@@ -3,9 +3,9 @@ import pytest
 import enoki as ek
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml, ScalarTransform4f
+    from mitsuba.core import load_dict, ScalarTransform4f
 
-    s = xml.load_dict({
+    s = load_dict({
         'type' : 'shapegroup',
         'shape_01' : {
             'type' : 'sphere',
@@ -30,11 +30,11 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_error(variant_scalar_rgb):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict
 
     error = "Nested instancing is not permitted"
     with pytest.raises(RuntimeError, match='.*{}.*'.format(error)):
-        xml.load_dict({
+        load_dict({
             'type' : 'shapegroup',
             'shape_01' : {
                 'type' : 'instance',
@@ -47,7 +47,7 @@ def test02_error(variant_scalar_rgb):
 
     error = "Nested ShapeGroup is not permitted"
     with pytest.raises(RuntimeError, match='.*{}.*'.format(error)):
-        xml.load_dict({
+        load_dict({
             'type' : 'shapegroup',
             'shape_01' : {
                 'type' : 'shapegroup',
@@ -57,7 +57,7 @@ def test02_error(variant_scalar_rgb):
 
     error = "Instancing of emitters is not supported"
     with pytest.raises(RuntimeError, match='.*{}.*'.format(error)):
-        xml.load_dict({
+        load_dict({
             'type' : 'shapegroup',
             'shape_01' : {
                 'type' : 'sphere',
@@ -67,7 +67,7 @@ def test02_error(variant_scalar_rgb):
 
     error = "Instancing of sensors is not supported"
     with pytest.raises(RuntimeError, match='.*{}.*'.format(error)):
-        xml.load_dict({
+        load_dict({
             'type' : 'shapegroup',
             'shape_01' : {
                 'type' : 'sphere',

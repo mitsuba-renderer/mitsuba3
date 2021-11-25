@@ -26,7 +26,7 @@ relevant differentiable parameters.
 
     import enoki as ek
     from mitsuba.core import Thread, Vector3f
-    from mitsuba.core.xml import load_file
+    from mitsuba.core import load_file
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render_torch, write_bitmap
     import torch

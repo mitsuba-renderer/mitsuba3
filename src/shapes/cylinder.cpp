@@ -84,17 +84,20 @@ public:
 
     Cylinder(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
-        m_flip_normals = props.bool_("flip_normals", false);
+        m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if face points and radius are also provided
-        float radius = props.float_("radius", 1.f);
-        ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
-                      p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
+        ScalarFloat radius = props.get<ScalarFloat>("radius", 1.f);
+        ScalarPoint3f p0 = props.get<ScalarPoint3f>("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
+                      p1 = props.get<ScalarPoint3f>("p1", ScalarPoint3f(0.f, 0.f, 1.f));
+
+        ScalarVector3f d = p1 - p0;
+        ScalarFloat length = ek::norm(d);
 
         m_to_world =
             m_to_world.scalar() * ScalarTransform4f::translate(p0) *
-            ScalarTransform4f::to_frame(ScalarFrame3f(p1 - p0)) *
-            ScalarTransform4f::scale(ScalarVector3f(radius, radius, 1.f));
+            ScalarTransform4f::to_frame(ScalarFrame3f(d / length)) *
+            ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
 
         update();
         initialize();
@@ -371,25 +374,22 @@ public:
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
-
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
+        Float t = pi.t;
+        if constexpr (ek::is_diff_array_v<Float>)
+            t = ek::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
-
-        si.p = ray(pi.t);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
+        si.p = ray(t);
 
         Vector3f local = m_to_object.value().transform_affine(si.p);
 
@@ -413,8 +413,8 @@ public:
 
         si.sh_frame.n = si.n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
-            has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
+        if (has_flag(hit_flags, RayFlags::dNSdUV) ||
+            has_flag(hit_flags, RayFlags::dNGdUV)) {
             si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }
@@ -428,14 +428,30 @@ public:
     //! @}
     // =============================================================
 
+    Float boundary_test(const Ray3f &ray,
+                        const SurfaceInteraction3f &si,
+                        Mask /*active*/) const override {
+        // Distance to cylinder edges
+        Float dist_edge = ek::dot(si.sh_frame.n, -ray.d);
+
+        // Distance to cap edges
+        Float dist_caps = 0.5f - ek::abs(si.uv.y() - 0.5f);
+
+        // Take the minimum of both distances to ensure 0.0 at silhouette.
+        return ek::min(dist_caps, dist_edge);
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world"))
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
             update();
+        }
         Base::parameters_changed();
     }
 

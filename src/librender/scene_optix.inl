@@ -23,48 +23,50 @@ NAMESPACE_BEGIN(mitsuba)
 
 static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
 
-struct OptixState {
-    OptixDeviceContext context;
-    OptixPipelineCompileOptions pipeline_compile_options = {};
-    OptixModule module = nullptr;
-    OptixProgramGroup program_groups[ProgramGroupCount];
+// Per scene OptiX state data structure
+struct OptixSceneState {
     OptixShaderBindingTable sbt = {};
     OptixAccelData accel;
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
+    size_t config_index;
+};
+
+/**
+ * \brief Optix configuration data structure
+ *
+ * OptiX modules and program groups can be compiled with different set of
+ * features and optimizations, which might vary depending on the scene's
+ * requirements. This data structure hold those OptiX pipeline components for a
+ * specific configuration, which can be shared across multiple scenes.
+ *
+ * \ref Scene::static_accel_shutdown is responsible for freeing those programs.
+ */
+struct OptixConfig {
+    OptixDeviceContext context;
+    OptixPipelineCompileOptions pipeline_compile_options;
+    OptixModule module;
+    OptixProgramGroup program_groups[ProgramGroupCount];
     char *custom_shapes_program_names[2 * custom_optix_shapes_count];
 };
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        ScopedPhase phase(ProfilerPhase::InitAccel);
-        Log(Info, "Building scene in OptiX ..");
-        Timer timer;
-        optix_initialize();
+// Array storing previously initialized optix configurations
+static OptixConfig optix_configs[8] = {};
 
-        m_accel = new OptixState();
-        OptixState &s = *(OptixState *) m_accel;
+size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
+    // Compute config index in optix_configs based on required set of features
+    size_t config_index =
+        (has_instances ? 4 : 0) +
+        (has_meshes ? 2 : 0) +
+        (has_others ? 1 : 0);
 
-        bool scene_has_meshes = false;
-        bool scene_has_others = false;
-        bool scene_has_instances = false;
+    OptixConfig &config = optix_configs[config_index];
 
-        for (auto& shape : m_shapes) {
-            scene_has_meshes    |= shape->is_mesh();
-            scene_has_others    |= !shape->is_mesh() && !shape->is_instance();
-            scene_has_instances |= shape->is_instance();
-        }
+    // Initialize Optix config if necessary
+    if (!config.module) {
+        Log(Debug, "Initialize Optix configuration (index=%zu)..", config_index);
 
-        for (auto& shape : m_shapegroups) {
-            scene_has_meshes |= !shape->has_meshes();
-            scene_has_others |= !shape->has_others();
-        }
-
-        // =====================================================
-        // OptiX context creation
-        // =====================================================
-
-        s.context = jit_optix_context();
+        config.context = jit_optix_context();
 
         // =====================================================
         // Configure options for OptiX pipeline
@@ -80,37 +82,37 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
     #endif
 
-        s.pipeline_compile_options.usesMotionBlur        = false;
-        s.pipeline_compile_options.numPayloadValues      = 6;
-        s.pipeline_compile_options.numAttributeValues    = 2; // the minimum legal value
-        s.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+        config.pipeline_compile_options.usesMotionBlur     = false;
+        config.pipeline_compile_options.numPayloadValues   = 6;
+        config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
+        config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
-        if (scene_has_instances)
-            s.pipeline_compile_options.traversableGraphFlags =
+        if (has_instances)
+            config.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        else if (scene_has_others && scene_has_meshes)
-            s.pipeline_compile_options.traversableGraphFlags =
+        else if (has_others && has_meshes)
+            config.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
         else
-            s.pipeline_compile_options.traversableGraphFlags =
+            config.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
 
     #if !defined(MTS_OPTIX_DEBUG)
-        s.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+        config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     #else
-        s.pipeline_compile_options.exceptionFlags =
+        config.pipeline_compile_options.exceptionFlags =
                 OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW
                 | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH
                 | OPTIX_EXCEPTION_FLAG_DEBUG;
     #endif
 
         unsigned int prim_flags = 0;
-        if (scene_has_meshes)
+        if (has_meshes)
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
-        if (scene_has_others)
+        if (has_others)
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
-        s.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
+        config.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
 
         // =====================================================
         // Logging infrastructure for pipeline setup
@@ -131,14 +133,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // =====================================================
 
         check_log(optixModuleCreateFromPTX(
-            s.context,
+            config.context,
             &module_compile_options,
-            &s.pipeline_compile_options,
+            &config.pipeline_compile_options,
             (const char *)optix_rt_ptx,
             optix_rt_ptx_size,
             optix_log,
             &optix_log_size,
-            &s.module
+            &config.module
         ));
 
         // =====================================================
@@ -149,44 +151,80 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         OptixProgramGroupDesc pgd[ProgramGroupCount] {};
 
         pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        pgd[0].miss.module                  = s.module;
+        pgd[0].miss.module                  = config.module;
         pgd[0].miss.entryFunctionName       = "__miss__ms";
         pgd[1].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[1].hitgroup.moduleCH            = s.module;
+        pgd[1].hitgroup.moduleCH            = config.module;
         pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
 
         for (size_t i = 0; i < custom_optix_shapes_count; i++) {
             pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
             std::string name = string::to_lower(custom_optix_shapes[i]);
-            s.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
-            s.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
+            config.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
+            config.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
 
-            pgd[2+i].hitgroup.moduleCH            = s.module;
-            pgd[2+i].hitgroup.entryFunctionNameCH = s.custom_shapes_program_names[2*i];
-            pgd[2+i].hitgroup.moduleIS            = s.module;
-            pgd[2+i].hitgroup.entryFunctionNameIS = s.custom_shapes_program_names[2*i+1];
+            pgd[2+i].hitgroup.moduleCH            = config.module;
+            pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
+            pgd[2+i].hitgroup.moduleIS            = config.module;
+            pgd[2+i].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
         }
 
         optix_log_size = sizeof(optix_log);
         check_log(optixProgramGroupCreate(
-            s.context,
+            config.context,
             pgd,
             ProgramGroupCount,
             &program_group_options,
             optix_log,
             &optix_log_size,
-            s.program_groups
+            config.program_groups
         ));
+    }
+
+    return config_index;
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ScopedPhase phase(ProfilerPhase::InitAccel);
+        Log(Info, "Building scene in OptiX ..");
+        Timer timer;
+        optix_initialize();
+
+        m_accel = new OptixSceneState();
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
+
+        // =====================================================
+        //  Initialize OptiX configuration
+        // =====================================================
+
+        bool has_meshes = false;
+        bool has_others = false;
+        bool has_instances = false;
+
+        for (auto& shape : m_shapes) {
+            has_meshes    |= shape->is_mesh();
+            has_others    |= !shape->is_mesh() && !shape->is_instance();
+            has_instances |= shape->is_instance();
+        }
+
+        for (auto& shape : m_shapegroups) {
+            has_meshes |= !shape->has_meshes();
+            has_others |= !shape->has_others();
+        }
+
+        s.config_index = init_optix_config(has_meshes, has_others, has_instances);
+        const OptixConfig &config = optix_configs[s.config_index];
 
         // =====================================================
         //  Shader Binding Table generation
         // =====================================================
 
         std::vector<HitGroupSbtRecord> hg_sbts;
-        fill_hitgroup_records(m_shapes, hg_sbts, s.program_groups);
+        fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
         for (auto& shapegroup: m_shapegroups)
-            shapegroup->optix_fill_hitgroup_records(hg_sbts, s.program_groups);
+            shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
 
         size_t shapes_count = hg_sbts.size();
 
@@ -200,11 +238,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
         s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
 
-        jit_optix_check(optixSbtRecordPackHeader(s.program_groups[0],
+        jit_optix_check(optixSbtRecordPackHeader(config.program_groups[0],
                                                  s.sbt.missRecordBase));
 
-        jit_memcpy_async(JitBackend::CUDA, s.sbt.hitgroupRecordBase,
-                         hg_sbts.data(),
+        jit_memcpy_async(JitBackend::CUDA, s.sbt.hitgroupRecordBase, hg_sbts.data(),
                          shapes_count * sizeof(HitGroupSbtRecord));
 
         s.sbt.missRecordBase =
@@ -218,38 +255,25 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         accel_parameters_changed_gpu();
 
-        // =====================================================
-        // Let Enoki know about all of this
-        // =====================================================
-
-        /* TODO sbt and program groups should be passed during the ray tracing
-                call to enable the support of multiple Scene instances at the
-                same time. Moreover, the pipeline config options should be the
-                union of the configs of all scene instances. */
-        jit_optix_configure(
-            &s.pipeline_compile_options,
-            &s.sbt,
-            s.program_groups, ProgramGroupCount
-        );
-
-        Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
+         Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
     }
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
         ek::sync_thread();
-        OptixState &s = *(OptixState *) m_accel;
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
+        const OptixConfig &config = optix_configs[s.config_index];
 
         if (!m_shapes.empty()) {
             // Build geometry acceleration structures for all the shapes
-            build_gas(s.context, m_shapes, s.accel);
+            build_gas(config.context, m_shapes, s.accel);
             for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_build_gas(s.context);
+                shapegroup->optix_build_gas(config.context);
 
             // Gather information about the instance acceleration structures to be built
             std::vector<OptixInstance> ias;
-            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
+            prepare_ias(config.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
             // If there is only a single IAS, no need to build the "master" IAS
             if (ias.size() == 1) {
@@ -275,7 +299,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
                 OptixAccelBufferSizes buffer_sizes;
                 jit_optix_check(optixAccelComputeMemoryUsage(
-                    s.context,
+                    config.context,
                     &accel_options,
                     &build_input,
                     1,
@@ -288,7 +312,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
                 jit_optix_check(optixAccelBuild(
-                    s.context,
+                    config.context,
                     (CUstream) jit_cuda_stream(),
                     &accel_options,
                     &build_input,
@@ -306,11 +330,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             }
         }
 
-        /* Set up a callback on the handle variable to release the OptiX
-           pipeline when this variable is freed. This ensures that the lifetime
-           of the pipeline goes beyond the one of the Scene instance if there
-           are still some pending ray tracing calls (e.g. non evaluated
-           variables depending on a ray tracing call). */
+        /* Set up a callback on the handle variable to release the OptiX scene
+           state when this variable is freed. This ensures that the lifetime of
+           the pipeline goes beyond the one of the Scene instance if there are
+           still some pending ray tracing calls (e.g. non evaluated variables
+           depending on a ray tracing call). */
 
         // Prevents the pipeline to be released when updating the scene parameters
         if (m_accel_handle.index())
@@ -320,22 +344,15 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int should_free, void *payload) {
-                OptixState &s = *(OptixState *) payload;
+                OptixSceneState &s = *(OptixSceneState *) payload;
                 if (should_free) {
-                    // TODO should enable this otherwise further Optix kernels will use invalid program groups
-                    // jit_optix_configure(nullptr, nullptr, nullptr, 0);
+                    Log(Debug, "Free OptiX scene state..");
                     jit_free(s.sbt.raygenRecord);
                     jit_free(s.sbt.hitgroupRecordBase);
                     jit_free(s.sbt.missRecordBase);
                     jit_free(s.ias_buffer);
 
-                    for (size_t i = 0; i < ProgramGroupCount; i++)
-                        jit_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
-                    for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
-                        free(s.custom_shapes_program_names[i]);
-                    jit_optix_check(optixModuleDestroy(s.module));
-
-                    delete (OptixState *) payload;
+                    delete (OptixSceneState *) payload;
                 }
             },
             (void *) m_accel
@@ -356,10 +373,37 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     }
 }
 
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
+    Log(Debug, "Optix configuration shutdown..");
+    for (size_t j = 0; j < 8; j++) {
+        OptixConfig &config = optix_configs[j];
+        if (config.module) {
+            for (size_t i = 0; i < ProgramGroupCount; i++)
+                jit_optix_check(optixProgramGroupDestroy(config.program_groups[i]));
+            for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
+                free(config.custom_shapes_program_names[i]);
+            jit_optix_check(optixModuleDestroy(config.module));
+            config.module = nullptr;
+        }
+    }
+}
+
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
+        const OptixConfig &config = optix_configs[s.config_index];
+
+        // Override optix configuration in enoki-jit.
+        // TODO This could be problematic when raytracing calls on other scenes are still pending.
+        jit_optix_configure(
+            &config.pipeline_compile_options,
+            &s.sbt,
+            config.program_groups, ProgramGroupCount
+        );
+
         UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
@@ -441,6 +485,17 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
+        const OptixConfig &config = optix_configs[s.config_index];
+
+        // Override optix configuration in enoki-jit.
+        // TODO This could be problematic when raytracing calls on other scenes are still pending.
+        jit_optix_configure(
+            &config.pipeline_compile_options,
+            &s.sbt,
+            config.program_groups, ProgramGroupCount
+        );
+
         UInt32 ray_mask(255),
                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),

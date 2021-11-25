@@ -134,6 +134,7 @@ class SceneParameters(Mapping):
         for depth, node, keys in work_list:
             node.parameters_changed(keys)
         self.update_list.clear()
+        ek.eval()
 
     def keep(self, keys: list) -> None:
         """
@@ -144,39 +145,6 @@ class SceneParameters(Mapping):
         self.properties = {
             k: v for k, v in self.properties.items() if k in keys
         }
-
-    def set_grad_suspended(self, state: bool) -> None:
-        """
-        Suspend/Resume tracking of all gradients in the scene.
-
-        Params
-        ------
-
-        - state : whether to stop or resume recording gradients.
-        """
-
-        for obj, (parent, depth) in self.hierarchy.items():
-            if depth == 0: # root node
-                suspend_gradients(obj, state)
-                break
-
-    @contextmanager
-    def suspend_gradients(self):
-        """Temporarily disable the generation of gradients."""
-        self.set_grad_suspended(True)
-        try:
-            yield
-        finally:
-            self.set_grad_suspended(False)
-
-    @contextmanager
-    def resume_gradients(self):
-        """Temporarily enable the generation of gradients"""
-        self.set_grad_suspended(False)
-        try:
-            yield
-        finally:
-            self.set_grad_suspended(True)
 
 
 def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
@@ -230,39 +198,6 @@ def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
     node.traverse(cb)
 
     return SceneParameters(cb.properties, cb.hierarchy)
-
-
-def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
-    """
-    Traverse a node of Mitsuba's scene graph and suspend/resume keeping track of derivatives.
-    """
-    from mitsuba.core import TraversalCallback
-
-    class SuspendCallback(TraversalCallback):
-        def __init__(self, node, state):
-            TraversalCallback.__init__(self)
-            self.state = state
-            self.node = node
-
-            from mitsuba.core import get_property
-            self.get_property = get_property
-
-        def put_parameter(self, name, value, cpptype=None):
-            if cpptype is None:
-                ek.set_grad_suspended(value, self.state)
-            else:
-                ek.set_grad_suspended(self.get_property(value, cpptype, self.node), self.state)
-
-        def put_object(self, name, node):
-            node.set_grad_suspended(self.state) # Suspend hidden parameters if necessary
-            cb = SuspendCallback(
-                node=node,
-                state=self.state,
-            )
-            node.traverse(cb)
-
-    cb = SuspendCallback(node, state)
-    node.traverse(cb)
 
 
 def convert_to_bitmap(data, uint8_srgb=True):

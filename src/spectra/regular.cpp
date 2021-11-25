@@ -25,8 +25,8 @@ public:
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
         ScalarVector2f wavelength_range(
-            props.float_("lambda_min"),
-            props.float_("lambda_max")
+            props.get<ScalarFloat>("lambda_min"),
+            props.get<ScalarFloat>("lambda_max")
         );
 
         if (props.type("values") == Properties::Type::String) {
@@ -47,12 +47,11 @@ public:
                 wavelength_range, data.data(), data.size()
             );
         } else {
-            size_t size = props.size_("size");
-            const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
-
-            m_distr = ContinuousDistribution<Wavelength>(
-                wavelength_range, values, size
-            );
+            size_t size = props.get<size_t>("size");
+            // Scene/property parsing is in double precision, cast to single precision depending on variant.
+            using DataInput = DynamicBuffer<ek::replace_scalar_t<Float, Properties::Float>>;
+            auto data = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("values"), size));
+            m_distr = ContinuousDistribution<Wavelength>(wavelength_range, data);
         }
     }
 
@@ -106,10 +105,6 @@ public:
             << "  distr = " << string::indent(m_distr) << std::endl
             << "]";
         return oss.str();
-    }
-
-    void set_grad_suspended(bool state) override {
-        m_distr.set_grad_suspended(state);
     }
 
     MTS_DECLARE_CLASS()

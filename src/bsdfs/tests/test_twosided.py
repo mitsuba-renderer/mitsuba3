@@ -6,7 +6,7 @@ from enoki.scalar import ArrayXu as UInt32
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="diffuse"/>
@@ -29,9 +29,8 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_pdf(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_string, Frame3f
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
 
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
@@ -53,10 +52,9 @@ def test02_pdf(variant_scalar_rgb):
 
 
 def test03_sample_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_string, Frame3f
     from mitsuba.core.warp import square_to_uniform_sphere
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
         <bsdf type="diffuse">

@@ -95,13 +95,13 @@ public:
 
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
-        m_flip_normals = props.bool_("flip_normals", false);
+        m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
         m_to_world =
             m_to_world.scalar() *
-            ScalarTransform4f::translate(props.point3f("center", 0.f)) *
-            ScalarTransform4f::scale(props.float_("radius", 1.f));
+            ScalarTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
+            ScalarTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
 
         update();
         initialize();
@@ -371,32 +371,36 @@ public:
 
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
+    Float boundary_test(const Ray3f &ray,
+                        const SurfaceInteraction3f &si,
+                        Mask /*active*/) const override {
+        return ek::abs(ek::dot(si.sh_frame.n, -ray.d));
+    }
+
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
+        // Recompute ray intersection to get differentiable t
+        Float t = pi.t;
+        if constexpr (ek::is_diff_array_v<Float>)
+            t = ek::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
-        // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
-
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
         // Fields requirement dependencies
-        bool need_dn_duv = has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
-                           has_flag(hit_flags, HitComputeFlags::dNGdUV);
-        bool need_dp_duv = has_flag(hit_flags, HitComputeFlags::dPdUV) || need_dn_duv;
-        bool need_uv     = has_flag(hit_flags, HitComputeFlags::UV) || need_dp_duv;
+        bool need_dn_duv = has_flag(hit_flags, RayFlags::dNSdUV) ||
+                           has_flag(hit_flags, RayFlags::dNGdUV);
+        bool need_dp_duv = has_flag(hit_flags, RayFlags::dPdUV) || need_dn_duv;
+        bool need_uv     = has_flag(hit_flags, RayFlags::UV) || need_dp_duv;
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
 
-        si.sh_frame.n = ek::normalize(ray(pi.t) - m_center.value());
+        si.sh_frame.n = ek::normalize(ray(t) - m_center.value());
 
         // Re-project onto the sphere to improve accuracy
         si.p = ek::fmadd(si.sh_frame.n, m_radius.value(), m_center.value());
@@ -459,8 +463,11 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world"))
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
             update();
+        }
         Base::parameters_changed();
     }
 

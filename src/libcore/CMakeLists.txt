@@ -104,6 +104,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
 endif()
 
 target_link_libraries(mitsuba-core PUBLIC enoki)
+target_link_libraries(mitsuba-core PRIVATE fast_float)
 
 if (MTS_ENABLE_JIT)
   target_link_libraries(mitsuba-core PUBLIC enoki-jit)

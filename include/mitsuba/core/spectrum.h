@@ -137,7 +137,7 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
 
 /* Scaling the CIE curves by the following constant ensures that
    a unit-valued spectrum integrates to a luminance of 1.0 */
-#define MTS_CIE_Y_NORMALIZATION float(1.0 / 106.7502593994140625)
+#define MTS_CIE_Y_NORMALIZATION (1.0 / 106.7502593994140625)
 
 /**
  * \brief Struct carrying color space tables with fits for \ref cie1931_xyz and
@@ -358,7 +358,8 @@ Float luminance(const Spectrum<Float, Size> &value,
 }
 
 template <typename Float> Float luminance(const Color<Float, 3> &c) {
-    return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
+    using F = ek::scalar_t<Float>;
+    return c[0] * F(0.212671f) + c[1] * F(0.715160f) + c[2] * F(0.072169f);
 }
 
 template <typename Value>

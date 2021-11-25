@@ -66,8 +66,8 @@ public:
             }
 
             if (props.has_property("direction")) {
-                ScalarPoint3f origin     = props.point3f("origin");
-                ScalarVector3f direction = props.vector3f("direction");
+                ScalarPoint3f origin     = props.get<ScalarPoint3f>("origin");
+                ScalarVector3f direction = props.get<ScalarVector3f>("direction");
                 ScalarPoint3f target     = origin + direction;
                 auto [up, unused]        = coordinate_system(ek::normalize(direction));
 

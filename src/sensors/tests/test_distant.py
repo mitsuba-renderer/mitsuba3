@@ -33,7 +33,7 @@ def sensor_dict(target=None, direction=None):
 
 
 def make_sensor(d):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     return load_dict(d).expand()[0]
 
@@ -136,8 +136,7 @@ def test_sample_ray_direction(variant_scalar_rgb, direction):
 @pytest.mark.slow
 def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     # This test checks if targeting works as intended by rendering a basic scene
-    from mitsuba.core import ScalarTransform4f, Struct, Bitmap
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarTransform4f, Struct, Bitmap
 
     # Basic illumination and sensing parameters
     l_e = 1.0  # Emitted radiance
@@ -314,8 +313,7 @@ def test_checkerboard(variants_all_rgb):
     """
     Very basic render test with checkerboard texture and square target.
     """
-    from mitsuba.core import ScalarTransform4f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarTransform4f
 
     l_o = 1.0
     rho0 = 0.5

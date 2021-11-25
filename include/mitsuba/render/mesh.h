@@ -154,8 +154,12 @@ public:
     barycentric_coordinates(const SurfaceInteraction3f &si,
                             Mask active = true) const;
 
+    virtual Float boundary_test(const Ray3f &ray,
+                                const SurfaceInteraction3f &si,
+                                Mask active = true) const override;
+
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                             PreliminaryIntersection3f pi,
+                                                             const PreliminaryIntersection3f &pi,
                                                              uint32_t hit_flags,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const override;
@@ -171,7 +175,7 @@ public:
                                      Mask active = true) const override;
 
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                                       uint32_t hit_flags = +RayFlags::All,
                                                        Mask active = true) const override;
 
     /** \brief Ray-triangle intersection test
@@ -196,7 +200,6 @@ public:
                                 const Ray3 &ray,
                                 ek::mask_t<T> active = true) const {
         using Point3T  = Point<T, 3>;
-        using Vector3T = Vector<T, 3>;
         using Faces    = ek::Array<ek::uint32_array_t<T>, 3>;
 
         Faces fi;
@@ -217,23 +220,8 @@ public:
             p2 = vertex_position(fi[2], active);
         }
 
-        Vector3T e1 = p1 - p0, e2 = p2 - p0;
-
-        Vector3T pvec = ek::cross(ray.d, e2);
-        T inv_det = ek::rcp(ek::dot(e1, pvec));
-
-        Vector3T tvec = ray.o - p0;
-        T u = ek::dot(tvec, pvec) * inv_det;
-        active &= u >= 0.f && u <= 1.f;
-
-        Vector3T qvec = ek::cross(tvec, e1);
-        T v = ek::dot(ray.d, qvec) * inv_det;
-        active &= v >= 0.f && u + v <= 1.f;
-
-        T t = ek::dot(e2, qvec) * inv_det;
-        active &= t >= 0.f && t <= ray.maxt;
-
-        return { ek::select(active, t, ek::Infinity<T>), { u, v } };
+        auto [t, uv, hit] = moeller_trumbore(ray, p0, p1, p2, active);
+        return { ek::select(hit, t, ek::Infinity<T>), uv };
     }
 
     MTS_INLINE PreliminaryIntersection3f
@@ -291,8 +279,6 @@ public:
     /// Return a human-readable string representation of the shape contents.
     virtual std::string to_string() const override;
 
-    virtual void set_grad_suspended(bool state) override;
-
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;
 
@@ -322,6 +308,52 @@ protected:
     ENOKI_INLINE void ensure_pmf_built() const {
         if (unlikely(m_area_pmf.empty()))
             const_cast<Mesh *>(this)->build_pmf();
+    }
+
+    /** \brief Moeller and Trumbore algorithm for computing ray-triangle
+     * intersection
+     *
+     * Discussed at
+     * <tt>http://www.acm.org/jgt/papers/MollerTrumbore97/code.html</tt>.
+     *
+     * \param ray
+     *    The ray segment to be used for the intersection query.
+     * \param p0
+     *    First vertex position of the triangle
+     * \param p1
+     *    Second vertex position of the triangle
+     * \param p2
+     *    Third vertex position of the triangle
+     * \return
+     *    Returns an ordered tuple <tt>(mask, u, v, t)</tt>, where \c mask
+     *    indicates whether an intersection was found, \c t contains the
+     *    distance from the ray origin to the intersection point, and \c u and
+     *    \c v contains the first two components of the intersection in
+     *    barycentric coordinates
+     */
+    template <typename T, typename Ray3>
+    std::tuple<T, Point<T, 2>, ek::mask_t<T>>
+    moeller_trumbore(const Ray3 &ray, const Point<T, 3> &p0,
+                     const Point<T, 3> &p1, const Point<T, 3> &p2,
+                     ek::mask_t<T> active = true) const {
+        using Vector3T = Vector<T, 3>;
+        Vector3T e1 = p1 - p0, e2 = p2 - p0;
+
+        Vector3T pvec = ek::cross(ray.d, e2);
+        T inv_det = ek::rcp(ek::dot(e1, pvec));
+
+        Vector3T tvec = ray.o - p0;
+        T u = ek::dot(tvec, pvec) * inv_det;
+        active &= u >= 0.f && u <= 1.f;
+
+        Vector3T qvec = ek::cross(tvec, e1);
+        T v = ek::dot(ray.d, qvec) * inv_det;
+        active &= v >= 0.f && u + v <= 1.f;
+
+        T t = ek::dot(e2, qvec) * inv_det;
+        active &= t >= 0.f && t <= ray.maxt;
+
+        return { t, { u, v }, active };
     }
 
     MTS_DECLARE_CLASS()

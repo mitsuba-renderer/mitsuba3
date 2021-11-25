@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
@@ -192,7 +193,7 @@ protected:
 // ========================================================================
 
 /// Helper function to parse the field of view field of a camera
-extern MTS_EXPORT_RENDER float parse_fov(const Properties &props, float aspect);
+extern MTS_EXPORT_RENDER double parse_fov(const Properties &props, double aspect);
 
 /// Helper function to create a perspective projection transformation matrix
 template <typename Float> Transform<Point<Float, 4>>

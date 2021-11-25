@@ -50,7 +50,8 @@ public:
         Pointer            ///< const void* pointer (for internal communication between plugins)
     };
 
-    using Float = float;
+    // Scene parsing in double precision
+    using Float = double;
     using Array3f = ek::Array<Float, 3>;
     MTS_IMPORT_CORE_TYPES()
 
@@ -154,91 +155,54 @@ public:
 
 public:  // Type-specific getters and setters ----------------------------------
 
+    /// Generic getter method to retrive properties. (throw an error if type isn't supported)
+    template <typename T> T get(const std::string &name) const;
+    /// Generic getter method to retrive properties. (use default value if no entry exists)
+    template <typename T> T get(const std::string &name, const T &def_val) const;
+
     /// Store a boolean value in the Properties instance
-    void set_bool(const std::string &name, const bool &value, bool warn_duplicates = true);
-    /// Retrieve a boolean value
-    const bool& bool_(const std::string &name) const;
-    /// Retrieve a boolean value (use default value if no entry exists)
-    const bool& bool_(const std::string &name, const bool &def_val) const;
+    void set_bool(const std::string &name, const bool &value, bool error_duplicates = true);
 
     /// Set an integer value in the Properties instance
-    void set_int(const std::string &name, const int &value, bool warn_duplicates = true) {
-        set_long(name, (int64_t) value, warn_duplicates);
-    }
-
-    /// Retrieve an integer value
-    int int_(const std::string &name) const { return (int) long_(name); }
-    /// Retrieve an integer value (use default value if no entry exists)
-    int int_(const std::string &name, const int &def_val) const {
-        return (int) long_(name, (int64_t) def_val);
+    void set_int(const std::string &name, const int &value, bool error_duplicates = true) {
+        set_long(name, (int64_t) value, error_duplicates);
     }
 
     /// Store a long value in the Properties instance
-    void set_long(const std::string &name, const int64_t &value, bool warn_duplicates = true);
-    /// Retrieve a long value
-    const int64_t& long_(const std::string &name) const;
-    /// Retrieve a long value (use default value if no entry exists)
-    const int64_t& long_(const std::string &name, const int64_t &def_val) const;
-
-    /// Retrieve a size_t value. Since the underlying storage has type int64_t,
-    /// an exception is thrown if the value is negative.
-    size_t size_(const std::string &name) const;
-    /// Retrieve a long value (use default value if no entry exists). Since the
-    /// underlying storage has type int64_t an exception is thrown if the value
-    /// is negative).
-    size_t size_(const std::string &name, const size_t &def_val) const;
+    void set_long(const std::string &name, const int64_t &value, bool error_duplicates = true);
 
     /// Store a floating point value in the Properties instance
-    void set_float(const std::string &name, const Float &value, bool warn_duplicates = true);
-    /// Retrieve a floating point value
-    Float float_(const std::string &name) const;
-    /// Retrieve a floating point value (use default value if no entry exists)
-    Float float_(const std::string &name, const Float &def_val) const;
+    void set_float(const std::string &name, const Float &value, bool error_duplicates = true);
 
     /// Store a string in the Properties instance
-    void set_string(const std::string &name, const std::string &value, bool warn_duplicates = true);
+    void set_string(const std::string &name, const std::string &value, bool error_duplicates = true);
     /// Retrieve a string value
     const std::string& string(const std::string &name) const;
     /// Retrieve a string value (use default value if no entry exists)
     const std::string& string(const std::string &name, const std::string &def_val) const;
 
     /// Store a named reference in the Properties instance
-    void set_named_reference(const std::string &name, const NamedReference &value, bool warn_duplicates = true);
+    void set_named_reference(const std::string &name, const NamedReference &value, bool error_duplicates = true);
     /// Retrieve a named reference value
     const NamedReference& named_reference(const std::string &name) const;
     /// Retrieve a named reference value (use default value if no entry exists)
     const NamedReference& named_reference(const std::string &name, const NamedReference &def_val) const;
 
     /// Store a 3D array in the Properties instance
-    void set_array3f(const std::string &name, const Array3f &value, bool warn_duplicates = true);
-    /// Retrieve a 3D array
-    Array3f array3f(const std::string &name) const;
-    /// Retrieve a 3D array (use default value if no entry exists)
-    Array3f array3f(const std::string &name, const Array3f &def_val) const;
+    void set_array3f(const std::string &name, const Array3f &value, bool error_duplicates = true);
 
-    /// Retrieve a 3D point
-    Point3f point3f(const std::string &name) const { return array3f(name); }
-    /// Retrieve a 3D point (use default value if no entry exists)
-    Point3f point3f(const std::string &name, const Point3f &def_val) const { return array3f(name, def_val); }
-
-    /// Retrieve a 3D vector
-    Vector3f vector3f(const std::string &name) const { return array3f(name); }
-    /// Retrieve a 3D vector (use default value if no entry exists)
-    Vector3f vector3f(const std::string &name, const Vector3f &def_val) const { return array3f(name, def_val); }
+    /// Store a color in the Properties instance
+    void set_color(const std::string &name, const Color3f &value, bool error_duplicates = true);
 
     /// Store a 4x4 homogeneous coordinate transformation in the Properties instance
-    void set_transform(const std::string &name, const Transform4f &value, bool warn_duplicates = true);
-    /// Retrieve a 4x4 homogeneous coordinate transformation
-    const Transform4f& transform(const std::string &name) const;
-    /// Retrieve a 4x4 homogeneous coordinate transformation (use default value if no entry exists)
-    const Transform4f& transform(const std::string &name, const Transform4f &def_val) const;
+    void set_transform(const std::string &name, const Transform4f &value, bool error_duplicates = true);
 
     /// Store an animated transformation in the Properties instance
     void set_animated_transform(const std::string &name, ref<AnimatedTransform> value,
-                                bool warn_duplicates = true);
+                                bool error_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
     void set_animated_transform(const std::string &name, const Transform4f &value,
-                                bool warn_duplicates = true);
+                                bool error_duplicates = true);
     /// Retrieve an animated transformation
     ref<AnimatedTransform> animated_transform(const std::string &name) const;
     /// Retrieve an animated transformation (use default value if no entry exists)
@@ -249,25 +213,18 @@ public:  // Type-specific getters and setters ----------------------------------
                                               const Transform<Point4f> &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
-    void set_object(const std::string &name, const ref<Object> &value, bool warn_duplicates = true);
+    void set_object(const std::string &name, const ref<Object> &value, bool error_duplicates = true);
     /// Retrieve an arbitrary object
     const ref<Object>& object(const std::string &name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
     const ref<Object>& object(const std::string &name, const ref<Object> &def_val) const;
 
     /// Store an arbitrary pointer in the Properties instance
-    void set_pointer(const std::string &name, const void * const &value, bool warn_duplicates = true);
+    void set_pointer(const std::string &name, const void * const &value, bool error_duplicates = true);
     /// Retrieve an arbitrary pointer
     const void * const& pointer(const std::string &name) const;
     /// Retrieve an arbitrary pointer (use default value if no entry exists)
     const void * const& pointer(const std::string &name, const void * const &def_val) const;
-
-    /// Store a color in the Properties instance
-    void set_color(const std::string &name, const Color3f &value, bool warn_duplicates = true);
-    /// Retrieve a color
-    const Color3f& color(const std::string &name) const;
-    /// Retrieve a color (use default value if no entry exists)
-    const Color3f& color(const std::string &name, const Color3f &def_val) const;
 
     /// Retrieve a texture (if the property is a float, create a uniform texture instead)
     template <typename Texture>
@@ -285,7 +242,7 @@ public:  // Type-specific getters and setters ----------------------------------
             return (Texture *) object.get();
         } else if (p_type == Properties::Type::Float) {
             Properties props("uniform");
-            props.set_float("value", float_(name));
+            props.set_float("value", get<Float>(name));
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
@@ -302,11 +259,11 @@ public:  // Type-specific getters and setters ----------------------------------
     }
 
     /// Retrieve a texture (or create uniform texture with default value)
-    template <typename Texture>
-    ref<Texture> texture(const std::string &name, Float def_val) const {
+    template <typename Texture, typename FloatType>
+    ref<Texture> texture(const std::string &name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("uniform");
-            props.set_float("value", def_val);
+            props.set_float("value", Float(def_val));
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         }
         return texture<Texture>(name);
@@ -337,7 +294,7 @@ public:  // Type-specific getters and setters ----------------------------------
             }
         } else if (p_type == Properties::Type::Float) {
             Properties props("constvolume");
-            props.set_float("value", float_(name));
+            props.set_float("value", get<Float>(name));
             return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
@@ -353,22 +310,48 @@ public:  // Type-specific getters and setters ----------------------------------
         return volume<Volume>(name);
     }
 
-    template <typename Volume>
-    ref<Volume> volume(const std::string &name, Float def_val) const {
+    template <typename Volume, typename FloatType>
+    ref<Volume> volume(const std::string &name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("constvolume");
-            props.set_float("value", def_val);
+            props.set_float("value", Float(def_val));
             return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         }
         return volume<Volume>(name);
     }
 
-
 private:
-    // Return a reference to an object for a specific name (return null ref if doesn't exist)
+    /// Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;
 };
+
+#define EXTERN_EXPORT_PROPERTY_ACCESSOR(T) \
+    extern template MTS_EXPORT_CORE T Properties::get<T>(const std::string &) const; \
+    extern template MTS_EXPORT_CORE T Properties::get<T>(const std::string &, const T&) const;
+
+#define T(...) __VA_ARGS__
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(bool))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(float))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(double))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(uint32_t))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(int32_t))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(uint64_t))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(int64_t))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ek::Array<float, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ek::Array<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Point<float, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Point<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Vector<float, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Vector<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Color<float, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Color<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<float, 4>>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 4>>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(std::string))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ref<Object>))
+#undef T
+#undef EXTERN_EXPORT_PROPERTY_ACCESSOR
 
 NAMESPACE_END(mitsuba)

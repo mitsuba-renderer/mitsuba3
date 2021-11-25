@@ -6,18 +6,11 @@
 
 
 MTS_PY_EXPORT(PhaseFunctionExtras) {
-    py::enum_<PhaseFunctionFlags>(m, "PhaseFunctionFlags", D(PhaseFunctionFlags))
+    auto e = py::enum_<PhaseFunctionFlags>(m, "PhaseFunctionFlags", D(PhaseFunctionFlags))
         .def_value(PhaseFunctionFlags, None)
         .def_value(PhaseFunctionFlags, Isotropic)
         .def_value(PhaseFunctionFlags, Anisotropic)
-        .def_value(PhaseFunctionFlags, Microflake)
-        .def(py::self == py::self)
-        .def(py::self | py::self)
-        .def(int() | py::self)
-        .def(py::self & py::self)
-        .def(int() & py::self)
-        .def(+py::self)
-        .def(~py::self)
-        .def("__pos__", [](const PhaseFunctionFlags &f) { return static_cast<uint32_t>(f); },
-                py::is_operator());
+        .def_value(PhaseFunctionFlags, Microflake);
+
+    MTS_PY_DECLARE_ENUM_OPERATORS(RayFlags, e)
 }

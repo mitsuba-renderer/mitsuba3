@@ -21,13 +21,13 @@ NAMESPACE_BEGIN(mitsuba)
 MTS_VARIANT ScatteringIntegrator<Float, Spectrum>::ScatteringIntegrator(const Properties &props)
     : Base(props) {
 
-    m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
+    m_samples_per_pass = (uint32_t) props.get<size_t>("samples_per_pass", (size_t) -1);
 
-    m_rr_depth = props.int_("rr_depth", 5);
+    m_rr_depth = props.get<int>("rr_depth", 5);
     if (m_rr_depth <= 0)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
-    m_max_depth = props.int_("max_depth", -1);
+    m_max_depth = props.get<int>("max_depth", -1);
     if (m_max_depth < 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 }
@@ -36,11 +36,10 @@ MTS_VARIANT ScatteringIntegrator<Float, Spectrum>::~ScatteringIntegrator() {}
 
 MTS_VARIANT typename ScatteringIntegrator<Float, Spectrum>::TensorXf
 ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
-                                              uint32_t sensor_index,
+                                              Sensor *sensor,
                                               bool develop_film) {
     m_stop = false;
 
-    ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->size();
     ScalarVector2i crop_size = film->crop_size();

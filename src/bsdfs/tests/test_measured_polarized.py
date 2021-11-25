@@ -7,8 +7,7 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_evaluation(variant_scalar_spectral_polarized):
-    from mitsuba.core import Vector3f, Frame3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import Vector3f, Frame3f, load_dict
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
 
     # Here we load a small example pBSDF file and evaluate the BSDF for a fixed

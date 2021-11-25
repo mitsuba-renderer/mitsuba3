@@ -5,39 +5,38 @@ from enoki.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml, ScalarTransform4f
+    from mitsuba.core import load_dict, ScalarTransform4f as T
 
-    s = xml.load_dict({"type" : "cylinder"})
+    s = load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 2*ek.Pi)
 
     # Test transforms order in constructor
+    rot = T.rotate([1.0, 0.0, 0.0], 35)
 
-    rot = ScalarTransform4f.rotate([1.0, 0.0, 0.0], 35)
-
-    s1 = xml.load_dict({
+    s1 = load_dict({
         "type" : "cylinder",
-        "radius" : 2.0,
-        "p0" : [1, 0, 0],
-        "p1" : [1, 0, 2],
+        "radius" : 0.5,
+        "p0" : [1, -1, -1],
+        "p1" : [1,  1,  1],
         "to_world" : rot
     })
 
-    s2 = xml.load_dict({
+    s2 = load_dict({
         "type" : "cylinder",
-        "to_world" : rot * ScalarTransform4f.translate([1, 0, 0]) * ScalarTransform4f.scale(2)
+        "to_world" : rot * T.translate([1, -1, -1]) * T.rotate([1.0, 0.0, 0.0], -45) * T.scale([0.5, 0.5, ek.sqrt(8)])
     })
 
     assert str(s1) == str(s2)
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import xml, Vector3f, Transform4f
+    from mitsuba.core import load_dict, Vector3f, Transform4f
 
     for l in [1, 5]:
         for r in [1, 2, 4]:
-            s = xml.load_dict({
+            s = load_dict({
                 "type" : "cylinder",
                 "to_world" : Transform4f.scale((r, r, l))
             })
@@ -50,12 +49,12 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f, Transform4f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.core import load_dict, Ray3f, Transform4f
+    from mitsuba.render import RayFlags
 
     for r in [1, 2, 4]:
         for l in [1, 5]:
-            s = xml.load_dict({
+            s = load_dict({
                 "type" : "scene",
                 "foo" : {
                     "type" : "cylinder",
@@ -73,7 +72,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                     ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
                                 time=0.0, wavelengths=[])
                     si_found = s.ray_test(ray)
-                    si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
+                    si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
 
                     assert si_found == si.is_valid()
                     assert si_found == ek.allclose(si.p[0]**2 + si.p[1]**2, r**2)
@@ -103,10 +102,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import xml, ScalarTransform4f
-        from mitsuba.core import Ray3f
+        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
 
-        scene = xml.load_dict({
+        scene = load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "cylinder",
@@ -117,7 +115,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+        t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
         ek.eval(t)
         return t
 
@@ -125,11 +123,11 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'cylinder'})
+    shape = load_dict({'type' : 'cylinder'})
 
-    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0), 0, [])
+    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -173,11 +171,11 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_backward(variant_cuda_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'cylinder'})
+    shape = load_dict({'type' : 'cylinder'})
 
-    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0), 0, [])
+    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)

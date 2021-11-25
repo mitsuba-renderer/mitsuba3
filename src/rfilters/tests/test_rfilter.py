@@ -6,14 +6,14 @@ from enoki.scalar import ArrayXf as Float
 # Spot-check the various reconstruction filters to prevent code rot
 
 def test01_box(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='box'/>")
     assert f.eval(0.49) == 1 and f.eval(0.51) == 0
     assert f.eval_discretized(0.49) == 1 and f.eval_discretized(0.51) == 0
 
 
 def test02_gaussian(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='gaussian'/>")
     assert ek,allclose(f.eval(0.2), 0.9227, atol=8e-3)
     assert ek,allclose(f.eval_discretized(0.2), 0.9227, atol=8e-3)
@@ -21,7 +21,7 @@ def test02_gaussian(variant_scalar_rgb):
 
 
 def test03_lanczos(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='lanczos'/>")
     assert ek.allclose(f.eval(1.4), -0.14668, atol=1e-2)
     assert ek.allclose(f.eval_discretized(1.4), -0.14668, atol=1e-2)
@@ -29,7 +29,7 @@ def test03_lanczos(variant_scalar_rgb):
 
 
 def test04_mitchell(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='mitchell'/>")
     assert ek.allclose(f.eval(0), 0.8888, atol=1e-3)
     assert ek.allclose(f.eval_discretized(0), 0.8888, atol=1e-3)
@@ -37,7 +37,7 @@ def test04_mitchell(variant_scalar_rgb):
 
 
 def test05_catmullrom(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='catmullrom'/>")
     assert ek.allclose(f.eval(0), 0.9765, atol=5e-2)
     assert ek.allclose(f.eval_discretized(0), 0.9765, atol=5e-2)
@@ -45,7 +45,7 @@ def test05_catmullrom(variant_scalar_rgb):
 
 
 def test06_tent(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     f = load_string("<rfilter version='2.0.0' type='tent'/>")
     assert ek.allclose(f.eval(0.1), 0.903, atol=5e-2)
     assert ek.allclose(f.eval_discretized(0.1), 0.903, atol=5e-2)
@@ -53,7 +53,7 @@ def test06_tent(variant_scalar_rgb):
 
 
 def test07_resampler_box(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.core import Resampler, float_dtype
     import numpy as np
 
@@ -80,8 +80,7 @@ def test07_resampler_box(variant_scalar_rgb):
 
 
 def test08_resampler_boundary_conditions(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import Resampler, FilterBoundaryCondition, float_dtype
+    from mitsuba.core import load_string, Resampler, FilterBoundaryCondition, float_dtype
     import numpy as np
 
     # Use a slightly larger filter
@@ -114,8 +113,7 @@ def test08_resampler_boundary_conditions(variant_scalar_rgb):
 
 
 def test09_resampler_filter_only(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import Resampler, FilterBoundaryCondition, float_dtype
+    from mitsuba.core import load_string, Resampler, FilterBoundaryCondition, float_dtype
     import numpy as np
 
     def G(x):

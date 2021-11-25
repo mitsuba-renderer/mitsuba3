@@ -109,6 +109,8 @@ class ChiSquareTest:
         considered to be weighted.
         """
 
+        self.pdf_start = time.time()
+
         # Generate a table of uniform variates
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
             UInt64, PCG32, sample_tea_64
@@ -122,14 +124,13 @@ class ChiSquareTest:
             samples_in[i] = rng.next_float32() if Float is Float32 \
                 else rng.next_float64()
 
-        self.pdf_start = time.time()
-
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
 
         if type(samples_out) is tuple:
             weights_out = samples_out[1]
             samples_out = samples_out[0]
+            assert ek.array_depth_v(weights_out) == 1
         else:
             weights_out = Float(1.0)
 
@@ -160,8 +161,6 @@ class ChiSquareTest:
             xy.x + xy.y * self.res.x,
         )
 
-        self.pdf_end = time.time()
-
         histogram_min = ek.hmin(self.histogram)
         if not histogram_min >= 0:
             self._log('Encountered a cell with negative sample '
@@ -174,6 +173,8 @@ class ChiSquareTest:
                       'than 1.0: %f' % self.histogram_sum)
             self.fail = True
 
+        self.pdf_end = time.time()
+
     def tabulate_pdf(self):
         """
         Numerically integrate the provided probability density function over
@@ -182,38 +183,45 @@ class ChiSquareTest:
         intervals discretized into ``self.ires`` separate function evaluations.
         """
 
-        from mitsuba.core import Float, Vector2f, ScalarVector2f
-
-        extents = self.bounds.extents()
-        endpoint = self.bounds.max - extents / ScalarVector2f(self.res)
-
-        # Compute a set of nodes where the PDF should be evaluated
-        x, y = ek.meshgrid(
-            ek.linspace(Float, self.bounds.min.x, endpoint.x, self.res.x),
-            ek.linspace(Float, self.bounds.min.y, endpoint.y, self.res.y)
-        )
-
-        endpoint = extents / ScalarVector2f(self.res)
-        eps = 1e-4
-        nx = ek.linspace(Float, eps, endpoint.x * (1 - eps), self.ires)
-        ny = ek.linspace(Float, eps, endpoint.y * (1 - eps), self.ires)
-        wx = [1 / (self.ires - 1)] * self.ires
-        wy = [1 / (self.ires - 1)] * self.ires
-        wx[0] = wx[-1] = wx[0] * .5
-        wy[0] = wy[-1] = wy[0] * .5
-
-        integral = 0
+        from mitsuba.core import Float, Vector2f, Vector2u, ScalarVector2f, UInt32
 
         self.histogram_start = time.time()
-        for yi, dy in enumerate(ny):
-            for xi, dx in enumerate(nx):
-                xy = self.domain.map_forward(Vector2f(x + dx, y + dy))
-                pdf = self.pdf_func(xy)
-                integral = ek.fmadd(pdf, wx[xi] * wy[yi], integral)
-        self.histogram_end = time.time()
 
-        self.pdf = integral * (ek.hprod(extents / ScalarVector2f(self.res))
-                               * self.sample_count)
+        # Determine total number of samples and construct an initial index
+        sample_count    = self.ires**2
+        cell_count      = self.res.x * self.res.y
+        index           = ek.arange(UInt32, cell_count * sample_count)
+        extents         = self.bounds.extents()
+        cell_size       = extents / self.res
+        sample_spacing  = cell_size / (self.ires - 1)
+
+        # Determine cell and integration sample indices
+        cell_index      = index // sample_count
+        sample_index    = index - cell_index * sample_count
+        cell_y          = cell_index // self.res.x
+        cell_x          = cell_index - cell_y * self.res.x
+        sample_y        = sample_index // self.ires
+        sample_x        = sample_index - sample_y * self.ires
+        cell_index_2d   = Vector2u(cell_x, cell_y)
+        sample_index_2d = Vector2u(sample_x, sample_y)
+
+        # Compute the position of each sample
+        p = self.bounds.min + cell_index_2d * cell_size
+        p += (sample_index_2d + 1e-4) * (1-2e-4) * sample_spacing
+
+        # Trapezoid rule integration weights
+        weights = ek.hprod(ek.select(ek.eq(sample_index_2d, 0) |
+                                     ek.eq(sample_index_2d, self.ires - 1), 0.5, 1))
+        weights *= ek.hprod(sample_spacing) * self.sample_count
+
+        # Remap onto the target domain
+        p = self.domain.map_forward(p)
+
+        # Evaluate the model density
+        pdf = self.pdf_func(p)
+
+        # Sum over each cell
+        self.pdf = ek.block_sum(pdf * weights, sample_count)
 
         if len(self.pdf) == 1:
             ek.resize(self.pdf, ek.width(xy))
@@ -230,6 +238,8 @@ class ChiSquareTest:
             self._log('Failure: PDF integrates to a value greater '
                       'than 1.0: %f' % self.pdf_sum)
             self.fail = True
+
+        self.histogram_end = time.time()
 
     def run(self, significance_level=0.01, test_count=1, quiet=False):
         """
@@ -347,9 +357,9 @@ class ChiSquareTest:
             f.write('    diff=histogram - pdf\n')
             f.write('    absdiff=np.abs(diff).max()\n')
             f.write('    a = pdf.shape[1] / pdf.shape[0]\n')
-            f.write('    pdf_plot = axs[0].imshow(pdf, aspect=a,'
+            f.write('    pdf_plot = axs[0].imshow(pdf, vmin=0, aspect=a,'
                     ' interpolation=\'nearest\')\n')
-            f.write('    hist_plot = axs[1].imshow(histogram, aspect=a,'
+            f.write('    hist_plot = axs[1].imshow(histogram, vmin=0, aspect=a,'
                     ' interpolation=\'nearest\')\n')
             f.write('    diff_plot = axs[2].imshow(diff, aspect=a, '
                     'vmin=-absdiff, vmax=absdiff, interpolation=\'nearest\','
@@ -457,8 +467,7 @@ def SpectrumAdapter(value):
     Chi^2 test.
     """
 
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import sample_shifted, Vector1f
+    from mitsuba.core import load_string, sample_shifted, Vector1f
     from mitsuba.render import SurfaceInteraction3f
 
     def instantiate(args):
@@ -502,8 +511,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     """
 
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core import Float
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Float
 
     if ctx is None:
         ctx = BSDFContext()
@@ -534,6 +542,45 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         return plugin.pdf(ctx, si, wo)
+
+    return sample_functor, pdf_functor
+
+
+def EmitterAdapter(emitter_type, extra):
+    """
+    Adapter to test Emitter sampling using the Chi^2 test.
+
+    Parameter ``emitter_type`` (string):
+        Name of the emitter plugin to instantiate.
+
+    Parameter ``extra`` (string):
+        Additional XML used to specify the emitter's parameters.
+
+    """
+
+    from mitsuba.render import Interaction3f, DirectionSample3f
+    from mitsuba.core import load_string
+
+    def instantiate(args):
+        xml = """<emitter version="2.0.0" type="%s">
+            %s
+        </emitter>""" % (emitter_type, extra)
+        return load_string(xml % args)
+
+    def sample_functor(sample, *args):
+        n = ek.width(sample)
+        plugin = instantiate(args)
+        si = ek.zero(Interaction3f)
+        ds, w = plugin.sample_direction(si, sample)
+        return ds.d
+
+    def pdf_functor(wo, *args):
+        n = ek.width(wo)
+        plugin = instantiate(args)
+        si = ek.zero(Interaction3f)
+        ds = ek.zero(DirectionSample3f)
+        ds.d = wo
+        return plugin.pdf_direction(si, ds)
 
     return sample_functor, pdf_functor
 
@@ -579,8 +626,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         Incoming direction, in local coordinates.
     """
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
-    from mitsuba.core import Float, Frame3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Float, Frame3f
 
     if ctx is None:
         ctx = PhaseFunctionContext(None)

@@ -50,3 +50,4 @@ extern MTS_EXPORT_CORE std::string info_features();
 
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)
+

@@ -53,7 +53,7 @@ public:
     MTS_IMPORT_TYPES(PhaseFunctionContext, Volume)
 
     SGGXPhaseFunction(const Properties &props) : Base(props) {
-        // m_diffuse    = props.bool_("diffuse", false);
+        // m_diffuse    = props.get<bool>("diffuse", false);
         m_ndf_params = props.volume<Volume>("S");
         m_flags = PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
         ek::set_attr(this, "flags", m_flags);

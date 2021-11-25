@@ -150,7 +150,7 @@ public:
         fs::path file_path = fs->resolve(props.string("filename"));
         m_volume_grid = new VolumeGrid(file_path);
 
-        m_raw = props.bool_("raw", false);
+        m_raw = props.get<bool>("raw", false);
 
         ScalarVector3i res = m_volume_grid->size();
         ScalarUInt32 size = ek::hprod(res);
@@ -253,14 +253,14 @@ public:
         m_inv_resolution_y = ek::divisor<int32_t>(res.y());
         m_inv_resolution_z = ek::divisor<int32_t>(res.z());
 
-        if (props.bool_("use_grid_bbox", false)) {
+        if (props.get<bool>("use_grid_bbox", false)) {
             m_to_local = bbox_transform * m_to_local;
             update_bbox();
         }
 
         if (props.has_property("max_value")) {
             m_fixed_max    = true;
-            m_max = props.float_("max_value");
+            m_max = props.get<ScalarFloat>("max_value");
         }
     }
 

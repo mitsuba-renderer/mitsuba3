@@ -86,6 +86,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("__name__") = "mitsuba.render";
 
     using Float = MTS_VARIANT_FLOAT;
+    using Spectrum = MTS_VARIANT_SPECTRUM;
+
+    Scene<Float, Spectrum>::static_accel_initialization();
 
     // Create sub-modules
     py::module mueller = create_submodule(m, "mueller");
@@ -124,22 +127,20 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         py::module::import("mitsuba.core_ext").attr("casters"));
     casters->push_back((void *) caster);
 
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-    if constexpr (ek::is_jit_array_v<Float>) {
-        /* Register a cleanup callback function that is invoked when
-           the 'mitsuba::Scene' Python type is garbage collected */
-        py::cpp_function cleanup_callback(
-            [](py::handle weakref) {
-                color_management_static_shutdown();
-                /* The Enoki python module is responsible for cleaning up the
-                   JIT state, so jit_shutdown() shouldn't be called here. */
-                weakref.dec_ref();
-            }
-        );
+    /* Register a cleanup callback function that is invoked when
+        the 'mitsuba::Scene' Python type is garbage collected */
+    py::cpp_function cleanup_callback(
+        [](py::handle weakref) {
+            color_management_static_shutdown();
+            Scene<Float, Spectrum>::static_accel_shutdown();
 
-        (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
-    }
-#endif
+            /* The Enoki python module is responsible for cleaning up the
+                JIT state, so jit_shutdown() shouldn't be called here. */
+            weakref.dec_ref();
+        }
+    );
+
+    (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);

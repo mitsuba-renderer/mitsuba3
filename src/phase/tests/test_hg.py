@@ -2,7 +2,7 @@ import mitsuba
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     p = load_dict({"type": "hg", "g": 0.4})
     assert p is not None

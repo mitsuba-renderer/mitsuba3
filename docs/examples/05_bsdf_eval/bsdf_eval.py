@@ -4,8 +4,7 @@ import mitsuba
 # Set the desired mitsuba variant
 mitsuba.set_variant('llvm_rgb')
 
-from mitsuba.core import Float, Vector3f
-from mitsuba.core.xml import load_string
+from mitsuba.core import Float, Vector3f, load_string
 from mitsuba.render import SurfaceInteraction3f, BSDFContext
 
 

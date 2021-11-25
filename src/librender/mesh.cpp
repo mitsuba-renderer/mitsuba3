@@ -26,10 +26,10 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
-    if (props.bool_("face_normals", false))
+    if (props.get<bool>("face_normals", false))
         m_disable_vertex_normals = true;
 
-    m_flip_normals = props.bool_("flip_normals", false);
+    m_flip_normals = props.get<bool>("flip_normals", false);
 }
 
 MTS_VARIANT
@@ -432,8 +432,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     } else {
         ps.n = ek::normalize(ek::cross(e0, e1));
     }
-    
-    if (m_flip_normals) 
+
+    if (m_flip_normals)
         ps.n = -ps.n;
 
     return ps;
@@ -492,38 +492,115 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
     return {w, u, v};
 }
 
+
+MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
+                                                       const SurfaceInteraction3f &si,
+                                                       Mask active) const {
+    auto fi = face_indices(si.prim_index, active);
+
+    Point3f vp0 = vertex_position(fi[0], active),
+            vp1 = vertex_position(fi[1], active),
+            vp2 = vertex_position(fi[2], active);
+
+    Vector3f rel = si.p - vp0,
+             du  = vp1 - vp0,
+             dv  = vp2 - vp0;
+
+    /* Solve a least squares problem to determine
+       the UV coordinates within the current triangle */
+    Float b1  = ek::dot(du, rel), b2 = ek::dot(dv, rel),
+          a11 = ek::dot(du, du), a12 = ek::dot(du, dv),
+          a22 = ek::dot(dv, dv),
+          inv_det = ek::rcp(a11 * a22 - a12 * a12);
+
+    Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
+          v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
+          w = 1.f - u - v;
+
+    /* If we are using flat shading, just fall back to a signed distance field
+       of the hit triangle. */
+    if (!has_vertex_normals()) {
+        // 2D Triangle SDF from Inigo Quilez
+        // https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
+
+        // Equilateral triangle
+        Point2f p0 = Point2f(0, 0),
+                p1 = Point2f(1, 0),
+                p2 = Point2f(0.5f, 0.5f*ek::sqrt(3.f));
+
+        Point2f p = p0 * w + p1 * u + p2 * v;
+
+        Vector2f e0 = p1 - p0,
+                 e1 = p2 - p1,
+                 e2 = p0 - p2,
+                 v0 = p - p0,
+                 v1 = p - p1,
+                 v2 = p - p2;
+        Vector2f pq0 = v0 - e0 * ek::clamp(ek::dot(v0, e0) / ek::dot(e0, e0), 0, 1),
+                 pq1 = v1 - e1 * ek::clamp(ek::dot(v1, e1) / ek::dot(e1, e1), 0, 1),
+                 pq2 = v2 - e2 * ek::clamp(ek::dot(v2, e2) / ek::dot(e2, e2), 0, 1);
+        Float s = ek::sign(e0.x() * e2.y() - e0.y() * e2.x());
+        Vector2f d = ek::min(ek::min(Vector2f(ek::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
+                                     Vector2f(ek::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
+                                     Vector2f(ek::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
+        Float dist = ek::sqrt(d.x());
+        // Scale s.t. farthest point / barycenter is one
+        dist /= ek::sqrt(3.f) / 6.f;
+        return dist;
+    }
+
+    // Fetch the three boundary test normals associated with this triangle
+    Normal3f n[3] = { vertex_normal(fi[0], active),
+                      vertex_normal(fi[1], active),
+                      vertex_normal(fi[2], active) };
+    Normal3f normal = n[0] * w + n[1] * u + n[2] * v;
+
+    // Dot product between surface normal and the ray direction is 0 at silhouette points
+    Float dp = ek::dot(normal, -ray.d);
+
+    // Add non-linearity by squaring the returned value
+    return ek::sqr(dp);
+}
+
 MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
-                                                   PreliminaryIntersection3f pi,
+                                                   const PreliminaryIntersection3f &pi,
                                                    uint32_t hit_flags,
                                                    uint32_t /*recursion_depth*/,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
-
-    bool differentiable =
-        ek::grad_enabled(m_vertex_positions) || ek::grad_enabled(ray);
-
-    // Recompute ray intersection to get differentiable prim_uv and t
-    if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
-        pi = ray_intersect_triangle(pi.prim_index, ray, active);
-
-    active &= pi.is_valid();
-
-    Float b1, b2;
-    if (!has_flag(hit_flags, HitComputeFlags::Sticky)) {
-        b1 = pi.prim_uv.x();
-        b2 = pi.prim_uv.y();
-    } else {
-        b1 = ek::detach(pi.prim_uv.x());
-        b2 = ek::detach(pi.prim_uv.y());
-    }
-    Float b0 = 1.f - b1 - b2;
 
     auto fi = face_indices(pi.prim_index, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
             p2 = vertex_position(fi[2], active);
+
+    Float t = pi.t;
+    Point2f prim_uv = pi.prim_uv;
+    if constexpr (ek::is_diff_array_v<Float>) {
+        if (has_flag(hit_flags, RayFlags::DetachShape) &&
+            has_flag(hit_flags, RayFlags::FollowShape))
+            Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
+
+        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+            p0 = ek::detach<true>(p0);
+            p1 = ek::detach<true>(p1);
+            p2 = ek::detach<true>(p2);
+        }
+
+        auto [t_d, prim_uv_d, hit] = moeller_trumbore(ray, p0, p1, p2, active);
+        prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
+        t = ek::replace_grad(t, t_d);
+    }
+
+    Float b1 = prim_uv.x(), b2 = prim_uv.y();
+    if (ek::is_diff_array_v<Float> &&
+        has_flag(hit_flags, RayFlags::FollowShape)) {
+        b1 = ek::detach(prim_uv.x());
+        b2 = ek::detach(prim_uv.y());
+    }
+    Float b0 = 1.f - b1 - b2;
 
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
@@ -533,12 +610,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Re-interpolate intersection using barycentric coordinates
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
-    // Re-compute the distance traveled to the surface interaction hit point (might be sticky)
-    if (!has_flag(hit_flags, HitComputeFlags::Sticky))
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+    // Potentially recompute the distance traveled to the surface interaction hit point
+    if (!ek::is_diff_array_v<Float> ||
+        !has_flag(hit_flags, RayFlags::FollowShape))
+        si.t = ek::select(active, t, ek::Infinity<Float>);
     else
-        si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d),
-                          ek::Infinity<Float>);
+        si.t = ek::select(
+            active,
+            ek::sqrt(ek::squared_norm(si.p - ray.o) / ek::squared_norm(ray.d)),
+            ek::Infinity<Float>);
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
@@ -547,15 +627,22 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.uv = Point2f(b1, b2);
     std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
     if (has_vertex_texcoords() &&
-        likely(has_flag(hit_flags, HitComputeFlags::UV) ||
-               has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+        likely(has_flag(hit_flags, RayFlags::UV) ||
+               has_flag(hit_flags, RayFlags::dPdUV))) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
+        if (ek::is_diff_array_v<Float> &&
+            has_flag(hit_flags, RayFlags::DetachShape)) {
+            uv0 = ek::detach<true>(uv0);
+            uv1 = ek::detach<true>(uv1);
+            uv2 = ek::detach<true>(uv2);
+        }
+
         si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
 
-        if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+        if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
@@ -571,12 +658,18 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Shading normal (if available)
     if (has_vertex_normals() &&
-        likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame) ||
-               has_flag(hit_flags, HitComputeFlags::dNSdUV))) {
+        likely(has_flag(hit_flags, RayFlags::ShadingFrame) ||
+               has_flag(hit_flags, RayFlags::dNSdUV))) {
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
+        if (ek::is_diff_array_v<Float> &&
+            has_flag(hit_flags, RayFlags::DetachShape)) {
+            n0 = ek::detach<true>(n0);
+            n1 = ek::detach<true>(n1);
+            n2 = ek::detach<true>(n2);
+        }
 
         Normal3f n = ek::fmadd(n2, b2, ek::fmadd(n1, b1, n0 * b0));
         Float il = ek::rsqrt(ek::squared_norm(n));
@@ -584,14 +677,13 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.sh_frame.n = n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, RayFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
                with respect to [u, v] in the local triangle parameterization.
 
                Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
                    - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
             */
-
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 
@@ -603,7 +695,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     } else {
         si.sh_frame.n = si.n;
     }
-    
+
     if (m_flip_normals) {
         si.n = -si.n;
         si.sh_frame.n = -si.sh_frame.n;
@@ -923,10 +1015,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         mark_dirty();
     }
     Base::parameters_changed();
-}
-
-MTS_VARIANT void Mesh<Float, Spectrum>::set_grad_suspended(bool state) {
-    m_area_pmf.set_grad_suspended(state);
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {

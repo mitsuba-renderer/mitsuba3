@@ -83,13 +83,13 @@ public:
 
         /// Number of shading samples -- this parameter is a shorthand notation
         /// to set both 'emitter_samples' and 'bsdf_samples' at the same time
-        size_t shading_samples = props.size_("shading_samples", 1);
+        size_t shading_samples = props.get<size_t>("shading_samples", 1);
 
         /// Number of samples to take using the emitter sampling technique
-        m_emitter_samples = props.size_("emitter_samples", shading_samples);
+        m_emitter_samples = props.get<size_t>("emitter_samples", shading_samples);
 
         /// Number of samples to take using the BSDF sampling technique
-        m_bsdf_samples = props.size_("bsdf_samples", shading_samples);
+        m_bsdf_samples = props.get<size_t>("bsdf_samples", shading_samples);
 
         if (m_emitter_samples + m_bsdf_samples == 0)
             Throw("Must have at least 1 BSDF or emitter sample!");
@@ -110,7 +110,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, HitComputeFlags::All | HitComputeFlags::Coherent, active);
+            ray, RayFlags::All | RayFlags::Coherent, active);
         Mask valid_ray = active && si.is_valid();
 
         Spectrum result(0.f);

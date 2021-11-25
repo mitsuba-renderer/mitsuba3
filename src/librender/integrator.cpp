@@ -21,10 +21,20 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     : m_stop(false) {
-    m_timeout = props.float_("timeout", -1.f);
+    m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     /// Disable direct visibility of emitters if needed
-    m_hide_emitters = props.bool_("hide_emitters", false);
+    m_hide_emitters = props.get<bool>("hide_emitters", false);
+}
+
+MTS_VARIANT typename Integrator<Float, Spectrum>::TensorXf
+Integrator<Float, Spectrum>::render(Scene *scene,
+                                    uint32_t seed,
+                                    uint32_t sensor_index,
+                                    bool develop_film) {
+    if (sensor_index >= scene->sensors().size())
+        Throw("Out-of-bound sensor index: %i", sensor_index);
+    return render(scene, seed, scene->sensors()[sensor_index].get(), develop_film);
 }
 
 MTS_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
@@ -40,7 +50,7 @@ MTS_VARIANT void Integrator<Float, Spectrum>::cancel() {
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Properties &props)
     : Base(props) {
 
-    m_block_size = (uint32_t) props.size_("block_size", 0);
+    m_block_size = props.get<uint32_t>("block_size", 0);
     uint32_t block_size = math::round_to_power_of_two(m_block_size);
     if (m_block_size > 0 && block_size != m_block_size) {
         Log(Warn, "Setting block size from %i to next higher power of two: %i", m_block_size,
@@ -48,7 +58,7 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Proper
         m_block_size = block_size;
     }
 
-    m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
+    m_samples_per_pass = (uint32_t) props.get<size_t>("samples_per_pass", (size_t) -1);
 }
 
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
@@ -56,16 +66,17 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             uint32_t seed,
-                                            uint32_t sensor_index,
+                                            Sensor *sensor,
                                             bool develop_film) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
     TensorXf result;
 
-    ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
+    if (film->has_high_quality_edges())
+        film_size += 2 * film->reconstruction_filter()->border_size();
 
     size_t total_spp        = sensor->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
@@ -106,7 +117,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             m_block_size = block_size;
         }
 
-        Spiral spiral(film, m_block_size, n_passes);
+        Spiral spiral(film_size, film->crop_offset(), m_block_size, n_passes);
 
         ThreadEnvironment env;
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
@@ -126,13 +137,20 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 ref<ImageBlock> block = new ImageBlock(
                     m_block_size, channels.size(),
                     film->reconstruction_filter(),
-                    /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>);
+                    !has_aovs && !is_spectral_v<Spectrum> /* warn_negative */,
+                    std::is_scalar_v<Float> /* warn_invalid */,
+                    true /* border */,
+                    false /* normalize */);
                 std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                     auto [offset, size, block_id] = spiral.next_block();
                     Assert(ek::hprod(size) != 0);
+
+                    if (film->has_high_quality_edges())
+                        offset -= film->reconstruction_filter()->border_size();
+
                     block->set_size(size);
                     block->set_offset(offset);
 
@@ -166,14 +184,21 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (samples_per_pass != 1)
             idx /= (uint32_t) samples_per_pass;
 
-        ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
+        ref<ImageBlock> block = new ImageBlock(film->crop_size(),
+                                               channels.size(),
                                                film->reconstruction_filter(),
-                                               false, false, false, false);
+                                               false /* warn_negative */,
+                                               false /* warn_invalid */,
+                                               film->has_high_quality_edges() /* border */,
+                                               false /* normalize */);
         block->clear();
         block->set_offset(film->crop_offset());
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));
         std::vector<Float> aovs(channels.size());
+
+        if (film->has_high_quality_edges())
+            pos -= film->reconstruction_filter()->border_size();
 
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
@@ -296,7 +321,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &pos,
                                                    ScalarFloat diff_scale_factor,
                                                    Mask active) const {
-    Vector2f position_sample = pos + sampler->next_2d(active);
+    Vector2f sample_pos = pos + sampler->next_2d(active);
 
     Point2f aperture_sample(.5f);
     if (sensor->needs_aperture_sample())
@@ -308,9 +333,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     Float wavelength_sample = sampler->next_1d(active);
 
-    Vector2f adjusted_position =
-        (position_sample - sensor->film()->crop_offset()) /
-        sensor->film()->crop_size();
+    const Film *film = sensor->film();
+    Vector2f adjusted_pos = (sample_pos - film->crop_offset()) / film->crop_size();
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_position, aperture_sample, ek::zero<Float>());
@@ -319,7 +343,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         ray.scale_differential(diff_scale_factor);
 
     const Medium *medium = sensor->medium();
-    std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, medium, aovs + 5, active);
+    std::pair<Spectrum, Mask> result =
+        sample(scene, sampler, ray, medium, aovs + 5, active);
     result.first = ray_weight * result.first;
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
@@ -338,7 +363,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
     aovs[4] = 1.f;
 
-    block->put(position_sample, aovs, active);
+    block->put(sample_pos, aovs, active);
 }
 
 MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
@@ -356,14 +381,14 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
     /// Depth to begin using russian roulette
-    m_rr_depth = props.int_("rr_depth", 5);
+    m_rr_depth = props.get<int>("rr_depth", 5);
     if (m_rr_depth <= 0)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
     /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
         visualize only directly visible light sources. \c 2 will lead to
         single-bounce (direct-only) illumination, and so on. */
-    m_max_depth = props.int_("max_depth", -1);
+    m_max_depth = props.get<int>("max_depth", -1);
     if (m_max_depth < 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 }

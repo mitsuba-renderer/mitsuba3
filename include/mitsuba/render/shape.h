@@ -153,6 +153,26 @@ public:
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
     /**
+     * \brief Boundary-test function used in reparameterized integrators.
+     *
+     * This method basically implements a soft indicator function which returns
+     * a zero value at the silhouette of the shape from the perspective of a
+     * given ray. Everywhere else this function will return non-negative values
+     * reflecting the distance of the surface interaction to this closest point
+     * on the silhouette.
+     *
+     * \param ray
+     *     The ray defining the perspecive from which the silhouette should be
+     *     percieved.
+     * \param si
+     *     The surface interaction data structure generated when tracing the ray
+     *     against this shape.
+     */
+    virtual Float boundary_test(const Ray3f &ray,
+                                const SurfaceInteraction3f &si,
+                                Mask active = true) const;
+
+    /**
      * \brief Compute and return detailed information related to a surface interaction
      *
      * The implementation should at most compute the fields \c p, \c uv, \c n,
@@ -177,8 +197,8 @@ public:
      *      A data structure containing the detailed information
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                             PreliminaryIntersection3f pi,
-                                                             uint32_t hit_flags = +HitComputeFlags::All,
+                                                             const PreliminaryIntersection3f &pi,
+                                                             uint32_t hit_flags = +RayFlags::All,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
@@ -195,7 +215,7 @@ public:
      *     Describe how the detailed information should be computed
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                       uint32_t hit_flags = +RayFlags::All,
                                        Mask active = true) const;
 
     //! @}
@@ -358,7 +378,7 @@ public:
      * The default implementation throws.
      */
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                                       uint32_t hit_flags = +RayFlags::All,
                                                        Mask active = true) const;
 
     //! @}
@@ -632,6 +652,7 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
+    ENOKI_VCALL_METHOD(boundary_test)
     ENOKI_VCALL_METHOD(compute_surface_interaction)
     ENOKI_VCALL_METHOD(eval_attribute)
     ENOKI_VCALL_METHOD(eval_attribute_1)

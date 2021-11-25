@@ -1,7 +1,8 @@
 import enoki as ek
 import mitsuba
-from .integrator import mis_weight, sample_sensor_rays
+from .integrator import prepare_sampler, mis_weight, sample_sensor_rays
 
+from typing import Union
 
 def index_spectrum(spec, idx):
     m = spec[0]
@@ -17,9 +18,9 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
-        self.max_depth = props.long_('max_depth', 4)
-        self.rr_depth = props.long_('rr_depth', 5)
-        self.hide_emitters = props.bool_('hide_emitters', False)
+        self.max_depth = props.get('max_depth', 4)
+        self.rr_depth = props.get('rr_depth', 5)
+        self.hide_emitters = props.get('hide_emitters', False)
 
         self.use_nee = False
         self.nee_handle_homogeneous = False
@@ -41,52 +42,88 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
                seed: int,
-               sensor_index: int = 0,
+               sensor: Union[int, mitsuba.render.Sensor] = 0,
                develop_film: bool = True,
-               spp: int = 0) -> None:
+               spp: int = 0) -> mitsuba.core.TensorXf:
         if not self.is_prepared:
             self.prepare(scene)
-        return super().render(scene=scene, seed=seed, sensor_index=sensor_index, develop_film=develop_film, spp=spp)
+        return super().render(scene, seed, sensor, develop_film, spp)
 
-    def render_backward(self: mitsuba.render.SamplingIntegrator,
+    def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.TensorXf,
                        seed: int,
-                       sensor_index: int = 0,
-                       spp: int = 0) -> None:
+                       sensor: Union[int, mitsuba.render.Sensor] = 0,
+                       spp: int=0) -> mitsuba.core.TensorXf:
         if not self.is_prepared:
             self.prepare(scene)
 
-        sensor = scene.sensors()[sensor_index]
+        from mitsuba.render import ImageBlock
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+        film = sensor.film()
+        rfilter = film.reconstruction_filter()
+        sampler = sensor.sampler()
+
+        spp = prepare_sampler(sensor, seed, spp)
+
+        ray, weight, pos, _, _ = sample_sensor_rays(sensor)
+
+        # Sample forward paths (not differentiable)
+        with ek.suspend_grad():
+            primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
+
+        grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
+                           ray, params=params, grad=weight,
+                           primal_result=primal_result)[0]
+
+        block = ImageBlock(film.crop_size(), channel_count=5,
+                           filter=rfilter, border=False)
+        block.set_offset(film.crop_offset())
+        block.clear()
+        block.put(pos, ray.wavelengths, grad_img)
+        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.put(block)
+        return film.develop()
+
+    def render_backward(self: mitsuba.render.SamplingIntegrator,
+                        scene: mitsuba.render.Scene,
+                        params: mitsuba.python.util.SceneParameters,
+                        image_adj: mitsuba.core.TensorXf,
+                        seed: int,
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        spp: int = 0) -> None:
+        from mitsuba.core import Spectrum
+        from mitsuba.render import ImageBlock
+
+        if not self.is_prepared:
+            self.prepare(scene)
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+        film = sensor.film()
         rfilter = sensor.film().reconstruction_filter()
         sampler = sensor.sampler()
-        if spp > 0:
-            sampler.set_sample_count(spp)
-        spp = sampler.sample_count()
-        sampler.seed(seed, ek.hprod(sensor.film().crop_size()) * spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        spp = prepare_sampler(sensor, seed, spp)
+
+        ray, weight, pos, _, _ = sample_sensor_rays(sensor)
 
         # sample forward path (not differentiable)
-        with params.suspend_gradients():
+        with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
-        block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
-        grad_values = block.read(pos) * weight / spp
-
-        for k, v in params.items():
-            ek.enable_grad(v)
+        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block.set_offset(film.crop_offset())
+        grad_values = Spectrum(block.read(pos)) * weight / spp
 
         # Replay light paths and accumulate gradients
-        self.sample_adjoint(scene, sampler, ray, params, grad_values, sensor.medium(), result)
+        self.Li(scene, sampler, ray, 0, params, grad_values, sensor.medium(), True, result)
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(scene, sampler, ray, medium=medium), []
-
-    def sample_adjoint(self, scene, sampler, ray, params, grad, medium, result):
-        self.Li(scene, sampler, ray, params=params, grad=grad, medium=medium, result=result)
-
+        res, valid = self.Li(scene, sampler, ray, medium=medium, active_=active)
+        return res, valid, []
 
     def Li(self, scene, sampler, ray, depth=0, params=mitsuba.python.util.SceneParameters(),
            grad=None, medium=None, active_=True, result=None):
@@ -97,7 +134,6 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                                     SurfaceInteraction3f, has_flag)
 
         is_primal = len(params) == 0
-        params.set_grad_suspended(is_primal)
 
         active = Mask(active_)
         ray = Ray3f(ray)
@@ -134,7 +170,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             active &= (sampler.next_1d(active) < q) | ~perform_rr
             throughput[perform_rr] = throughput * ek.rcp(q)
 
-            active_medium = active & ek.neq(medium, None)
+            active_medium = active & ek.neq(medium, None) # TODO this is not necessary
             active_surface = active & ~active_medium
 
             # Handle medium sampling and potential medium escape
@@ -191,7 +227,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             phase[~act_medium_scatter] = ek.zero(mitsuba.render.PhaseFunctionPtr, 1)
 
             valid_ray |= act_medium_scatter
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 wo, phase_pdf = phase.sample(phase_ctx, mi, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
             new_ray = mi.spawn_ray(wo)
             ray[act_medium_scatter] = new_ray
@@ -254,7 +290,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                         ek.backward(grad * contrib)
 
             # ----------------------- BSDF sampling ----------------------
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active_surface),
                                            sampler.next_2d(active_surface), active_surface)
                 active_surface &= bs.pdf > 0

@@ -67,7 +67,7 @@ public:
         if (m_name.find("vertex_") == std::string::npos && m_name.find("face_") == std::string::npos)
             Throw("Invalid mesh attribute name: must be start with either \"vertex_\" or \"face_\" but was \"%s\".", m_name.c_str());
 
-        m_scale = props.float_("scale", 1.f);
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
     }
 
     const std::string& name() const { return m_name; }

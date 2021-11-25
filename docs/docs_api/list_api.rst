@@ -580,11 +580,11 @@
 
 .. autofunction:: mitsuba.core.warp.von_mises_fisher_to_square
 
-.. autofunction:: mitsuba.core.xml.load_dict
+.. autofunction:: mitsuba.core.load_dict
 
-.. autofunction:: mitsuba.core.xml.load_file
+.. autofunction:: mitsuba.core.load_file
 
-.. autofunction:: mitsuba.core.xml.load_string
+.. autofunction:: mitsuba.core.load_string
 
 .. autofunction:: mitsuba.core.xyz_to_srgb
 
@@ -606,7 +606,7 @@
 
 .. autoclass:: mitsuba.render.Film
 
-.. autoclass:: mitsuba.render.HitComputeFlags
+.. autoclass:: mitsuba.render.RayFlags
 
 .. autoclass:: mitsuba.render.ImageBlock
 

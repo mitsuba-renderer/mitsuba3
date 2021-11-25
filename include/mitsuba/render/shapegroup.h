@@ -18,7 +18,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ShapeGroup : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_id)
-    MTS_IMPORT_TYPES(ShapeKDTree)
+    MTS_IMPORT_TYPES(ShapeKDTree, ShapePtr)
 
     using typename Base::ScalarSize;
     using typename Base::ScalarRay3f;
@@ -35,7 +35,7 @@ public:
 #endif
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t recursion_depth,
                                                      Mask active) const override;

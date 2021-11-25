@@ -33,7 +33,7 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
             PluginManager::instance()->create_object<PhaseFunction>(Properties("isotropic"));
     }
 
-    m_sample_emitters = props.bool_("sample_emitters", true);
+    m_sample_emitters = props.get<bool>("sample_emitters", true);
     ek::set_attr(this, "use_emitter_sampling", m_sample_emitters);
     ek::set_attr(this, "phase_function", m_phase_function.get());
     ek::set_attr(this, "emitter", m_emitter.get());

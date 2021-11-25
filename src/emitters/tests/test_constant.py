@@ -16,7 +16,8 @@ spectrum_strings = {
 
 
 def create_emitter_and_spectrum(s_key='d65'):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
+
     emitter = load_string("""<emitter version='2.0.0' type='constant'>
                                 {s}
                              </emitter>""".format(s=spectrum_strings[s_key]))
@@ -32,7 +33,6 @@ def create_emitter_and_spectrum(s_key='d65'):
 def test01_eval(variants_vec_spectral, spectrum_key):
     # Check the correctness of the eval() method
 
-    from mitsuba.core import warp
     from mitsuba.render import SurfaceInteraction3f
 
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)

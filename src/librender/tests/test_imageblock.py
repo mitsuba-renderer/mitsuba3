@@ -22,7 +22,7 @@ def check_value(im, arr, atol=1e-9):
 
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
     im = ImageBlock([33, 12], 4)
@@ -50,7 +50,7 @@ def test01_construct(variant_scalar_rgb):
     im.channel_count() == 6
 
 def test02_put_image_block(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
     rfilter = load_string("""<rfilter version="2.0.0" type="box"/>""")
@@ -75,7 +75,7 @@ def test02_put_image_block(variant_scalar_rgb):
         check_value(im, (i+1) * ref)
 
 def test03_put_values_basic(variant_scalar_rgb, np_rng):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
     # Recall that we must pass a reconstruction filter to use the `put` methods.
@@ -102,7 +102,7 @@ def test03_put_values_basic(variant_scalar_rgb, np_rng):
 
 
 def test04_put_vec_basic(variants_vec_rgb, np_rng):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
     variant = mitsuba.variant()
@@ -143,13 +143,12 @@ def test04_put_vec_basic(variants_vec_rgb, np_rng):
 
 
 def test05_put_with_filter(variants_vec_rgb, np_rng):
-    from mitsuba.core import float_dtype
-    from mitsuba.core.xml import load_string as load_string_vec
+    from mitsuba.core import load_string as load_string_vec, float_dtype
     from mitsuba.render import ImageBlock as ImageBlockV
 
     variant = mitsuba.variant()
     mitsuba.set_variant('scalar_rgb')
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
     mitsuba.set_variant(variant)
 
@@ -228,8 +227,7 @@ def test05_put_with_filter(variants_vec_rgb, np_rng):
 
 
 def test06_put_values_basic(variant_scalar_spectral, np_rng):
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES, spectrum_to_srgb
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, MTS_WAVELENGTH_SAMPLES, spectrum_to_srgb
     from mitsuba.render import ImageBlock
 
     # Recall that we must pass a reconstruction filter to use the `put` methods.
@@ -259,14 +257,14 @@ def test06_put_values_basic(variant_scalar_spectral, np_rng):
 
 @pytest.mark.parametrize("filter_name", ['gaussian', 'box'])
 def test07_put_samples_at_boundaries(variants_all_rgb, filter_name):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict, Float
     from mitsuba.render import ImageBlock
 
-    rfilter = xml.load_dict({'type': filter_name})
+    rfilter = load_dict({'type': filter_name})
     im = ImageBlock([3, 3], 1, filter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
-    if ek.is_jit_array_v(mitsuba.core.Float):
+    if ek.is_jit_array_v(Float):
         a = ek.slice(rfilter.eval(0))
         b = ek.slice(rfilter.eval(1))
         c = b**2
@@ -283,10 +281,10 @@ def test07_put_samples_at_boundaries(variants_all_rgb, filter_name):
 
 @pytest.mark.parametrize("filter_name", ['gaussian', 'box'])
 def test08_read_values(variants_vec_rgb, filter_name):
-    from mitsuba.core import xml, TensorXf
+    from mitsuba.core import load_dict, TensorXf
     from mitsuba.render import ImageBlock
 
-    rfilter = xml.load_dict({'type': filter_name})
+    rfilter = load_dict({'type': filter_name})
     data = TensorXf([0, 0, 0, 0, 1, 0, 0, 0, 0], [3, 3, 1])
     im = ImageBlock(data, filter=rfilter, warn_negative=False)
 

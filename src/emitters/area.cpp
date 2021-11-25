@@ -93,11 +93,13 @@ public:
         SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
         auto [wavelength, wav_weight] =
             sample_wavelengths(si, wavelength_sample, active);
+        si.time = time;
+        si.wavelengths = wavelength;
 
         // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
-        Spectrum weight = 2.f * pos_weight * wav_weight * ek::Pi<ScalarFloat>;
+        Spectrum weight = pos_weight * wav_weight * ek::Pi<ScalarFloat>;
 
-        return { Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelength),
+        return { si.spawn_ray(si.to_world(local)),
                  depolarizer<Spectrum>(weight) & active };
     }
 
@@ -124,7 +126,7 @@ public:
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
             active &= ek::neq(pdf, 0.f);
 
-            SurfaceInteraction3f si = m_shape->eval_parameterization(uv, +HitComputeFlags::All, active);
+            SurfaceInteraction3f si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             si.wavelengths = it.wavelengths;
             active &= si.is_valid();
 
@@ -171,7 +173,7 @@ public:
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
             active &= ek::neq(pdf, 0.f);
 
-            auto si = m_shape->eval_parameterization(uv, +HitComputeFlags::All, active);
+            auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             active &= si.is_valid();
             pdf /= ek::norm(ek::cross(si.dp_du, si.dp_dv));
 
@@ -208,7 +210,7 @@ public:
             value = m_shape->pdf_direction(it, ds, active);
         } else {
             // This surface intersection would be nice to avoid..
-            SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +HitComputeFlags::dPdUV, active);
+            SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
             active &= si.is_valid();
 
             value = m_radiance->pdf_position(ds.uv, active) * ek::sqr(ds.dist) /

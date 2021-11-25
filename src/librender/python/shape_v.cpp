@@ -9,6 +9,22 @@
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
 
+
+/// Trampoline for derived types implemented in Python
+MTS_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
+public:
+    MTS_IMPORT_TYPES(Mesh)
+    PyMesh(const Properties &props) : Mesh(props) { }
+    PyMesh(const std::string &name, uint32_t vertex_count, uint32_t face_count,
+           const Properties &props = Properties(),
+           bool has_vertex_normals = false, bool has_vertex_texcoords = false)
+        : Mesh(name, vertex_count, face_count, props, has_vertex_normals,
+               has_vertex_texcoords) {}
+    std::string to_string() const override {
+        PYBIND11_OVERRIDE(std::string, Mesh, to_string,);
+    }
+};
+
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
     MTS_PY_IMPORT_TYPES()
 
@@ -37,7 +53,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                Mask active) {
                 return shape->compute_surface_interaction(ray, pi, hit_flags, 0, active);
             },
-            "ray"_a, "pi"_a, "hit_flags"_a = +HitComputeFlags::All,
+            "ray"_a, "pi"_a, "hit_flags"_a = +RayFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))
        .def("eval_attribute",
             [](Ptr shape, const std::string &name,
@@ -71,7 +87,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
                 return shape->ray_intersect(ray, flags, active);
             },
-            "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
+            "ray"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true,
             D(Shape, ray_intersect))
        .def("ray_test",
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
@@ -118,13 +134,16 @@ MTS_PY_EXPORT(Shape) {
         bind_shape_generic<ShapePtr>(cls);
     }
 
+    using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
-    MTS_PY_CLASS(Mesh, Shape)
+    auto mesh = py::class_<Mesh, PyMesh, Shape, ref<Mesh>>(m, "Mesh", D(Mesh))
+        .def(py::init<const Properties&>(), "props"_a)
         .def(py::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),
              "name"_a, "vertex_count"_a, "face_count"_a,
              "props"_a = Properties(), "has_vertex_normals"_a = false,
              "has_vertex_texcoords"_a = false, D(Mesh, Mesh))
+        .def_method(Mesh, initialize)
         .def_method(Mesh, vertex_count)
         .def_method(Mesh, face_count)
         .def_method(Mesh, has_vertex_normals)
@@ -155,6 +174,8 @@ MTS_PY_EXPORT(Shape) {
              "index"_a, "ray"_a, "active"_a = true,
              D(Mesh, ray_intersect_triangle))
         .def("eval_parameterization", &Mesh::eval_parameterization,
-             "uv"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
+             "uv"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true,
              D(Mesh, eval_parameterization));
+
+    MTS_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }

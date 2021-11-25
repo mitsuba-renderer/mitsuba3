@@ -516,6 +516,11 @@ install(
 )
 
 install(
+  FILES ${TINYFORMAT_INCLUDE_DIRS}/tinyformat.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mitsuba/core/config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mitsuba/core
 )

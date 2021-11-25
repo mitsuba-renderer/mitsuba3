@@ -54,13 +54,12 @@ public:
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
-            size_t size = props.size_("size");
-            const ScalarFloat *wavelengths = (ScalarFloat *) props.pointer("wavelengths");
-            const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
-
-            m_distr = IrregularContinuousDistribution<Wavelength>(
-                wavelengths, values, size
-            );
+            size_t size = props.get<size_t>("size");
+            // Scene/property parsing is in double precision, cast to single precision depending on variant.
+            using DataInput = DynamicBuffer<ek::replace_scalar_t<Float, Properties::Float>>;
+            auto wavelengths = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("wavelengths"), size));
+            auto values      = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("values"), size));
+            m_distr = IrregularContinuousDistribution<Wavelength>(wavelengths, values);
         }
     }
 
@@ -118,10 +117,6 @@ public:
             << "  distr = " << string::indent(m_distr) << std::endl
             << "]";
         return oss.str();
-    }
-
-    void set_grad_suspended(bool state) override {
-        m_distr.set_grad_suspended(state);
     }
 
     MTS_DECLARE_CLASS()

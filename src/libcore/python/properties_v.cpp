@@ -9,11 +9,11 @@ extern Caster cast_object;
 #  pragma clang diagnostic ignored "-Wduplicate-decl-specifier" // warning: duplicate 'const' declaration specifier
 #endif
 
-#define SET_ITEM_BINDING(Name, Type)                                   \
+#define SET_ITEM_BINDING(Name, Type, ...)                              \
     def("__setitem__", [](Properties& p,                               \
                           const std::string &key, const Type &value) { \
         p.set_##Name(key, value, false);                               \
-    }, D(Properties, set_##Name))
+    }, D(Properties, set_##Name), ##__VA_ARGS__)
 
 
 #define GET_ITEM_DEFAULT_BINDING(Name, DName, Type)       \
@@ -24,20 +24,23 @@ extern Caster cast_object;
 
 
 py::object properties_get(const Properties& p, const std::string &key) {
+    using PFloat = Properties::Float;
     // We need to ask for type information to return the right cast
     auto type = p.type(key);
     if (type == Properties::Type::Bool)
-        return py::cast(p.bool_(key));
+        return py::cast(p.get<bool>(key));
     else if (type == Properties::Type::Long)
-        return py::cast(p.long_(key));
+        return py::cast(p.get<int64_t>(key));
     else if (type == Properties::Type::Float)
-        return py::cast(p.float_(key));
+        return py::cast(p.get<PFloat>(key));
     else if (type == Properties::Type::String)
         return py::cast(p.string(key));
-        else if (type == Properties::Type::Array3f)
-        return py::cast(p.array3f(key));
+    else if (type == Properties::Type::Color)
+        return py::cast(p.get<Color<PFloat, 3>>(key));
+    else if (type == Properties::Type::Array3f)
+        return py::cast(p.get<ek::Array<PFloat, 3>>(key));
     else if (type == Properties::Type::Transform)
-        return py::cast(p.transform(key));
+        return py::cast(p.get<Transform<Point<PFloat, 4>>>(key));
     else if (type == Properties::Type::AnimatedTransform)
         return py::cast(p.animated_transform(key));
     else if (type == Properties::Type::Object) {
@@ -52,6 +55,9 @@ py::object properties_get(const Properties& p, const std::string &key) {
 
 MTS_PY_EXPORT(Properties) {
     MTS_PY_CHECK_ALIAS(Properties, "Properties") {
+        using Color3f = Color<float, 3>;
+        using Color3d = Color<double, 3>;
+
         py::class_<Properties>(m, "Properties", D(Properties))
             // Constructors
             .def(py::init<>(), D(Properties, Properties))
@@ -75,16 +81,13 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(bool, bool)
             .SET_ITEM_BINDING(long, int64_t)
             .SET_ITEM_BINDING(string, std::string)
+            .SET_ITEM_BINDING(color, Color3f, py::arg(), py::arg().noconvert())
+            .SET_ITEM_BINDING(color, Color3d, py::arg(), py::arg().noconvert())
             .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
-            .GET_ITEM_DEFAULT_BINDING(float_, float, py::float_)
-            .GET_ITEM_DEFAULT_BINDING(bool_, bool, bool)
-            .GET_ITEM_DEFAULT_BINDING(long_, long, int64_t)
             .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
-            .GET_ITEM_DEFAULT_BINDING(array3f, array3f, typename Properties::Array3f)
-            .GET_ITEM_DEFAULT_BINDING(transform, transform, typename Properties::Transform4f)
             .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
             .def("__getitem__", [](const Properties& p, const std::string &key) {
                 return properties_get(p, key);

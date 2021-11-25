@@ -14,8 +14,8 @@ def test01_chi2_smooth(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
-        res=151,
-        ires=8
+        res=150,
+        ires=16
     )
 
     assert chi2.run()
@@ -35,7 +35,7 @@ def test02_chi2_aniso_beckmann_all(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
-        ires=8
+        ires=16
     )
 
     assert chi2.run()
@@ -103,9 +103,8 @@ def test05_chi2_aniso_ggx_visible(variants_vec_backends_once_rgb):
 
 
 def test06_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
-    from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f
 
     bsdf = load_string("<bsdf version='2.0.0' type='roughconductor'></bsdf>")
 

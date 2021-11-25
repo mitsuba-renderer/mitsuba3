@@ -5,7 +5,7 @@ import enoki as ek
 from .utils import check_deep_copy_sampler_scalar ,check_deep_copy_sampler_wavefront
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     sampler = load_string("""<sampler version="2.0.0" type="independent">
                                 <integer name="sample_count" value="%d"/>
                              </sampler>""" % 58)
@@ -15,7 +15,7 @@ def test01_construct(variant_scalar_rgb):
 
 
 def test02_sample_vs_pcg32(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     sampler = load_string("""<sampler version="2.0.0" type="independent">
                                 <integer name="sample_count" value="%d"/>
                              </sampler>""" % 8)
@@ -28,7 +28,7 @@ def test02_sample_vs_pcg32(variant_scalar_rgb):
 
 
 def test03_copy_sampler_scalar(variants_any_scalar):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
     sampler = load_dict({
         "type": "independent",
         "sample_count": 1024
@@ -37,7 +37,7 @@ def test03_copy_sampler_scalar(variants_any_scalar):
     check_deep_copy_sampler_scalar(sampler)
 
 def test04_copy_sampler_wavefront(variants_vec_backends_once):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
     sampler = load_dict({
         "type": "independent",
         "sample_count": 1024

@@ -38,8 +38,9 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &data,
         m_weights_y = m_weights_x + filter_size;
     }
 
-    m_size = ScalarVector2i(data.shape(1), data.shape(0));
-    m_channel_count = data.shape(2);
+    m_size = ScalarVector2i((int32_t) data.shape(1),
+                            (int32_t) data.shape(0));
+    m_channel_count = (uint32_t) data.shape(2);
     if constexpr (ek::is_jit_array_v<Float>)
         m_data = TensorXf(data.array().copy(), 3, data.shape().data());
     else
@@ -173,7 +174,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
                 wy += m_weights_y[i];
             }
 
-            Float factor = ek::rcp(wx * wy);
+            Float factor = ek::detach(ek::rcp(wx * wy));
             for (uint32_t i = 0; i < n; ++i)
                 m_weights_x[i] *= factor;
         }
@@ -208,10 +209,15 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
 MTS_VARIANT void
 ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask active) {
-    ScalarVector2i size = m_size + 2 * m_border_size;
-
     // Convert to pixel coordinates within the image block
-    Point2f pos = pos_ - (m_offset - m_border_size + 0.5f);
+    Point2f pos = pos_ - m_offset;
+
+    if (m_border_size == 0)
+        active &= ek::all(pos >= 0.0) && ek::all(pos < m_size);
+
+    pos += m_border_size - 0.5f;
+
+    ScalarVector2i size = m_size + 2 * m_border_size;
 
     if (m_filter != nullptr && m_filter->radius() > 0.5f + math::RayEpsilon<Float>) {
         ScalarFloat filter_radius = m_filter->radius();
@@ -236,16 +242,22 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
             }
         }
 
+        Float factor = 1.f;
         if (unlikely(m_normalize)) {
-            Float wx(0), wy(0);
-            for (uint32_t i = 0; i < n; ++i) {
-                wx += m_weights_x[i];
-                wy += m_weights_y[i];
+            Float weight = 0.f;
+            for (uint32_t yr = 0; yr < n; ++yr) {
+                UInt32 y = lo.y() + yr;
+                Mask enabled = active && y <= hi.y();
+                for (uint32_t xr = 0; xr < n; ++xr) {
+                    UInt32 x = lo.x() + xr;
+                    enabled &= x <= hi.x();
+                    if (m_border_size == 0)
+                        ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
+                    else
+                        weight += m_weights_y[yr] * m_weights_x[xr];
+                }
             }
-
-            Float factor = ek::rcp(wx * wy);
-            for (uint32_t i = 0; i < n; ++i)
-                m_weights_x[i] *= factor;
+            factor = ek::detach(ek::select(weight > 0.f, ek::rcp(weight), 1.f));
         }
 
         for (uint32_t k = 0; k < m_channel_count; ++k)
@@ -258,7 +270,7 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
             ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
                 UInt32 x       = lo.x() + xr,
                        offset  = m_channel_count * (y * size.x() + x);
-                Float weight = m_weights_y[yr] * m_weights_x[xr];
+                Float weight = m_weights_y[yr] * m_weights_x[xr] * factor;
 
                 enabled &= x <= hi.x();
                 ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)

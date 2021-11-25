@@ -172,7 +172,7 @@ public:
             m_type = MicrofacetType::Beckmann;
         }
 
-        m_sample_visible = props.bool_("sample_visible", true);
+        m_sample_visible = props.get<bool>("sample_visible", true);
 
         if (props.has_property("alpha_u") || props.has_property("alpha_v")) {
             if (!props.has_property("alpha_u") || !props.has_property("alpha_v"))

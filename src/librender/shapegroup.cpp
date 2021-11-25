@@ -125,20 +125,22 @@ bool ShapeGroup<Float, Spectrum>::ray_test_scalar(const ScalarRay3f &ray) const 
 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
 ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
-                                                         PreliminaryIntersection3f pi,
+                                                         const PreliminaryIntersection3f &pi,
                                                          uint32_t hit_flags,
                                                          uint32_t recursion_depth,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
+    ShapePtr shape = pi.shape;
+
 #if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     if constexpr (!ek::is_cuda_array_v<Float>) {
         if constexpr (!ek::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
-            pi.shape = m_shapes[pi.shape_index];
+            shape = m_shapes[pi.shape_index];
         } else {
 #if defined(MTS_ENABLE_LLVM)
-            pi.shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
+            shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
 #endif
         }
     }
@@ -147,7 +149,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     if (recursion_depth > 0)
         return ek::zero<SurfaceInteraction3f>();
 
-    return pi.shape->compute_surface_interaction(ray, pi, hit_flags, 1, active);
+    return shape->compute_surface_interaction(ray, pi, hit_flags, 1, active);
 }
 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize

@@ -31,13 +31,13 @@ def test02_ray_intersect(variant_scalar_rgb):
 
     bsphere = BSphere([0, 0, 0], 1)
 
-    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-5, 0, 0], [1, 0, 0], 0, []))
+    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-5, 0, 0], [1, 0, 0]))
     assert hit and ek.allclose(mint, 4.0) and ek.allclose(maxt, 6.0)
 
-    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-1, -1, -1], ek.normalize(Vector3f(1)), 0, []))
+    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-1, -1, -1], ek.normalize(Vector3f(1))))
     assert hit and ek.allclose(mint, ek.sqrt(3) - 1) and ek.allclose(maxt, ek.sqrt(3) + 1)
 
-    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-2, 0, 0], [0, 1, 0], 0, []))
+    hit, mint, maxt = bsphere.ray_intersect(Ray3f([-2, 0, 0], [0, 1, 0]))
     assert not hit
 
 
@@ -49,7 +49,7 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
         from mitsuba.core import Ray3f
 
         bsphere = BSphere(center, radius)
-        hit, mint, maxt = bsphere.ray_intersect(Ray3f(o, ek.normalize(-o), 0, []))
+        hit, mint, maxt = bsphere.ray_intersect(Ray3f(o, ek.normalize(-o)))
 
         mint = ek.select(hit, mint, -1.0)
         maxt = ek.select(hit, maxt, -1.0)

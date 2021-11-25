@@ -107,12 +107,82 @@ void expand_and_set_object(Properties &props, const std::string &name, const ref
 }
 
 template <typename Float, typename Spectrum>
+ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
+    // Treat nested dictionary differently when their type is "rgb" or "spectrum"
+    ref<Object> obj;
+    std::string type = get_type(dict);
+    if (type == "rgb") {
+        if (dict.size() != 2) {
+            Throw("'rgb' dictionary should always contain 2 entries "
+                    "('type' and 'value'), got %u.", dict.size());
+        }
+        // Read info from the dictionary
+        Properties::Color3f color(0.f);
+        for (auto& [k2, value2] : dict) {
+            std::string key2 = k2.template cast<std::string>();
+            if (key2 == "value")
+                color = value2.template cast<Properties::Color3f>();
+            else if (key2 != "type")
+                Throw("Unexpected key in rgb dictionary: %s", key2);
+        }
+        // Update the properties struct
+        obj = mitsuba::xml::detail::create_texture_from_rgb(
+                "rgb", color, GET_VARIANT(), within_emitter);
+    } else if (type == "spectrum") {
+        if (dict.size() != 2) {
+            Throw("'spectrum' dictionary should always contain 2 "
+                    "entries ('type' and 'value'), got %u.", dict.size());
+        }
+        // Read info from the dictionary
+        Properties::Float const_value(1);
+        std::vector<Properties::Float> wavelengths;
+        std::vector<Properties::Float> values;
+        for (auto& [k2, value2] : dict) {
+            std::string key2 = k2.template cast<std::string>();
+            if (key2 == "filename") {
+                spectrum_from_file(value2.template cast<std::string>(), wavelengths, values);
+            } else if (key2 == "value") {
+                if (py::isinstance<py::float_>(value2) ||
+                    py::isinstance<py::int_>(value2)) {
+                    const_value = value2.template cast<Properties::Float>();
+                } else if (py::isinstance<py::list>(value2)) {
+                    py::list list = value2.template cast<py::list>();
+                    wavelengths.resize(list.size());
+                    values.resize(list.size());
+                    for (size_t i = 0; i < list.size(); ++i) {
+                        auto pair = list[i].template cast<py::tuple>();
+                        wavelengths[i] = pair[0].template cast<Properties::Float>();
+                        values[i]      = pair[1].template cast<Properties::Float>();
+                    }
+                } else {
+                    Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
+                }
+            } else if (key2 != "type") {
+                Throw("Unexpected key in spectrum dictionary: %s", key2);
+            }
+        }
+        // Update the properties struct
+        obj = mitsuba::xml::detail::create_texture_from_spectrum(
+                "spectrum", const_value, wavelengths, values, GET_VARIANT(),
+                within_emitter, is_spectral_v<Spectrum>,
+                is_monochromatic_v<Spectrum>);
+    }
+
+    return obj;
+}
+
+template <typename Float, typename Spectrum>
 ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
                       std::map<std::string, ref<Object>> &instances) {
     MTS_IMPORT_CORE_TYPES()
     using ScalarArray3f = ek::Array<ScalarFloat, 3>;
 
     std::string type = get_type(dict);
+
+    if (type == "spectrum" || type == "rgb") {
+        return create_texture_from<Float, Spectrum>(dict, false);
+    }
+
     bool is_scene = (type == "scene");
 
     const Class *class_;
@@ -139,6 +209,7 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
         SET_PROPS(py::int_, int64_t, set_long);
         SET_PROPS(py::float_, Properties::Float, set_float);
         SET_PROPS(py::str, std::string, set_string);
+        SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
         SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
         SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
 
@@ -147,67 +218,8 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
             py::dict dict2 = value.template cast<py::dict>();
             std::string type2 = get_type(dict2);
 
-            // Treat nested dictionary differently when their type is "rgb" or "spectrum"
-            if (type2 == "rgb") {
-                if (dict2.size() != 2) {
-                    Throw("'rgb' dictionary should always contain 2 entries "
-                          "('type' and 'value'), got %u.", dict2.size());
-                }
-                // Read info from the dictionary
-                Properties::Color3f color(0.f);
-                for (auto& [k2, value2] : dict2) {
-                    std::string key2 = k2.template cast<std::string>();
-                    if (key2 == "value")
-                        color = value2.template cast<Properties::Color3f>();
-                    else if (key2 != "type")
-                        Throw("Unexpected key in rgb dictionary: %s", key2);
-                }
-                // Update the properties struct
-                ref<Object> obj = mitsuba::xml::detail::create_texture_from_rgb(
-                    key, color, GET_VARIANT(), within_emitter);
-                props.set_object(key, obj);
-                continue;
-            }
-            if (type2 == "spectrum") {
-                if (dict2.size() != 2) {
-                    Throw("'spectrum' dictionary should always contain 2 "
-                          "entries ('type' and 'value'), got %u.", dict2.size());
-                }
-                // Read info from the dictionary
-                Properties::Float const_value(1.f);
-                std::vector<Properties::Float> wavelengths;
-                std::vector<Properties::Float> values;
-                for (auto& [k2, value2] : dict2) {
-                    std::string key2 = k2.template cast<std::string>();
-                    if (key2 == "filename") {
-                        spectrum_from_file(value2.template cast<std::string>(), wavelengths, values);
-                    } else if (key2 == "value") {
-                        if (py::isinstance<py::float_>(value2) ||
-                            py::isinstance<py::int_>(value2)) {
-                            const_value = value2.template cast<Properties::Float>();
-                        } else if (py::isinstance<py::list>(value2)) {
-                            py::list list = value2.template cast<py::list>();
-                            wavelengths.resize(list.size());
-                            values.resize(list.size());
-                            for (size_t i = 0; i < list.size(); ++i) {
-                                auto pair = list[i].template cast<py::tuple>();
-                                wavelengths[i] = pair[0].template cast<Properties::Float>();
-                                values[i]      = pair[1].template cast<Properties::Float>();
-                            }
-                        } else {
-                            Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
-                        }
-                    } else if (key2 != "type") {
-                        Throw("Unexpected key in spectrum dictionary: %s", key2);
-                    }
-                }
-                // Update the properties struct
-                ref<Object> obj =
-                    mitsuba::xml::detail::create_texture_from_spectrum(
-                        key, const_value, wavelengths, values, GET_VARIANT(),
-                        within_emitter, is_spectral_v<Spectrum>,
-                        is_monochromatic_v<Spectrum>);
-                props.set_object(key, obj);
+            if (type2 == "spectrum" || type2 == "rgb") {
+                props.set_object(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
                 continue;
             }
 

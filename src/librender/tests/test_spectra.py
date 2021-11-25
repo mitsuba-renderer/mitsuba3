@@ -17,9 +17,8 @@ def test02_d65(variant_scalar_spectral):
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
 
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import PositionSample3f
-    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import load_string
+    from mitsuba.render import PositionSample3f, SurfaceInteraction3f
 
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
     ps = PositionSample3f()
@@ -32,9 +31,8 @@ def test03_blackbody(variant_scalar_spectral):
     """blackbody: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import PositionSample3f
-    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import load_string
+    from mitsuba.render import PositionSample3f, SurfaceInteraction3f
 
     bb = load_string("""<spectrum version='2.0.0' type='blackbody'>
         <float name='temperature' value='5000'/>
@@ -48,10 +46,8 @@ def test04_srgb_d65(variant_scalar_spectral, np_rng):
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
-    from mitsuba.render import PositionSample3f
-    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import load_string, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.render import PositionSample3f, SurfaceInteraction3f
     import numpy as np
 
 

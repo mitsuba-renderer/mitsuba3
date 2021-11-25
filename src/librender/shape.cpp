@@ -41,7 +41,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     m_to_world =
-        (ScalarTransform4f) props.transform("to_world", ScalarTransform4f());
+        (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     m_to_object = m_to_world.scalar().inverse();
 
     for (auto &[name, obj] : props.objects(false)) {
@@ -90,7 +90,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
     if (!m_bsdf) {
         Properties props2("diffuse");
         if (m_emitter)
-            props2.set_float("reflectance", 0.f);
+            props2.set_float("reflectance", 0);
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
@@ -451,7 +451,7 @@ bool Shape<Float, Spectrum>::ray_test_scalar(const ScalarRay3f & /*ray*/) const 
 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
-                                                    PreliminaryIntersection3f /*pi*/,
+                                                    const PreliminaryIntersection3f &/*pi*/,
                                                     uint32_t /*hit_flags*/,
                                                     uint32_t /*recursion_depth*/,
                                                     Mask /*active*/) const {
@@ -463,6 +463,13 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask
     MTS_MASK_ARGUMENT(active);
     auto pi = ray_intersect_preliminary(ray, active);
     return pi.compute_surface_interaction(ray, hit_flags, active);
+}
+
+MTS_VARIANT
+Float Shape<Float, Spectrum>::boundary_test(const Ray3f &/*ray*/,
+                                            const SurfaceInteraction3f &/*si*/,
+                                            Mask /*active*/) const {
+    NotImplementedError("boundary_test");
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum

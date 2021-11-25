@@ -33,8 +33,7 @@ def test01_create_mesh(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_ply_triangle(variant_scalar_rgb):
-    from mitsuba.core import UInt32
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import UInt32, load_string
 
     m = load_string("""
         <shape type="ply" version="0.5.0">
@@ -59,7 +58,7 @@ def test02_ply_triangle(variant_scalar_rgb):
 
 @fresolver_append_path
 def test03_ply_computed_normals(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     """Checks(automatic) vertex normal computation for a PLY file that
     doesn't have them."""
@@ -107,7 +106,7 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
 @fresolver_append_path
 def test05_load_simple_mesh(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     """Tests the OBJ and PLY loaders on a simple example."""
     for mesh_format in ["obj", "ply"]:
@@ -134,7 +133,7 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc.
     """
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     def test():
         shape = load_string("""
@@ -178,8 +177,7 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
 
 @fresolver_append_path
 def test07_ply_stored_attribute(variant_scalar_rgb):
-    from mitsuba.core import Vector3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     m = load_string("""
         <shape type="ply" version="0.5.0">
@@ -234,7 +232,8 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
 
 @fresolver_append_path
 def test09_eval_parameterization(variants_all_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
+
     shape = load_string('''
         <shape type="obj" version="2.0.0">
             <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -256,10 +255,9 @@ def test09_eval_parameterization(variants_all_rgb):
 
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -267,7 +265,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     assert ek.allclose(pi.t, 10)
@@ -281,7 +279,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
     assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
-    ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
     assert ek.allclose(pi.t, 10)
     assert pi.prim_index == 1
@@ -297,8 +295,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
 
 @fresolver_append_path
 def test11_parameters_grad_enabled(variants_all_ad_rgb):
-    from mitsuba.core.xml import load_string
-
+    from mitsuba.core import load_string
     shape = load_string('''
         <shape type="obj" version="2.0.0">
             <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -336,14 +333,14 @@ else:
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.core import load_string, Ray3f, Vector3f
+    from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -351,7 +348,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # si should not be attached if not necessary
@@ -364,13 +361,14 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
     si = pi.compute_surface_interaction(ray)
     assert ek.grad_enabled(si.t)
     assert ek.grad_enabled(si.p)
+    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
 
-    # si should not be attached if flags says so
+    # si should be attached if ray is attached (even when we pass RayFlags.DetachShape)
     ek.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.NonDifferentiable)
-    print(si.p.x.index_ad())
-    assert not ek.grad_enabled(si.p)
-    assert not ek.grad_enabled(si.n)
+    si = pi.compute_surface_interaction(ray, RayFlags.DetachShape)
+    assert ek.grad_enabled(si.p)
+    assert ek.grad_enabled(si.uv)
+    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
@@ -388,13 +386,13 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -402,7 +400,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -434,13 +432,13 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -448,7 +446,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -468,13 +466,13 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
+    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -502,7 +500,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # # If the vertices are shifted along z-axis, so does si.t
@@ -533,7 +531,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test rotation
 
-    ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # If the vertices are rotated around the center, so does si.uv (times 0.5)
@@ -547,13 +545,13 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -574,7 +572,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     params.update()
 
     # Hit the upper right corner of the rectangle (the 4th vertex)
-    ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # ---------------------------------------
@@ -686,14 +684,14 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
+    from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -721,7 +719,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # If the vertices are shifted along x-axis, si.p won't move
@@ -733,7 +731,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
@@ -746,14 +744,14 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
     # TODO fix this!
     # If the vertices are shifted along x-axis, sticky si.t should follow
     # apply_transformation(lambda v : Transform4f.translate(v))
-    # si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     # ek.forward(diff_vector.y)
     # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
 
@@ -765,8 +763,8 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
-    from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.core import load_dict, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
+    from mitsuba.render import RayFlags
     from mitsuba.python.util import traverse
 
     # Set enoki JIT flags
@@ -788,7 +786,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
             'id' : 'wall',
             'filename' : 'resources/data/common/meshes/cbox/back.obj'
         }
-    scene = xml.load_dict(scene_dict)
+    scene = load_dict(scene_dict)
 
     # Get scene parameters
     params = traverse(scene)
@@ -826,11 +824,11 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1], 0.0, [])
+    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1])
     ek.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
-    si = scene.ray_intersect(ray, HitComputeFlags.Sticky, True)
+    si = scene.ray_intersect(ray, RayFlags.FollowShape, True)
     ek.set_label(si, 'si')
 
     # print(ek.graphviz_str(Float(1)))
@@ -843,10 +841,10 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
 
 @fresolver_append_path
 def test19_update_geometry(variants_vec_rgb):
-    from mitsuba.core import xml, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
+    from mitsuba.core import load_dict, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
     from mitsuba.python.util import traverse
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type': 'scene',
         'rect': {
             'type': 'ply',
@@ -864,7 +862,6 @@ def test19_update_geometry(variants_vec_rgb):
         positions_new = transform @ init_vertex_pos
         params['rect.vertex_positions'] = ek.ravel(positions_new)
         params.update()
-        ek.eval()
 
     film_size = ScalarVector2i([4, 4])
     total_sample_count = ek.hprod(film_size)
@@ -874,7 +871,7 @@ def test19_update_geometry(variants_vec_rgb):
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0], 0.0, [])
+    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
     init_t = scene.ray_intersect_preliminary(ray).t
     ek.eval(init_t)
 
@@ -895,13 +892,13 @@ def test19_update_geometry(variants_vec_rgb):
 
 @fresolver_append_path
 def test20_write_xml(variants_all_rgb, tmp_path):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict
     from mitsuba.python.util import traverse
 
     filepath = str(tmp_path / 'test_mesh-test20_write_xml.ply')
     print(f"Output temporary file: {filepath}")
 
-    mesh = xml.load_dict({
+    mesh = load_dict({
         'type': 'ply',
         'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
     })
@@ -915,7 +912,7 @@ def test20_write_xml(variants_all_rgb, tmp_path):
     mesh.add_attribute(buf_name, 1, [1,2,3,4])
 
     mesh.write_ply(filepath)
-    mesh_saved = xml.load_dict({
+    mesh_saved = load_dict({
         'type': 'ply',
         'filename': filepath
     })
@@ -923,3 +920,66 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 
     assert ek.allclose(params_saved['vertex_positions'], positions + 10.0)
     assert buf_name in params_saved and ek.allclose(params_saved[buf_name], [1, 2, 3, 4])
+
+
+@fresolver_append_path
+def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
+    from mitsuba.core import load_dict, Ray3f
+
+    scene = load_dict({
+        'type': 'scene',
+        'mesh': {
+            'type' : 'obj',
+            'filename' : 'resources/data/common/meshes/sphere.obj'
+        }
+    })
+
+    # Check boundary test value at silhouette
+    ray = Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray).boundary_test(ray)
+    assert ek.all(B < 1e-6)
+
+    # Check that boundary test value increase as we move away from boundary
+    N = 10
+    prev = 0.0
+    for x in range(N):
+        ray = Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
+        B = scene.ray_intersect(ray).boundary_test(ray)
+        assert ek.all(prev < B)
+        prev = B
+
+
+@fresolver_append_path
+def test22_boundary_test_face_normal(variants_all_ad_rgb):
+    from mitsuba.core import load_dict, Ray3f
+
+    scene = load_dict({
+        'type': 'scene',
+        'mesh': {
+            'type' : 'obj',
+            'filename' : 'resources/data/common/meshes/rectangle.obj',
+            'face_normals': True
+        }
+    })
+
+    # Check boundary test value when no intersection
+    ray = Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
+    si = scene.ray_intersect(ray)
+    assert ek.all(~si.is_valid())
+    B = si.boundary_test(ray)
+    assert ek.all(B > 1e6)
+
+    # Check boundary test value close to silhouette
+    ray = Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray).boundary_test(ray)
+    assert ek.all(B < 1e-3)
+
+    # Check boundary test value close to silhouette
+    ray = Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray).boundary_test(ray)
+    assert ek.all(B < 1e-4)
+
+    # Check boundary test value close far from silhouette
+    ray = Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray).boundary_test(ray)
+    assert ek.all(B > 1e-1)

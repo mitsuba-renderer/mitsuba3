@@ -52,6 +52,8 @@ MTS_PY_EXPORT(Emitter) {
     MTS_PY_IMPORT_TYPES()
     using PyEmitter = PyEmitter<Float, Spectrum>;
 
+    m.def("has_flag", [](UInt32 flags, EmitterFlags f) {return has_flag(flags, f);});
+
     auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
@@ -83,6 +85,18 @@ MTS_PY_EXPORT(Emitter) {
                 },
                 "it"_a, "sample"_a, "volume_sample"_a = 0.0, "active"_a = true,
                 D(Endpoint, sample_direction))
+        .def("sample_position",
+                [](EmitterPtr ptr, Float time, const Point2f &sample, Mask active) {
+                return ptr->sample_position(time, sample, active);
+                },
+                "time"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_position))
+        .def("sample_wavelengths",
+                [](EmitterPtr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
+                return ptr->sample_wavelengths(si, sample, active);
+                },
+                "si"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_wavelengths))
         .def("pdf_direction",
                 [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
                     return ptr->pdf_direction(it, ds, active);
@@ -95,6 +109,7 @@ MTS_PY_EXPORT(Emitter) {
                 },
                 "si"_a, "active"_a = true, D(Endpoint, eval))
         .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
+        .def("shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
         .def("is_environment",
              [](EmitterPtr ptr) { return ptr->is_environment(); },
              D(Emitter, is_environment));

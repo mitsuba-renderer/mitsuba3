@@ -1,8 +1,8 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.scalar import ArrayXf as Float
 
+import mitsuba
 from mitsuba.python.test.util import fresolver_append_path
 
 
@@ -20,7 +20,7 @@ spectrum_strings = {
 
 @fresolver_append_path
 def create_emitter_and_spectrum(s_key='d65'):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     emitter = load_string("""<shape version='2.0.0' type='ply'>
                                  <string name='filename' value='data/triangle.ply'/>
                                  <emitter type='area'>
@@ -41,12 +41,12 @@ def create_emitter_and_spectrum(s_key='d65'):
 def test01_constructor(variant_scalar_rgb):
     # Check that the shape is properly bound to the emitter
 
+    from mitsuba.core import load_string
+
     shape, spectrum = create_emitter_and_spectrum()
     assert shape.emitter().bbox() == shape.bbox()
 
     # Check that we are not allowed to specify a to_world transform directly in the emitter.
-
-    from mitsuba.core.xml import load_string
     with pytest.raises(RuntimeError):
         e = load_string("""<emitter version="2.0.0" type="area">
                                <transform name="to_world">

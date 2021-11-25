@@ -81,6 +81,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_uv_partials))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
             D(SurfaceInteraction, has_n_partials))
+        .def("boundary_test", &SurfaceInteraction3f::boundary_test, "ray"_a, "active"_a=true)
         .def_repr(SurfaceInteraction3f);
 
     MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths,
@@ -117,7 +118,7 @@ MTS_PY_EXPORT(MediumInteraction) {
 MTS_PY_EXPORT(PreliminaryIntersection) {
     MTS_PY_IMPORT_TYPES()
 
-    m.def("has_flag", [](uint32_t f0, HitComputeFlags f1) { return has_flag(f0, f1); });
+    m.def("has_flag", [](uint32_t f0, RayFlags f1) { return has_flag(f0, f1); });
 
     auto pi =
         py::class_<PreliminaryIntersection3f>(m, "PreliminaryIntersection3f",
@@ -136,7 +137,7 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("compute_surface_interaction",
            &PreliminaryIntersection3f::compute_surface_interaction,
            D(PreliminaryIntersection, compute_surface_interaction),
-           "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true)
+           "ray"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true)
         .def_repr(PreliminaryIntersection3f);
 
     MTS_PY_ENOKI_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,

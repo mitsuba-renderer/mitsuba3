@@ -1,28 +1,20 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(HitComputeFlags) {
-    py::enum_<HitComputeFlags>(m, "HitComputeFlags", py::arithmetic())
-        .def_value(HitComputeFlags, None)
-        .def_value(HitComputeFlags, Minimal)
-        .def_value(HitComputeFlags, UV)
-        .def_value(HitComputeFlags, dPdUV)
-        .def_value(HitComputeFlags, dNGdUV)
-        .def_value(HitComputeFlags, dNSdUV)
-        .def_value(HitComputeFlags, ShadingFrame)
-        .def_value(HitComputeFlags, NonDifferentiable)
-        .def_value(HitComputeFlags, Sticky)
-        .def_value(HitComputeFlags, Coherent)
-        .def_value(HitComputeFlags, All)
-        .def_value(HitComputeFlags, AllNonDifferentiable)
-        .def(py::self == py::self)
-        .def(py::self | py::self)
-        .def(int() | py::self)
-        .def(py::self & py::self)
-        .def(int() & py::self)
-        .def(+py::self)
-        .def(~py::self)
-        .def("__pos__", [](const HitComputeFlags &f) {
-            return static_cast<uint32_t>(f);
-        }, py::is_operator());
+MTS_PY_EXPORT(RayFlags) {
+    auto e = py::enum_<RayFlags>(m, "RayFlags", py::arithmetic())
+        .def_value(RayFlags, None)
+        .def_value(RayFlags, Minimal)
+        .def_value(RayFlags, UV)
+        .def_value(RayFlags, dPdUV)
+        .def_value(RayFlags, dNGdUV)
+        .def_value(RayFlags, dNSdUV)
+        .def_value(RayFlags, ShadingFrame)
+        .def_value(RayFlags, FollowShape)
+        .def_value(RayFlags, DetachShape)
+        .def_value(RayFlags, Coherent)
+        .def_value(RayFlags, All)
+        .def_value(RayFlags, AllNonDifferentiable);
+
+        MTS_PY_DECLARE_ENUM_OPERATORS(RayFlags, e)
 }

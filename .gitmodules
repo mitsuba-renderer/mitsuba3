@@ -38,3 +38,6 @@
 [submodule "ext/ittnotify"]
 	path = ext/ittnotify
 	url = https://github.com/intel/IntelSEAPI
+[submodule "ext/fastfloat"]
+	path = ext/fastfloat
+	url = https://github.com/fastfloat/fast_float

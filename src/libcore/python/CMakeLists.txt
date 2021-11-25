@@ -75,6 +75,7 @@ pybind11_add_module(core_ext
   stream.cpp
   struct.cpp
   thread.cpp
+  timer.cpp
   util.cpp
 )
 

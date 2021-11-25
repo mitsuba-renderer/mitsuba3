@@ -60,7 +60,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     if (m_sensors.empty()) {
         Log(Warn, "No sensors found! Instantiating a perspective camera..");
         Properties sensor_props("perspective");
-        sensor_props.set_float("fov", 45.0f);
+        sensor_props.set_float("fov", 45.0);
 
         /* Create a perspective camera with a 45 deg. field of view
            and positioned so that it can see the entire scene */
@@ -71,10 +71,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarFloat distance =
                 ek::hmax(extents) / (2.f * ek::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
 
-            sensor_props.set_float("far_clip", (float) (ek::hmax(extents) * 5 + distance));
-            sensor_props.set_float("near_clip", (float) distance / 100);
+            sensor_props.set_float("far_clip", (Properties::Float) (ek::hmax(extents) * 5 + distance));
+            sensor_props.set_float("near_clip", (Properties::Float) distance / 100);
 
-            sensor_props.set_float("focus_distance", (float) (distance + extents.z() / 2));
+            sensor_props.set_float("focus_distance", (Properties::Float) (distance + extents.z() / 2));
             sensor_props.set_transform(
                 "to_world", ScalarTransform4f::translate(ScalarVector3f(
                                 center.x(), center.y(), m_bbox.min.z() - distance)));
@@ -138,8 +138,8 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
 
 
 MTS_VARIANT ref<Bitmap>
-Scene<Float, Spectrum>::render(uint32_t sensor_index) {
-    m_integrator->render(this, 0, sensor_index, false);
+Scene<Float, Spectrum>::render(uint32_t seed, uint32_t sensor_index) {
+    m_integrator->render(this, seed, sensor_index, false);
     return m_sensors[sensor_index]->film()->bitmap();
 }
 
@@ -148,9 +148,9 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_intersect_gpu(ray, +HitComputeFlags::All, active);
+        return ray_intersect_gpu(ray, +RayFlags::All, active);
     else
-        return ray_intersect_cpu(ray, +HitComputeFlags::All, active);
+        return ray_intersect_cpu(ray, +RayFlags::All, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -355,6 +355,23 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
+    if constexpr (ek::is_cuda_array_v<Float>)
+        Scene::static_accel_initialization_gpu();
+    else
+        Scene::static_accel_initialization_cpu();
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
+    if constexpr (ek::is_cuda_array_v<Float>)
+        Scene::static_accel_shutdown_gpu();
+    else
+        Scene::static_accel_shutdown_cpu();
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_cpu() { }
+
 void librender_nop() { }
 
 #if !defined(MTS_ENABLE_CUDA)
@@ -379,6 +396,8 @@ MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, uint32_t, Mask) const {
     NotImplementedError("ray_test_gpu");
 }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
 MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")

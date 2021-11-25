@@ -39,7 +39,5 @@ std::ostream& operator<<(std::ostream &os, const Object *object) {
     return os;
 }
 
-void Object::set_grad_suspended(bool /*state*/) { }
-
 MTS_IMPLEMENT_CLASS(Object,)
 NAMESPACE_END(mitsuba)

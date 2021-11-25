@@ -10,8 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
     : Object() {
-    m_sample_count = (uint32_t) props.size_("sample_count", 4);
-    m_base_seed = props.size_("seed", 0);
+    m_sample_count = (uint32_t) props.get<size_t>("sample_count", 4);
+    m_base_seed = props.get<size_t>("seed", 0);
 
     m_dimension_index = ek::opaque<UInt32>(0);
     m_sample_index = ek::opaque<UInt32>(0);

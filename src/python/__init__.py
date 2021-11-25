@@ -15,7 +15,10 @@ if os.name == 'nt':
     d = __file__
     for i in range(3):
         d = os.path.dirname(d)
-    os.add_dll_directory(d)
+    try: # try to use Python 3.8's DLL handling
+        os.add_dll_directory(d)
+    except AttributeError:  # otherwise use PATH
+        os.environ['PATH'] += os.pathsep + d
     del d, i
 
 try:

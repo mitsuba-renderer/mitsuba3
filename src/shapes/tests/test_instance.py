@@ -6,19 +6,19 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
-    from mitsuba.core import xml, ScalarTransform4f as T
+    from mitsuba.core import load_dict, ScalarTransform4f as T
 
     to_world = T.translate(translate) * T.rotate([0, 1, 0], angle) * T.scale(scale)
 
     shape2 = shape.copy()
     shape2['to_world'] = to_world
 
-    s = xml.load_dict({
+    s = load_dict({
         'type' : 'scene',
         'shape' : shape2
     })
 
-    s_inst = xml.load_dict({
+    s_inst = load_dict({
         'type' : 'scene',
         'group_0' : {
             'type' : 'shapegroup',
@@ -47,7 +47,7 @@ shapes = [
 @pytest.mark.parametrize("shape", shapes)
 def test01_ray_intersect(variant_scalar_rgb, shape):
     from mitsuba.core import Ray3f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     s, s_inst = example_scene(shape)
 
@@ -68,8 +68,8 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
             assert si_found == si_found_inst
 
             if si_found:
-                si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
-                si_inst = s_inst.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
+                si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
+                si_inst = s_inst.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
 
                 assert si.prim_index == si_inst.prim_index
                 assert si.instance is None
@@ -91,7 +91,7 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
 @pytest.mark.parametrize("shape", shapes)
 def test02_ray_intersect_transform(variant_scalar_rgb, shape):
     from mitsuba.core import Ray3f, ScalarVector3f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     trans = ScalarVector3f([0, 1, 0])
     angle = 15
@@ -117,10 +117,10 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
                 assert si_found == si_found_inst
 
-                for dn_flags in [HitComputeFlags.dNGdUV, HitComputeFlags.dNSdUV]:
+                for dn_flags in [RayFlags.dNGdUV, RayFlags.dNSdUV]:
                     if si_found:
-                        si = s.ray_intersect(ray, HitComputeFlags.All | dn_flags, True)
-                        si_inst = s_inst.ray_intersect(ray, HitComputeFlags.All | dn_flags, True)
+                        si = s.ray_intersect(ray, RayFlags.All | dn_flags, True)
+                        si_inst = s_inst.ray_intersect(ray, RayFlags.All | dn_flags, True)
 
                         assert si.prim_index == si_inst.prim_index
                         assert si.instance is None
@@ -140,13 +140,13 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
 @pytest.mark.parametrize('width', [1, 10])
 def test03_ray_intersect_instance(variants_all_rgb, width):
-    from mitsuba.core import xml, Float, Ray3f, ScalarVector3f, ScalarTransform4f as T
+    from mitsuba.core import load_dict, Ray3f, ScalarTransform4f as T
 
     """Check that we get the correct instance pointer when tracing a ray"""
 
     scalar_mode = mitsuba.variant().startswith('scalar')
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type' : 'scene',
 
         'group_0' : {

@@ -39,8 +39,8 @@ template <typename Point_, typename Spectrum_> struct Ray {
         : o(o), d(d), time(time), wavelengths(wavelengths) { }
 
     /// Construct a new ray (o, d) with time
-    Ray(const Point &o, const Vector &d, const Float &t)
-        : o(o), d(d), time(t) { }
+    Ray(const Point &o, const Vector &d, const Float &time=0.f)
+        : o(o), d(d), time(time) { }
 
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Float maxt, Float time,
@@ -89,8 +89,8 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
         : Base(ray), o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {}
 
     /// Construct a new ray (o, d) at time 'time'
-    RayDifferential(const Point &o_, const Vector &d_, Float time_,
-                    const Wavelength &wavelengths_)
+    RayDifferential(const Point &o_, const Vector &d_, Float time_ = 0.f,
+                    const Wavelength &wavelengths_ = Wavelength())
         : o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {
         o           = o_;
         d           = d_;

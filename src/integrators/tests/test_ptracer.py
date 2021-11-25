@@ -7,8 +7,8 @@ from mitsuba.python.test.util import fresolver_append_path
 @fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',
                       shape=None, hide_emitters=False, crop_window=None):
-    from mitsuba.core import ScalarTransform4f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarTransform4f
+
     integrator = {
         'type': 'ptracer',
         'samples_per_pass': 16,
@@ -117,7 +117,7 @@ def test01_render_simple(variants_all, emitter):
     scene, integrator = create_test_scene(emitter=emitter)
     assert isinstance(integrator, ScatteringIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop_film=True)
-    assert ek.count(ek.ravel(image) > 0) >= 0.3 * ek.hprod(ek.shape(image))
+    assert ek.count(ek.ravel(image) > 0) >= 0.2 * ek.hprod(ek.shape(image))
 
 
 @pytest.mark.slow
@@ -130,7 +130,7 @@ def test02_render_infinite_emitter(variants_all, emitter, shape):
     image = integrator.render(scene, seed=0, spp=4, develop_film=True)
     # Infinite emitters are sampled very inefficiently, so with such low spp
     # it's possible that the vast majority of pixels are still zero.
-    assert ek.count(ek.ravel(image) > 0) >= 0.03 * ek.hprod(ek.shape(image))
+    assert ek.count(ek.ravel(image) > 0) >= 0.02 * ek.hprod(ek.shape(image))
 
 
 @pytest.mark.parametrize('emitter', ['constant', 'envmap', 'area', 'texturedarea'])
@@ -164,6 +164,7 @@ def test05_render_crop_film(variants_all):
     scene, integrator = create_test_scene(emitter='texturedarea')
     image1 = integrator.render(scene, seed=0, spp=4, develop_film=True)
     image1_cropped = image1[offset[1]:offset[1]+size[1], offset[0]:offset[0]+size[0], :]
+    ek.eval(image1_cropped)
 
     # 2. Use the film's crop window via the Python API
     film = scene.sensors()[0].film()
@@ -172,17 +173,19 @@ def test05_render_crop_film(variants_all):
         # TODO: ideally, we shouldn't need to call this explicitly
         scene.sensors()[0].parameters_changed()
     image2 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    ek.eval(image2)
 
     # 3. Specify the crop window at scene loading time
     scene, integrator = create_test_scene(emitter='texturedarea', crop_window=(offset, size))
     image3 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    ek.eval(image3)
 
     if False:
         from mitsuba.core import Bitmap
-        Bitmap(image1).write(f'test04_{mitsuba.variant()}_full.exr')
-        Bitmap(image1_cropped).write(f'test04_{mitsuba.variant()}_full_cropped.exr')
-        Bitmap(image2).write(f'test04_{mitsuba.variant()}_cropped.exr')
-        Bitmap(image3).write(f'test04_{mitsuba.variant()}_loaded.exr')
+        Bitmap(image1).write(f'test05_{mitsuba.variant()}_full.exr')
+        Bitmap(image1_cropped).write(f'test05_{mitsuba.variant()}_full_cropped.exr')
+        Bitmap(image2).write(f'test05_{mitsuba.variant()}_cropped.exr')
+        Bitmap(image3).write(f'test05_{mitsuba.variant()}_loaded.exr')
 
     # Since we trace the exact same rays regardless of crops, even the noise
     # pattern should be identical
@@ -207,7 +210,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     opt.load()
     opt.update()
 
-    with opt.suspend_gradients():
+    with ek.suspend_grad():
         image = integrator.render(scene, seed=0, spp=4)
 
     ek.enable_grad(image)
@@ -216,7 +219,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     adjoint = ek.grad(image)
     ek.set_grad(image, 0.0)
 
-    integrator.render_backward(scene, opt, adjoint, seed=3, spp=4)
+    integrator.render_backward(scene, params, adjoint, seed=3, spp=4)
     g = ek.grad(params[key])
     assert ek.shape(g) == ek.shape(params[key])
     assert ek.allclose(g, 0.3269110321)

@@ -98,7 +98,7 @@ private:
     Point3f offset_p(const Vector3f &d) const {
         Float mag = (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>;
         mag *= ek::select(ek::dot(n, d) >= 0.f, 1.f, -1.f);
-        return p + mag * n;
+        return p + ek::detach(mag * n);
     }
 };
 
@@ -400,6 +400,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return ek::any_nested(ek::neq(dn_du, 0.f) || ek::neq(dn_dv, 0.f));
     }
 
+    Float boundary_test(const Ray3f &ray, Mask active = true) {
+        Float B = shape->boundary_test(ray, *this, active && is_valid());
+        return ek::select(active && is_valid(), B, 1e8f);
+    }
+
     //! @}
     // =============================================================
 
@@ -511,7 +516,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * It also specifies whether the \ref SurfaceInteraction should be differentiable with
  * respect to the shapes parameters.
  */
-enum class HitComputeFlags : uint32_t {
+enum class RayFlags : uint32_t {
 
     // =============================================================
     //             Surface interaction compute flags
@@ -542,11 +547,11 @@ enum class HitComputeFlags : uint32_t {
     //!              Differentiability compute flags
     // =============================================================
 
-    /// Force computed fields to not be be differentiable
-    NonDifferentiable     = 0x00040,
+    /// Derivatives of the SurfaceInteraction fields follow shape's motion
+    FollowShape      = 0x00040,
 
-    /// Derivatives of the SurfaceInteraction members will follow the shape's motion
-    Sticky                = 0x00080,
+    /// Derivatives of the SurfaceInteraction fields ignore shape's motion
+    DetachShape      = 0x00080,
 
     // =============================================================
     //!                      Miscellaneous
@@ -562,18 +567,11 @@ enum class HitComputeFlags : uint32_t {
     /// Compute all fields of the surface interaction data structure (default)
     All = UV | dPdUV | ShadingFrame,
 
-    /// Compute all fields of the surface interaction data structure in a non differentiable way
-    AllNonDifferentiable = UV | dPdUV | ShadingFrame | NonDifferentiable,
+    /// Compute all fields of the surface interaction ignoring shape's motion
+    AllNonDifferentiable = All | DetachShape,
 };
 
-constexpr uint32_t operator |(HitComputeFlags f1, HitComputeFlags f2) { return (uint32_t) f1 | (uint32_t) f2; }
-constexpr uint32_t operator |(uint32_t f1, HitComputeFlags f2)        { return f1 | (uint32_t) f2; }
-constexpr uint32_t operator &(HitComputeFlags f1, HitComputeFlags f2) { return (uint32_t) f1 & (uint32_t) f2; }
-constexpr uint32_t operator &(uint32_t f1, HitComputeFlags f2)        { return f1 & (uint32_t) f2; }
-constexpr uint32_t operator ~(HitComputeFlags f)                     { return ~(uint32_t) f; }
-constexpr uint32_t operator +(HitComputeFlags f)                      { return (uint32_t) f; }
-template <typename UInt32>
-constexpr auto has_flag(UInt32 flags, HitComputeFlags f) { return ek::neq(flags & (uint32_t) f, 0u); }
+MTS_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
@@ -692,7 +690,7 @@ struct PreliminaryIntersection {
             si.time        = ray.time;
             si.wavelengths = ray.wavelengths;
 
-            if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
+            if (has_flag(hit_flags, RayFlags::ShadingFrame))
                 si.initialize_sh_frame();
 
             // Incident direction in local coordinates

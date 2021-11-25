@@ -18,7 +18,7 @@ def find_resource(fname):
 
 
 def test_read_convert_yc(variant_scalar_rgb, tmpdir):
-    from mitsuba.core import Bitmap, Struct, FilterBoundaryCondition
+    from mitsuba.core import load_string, Bitmap, Struct, FilterBoundaryCondition
     # Tests reading & upsampling a luminance/chroma image
     b = Bitmap(find_resource('resources/data/tests/bitmap/XYZ_YC.exr'))
     # Tests float16 XYZ -> float32 RGBA conversion
@@ -28,7 +28,7 @@ def test_read_convert_yc(variant_scalar_rgb, tmpdir):
     assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-3)
     tmp_file = os.path.join(str(tmpdir), "out.exr")
     # Tests bitmap resampling filters
-    rfilter = mitsuba.core.xml.load_string("<rfilter version='2.0.0' type='box'/>")
+    rfilter = load_string("<rfilter version='2.0.0' type='box'/>")
     b = b.resample([1, 1], rfilter, (FilterBoundaryCondition.Zero, FilterBoundaryCondition.Zero))
     # Tests OpenEXR bitmap writing
     b.write(tmp_file)

@@ -69,8 +69,8 @@ public:
     MTS_IMPORT_TYPES()
 
     OrthogonalSampler(const Properties &props) : Base(props) {
-        m_jitter = props.bool_("jitter", true);
-        m_strength = props.int_("strength", 2);
+        m_jitter = props.get<bool>("jitter", true);
+        m_strength = props.get<int>("strength", 2);
         set_sample_count(m_sample_count);
     }
 

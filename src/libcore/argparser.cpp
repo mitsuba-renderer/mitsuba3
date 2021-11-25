@@ -35,12 +35,7 @@ int ArgParser::Arg::as_int() const {
 }
 
 double ArgParser::Arg::as_float() const {
-    char *start = (char *) m_value.data();
-    char *end   = (char *) m_value.data() + m_value.size();
-    double result = std::strtod(start, &start);
-    if (start != end)
-        Throw("Argument \"%s\": value \"%s\" is not a valid floating point value!", m_prefixes[0], m_value);
-    return result;
+    return string::stof<double>(m_value);
 }
 
 void ArgParser::parse(int argc, const char **argv) {

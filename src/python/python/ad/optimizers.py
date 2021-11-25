@@ -44,7 +44,7 @@ class Optimizer:
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
         needs_reset = (key not in self.variables) or ek.shape(self.variables[key]) != ek.shape(value)
 
-        self.variables[key] = type(value)(ek.detach(value))
+        self.variables[key] = ek.detach(value, True)
         ek.enable_grad(self.variables[key])
         if needs_reset:
             self.reset(key)
@@ -130,7 +130,6 @@ class Optimizer:
 
         ek.schedule(self.params)
         self.params.update()
-        ek.eval()
 
     def set_learning_rate(self, lr, key=None):
         """Set the learning rate.
@@ -153,28 +152,6 @@ class Optimizer:
         else:
             self.lr[key] = lr
             self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, shape=1)
-
-    def set_grad_suspended(self, value):
-        """Temporarily enable or disable the generation of gradients."""
-        self.params.set_grad_suspended(value)
-
-    @contextmanager
-    def suspend_gradients(self):
-        """Temporarily disable the generation of gradients."""
-        self.params.set_grad_suspended(True)
-        try:
-            yield
-        finally:
-            self.params.set_grad_suspended(False)
-
-    @contextmanager
-    def resume_gradients(self):
-        """Temporarily enable the generation of gradients"""
-        self.params.set_grad_suspended(False)
-        try:
-            yield
-        finally:
-            self.params.set_grad_suspended(True)
 
     def reset(self, key):
         """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
