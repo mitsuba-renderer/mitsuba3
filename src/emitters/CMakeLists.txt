@@ -11,3 +11,4 @@ add_plugin(projector       projector.cpp)
 
 add_plugin(sky             sky.cpp sunsky/skymodel.cpp)
 add_plugin(sun             sun.cpp)
+add_plugin(sunsky          sunsky.cpp sunsky/skymodel.cpp)
