@@ -55,6 +55,11 @@ public:
                   "shape.");
 
         m_radiance = props.volume<Volume>("radiance", 1.f);
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
+            // TODO: this should probably be done in the parser, just like with
+            // non-textured spectra.
+            m_d65 = Texture::D65(1.f);
+        }
         m_scale = props.float_("scale", 1.0f);
 
         m_flags = +EmitterFlags::Volume;
@@ -100,6 +105,10 @@ public:
         ds.pdf = ek::select(ek::isfinite(x), ds.pdf * x, 0.f);
 
         MediumInteraction3f mi = MediumInteraction3f(ds, it.wavelengths);
+        SurfaceInteraction3f si = SurfaceInteraction3f(ds, it.wavelengths);
+        spec = m_radiance->eval(mi, active) / ds.pdf;
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
+            spec *= m_d65->eval(si, active);
         spec = m_scale * m_radiance->eval(mi, active) / ds.pdf;
 
         ds.emitter = this;
@@ -180,11 +189,8 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_radiance;
-<<<<<<< HEAD
     ref<Texture> m_d65;
-=======
     float m_scale;
->>>>>>> 903e3175e672ab2caa8a1bc8da8cf8e1e24a3d9e
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumeLight, Emitter)
