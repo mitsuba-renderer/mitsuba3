@@ -55,11 +55,7 @@ public:
                   "shape.");
 
         m_radiance = props.volume<Volume>("radiance", 1.f);
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
-            // TODO: this should probably be done in the parser, just like with
-            // non-textured spectra.
-            m_d65 = Texture::D65(1.f);
-        }
+        m_scale = props.float_("scale", 1.0f);
 
         m_flags = +EmitterFlags::Volume;
         if (m_radiance->is_spatially_varying())
@@ -70,35 +66,14 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         MediumInteraction3f mi = MediumInteraction3f(si);
-        return depolarizer<Spectrum>(m_radiance->eval(mi, active));
+        return m_scale * depolarizer<Spectrum>(m_radiance->eval(mi, active));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           const Float &volume_sample,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-
-        // 1. Two strategies to sample spatial component based on 'm_radiance'
-        // Currently only supports homogeneous sampling within the bounding box of the shape
-        auto [ps, pos_weight] = this->sample_position(time, sample2, volume_sample, active);
-        mi = MediumInteraction3f(ps, ek::zero<Wavelength>());
-
-        // 2. Sample directional component
-        Vector3f local = warp::square_to_uniform_sphere(sample3);
-
-        // 3. Sample spectral component
-        SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
-        auto [wavelength, wav_weight] =
-            sample_wavelengths(si, wavelength_sample, active);
-
-        // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
-        Spectrum weight = pos_weight * wav_weight * ek::Pi<ScalarFloat>;
-
-        return { Ray3f(mi.p, mi.to_world(local), time, wavelength),
-                 depolarizer<Spectrum>(weight) * ps.pdf };
+        NotImplementedError("sample_ray");
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -125,15 +100,10 @@ public:
         ds.pdf = ek::select(ek::isfinite(x), ds.pdf * x, 0.f);
 
         MediumInteraction3f mi = MediumInteraction3f(ds, it.wavelengths);
-        SurfaceInteraction3f si = SurfaceInteraction3f(ds, it.wavelengths);
-        spec = m_radiance->eval(mi, active) / ds.pdf;
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
-            spec *= m_d65->eval(si, active);
+        spec = m_scale * m_radiance->eval(mi, active) / ds.pdf;
 
         ds.emitter = this;
         active &= mi.is_valid();
-
-        // Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, mi.mint, active);
 
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
@@ -146,18 +116,11 @@ public:
         Assert(m_shape, "Cannot sample from a volume emitter without an associated Shape.");
 
         ScalarBoundingBox3f shape_bbox = m_shape->bbox();
-        // Log(Debug, "%s, %s", shape_bbox, m_shape);
-        PositionSample3f ps = PositionSample3f(ek::zero<Point3f>(), 
-                                               ek::zero<Point3f>(), 
-                                               ek::zero<Point2f>(), 
-                                               time, 
-                                               ek::zero<Float>(), 
-                                               ek::zero<Mask>()
-        );
+        PositionSample3f ps = ek::zero<PositionSample3f>();
         Point3f sample = Point3f(sample_.x(), sample_.y(), volume_sample);
         ek::masked(ps.p, active) = shape_bbox.min + sample * (shape_bbox.max - shape_bbox.min);
         ek::masked(ps.pdf, active) = 1.f / shape_bbox.volume();
-        // Log(Debug, "bbox: %s, sample: %s, p: %s, pdf: %s", shape_bbox, sample, ps.p, ps.pdf);
+
         Float weight = ek::select(active & (ps.pdf > 0.f), ek::rcp(ps.pdf), Float(0.f));
         return { ps, weight };
     }
@@ -165,7 +128,6 @@ public:
     Float pdf_direction(const Interaction3f &/*it*/, const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        MTS_MASK_ARGUMENT(active);
 
         Mask is_inside = this->m_shape->bbox().contains(ds.p);
         Float pdf = ek::select(is_inside, ds.dist * ds.dist / this->m_shape->bbox().volume(), 0.f);
@@ -218,7 +180,11 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_radiance;
+<<<<<<< HEAD
     ref<Texture> m_d65;
+=======
+    float m_scale;
+>>>>>>> 903e3175e672ab2caa8a1bc8da8cf8e1e24a3d9e
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumeLight, Emitter)

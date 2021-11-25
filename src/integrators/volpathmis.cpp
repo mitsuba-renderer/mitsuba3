@@ -224,13 +224,9 @@ public:
                 prob_scatter  /= c;
                 prob_null     /= c;
 
-                // Log(Debug, "%s %s %s", prob_emission, prob_scatter, prob_null);
-
                 Mask emission_interaction = medium_sample_eta < index_spectrum(prob_emission, channel);
                 Mask null_interaction     = medium_sample_eta < index_spectrum(prob_emission + prob_null, channel) && !emission_interaction;
                 Mask scatter_interaction  = !emission_interaction && !null_interaction;
-
-                // Log(Debug, "%s %s %s", emission_interaction, scatter_interaction, null_interaction);
 
                 act_emission       |= emission_interaction && active_medium;
                 act_medium_scatter |= scatter_interaction  && active_medium;
@@ -476,8 +472,6 @@ public:
 
                     UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
                     ek::masked(c, ek::eq(c, 0.f)) = 1.f;
-                    prob_emission /= c;
-                    prob_scatter  /= c;
                     prob_null     /= c;
 
                     update_weights(p_over_f_uni, prob_null, mi.sigma_n, channel, is_spectral || not_spectral);
@@ -523,7 +517,6 @@ public:
                 ek::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
         }
-        Log(Debug, "%s | %s ~ %s", p_over_f_nee, p_over_f_uni, emitter_val);
 
         return { p_over_f_nee, p_over_f_uni, emitter_val, ds};
     }
