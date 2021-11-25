@@ -15,11 +15,6 @@
 #include "sunsky/skymodel.h"
 #include <cmath>
 
-#include <mitsuba/core/timer.h>
-#include <mitsuba/core/qmc.h>
-#include <mitsuba/core/vector.h>
-#include <mitsuba/render/texture.h>
-#include <mitsuba/core/distr_1d.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -63,9 +58,8 @@ public:
 
         ScalarFloat sun_elevation = 0.5f * enoki::Pi<Float> - m_sun.elevation;
 
-        if (sun_elevation < 0){
+        if (sun_elevation < 0)
             Log(Error, "The sun is below the horizon -- this is not supported by the sky model.");
-        }
 
         if constexpr (is_spectral_v<Spectrum>){
             for (size_t i = 0; i < m_channels; ++i){
@@ -95,8 +89,7 @@ public:
             ScalarVector2i(m_resolution, m_resolution / 2));
         }else{
             const std::vector<std::string> channel_names = {"320", "360", 
-            "400", "440", "480", "520", "560", "600", "640", 
-            "680", "720"};
+            "400", "440", "480", "520", "560", "600", "640", "680", "720"};
             bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
         }
@@ -113,7 +106,6 @@ public:
                     ScalarFloat phi = (x + .5f) * factor.x();
                     SkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi));
                     *target++ = sky_rad;
-
                 }
             }
         } else{
@@ -139,9 +131,9 @@ public:
         Properties props("envmap");
 
         props.set_pointer("bitmap", (uint8_t *) bitmap.get());
-        ref<Object> texture = PluginManager::instance()->create_object<Base>(props).get();
+        ref<Object> emitter = PluginManager::instance()->create_object<Base>(props).get();
 
-        return {texture};
+        return {emitter};
     }
 
     SkyPixelFormat get_sky_radiance(const SphericalCoordinates coords) const {
@@ -164,10 +156,10 @@ public:
         SkyPixelFormat result;
 
         for (size_t i = 0; i < SkyPixelFormat::Size; i++) {
-            if constexpr (!is_spectral_v<Spectrum>){
+            if constexpr (!is_spectral_v<Spectrum>)
                 result[i] = (ScalarFloat) (arhosek_tristim_skymodel_radiance(
                 m_state[i], (double)theta, (double)gamma, i) * MTS_CIE_Y_NORMALIZATION); // (sum of Spectrum::CIE_Y)
-            }else{
+            else{
                 int wave_l = 320 + i * 40;
                 result[i] = (ScalarFloat) (arhosekskymodel_radiance(
                 m_state[i], (double)theta, (double)gamma, (double)wave_l) * MTS_CIE_Y_NORMALIZATION ); 

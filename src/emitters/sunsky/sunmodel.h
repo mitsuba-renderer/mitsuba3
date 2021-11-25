@@ -12,9 +12,6 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined(__SUN_H)
-#define __SUN_H
-
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/stream.h>
@@ -64,7 +61,6 @@ struct LocationRecord {
 };
 
 struct SphericalCoordinates {
-    // using ScalarFloat = ek::scalar_t<Float>;
 
     float elevation;
     float azimuth;
@@ -241,14 +237,11 @@ SphericalCoordinates compute_sun_coordinates(const Properties &props) {
     }
 }
 
-/* The following is from the implementation of "A Practical Analytic Model for
-   Daylight" by A.J. Preetham, Peter Shirley, and Brian Smits */
-
 /* All data lifted from MI. Units are either [] or cm^-1. refer when in doubt MI */
 
 // k_o Spectrum table from pg 127, MI.
 
-static float k_o_wavelengths[64] = {
+float k_o_wavelengths[64] = {
     300, 305, 310, 315, 320, 325, 330, 335, 340, 345,
     350, 355, 445, 450, 455, 460, 465, 470, 475, 480,
     485, 490, 495, 500, 505, 510, 515, 520, 525, 530,
@@ -316,67 +309,5 @@ float sol_amplitudes[38] = {
     19072.4, 18628.9, 18259.2
 };
 
-//TODO2: This need to be fixed
-template <typename Float, typename Spectrum>
-Spectrum compute_sun_radiance(Float theta, Float turbidity) {
-    IrregularContinuousDistribution<Float> k_oCurve(k_o_wavelengths, k_o_amplitudes, 64);
-    IrregularContinuousDistribution<Float> k_gCurve(k_g_wavelengths, k_g_amplitudes, 4);
-    IrregularContinuousDistribution<Float> k_waCurve(k_wa_wavelengths, k_wa_amplitudes, 13);
-    IrregularContinuousDistribution<Float> solCurve(sol_wavelengths, sol_amplitudes, 38);
-    Float data[91], wavelengths[91];  // (800 - 350) / 5  + 1
-
-    Float beta = 0.04608365822050f * turbidity - 0.04586025928522f;
-
-    // Relative Optical Mass
-    Float m = 1.0f / (std::cos(theta) + 0.15f *
-        std::pow(93.885f - theta/M_PI*180.0f, (Float) -1.253f));
-
-    Float lambda;
-    int i = 0;
-    for (i = 0, lambda = 350; i < 91; i++, lambda += 5) {
-        // Rayleigh Scattering
-        // Results agree with the graph (pg 115, MI) */
-        Float tauR = ek::exp(-m * 0.008735f * std::pow(lambda/1000.0f, (Float) -4.08));
-
-        // Aerosol (water + dust) attenuation
-        // beta - amount of aerosols present
-        // alpha - ratio of small to large particle sizes. (0:4,usually 1.3)
-        // Results agree with the graph (pg 121, MI)
-        const Float alpha = 1.3f;
-        Float tauA = ek::exp(-m * beta * std::pow(lambda/1000.0f, -alpha));  // lambda should be in um
-
-        // Attenuation due to ozone absorption
-        // lOzone - amount of ozone in cm(NTP)
-        // Results agree with the graph (pg 128, MI)
-        const Float lOzone = .35f;
-        Float tauO = ek::exp(-m * k_oCurve.eval(lambda) * lOzone);
-
-        // Attenuation due to mixed gases absorption
-        // Results agree with the graph (pg 131, MI)
-        Float tauG = ek::exp(-1.41f * k_gCurve.eval(lambda) * m / std::pow(1 + 118.93f
-            * k_gCurve.eval(lambda) * m, (Float) 0.45f));
-
-        // Attenuation due to water vapor absorbtion
-        // w - precipitable water vapor in centimeters (standard = 2)
-        // Results agree with the graph (pg 132, MI)
-        const Float w = 2.0;
-        Float tauWA = exp(-0.2385f * k_waCurve.eval(lambda) * w * m /
-                std::pow(1 + 20.07f * k_waCurve.eval(lambda) * w * m, (Float) 0.45f));
-
-        data[i] = solCurve.eval(lambda) * tauR * tauA * tauO * tauG * tauWA;
-        wavelengths[i] = lambda;
-    }
-
-    IrregularContinuousDistribution interpolated(wavelengths, data, 91);
-    Spectrum discretized;
-    discretized.fromContinuousSpectrum(interpolated);
-
-    discretized = max(discretized, 0.f);
-
-    return discretized;
-}
-
 
 NAMESPACE_END(mitsuba)
-
-#endif /* __SUN_H */
