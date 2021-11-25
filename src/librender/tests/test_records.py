@@ -103,7 +103,7 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
 ]"""
 
     # Construct from two interactions: ds.d should start from the reference its.
-    shape = mitsuba.core.xml.load_dict({
+    shape = mitsuba.core.load_dict({
         'type': 'sphere',
         'emitter': { 'type' : 'area' }
     })

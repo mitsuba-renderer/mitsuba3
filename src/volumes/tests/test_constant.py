@@ -5,8 +5,7 @@ import enoki as ek
 
 
 def test01_constant_construct(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import BoundingBox3f
+    from mitsuba.core import load_string, BoundingBox3f
 
     vol = load_string("""
         <volume type="constvolume" version="2.0.0">
@@ -22,8 +21,7 @@ def test01_constant_construct(variant_scalar_rgb):
 
 
 def test02_constant_eval(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import BoundingBox3f, Color3f
+    from mitsuba.core import load_string, BoundingBox3f, Color3f
     from mitsuba.render import Interaction3f
 
     vol = load_string("""

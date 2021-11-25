@@ -6,7 +6,7 @@ import numpy as np
 
 
 def make_film(width = 156, height = 232):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     f = load_string("""<film type="hdrfilm" version="2.0.0">
             <integer name="width" value="{}"/>

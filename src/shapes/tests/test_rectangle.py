@@ -5,22 +5,22 @@ from enoki.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict
 
-    s = xml.load_dict({"type" : "rectangle"})
+    s = load_dict({"type" : "rectangle"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 4.0)
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import xml, Vector3f, Transform4f
+    from mitsuba.core import load_dict, Vector3f, Transform4f
 
     sy = 2.5
     for sx in [1, 2, 4]:
         for translate in [Vector3f([1.3, -3.0, 5]),
                           Vector3f([-10000, 3.0, 31])]:
-            s = xml.load_dict({
+            s = load_dict({
                 "type" : "rectangle",
                 "to_world" : Transform4f.translate(translate) * Transform4f.scale((sx, sy, 1.0))
             })
@@ -35,10 +35,10 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Ray3f, Transform4f
 
     # Scalar
-    scene = xml.load_dict({
+    scene = load_dict({
         "type" : "scene",
         "foo" : {
             "type" : "rectangle",
@@ -68,10 +68,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import xml, ScalarTransform4f
-        from mitsuba.core import Ray3f
+        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
 
-        scene = xml.load_dict({
+        scene = load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "rectangle",
@@ -90,10 +89,10 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_surface_area(variant_scalar_rgb):
-    from mitsuba.core import xml, Transform4f
+    from mitsuba.core import load_dict, Transform4f
 
     # Unifomly-scaled rectangle
-    rect = xml.load_dict({
+    rect = load_dict({
         "type" : "rectangle",
         "to_world" : Transform4f([[2, 0, 0, 0],
                                   [0, 2, 0, 0],
@@ -103,7 +102,7 @@ def test05_surface_area(variant_scalar_rgb):
     assert ek.allclose(rect.surface_area(), 2.0 * 2.0 * 2.0 * 2.0)
 
     # Rectangle sheared along the Z-axis
-    rect = xml.load_dict({
+    rect = load_dict({
         "type" : "rectangle",
         "to_world" : Transform4f([[1, 0, 0, 0],
                                   [0, 1, 0, 0],
@@ -113,7 +112,7 @@ def test05_surface_area(variant_scalar_rgb):
     assert ek.allclose(rect.surface_area(), 2.0 * 2.0 * ek.sqrt(2.0))
 
     # Rectangle sheared along the X-axis (shouldn't affect surface_area)
-    rect = xml.load_dict({
+    rect = load_dict({
         "type" : "rectangle",
         "to_world" : Transform4f([[1, 1, 0, 0],
                                   [0, 1, 0, 0],
@@ -124,9 +123,9 @@ def test05_surface_area(variant_scalar_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'rectangle'})
+    shape = load_dict({'type' : 'rectangle'})
 
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
@@ -166,9 +165,9 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'rectangle'})
+    shape = load_dict({'type' : 'rectangle'})
 
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)

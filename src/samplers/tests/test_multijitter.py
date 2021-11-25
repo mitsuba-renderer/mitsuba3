@@ -7,9 +7,7 @@ from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampl
                      check_deep_copy_sampler_scalar, check_deep_copy_sampler_wavefront )
 
 def test01_multijitter_scalar(variant_scalar_rgb):
-    from mitsuba.core import xml
-
-    sampler = xml.load_dict({
+    sampler = mitsuba.core.load_dict({
         "type" : "multijitter",
         "sample_count" : 1024,
     })
@@ -18,9 +16,7 @@ def test01_multijitter_scalar(variant_scalar_rgb):
 
 
 def test02_multijitter_wavefront(variants_vec_backends_once):
-    from mitsuba.core import xml
-
-    sampler = xml.load_dict({
+    sampler = mitsuba.core.load_dict({
         "type" : "multijitter",
         "sample_count" : 1024,
     })
@@ -29,9 +25,7 @@ def test02_multijitter_wavefront(variants_vec_backends_once):
 
 
 def test03_copy_sampler_scalar(variants_any_scalar):
-    from mitsuba.core import xml
-
-    sampler = xml.load_dict({
+    sampler = mitsuba.core.load_dict({
         "type" : "multijitter",
         "sample_count" : 1024,
     })
@@ -39,9 +33,7 @@ def test03_copy_sampler_scalar(variants_any_scalar):
     check_deep_copy_sampler_scalar(sampler)
 
 def test04_copy_sampler_wavefront(variants_vec_backends_once):
-    from mitsuba.core import xml
-
-    sampler = xml.load_dict({
+    sampler = mitsuba.core.load_dict({
         "type" : "multijitter",
         "sample_count" : 1024,
     })

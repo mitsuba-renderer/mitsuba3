@@ -5,9 +5,9 @@ from enoki.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml, ScalarTransform4f as T
+    from mitsuba.core import load_dict, ScalarTransform4f as T
 
-    s = xml.load_dict({"type" : "cylinder"})
+    s = load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 2*ek.Pi)
@@ -15,7 +15,7 @@ def test01_create(variant_scalar_rgb):
     # Test transforms order in constructor
     rot = T.rotate([1.0, 0.0, 0.0], 35)
 
-    s1 = xml.load_dict({
+    s1 = load_dict({
         "type" : "cylinder",
         "radius" : 0.5,
         "p0" : [1, -1, -1],
@@ -23,7 +23,7 @@ def test01_create(variant_scalar_rgb):
         "to_world" : rot
     })
 
-    s2 = xml.load_dict({
+    s2 = load_dict({
         "type" : "cylinder",
         "to_world" : rot * T.translate([1, -1, -1]) * T.rotate([1.0, 0.0, 0.0], -45) * T.scale([0.5, 0.5, ek.sqrt(8)])
     })
@@ -32,11 +32,11 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import xml, Vector3f, Transform4f
+    from mitsuba.core import load_dict, Vector3f, Transform4f
 
     for l in [1, 5]:
         for r in [1, 2, 4]:
-            s = xml.load_dict({
+            s = load_dict({
                 "type" : "cylinder",
                 "to_world" : Transform4f.scale((r, r, l))
             })
@@ -49,12 +49,12 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Ray3f, Transform4f
     from mitsuba.render import RayFlags
 
     for r in [1, 2, 4]:
         for l in [1, 5]:
-            s = xml.load_dict({
+            s = load_dict({
                 "type" : "scene",
                 "foo" : {
                     "type" : "cylinder",
@@ -102,10 +102,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import xml, ScalarTransform4f
-        from mitsuba.core import Ray3f
+        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
 
-        scene = xml.load_dict({
+        scene = load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "cylinder",
@@ -124,9 +123,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'cylinder'})
+    shape = load_dict({'type' : 'cylinder'})
 
     ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
@@ -172,9 +171,9 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_backward(variant_cuda_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'cylinder'})
+    shape = load_dict({'type' : 'cylinder'})
 
     ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)

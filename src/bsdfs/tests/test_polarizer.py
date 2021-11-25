@@ -3,8 +3,7 @@ import pytest
 import enoki as ek
 
 def test01_create(variant_scalar_mono_polarized):
-    from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.render import load_string, BSDFFlags
 
     b = load_string("<bsdf version='2.0.0' type='polarizer'></bsdf>")
     assert b is not None
@@ -14,8 +13,7 @@ def test01_create(variant_scalar_mono_polarized):
 
 
 def test02_sample_local(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Transform4f, Spectrum, Vector3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f, Transform4f, Spectrum, Vector3f
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
     def spectrum_from_stokes(v):
@@ -89,8 +87,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
 
 
 def test03_sample_world(variant_scalar_mono_polarized):
-    from mitsuba.core import Ray3f, Spectrum, Color0f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Ray3f, Spectrum, Color0f
     from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
@@ -157,9 +154,7 @@ def test03_sample_world(variant_scalar_mono_polarized):
 
 
 def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
-    from mitsuba.core import Spectrum
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode
+    from mitsuba.core import load_string, Spectrum
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
@@ -257,10 +252,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
 
 
 def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
-    from mitsuba.core import Spectrum
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode
-    from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
+    from mitsuba.core import load_string, Spectrum
 
     def spectrum_from_stokes(v):
         res = Spectrum(0.0)

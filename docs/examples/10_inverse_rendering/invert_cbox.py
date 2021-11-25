@@ -7,7 +7,7 @@ import mitsuba
 mitsuba.set_variant('cuda_autodiff_rgb')
 
 from mitsuba.core import Thread, Color3f
-from mitsuba.core.xml import load_file
+from mitsuba.core import load_file
 from mitsuba.python.util import traverse
 from mitsuba.python.autodiff import render, write_bitmap, Adam
 import time

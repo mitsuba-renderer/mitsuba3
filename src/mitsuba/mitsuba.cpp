@@ -70,7 +70,7 @@ Options:
     -p, --parallel-loading
         Force the loading of the scene to run on multiple threads. By default,
         this is turned off for the cuda/llvm variants of the renderer to ensure
-        kernel consistency accross different executions.
+        kernel consistency across different executions.
 
     -O0
         Disable loop and virtual function call optimizations
@@ -88,6 +88,16 @@ Options:
 
 std::function<void(void)> develop_callback;
 std::mutex develop_callback_mutex;
+
+template <typename Float, typename Spectrum>
+void scene_static_accel_initialization() {
+    Scene<Float, Spectrum>::static_accel_initialization();
+}
+
+template <typename Float, typename Spectrum>
+void scene_static_accel_shutdown() {
+    Scene<Float, Spectrum>::static_accel_shutdown();
+}
 
 template <typename Float, typename Spectrum>
 void render(Object *scene_, size_t sensor_i, fs::path filename,
@@ -282,6 +292,8 @@ int main(int argc, char *argv[]) {
             Profiler::static_initialization();
         color_management_static_initialization(cuda, llvm);
 
+        MTS_INVOKE_VARIANT(mode, scene_static_accel_initialization);
+
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
         bool parallel_loading = !(llvm || cuda) || (*arg_parallel);
@@ -369,6 +381,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
+    MTS_INVOKE_VARIANT(mode, scene_static_accel_shutdown);
     color_management_static_shutdown();
     if (profile) {
         Profiler::static_shutdown();

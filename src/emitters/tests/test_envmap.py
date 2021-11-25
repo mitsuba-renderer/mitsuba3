@@ -41,9 +41,8 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 
 # Ensure that sampling weights remain bounded
 def test02_sampling_weights(variants_vec_backends_once_rgb):
-    from mitsuba.core import PCG32, Point2f, Bitmap
+    from mitsuba.core import load_string, PCG32, Point2f, Bitmap
     from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     rng = PCG32(size=102400)
     sample = Point2f(

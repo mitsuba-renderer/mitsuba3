@@ -6,7 +6,7 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def make_sphere_mesh_scene():
-    return mitsuba.core.xml.load_dict({
+    return mitsuba.core.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -16,7 +16,7 @@ def make_sphere_mesh_scene():
 
 @fresolver_append_path
 def make_rectangle_mesh_scene():
-    return mitsuba.core.xml.load_dict({
+    return mitsuba.core.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -32,7 +32,7 @@ def make_rectangle_mesh_scene():
     ('rectangle', [0.99, -0.99, -5], [0, 0, 1]) # Target one corner of the rectangle
 ])
 def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
-    from mitsuba.core import xml, Float, Point3f, Vector3f, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Float, Point3f, Vector3f, Ray3f, Transform4f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
@@ -49,7 +49,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     else:
         scene = make_sphere_mesh_scene()
 
-    sampler = xml.load_dict({ 'type': 'independent'})
+    sampler = load_dict({ 'type': 'independent'})
     sampler.seed(0, 1)
 
     params = traverse(scene)
@@ -107,7 +107,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     ([1, 0, -1], [0, 0, 1], [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0]], 1e-2),
 ])
 def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, ray_o, ray_d, ref, atol):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f
+    from mitsuba.core import load_dict, Float, Ray3f, Vector3f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
@@ -122,7 +122,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
 
     scene = make_rectangle_mesh_scene()
 
-    sampler = xml.load_dict({ 'type': 'independent'})
+    sampler = load_dict({ 'type': 'independent'})
     sampler.seed(0, 1)
 
     params = traverse(scene)
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
     mitsuba.set_variant('llvm_ad_rgb')
 
-    from mitsuba.core import xml, Float,  Point3f, Vector3f, Transform4f, ScalarTransform4f, Bitmap, Struct, Color3f
+    from mitsuba.core import load_dict, Float,  Point3f, Vector3f, Transform4f, ScalarTransform4f, Bitmap, Struct, Color3f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
     from mitsuba.python.ad.integrators.integrator import sample_sensor_rays
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # scene = make_sphere_mesh_scene()
     scene = make_rectangle_mesh_scene()
 
-    camera = xml.load_dict({
+    camera = load_dict({
         "type" : "perspective",
         "near_clip": 0.1,
         "far_clip": 1000.0,

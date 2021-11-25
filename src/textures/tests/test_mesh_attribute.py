@@ -33,13 +33,13 @@ def create_rectangle():
 
 
 def test01_eval(variant_scalar_rgb):
-    from mitsuba.core import xml, luminance
+    from mitsuba.core import load_dict
 
     mesh = create_rectangle()
 
     # Check vertex color attribute
 
-    texture = xml.load_dict({
+    texture = load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_color",
     })
@@ -57,7 +57,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check vertex mono attribute
 
-    texture = xml.load_dict({
+    texture = load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_mono",
     })
@@ -70,7 +70,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check face color attribute
 
-    texture = xml.load_dict({
+    texture = load_dict({
         "type" : "mesh_attribute",
         "name" : "face_color",
     })
@@ -81,7 +81,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check face mono attribute
 
-    texture = xml.load_dict({
+    texture = load_dict({
         "type" : "mesh_attribute",
         "name" : "face_mono",
     })
@@ -92,13 +92,12 @@ def test01_eval(variant_scalar_rgb):
 
 
 def test02_eval_spectrum(variant_scalar_spectral):
-    from mitsuba.core import xml
-    from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
-    from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.core import load_dict, MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.render import srgb_model_fetch, srgb_model_eval
 
     mesh = create_rectangle()
 
-    texture = xml.load_dict({
+    texture = load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_color",
     })
@@ -112,7 +111,7 @@ def test02_eval_spectrum(variant_scalar_spectral):
 
 
 def test03_invalid_attribute(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     mesh = create_rectangle()
 

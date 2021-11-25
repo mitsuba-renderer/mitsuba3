@@ -3,7 +3,7 @@ import enoki as ek
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.render import PhaseFunctionFlags
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     phase = load_dict(
         {
@@ -34,9 +34,8 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_eval_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_dict, Frame3f
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core.xml import load_dict
 
     weight = 0.2
     g = 0.2
@@ -68,9 +67,8 @@ def test02_eval_all(variant_scalar_rgb):
 
 
 def test03_sample_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_dict, Frame3f
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core.xml import load_dict
 
     weight = 0.2
     g = 0.2
@@ -107,9 +105,8 @@ def test03_sample_all(variant_scalar_rgb):
 
 
 def test04_eval_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_dict, Frame3f
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core.xml import load_dict
 
     weight = 0.2
     g = 0.2
@@ -146,9 +143,8 @@ def test04_eval_components(variant_scalar_rgb):
 
 
 def test05_sample_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import load_dict, Frame3f
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core.xml import load_dict
 
     weight = 0.2
     g = 0.2

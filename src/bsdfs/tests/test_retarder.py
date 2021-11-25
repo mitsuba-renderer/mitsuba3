@@ -5,7 +5,7 @@ import enoki as ek
 
 def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     b = load_string("<bsdf version='2.0.0' type='retarder'></bsdf>")
     assert b is not None
@@ -15,8 +15,7 @@ def test01_create(variant_scalar_mono_polarized):
 
 
 def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Transform4f, Spectrum
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f, Spectrum
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
     def spectrum_from_stokes(v):
@@ -78,8 +77,7 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
 
 
 def test03_sample_half_wave_local(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Transform4f, Spectrum
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f, Spectrum
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
     def spectrum_from_stokes(v):
@@ -133,8 +131,7 @@ def test03_sample_half_wave_local(variant_scalar_mono_polarized):
 
 
 def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
-    from mitsuba.core import Ray3f, Spectrum, Color0f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Ray3f, Spectrum, Color0f
     from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
@@ -210,8 +207,7 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
 
 
 def test05_sample_half_wave_world(variant_scalar_mono_polarized):
-    from mitsuba.core import Ray3f, Spectrum, Color0f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Ray3f, Spectrum, Color0f
     from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
@@ -278,9 +274,7 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
 
 
 def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
-    from mitsuba.core import Spectrum
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode
+    from mitsuba.core import load_string, Spectrum
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
@@ -402,9 +396,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
 
 
 def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
-    from mitsuba.core import Spectrum
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode
+    from mitsuba.core import load_string, Spectrum
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):

@@ -20,7 +20,7 @@ xml_spectrum_keys = sorted(list(set(xml_spectrum.keys()) - {"null"}))
 
 
 def make_spectrum(spectrum_key="d65"):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     spectrum = load_string(xml_spectrum[spectrum_key])
     expanded = spectrum.expand()
@@ -32,7 +32,7 @@ def make_spectrum(spectrum_key="d65"):
 
 
 def make_emitter(direction=None, spectrum_key="d65"):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     if direction is None:
         xml_direction = ""

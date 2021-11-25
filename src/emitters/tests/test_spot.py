@@ -20,7 +20,7 @@ lookat_transforms = [
 ]
 
 def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     spectrum = load_dict(spectrum_strings[s_key])
     expanded = spectrum.expand()

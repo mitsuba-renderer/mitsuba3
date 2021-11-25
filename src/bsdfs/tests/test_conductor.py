@@ -4,7 +4,7 @@ import enoki as ek
 
 def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     b = load_string("<bsdf version='2.0.0' type='conductor'></bsdf>")
     assert b is not None
@@ -14,8 +14,7 @@ def test01_create(variant_scalar_mono_polarized):
 
 
 def test02_sample_pol_local(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Transform4f, Spectrum, UnpolarizedSpectrum, Vector3f, Normal3f, Point3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f, Spectrum, UnpolarizedSpectrum, Vector3f, Normal3f, Point3f
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f, fresnel_conductor
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis
 
@@ -113,8 +112,7 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
 
 
 def test02_sample_pol_world(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Spectrum, UnpolarizedSpectrum, Point3f, Normal3f, Vector3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f, Spectrum, UnpolarizedSpectrum, Point3f, Normal3f, Vector3f
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f, fresnel_conductor
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis
 

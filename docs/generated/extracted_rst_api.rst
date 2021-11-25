@@ -10066,7 +10066,7 @@
     Returns → :py:obj:`mitsuba.core.Point2f`:
         *no description available*
 
-.. py:function:: mitsuba.core.xml.load_dict(dict)
+.. py:function:: mitsuba.core.load_dict(dict)
 
     Load a Mitsuba scene or object from an Python dictionary
 
@@ -10076,7 +10076,7 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.core.xml.load_file(path, update_scene=False, parallel=True, **kwargs)
+.. py:function:: mitsuba.core.load_file(path, update_scene=False, parallel=True, **kwargs)
 
     Load a Mitsuba scene from an XML file
 
@@ -10101,7 +10101,7 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.core.xml.load_string(string, parallel=True, **kwargs)
+.. py:function:: mitsuba.core.load_string(string, parallel=True, **kwargs)
 
     Load a Mitsuba scene from an XML string
 

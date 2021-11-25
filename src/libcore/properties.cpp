@@ -114,7 +114,7 @@ T get_routing(const Iterator &it) {
                     " size_t (unsigned).", it->first, v);
             }
         }
-        return v;
+        return (T) v;
     }
 
     if constexpr (std::is_same_v<T, std::string>)

@@ -6,9 +6,9 @@ from mitsuba.python.test.util import fresolver_append_path
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml, ScalarTransform4f
+    from mitsuba.core import load_dict, ScalarTransform4f
 
-    s = xml.load_dict({"type" : "sphere"})
+    s = load_dict({"type" : "sphere"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 4 * ek.Pi)
@@ -17,14 +17,14 @@ def test01_create(variant_scalar_rgb):
 
     rot = ScalarTransform4f.rotate([1.0, 0.0, 0.0], 35)
 
-    s1 = xml.load_dict({
+    s1 = load_dict({
         "type" : "sphere",
         "radius" : 2.0,
         "center" : [1, 0, 0],
         "to_world" : rot
     })
 
-    s2 = xml.load_dict({
+    s2 = load_dict({
         "type" : "sphere",
         "to_world" : rot * ScalarTransform4f.translate([1, 0, 0]) * ScalarTransform4f.scale(2)
     })
@@ -33,10 +33,10 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict
 
     for r in [1, 2, 4]:
-        s = xml.load_dict({
+        s = load_dict({
             "type" : "sphere",
             "radius" : r
         })
@@ -50,10 +50,10 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect_transform(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Ray3f, Transform4f
 
     for r in [1, 3]:
-        s = xml.load_dict({
+        s = load_dict({
             "type" : "sphere",
             "radius" : r,
             "to_world": Transform4f.translate([0, 1, 0]) * Transform4f.rotate([0, 1, 0], 30.0)
@@ -96,10 +96,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import xml, ScalarTransform4f
-        from mitsuba.core import Ray3f
+        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
 
-        scene = xml.load_dict({
+        scene = load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "sphere",
@@ -118,10 +117,10 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_sample_direct(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f
+    from mitsuba.core import load_dict, Ray3f
     from mitsuba.render import Interaction3f
 
-    sphere = xml.load_dict({"type" : "sphere"})
+    sphere = load_dict({"type" : "sphere"})
 
     def sample_cone(sample, cos_theta_max):
         cos_theta = (1 - sample[1]) + sample[1] * cos_theta_max
@@ -147,9 +146,9 @@ def test05_sample_direct(variant_scalar_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32, Float
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'sphere'})
+    shape = load_dict({'type' : 'sphere'})
 
     ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
@@ -211,9 +210,9 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_dict, Ray3f, Vector3f
 
-    shape = xml.load_dict({'type' : 'sphere'})
+    shape = load_dict({'type' : 'sphere'})
 
     ray = Ray3f(Vector3f(0.0, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
@@ -233,9 +232,9 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
 
 def test08_si_singularity(variants_all_rgb):
-    from mitsuba.core import xml, Ray3f
+    from mitsuba.core import load_dict, Ray3f
 
-    scene = xml.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
+    scene = load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
     ray = Ray3f([0, 0, -1], [0, 0, 1])
 
     si = scene.ray_intersect(ray)

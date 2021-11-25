@@ -504,6 +504,16 @@ void Thread::register_task(Task *task) {
     registered_tasks.push_back(task);
 }
 
+void Thread::wait_for_tasks() {
+    std::vector<Task *> tasks;
+    {
+        std::lock_guard guard(task_mutex);
+        tasks.swap(registered_tasks);
+    }
+    for (Task *task : tasks)
+        task_wait_and_release(task);
+}
+
 void Thread::static_initialization() {
     #if defined(__linux__) || defined(__APPLE__)
         pthread_key_create(&this_thread_id, nullptr);

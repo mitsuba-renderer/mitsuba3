@@ -141,7 +141,7 @@ def z_test(mean, sample_count, reference, reference_var):
 @pytest.mark.parametrize("variant, scene_fname, jit_flags_key", list_all_render_test_configs())
 def test_render(variant, scene_fname, jit_flags_key):
     mitsuba.set_variant(variant)
-    from mitsuba.core import Bitmap
+    from mitsuba.core import load_file, Bitmap
 
     if 'cuda' in variant or 'llvm' in variant:
         ek.malloc_trim()
@@ -168,7 +168,7 @@ def test_render(variant, scene_fname, jit_flags_key):
     spp = sample_budget // pixel_count
 
     # Load and render
-    scene = mitsuba.core.xml.load_file(scene_fname, spp=spp)
+    scene = load_file(scene_fname, spp=spp)
     scene.integrator().render(scene, seed=0, develop_film=False)
 
     # Compute variance image
@@ -260,7 +260,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
             if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
 
-            scene = mitsuba.core.xml.load_file(scene_fname, spp=spp)
+            scene = load_file(scene_fname, spp=spp)
             scene.integrator().render(scene, seed=0, develop_film=False)
 
             bmp = scene.sensors()[0].film().bitmap(raw=False)

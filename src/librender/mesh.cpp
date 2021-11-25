@@ -498,13 +498,13 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
                                                        Mask active) const {
     auto fi = face_indices(si.prim_index, active);
 
-    Point3f p0 = vertex_position(fi[0], active),
-            p1 = vertex_position(fi[1], active),
-            p2 = vertex_position(fi[2], active);
+    Point3f vp0 = vertex_position(fi[0], active),
+            vp1 = vertex_position(fi[1], active),
+            vp2 = vertex_position(fi[2], active);
 
-    Vector3f rel = si.p - p0,
-             du  = p1 - p0,
-             dv  = p2 - p0;
+    Vector3f rel = si.p - vp0,
+             du  = vp1 - vp0,
+             dv  = vp2 - vp0;
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
@@ -572,10 +572,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     auto fi = face_indices(pi.prim_index, active);
 
-    if (has_flag(hit_flags, RayFlags::DetachShape) &&
-        has_flag(hit_flags, RayFlags::FollowShape))
-        Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
-
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
             p2 = vertex_position(fi[2], active);
@@ -583,6 +579,10 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Float t = pi.t;
     Point2f prim_uv = pi.prim_uv;
     if constexpr (ek::is_diff_array_v<Float>) {
+        if (has_flag(hit_flags, RayFlags::DetachShape) &&
+            has_flag(hit_flags, RayFlags::FollowShape))
+            Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
+
         if (has_flag(hit_flags, RayFlags::DetachShape)) {
             p0 = ek::detach<true>(p0);
             p1 = ek::detach<true>(p1);
@@ -594,11 +594,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         t = ek::replace_grad(t, t_d);
     }
 
-    Float b1, b2;
-    if (!has_flag(hit_flags, RayFlags::FollowShape)) {
-        b1 = prim_uv.x();
-        b2 = prim_uv.y();
-    } else {
+    Float b1 = prim_uv.x(), b2 = prim_uv.y();
+    if (ek::is_diff_array_v<Float> &&
+        has_flag(hit_flags, RayFlags::FollowShape)) {
         b1 = ek::detach(prim_uv.x());
         b2 = ek::detach(prim_uv.y());
     }
@@ -612,12 +610,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Re-interpolate intersection using barycentric coordinates
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
-    // Re-compute the distance traveled to the surface interaction hit point (might be sticky)
-    if (!has_flag(hit_flags, RayFlags::FollowShape))
+    // Potentially recompute the distance traveled to the surface interaction hit point
+    if (!ek::is_diff_array_v<Float> ||
+        !has_flag(hit_flags, RayFlags::FollowShape))
         si.t = ek::select(active, t, ek::Infinity<Float>);
     else
-        si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d),
-                          ek::Infinity<Float>);
+        si.t = ek::select(
+            active,
+            ek::sqrt(ek::squared_norm(si.p - ray.o) / ek::squared_norm(ray.d)),
+            ek::Infinity<Float>);
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
@@ -632,7 +633,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
-        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+        if (ek::is_diff_array_v<Float> &&
+            has_flag(hit_flags, RayFlags::DetachShape)) {
             uv0 = ek::detach<true>(uv0);
             uv1 = ek::detach<true>(uv1);
             uv2 = ek::detach<true>(uv2);
@@ -662,7 +664,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+        if (ek::is_diff_array_v<Float> &&
+            has_flag(hit_flags, RayFlags::DetachShape)) {
             n0 = ek::detach<true>(n0);
             n1 = ek::detach<true>(n1);
             n2 = ek::detach<true>(n2);

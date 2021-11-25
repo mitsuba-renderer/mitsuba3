@@ -149,7 +149,6 @@ api_doc_structure = {
         'Object': ['mitsuba.core.Object'],
         'Properties': ['mitsuba.core.Properties'],
         'Bitmap': ['mitsuba.core.Bitmap'],
-        'XML': [r'mitsuba.core.xml.([\w]+)'],
         'Warp': [r'mitsuba.core.warp.([\w]+)'],
         'Distributions': [r'mitsuba.core.([\w]+)Distribution',
                           r'mitsuba.core.Hierarchical2D\d',

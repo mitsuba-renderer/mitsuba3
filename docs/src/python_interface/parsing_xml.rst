@@ -3,9 +3,9 @@ Parsing XML code
 
 Mitsuba provides three functions for creating scenes and objects in Python:
 
-- :py:func:`mitsuba.core.xml.load_file`: load files on disk
-- :py:func:`mitsuba.core.xml.load_string`: load arbitrary strings
-- :py:func:`mitsuba.core.xml.load_dict`: load from Python dictionary (`dict`)
+- :py:func:`mitsuba.core.load_file`: load files on disk
+- :py:func:`mitsuba.core.load_string`: load arbitrary strings
+- :py:func:`mitsuba.core.load_dict`: load from Python dictionary (`dict`)
 
 Please refer to this :ref:`chapter <sec-file-format>` for more information regarding the Mitsuba's
 XML scene description language.
@@ -21,8 +21,7 @@ file:
     import os
     import mitsuba
     mitsuba.set_variant('scalar_rgb')
-    from mitsuba.core import Thread
-    from mitsuba.core.xml import load_file
+    from mitsuba.core import Thread, load_file
 
     # Absolute or relative path to the XML file
     filename = 'path/to/my/scene.xml'
@@ -69,7 +68,7 @@ the XML parser, as shown in the following Python snippet:
 
 .. code-block:: python
 
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     diffuse_bsdf = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
 
@@ -81,7 +80,7 @@ Creating objects using Python dictionaries
 ------------------------------------------
 
 A more convinient way of constructing Mitsuba objects in Python is to use
-:py:func:`mitsuba.core.xml.load_dict` which takes as argument a Python dictionary. This dictionary
+:py:func:`mitsuba.core.load_dict` which takes as argument a Python dictionary. This dictionary
 should follow a structure similar to the XML structure used for the Mitsuba scene description.
 
 The dictionary should always contain an entry ``"type"`` to specify the name of the plugin to
@@ -122,7 +121,7 @@ Here is a more concrete example on how to use the function:
 
 .. code-block:: python
 
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     sphere = load_dict({
         "type" : "sphere",
@@ -184,7 +183,7 @@ Here as some examples of the possible use of the ``"value"`` entry in the nested
         "value": [(400.0, 0.5), (500.0, 0.8), (600.0, 0.2)]
     }
 
-The following example constructs a Mitsuba scene using :py:func:`mitsuba.core.xml.load_dict`:
+The following example constructs a Mitsuba scene using :py:func:`mitsuba.core.load_dict`:
 
 .. code-block:: python
 

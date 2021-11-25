@@ -42,13 +42,13 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """
     Tests that forward rendering launches the correct number of kernels
     """
-    from mitsuba.core import xml
+    from mitsuba.core import load_file, load_dict
 
-    scene = xml.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': integrator_name,
         'max_depth': 3
     })
@@ -104,13 +104,13 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     Tests that forward rendering launches the correct number of kernels
     for the particle tracer integrator
     """
-    from mitsuba.core import xml
+    from mitsuba.core import load_file, load_dict
 
-    scene = xml.load_file(find_resource(scene_fname))
+    scene = load_file(find_resource(scene_fname))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': 'ptracer',
         'max_depth': 5
     })
@@ -168,17 +168,17 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     Check the history of kernel launches during a simple optimization loop
     using render_adjoint.
     """
-    from mitsuba.core import xml, Color3f
+    from mitsuba.core import load_file, load_dict, Color3f
     from mitsuba.python.util import traverse
 
-    scene = xml.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 4
 
     film_wavefront_size = ek.hprod(film_size) * 3 #(RGB)
     wavefront_size = ek.hprod(film_size) * spp
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': 'rb',
         'max_depth': 3
     })

@@ -94,11 +94,15 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                         seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                         spp: int = 0) -> None:
+        from mitsuba.core import Spectrum
+        from mitsuba.render import ImageBlock
+
         if not self.is_prepared:
             self.prepare(scene)
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
+        film = sensor.film()
         rfilter = sensor.film().reconstruction_filter()
         sampler = sensor.sampler()
 
@@ -110,14 +114,16 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
-        block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
-        grad_values = block.read(pos) * weight / spp
+        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block.set_offset(film.crop_offset())
+        grad_values = Spectrum(block.read(pos)) * weight / spp
 
         # Replay light paths and accumulate gradients
         self.Li(scene, sampler, ray, 0, params, grad_values, sensor.medium(), True, result)
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(scene, sampler, ray, medium=medium), []
+        res, valid = self.Li(scene, sampler, ray, medium=medium, active_=active)
+        return res, valid, []
 
     def Li(self, scene, sampler, ray, depth=0, params=mitsuba.python.util.SceneParameters(),
            grad=None, medium=None, active_=True, result=None):

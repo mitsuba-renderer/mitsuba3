@@ -4,9 +4,9 @@ import enoki as ek
 
 
 def make_simple_scene(res=1, integrator="path"):
-    from mitsuba.core import xml, ScalarTransform4f
+    from mitsuba.core import load_dict, ScalarTransform4f
 
-    return xml.load_dict({
+    return load_dict({
         'type' : 'scene',
         "integrator" : { "type" : integrator },
         "mysensor" : {
@@ -207,11 +207,11 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    from mitsuba.core import xml, Float, UInt32, Color3f, Mask, Frame3f
+    from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
     from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
     from mitsuba.python.util import traverse
 
-    bsdf = xml.load_dict({
+    bsdf = load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',
@@ -285,11 +285,11 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    from mitsuba.core import xml, Float, UInt32, Color3f, Mask, Frame3f
+    from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
     from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
     from mitsuba.python.util import traverse
 
-    bsdf1 = xml.load_dict({
+    bsdf1 = load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',
@@ -297,7 +297,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         }
     })
 
-    bsdf2 = xml.load_dict({
+    bsdf2 = load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',

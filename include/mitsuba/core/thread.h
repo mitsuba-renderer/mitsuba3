@@ -156,6 +156,9 @@ public:
     /// Register enoki-thread Task to prevent internal resources leakage
     static void register_task(Task *task);
 
+    /// Wait for previously registered enoki-thread tasks to complete
+    static void wait_for_tasks();
+
     MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor

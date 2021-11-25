@@ -352,6 +352,23 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
+    if constexpr (ek::is_cuda_array_v<Float>)
+        Scene::static_accel_initialization_gpu();
+    else
+        Scene::static_accel_initialization_cpu();
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
+    if constexpr (ek::is_cuda_array_v<Float>)
+        Scene::static_accel_shutdown_gpu();
+    else
+        Scene::static_accel_shutdown_cpu();
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_cpu() { }
+
 void librender_nop() { }
 
 #if !defined(MTS_ENABLE_CUDA)
@@ -376,6 +393,8 @@ MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, uint32_t, Mask) const {
     NotImplementedError("ray_test_gpu");
 }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
 MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")

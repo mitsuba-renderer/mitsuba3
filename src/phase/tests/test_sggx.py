@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 def test01_create(variant_scalar_rgb, tmpdir):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.render import VolumeGrid, PhaseFunctionFlags
 
     tmp_file = os.path.join(str(tmpdir), "sggx.vol")

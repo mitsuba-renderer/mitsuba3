@@ -75,7 +75,7 @@ class ConfigBase:
         Initialize the configuration, loading the Mitsuba scene and storing a
         copy of the scene parameters to compute gradients for.
         """
-        from mitsuba.core import xml
+        from mitsuba.core import load_dict
         from mitsuba.python.util import traverse
 
         self.sensor_dict['film']['width'] = self.res
@@ -84,7 +84,7 @@ class ConfigBase:
 
         @fresolver_append_path
         def create_scene():
-            return xml.load_dict(self.scene_dict)
+            return load_dict(self.scene_dict)
         self.scene = create_scene()
         self.params = traverse(self.scene)
 
@@ -517,13 +517,13 @@ for integrator_name, reparam in INTEGRATORS:
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml, TensorXf, Bitmap
+    from mitsuba.core import load_dict, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
     config = config()
     config.initialize()
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
     })
@@ -548,7 +548,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml, Float, TensorXf, Bitmap
+    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
     # ek.set_flag(ek.JitFlag.PrintIR, True)
@@ -558,7 +558,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
     })
@@ -600,7 +600,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml, Float, TensorXf, Bitmap
+    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
 
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
     # ek.set_flag(ek.JitFlag.VCallRecord, False)
@@ -608,7 +608,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    integrator = xml.load_dict({
+    integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
     })
@@ -644,14 +644,14 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
 @pytest.mark.slow
 def test04_render_custom_op(variants_all_ad_rgb):
-    from mitsuba.core import xml, Float, TensorXf, Bitmap
+    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
     from mitsuba.python.ad import render
 
     config = DiffuseAlbedoConfig()
     config.initialize()
 
-    integrator = xml.load_dict({ 'type': 'rb' })
+    integrator = load_dict({ 'type': 'rb' })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = TensorXf(Bitmap(filename))
@@ -737,7 +737,7 @@ if __name__ == "__main__":
     if not exists(output_dir):
         os.makedirs(output_dir)
 
-    from mitsuba.core import xml, Float
+    from mitsuba.core import load_dict, Float
     from mitsuba.python.util import write_bitmap
 
     for config in BASIC_CONFIGS_LIST + REPARAM_CONFIGS_LIST:
@@ -746,7 +746,7 @@ if __name__ == "__main__":
 
         config.initialize()
 
-        integrator = xml.load_dict({
+        integrator = load_dict({
             'type': 'path',
             'max_depth': config.max_depth
         })

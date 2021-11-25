@@ -32,8 +32,7 @@ def test_construct(variant_scalar_rgb):
     - associated shape
     - film
     """
-    from mitsuba.core import ScalarVector3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarVector3f
 
     center_v = ScalarVector3f(0.0)
     radius = 1.0
@@ -52,8 +51,7 @@ def test_sampling(variant_scalar_rgb, center, radius, np_rng):
     """We construct an irradiance meter attached to a sphere and assert that
     sampled rays originate at the sphere's surface
     """
-    from mitsuba.core import ScalarVector3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarVector3f
 
     center_v = ScalarVector3f(center)
     sphere = load_dict(sensor_shape_dict(radius, center_v))
@@ -92,8 +90,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
     We expect the average value to be \\pi * L with L the radiance of the constant
     emitter.
     """
-    from mitsuba.core import Spectrum, ScalarVector3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, Spectrum, ScalarVector3f
 
     scene_dict = {
         "type": "scene",
@@ -135,8 +132,7 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     emitter.
     """
 
-    from mitsuba.core import Spectrum, Bitmap, Struct, ScalarVector3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, Bitmap, Struct, ScalarVector3f
 
     scene_dict = {
         "type": "scene",

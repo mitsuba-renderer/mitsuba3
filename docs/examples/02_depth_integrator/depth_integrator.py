@@ -8,7 +8,7 @@ mitsuba.set_variant('llvm_rgb')
 
 from mitsuba.core import Float, UInt32, UInt64, Vector2f, Vector3f
 from mitsuba.core import Bitmap, Struct, Thread
-from mitsuba.core.xml import load_file
+from mitsuba.core import load_file
 from mitsuba.render import ImageBlock
 
 # Absolute or relative path to the XML file

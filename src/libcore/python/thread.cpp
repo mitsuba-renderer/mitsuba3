@@ -97,7 +97,8 @@ MTS_PY_EXPORT(Thread) {
        .def_method(Thread, is_running)
        .def_method(Thread, detach)
        .def_method(Thread, join)
-       .def_static_method(Thread, sleep);
+       .def_static_method(Thread, sleep)
+       .def_static_method(Thread, wait_for_tasks);
 
     py::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
         .def(py::init<>());

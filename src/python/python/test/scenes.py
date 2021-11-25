@@ -9,7 +9,7 @@ from mitsuba.python.test.util import fresolver_append_path
 def empty_scene():
     return make_empty_scene()
 def make_empty_scene(spp = 16):
-    scene = mitsuba.core.xml.load_string("""
+    scene = mitsuba.core.load_string("""
         <scene version='2.0.0'>
             <sensor type="perspective">
                 <film type="hdrfilm">
@@ -32,7 +32,7 @@ def teapot_scene():
     return make_teapot_scene()
 @fresolver_append_path
 def make_teapot_scene(spp = 32):
-    scene = mitsuba.core.xml.load_string("""
+    scene = mitsuba.core.load_string("""
         <scene version='2.0.0'>
             <sensor type="perspective">
                 <float name="near_clip" value="1"/>
@@ -81,7 +81,7 @@ def box_scene():
     return make_box_scene()
 @fresolver_append_path
 def make_box_scene(spp = 16):
-    scene = mitsuba.core.xml.load_string("""
+    scene = mitsuba.core.load_string("""
         <scene version='2.0.0'>
             <integrator type="path"/>
 
@@ -193,7 +193,7 @@ def museum_plane_scene():
     return make_museum_plane_scene()
 @fresolver_append_path
 def make_museum_plane_scene(spp = 16, roughness = 0.01):
-    scene = mitsuba.core.xml.load_string("""
+    scene = mitsuba.core.load_string("""
         <scene version="2.0.0">
             <sensor type="perspective">
                 <float name="fov" value="50"/>

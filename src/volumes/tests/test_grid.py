@@ -6,8 +6,7 @@ import enoki as ek
 
 
 def test01_grid_construct(variant_scalar_rgb, tmpdir):
-    from mitsuba.core import Vector3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Vector3f
     from mitsuba.render import VolumeGrid, Interaction3f
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
@@ -26,8 +25,7 @@ def test01_grid_construct(variant_scalar_rgb, tmpdir):
 
 
 def test02_nearest_interpolation(variants_all, tmpdir):
-    from mitsuba.core import Vector3f, Point3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Point3f
     from mitsuba.render import VolumeGrid, Interaction3f
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
@@ -47,8 +45,7 @@ def test02_nearest_interpolation(variants_all, tmpdir):
 
 
 def test03_trilinear_interpolation(variants_all, tmpdir):
-    from mitsuba.core import Vector3f, Point3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Point3f
     from mitsuba.render import VolumeGrid, Interaction3f
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
@@ -67,8 +64,7 @@ def test03_trilinear_interpolation(variants_all, tmpdir):
 
 
 def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
-    from mitsuba.core import Vector3f, Point3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Point3f
     from mitsuba.render import VolumeGrid, Interaction3f
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")

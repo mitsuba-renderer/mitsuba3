@@ -42,7 +42,6 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
         Optional parameter to override the number of samples per pixel.
         This parameter will be ignored if set to 0.
     """
-    ek.enable_grad(params)
     prev_flag = ek.flag(ek.JitFlag.LoopRecord)
     ek.set_flag(ek.JitFlag.LoopRecord, False)
     image = self.render(scene, seed, sensor, spp=spp)
@@ -88,7 +87,6 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
         Optional parameter to override the number of samples per pixel.
         This parameter will be ignored if set to 0.
     """
-    ek.enable_grad(params)
     prev_flag = ek.flag(ek.JitFlag.LoopRecord)
     ek.set_flag(ek.JitFlag.LoopRecord, False)
     image = self.render(scene, seed, sensor, spp=spp)
