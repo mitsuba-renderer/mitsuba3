@@ -305,6 +305,7 @@ public:
 
         if (m_fixed_max)
             Log(Info, "Medium will keep majorant fixed to: %s", m_max);
+        m_max_dirty = !ek::isfinite(m_max);
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
@@ -517,7 +518,19 @@ public:
         }
     }
 
-    ScalarFloat max() const override { return m_max; }
+    ScalarFloat max() const override {
+        if (m_max_dirty)
+            update_max();
+        return m_max;
+    }
+
+    void update_max() const {
+        if (m_max_dirty) {
+            m_max = (float) ek::hmax(ek::detach(m_data.array()));
+            Log(Info, "Grid max value was updated to: %s", m_max);
+            m_max_dirty = false;
+        }
+    }
 
     TensorXf local_majorants(size_t resolution_factor, ScalarFloat value_scale) override {
         MTS_IMPORT_TYPES()
@@ -623,8 +636,7 @@ public:
 
         // Recompute maximum if necessary
         if (!m_fixed_max) {
-            m_max = (float) ek::hmax_nested(ek::detach(m_data.array()));
-            Log(Info, "Grid max value was updated to: %s", m_max);
+            m_max_dirty = true;
         }
     }
 
@@ -650,7 +662,11 @@ protected:
     ek::divisor<int32_t> m_inv_resolution_x,
                          m_inv_resolution_y,
                          m_inv_resolution_z;
-    ScalarFloat m_max;
+
+    // Mutable so that we can do lazy updates
+    mutable ScalarFloat m_max;
+    mutable bool m_max_dirty;
+
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
 };
