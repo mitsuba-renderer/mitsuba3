@@ -3671,6 +3671,11 @@ static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns 
 
 static const char *__doc_mitsuba_Medium_majorant_grid = R"doc(Returns a reference to the majorant supegrid, if any.)doc";
 
+static const char *__doc_mitsuba_Medium_majorant_resolution_factor = R"doc(Returns the current majorant supergrid resolution factor w.r.t. the sigma_t grid resolution..)doc";
+
+static const char *__doc_mitsuba_Medium_set_majorant_resolution_factor = R"doc(Set the majorant supergrid resolution factor w.r.t. the sigma_t grid resolution.
+One should call \ref parameters_changed() to ensure that the supergrid is regenerated.)doc";
+
 static const char *__doc_mitsuba_Medium_has_majorant_grid = R"doc(Return true if a majorant supergrid is available.)doc";
 
 static const char *__doc_mitsuba_Medium_majorant_grid_voxel_size = R"doc(Return the majorant grid, if any)doc";

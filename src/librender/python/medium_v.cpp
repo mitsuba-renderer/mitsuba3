@@ -17,11 +17,9 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true,
-                            bool global_only = false) const override {
+    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const override {
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium,
-                               get_combined_extinction, mi, active,
-                               global_only);
+                               get_combined_extinction, mi, active);
     }
 
     UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi, Mask active = true) const override {
@@ -63,9 +61,9 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             [](Ptr ptr) { return ptr->has_spectral_extinction(); },
             D(Medium, has_spectral_extinction))
        .def("get_combined_extinction",
-            [](Ptr ptr, const MediumInteraction3f &mi, Mask active, bool global_only) {
-                return ptr->get_combined_extinction(mi, active, global_only); },
-            "mi"_a, "active"_a=true, "global_only"_a = false,
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
+                return ptr->get_combined_extinction(mi, active); },
+            "mi"_a, "active"_a=true,
             D(Medium, get_combined_extinction))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
@@ -128,6 +126,8 @@ MTS_PY_EXPORT(Medium) {
     auto medium = py::class_<Medium, PyMedium, Object, ref<Medium>>(m, "Medium", D(Medium))
             .def(py::init<const Properties &>())
             .def_method(Medium, majorant_grid)
+            .def_method(Medium, majorant_resolution_factor)
+            .def_method(Medium, set_majorant_resolution_factor, "factor"_a)
             .def_method(Medium, has_majorant_grid)
             .def_method(Medium, majorant_grid_voxel_size)
             .def_method(Medium, id)

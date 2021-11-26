@@ -20,8 +20,7 @@ public:
 
     /// Returns the medium's majorant used for delta tracking
     virtual UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true,
-                            bool global_only = false) const = 0;
+    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const = 0;
 
     /**
      * Returns the medium's albedo, independently of other quantities.
@@ -134,11 +133,27 @@ public:
         return m_phase_function.get();
     }
 
+    /**
+     * Returns the current majorant supergrid resolution factor
+     * w.r.t. the sigma_t grid resolution.
+     */
+    MTS_INLINE size_t majorant_resolution_factor() const {
+        return m_majorant_resolution_factor;
+    }
+    /**
+     * Set the majorant supergrid resolution factor
+     * w.r.t. the sigma_t grid resolution.
+     * One should call \ref parameters_changed() to ensure
+     * that the supergrid is regenerated.
+     */
+    MTS_INLINE void set_majorant_resolution_factor(size_t factor) {
+        m_majorant_resolution_factor = factor;
+    }
+
     /// Returns a reference to the majorant supegrid, if any
     MTS_INLINE ref<Volume> majorant_grid() const {
         return m_majorant_grid;
     }
-
     /// Return true if a majorant supergrid is available.
     MTS_INLINE bool has_majorant_grid() const {
         return (bool) m_majorant_grid;

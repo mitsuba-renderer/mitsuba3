@@ -135,9 +135,8 @@ public:
         return sigmat;
     }
 
-    UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f &mi,
-                            Mask active, bool /*global_only*/) const override {
+    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi,
+                                                Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         UnpolarizedSpectrum majorant = ek::max(1e-6f, m_majorant_factor * eval_sigmat(mi, active));
         return majorant & active;

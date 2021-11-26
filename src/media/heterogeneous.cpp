@@ -126,12 +126,12 @@ public:
         m_scale = scale;
 
         update_majorant_supergrid();
-        m_max_density =
-            ek::opaque<Float>(ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
         if (m_majorant_resolution_factor > 0) {
             Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
             m_max_density = ek::NaN<Float>;
         } else {
+            m_max_density =
+                ek::opaque<Float>(ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
             Log(Info, "Heterogeneous medium will use majorant: %s (majorant factor: %s)",
                 m_max_density, m_majorant_factor);
         }
@@ -141,10 +141,9 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f & mi,
-                            Mask active, bool global_only) const override {
+    get_combined_extinction(const MediumInteraction3f & mi, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        if (m_majorant_grid && !global_only)
+        if (m_majorant_grid)
             return m_majorant_grid->eval_1(mi, active);
         else
             return m_max_density;
@@ -195,6 +194,8 @@ public:
         // Build a majorant grid, with the scale factor baked-in for convenience
         TensorXf majorants =
             m_sigmat->local_majorants(m_majorant_resolution_factor, m_majorant_factor * scalar_scale());
+        ek::eval(majorants);
+
         Properties props("gridvolume");
         props.set_string("filter_type", "nearest");
         props.set_transform("to_world", m_sigmat->world_transform());
@@ -211,11 +212,12 @@ public:
         if (m_majorant_resolution_factor > 0) {
             // TODO: make this more configurable (could be slow)
             update_majorant_supergrid();
+        } else {
+            // TODO: make this really optional if we never need max_density
+            ScalarFloat scale = scalar_scale();
+            m_max_density = ek::opaque<Float>(
+                ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
         }
-
-        ScalarFloat scale = scalar_scale();
-        m_max_density = ek::opaque<Float>(
-            ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
     }
 
     void traverse(TraversalCallback *callback) override {
