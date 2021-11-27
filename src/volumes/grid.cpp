@@ -608,6 +608,38 @@ public:
                 }
             }
 
+#if 0
+            if constexpr (ek::is_jit_array_v<Float>) {
+                using VolumeGrid = VolumeGrid<Float, Spectrum>;
+                ek::eval(result);
+                ek::sync_thread();
+
+                if (true) {
+                    VolumeGrid grid(resolution, 1);
+                    const auto &&result_cpu = ek::migrate(result, AllocType::Host);
+                    ek::eval(result_cpu);
+                    ek::sync_thread();
+                    memcpy(grid.data(), result_cpu.data(), sizeof(ScalarFloat) * result_cpu.size());
+                    grid.write("supergrid.vol");
+                    Log(Info,
+                        "Saved supergrid to file (%s entries, resolution %s)",
+                        result_cpu.size(), resolution);
+                }
+
+                if (true) {
+                    VolumeGrid grid(full_resolution, 1);
+                    const auto &&data_cpu = ek::migrate(scaled_data, AllocType::Host);
+                    ek::eval(data_cpu);
+                    ek::sync_thread();
+                    memcpy(grid.data(), data_cpu.data(), sizeof(ScalarFloat) * data_cpu.size());
+                    grid.write("sigma_t.vol");
+                    Log(Info,
+                        "Saved original volume to file (%s entries, resolution %s)",
+                        data_cpu.size(), full_resolution);
+                }
+            }
+#endif
+
             size_t shape[4] = { (size_t) resolution.x(),
                                 (size_t) resolution.y(),
                                 (size_t) resolution.z(),

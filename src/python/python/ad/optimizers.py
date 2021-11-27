@@ -225,7 +225,7 @@ class SGD(Optimizer):
             else:
                 value = ek.detach(p) - self.lr_v[k] * g_p
 
-
+            # TODO: do we really need this?
             value = type(p)(value)
             ek.enable_grad(value)
             self.variables[k] = value
@@ -330,7 +330,9 @@ class Adam(Optimizer):
             step = lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
                 step = ek.select(nonzero, step, 0.)
+
             u = ek.detach(p, True) - step
+            # TODO: do we really need this?
             u = type(p)(u)
             ek.enable_grad(u)
             self.variables[k] = u
