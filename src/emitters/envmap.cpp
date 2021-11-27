@@ -8,8 +8,6 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <enoki/tensor.h>
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/core/fstream.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -76,7 +74,6 @@ public:
 
         FileResolver *fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
-        m_filename = file_path.filename().string();
 
         ref<Bitmap> bitmap = new Bitmap(file_path);
         if (bitmap->width() < 2 || bitmap->height() < 3)
@@ -85,29 +82,21 @@ public:
 
         /* Convert to linear RGBA float bitmap, will undergo further
            conversion into coefficients of a spectral upsampling model below */
-        bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<Float>, false);
+        bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<ScalarFloat>, false);
+        m_filename = file_path.filename().string();
 
-        /* Allocate a larger image including an extra column to
-           account for the periodic boundary */
-        ScalarVector2u res(bitmap->width() + 1, bitmap->height());
-        ref<Bitmap> bitmap_2 = new Bitmap(bitmap->pixel_format(),
-                                          bitmap->component_format(), res);
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[bitmap->pixel_count()]);
 
-        // Luminance image used for importance sampling
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(res)]);
-
-        ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
-                    *out_ptr = (ScalarFloat *) bitmap_2->data(),
+        ScalarFloat *ptr     = (ScalarFloat *) bitmap->data(),
                     *lum_ptr = (ScalarFloat *) luminance.get();
 
-        ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * ek::Pi<Float>;
-
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
-            ScalarFloat sin_theta = ek::sin(y * theta_scale);
+            ScalarFloat sin_theta =
+                ek::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
-                ScalarFloat lum = mitsuba::luminance(rgb);
+                ScalarColor3f rgb = ek::load<ScalarVector3f>(ptr);
+                ScalarFloat lum   = mitsuba::luminance(rgb);
 
                 ScalarVector4f coeff;
                 if constexpr (is_monochromatic_v<Spectrum>) {
@@ -127,21 +116,14 @@ public:
                 }
 
                 *lum_ptr++ = lum * sin_theta;
-                ek::store(out_ptr, coeff);
-                in_ptr += 4;
-                out_ptr += 4;
+                ek::store(ptr, coeff);
+                ptr += 4;
             }
-
-            // Last column of pixels mirrors first
-            ScalarFloat temp = *(lum_ptr - bitmap->size().x());
-            *lum_ptr++ = temp;
-            ek::store(out_ptr, ek::load<ScalarVector4f>(
-                                   out_ptr - bitmap->size().x() * 4));
-            out_ptr += 4;
         }
 
+        ScalarVector2u res = bitmap->size();
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
-        m_data = TensorXf(bitmap_2->data(), 3, shape);
+        m_data = TensorXf(bitmap->data(), 3, shape);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_warp = Warp(luminance.get(), res);
@@ -167,7 +149,7 @@ public:
 
         Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
 
-        // Convert to latitude-longitude texture coordinates
+        /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
                              ek::safe_acos(v.y()) * ek::InvPi<Float>);
 
@@ -185,8 +167,6 @@ public:
 
         // 2. Sample directional component
         auto [uv, pdf] = m_warp.sample(sample3, nullptr, active);
-        uv.x() += .5f / (m_data.shape(1) - 1);
-
         active &= pdf > 0.f;
 
         Float theta = uv.y() * ek::Pi<Float>,
@@ -229,7 +209,6 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
-        uv.x() += .5f / (m_data.shape(1) - 1);
         active &= pdf > 0.f;
 
         Float theta = uv.y() * ek::Pi<Float>,
@@ -278,7 +257,6 @@ public:
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
                              ek::safe_acos(d.y()) * ek::InvPi<Float>);
-        uv.x() -= .5f / (m_data.shape(1) - 1u);
         uv -= ek::floor(uv);
 
         Float inv_sin_theta = ek::safe_rsqrt(ek::max(
@@ -391,7 +369,8 @@ protected:
                                       Mask active, bool include_whitepoint = true) const {
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
-        uv.x() -= .5f / (res.x() - 1u);
+        // TODO: did we need this?
+        // uv.x() -= .5f / (res.x() - 1u);
         uv -= ek::floor(uv);
         uv *= Vector2f(res - 1u);
 
