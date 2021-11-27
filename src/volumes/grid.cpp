@@ -193,9 +193,9 @@ public:
             const auto &shape = data->shape();
             m_data = TensorXf(data->array(), data->ndim(), shape.data());
 
-            if (!props.bool_("raw", true))
+            if (!props.get<bool>("raw", true))
                 Throw("Passing grid data directly implies raw = true");
-            if (props.bool_("use_grid_bbox", false))
+            if (props.get<bool>("use_grid_bbox", false))
                 Throw("Passing grid data directly implies use_grid_bbox = false");
 
             if (m_data.ndim() != 4)
@@ -294,7 +294,7 @@ public:
         // In the context of an optimization, we might want to keep the majorant
         // fixed to an initial value computed from the reference data, for convenience.
         if (props.has_property("fixed_max")) {
-            m_fixed_max = props.bool_("fixed_max");
+            m_fixed_max = props.get<bool>("fixed_max");
             // It's easy to get incorrect results by e.g.:
             // 1. Loading the scene with some data X with fixed_max = true
             // 2. From Python, overwriting the grid data with Y > X
