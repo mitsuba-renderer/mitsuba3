@@ -329,9 +329,9 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
         ek::masked(mi_sub.p, active_drt) = ray(running_t);
         auto [_1, _2, current_sigma_t] =
             get_scattering_coefficients(mi_sub, active_drt);
-        ek::masked(transmittance, active_drt) =
+        ek::masked(transmittance, active_drt) = ek::detach(
             transmittance * (1.f - (extract_channel(current_sigma_t, channel) /
-                                    local_majorant));
+                                    local_majorant)));
     }
     sampled_t = sampled_t + sampler->next_1d(did_traverse) * sampled_t_step;
 
@@ -404,7 +404,8 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
         auto [_1, _2, current_sigma_t] =
             get_scattering_coefficients(mi_sub, active);
         Float s = extract_channel(current_sigma_t, channel);
-        transmittance *= (1.f - (s - control) / m) * ek::exp(-control * dt);
+        transmittance *=
+            ek::detach((1.f - (s - control) / m) * ek::exp(-control * dt));
         // Recall that replacement is possible in this loop.
         active &= (running_t < maxt);
     }
