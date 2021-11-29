@@ -27,6 +27,69 @@ NAMESPACE_BEGIN(mitsuba)
    0.526 and 0.545 depending on the time of year */
 #define SUN_APP_RADIUS 0.5358
 
+/**!
+
+.. _emitter-sunsky:
+
+Sunsky emitter (:monosp:`sunsky`)
+--------------------------------------
+
+.. pluginparameters::
+
+ * - turbidity
+   - |Float|
+   - Determines the amount of aerosol present in the atmosphere.
+     Valid range: 1-10. (Default: 3, corresponding to a clear sky in a temperate climate)
+
+ * - albedo
+   - |Vector3f|
+   - Specifies the ground albedo. (Default: ScalarColor3f(0.2f))
+
+ * - year, month, day
+   - |Int|
+   - Denote the date of the observation. (Default: 2010, 07, 10)
+
+ * - latitude, longitude, timezone
+   - |Float|
+   - Specify the oberver's latitude and longitude in degrees, and 
+     the local timezone offset in hours, which are required to 
+     compute the sun's position. 
+     (Default 35.6894, 139.6917, 9 --- Tokyo, Japan)
+
+ * - sun_direction
+   - |Vector3f|
+   - Allows to manually override the sun direction in world space.
+     When this value is provided, parameters pertaining to the 
+     computation of the sun direction (year, hour, latitude,} etc.
+     are unnecessary. (Default: none)
+
+ * - stretch
+   - |Float|
+   - Stretch factor to extend emitter below the horizon, must be 
+     in [1,2] (Default: 1, i.e. not used)
+
+ * - resolution
+   - |Int|
+   - Specifies the horizontal resolution of the precomputed image 
+     that is used to represent the environment map. (Default: 512)
+
+ * - scale
+   - |Float|
+   - This parameter can be used to scale the amount of illumination 
+     emitted by the sky emitter. Default: 1.
+
+ * - sun_radius_scale
+   - |Float|
+   - Scale factor to adjust the radius of the sun, while preserving its power.
+     Set to 0 to turn it into a directional light source.
+
+ This convenience plugin has the sole purpose of instantiating
+ \pluginref{sun} and \pluginref{sky} and merging them into a joint
+ environment map. Please refer to these plugins individually for more
+ details.
+ */
+
+
 /// S-shaped smoothly varying interpolation between two values
 template <typename Scalar> 
 inline Scalar smooth_step(Scalar min, Scalar max, Scalar value) {
@@ -103,6 +166,7 @@ public:
 
     std::vector<ref<Object>> expand() const override {
 
+
         ref<Bitmap> bitmap;
         if constexpr (!is_spectral_v<Spectrum>){
             bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
@@ -114,6 +178,8 @@ public:
             ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
         }
 
+
+        /* First, rasterize the sky */
         ScalarPoint2f factor((2 * enoki::Pi<Float>) / bitmap->width(), 
             enoki::Pi<Float> / bitmap->height());
 
@@ -142,6 +208,7 @@ public:
             }
         }
 
+        //Then create the sun
         /* Step 1: compute a *very* rough estimate of how many
            pixel in the output environment map will be covered
            by the sun */
@@ -206,23 +273,16 @@ public:
             }
         }
 
-
-
-
         if constexpr (!is_spectral_v<Spectrum>){
             bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
         }
-
+        /* Instantiate a nested envmap plugin */
         Properties props("envmap");
 
         props.set_pointer("bitmap", (uint8_t *) bitmap.get());
         ref<Object> emitter = PluginManager::instance()->create_object<Base>(props).get();
 
         return {emitter};
-
-
-
-
 
     }
 

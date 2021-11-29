@@ -24,6 +24,87 @@ NAMESPACE_BEGIN(mitsuba)
    0.526 and 0.545 depending on the time of year */
 #define SUN_APP_RADIUS 0.5358f
 
+/**!
+
+.. _emitter-sun:
+
+Sunlight emitter (:monosp:`sun`)
+--------------------------------------
+
+.. pluginparameters::
+
+ * - turbidity
+   - |Float|
+   - Determines the amount of aerosol present in the atmosphere.
+     Valid range: 1-10. (Default: 3, corresponding to a clear sky in a temperate climate)
+
+ * - year, month, day
+   - |Int|
+   - Denote the date of the observation. (Default: 2010, 07, 10)
+
+ * - latitude, longitude, timezone
+   - |Float|
+   - Specify the oberver's latitude and longitude in degrees, and 
+     the local timezone offset in hours, which are required to 
+     compute the sun's position. 
+     (Default 35.6894, 139.6917, 9 --- Tokyo, Japan)
+
+ * - sun_direction
+   - |Vector3f|
+   - Allows to manually override the sun direction in world space.
+     When this value is provided, parameters pertaining to the 
+     computation of the sun direction (year, hour, latitude,} etc.
+     are unnecessary. (Default: none)
+
+ * - stretch
+   - |Float|
+   - Stretch factor to extend emitter below the horizon, must be 
+     in [1,2] (Default: 1, i.e. not used)
+
+ * - resolution
+   - |Int|
+   - Specifies the horizontal resolution of the precomputed image 
+     that is used to represent the environment map. (Default: 512)
+
+ * - scale
+   - |Float|
+   - This parameter can be used to scale the amount of illumination 
+     emitted by the sun emitter. Default: 1.
+
+ * - sun_radius_scale
+   - |Float|
+   - Scale factor to adjust the radius of the sun, while preserving its power.
+     Set to 0 to turn it into a directional light source.
+
+
+
+ This plugin implements the physically-based sun model proposed by
+ Preetham et al. Using the provided position
+ and time information (see \pluginref{sky} for details), it can determine the
+ position of the sun as seen from the position of the observer.
+ The radiance arriving at the earth surface is then found based on the spectral
+ emission profile of the sun and the extinction cross-section of the
+ atmosphere (which depends on the turbidity and the zenith angle of the sun).
+ 
+ The sun model introduces physical units into the rendering process.
+ The radiance values computed by this plugin have units of power ($W$) per
+ unit area ($m^{-2}$) per steradian ($sr^{-1}$) per unit wavelength ($nm^{-1}$).
+ If these units are inconsistent with your scene description, you may use the
+ optional \texttt{scale} parameter to adjust them.
+  
+ This plugin supplies proper spectral power distributions when Mitsuba is
+ compiled in spectral rendering mode. Otherwise, they are simply projected onto
+ a linear RGB color space.
+  
+ Remarks:
+  The sun is an intense light source that subtends a tiny solid angle.
+  This can be a problem for certain rendering techniques (e.g. path
+  tracing), which produce high variance output (i.e. noise in renderings)
+  when the scene also contains specular or glossy or materials.
+
+
+ */
+
 template <typename Float, typename Spectrum>
 class SunEmitter final : public Emitter<Float, Spectrum> {
 public:
@@ -182,7 +263,7 @@ public:
         FileStream *fs = new FileStream("sun.exr", FileStream::ETruncReadWrite);
         bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
 
-
+        /* Instantiate a nested envmap plugin */
         Properties prop("envmap");
         prop.set_pointer("bitmap", bitmap.get());
         ref<Object> emitter = PluginManager::instance()->create_object<Base>(prop).get();

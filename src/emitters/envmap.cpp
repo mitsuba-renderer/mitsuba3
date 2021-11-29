@@ -354,7 +354,7 @@ public:
                        Mask active) const override {
         Wavelength wavelengths;
         UnpolarizedSpectrum weight;
-
+        //if bitmap contains multichannel and render in spectral mode
         if (is_spectral_v<Spectrum> && m_is_spectral) {
             float max_wl = m_channels.back();
             float min_wl = m_channels.front();
@@ -475,6 +475,7 @@ protected:
         const uint32_t width = res.x();
         UInt32 index = pos.x() + pos.y() * width;
 
+        //non-spectral cases
         if constexpr (!is_spectral_v<Spectrum>) {
             ENOKI_MARK_USED(wavelengths);
 
@@ -494,7 +495,7 @@ protected:
 
         } else {
             
-            //upsamping needed for non-spectral data
+            //spectral cases with non-spectral bitmap: upsamping needed 
             if (!m_is_spectral){
                 Float f0, f1, f;
 
@@ -529,6 +530,7 @@ protected:
                 return result;
 
             } else{ 
+                //spectral data interpolation for spectral mode
                 using WavelengthIndex = ek::uint32_array_t<Wavelength>;
                 using WavelengthWeight = ek::float32_array_t<Wavelength>;
 
