@@ -5,7 +5,6 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/phase.h>
-#include <mitsuba/render/scatteringintegrator.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/texture.h>
@@ -42,7 +41,7 @@ static py::object caster(Object *o) {
 
     PY_TRY_CAST(MonteCarloIntegrator);
     PY_TRY_CAST(SamplingIntegrator);
-    PY_TRY_CAST(ScatteringIntegrator);
+    PY_TRY_CAST(AdjointIntegrator);
     PY_TRY_CAST(Integrator);
 
     PY_TRY_CAST(Sampler);

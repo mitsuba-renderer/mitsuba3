@@ -11,7 +11,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2i &size, size_t chann
     : m_offset(0), m_size(0), m_channel_count((uint32_t) channel_count), m_filter(filter),
       m_weights_x(nullptr), m_weights_y(nullptr), m_warn_negative(warn_negative),
       m_warn_invalid(warn_invalid), m_normalize(normalize) {
-    m_border_size = (uint32_t)((filter != nullptr && border) ? filter->border_size() : 0);
+    m_border_size = (filter && border) ? filter->border_size() : 0;
 
     if (filter) {
         // Temporary buffers used in put()

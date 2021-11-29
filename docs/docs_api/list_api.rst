@@ -650,7 +650,7 @@
 
 .. autoclass:: mitsuba.render.SamplingIntegrator
 
-.. autoclass:: mitsuba.render.ScatteringIntegrator
+.. autoclass:: mitsuba.render.AdjointIntegrator
 
 .. autoclass:: mitsuba.render.Scene
 

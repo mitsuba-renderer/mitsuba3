@@ -24,64 +24,48 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
-    using Float = float;
-    MTS_IMPORT_CORE_TYPES()
+    using Vector2i = Vector<int32_t, 2>;
+    using Vector2u = Vector<uint32_t, 2>;
+    using Point2i = Point<int32_t, 2>;
 
     /// Create a new spiral generator for the given size, offset into a larger frame, and block size
-    Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes = 1);
+    Spiral(const Vector2u &size,
+           const Vector2u &offset,
+           uint32_t block_size,
+           uint32_t passes = 1);
 
     /// Return the maximum block size
-    size_t max_block_size() const { return m_block_size; }
+    uint32_t max_block_size() const { return m_block_size; }
 
     /// Return the total number of blocks
-    size_t block_count() { return m_block_count; }
+    uint32_t block_count() { return m_block_count; }
 
     /// Reset the spiral to its initial state. Does not affect the number of passes.
     void reset();
 
     /**
-     * Sets the number of time the spiral should automatically reset.
-     * Not affected by a call to \ref reset.
-     */
-    void set_passes(size_t passes) {
-        m_remaining_passes = passes;
-    }
-
-    /**
-     * \brief Return the offset, size and unique identifer of the next block.
+     * \brief Return the offset, size, and unique identifer of the next block.
      *
      * A size of zero indicates that the spiral traversal is done.
      */
-    std::tuple<Vector2i, Vector2i, size_t> next_block();
+    std::tuple<Vector2u, Vector2u, uint32_t> next_block();
 
     MTS_DECLARE_CLASS()
 protected:
-    enum class Direction {
-        Right = 0,
-        Down,
-        Left,
-        Up
-    };
+    enum class Direction { Right, Down, Left, Up };
 
-    size_t m_block_counter, //< Number of blocks generated so far
-           m_block_count,   //< Total number of blocks to be generated
-           m_block_size;    //< Size of the (square) blocks (in pixels)
-
-    Vector2i m_size,        //< Size of the 2D image (in pixels).
-             m_offset,      //< Offset to the crop region on the sensor (pixels).
-             m_blocks;      //< Number of blocks in each direction.
-
-    Point2i  m_position;    //< Relative position of the current block.
-    /// Direction where the spiral is currently headed.
-    Direction m_current_direction;
-    /// Step counters.
-    int m_steps_left, m_steps;
-
-    /// Number of times the spiral should automatically restart.
-    size_t m_remaining_passes;
-
-    /// Protects the spiral's state (thread safety).
-    std::mutex m_mutex;
+    std::mutex m_mutex;       //< Protects the state for thread safety
+    Vector2u m_size;          //< Size of the 2D image (in pixels)
+    Vector2u m_offset;        //< Offset to the crop region on the sensor (pixels)
+    Vector2u m_blocks;        //< Number of blocks in each direction
+    Point2i  m_position;      //< Relative position of the current block
+    Direction direction;      //< Current spiral direction
+    uint32_t m_block_counter; //< Number of blocks generated so far
+    uint32_t m_block_count;   //< Number of blocks to be generated in pass
+    uint32_t m_passes_left;   //< Remaining spiral passes to be generated
+    uint32_t m_block_size;    //< Size of the (square) blocks (in pixels)
+    uint32_t m_steps_left;    //< Steps before next change of direction
+    uint32_t m_spiral_size;   //< Current spiral size in blocks
 };
 
 NAMESPACE_END(mitsuba)

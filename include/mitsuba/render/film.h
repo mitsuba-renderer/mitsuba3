@@ -52,7 +52,7 @@ public:
      * Configure the film for rendering a specified set of extra channels (AOVS).
      * Returns the total number of channels that the film will store
      */
-    virtual size_t prepare(const std::vector<std::string> &channels) = 0;
+    virtual size_t prepare(const std::vector<std::string> &aovs) = 0;
 
     /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put(const ImageBlock *block) = 0;
@@ -102,17 +102,17 @@ public:
     bool has_high_quality_edges() const { return m_high_quality_edges; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
-    const ScalarVector2i &size() const { return m_size; }
+    const ScalarVector2u &size() const { return m_size; }
 
     /// Return the size of the crop window
-    const ScalarVector2i &crop_size() const { return m_crop_size; }
+    const ScalarVector2u &crop_size() const { return m_crop_size; }
 
     /// Return the offset of the crop window
-    const ScalarPoint2i &crop_offset() const { return m_crop_offset; }
+    const ScalarPoint2u &crop_offset() const { return m_crop_offset; }
 
     /// Set the size and offset of the crop window.
-    void set_crop_window(const ScalarPoint2i &crop_offset,
-                         const ScalarVector2i &crop_size);
+    void set_crop_window(const ScalarPoint2u &crop_offset,
+                         const ScalarVector2u &crop_size);
 
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *reconstruction_filter() const {
@@ -142,9 +142,9 @@ protected:
     uint32_t m_flags;
 
 protected:
-    ScalarVector2i m_size;
-    ScalarVector2i m_crop_size;
-    ScalarPoint2i m_crop_offset;
+    ScalarVector2u m_size;
+    ScalarVector2u m_crop_size;
+    ScalarPoint2u m_crop_offset;
     bool m_high_quality_edges;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;

@@ -10,7 +10,7 @@
 MTS_PY_EXPORT(Film) {
     MTS_PY_IMPORT_TYPES(Film)
     MTS_PY_CLASS(Film, Object)
-        .def_method(Film, prepare, "channels"_a)
+        .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put, "block"_a)
         .def_method(Film, overwrite_channel, "channel_name"_a, "value"_a)
         .def_method(Film, develop, "raw"_a = false)

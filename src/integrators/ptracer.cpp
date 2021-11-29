@@ -6,11 +6,11 @@
 #include <mitsuba/core/progress.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/render/integrator.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/sampler.h>
-#include <mitsuba/render/scatteringintegrator.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -55,9 +55,9 @@ allows splitting work in successive passes of the given sample count per pixel. 
 useful in wavefront mode.
  */
 template <typename Float, typename Spectrum>
-class ParticleTracerIntegrator : public ScatteringIntegrator<Float, Spectrum> {
+class ParticleTracerIntegrator : public AdjointIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ScatteringIntegrator, m_samples_per_pass, m_hide_emitters,
+    MTS_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_hide_emitters,
                     m_rr_depth, m_max_depth)
     MTS_IMPORT_TYPES(Scene, Sensor, Film, Sampler, ImageBlock, Emitter,
                      EmitterPtr, BSDF, BSDFPtr)
@@ -65,7 +65,7 @@ public:
     ParticleTracerIntegrator(const Properties &props) : Base(props) { }
 
     void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
-                ImageBlock *block, Mask /*active*/) const override {
+                ImageBlock *block) const override {
         if (likely(m_max_depth != 0) && !m_hide_emitters) {
             // Account for emitters directly visible from the sensor
             sample_visible_emitters(scene, sensor, sampler, block);
@@ -76,51 +76,52 @@ public:
         trace_light_ray(ray, scene, sensor, sampler, throughput, block);
     }
 
-
     /**
      * Samples an emitter in the scene and connects it directly to the sensor,
      * splatting the emitted radiance to the given image block.
      */
     Spectrum sample_visible_emitters(const Scene *scene, const Sensor *sensor,
-                                     Sampler *sampler, ImageBlock *block,
-                                     Mask active = true) const {
+                                     Sampler *sampler, ImageBlock *block) const {
         // 1. Time sampling
         Float time = sensor->shutter_open();
         if (sensor->shutter_open_time() > 0)
-            time += sampler->next_1d(active) * sensor->shutter_open_time();
+            time += sampler->next_1d() * sensor->shutter_open_time();
 
         // 2. Emitter sampling (select one emitter)
         auto [emitter_idx, emitter_idx_weight, _] =
-            scene->sample_emitter(sampler->next_1d(active), active);
+            scene->sample_emitter(sampler->next_1d());
+
         EmitterPtr emitter =
-            ek::gather<EmitterPtr>(scene->emitters_ek(), emitter_idx, active);
+            ek::gather<EmitterPtr>(scene->emitters_ek(), emitter_idx);
 
         // Don't connect delta emitters with sensor (both position and direction)
-        active &= !has_flag(emitter->flags(), EmitterFlags::Delta);
+        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
 
         // 3. Emitter position sampling
         Spectrum emitter_weight = ek::zero<Spectrum>();
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
         // 3.a. Infinite emitters
-        Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite);
-        Mask active_e = active && is_infinite;
+        Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite),
+             active_e = active && is_infinite;
         if (ek::any_or<true>(active_e)) {
-            /* We are sampling a direction toward an envmap emitter starting
-            * from the center of the scene. This is because the sensor is
-            * not part of the scene's bounding box, which could cause issues.
-            */
+            /* Sample a direction toward an envmap emitter starting
+               from the center of the scene (the sensor is not part of the
+               scene's bounding box, which could otherwise cause issues.) */
             Interaction3f ref_it(0.f, time, ek::zero<Wavelength>(),
-                                sensor->world_transform().translation());
+                                 sensor->world_transform().translation());
 
             auto [ds, dir_weight] = emitter->sample_direction(
                 ref_it, sampler->next_2d(active), active_e);
+
             /* Note: `dir_weight` already includes the emitter radiance, but
-            * that will be accounted for again when sampling the wavelength
-            * below. Instead, we recompute just the factor due to the PDF.
-            * Also, convert to area measure. */
+               that will be accounted for again when sampling the wavelength
+               below. Instead, we recompute just the factor due to the PDF.
+               Also, convert to area measure. */
             emitter_weight[active_e] =
-                ek::select(ds.pdf > 0.f, 1.f / ds.pdf, 0.f) * ek::sqr(ds.dist);
+                ek::select(ds.pdf > 0.f, ek::rcp(ds.pdf), 0.f) *
+                ek::sqr(ds.dist);
+
             si[active_e] = SurfaceInteraction3f(ds, ref_it.wavelengths);
         }
 
@@ -129,14 +130,15 @@ public:
         if (ek::any_or<true>(active_e)) {
             auto [ps, pos_weight] =
                 emitter->sample_position(time, sampler->next_2d(active), active_e);
+
             emitter_weight[active_e] = pos_weight;
             si[active_e] = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
         }
 
         /* 4. Connect to the sensor.
-        * Query sensor for a direction connecting to `si.p`. This also gives
-        * us UVs on the sensor (for splatting). The resulting direction points
-        * from si.p (on the emitter) toward the sensor. */
+           Query sensor for a direction connecting to `si.p`, which also
+           produces UVs on the sensor (for splatting). The resulting direction
+           points from si.p (on the emitter) toward the sensor. */
         auto [sensor_ds, sensor_weight] = sensor->sample_direction(si, sampler->next_2d(), active);
         si.wi = sensor_ds.d;
 
@@ -152,33 +154,31 @@ public:
         return connect_sensor(scene, si, sensor_ds, nullptr, weight, block, active);
     }
 
-    /**
-     * Samples a ray from a random emitter in the scene.
-     */
+    /// Samples a ray from a random emitter in the scene.
     std::pair<Ray3f, Spectrum> prepare_ray(const Scene *scene,
                                            const Sensor *sensor,
-                                           Sampler *sampler,
-                                           Mask active = true) const {
+                                           Sampler *sampler) const {
         Float time = sensor->shutter_open();
         if (sensor->shutter_open_time() > 0)
-            time += sampler->next_1d(active) * sensor->shutter_open_time();
+            time += sampler->next_1d() * sensor->shutter_open_time();
 
-        /* ---------------------- Sample ray from emitter ------------------- */
         // Prepare random samples.
-        Float wavelength_sample  = sampler->next_1d(active);
-        Point2f direction_sample = sampler->next_2d(active);
-        Point2f position_sample  = sampler->next_2d(active);
+        Float wavelength_sample  = sampler->next_1d();
+        Point2f direction_sample = sampler->next_2d(),
+                position_sample  = sampler->next_2d();
+
         // Sample one ray from an emitter in the scene.
         auto [ray, ray_weight, emitter] = scene->sample_emitter_ray(
-            time, wavelength_sample, direction_sample, position_sample, active);
-        return std::make_pair(ray, ray_weight);
+            time, wavelength_sample, direction_sample, position_sample);
+
+        return { ray, ray_weight };
     }
 
     /**
      * Intersects the given ray with the scene and recursively trace using
      * BSDF sampling. The given `throughput` should account for emitted
      * radiance from the sampled light source, wavelengths sampling weights,
-     * etc. At each interaction, we attempt connecting to the sensor and add
+     * etc. At each interaction, we attempt to connect to the sensor and add
      * the current radiance to the given `block`.
      *
      * Note: this will *not* account for directly visible emitters, since
@@ -218,8 +218,8 @@ public:
         while (loop(ek::detach(active))) {
             BSDFPtr bsdf = si.bsdf(ray);
 
-            // Connect to sensor and splat if successful.
-            // Sample a direction from the sensor to the current surface point.
+            /* Connect to sensor and splat if successful. Sample a direction
+               from the sensor to the current surface point. */
             auto [sensor_ds, sensor_weight] =
                 sensor->sample_direction(si, sampler->next_2d(), active);
             connect_sensor(scene, si, sensor_ds, bsdf,
@@ -231,12 +231,15 @@ public:
             auto [bs, bsdf_val] =
                 bsdf->sample(ctx, si, sampler->next_1d(active),
                              sampler->next_2d(active), active);
+
             // Using geometric normals (wo points to the camera)
             Float wi_dot_geo_n = ek::dot(si.n, -ray.d),
                   wo_dot_geo_n = ek::dot(si.n, si.to_world(bs.wo));
+
             // Prevent light leaks due to shading normals
             active &= (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                       (wo_dot_geo_n * Frame3f::cos_theta(bs.wo) > 0.f);
+
             // Adjoint BSDF for shading normals -- [Veach, p. 155]
             Float correction = ek::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
                                        (Frame3f::cos_theta(bs.wo) * wi_dot_geo_n));
@@ -301,9 +304,10 @@ public:
         Vector3f local_d        = si.to_local(sensor_ray.d);
         Mask on_surface         = active && ek::neq(si.shape, nullptr);
         if (ek::any_or<true>(on_surface)) {
-            // Note that foreshortening is only missing for directly visible
-            // emitters associated with a shape. Otherwise it's included in the BSDF.
-            // Clamp negative cosines (zero value if behind the surface).
+            /* Note that foreshortening is only missing for directly visible
+               emitters associated with a shape. Otherwise it's included in the
+               BSDF. Clamp negative cosines (zero value if behind the surface). */
+
             surface_weight[on_surface && ek::eq(bsdf, nullptr)] *=
                 ek::max(0.f, Frame3f::cos_theta(local_d));
 
@@ -313,24 +317,23 @@ public:
                 // Using geometric normals
                 Float wi_dot_geo_n = ek::dot(si.n, si.to_world(si.wi)),
                       wo_dot_geo_n = ek::dot(si.n, sensor_ray.d);
+
                 // Prevent light leaks due to shading normals
                 Mask valid = (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                              (wo_dot_geo_n * Frame3f::cos_theta(local_d) > 0.f);
 
                 // Adjoint BSDF for shading normals -- [Veach, p. 155]
-                Float correction = ek::select(
-                    valid,
+                Float correction = ek::select(valid,
                     ek::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
-                               (Frame3f::cos_theta(local_d) * wi_dot_geo_n)),
-                    0.f);
+                            (Frame3f::cos_theta(local_d) * wi_dot_geo_n)), 0.f);
 
                 surface_weight[on_surface] *=
                     correction * bsdf->eval(ctx, si, local_d, on_surface);
             }
         }
 
-        // Even if the ray is not coming from a surface (no foreshortening),
-        // we still don't want light coming from behind the emitter.
+        /* Even if the ray is not coming from a surface (no foreshortening),
+           we still don't want light coming from behind the emitter. */
         Mask not_on_surface = active && ek::eq(si.shape, nullptr) && ek::eq(bsdf, nullptr);
         if (ek::any_or<true>(not_on_surface)) {
             Mask invalid_side = Frame3f::cos_theta(local_d) <= 0.f;
@@ -340,9 +343,9 @@ public:
         result = weight * surface_weight;
 
         /* Splatting, adjusting UVs for sensor's crop window if needed.
-         * The crop window is already accounted for in the UV positions
-         * returned by the sensor, here we just need to compensate for
-         * the block's offset that will be applied in `put`. */
+           The crop window is already accounted for in the UV positions
+           returned by the sensor, here we just need to compensate for
+           the block's offset that will be applied in `put`. */
         Float alpha = ek::select(ek::neq(bsdf, nullptr), 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
         block->put(adjusted_position, si.wavelengths, result, alpha, active);
@@ -364,6 +367,6 @@ public:
     MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, ScatteringIntegrator);
+MTS_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, AdjointIntegrator);
 MTS_EXPORT_PLUGIN(ParticleTracerIntegrator, "Particle Tracer integrator");
 NAMESPACE_END(mitsuba)

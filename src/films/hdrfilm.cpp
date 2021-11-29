@@ -183,24 +183,27 @@ public:
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
-    size_t prepare(const std::vector<std::string> &channels) override {
-        std::vector<std::string> sorted = channels;
+    size_t prepare(const std::vector<std::string> &aovs) override {
+        std::vector<std::string> channels(5 + aovs.size());
 
         // Add basic RGBAW channels to the film
         for (size_t i = 0; i < 5; ++i)
-            sorted.insert(sorted.begin() + i, std::string(1, "RGBAW"[i]));
+            channels[i] = std::string(1, "RGBAW"[i]);
+
+        for (size_t i = 0; i < aovs.size(); ++i)
+            channels[5 + i] = aovs[i];
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, sorted.size());
+            m_storage = new ImageBlock(m_crop_size, channels.size());
             m_storage->set_offset(m_crop_offset);
             m_storage->clear();
-            m_channels = sorted;
+            m_channels = channels;
         }
 
-        std::sort(sorted.begin(), sorted.end());
-        auto it = std::unique(sorted.begin(), sorted.end());
-        if (it != sorted.end())
+        std::sort(channels.begin(), channels.end());
+        auto it = std::unique(channels.begin(), channels.end());
+        if (it != channels.end())
             Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
 
         return m_channels.size();
