@@ -2,7 +2,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/scatteringintegrator.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 
@@ -136,7 +135,7 @@ MTS_PY_EXPORT(Scene) {
                     return py::cast(tmp);
                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
                     return py::cast(tmp);
-                if (auto tmp = dynamic_cast<ScatteringIntegrator *>(o); tmp)
+                if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp)
                     return py::cast(tmp);
                 return py::cast(o);
             },

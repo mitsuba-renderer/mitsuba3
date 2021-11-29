@@ -10,6 +10,5 @@ MTS_PY_EXPORT(Spiral) {
         .def_method(Spiral, max_block_size)
         .def_method(Spiral, block_count)
         .def_method(Spiral, reset)
-        .def_method(Spiral, set_passes)
         .def_method(Spiral, next_block);
 }

@@ -112,10 +112,10 @@ def create_test_scene(max_depth=4, emitter='area',
 
 @pytest.mark.parametrize('emitter', ['area', 'directionalarea', 'texturedarea'])
 def test01_render_simple(variants_all, emitter):
-    from mitsuba.render import ScatteringIntegrator
+    from mitsuba.render import AdjointIntegrator
 
     scene, integrator = create_test_scene(emitter=emitter)
-    assert isinstance(integrator, ScatteringIntegrator)
+    assert isinstance(integrator, AdjointIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop_film=True)
     assert ek.count(ek.ravel(image) > 0) >= 0.2 * ek.hprod(ek.shape(image))
 

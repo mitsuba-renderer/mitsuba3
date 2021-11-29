@@ -76,10 +76,6 @@ public:
         return new IndependentSampler(*this);
     }
 
-    void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1) override {
-        Base::seed(seed_offset, wavefront_size);
-    }
-
     Float next_1d(Mask active = true) override {
         Assert(seeded());
         return m_rng.template next_float<Float>(active);

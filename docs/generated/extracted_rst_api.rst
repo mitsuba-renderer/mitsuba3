@@ -12884,7 +12884,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.render.ScatteringIntegrator
+.. py:class:: mitsuba.render.AdjointIntegrator
 
     Base class: :py:obj:`mitsuba.render.Integrator`
 
@@ -12892,7 +12892,7 @@
     scatter their radiance to sensors, as opposed integrators starting
     from sensors and gathering radiance from light sources.
 
-    .. py:method:: mitsuba.render.ScatteringIntegrator.render_backward(scene, params, image_adj, seed, sensor_index=0, spp=0)
+    .. py:method:: mitsuba.render.AdjointIntegrator.render_backward(scene, params, image_adj, seed, sensor_index=0, spp=0)
 
         Performs the adjoint phase of differentiable rendering by backpropagating
         image gradients back to the scene parameters.
@@ -12940,7 +12940,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.render.ScatteringIntegrator.sample(self, scene, sensor, block, active=True)
+    .. py:method:: mitsuba.render.AdjointIntegrator.sample(self, scene, sensor, block, active=True)
 
         Samples a light path starting from a light source and attempts to
         connect it to the given sensor at each surface interaction. If the
@@ -12962,7 +12962,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.render.ScatteringIntegrator.sample_adjoint(scene, sampler, ray, params, grad, medium=None, active=True)
+    .. py:method:: mitsuba.render.AdjointIntegrator.sample_adjoint(scene, sampler, ray, params, grad, medium=None, active=True)
 
         Propagate adjoint radiance along a ray.
 
