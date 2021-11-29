@@ -13,6 +13,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+#define MTS_OPTIX_ENABLE_BBOX_FASTPATH
+
 #if !defined(NDEBUG)
 #  define MTS_OPTIX_DEBUG 1
 #endif
@@ -471,52 +473,57 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
                                           Mask active) const {
-#if 0
-    // Attempt a fast path for scenes that are only made of a single AABB.
-    if (true) {
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-
-        const ref<Shape> shape = m_shapes[0];
-        const ScalarBoundingBox3f bbox = shape->bbox();
-
-        auto [hit, mint, maxt] = bbox.ray_intersect(ray);
-        Mask starts_outside = mint > 0.f;
-        Float t = ek::select(starts_outside, mint, maxt);
-        hit &= t <= ray.maxt && t > math::RayEpsilon<Float>;
-        si.t = ek::select(hit, t, ek::Infinity<Float>);
-        si.time = ray.time;
-        si.wavelengths = ray.wavelengths;
-        si.p = ray(si.t);
-
-        // Normal vector: assuming axis-aligned bbox, figure
-        // out the normal direction based on the relative position
-        // of the intersection point to the bbox's center.
-        Point3f p_local = si.p - bbox.center();
-        // The axis with the largest local coordinate (magnitude)
-        // is the axis of the normal vector.
-        Point3f p_local_abs = ek::abs(p_local);
-        Float vmax = ek::hmax(p_local_abs);
-        Normal3f n(ek::eq(p_local_abs.x(), vmax), ek::eq(p_local_abs.y(), vmax),
-                   ek::eq(p_local_abs.z(), vmax));
-        // Normal always points to the outside of the bbox, independently
-        // of the ray direction.
-        // n = ek::normalize(ek::select(ek::dot(ray.d, n) > 0, -n, n));
-        n = ek::normalize(ek::sign(p_local) * n);
-        si.n = ek::select(hit, n, -ray.d);
-
-        si.shape = ek::select(hit, ek::opaque<ShapePtr>(shape.get()), ek::zero<ShapePtr>());
-        si.uv = 0.f;  // TODO: proper UVs
-        si.sh_frame.n = si.n;
-        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
-            si.initialize_sh_frame();
-        si.wi = ek::select(hit, si.to_local(-ray.d), -ray.d);
-        return si;
-    }
-#endif
 
     if constexpr (ek::is_cuda_array_v<Float>) {
+#if defined(MTS_OPTIX_ENABLE_BBOX_FASTPATH)
+        // Attempt a fast path for scenes that are only made of a single AABB.
+        if (m_use_bbox_fast_path) {
+            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+
+            const ref<Shape> shape = m_shapes[0];
+            const ScalarBoundingBox3f bbox = shape->bbox();
+
+            auto [hit, mint, maxt] = bbox.ray_intersect(ray);
+            Mask starts_outside = mint > 0.f;
+            Float t = ek::select(starts_outside, mint, maxt);
+            hit &= active && (t <= ray.maxt) && (t > math::RayEpsilon<Float>);
+            si.t = ek::select(hit, t, ek::Infinity<Float>);
+
+            si.time = ray.time;
+            si.wavelengths = ray.wavelengths;
+            si.p = ray(si.t);
+
+            // Normal vector: assuming axis-aligned bbox, figure
+            // out the normal direction based on the relative position
+            // of the intersection point to the bbox's center.
+            Point3f p_local = (si.p - bbox.center()) / bbox.extents();
+            // The axis with the largest local coordinate (magnitude)
+            // is the axis of the normal vector.
+            Point3f p_local_abs = ek::abs(p_local);
+            Float vmax = ek::hmax(p_local_abs);
+            Normal3f n(ek::eq(p_local_abs.x(), vmax), ek::eq(p_local_abs.y(), vmax),
+                    ek::eq(p_local_abs.z(), vmax));
+            // Normal always points to the outside of the bbox, independently
+            // of the ray direction.
+            n = ek::normalize(ek::sign(p_local) * n);
+            si.n = ek::select(hit, n, -ray.d);
+
+            si.shape = ek::select(hit, ek::opaque<ShapePtr>(shape.get()), ek::zero<ShapePtr>());
+            si.uv = 0.f;  // TODO: proper UVs
+            si.sh_frame.n = si.n;
+            if (has_flag(hit_flags, RayFlags::ShadingFrame))
+                si.initialize_sh_frame();
+            si.wi = ek::select(hit, si.to_local(-ray.d), -ray.d);
+            return si;
+        } else {
+            PreliminaryIntersection3f pi =
+                ray_intersect_preliminary_gpu(ray, hit_flags, active);
+            return pi.compute_surface_interaction(ray, hit_flags, active);
+        }
+#else
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, hit_flags, active);
         return pi.compute_surface_interaction(ray, hit_flags, active);
+#endif
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(hit_flags);
@@ -528,44 +535,63 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        OptixSceneState &s = *(OptixSceneState *) m_accel;
-        const OptixConfig &config = optix_configs[s.config_index];
+#if defined(MTS_OPTIX_ENABLE_BBOX_FASTPATH)
+        if (m_use_bbox_fast_path) {
+#else
+        if (false) {
+#endif
+            // Attempt a fast path for scenes that are only made of a single AABB.
+            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
-        // Override optix configuration in enoki-jit.
-        // TODO This could be problematic when raytracing calls on other scenes are still pending.
-        jit_optix_configure(
-            &config.pipeline_compile_options,
-            &s.sbt,
-            config.program_groups, ProgramGroupCount
-        );
+            const ref<Shape> shape         = m_shapes[0];
+            const ScalarBoundingBox3f bbox = shape->bbox();
 
-        UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
-                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+            auto [hit, mint, maxt] = bbox.ray_intersect(ray);
+            Mask starts_outside    = mint > 0.f;
+            Float t                = ek::select(starts_outside, mint, maxt);
+            return active && hit && (t <= ray.maxt) &&
+                   (t > math::RayEpsilon<Float>);
+        } else {
 
-        UInt32 payload_hit(1);
+            OptixSceneState &s        = *(OptixSceneState *) m_accel;
+            const OptixConfig &config = optix_configs[s.config_index];
 
-        using Single = ek::float32_array_t<Float>;
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
-        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
-            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
+            // Override optix configuration in enoki-jit.
+            // TODO: this could be problematic when raytracing calls on other
+            // scenes are still pending.
+            jit_optix_configure(&config.pipeline_compile_options, &s.sbt,
+                                config.program_groups, ProgramGroupCount);
 
-        uint32_t trace_args[] {
-            m_accel_handle.index(),
-            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
-            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-            ray_mint.index(), ray_maxt.index(), ray_time.index(),
-            ray_mask.index(), ray_flags.index(),
-            sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index(), payload_hit.index()
-        };
+            UInt32 ray_mask(255),
+                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index());
+            UInt32 payload_hit(1);
 
-        return active && ek::eq(UInt32::steal(trace_args[15]), 1);
+            using Single = ek::float32_array_t<Float>;
+            ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+            Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
+            if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
+                ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] =
+                    ek::Largest<Single>;
+
+            uint32_t trace_args[]{
+                m_accel_handle.index(), ray_o.x().index(),
+                ray_o.y().index(),      ray_o.z().index(),
+                ray_d.x().index(),      ray_d.y().index(),
+                ray_d.z().index(),      ray_mint.index(),
+                ray_maxt.index(),       ray_time.index(),
+                ray_mask.index(),       ray_flags.index(),
+                sbt_offset.index(),     sbt_stride.index(),
+                miss_sbt_index.index(), payload_hit.index()
+            };
+
+            jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
+                                trace_args, active.index());
+
+            return active && ek::eq(UInt32::steal(trace_args[15]), 1);
+        }
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);
