@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This class implements GTR1 Microfacet Distribution Methods.
  * It is not included in Microfacet Class so it is added here.
- * Only Principled BSDF is using it.
+ * Only Disney Principled BSDF is using it.
 
  /parameters:
  * - alpha (float)
@@ -82,17 +82,17 @@ Disney Principled BSDF (:monosp:`disney`)
    - Controls the roughness parameter of main specular lobes.(Default:0.5)
  * - anisotropic
    - |float| or |texture|
-   - Controls the roughness parameters of main specular lobes. '0.0' makes the
+   - Controls the roughness parameters of the main specular lobes. '0.0' makes the
      material isotropic.(Default:0.0)
  * - metallic
    - |texture| or |float|
-   - The rate of the metallic major lobe.(Default:0.0) Only used in `3D`
+   - The coefficient of the metallic major lobe.(Default:0.0) Only used in `3D` .
  * - spec_trans
    - |texture| or |float|
    - has different role in 2 models.
 
-     - `3D`: The rate of the bsdf major lobe.
-     - `thin`: The rate of the all specular lobes.
+     - `3D`: The coefficient of the bsdf major lobe.
+     - `thin`: The coefficient of all specular lobes.
  * - eta
    - Different for
 
@@ -117,7 +117,7 @@ Disney Principled BSDF (:monosp:`disney`)
  * - flatness
    - |float| or |texture|
    - The coefficient of the fake subsurface approximation lobe based on
-     Hanrahan-Krueger.(Default:0.0)
+     Hanrahan-Krueger approximation.(Default:0.0)
  * - clearcoat
    - |texture| or |float|
    - The coefficient of the secondary isotropic specular lobe. (Default:0.0)
@@ -125,7 +125,7 @@ Disney Principled BSDF (:monosp:`disney`)
  * - clearcoat_gloss
    - |texture| or |float|
    - Controls the roughness of the secondary specular lobe. (Default:0.0) Only
-     used in `3D`.
+     used in `3D`. Clearcoat response gets glossier as the parameter increases.
  * - diff_trans
    - |texture| or |float|
    - The rate that the energy of diffuse reflection is given to the
@@ -138,7 +138,7 @@ Disney Principled BSDF (:monosp:`disney`)
      `3D`, 1.0 for `thin`)
  * - main_specular_sampling_rate
    - |float|
-   - The rate of main specular lobe in sampling.(Default:1.0) Only used in `3D`.
+   - The rate of main the specular lobe in sampling.(Default:1.0) Only used in `3D`.
  * - clearcoat_sampling_rate
    - |float|
    - The rate of the secondary specular reflection in sampling.(Default:0.0)
@@ -160,15 +160,16 @@ All of the parameters except sampling rates, :monosp:`diff_trans` and
 :monosp:`eta` should take values between 0.0 and 1.0 .  The range of
 :monosp:`diff_trans` is 0.0 to 2.0 . For faster performance in jit compiler, the
 parameters which have 0.0 default value should not be specified in the xml file
-if the default values are used. Also, the parameters which are peculiar to one
+if the 0.0 value is used. Also, the parameters which are peculiar to one
 of the models (`3D` or `thin`) must only be specified in the corresponding
 model.
 
 Disney principled BSDF is a complex BSDF which has many parameters. The
-implementation is based on Disney course notes (Physically Based Shading at
-Disney and Extending the Disney BRDF to a BSDF with Integrated Subsurface
-Scattering). There are two different configurations: `3D` Principled BSDF and
-`thin` BSDF.
+implementation is based on Disney course notes *Physically Based Shading at
+Disney* and *Extending the Disney BRDF to a BSDF with Integrated Subsurface
+Scattering* . There are two different configurations: `3D` Principled BSDF and
+`thin` BSDF. Thin BSDF is just an approximation for `2D` surfaces while `3D`
+is the main BSDF.
 
  .. note::
 
@@ -178,22 +179,22 @@ Images below show how the input parameters affect the appearance of the objects.
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/disney_blend.jpg
-   :caption: Blending of parameters when transmission lobe is turned off. ( `3D`
+   :caption: Blending of parameters when transmission lobe is turned off ( `3D`
              material)
 .. subfigure:: ../../resources/data/docs/images/render/disney_st_blend.jpg
-    :caption: Blending of parameters when transmission lobe is turned on. ( `3D`
+    :caption: Blending of parameters when transmission lobe is turned on ( `3D`
               material)
 .. subfigure:: ../../resources/data/docs/images/render/thin_disney_blend.jpg
-    :caption: Blending of parameters. ( `thin` material)
+    :caption: Blending of Parameters ( `thin` material)
 .. subfigend::
     :label: fig-blend-disney
 
 You can see the general structure of the BSDF below.
 
 .. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/disney.png
+.. subfigure:: ../../resources/data/docs/images/bsdf/disney.png
     :caption: General Structure of `3D` Configuration
-.. subfigure:: ../../resources/data/docs/images/render/thin_disney.png
+.. subfigure:: ../../resources/data/docs/images/bsdf/thin_disney.png
     :caption: General Structure of `thin` Configuration
 .. subfigend::
     :label: fig-structure-disney
@@ -244,13 +245,10 @@ public:
     using GTR1 = GTR1<Float, Spectrum>;
 
     Disney(const Properties &props) : Base(props) {
+        //decides between the thin and 3D model
+        thin = props.get<bool>("thin",false);
 
-        if (props.has_property("thin")) {
-            thin = props.get<bool>("thin");
-        } else
-            thin = false;
-
-        // parameters that are used in both models
+        // parameters that are used in both models (thin and 3D)
         base_color = props.texture<Texture>("base_color", .5f);
         roughness  = props.texture<Texture>("roughness", .5f);
 
@@ -639,16 +637,6 @@ public:
             Float metallic_w =
                 has_metallic ? metallic->eval_1(si, active) : Float(0.f);
 
-            // in case eta value is changed through specular with python plugin,
-            // we need to update eta
-            // Float eta;
-            /*
-            if (!eta_specular)
-                eta = 2.f * ek::rcp(1.f - ek::sqrt(0.08f * specular)) - 1.f;
-            else
-                eta = m_eta;
-
-             */
             Float clearcoat_w =
                 has_clearcoat ? clearcoat->eval_1(si, active) : Float(0.f);
             Float brdf_w = (1.0f - metallic_w) * (1.0f - strans_w),
