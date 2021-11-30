@@ -391,9 +391,9 @@ protected:
     // ref<Texture> m_radiance;
     /// Stretch factor to extend to the bottom hemisphere
     ScalarFloat m_stretch;
-
+    /// Coefficients of the wavelength from the spectrum of the sun
     std::vector<double> m_data;
-
+    /// Wavelength from the spectrum of the sun
     std::vector<double> m_wavelengths;
 
 

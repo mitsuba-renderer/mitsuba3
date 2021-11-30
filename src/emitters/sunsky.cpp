@@ -25,7 +25,7 @@ NAMESPACE_BEGIN(mitsuba)
 /* Apparent radius of the sun as seen from the earth (in degrees).
    This is an approximation--the actual value is somewhere between
    0.526 and 0.545 depending on the time of year */
-#define SUN_APP_RADIUS 0.5358
+#define SUN_APP_RADIUS 0.5358f
 
 /**!
 
@@ -83,10 +83,21 @@ Sunsky emitter (:monosp:`sunsky`)
    - Scale factor to adjust the radius of the sun, while preserving its power.
      Set to 0 to turn it into a directional light source.
 
+ * - has_sky
+   - |Boolean|
+   - Display the sky.
+
+ * - has_sun
+   - |Boolean|
+   - Display the sun.
+
  This convenience plugin has the sole purpose of instantiating
  \pluginref{sun} and \pluginref{sky} and merging them into a joint
  environment map. Please refer to these plugins individually for more
  details.
+ 
+ It can also be a single sun plugin or a single sky plugin when setting 
+ either of the plugin to not be displayed. 
  */
 
 
@@ -120,6 +131,9 @@ public:
         m_extend = props.get<bool>("extend", false);
         m_albedo = props.get<ScalarColor3f>("albedo", ScalarColor3f(0.2f));
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+
+        m_sky_display = props.get<bool>("has_sky", true);
+        m_sun_display = props.get<bool>("has_sun", true);
 
         if (m_turbidity < 1 || m_turbidity > 10)
              Log(Error, "The turbidity parameter must be in the range[1,10]!");
@@ -178,101 +192,107 @@ public:
             ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
         }
 
+        if (m_sky_display){
+            /* First, rasterize the sky */
+            ScalarPoint2f factor((2 * enoki::Pi<Float>) / bitmap->width(), 
+                enoki::Pi<Float> / bitmap->height());
 
-        /* First, rasterize the sky */
-        ScalarPoint2f factor((2 * enoki::Pi<Float>) / bitmap->width(), 
-            enoki::Pi<Float> / bitmap->height());
+            if constexpr (!is_spectral_v<Spectrum>){
+                for (size_t y = 0; y < bitmap->height(); ++y) {
+                    ScalarFloat theta = (y + .5f) * factor.y();
+                    SunSkyPixelFormat *target = (SunSkyPixelFormat *) bitmap->data() + y * bitmap->width();
 
-        if constexpr (!is_spectral_v<Spectrum>){
-            for (size_t y = 0; y < bitmap->height(); ++y) {
-                ScalarFloat theta = (y + .5f) * factor.y();
-                SunSkyPixelFormat *target = (SunSkyPixelFormat *) bitmap->data() + y * bitmap->width();
-
-                for (size_t x = 0; x < bitmap->width(); ++x) {
-                    ScalarFloat phi = (x + .5f) * factor.x();
-                    SunSkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi));
-                    *target++ = sky_rad;
+                    for (size_t x = 0; x < bitmap->width(); ++x) {
+                        ScalarFloat phi = (x + .5f) * factor.x();
+                        SunSkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi));
+                        *target++ = sky_rad;
+                    }
                 }
-            }
-        } else{
-            for (size_t y = 0; y < bitmap->height(); ++y) {
-                ScalarFloat theta = (y + .5f) * factor.y();
-                float *target = (float *) bitmap->data() + (y * bitmap->width()) * SunSkyPixelFormat::Size;
+            } else{
+                for (size_t y = 0; y < bitmap->height(); ++y) {
+                    ScalarFloat theta = (y + .5f) * factor.y();
+                    float *target = (float *) bitmap->data() + (y * bitmap->width()) * SunSkyPixelFormat::Size;
 
-                for (size_t x = 0; x < bitmap->width(); ++x) {
-                    ScalarFloat phi = (x + .5f) * factor.x();
-                    SunSkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi)); 
-                    for (size_t i = 0; i < SunSkyPixelFormat::Size; ++i)
-                        *target++ = float(sky_rad[i]);
+                    for (size_t x = 0; x < bitmap->width(); ++x) {
+                        ScalarFloat phi = (x + .5f) * factor.x();
+                        SunSkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi)); 
+                        for (size_t i = 0; i < SunSkyPixelFormat::Size; ++i)
+                            *target++ = float(sky_rad[i]);
+                    }
                 }
             }
         }
-
-        //Then create the sun
-        /* Step 1: compute a *very* rough estimate of how many
-           pixel in the output environment map will be covered
-           by the sun */
-
-        size_t pixel_count = m_resolution * m_resolution / 2;
-        ScalarFloat cos_theta = std::cos(m_theta * m_sun_radius_scale);
-
-        /* Ratio of the sphere that is covered by the sun */
-        ScalarFloat covered_portion = 0.5f * (1 - cos_theta);
-
-        /* Approx. number of samples that need to be generated,
-           be very conservative */
-        size_t n_samples = (size_t) std::max(100.f, (pixel_count * covered_portion * 1000.f));
-
-        ScalarFrame3f frame(m_sun_dir);
-
-        ScalarPoint2f factor_sun(bitmap->width() / (2 * enoki::Pi<Float>) , 
-            bitmap->height() / enoki::Pi<Float>);
-
-        SunSkyPixelFormat value;
-
-        if constexpr (is_spectral_v<Spectrum>){
-            IrregularContinuousDistribution<double> m_radiance_dist(m_wavelengths.data(), m_data.data(), 97);
-            for (size_t i = 0; i < SunSkyPixelFormat::Size; i ++){
-                double w_l = 320. + (double)i * 40.;
-                value[i] = m_radiance_dist.eval_pdf(w_l, true);
-            }
-            value *= 2 * ek::Pi<float> * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
-            (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
-
-        }else{
-            value = spectrum_list_to_srgb(m_wavelengths, m_data, false) * 2 * ek::Pi<float> 
-            * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
-            (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
-        }
-
-        value *= MTS_CIE_Y_NORMALIZATION;
         
-        for (size_t i = 0; i < n_samples; ++i) {
-            ScalarVector3f dir = frame.to_world(warp::square_to_uniform_cone<ScalarFloat>(sample02(i), cos_theta));
+        if (m_sun_display){
 
-            ScalarFloat sin_theta = ek::safe_sqrt(1 - dir.y() * dir.y());
-            SphericalCoordinates sph_coords = from_sphere(dir);
+            //Then create the sun
+            /* Step 1: compute a *very* rough estimate of how many
+            pixel in the output environment map will be covered
+            by the sun */
 
-            ScalarPoint2i pos(
-                ek::min(ek::max(0, (int) (sph_coords.azimuth * factor_sun.x())), bitmap->width() - 1),
-                ek::min(ek::max(0, (int) (sph_coords.elevation * factor_sun.y())), bitmap->height() - 1)
-            );
+            size_t pixel_count = m_resolution * m_resolution / 2;
+            ScalarFloat cos_theta = std::cos(m_theta * m_sun_radius_scale);
 
-            SunSkyPixelFormat val = value / ek::max(1e-3f, sin_theta);
+            /* Ratio of the sphere that is covered by the sun */
+            ScalarFloat covered_portion = 0.5f * (1 - cos_theta);
+
+            /* Approx. number of samples that need to be generated,
+            be very conservative */
+            size_t n_samples = (size_t) std::max(100.f, (pixel_count * covered_portion * 1000.f));
+
+            ScalarFrame3f frame(m_sun_dir);
+
+            ScalarPoint2f factor_sun(bitmap->width() / (2 * enoki::Pi<Float>) , 
+                bitmap->height() / enoki::Pi<Float>);
+
+            SunSkyPixelFormat value;
 
             if constexpr (is_spectral_v<Spectrum>){
-                float *target = (float *)bitmap->data();
-                float *ptr = target + SunSkyPixelFormat::Size * (pos.x() + pos.y() * bitmap->width());
-                for (size_t i = 0; i < SunSkyPixelFormat::Size; ++i)
-                    *ptr++ += float(val[i]);
-                
+                IrregularContinuousDistribution<double> m_radiance_dist(m_wavelengths.data(), m_data.data(), 97);
+                for (size_t i = 0; i < SunSkyPixelFormat::Size; i ++){
+                    double w_l = 320. + (double)i * 40.;
+                    value[i] = m_radiance_dist.eval_pdf(w_l, true);
+                }
+                value *= 2 * ek::Pi<float> * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
+                (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
+
             }else{
-                SunSkyPixelFormat *target = (SunSkyPixelFormat *)bitmap->data();
-                SunSkyPixelFormat *ptr = target + (pos.x() + pos.y() * bitmap->width());
-                *ptr++ += val;
+                value = spectrum_list_to_srgb(m_wavelengths, m_data, false) * 2 * ek::Pi<float> 
+                * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
+                (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
             }
+
+            value *= MTS_CIE_Y_NORMALIZATION;
+            
+            for (size_t i = 0; i < n_samples; ++i) {
+                ScalarVector3f dir = frame.to_world(warp::square_to_uniform_cone<ScalarFloat>(sample02(i), cos_theta));
+
+                ScalarFloat sin_theta = ek::safe_sqrt(1 - dir.y() * dir.y());
+                SphericalCoordinates sph_coords = from_sphere(dir);
+
+                ScalarPoint2i pos(
+                    ek::min(ek::max(0, (int) (sph_coords.azimuth * factor_sun.x())), bitmap->width() - 1),
+                    ek::min(ek::max(0, (int) (sph_coords.elevation * factor_sun.y())), bitmap->height() - 1)
+                );
+
+                SunSkyPixelFormat val = value / ek::max(1e-3f, sin_theta);
+
+                if constexpr (is_spectral_v<Spectrum>){
+                    float *target = (float *)bitmap->data();
+                    float *ptr = target + SunSkyPixelFormat::Size * (pos.x() + pos.y() * bitmap->width());
+                    for (size_t i = 0; i < SunSkyPixelFormat::Size; ++i)
+                        *ptr++ += float(val[i]);
+                    
+                }else{
+                    SunSkyPixelFormat *target = (SunSkyPixelFormat *)bitmap->data();
+                    SunSkyPixelFormat *ptr = target + (pos.x() + pos.y() * bitmap->width());
+                    *ptr++ += val;
+                }
+            }
+
         }
 
+        
         if constexpr (!is_spectral_v<Spectrum>){
             bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
         }
@@ -473,10 +493,14 @@ protected:
     ScalarFloat m_solid_angle;
     /// Direction of the sun (untransformed)
     Vector<float, 3> m_sun_dir;
-
+    /// Coefficients of the wavelength from the spectrum of the sun
     std::vector<double> m_data;
-
+    /// Wavelength from the spectrum of the sun
     std::vector<double> m_wavelengths;
+    /// Current render displays the sky
+    bool m_sky_display;
+    /// Current render displays the sun
+    bool m_sun_display;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(SunSkyEmitter, Emitter)

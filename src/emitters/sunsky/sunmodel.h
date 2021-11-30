@@ -16,9 +16,9 @@ struct DateTimeRecord {
     int year;
     int month;
     int day;
-    float hour;
-    float minute;
-    float second;
+    double hour;
+    double minute;
+    double second;
 
     std::string to_string() const {
         std::ostringstream oss;
@@ -33,9 +33,9 @@ struct DateTimeRecord {
 };
 
 struct LocationRecord {
-    float longitude;
-    float latitude;
-    float timezone;
+    double longitude;
+    double latitude;
+    double timezone;
 
     std::string to_string() const {
         std::ostringstream oss;
@@ -153,10 +153,10 @@ SphericalCoordinates compute_sun_coordinates(const DateTimeRecord &dateTime, con
         double greenwichMeanSiderealTime = 6.6974243242
             + 0.0657098283 * elapsedJulianDays + decHours;
 
-        double localMeanSiderealTime = ek::deg_to_rad((float) ((greenwichMeanSiderealTime * 15
-            + location.longitude)));
+        double localMeanSiderealTime = ek::deg_to_rad<double> (greenwichMeanSiderealTime * 15
+            + location.longitude);
 
-        double latitudeInRadians = ek::deg_to_rad(location.latitude);
+        double latitudeInRadians = ek::deg_to_rad<double>(location.latitude);
         double cosLatitude = std::cos(latitudeInRadians);
         double sinLatitude = std::sin(latitudeInRadians);
 
@@ -203,15 +203,15 @@ SphericalCoordinates compute_sun_coordinates(const Properties &props) {
         LocationRecord location;
         DateTimeRecord dateTime;
 
-        location.latitude  = props.get<float>("latitude", 35.6894f);
-        location.longitude = props.get<float>("longitude", 139.6917f);
-        location.timezone  = props.get<float>("timezone", 9);
+        location.latitude  = props.get<double>("latitude", 35.6894);
+        location.longitude = props.get<double>("longitude", 139.6917);
+        location.timezone  = props.get<double>("timezone", 9);
         dateTime.year      = props.get<int>("year", 2010);
         dateTime.day       = props.get<int>("day", 10);
         dateTime.month     = props.get<int>("month", 7);
-        dateTime.hour      = props.get<float>("hour", 15.0f);
-        dateTime.minute    = props.get<float>("minute", 0.0f);
-        dateTime.second    = props.get<float>("second", 0.0f);
+        dateTime.hour      = props.get<double>("hour", 15.0);
+        dateTime.minute    = props.get<double>("minute", 0.0);
+        dateTime.second    = props.get<double>("second", 0.0);
 
         SphericalCoordinates coords = compute_sun_coordinates(dateTime, location);
 
