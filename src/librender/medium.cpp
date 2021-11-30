@@ -187,15 +187,17 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     const bool has_supergrid = (bool) m_majorant_grid;
 
     // Sample proportional to transmittance only using reservoir sampling
-    MediumInteraction3f mi_sub = mi;
-    Float transmittance = 1.f;
-    Float running_t = mint;
-    Float acc_weight = 0.f;
-    Float sampled_t = ek::NaN<Float>;
-    Float sampled_t_step = ek::NaN<Float>;
-    Float sampling_weight = ek::NaN<Float>;
+    MediumInteraction3f mi_sub  = mi;
+    Float transmittance         = 1.f;
+    Float running_t             = mint;
+    Float acc_weight            = 0.f;
+    Float sampled_t             = ek::NaN<Float>;
+    Float sampled_t_step        = ek::NaN<Float>;
+    Float sampling_weight       = ek::NaN<Float>;
 
     ek::Loop<Mask> loop("Medium::sample_interaction_drt");
+    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
+             running_t, mi_sub, transmittance);
     Float global_majorant;
     Float dda_t, desired_tau, tau_acc;
     Vector3f dda_tmax, dda_tdelta;
@@ -209,16 +211,11 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
         needs_new_target = true;
         global_majorant = ek::NaN<Float>;
 
-        loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-                 running_t, mi_sub, transmittance, dda_t, dda_tmax,
-                 needs_new_target, desired_tau, tau_acc);
+        loop.put(dda_t, dda_tmax, needs_new_target, desired_tau, tau_acc);
     } else {
         // Get global majorant
         global_majorant =
             extract_channel(get_combined_extinction(mi, active), channel);
-
-        loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-                 running_t, mi_sub, transmittance);
     }
 
     sampler->loop_register(loop);
