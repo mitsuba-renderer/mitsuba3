@@ -20,7 +20,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
         NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
         s.accel = kdtree;
 
-            // Get shapes registry ids
+        // Get shapes registry ids
         if (!m_shapes.empty()) {
             std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
             for (size_t i = 0; i < m_shapes.size(); i++)
@@ -156,7 +156,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         Float t(Float::steal(out[0]));
 
-        pi.prim_uv = Vector2f(Float::steal(out[1]), Float::steal(out[2]));
+        pi.prim_uv = Vector2f(Float::steal(out[1]),
+                              Float::steal(out[2]));
 
         pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);
