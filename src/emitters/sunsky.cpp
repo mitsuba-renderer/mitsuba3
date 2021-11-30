@@ -20,8 +20,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-//TODO: unresolved: m_sun_radius_scale == 0 case
-
 /* Apparent radius of the sun as seen from the earth (in degrees).
    This is an approximation--the actual value is somewhere between
    0.526 and 0.545 depending on the time of year */
@@ -136,13 +134,18 @@ public:
         m_sun_display = props.get<bool>("has_sun", true);
 
         if (m_turbidity < 1 || m_turbidity > 10)
-             Log(Error, "The turbidity parameter must be in the range[1,10]!");
+            Log(Error, "The turbidity parameter must be in the range[1,10]!");
         if (m_stretch < 1 || m_stretch > 2)
-             Log(Error, "The stretch parameter must be in the range [1,2]!");
+            Log(Error, "The stretch parameter must be in the range [1,2]!");
         for (size_t i=0; i < m_albedo.Size; ++i) {
-             if (m_albedo[i] < 0 || m_albedo[i] > 1)
-                 Log(Error, "The albedo parameter must be in the range [0,1]!");
+            if (m_albedo[i] < 0 || m_albedo[i] > 1)
+                Log(Error, "The albedo parameter must be in the range [0,1]!");
          }
+
+        // imitate behavior of Mitsuba1 in this case
+        if (m_sky_display && m_sun_radius_scale == 0){
+            m_sun_display = false;
+        }
 
         ScalarFloat sun_elevation = 0.5f * enoki::Pi<Float> - m_sun.elevation;
 
