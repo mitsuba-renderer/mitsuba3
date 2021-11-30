@@ -2511,7 +2511,7 @@ protected:
             pi.prim_index = prim_index;
 
             bool hit_inst  = (inst_index != (uint32_t) -1);
-            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape;
+            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape; // shape_index for LLVM + kdtree
             pi.instance    = hit_inst ? shape : nullptr;
             pi.shape_index = hit_inst ? inst_index : shape_index;
         }
