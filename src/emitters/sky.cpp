@@ -198,33 +198,32 @@ public:
             Log(Error, "The sun is below the horizon -- this is not supported by the sky model.");
 
         if constexpr (is_spectral_v<Spectrum>){
-            for (size_t i = 0; i < m_channels; ++i){
+            for (size_t i = 0; i < m_channels; ++i)
                 m_state[i] = arhosekskymodelstate_alloc_init
                 ((double)sun_elevation, (double)m_turbidity, (double)luminance<Float>(m_albedo));
-            }
+            
         }
         else {
-            for (size_t i = 0; i < m_channels; ++i){
+            for (size_t i = 0; i < m_channels; ++i)
                 m_state[i] = arhosek_rgb_skymodelstate_alloc_init
                 ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
-            }
+            
         }
     }
 
     ~SkyEmitter(){
-        for (size_t i = 0; i < m_channels; ++i){
+        for (size_t i = 0; i < m_channels; ++i)
             arhosekskymodelstate_free(m_state[i]);
-        }
     }
 
 
     std::vector<ref<Object>> expand() const override {
         //expends into a envmap plugin writing to a bitmap
         ref<Bitmap> bitmap;
-        if constexpr (!is_spectral_v<Spectrum>){
+        if constexpr (!is_spectral_v<Spectrum>)
             bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2));
-        }else{
+        else{
             const std::vector<std::string> channel_names = {"320", "360", 
             "400", "440", "480", "520", "560", "600", "640", "680", "720"};
             bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
@@ -259,12 +258,9 @@ public:
             }
         }
 
-        if constexpr (!is_spectral_v<Spectrum>){
+        if constexpr (!is_spectral_v<Spectrum>)
             bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
-        }
-        // FileStream *fs = new FileStream("sky.exr", FileStream::ETruncReadWrite);
-        // bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
-        
+
         Properties props("envmap");
 
         props.set_pointer("bitmap", (uint8_t *) bitmap.get());
@@ -311,13 +307,6 @@ public:
         return result * m_scale;
     }
 
-    // from constant.cpp
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
-                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-
-        return warp::square_to_uniform_sphere_pdf(ds.d);
-    }
 
     /// This emitter does not occupy any particular region of space, return an invalid bounding box
     ScalarBoundingBox3f bbox() const override {

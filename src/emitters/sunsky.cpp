@@ -143,26 +143,23 @@ public:
          }
 
         // imitate behavior of Mitsuba1 in this case
-        if (m_sky_display && m_sun_radius_scale == 0){
+        if (m_sky_display && m_sun_radius_scale == 0)
             m_sun_display = false;
-        }
-
+        
         ScalarFloat sun_elevation = 0.5f * enoki::Pi<Float> - m_sun.elevation;
 
         if (sun_elevation < 0)
             Log(Error, "The sun is below the horizon -- this is not supported by the sky model.");
 
         if constexpr (is_spectral_v<Spectrum>){
-            for (size_t i = 0; i < m_channels; ++i){
+            for (size_t i = 0; i < m_channels; ++i)
                 m_state[i] = arhosekskymodelstate_alloc_init
                 ((double)sun_elevation, (double)m_turbidity, (double)luminance<Float>(m_albedo));
-            }
         }
         else {
-            for (size_t i = 0; i < m_channels; ++i){
+            for (size_t i = 0; i < m_channels; ++i)
                 m_state[i] = arhosek_rgb_skymodelstate_alloc_init
                 ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
-            }
         }
 
         SphericalCoordinates sun(m_sun);
@@ -185,10 +182,10 @@ public:
 
 
         ref<Bitmap> bitmap;
-        if constexpr (!is_spectral_v<Spectrum>){
+        if constexpr (!is_spectral_v<Spectrum>)
             bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2));
-        }else{
+        else{
             const std::vector<std::string> channel_names = {"320", "360", 
             "400", "440", "480", "520", "560", "600", "640", "680", "720"};
             bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
@@ -259,11 +256,10 @@ public:
                 value *= 2 * ek::Pi<float> * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
                 (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
 
-            }else{
+            }else
                 value = spectrum_list_to_srgb(m_wavelengths, m_data, false) * 2 * ek::Pi<float> 
                 * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
                 (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
-            }
 
             value *= MTS_CIE_Y_NORMALIZATION;
             
@@ -292,13 +288,11 @@ public:
                     *ptr++ += val;
                 }
             }
-
         }
-
         
-        if constexpr (!is_spectral_v<Spectrum>){
+        if constexpr (!is_spectral_v<Spectrum>)
             bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
-        }
+
         /* Instantiate a nested envmap plugin */
         Properties props("envmap");
 
@@ -308,7 +302,6 @@ public:
         return {emitter};
 
     }
-
     
 
     /// This emitter does not occupy any particular region of space, return an invalid bounding box

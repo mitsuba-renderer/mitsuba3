@@ -159,7 +159,7 @@ public:
     }
 
     std::vector<ref<Object>> expand() const override {
-
+        //expends into a envmap plugin writing to a bitmap
         using ScalarArray3f = ek::Array<ScalarFloat, 3>;
 
         if (m_sun_radius_scale == 0){
@@ -169,7 +169,6 @@ public:
             ScalarArray3f direction_array(direc.x(), direc.y(), direc.z());
             props.set_array3f("direction", direction_array);
 
-            
             Properties props_radiance("regular");
             props_radiance.set_float("lambda_min", 320);
             props_radiance.set_float("lambda_max", 800);
@@ -178,7 +177,6 @@ public:
             props_radiance.set_long("size", m_wavelengths.size());
             ref<Texture> m_radiance = PluginManager::instance()->create_object<Texture>(props_radiance);
             
-
             props.set_object("irradiance", m_radiance);
             ref<Object> emitter = PluginManager::instance()->create_object<Base>(props).get();
 
@@ -205,14 +203,14 @@ public:
             "400", "440", "480", "520", "560", "600", "640", "680", "720"};
             bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
-        }else{
+        }else
             bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2));
-        }
+
         bitmap->clear();
         ScalarFrame3f frame(m_sun_dir);
 
-        ScalarPoint2f factor(bitmap->width() / (2 * enoki::Pi<Float>) , 
+        ScalarPoint2f factor(bitmap->width() / (2 * enoki::Pi<Float>), 
             bitmap->height() / enoki::Pi<Float>);
 
         SunPixelFormat value;
@@ -226,11 +224,10 @@ public:
             value *= 2 * ek::Pi<float> * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
             (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
 
-        }else{
+        }else
             value = spectrum_list_to_srgb(m_wavelengths, m_data, false) * 2 * ek::Pi<float> 
             * (1 - std::cos(m_theta)) * (float) (bitmap->width() * bitmap->height()) /
             (2 * ek::Pi<float> * ek::Pi<float> * n_samples);
-        }
 
         value *= MTS_CIE_Y_NORMALIZATION;
         
@@ -259,9 +256,6 @@ public:
                 *ptr++ += val;
             }
         }
-
-        FileStream *fs = new FileStream("sun.exr", FileStream::ETruncReadWrite);
-        bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
 
         /* Instantiate a nested envmap plugin */
         Properties prop("envmap");
@@ -387,8 +381,6 @@ protected:
     Vector<float, 3> m_sun_dir;
     /// Turbidity of the atmosphere
     ScalarFloat m_turbidity;
-    // /// Radiance arriving from the sun disk
-    // ref<Texture> m_radiance;
     /// Stretch factor to extend to the bottom hemisphere
     ScalarFloat m_stretch;
     /// Coefficients of the wavelength from the spectrum of the sun
