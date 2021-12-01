@@ -4,6 +4,8 @@ import os
 from os.path import join, realpath, dirname, basename, splitext, exists
 import glob
 import pytest
+import re
+import mitsuba
 
 
 def run_notebook(notebook_path, tmp_dir=None):
@@ -19,6 +21,13 @@ def run_notebook(notebook_path, tmp_dir=None):
 
     with open(notebook_path) as f:
         nb = nbformat.read(f, as_version=4)
+
+    # Check the variants required in this notebook are enabled, otherwise skip
+    regex = re.compile(r'mitsuba.set_variant\(\'([a-zA-Z_]+)\'\)', re.MULTILINE)
+    for c in filter(lambda c: c['cell_type'] == 'code', nb['cells']):
+        for v in re.findall(regex, c['source']):
+            if v not in mitsuba.variants():
+                pytest.skip(f'variant {v} is not enabled')
 
     proc = ExecutePreprocessor(timeout=600, kernel_name='python3')
     proc.allow_errors = True
