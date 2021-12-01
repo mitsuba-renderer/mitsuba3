@@ -144,7 +144,7 @@ def test_render(variant, scene_fname, jit_flags_key):
     from mitsuba.core import load_file, Bitmap
 
     if 'cuda' in variant or 'llvm' in variant:
-        ek.malloc_trim()
+        ek.flush_malloc_cache()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
             ek.set_flag(k, v)
 
