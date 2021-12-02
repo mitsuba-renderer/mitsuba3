@@ -11,6 +11,35 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+enum class ActivationType : uint32_t {
+    None = 0,
+    Exponential,
+    SoftPlus,
+    ReLU,
+};
+ActivationType activation_type_from_string(const std::string &str) {
+    if (str == "none" || str == "")
+        return ActivationType::None;
+    if (str == "exponential" || str == "exp")
+        return ActivationType::Exponential;
+    if (str == "softplus" || str == "SoftPlus")
+        return ActivationType::SoftPlus;
+    if (str == "relu" || str == "ReLU")
+        return ActivationType::ReLU;
+    Throw("Unsupported activation type: '%s'", str);
+}
+std::string activation_type_to_string(ActivationType tp) {
+    switch (tp) {
+        case ActivationType::None: return "none";
+        case ActivationType::Exponential: return "exponential";
+        case ActivationType::SoftPlus: return "softplus";
+        case ActivationType::ReLU: return "relu";
+
+        default:
+            Throw("Unsupported activation type: %s", (uint32_t) tp);
+    };
+}
+
 
 /**!
 
@@ -120,6 +149,25 @@ public:
         m_sigmat         = props.volume<Volume>("sigma_t", 1.f);
         m_emission       = props.volume<Volume>("emission", 0.f);
 
+        m_density_activation = activation_type_from_string(
+            props.string("density_activation", "none"));
+        ScalarFloat default_param = ek::NaN<ScalarFloat>;
+        if (m_density_activation == ActivationType::SoftPlus) {
+            // Suggested value: 1e-6 for "coarse" model initialization,
+            //                  1e-2 for "fine" model initialization.
+            const ScalarFloat a = 1e-2f;
+            // Approximate size of a voxel in world coordinates
+            ScalarFloat voxel_size = ek::hmax(m_sigmat->voxel_size());
+            default_param = ek::log(ek::pow(1.f - a, -1.f / voxel_size) - 1.f);
+        }
+        m_density_activation_parameter =
+            props.get<float>("density_activation_parameter", default_param);
+        if (m_density_activation != ActivationType::None) {
+            Log(Info, "Heterogeneous medium using density activation '%s', parameter %s",
+                activation_type_to_string(m_density_activation),
+                m_density_activation_parameter);
+        }
+
         ScalarFloat scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction =
             props.get<bool>("has_spectral_extinction", true);
@@ -130,8 +178,9 @@ public:
             Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
             m_max_density = ek::NaN<Float>;
         } else {
-            m_max_density =
-                ek::opaque<Float>(ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
+            const ScalarFloat vmax =
+                density_activation(m_majorant_factor * scale * m_sigmat->max());
+            m_max_density = ek::opaque<Float>(ek::max(1e-6f, vmax));
             Log(Info, "Heterogeneous medium will use majorant: %s (majorant factor: %s)",
                 m_max_density, m_majorant_factor);
         }
@@ -168,7 +217,8 @@ public:
                                 Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-        auto sigmat = m_scale * m_sigmat->eval(mi, active);
+        auto sigmat =
+            density_activation(m_scale.value() * m_sigmat->eval(mi, active));
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigmat *= m_phase_function->projected_area(mi, active);
 
@@ -183,6 +233,24 @@ public:
         return { sigmas, sigman, sigmat };
     }
 
+    template <typename Value>
+    Value density_activation(const Value &v) const {
+        switch (m_density_activation) {
+            case ActivationType::None:
+                return v;
+            case ActivationType::Exponential:
+                return ek::exp(v);
+            case ActivationType::SoftPlus:
+                return ek::log(1.f +
+                               ek::exp(v + m_density_activation_parameter));
+            case ActivationType::ReLU:
+                return ek::max(v, 0.f);
+            default:
+                Throw("Unsupported activation type: %s",
+                      (uint32_t) m_density_activation);
+        };
+    }
+
     std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f &ray) const override {
         return m_sigmat->bbox().ray_intersect(ray);
@@ -193,8 +261,9 @@ public:
             return;
 
         // Build a majorant grid, with the scale factor baked-in for convenience
-        TensorXf majorants =
-            m_sigmat->local_majorants(m_majorant_resolution_factor, m_majorant_factor * scalar_scale());
+        TensorXf majorants = density_activation(
+            m_sigmat->local_majorants(m_majorant_resolution_factor,
+                                      m_majorant_factor * m_scale.scalar()));
         ek::eval(majorants);
 
         Properties props("gridvolume");
@@ -215,8 +284,8 @@ public:
             update_majorant_supergrid();
         } else {
             // TODO: make this really optional if we never need max_density
-            const ScalarFloat vmax =
-                m_majorant_factor * m_scale.scalar() * m_sigmat->max();
+            const ScalarFloat vmax = density_activation(
+                m_majorant_factor * m_scale.scalar() * m_sigmat->max());
             m_max_density = ek::opaque<Float>(ek::max(1e-6f, vmax));
             m_majorant_grid = nullptr;
         }
@@ -230,16 +299,6 @@ public:
         Base::traverse(callback);
     }
 
-    ScalarFloat scalar_scale() const {
-        if constexpr (ek::is_jit_array_v<Float>) {
-            if (ek::width(m_scale) != 1)
-                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
-            return m_scale[0];
-        } else {
-            return m_scale;
-        }
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
@@ -249,8 +308,10 @@ public:
             << "  scale           = " << string::indent(m_scale) << std::endl
             << "  max_density     = " << string::indent(m_max_density) << std::endl
             << "  majorant_factor = " << string::indent(m_majorant_factor) << std::endl
-            << "  majorant_resolution_factor = " << string::indent(m_majorant_resolution_factor) << std::endl
-            << "  majorant_grid   = " << string::indent(m_majorant_grid) << std::endl
+            << "  majorant_resolution_factor   = " << string::indent(m_majorant_resolution_factor) << std::endl
+            << "  majorant_grid                = " << string::indent(m_majorant_grid) << std::endl
+            << "  density_activation           = " << activation_type_to_string(m_density_activation) << std::endl
+            << "  density_activation_parameter = " << m_density_activation_parameter << std::endl
             << "]";
         return oss.str();
     }
@@ -258,9 +319,11 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo, m_emission;
-    Float m_scale;
+    field<Float> m_scale;
 
     Float m_max_density;
+    ActivationType m_density_activation;
+    ScalarFloat m_density_activation_parameter;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
