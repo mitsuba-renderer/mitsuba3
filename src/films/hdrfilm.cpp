@@ -35,8 +35,9 @@ High dynamic range film (:monosp:`hdrfilm`)
      (Default: :monosp:`rgb`)
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
-     :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
+   - Specifies the desired floating  point component format of output images (when saving to disk).
+     The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
+     (Default: :monosp:`float16`)
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
@@ -322,23 +323,12 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
 
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
-            ref<Bitmap> target = new Bitmap(
-                source->pixel_format(),
-                struct_type_v<ScalarFloat>,  // Convert to 'float' if single mode or 'double'
-                source->size(),
-                source->channel_count(),
-                channel_names);
-            source->convert(target);
-
-            ScalarVector2i size = target->size();
-            size_t width = target->channel_count() * ek::hprod(size);
-            auto data = DynamicBuffer<Float64>(ek::load<DynamicBuffer<Float32>>(target->data(), width));
-            size_t shape[3] = { (size_t) target->height(),
-                                (size_t) target->width(),
-                                target->channel_count() };
+            ScalarVector2i size = source->size();
+            size_t width = source->channel_count() * ek::hprod(size);
+            auto data = DynamicBuffer<ScalarFloat>(ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width));
+            size_t shape[3] = { (size_t) source->height(),
+                                (size_t) source->width(),
+                                source->channel_count() };
             return TensorXf(data, 3, shape);
         }
     }
@@ -379,7 +369,7 @@ public:
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
-            m_component_format, m_storage->size(),
+            struct_type_v<ScalarFloat>, m_storage->size(),
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
@@ -484,7 +474,21 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        bitmap()->write(filename, m_file_format);
+        // Convert data to the file format
+        ref<Bitmap> source = bitmap();
+
+        std::vector<std::string> channel_names;
+        for (size_t i = 0; i < source->channel_count(); i++)
+            channel_names.push_back(source->struct_()->operator[](i).name);
+        ref<Bitmap> target = new Bitmap(
+            source->pixel_format(),
+            m_component_format,
+            source->size(),
+            source->channel_count(),
+            channel_names);
+        source->convert(target);
+
+        target->write(filename, m_file_format);
     }
 
     void schedule_storage() override {
