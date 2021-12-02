@@ -143,7 +143,7 @@ public:
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f & mi, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        if (m_majorant_grid)
+        if (m_majorant_resolution_factor > 0)
             return m_majorant_grid->eval_1(mi, active);
         else
             return m_max_density;
@@ -175,8 +175,9 @@ public:
         auto sigmas = sigmat * m_albedo->eval(mi, active);
 
         UnpolarizedSpectrum local_majorant =
-            m_majorant_grid ? m_majorant_grid->eval_1(mi, active)
-                            : m_max_density;
+            (m_majorant_resolution_factor > 0)
+                ? m_majorant_grid->eval_1(mi, active)
+                : m_max_density;
         auto sigman = local_majorant - sigmat;
 
         return { sigmas, sigman, sigmat };
@@ -214,9 +215,10 @@ public:
             update_majorant_supergrid();
         } else {
             // TODO: make this really optional if we never need max_density
-            ScalarFloat scale = scalar_scale();
-            m_max_density = ek::opaque<Float>(
-                ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
+            const ScalarFloat vmax =
+                m_majorant_factor * m_scale.scalar() * m_sigmat->max();
+            m_max_density = ek::opaque<Float>(ek::max(1e-6f, vmax));
+            m_majorant_grid = nullptr;
         }
     }
 
