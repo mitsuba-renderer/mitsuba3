@@ -117,7 +117,16 @@ void VolumeGrid<Float, Spectrum>::write(Stream *stream) const {
     stream->write(float(m_bbox.max.x()));
     stream->write(float(m_bbox.max.y()));
     stream->write(float(m_bbox.max.z()));
-    stream->write_array(m_data.get(), ek::hprod(m_size) * m_channel_count);
+
+    if constexpr (std::is_same<ScalarFloat, float>::value)
+        stream->write_array(m_data.get(), ek::hprod(m_size) * m_channel_count);
+    else {
+        // Need to convert data to single precision before writing to disk
+        std::vector<float> output(ek::hprod(m_size) * m_channel_count);
+        for (size_t i = 0; i < ek::hprod(m_size) * m_channel_count; ++i)
+            output[i] = m_data[i];
+        stream->write_array(output.data(), ek::hprod(m_size) * m_channel_count);
+    }
 }
 
 MTS_VARIANT

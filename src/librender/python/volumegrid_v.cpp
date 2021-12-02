@@ -6,11 +6,8 @@
 
 MTS_PY_EXPORT(VolumeGrid) {
     MTS_PY_IMPORT_TYPES(VolumeGrid)
-    MTS_PY_CLASS(VolumeGrid, Object)
-        .def(py::init([](py::array obj, bool compute_max = true) {
-            if (!obj.dtype().is(py::dtype("f")))
-                throw py::type_error("Expected floating point (float32) array");
-
+    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array_t<ScalarFloat> obj,
+                                                     bool compute_max = true) {
             if (obj.ndim() != 3 && obj.ndim() != 4)
                 throw py::type_error("Expected an array of size 3 or 4");
 
@@ -68,7 +65,7 @@ MTS_PY_EXPORT(VolumeGrid) {
                 code[0] = '>';
             #endif
             code[1] = 'f';
-            code[2] = (char) ('0' + sizeof(float));
+            code[2] = (char) ('0' + sizeof(ScalarFloat));
             #if PY_MAJOR_VERSION > 3
                 result["typestr"] = code;
             #else
