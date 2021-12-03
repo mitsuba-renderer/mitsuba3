@@ -10,13 +10,14 @@
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 
+// TODO: remove this
+// #define MTS_GRID_NO_TEXTURE
+
 NAMESPACE_BEGIN(mitsuba)
 
 enum class FilterType { Nearest, Trilinear };
 enum class WrapMode { Repeat, Mirror, Clamp };
 
-// TODO: remove this
-// #define MTS_GRID_USE_TEXTURE
 
 /**!
 .. _volume-gridvolume:
@@ -106,7 +107,7 @@ little endian encoding and is specified as follows:
 
 
 // Forward declaration of specialized GridVolume
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw, bool HardwareTexture>
 class GridVolumeImpl;
 
 /**
@@ -148,6 +149,10 @@ public:
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
                   "\"mirror\", or \"clamp\"!", wrap_mode);
+
+        // Can be used to explicitly disallow usage of hardware textures,
+        // e.g. due to precision concerns.
+        m_use_hardware_texture = props.get<bool>("use_hardware_texture", true);
 
         if (props.has_property("filename")) {
             // --- Loading grid data from a file
@@ -219,7 +224,9 @@ public:
         props.mark_queried("fixed_max");
     }
 
-    template <uint32_t Channels, bool Raw> using Impl = GridVolumeImpl<Float, Spectrum, Channels, Raw>;
+    template <uint32_t Channels, bool Raw, bool HardwareTexture>
+    using Impl =
+        GridVolumeImpl<Float, Spectrum, Channels, Raw, HardwareTexture>;
 
     /**
      * Recursively expand into an implementation specialized to the actual loaded grid.
@@ -237,10 +244,8 @@ protected:
                 return expand_2<1>();
             case 3:
                 return expand_2<3>();
-#if !defined(MTS_GRID_USE_TEXTURE)
             case 6:
                 return expand_2<6>();
-#endif
             default:
                 Throw("Unsupported channel count: %d (expected 1, 3, or 6)",
                        m_volume_grid->channel_count());
@@ -252,7 +257,19 @@ protected:
     }
 
     template <uint32_t Channels, bool Raw> Object* expand_3() const {
-        return new GridVolumeImpl<Float, Spectrum, Channels, Raw>(
+#if !defined(MTS_GRID_NO_TEXTURE)
+        // Only enable using hardware textures in supported cases
+        if constexpr (Channels <= 4 && mitsuba::is_rgb_v<Spectrum>) {
+            if (m_filter_type == FilterType::Trilinear &&
+                m_wrap_mode == WrapMode::Clamp && m_use_hardware_texture)
+                return expand_4<Channels, Raw, true>();
+        }
+#endif
+        return expand_4<Channels, Raw, false>();
+    }
+
+    template <uint32_t Channels, bool Raw, bool HardwareTexture> Object* expand_4() const {
+        return new GridVolumeImpl<Float, Spectrum, Channels, Raw, HardwareTexture>(
             m_props, m_data, m_max, m_volume_grid->bbox_transform(),
             m_filter_type, m_wrap_mode);
     }
@@ -265,63 +282,57 @@ protected:
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
     ScalarFloat m_max;
+    bool m_use_hardware_texture;
 };
 
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw,
+          bool HardwareTexture>
 class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
     MTS_IMPORT_TYPES()
-#if defined(MTS_GRID_USE_TEXTURE)
-    using DynamicBuffer = DynamicBuffer<Float>;
-    using Texture       = ek::Texture<Float, /*Dimension*/ 3>;
-#endif
+
+    using Storage =
+        std::conditional_t<HardwareTexture, ek::Texture<Float, /*Dimension*/ 3>,
+                           TensorXf>;
 
     GridVolumeImpl(const Properties &props, const TensorXf &data,
                    ScalarFloat max, const ScalarTransform4f &bbox_transform,
                    FilterType filter_type, WrapMode wrap_mode)
-        : Base(props),
-#if !defined(MTS_GRID_USE_TEXTURE)
-          m_data(data),
-#endif
-          m_max(max), m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
+        : Base(props), m_max(max), m_filter_type(filter_type),
+          m_wrap_mode(wrap_mode) {
 
-#if defined(MTS_GRID_USE_TEXTURE)
-        if (m_wrap_mode != WrapMode::Clamp)
-            NotImplementedError("Enoki Texture with wrap mode != clamp");
-        if (filter_type != FilterType::Trilinear)
-            NotImplementedError("Enoki Texture with filter type != trilinear");
-        // TODO: also point out unsupported spectral mode
+        if constexpr (HardwareTexture) {
+            if (m_wrap_mode != WrapMode::Clamp)
+                NotImplementedError("Hardware texture with wrap mode != clamp");
+            if (filter_type != FilterType::Trilinear)
+                NotImplementedError("Hardware texture with filter type != trilinear");
+            // TODO: also point out unsupported spectral mode
+            if constexpr (!mitsuba::is_rgb_v<Spectrum>)
+                NotImplementedError("Hardware texture with spectral color mode");
 
-        if constexpr (ek::is_jit_array_v<Float>) {
-            Float a;
-            Log(Info, "testing empty a: %s", a.empty());
-            Float b = Float(0);
-            Log(Info, "testing empty b: %s", b.empty());
+            Log(Warn, "Using HW texture in Grid3D with Channels = %s, Raw = %s",
+                Channels, Raw);
         }
 
-        if (Channels == 3) {
-            using DynamicVector3f = mitsuba::Vector<DynamicBuffer, 3>;
-            using DynamicVector4f = mitsuba::Vector<DynamicBuffer, 4>;
+        if constexpr (HardwareTexture && Channels == 3) {
+            using DynamicVector3f = mitsuba::Vector<typename Storage::Storage, 3>;
+            using DynamicVector4f = mitsuba::Vector<typename Storage::Storage, 4>;
             Log(Info, "Creating an additional channel in the raw texture data "
-                      "as 3-channel textures are not supported.");
+                    "as 3-channel textures are not supported.");
             if (data.ndim() != 4 || data.shape(3) != 3)
                 Throw("Expected 4 dimensional tensor with 3 channels, found shape: (%s, %s, %s, %s)",
-                      data.shape(0), data.shape(1), data.shape(2), data.shape(3));
+                    data.shape(0), data.shape(1), data.shape(2), data.shape(3));
 
             DynamicVector3f values3 =
                 ek::unravel<DynamicVector3f>(data.array());
             DynamicVector4f values4(values3.x(), values3.y(), values3.z(), 0);
             size_t sh[4] = { data.shape(0), data.shape(1), data.shape(2), 4 };
             TensorXf data4(ek::ravel(values4), 4, sh);
-            m_data = Texture(data4);
-            // m_data = Texture(data4, /*migrate*/ false);
+            m_data = Storage(data4);
         } else {
-            m_data = Texture(data);
-            // m_data = Texture(data, /*migrate*/ false);
+            m_data = Storage(data);
         }
-#endif
-
 
         ScalarVector3i res = resolution();
         m_inv_resolution_x = ek::divisor<int32_t>(res.x());
@@ -466,6 +477,23 @@ public:
      */
     MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
                                 Mask active) const {
+        if constexpr (HardwareTexture)
+            return interpolate_hw(p, wavelengths, active);
+        else
+            return interpolate_default(p, wavelengths, active);
+    }
+
+    MTS_INLINE auto interpolate_hw(Point3f p, const Wavelength & /*wavelengths*/,
+                                   Mask active) const {
+        // Note: lookup coordinates should be given in UV space directly.
+        // TODO: need a 0.5 offset? (center of voxel vs corner of voxel)
+        // p -= Point3f(0.5f) / res;
+        Vector4f result = m_data.eval(p, active);
+        return ek::head<Channels>(result);
+    }
+
+    MTS_INLINE auto interpolate_default(Point3f p, const Wavelength &wavelengths,
+                                        Mask active) const {
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using StorageType = std::conditional_t<uses_srgb_model, ek::Array<Float, 4>, ek::Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
@@ -474,16 +502,6 @@ public:
             active = true;
         ScalarVector3i res = resolution();
 
-#if defined(MTS_GRID_USE_TEXTURE)
-        ENOKI_MARK_USED(wavelengths);
-        // Note: lookup coordinates should be given in UV space directly.
-        // TODO: need a 0.5 offset? (center of voxel vs corner of voxel)
-        // p -= Point3f(0.5f) / res;
-        ENOKI_MARK_USED(res);
-
-        Vector4f result = m_data.eval(p, active);
-        return ek::head<Channels>(result);
-#else
         const uint32_t nx = res.x();
         const uint32_t ny = res.y();
         if (m_filter_type == FilterType::Trilinear) {
@@ -572,7 +590,6 @@ public:
                 return v;
 
         }
-#endif
     }
 
     ScalarFloat max() const override {
@@ -583,11 +600,10 @@ public:
 
     void update_max() const {
         if (m_max_dirty) {
-#if defined(MTS_GRID_USE_TEXTURE)
-            m_max = (float) ek::hmax(ek::detach(m_data.value()));
-#else
-            m_max = (float) ek::hmax(ek::detach(m_data.array()));
-#endif
+            if constexpr (HardwareTexture)
+                m_max = (float) ek::hmax(ek::detach(m_data.value()));
+            else
+                m_max = (float) ek::hmax(ek::detach(m_data.array()));
             Log(Info, "Grid max value was updated to: %s", m_max);
             m_max_dirty = false;
         }
@@ -595,8 +611,8 @@ public:
 
     TensorXf local_majorants(size_t resolution_factor, ScalarFloat value_scale) override {
         MTS_IMPORT_TYPES()
-        using Value  = mitsuba::DynamicBuffer<Float>;
-        using Index  = mitsuba::DynamicBuffer<UInt32>;
+        using Value   = mitsuba::DynamicBuffer<Float>;
+        using Index   = mitsuba::DynamicBuffer<UInt32>;
         using Index3i = mitsuba::Vector<mitsuba::DynamicBuffer<Int32>, 3>;
 
         if constexpr (Channels == 1) {
@@ -643,11 +659,12 @@ public:
                 }
             };
 
-#if defined(MTS_GRID_USE_TEXTURE)
-            Value scaled_data = value_scale * ek::detach(m_data.value());
-#else
-            Value scaled_data = value_scale * ek::detach(m_data.array());
-#endif
+            Value scaled_data;
+            if constexpr (HardwareTexture)
+                scaled_data = value_scale * ek::detach(m_data.value());
+            else
+                scaled_data = value_scale * ek::detach(m_data.array());
+
             // TODO: any way to do this without the many operations?
             for (int32_t dz = begin_offset; dz < end_offset; ++dz) {
                 for (int32_t dy = begin_offset; dy < end_offset; ++dy) {
@@ -715,23 +732,13 @@ public:
     }
 
     ScalarVector3i resolution() const override {
-#if defined(MTS_GRID_USE_TEXTURE)
-        auto shape = m_data.tensor().shape();
-#else
         auto shape = m_data.shape();
-#endif
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
     };
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-#if defined(MTS_GRID_USE_TEXTURE)
         callback->put_parameter("data", m_data);
-        // TensorXf tmp = m_data.tensor();
-        // callback->put_parameter("data", tmp);
-#else
-        callback->put_parameter("data", m_data);
-#endif
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -763,11 +770,7 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-#if defined(MTS_GRID_USE_TEXTURE)
-    Texture m_data;
-#else
-    TensorXf m_data;
-#endif
+    Storage m_data;
     bool m_fixed_max = false;
     ek::divisor<int32_t> m_inv_resolution_x,
                          m_inv_resolution_y,
@@ -785,33 +788,51 @@ MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
 MTS_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
 
 NAMESPACE_BEGIN(detail)
-template <uint32_t Channels, bool Raw>
+template <uint32_t Channels, bool Raw, bool HardwareTexture>
 constexpr const char * gridvolume_class_name() {
-    if constexpr (!Raw) {
-        if constexpr (Channels == 1)
-            return "GridVolumeImpl_1_0";
-        else if constexpr (Channels == 3)
-            return "GridVolumeImpl_3_0";
-        else
-            return "GridVolumeImpl_6_0";
+    if constexpr (HardwareTexture) {
+        if constexpr (!Raw) {
+            if constexpr (Channels == 1)
+                return "GridVolumeImpl_hw_1_0";
+            else if constexpr (Channels == 3)
+                return "GridVolumeImpl_hw_3_0";
+            else
+                return "GridVolumeImpl_hw_6_0";
+        } else {
+            if constexpr (Channels == 1)
+                return "GridVolumeImpl_hw_1_1";
+            else if constexpr (Channels == 3)
+                return "GridVolumeImpl_hw_3_1";
+            else
+                return "GridVolumeImpl_hw_6_1";
+        }
     } else {
-        if constexpr (Channels == 1)
-            return "GridVolumeImpl_1_1";
-        else if constexpr (Channels == 3)
-            return "GridVolumeImpl_3_1";
-        else
-            return "GridVolumeImpl_6_1";
+        if constexpr (!Raw) {
+            if constexpr (Channels == 1)
+                return "GridVolumeImpl_1_0";
+            else if constexpr (Channels == 3)
+                return "GridVolumeImpl_3_0";
+            else
+                return "GridVolumeImpl_6_0";
+        } else {
+            if constexpr (Channels == 1)
+                return "GridVolumeImpl_1_1";
+            else if constexpr (Channels == 3)
+                return "GridVolumeImpl_3_1";
+            else
+                return "GridVolumeImpl_6_1";
+        }
     }
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *GridVolumeImpl<Float, Spectrum, Channels, Raw>::m_class
-    = new Class(detail::gridvolume_class_name<Channels, Raw>(), "Volume",
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw, bool HardwareTexture>
+Class *GridVolumeImpl<Float, Spectrum, Channels, Raw, HardwareTexture>::m_class
+    = new Class(detail::gridvolume_class_name<Channels, Raw, HardwareTexture>(), "Volume",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-const Class* GridVolumeImpl<Float, Spectrum, Channels, Raw>::class_() const {
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw, bool HardwareTexture>
+const Class* GridVolumeImpl<Float, Spectrum, Channels, Raw, HardwareTexture>::class_() const {
     return m_class;
 }
 
