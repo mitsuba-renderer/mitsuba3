@@ -1,19 +1,22 @@
+#include <enoki/dynamic.h>
+#include <enoki/tensor.h>
+#include <enoki/texture.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
-
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
-#include <enoki/dynamic.h>
-#include <enoki/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 enum class FilterType { Nearest, Trilinear };
 enum class WrapMode { Repeat, Mirror, Clamp };
+
+// TODO: remove this
+// #define MTS_GRID_USE_TEXTURE
 
 /**!
 .. _volume-gridvolume:
@@ -234,8 +237,10 @@ protected:
                 return expand_2<1>();
             case 3:
                 return expand_2<3>();
+#if !defined(MTS_GRID_USE_TEXTURE)
             case 6:
                 return expand_2<6>();
+#endif
             default:
                 Throw("Unsupported channel count: %d (expected 1, 3, or 6)",
                        m_volume_grid->channel_count());
@@ -267,14 +272,56 @@ class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
     MTS_IMPORT_TYPES()
+#if defined(MTS_GRID_USE_TEXTURE)
+    using DynamicBuffer = DynamicBuffer<Float>;
+    using Texture       = ek::Texture<Float, /*Dimension*/ 3>;
+#endif
 
-    GridVolumeImpl(const Properties &props,
-                   const TensorXf &data,
-                   ScalarFloat max,
-                   const ScalarTransform4f &bbox_transform,
+    GridVolumeImpl(const Properties &props, const TensorXf &data,
+                   ScalarFloat max, const ScalarTransform4f &bbox_transform,
                    FilterType filter_type, WrapMode wrap_mode)
-        : Base(props), m_data(data), m_max(max), m_filter_type(filter_type),
-          m_wrap_mode(wrap_mode) {
+        : Base(props),
+#if !defined(MTS_GRID_USE_TEXTURE)
+          m_data(data),
+#endif
+          m_max(max), m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
+
+#if defined(MTS_GRID_USE_TEXTURE)
+        if (m_wrap_mode != WrapMode::Clamp)
+            NotImplementedError("Enoki Texture with wrap mode != clamp");
+        if (filter_type != FilterType::Trilinear)
+            NotImplementedError("Enoki Texture with filter type != trilinear");
+        // TODO: also point out unsupported spectral mode
+
+        if constexpr (ek::is_jit_array_v<Float>) {
+            Float a;
+            Log(Info, "testing empty a: %s", a.empty());
+            Float b = Float(0);
+            Log(Info, "testing empty b: %s", b.empty());
+        }
+
+        if (Channels == 3) {
+            using DynamicVector3f = mitsuba::Vector<DynamicBuffer, 3>;
+            using DynamicVector4f = mitsuba::Vector<DynamicBuffer, 4>;
+            Log(Info, "Creating an additional channel in the raw texture data "
+                      "as 3-channel textures are not supported.");
+            if (data.ndim() != 4 || data.shape(3) != 3)
+                Throw("Expected 4 dimensional tensor with 3 channels, found shape: (%s, %s, %s, %s)",
+                      data.shape(0), data.shape(1), data.shape(2), data.shape(3));
+
+            DynamicVector3f values3 =
+                ek::unravel<DynamicVector3f>(data.array());
+            DynamicVector4f values4(values3.x(), values3.y(), values3.z(), 0);
+            size_t sh[4] = { data.shape(0), data.shape(1), data.shape(2), 4 };
+            TensorXf data4(ek::ravel(values4), 4, sh);
+            m_data = Texture(data4);
+            // m_data = Texture(data4, /*migrate*/ false);
+        } else {
+            m_data = Texture(data);
+            // m_data = Texture(data, /*migrate*/ false);
+        }
+#endif
+
 
         ScalarVector3i res = resolution();
         m_inv_resolution_x = ek::divisor<int32_t>(res.x());
@@ -425,11 +472,20 @@ public:
 
         if constexpr (!ek::is_array_v<Mask>)
             active = true;
-
         ScalarVector3i res = resolution();
+
+#if defined(MTS_GRID_USE_TEXTURE)
+        ENOKI_MARK_USED(wavelengths);
+        // Note: lookup coordinates should be given in UV space directly.
+        // TODO: need a 0.5 offset? (center of voxel vs corner of voxel)
+        // p -= Point3f(0.5f) / res;
+        ENOKI_MARK_USED(res);
+
+        Vector4f result = m_data.eval(p, active);
+        return ek::head<Channels>(result);
+#else
         const uint32_t nx = res.x();
         const uint32_t ny = res.y();
-
         if (m_filter_type == FilterType::Trilinear) {
             using Int8  = ek::Array<Int32, 8>;
             using Int38 = ek::Array<Int8, 3>;
@@ -516,6 +572,7 @@ public:
                 return v;
 
         }
+#endif
     }
 
     ScalarFloat max() const override {
@@ -526,7 +583,11 @@ public:
 
     void update_max() const {
         if (m_max_dirty) {
+#if defined(MTS_GRID_USE_TEXTURE)
+            m_max = (float) ek::hmax(ek::detach(m_data.value()));
+#else
             m_max = (float) ek::hmax(ek::detach(m_data.array()));
+#endif
             Log(Info, "Grid max value was updated to: %s", m_max);
             m_max_dirty = false;
         }
@@ -582,8 +643,11 @@ public:
                 }
             };
 
+#if defined(MTS_GRID_USE_TEXTURE)
+            Value scaled_data = value_scale * ek::detach(m_data.value());
+#else
             Value scaled_data = value_scale * ek::detach(m_data.array());
-
+#endif
             // TODO: any way to do this without the many operations?
             for (int32_t dz = begin_offset; dz < end_offset; ++dz) {
                 for (int32_t dy = begin_offset; dy < end_offset; ++dy) {
@@ -651,13 +715,23 @@ public:
     }
 
     ScalarVector3i resolution() const override {
+#if defined(MTS_GRID_USE_TEXTURE)
+        auto shape = m_data.tensor().shape();
+#else
         auto shape = m_data.shape();
+#endif
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
     };
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_data);
         Base::traverse(callback);
+#if defined(MTS_GRID_USE_TEXTURE)
+        callback->put_parameter("data", m_data);
+        // TensorXf tmp = m_data.tensor();
+        // callback->put_parameter("data", tmp);
+#else
+        callback->put_parameter("data", m_data);
+#endif
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -682,14 +756,18 @@ public:
             << "  max = " << m_max << "," << std::endl
             << "  filter_type = " << (std::underlying_type_t<FilterType>) m_filter_type << "," << std::endl
             << "  wrap_mode = " << (std::underlying_type_t<WrapMode>) m_wrap_mode << "," << std::endl
-            << "  channels = " << m_data.shape()[3] << std::endl
+            << "  channels = " << Channels << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 protected:
+#if defined(MTS_GRID_USE_TEXTURE)
+    Texture m_data;
+#else
     TensorXf m_data;
+#endif
     bool m_fixed_max = false;
     ek::divisor<int32_t> m_inv_resolution_x,
                          m_inv_resolution_y,
