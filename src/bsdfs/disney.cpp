@@ -366,8 +366,10 @@ public:
      * (1-R0) (1-cos^5(i)). Transmitted ray's angle should be used for eta<1.
      * \param R0
      *     Incident specular. (Fresnel term when incident ray is aligned with
-     *     the surface normal.) \param cos_theta_i Incident angle of the ray based
-     *     on microfacet normal. \return Schlick approximation result.
+     *     the surface normal.)
+     * \param cos_theta_i
+     *     Incident angle of the ray based on microfacet normal.
+     * \return Schlick approximation result.
      */
     template <typename T> T calc_schlick(T R0, Float cos_theta_i) const {
 
