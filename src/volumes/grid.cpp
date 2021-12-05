@@ -11,7 +11,7 @@
 #include <mitsuba/render/volumegrid.h>
 
 // TODO: remove this
-// #define MTS_GRID_NO_TEXTURE
+#define MTS_GRID_NO_TEXTURE
 
 NAMESPACE_BEGIN(mitsuba)
 
