@@ -296,24 +296,12 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
 
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
-
-            ref<Bitmap> target = new Bitmap(
-                source->pixel_format(),
-                struct_type_v<ScalarFloat>,  // Convert to 'float' if single mode or 'double'
-                source->size(),
-                source->channel_count(),
-                channel_names);
-            source->convert(target);
-
-            ScalarVector2i size = target->size();
-            size_t width = target->channel_count() * ek::hprod(size);
-            auto data = ek::load<DynamicBuffer<Float>>(target->data(), width);
-            size_t shape[3] = { (size_t) target->height(),
-                                (size_t) target->width(),
-                                target->channel_count() };
+            ScalarVector2i size = source->size();
+            size_t width = source->channel_count() * ek::hprod(size);
+            auto data = ek::load<DynamicBuffer<Float>>(source->data(), width);
+            size_t shape[3] = { (size_t) source->height(),
+                                (size_t) source->width(),
+                                source->channel_count() };
             return TensorXf(data, 3, shape);
         }
     }
@@ -339,7 +327,7 @@ public:
 
         ref<Bitmap> target = new Bitmap(
             Bitmap::PixelFormat::MultiChannel,
-            m_component_format, m_storage->size(),
+            struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count() - 1);
 
         source->struct_()->operator[](m_channels.size() - 1).flags |= +Struct::Flags::Weight;
@@ -367,7 +355,25 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        bitmap()->write(filename, Bitmap::FileFormat::OpenEXR);
+        ref<Bitmap> source = bitmap();
+        if (m_component_format != struct_type_v<ScalarFloat>) {
+            // Mismatch between the current format and the one expected by the film
+            // Conversion is necessary before saving to disk
+            std::vector<std::string> channel_names;
+            for (size_t i = 0; i < source->channel_count(); i++)
+                channel_names.push_back(source->struct_()->operator[](i).name);
+            ref<Bitmap> target = new Bitmap(
+                source->pixel_format(),
+                m_component_format,
+                source->size(),
+                source->channel_count(),
+                channel_names);
+            source->convert(target);
+
+            target->write(filename, m_file_format);
+        } else {
+            source->write(filename, m_file_format);
+        }
     }
 
     void schedule_storage() override {

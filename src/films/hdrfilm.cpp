@@ -325,7 +325,7 @@ public:
 
             ScalarVector2i size = source->size();
             size_t width = source->channel_count() * ek::hprod(size);
-            auto data = DynamicBuffer<ScalarFloat>(ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width));
+            auto data = ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
             size_t shape[3] = { (size_t) source->height(),
                                 (size_t) source->width(),
                                 source->channel_count() };
@@ -474,21 +474,25 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        // Convert data to the file format
         ref<Bitmap> source = bitmap();
+        if (m_component_format != struct_type_v<ScalarFloat>) {
+            // Mismatch between the current format and the one expected by the film
+            // Conversion is necessary before saving to disk
+            std::vector<std::string> channel_names;
+            for (size_t i = 0; i < source->channel_count(); i++)
+                channel_names.push_back(source->struct_()->operator[](i).name);
+            ref<Bitmap> target = new Bitmap(
+                source->pixel_format(),
+                m_component_format,
+                source->size(),
+                source->channel_count(),
+                channel_names);
+            source->convert(target);
 
-        std::vector<std::string> channel_names;
-        for (size_t i = 0; i < source->channel_count(); i++)
-            channel_names.push_back(source->struct_()->operator[](i).name);
-        ref<Bitmap> target = new Bitmap(
-            source->pixel_format(),
-            m_component_format,
-            source->size(),
-            source->channel_count(),
-            channel_names);
-        source->convert(target);
-
-        target->write(filename, m_file_format);
+            target->write(filename, m_file_format);
+        } else {
+            source->write(filename, m_file_format);
+        }
     }
 
     void schedule_storage() override {
