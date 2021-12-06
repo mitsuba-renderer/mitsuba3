@@ -113,6 +113,7 @@ public:
 
             return pdf & active;
         } else {
+            ENOKI_MARK_USED(active_);
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
         }

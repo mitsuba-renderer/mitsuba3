@@ -320,6 +320,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
     } else {
         ENOKI_MARK_USED(scene);
         ENOKI_MARK_USED(sensor);
+        ENOKI_MARK_USED(sampler);
         ENOKI_MARK_USED(block);
         ENOKI_MARK_USED(aovs);
         ENOKI_MARK_USED(sample_count);
@@ -469,8 +470,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     uint32_t n_passes = spp / spp_per_pass;
 
-    size_t samples_per_pass = spp_per_pass * (size_t) ek::hprod(film_size),
-           total_samples = samples_per_pass * n_passes;
+    size_t samples_per_pass = spp_per_pass * (size_t) ek::hprod(film_size);
 
     std::vector<std::string> aovs = aov_names();
     if (!aovs.empty())
@@ -509,6 +509,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         std::mutex mutex;
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
 
+        size_t total_samples = samples_per_pass * n_passes;
         uint64_t seed_offset = (uint64_t) seed * (uint64_t) total_samples;
         std::atomic<size_t> samples_done(0);
 
