@@ -27,6 +27,10 @@ Radiance meter (:monosp:`radiancemeter`)
    - |vector|
    - Alternative (and exclusive) to `to_world`. Direction in which the
      sensor is pointing in world coordinates. Must be used with `origin`.
+ * - srf
+   - |spectrum|
+   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
+     of the sensor (Default: :monosp:`none`)
 
 This sensor plugin implements a simple radiance meter, which measures
 the incident power per unit area per unit solid angle along a
@@ -49,7 +53,7 @@ priority.
 MTS_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
-                    m_needs_sample_3)
+                    m_needs_sample_3, sample_wavelengths)
     MTS_IMPORT_TYPES()
 
     RadianceMeter(const Properties &props) : Base(props) {
@@ -98,7 +102,9 @@ public:
 
         // 1. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelength<Float, Spectrum>(wavelength_sample);
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
@@ -120,7 +126,9 @@ public:
 
         // 1. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelength<Float, Spectrum>(wavelength_sample);
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction

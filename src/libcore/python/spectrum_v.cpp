@@ -27,15 +27,7 @@ MTS_PY_EXPORT(Spectrum) {
     .def("pdf_rgb_spectrum", &pdf_rgb_spectrum<Float>, "wavelengths"_a,
         D(pdf_rgb_spectrum))
     .def("pdf_rgb_spectrum", &pdf_rgb_spectrum<Spectrum>, "wavelengths"_a,
-        D(pdf_rgb_spectrum))
-    .def("sample_uniform_spectrum", &sample_uniform_spectrum<Float>,
-        "sample"_a, D(sample_uniform_spectrum))
-    .def("sample_uniform_spectrum", &sample_uniform_spectrum<Spectrum>,
-        "sample"_a, D(sample_uniform_spectrum))
-    .def("pdf_uniform_spectrum", &pdf_uniform_spectrum<Float>,
-        "wavelengths"_a, D(pdf_uniform_spectrum))
-    .def("pdf_uniform_spectrum", &pdf_uniform_spectrum<Spectrum>,
-        "wavelengths"_a, D(pdf_uniform_spectrum));
+        D(pdf_rgb_spectrum));
 
     m.def("xyz_to_srgb", &xyz_to_srgb<Float>,
           "rgb"_a, "active"_a = true, D(xyz_to_srgb));
@@ -56,9 +48,10 @@ MTS_PY_EXPORT(Spectrum) {
               "sample"_a);
 
         m.attr("MTS_WAVELENGTH_SAMPLES") = ek::array_size_v<Spectrum>;
-        m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
-        m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
     }
+
+    m.attr("MTS_CIE_MIN") = MTS_CIE_MIN;
+    m.attr("MTS_CIE_MAX") = MTS_CIE_MAX;
 
     m.def("unpolarized_spectrum", [](const Spectrum &s) { return unpolarized_spectrum(s); }, "");
     m.def("depolarizer", [](const Spectrum &s) { return depolarizer(s); }, "");

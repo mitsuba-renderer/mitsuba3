@@ -54,7 +54,7 @@ public:
     /**
      * \brief Create a fork of this sampler.
      *
-     * A subsequent call to \c seed() is necessary to properly initialize
+     * A subsequent call to \c seed is necessary to properly initialize
      * the internal state of the sampler.
      *
      * May throw an exception if not supported.

@@ -35,8 +35,9 @@ High dynamic range film (:monosp:`hdrfilm`)
      (Default: :monosp:`rgb`)
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
-     :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
+   - Specifies the desired floating  point component format of output images (when saving to disk).
+     The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
+     (Default: :monosp:`float16`)
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
@@ -95,7 +96,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_high_quality_edges, m_filter)
+                    m_high_quality_edges, m_filter, m_flags)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -135,12 +136,11 @@ public:
             m_pixel_format = Bitmap::PixelFormat::XYZ;
         else if (pixel_format == "xyza")
             m_pixel_format = Bitmap::PixelFormat::XYZA;
-        else {
+        else
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
                   " \"xyz\", \"xyza\". Found %s.",
                   pixel_format);
-        }
 
         if (component_format == "float16")
             m_component_format = Struct::Type::Float16;
@@ -148,11 +148,10 @@ public:
             m_component_format = Struct::Type::Float32;
         else if (component_format == "uint32")
             m_component_format = Struct::Type::UInt32;
-        else {
+        else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
-        }
 
         if (m_file_format == Bitmap::FileFormat::RGBE) {
             if (m_pixel_format != Bitmap::PixelFormat::RGB) {
@@ -179,32 +178,42 @@ public:
             }
         }
 
+        m_flags = +FilmFlags::None;
+
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
-    void prepare(const std::vector<std::string> &channels) override {
-        if (channels.size() < 5)
-            Throw("Film::prepare(): expects at least 5 channels (RGBAW)!");
+    size_t prepare(const std::vector<std::string> &channels) override {
+        std::vector<std::string> sorted = channels;
 
-        for (size_t i = 0; i < 5; ++i) {
-            if (channels[i] != std::string(1, "RGBAW"[i])) {
-                Throw("Film::prepare(): expects the first 5 channels to be RGBAW!");
-            }
+        // Add basic RGBAW channels to the film
+        for (size_t i = 0; i < 5; ++i)
+            sorted.insert(sorted.begin() + i, std::string(1, "RGBAW"[i]));
+
+        /* locked */ {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_storage = new ImageBlock(m_crop_size, sorted.size());
+            m_storage->set_offset(m_crop_offset);
+            m_storage->clear();
+            m_channels = sorted;
         }
 
-        std::vector<std::string> sorted = channels;
         std::sort(sorted.begin(), sorted.end());
         auto it = std::unique(sorted.begin(), sorted.end());
         if (it != sorted.end())
             Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
 
-        /* locked */ {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, channels.size());
-            m_storage->set_offset(m_crop_offset);
-            m_storage->clear();
-            m_channels = channels;
-        }
+        return m_channels.size();
+    }
+
+    ref<ImageBlock> create_storage(bool normalize, bool borders) override {
+        bool warn  = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) && !is_spectral_v<Spectrum>;
+        return new ImageBlock(m_crop_size, m_channels.size(),
+                              m_filter.get(),
+                              warn /* warn_negative */,
+                              warn /* warn_invalid */,
+                              borders || m_high_quality_edges /* border */,
+                              normalize /* normalize */);
     }
 
     void put(const ImageBlock *block) override {
@@ -314,24 +323,12 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
 
-            // Convert to Float32 bitmap
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
-            ref<Bitmap> target = new Bitmap(
-                source->pixel_format(),
-                Struct::Type::Float32,
-                source->size(),
-                source->channel_count(),
-                channel_names);
-            source->convert(target);
-
-            ScalarVector2i size = target->size();
-            size_t width = target->channel_count() * ek::hprod(size);
-            auto data = DynamicBuffer<Float64>(ek::load<DynamicBuffer<Float32>>(target->data(), width));
-            size_t shape[3] = { (size_t) target->height(),
-                                (size_t) target->width(),
-                                target->channel_count() };
+            ScalarVector2i size = source->size();
+            size_t width = source->channel_count() * ek::hprod(size);
+            auto data = ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
+            size_t shape[3] = { (size_t) source->height(),
+                                (size_t) source->width(),
+                                source->channel_count() };
             return TensorXf(data, 3, shape);
         }
     }
@@ -372,7 +369,7 @@ public:
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
-            m_component_format, m_storage->size(),
+            struct_type_v<ScalarFloat>, m_storage->size(),
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
@@ -477,7 +474,25 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        bitmap()->write(filename, m_file_format);
+        ref<Bitmap> source = bitmap();
+        if (m_component_format != struct_type_v<ScalarFloat>) {
+            // Mismatch between the current format and the one expected by the film
+            // Conversion is necessary before saving to disk
+            std::vector<std::string> channel_names;
+            for (size_t i = 0; i < source->channel_count(); i++)
+                channel_names.push_back(source->struct_()->operator[](i).name);
+            ref<Bitmap> target = new Bitmap(
+                source->pixel_format(),
+                m_component_format,
+                source->size(),
+                source->channel_count(),
+                channel_names);
+            source->convert(target);
+
+            target->write(filename, m_file_format);
+        } else {
+            source->write(filename, m_file_format);
+        }
     }
 
     void schedule_storage() override {

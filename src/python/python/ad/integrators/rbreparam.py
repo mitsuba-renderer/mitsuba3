@@ -67,7 +67,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
         Li_attached = film.develop()
 
@@ -78,7 +78,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         block.clear()
         block.put(pos, ray.wavelengths, grad_img + div_grad)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
 
         return ek.grad(Li_attached) + film.develop()
@@ -141,7 +141,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
         Li_attached = film.develop()
 

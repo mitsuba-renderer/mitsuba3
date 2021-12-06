@@ -228,3 +228,46 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     camera = create_camera(origin, direction, fov=fov, fov_axis='diagonal')
     for sample in [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]:
         check_fov(camera, sample)
+
+
+def test05_spectrum_sampling(variants_vec_spectral):
+    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import Float, MTS_CIE_MIN, MTS_CIE_MAX, load_dict
+
+    # Check RGB wavelength sampling
+    camera = load_dict({
+        "type": "thinlens",
+        "aperture_radius": 1.0,
+    })
+    wavelengths, _ =  camera.sample_wavelengths(ek.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
+    assert (ek.all_nested((wavelengths >= MTS_CIE_MIN) & (wavelengths <= MTS_CIE_MAX)))
+
+    # Check custom SRF wavelength sampling
+    camera = load_dict({
+        "type": "thinlens",
+        "aperture_radius": 1.0,
+        "srf": {
+            "type": 'spectrum',
+            "value": [(1200,1.0), (1400,1.0)]
+        }
+    })
+    wavelengths, _ =  camera.sample_wavelengths(ek.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
+    assert (ek.all_nested((wavelengths >= 1200) & (wavelengths <= 1400)))
+
+    # Check error if double SRF is defined
+    with pytest.raises(RuntimeError, match=r'Sensor\(\)'):
+        camera = load_dict({
+            "type": "thinlens",
+            "aperture_radius": 1.0,
+            "srf": {
+                "type": 'spectrum',
+                "value": [(1200,1.0), (1400,1.0)]
+            },
+            "film": {
+                "type": 'specfilm',
+                "srf_test": {
+                    "type": 'spectrum',
+                    "value": [(34,1.0),(79,1.0),(120,1.0)]
+                }
+            }
+        })

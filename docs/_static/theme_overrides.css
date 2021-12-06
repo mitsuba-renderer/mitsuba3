@@ -165,10 +165,22 @@ div.figure.compound > p.caption {
 	margin-right: 7px;
 }
 div.subfigure {
-	display: inline-block;
+	display: inline-block !important;
 	vertical-align: top;
 	padding-left: 7px;
 	padding-right: 7px;
+}
+
+@media only screen and (min-width: 768px) {
+	div.subfigure {
+		/* display: inline-block; */
+		display: inline-flex !important;
+		flex-direction: row;
+
+		vertical-align: top;
+		padding-left: 7px;
+		padding-right: 7px;
+	}
 }
 
 

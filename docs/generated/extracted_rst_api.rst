@@ -1797,6 +1797,13 @@
         Returns → float:
             *no description available*
 
+    .. py:method:: mitsuba.core.ContinuousDistribution.interval_resolution(self)
+
+        Return the minimum resolution of the discretization
+
+        Returns → float:
+            *no description available*
+
     .. py:method:: mitsuba.core.ContinuousDistribution.normalization(self)
 
         Return the normalization factor (i.e. the inverse of sum())
@@ -3208,6 +3215,13 @@
         Returns → float:
             *no description available*
 
+    .. py:method:: mitsuba.core.IrregularContinuousDistribution.interval_resolution(self)
+
+        Return the minimum resolution of the discretization
+
+        Returns → float:
+            *no description available*
+
     .. py:method:: mitsuba.core.IrregularContinuousDistribution.nodes(self)
 
         Return the nodes of the underlying discretization
@@ -3227,6 +3241,13 @@
         Return the unnormalized discretized probability density function
 
         Returns → enoki.scalar.ArrayXf:
+            *no description available*
+
+    .. py:method:: mitsuba.core.IrregularContinuousDistribution.range(self)
+
+        Return the range of the distribution
+
+        Returns → enoki.scalar.Array2f:
             *no description available*
 
     .. py:method:: mitsuba.core.IrregularContinuousDistribution.sample(self, value, active=True)
@@ -3485,6 +3506,14 @@
 .. py:data:: mitsuba.core.MTS_AUTHORS
     :type: str
     :value: Realistic Graphics Lab, EPFL
+
+.. py:data:: mitsuba.core.MTS_CIE_MAX
+    :type: float
+    :value: 830.0
+
+.. py:data:: mitsuba.core.MTS_CIE_MIN
+    :type: float
+    :value: 360.0
 
 .. py:data:: mitsuba.core.MTS_ENABLE_CUDA
     :type: bool
@@ -4873,30 +4902,6 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.core.Object.set_grad_suspended(self, state)
-
-        Suspend or resume tracking of derivatives.
-
-        One important use case of Mitsuba 2 entails the propagation of
-        derivatives through the full rendering process, typically via
-        automatic differentiation. To this end, certain variants of the
-        renderer perform all computation via Enoki's DiffArray<T> class, which
-        internally builds a computation graph of all involved arithmetic. In
-        certain situations, this is undesirable, and we need to temporarily
-        suspend the propagation of gradients. That is typically done using the
-        Object::traverse mechanism. However, some parameters may not be
-        exposed through traverse, and we need to suspend them too, otherwise
-        parts of the computation will still be recorded. This method handles
-        such cases: its default implementation doed nothing, but classes using
-        such "hidden" parameters may override it to properly suspend the
-        tracking of their gradients.
-
-        Parameter ``state`` (bool):
-            Whether to stop or resume recording derivatives.
-
-        Returns → None:
-            *no description available*
-
     .. py:method:: mitsuba.core.Object.set_id(self, id)
 
         Set an identifier to the current instance (if applicable)
@@ -5157,32 +5162,6 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.core.Properties.array3f(self, arg0, arg1)
-
-        Retrieve a 3D array (use default value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (enoki.scalar.Array3f):
-            *no description available*
-
-        Returns → object:
-            *no description available*
-
-    .. py:method:: mitsuba.core.Properties.bool_(self, arg0, arg1)
-
-        Retrieve a boolean value (use default value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (bool):
-            *no description available*
-
-        Returns → object:
-            *no description available*
-
     .. py:method:: mitsuba.core.Properties.copy_attribute(self, arg0, arg1, arg2)
 
         Copy a single attribute from another Properties object and potentially
@@ -5198,19 +5177,6 @@
             *no description available*
 
         Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.core.Properties.float_(self, arg0, arg1)
-
-        Retrieve a floating point value (use default value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (float_):
-            *no description available*
-
-        Returns → object:
             *no description available*
 
     .. py:method:: mitsuba.core.Properties.get(self, key, def_value=None)
@@ -5242,19 +5208,6 @@
         string)
 
         Returns → str:
-            *no description available*
-
-    .. py:method:: mitsuba.core.Properties.long_(self, arg0, arg1)
-
-        Retrieve a long value (use default value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (int):
-            *no description available*
-
-        Returns → object:
             *no description available*
 
     .. py:method:: mitsuba.core.Properties.mark_queried(self, arg0)
@@ -5332,20 +5285,6 @@
             *no description available*
 
         Parameter ``arg1`` (str):
-            *no description available*
-
-        Returns → object:
-            *no description available*
-
-    .. py:method:: mitsuba.core.Properties.transform(self, arg0, arg1)
-
-        Retrieve a 4x4 homogeneous coordinate transformation (use default
-        value if no entry exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (:py:obj:`mitsuba.render.Transform`):
             *no description available*
 
         Returns → object:
@@ -5480,7 +5419,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.core.Ray3f`):
             *no description available*
 
-    .. py:method:: __init__(self, o, d, time, wavelengths)
+    .. py:method:: __init__(self, o, d, time=0.0, wavelengths=[])
 
         Parameter ``o`` (:py:obj:`mitsuba.core.Point3f`):
             *no description available*
@@ -5569,7 +5508,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
             *no description available*
 
-    .. py:method:: __init__(self, o, d, time, wavelengths)
+    .. py:method:: __init__(self, o, d, time=0.0, wavelengths=[])
 
         Initialize without differentials.
 
@@ -5771,6 +5710,12 @@
 
         Returns → int:
             *no description available*
+
+.. py:class:: mitsuba.core.ScalarColor0d
+
+.. py:class:: mitsuba.core.ScalarColor1d
+
+.. py:class:: mitsuba.core.ScalarColor3d
 
 .. py:class:: mitsuba.core.ScopedSetThreadEnvironment
 
@@ -8574,25 +8519,6 @@
         Returns → :py:obj:`mitsuba.core.Color3f`:
             *no description available*
 
-.. py:function:: mitsuba.core.pdf_uniform_spectrum(overloaded)
-
-
-    .. py:function:: pdf_uniform_spectrum(wavelengths)
-
-        Parameter ``wavelengths`` (float):
-            *no description available*
-
-        Returns → float:
-            *no description available*
-
-    .. py:function:: pdf_uniform_spectrum(wavelengths)
-
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.core.Color3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.core.Color3f`:
-            *no description available*
-
 .. py:function:: mitsuba.core.permute(value, sample_count, seed, rounds=4)
 
     Generate pseudorandom permutation vector using a shuffling network and
@@ -8915,25 +8841,6 @@
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
 
-.. py:function:: mitsuba.core.sample_uniform_spectrum(overloaded)
-
-
-    .. py:function:: sample_uniform_spectrum(sample)
-
-        Parameter ``sample`` (float):
-            *no description available*
-
-        Returns → Tuple[float, float]:
-            *no description available*
-
-    .. py:function:: sample_uniform_spectrum(sample)
-
-        Parameter ``sample`` (:py:obj:`mitsuba.core.Color3f`):
-            *no description available*
-
-        Returns → Tuple[:py:obj:`mitsuba.core.Color3f`, :py:obj:`mitsuba.core.Color3f`]:
-            *no description available*
-
 .. py:function:: mitsuba.core.set_property(ptr, type, value)
 
     Parameter ``ptr`` (capsule):
@@ -8959,6 +8866,20 @@
         *no description available*
 
     Returns → float:
+        *no description available*
+
+.. py:function:: mitsuba.core.spectrum_list_to_srgb(wavelengths, values, bounded=True)
+
+    Parameter ``wavelengths`` (List[float]):
+        *no description available*
+
+    Parameter ``values`` (List[float]):
+        *no description available*
+
+    Parameter ``bounded`` (bool):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.core.Color3f`:
         *no description available*
 
 .. py:function:: mitsuba.core.spline.eval_1d(overloaded)
@@ -10982,6 +10903,36 @@
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
+    .. py:method:: mitsuba.render.Endpoint.sample_wavelengths(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths proportional to the
+        sensitivity/emission spectrum.
+
+        Any discrepancies between ideal and actual sampled profile are
+        absorbed into a spectral importance weight that is returned along with
+        the wavelengths.
+
+        In RGB and monochromatic modes, since no wavelengths need to be
+        sampled, this simply returns the value of the spectrum (pdf = 1).
+
+        Parameter ``si`` (:py:obj:`mitsuba.render.SurfaceInteraction`):
+            Surface interaction, used to condition on the spatial dimensions
+            in case of a spatially-varying spectrum. In that case, at least
+            the `uv` field must be correctly filled.
+
+        Parameter ``sample`` (float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the emission profile.
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.core.Color0f`, :py:obj:`mitsuba.core.Color3f`]:
+            The set of sampled wavelengths and (potentially spectrally
+            varying) importance weights. The latter account for the difference
+            between the profile and the actual used sampling density function.
+            In the case of emitters, this will include the emitted radiance.
+
     .. py:method:: mitsuba.render.Endpoint.set_medium(self, medium)
 
         Set the medium that surrounds the emitter.
@@ -11037,6 +10988,17 @@
         Returns → :py:obj:`mitsuba.core.Bitmap`:
             *no description available*
 
+    .. py:method:: mitsuba.render.Film.create_storage(self, normalize=False)
+
+        Return a reference to a newly created storage similar to the
+        underlying one used by the film
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.render.ImageBlock`:
+            *no description available*
+
     .. py:method:: mitsuba.render.Film.crop_offset(self)
 
         Return the offset of the crop window
@@ -11059,6 +11021,13 @@
             *no description available*
 
         Returns → enoki.scalar.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Film.flags(self)
+
+        Flags for all properties combined.
+
+        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.render.Film.has_high_quality_edges(self)
@@ -11085,10 +11054,30 @@
 
     .. py:method:: mitsuba.render.Film.prepare(self, channels)
 
-        Configure the film for rendering a specified set of channels
+        Configure the film for rendering a specified set of extra channels
+        (AOVS). Returns the total number of channels that the film will use
 
         Parameter ``channels`` (List[str]):
             *no description available*
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Film.prepare_sample(self, spec, wavelengths, aovs, active)
+
+        Prepare spectrum samples to be in the format expected by the film
+
+        Parameter ``spec`` (:py:obj:`mitsuba.core.Color3f`):
+            *no description available*
+
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.core.Color0f`):
+            *no description available*
+
+        Parameter ``aovs`` (float):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
 
         Returns → None:
             *no description available*
@@ -11109,6 +11098,13 @@
         Return the image reconstruction filter (const version)
 
         Returns → :py:obj:`mitsuba.core.ReconstructionFilter`:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Film.sensor_response_function(self)
+
+        Returns the specific Sensor Response Function (SRF) used by the film
+
+        Returns → :py:obj:`mitsuba.render.Texture`:
             *no description available*
 
     .. py:method:: mitsuba.render.Film.set_crop_window(self, arg0, arg1)
@@ -11477,29 +11473,56 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.render.Integrator.render(self, scene, seed, sensor_index=0, develop_film=True, spp=0)
+    .. py:method:: mitsuba.render.Integrator.render(overloaded)
 
-        Perform the main rendering job.
 
-        Returns the rendered image if ``develop_film`` is set to ``True``.
+        .. py:method:: render(self, scene, seed, sensor, develop_film=True, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.render.Scene`):
-            *no description available*
+            Perform the main rendering job.
 
-        Parameter ``seed`` (int):
-            *no description available*
+            Returns the rendered image if ``develop_film`` is set to ``True``.
 
-        Parameter ``sensor_index`` (int):
-            *no description available*
+            Parameter ``scene`` (:py:obj:`mitsuba.render.Scene`):
+                *no description available*
 
-        Parameter ``develop_film`` (bool):
-            *no description available*
+            Parameter ``seed`` (int):
+                *no description available*
 
-        Parameter ``spp`` (int):
-            *no description available*
+            Parameter ``sensor`` (:py:obj:`mitsuba.render.Sensor`):
+                *no description available*
 
-        Returns → enoki.scalar.TensorXf:
-            *no description available*
+            Parameter ``develop_film`` (bool):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → enoki.scalar.TensorXf:
+                *no description available*
+
+        .. py:method:: render(self, scene, seed, sensor_index=0, develop_film=True, spp=0)
+
+            Perform the main rendering job.
+
+            Returns the rendered image if ``develop_film`` is set to ``True``.
+
+            Parameter ``scene`` (:py:obj:`mitsuba.render.Scene`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``sensor_index`` (int):
+                *no description available*
+
+            Parameter ``develop_film`` (bool):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → object:
+                *no description available*
 
     .. py:method:: mitsuba.render.Integrator.should_stop(self)
 
@@ -13155,9 +13178,12 @@
             Parameter ``active`` (bool):
                 Mask to specify active lanes.
 
-    .. py:method:: mitsuba.render.Scene.render(self, sensor_index=0, spp=0)
+    .. py:method:: mitsuba.render.Scene.render(self, seed=0, sensor_index=0, spp=0)
 
         Render the scene with the sensor specified by its index
+
+        Parameter ``seed`` (int):
+            *no description available*
 
         Parameter ``sensor_index`` (int):
             *no description available*
@@ -14205,7 +14231,7 @@
         Evaluate the density function of the sample_spectrum() method as a
         probability per unit wavelength (in units of 1/nm).
 
-        Not every implementation necessarily provides this function. The
+        Not every implementation necessarily overrides this function. The
         default implementation throws an exception.
 
         Parameter ``si`` (:py:obj:`mitsuba.render.SurfaceInteraction3f`):
@@ -14264,6 +14290,25 @@
 
         2. The Monte Carlo importance weight (Spectral power distribution
         value divided by the sampling density)
+
+    .. py:method:: mitsuba.render.Texture.spectral_resolution(self)
+
+        Returns the resolution of the spectrum in nanometers (if discretized)
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Texture.wavelength_range(self)
+
+        Returns the range of wavelengths covered by the spectrum
+
+        The default implementation returns ``(MTS_CIE_MIN, MTS_CIE_MAX)``
+
+        Returns → :py:obj:`mitsuba.core.Vector2f`:
+            *no description available*
 
 .. py:class:: mitsuba.render.TransportMode
 
@@ -14582,7 +14627,18 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (:py:obj:`mitsuba.render.RayFlags`):
+        Parameter ``arg1`` (:py:obj:`mitsuba.render.EmitterFlags`):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.render.HitComputeFlags`):
             *no description available*
 
         Returns → bool:
@@ -15351,6 +15407,1174 @@
 
     Regularized lower incomplete gamma function based on CEPHES
 
+.. py:class:: mitsuba.python.tonemap.Bitmap(*args, **kwargs)
+
+    Base class: :py:obj:`mitsuba.core.Object`
+
+    General-purpose bitmap class with read and write support for several
+    common file formats.
+
+    This class handles loading of PNG, JPEG, BMP, TGA, as well as OpenEXR
+    files, and it supports writing of PNG, JPEG and OpenEXR files.
+
+    PNG and OpenEXR files are optionally annotated with string-valued
+    metadata, and the gamma setting can be stored as well. Please see the
+    class methods and enumerations for further detail.
+
+    .. py:method:: __init__(*args, **kwargs)
+
+        Overloaded function.
+
+        1. __init__(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, size: mitsuba::Vector<unsigned int, 2ul>, channel_count: int = 0, channel_names: List[str] = []) -> None
+
+        Create a bitmap of the specified type and allocate the necessary
+        amount of memory
+
+        Parameter ``pixel_format``:
+            Specifies the pixel format (e.g. RGBA or Luminance-only)
+
+        Parameter ``component_format``:
+            Specifies how the per-pixel components are encoded (e.g. unsigned
+            8 bit integers or 32-bit floating point values). The component
+            format struct_type_v<Float> will be translated to the
+            corresponding compile-time precision type (Float32 or Float64).
+
+        Parameter ``size``:
+            Specifies the horizontal and vertical bitmap size in pixels
+
+        Parameter ``channel_count``:
+            Channel count of the image. This parameter is only required when
+            ``pixel_format`` = PixelFormat::MultiChannel
+
+        Parameter ``channel_names``:
+            Channel names of the image. This parameter is optional, and only
+            used when ``pixel_format`` = PixelFormat::MultiChannel
+
+        Parameter ``data``:
+            External pointer to the image data. If set to ``nullptr``, the
+            implementation will allocate memory itself.
+
+        2. __init__(self: :py:obj:`mitsuba.core.Bitmap`, arg0: :py:obj:`mitsuba.core.Bitmap`) -> None
+
+        3. __init__(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+
+        4. __init__(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+
+        5. __init__(self: :py:obj:`mitsuba.core.Bitmap`, array: :py:obj:`mitsuba.core.PyObjectWrapper`, pixel_format: object = None, channel_names: List[str] = []) -> None
+
+        Initialize a Bitmap from any array that implements __array_interface__
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.AlphaTransform(self: mitsuba.core.Bitmap.AlphaTransform, value: int)
+
+        Members:
+
+            None : No transformation (default)
+
+            Premultiply : No transformation (default)
+
+            Unpremultiply : No transformation (default)
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.AlphaTransform`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.AlphaTransform.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.FileFormat(self: mitsuba.core.Bitmap.FileFormat, value: int)
+
+        Supported image file formats
+
+        Members:
+
+        .. py:data:: PNG
+
+            Portable network graphics
+
+            The following is supported:
+
+            * Loading and saving of 8/16-bit per component bitmaps for all pixel
+              formats (Y, YA, RGB, RGBA)
+
+            * Loading and saving of 1-bit per component mask bitmaps
+
+            * Loading and saving of string-valued metadata fields
+
+        .. py:data:: OpenEXR
+
+            OpenEXR high dynamic range file format developed by Industrial Light &
+            Magic (ILM)
+
+            The following is supported:
+
+            * Loading and saving of Float16 / Float32/ UInt32 bitmaps with all
+              supported RGB/Luminance/Alpha combinations
+
+            * Loading and saving of spectral bitmaps
+
+            * Loading and saving of XYZ tristimulus bitmaps
+
+            * Loading and saving of string-valued metadata fields
+
+            The following is *not* supported:
+
+            * Saving of tiled images, tile-based read access
+
+            * Display windows that are different than the data window
+
+            * Loading of spectrum-valued bitmaps
+
+        .. py:data:: RGBE
+
+            RGBE image format by Greg Ward
+
+            The following is supported
+
+            * Loading and saving of Float32 - based RGB bitmaps
+
+        .. py:data:: PFM
+
+            PFM (Portable Float Map) image format
+
+            The following is supported
+
+            * Loading and saving of Float32 - based Luminance or RGB bitmaps
+
+        .. py:data:: PPM
+
+            PPM (Portable Pixel Map) image format
+
+            The following is supported
+
+            * Loading and saving of UInt8 and UInt16 - based RGB bitmaps
+
+        .. py:data:: JPEG
+
+            Joint Photographic Experts Group file format
+
+            The following is supported:
+
+            * Loading and saving of 8 bit per component RGB and luminance bitmaps
+
+        .. py:data:: TGA
+
+            Truevision Advanced Raster Graphics Array file format
+
+            The following is supported:
+
+            * Loading of uncompressed 8-bit RGB/RGBA files
+
+        .. py:data:: BMP
+
+            Windows Bitmap file format
+
+            The following is supported:
+
+            * Loading of uncompressed 8-bit luminance and RGBA bitmaps
+
+        .. py:data:: Unknown
+
+            Unknown file format
+
+        .. py:data:: Auto
+
+            Automatically detect the file format
+
+            Note: this flag only applies when loading a file. In this case, the
+            source stream must support the ``seek()`` operation.
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.FileFormat`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.FileFormat.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.PixelFormat(self: mitsuba.core.Bitmap.PixelFormat, value: int)
+
+        This enumeration lists all pixel format types supported by the Bitmap
+        class. This both determines the number of channels, and how they
+        should be interpreted
+
+        Members:
+
+        .. py:data:: Y
+
+            Single-channel luminance bitmap
+
+        .. py:data:: YA
+
+            Two-channel luminance + alpha bitmap
+
+        .. py:data:: RGB
+
+            RGB bitmap
+
+        .. py:data:: RGBA
+
+            RGB bitmap + alpha channel
+
+        .. py:data:: RGBAW
+
+            RGB bitmap + alpha channel + weight
+
+        .. py:data:: XYZ
+
+            XYZ tristimulus bitmap
+
+        .. py:data:: XYZA
+
+            XYZ tristimulus + alpha channel
+
+        .. py:data:: MultiChannel
+
+            Arbitrary multi-channel bitmap without a fixed interpretation
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.PixelFormat.name
+        :property:
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.accumulate(*args, **kwargs)
+
+        Overloaded function.
+
+        1. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, source_offset: mitsuba::Point<int, 2ul>, target_offset: mitsuba::Point<int, 2ul>, size: mitsuba::Vector<int, 2ul>) -> None
+
+        Accumulate the contents of another bitmap into the region with the
+        specified offset
+
+        Out-of-bounds regions are safely ignored. It is assumed that ``bitmap
+        != this``.
+
+        Remark:
+            This function throws an exception when the bitmaps use different
+            component formats or channels.
+
+        2. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, target_offset: mitsuba::Point<int, 2ul>) -> None
+
+        Accumulate the contents of another bitmap into the region with the
+        specified offset
+
+        This convenience function calls the main ``accumulate()``
+        implementation with ``size`` set to ``bitmap->size()`` and
+        ``source_offset`` set to zero. Out-of-bounds regions are ignored. It
+        is assumed that ``bitmap != this``.
+
+        Remark:
+            This function throws an exception when the bitmaps use different
+            component formats or channels.
+
+        3. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`) -> None
+
+        Accumulate the contents of another bitmap into the region with the
+        specified offset
+
+        This convenience function calls the main ``accumulate()``
+        implementation with ``size`` set to ``bitmap->size()`` and
+        ``source_offset`` and ``target_offset`` set to zero. Out-of-bounds
+        regions are ignored. It is assumed that ``bitmap != this``.
+
+        Remark:
+            This function throws an exception when the bitmaps use different
+            component formats or channels.
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.buffer_size(self: mitsuba.core.Bitmap)
+
+        Return the bitmap size in bytes (excluding metadata)
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.bytes_per_pixel(self: mitsuba.core.Bitmap)
+
+        Return the number bytes of storage used per pixel
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.channel_count(self: mitsuba.core.Bitmap)
+
+        Return the number of channels used by this bitmap
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.clear(self: mitsuba.core.Bitmap)
+
+        Clear the bitmap to zero
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.component_format(self: mitsuba.core.Bitmap)
+
+        Return the component format of this bitmap
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.convert(*args, **kwargs)
+
+        Overloaded function.
+
+        1. convert(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, srgb_gamma: bool, alpha_transform: :py:obj:`mitsuba.core.Bitmap.AlphaTransform` = <AlphaTransform.None: 0>) -> :py:obj:`mitsuba.core.Bitmap`
+
+        Convert the bitmap into another pixel and/or component format
+
+        This helper function can be used to efficiently convert a bitmap
+        between different underlying representations. For instance, it can
+        translate a uint8 sRGB bitmap to a linear float32 XYZ bitmap based on
+        half-, single- or double-precision floating point-backed storage.
+
+        This function roughly does the following:
+
+        * For each pixel and channel, it converts the associated value into a
+        normalized linear-space form (any gamma of the source bitmap is
+        removed)
+
+        * gamma correction (sRGB ramp) is applied if ``srgb_gamma`` is
+        ``True``
+
+        * The corrected value is clamped against the representable range of
+        the desired component format.
+
+        * The clamped gamma-corrected value is then written to the new bitmap
+
+        If the pixel formats differ, this function will also perform basic
+        conversions (e.g. spectrum to rgb, luminance to uniform spectrum
+        values, etc.)
+
+        Note that the alpha channel is assumed to be linear in both the source
+        and target bitmap, hence it won't be affected by any gamma-related
+        transformations.
+
+        Remark:
+            This ``convert()`` variant usually returns a new bitmap instance.
+            When the conversion would just involve copying the original
+            bitmap, the function becomes a no-op and returns the current
+            instance.
+
+        pixel_format Specifies the desired pixel format
+
+        component_format Specifies the desired component format
+
+        srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
+        the ouutput values.
+
+        2. convert(self: :py:obj:`mitsuba.core.Bitmap`, target: :py:obj:`mitsuba.core.Bitmap`) -> None
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.detect_file_format(arg0: mitsuba.core.Stream)
+
+        Attempt to detect the bitmap file format in a given stream
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.has_alpha(self: mitsuba.core.Bitmap)
+
+        Return whether this image has an alpha channel
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.height(self: mitsuba.core.Bitmap)
+
+        Return the bitmap's height in pixels
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.metadata(self: mitsuba.core.Bitmap)
+
+        Return a Properties object containing the image metadata
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.pixel_count(self: mitsuba.core.Bitmap)
+
+        Return the total number of pixels
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.pixel_format(self: mitsuba.core.Bitmap)
+
+        Return the pixel format of this bitmap
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.premultiplied_alpha(self: mitsuba.core.Bitmap)
+
+        Return whether the bitmap uses premultiplied alpha
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.resample(*args, **kwargs)
+
+        Overloaded function.
+
+        1. resample(self: :py:obj:`mitsuba.core.Bitmap`, target: :py:obj:`mitsuba.core.Bitmap`, rfilter: mitsuba::ReconstructionFilter<float, mitsuba::Color<float, 3ul> > = None, bc: Tuple[:py:obj:`mitsuba.core.FilterBoundaryCondition`, :py:obj:`mitsuba.core.FilterBoundaryCondition`] = (<FilterBoundaryCondition.Clamp: 0>, <FilterBoundaryCondition.Clamp: 0>), clamp: Tuple[float, float] = (-inf, inf), temp: :py:obj:`mitsuba.core.Bitmap` = None) -> None
+
+        Up- or down-sample this image to a different resolution
+
+        Uses the provided reconstruction filter and accounts for the requested
+        horizontal and vertical boundary conditions when looking up data
+        outside of the input domain.
+
+        A minimum and maximum image value can be specified to prevent to
+        prevent out-of-range values that are created by the resampling
+        process.
+
+        The optional ``temp`` parameter can be used to pass an image of
+        resolution ``Vector2u(target->width(), this->height())`` to avoid
+        intermediate memory allocations.
+
+        Parameter ``target``:
+            Pre-allocated bitmap of the desired target resolution
+
+        Parameter ``rfilter``:
+            A separable image reconstruction filter (default: 2-lobe Lanczos
+            filter)
+
+        Parameter ``bch``:
+            Horizontal and vertical boundary conditions (default: clamp)
+
+        Parameter ``clamp``:
+            Filtered image pixels will be clamped to the following range.
+            Default: -infinity..infinity (i.e. no clamping is used)
+
+        Parameter ``temp``:
+            Optional: image for intermediate computations
+
+        2. resample(self: :py:obj:`mitsuba.core.Bitmap`, res: mitsuba::Vector<unsigned int, 2ul>, rfilter: mitsuba::ReconstructionFilter<float, mitsuba::Color<float, 3ul> > = None, bc: Tuple[:py:obj:`mitsuba.core.FilterBoundaryCondition`, :py:obj:`mitsuba.core.FilterBoundaryCondition`] = (<FilterBoundaryCondition.Clamp: 0>, <FilterBoundaryCondition.Clamp: 0>), clamp: Tuple[float, float] = (-inf, inf)) -> :py:obj:`mitsuba.core.Bitmap`
+
+        Up- or down-sample this image to a different resolution
+
+        This version is similar to the above resample() function -- the main
+        difference is that it does not work with preallocated bitmaps and
+        takes the desired output resolution as first argument.
+
+        Uses the provided reconstruction filter and accounts for the requested
+        horizontal and vertical boundary conditions when looking up data
+        outside of the input domain.
+
+        A minimum and maximum image value can be specified to prevent to
+        prevent out-of-range values that are created by the resampling
+        process.
+
+        Parameter ``res``:
+            Desired output resolution
+
+        Parameter ``rfilter``:
+            A separable image reconstruction filter (default: 2-lobe Lanczos
+            filter)
+
+        Parameter ``bch``:
+            Horizontal and vertical boundary conditions (default: clamp)
+
+        Parameter ``clamp``:
+            Filtered image pixels will be clamped to the following range.
+            Default: -infinity..infinity (i.e. no clamping is used)
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.set_premultiplied_alpha(self: mitsuba.core.Bitmap, arg0: bool)
+
+        Specify whether the bitmap uses premultiplied alpha
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.set_srgb_gamma(self: mitsuba.core.Bitmap, arg0: bool)
+
+        Specify whether the bitmap uses an sRGB gamma encoding
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.size(self: mitsuba.core.Bitmap)
+
+        Return the bitmap dimensions in pixels
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.split(self: mitsuba.core.Bitmap)
+
+        Split an multi-channel image buffer (e.g. from an OpenEXR image with
+        lots of AOVs) into its constituent layers
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.srgb_gamma(self: mitsuba.core.Bitmap)
+
+        Return whether the bitmap uses an sRGB gamma encoding
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.struct_(self: mitsuba.core.Bitmap)
+
+        Return a ``Struct`` instance describing the contents of the bitmap
+        (const version)
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.vflip(self: mitsuba.core.Bitmap)
+
+        Vertically flip the bitmap
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.width(self: mitsuba.core.Bitmap)
+
+        Return the bitmap's width in pixels
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.write(*args, **kwargs)
+
+        Overloaded function.
+
+        1. write(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>, quality: int = -1) -> None
+
+        Write an encoded form of the bitmap to a stream using the specified
+        file format
+
+        Parameter ``stream``:
+            Target stream that will receive the encoded output
+
+        Parameter ``format``:
+            Target file format (OpenEXR, PNG, etc.) Detected from the filename
+            by default.
+
+        Parameter ``quality``:
+            Depending on the file format, this parameter takes on a slightly
+            different meaning:
+
+        * PNG images: Controls how much libpng will attempt to compress the
+        output (with 1 being the lowest and 9 denoting the highest
+        compression). The default argument uses the compression level 5.
+
+        * JPEG images: denotes the desired quality (between 0 and 100). The
+        default argument (-1) uses the highest quality (100).
+
+        * OpenEXR images: denotes the quality level of the DWAB compressor,
+        with higher values corresponding to a lower quality. A value of 45 is
+        recommended as the default for lossy compression. The default argument
+        (-1) causes the implementation to switch to the lossless PIZ
+        compressor.
+
+        2. write(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>, quality: int = -1) -> None
+
+        Write an encoded form of the bitmap to a file using the specified file
+        format
+
+        Parameter ``path``:
+            Target file path on disk
+
+        Parameter ``format``:
+            Target file format (FileFormat::OpenEXR, FileFormat::PNG, etc.)
+            Detected from the filename by default.
+
+        Parameter ``quality``:
+            Depending on the file format, this parameter takes on a slightly
+            different meaning:
+
+        * PNG images: Controls how much libpng will attempt to compress the
+        output (with 1 being the lowest and 9 denoting the highest
+        compression). The default argument uses the compression level 5.
+
+        * JPEG images: denotes the desired quality (between 0 and 100). The
+        default argument (-1) uses the highest quality (100).
+
+        * OpenEXR images: denotes the quality level of the DWAB compressor,
+        with higher values corresponding to a lower quality. A value of 45 is
+        recommended as the default for lossy compression. The default argument
+        (-1) causes the implementation to switch to the lossless PIZ
+        compressor.
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.write_async(self: mitsuba.core.Bitmap, path: mitsuba.core.filesystem.path, format: mitsuba.core.Bitmap.FileFormat = <FileFormat.Auto: 9>, quality: int = -1)
+
+        Equivalent to write(), but executes asynchronously on a different
+        thread
+
+.. py:function:: mitsuba.python.tonemap.Log(level: mitsuba.core.LogLevel, msg: str)
+
+.. py:class:: mitsuba.python.tonemap.LogLevel(self: mitsuba.core.LogLevel, value: int)
+
+    Available Log message types
+
+    Members:
+
+    .. py:data:: Trace
+
+        < Trace message, for extremely verbose debugging
+
+    .. py:data:: Debug
+
+        < Debug message, usually turned off
+
+    .. py:data:: Info
+
+        < More relevant debug / information message
+
+    .. py:data:: Warn
+
+        < Warning message
+
+    .. py:data:: Error
+
+        < Error message, causes an exception to be thrown
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.core.LogLevel`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.LogLevel.name
+        :property:
+
+.. py:class:: mitsuba.python.tonemap.ScopedSetThreadEnvironment(self: mitsuba.core.ScopedSetThreadEnvironment, arg0: mitsuba.core.ThreadEnvironment)
+
+    RAII-style class to temporarily switch to another thread's logger/file
+    resolver
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.core.ScopedSetThreadEnvironment`, arg0: :py:obj:`mitsuba.core.ThreadEnvironment`)
+
+
+.. py:class:: mitsuba.python.tonemap.Struct(self: mitsuba.core.Struct, pack: bool = False, byte_order: mitsuba.core.Struct.ByteOrder = <ByteOrder.HostByteOrder: 2>)
+
+    Base class: :py:obj:`mitsuba.core.Object`
+
+    Descriptor for specifying the contents and in-memory layout of a POD-
+    style data record
+
+    Remark:
+        The python API provides an additional ``dtype()`` method, which
+        returns the NumPy ``dtype`` equivalent of a given ``Struct``
+        instance.
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct`, pack: bool = False, byte_order: :py:obj:`mitsuba.core.Struct.ByteOrder` = <ByteOrder.HostByteOrder: 2>)
+
+        Create a new ``Struct`` and indicate whether the contents are packed
+        or aligned
+
+    .. py:class:: mitsuba.python.tonemap.Struct.ByteOrder(self: mitsuba.core.Struct.ByteOrder, value: int)
+
+        Members:
+
+            LittleEndian :
+
+            BigEndian :
+
+            HostByteOrder :
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.ByteOrder`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Struct.ByteOrder.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Struct.Field
+
+        Field specifier with size and offset
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.blend
+        :property:
+
+        For use with StructConverter::convert()
+
+        Specifies a pair of weights and source field names that will be
+        linearly blended to obtain the output field value. Note that this only
+        works for floating point fields or integer fields with the
+        Flags::Normalized flag. Gamma-corrected fields will be blended in
+        linear space.
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.flags
+        :property:
+
+        Additional flags
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_float(self: mitsuba.core.Struct.Field)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_integer(self: mitsuba.core.Struct.Field)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_signed(self: mitsuba.core.Struct.Field)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_unsigned(self: mitsuba.core.Struct.Field)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.name
+        :property:
+
+        Name of the field
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.offset
+        :property:
+
+        Offset within the ``Struct`` (in bytes)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.range(self: mitsuba.core.Struct.Field)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.size
+        :property:
+
+        Size in bytes
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Field.type
+        :property:
+
+        Type identifier
+
+    .. py:class:: mitsuba.python.tonemap.Struct.Flags(self: mitsuba.core.Struct.Flags, value: int)
+
+        Members:
+
+        .. py:data:: Normalized
+
+            Specifies whether an integer field encodes a normalized value in the
+            range [0, 1]. The flag is ignored if specified for floating point
+            valued fields.
+
+        .. py:data:: Gamma
+
+            Specifies whether the field encodes a sRGB gamma-corrected value.
+            Assumes ``Normalized`` is also specified.
+
+        .. py:data:: Weight
+
+            In FieldConverter::convert, when an input structure contains a weight
+            field, the value of all entries are considered to be expressed
+            relative to its value. Converting to an un-weighted structure entails
+            a division by the weight.
+
+        .. py:data:: Assert
+
+            In FieldConverter::convert, check that the field value matches the
+            specified default value. Otherwise, return a failure
+
+        .. py:data:: Alpha
+
+            Specifies whether the field encodes an alpha value
+
+        .. py:data:: PremultipliedAlpha
+
+            Specifies whether the field encodes an alpha premultiplied value
+
+        .. py:data:: Default
+
+            In FieldConverter::convert, when the field is missing in the source
+            record, replace it by the specified default value
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.Flags`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Flags.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Struct.Type(*args, **kwargs)
+
+        Members:
+
+            Int8 :
+
+            UInt8 :
+
+            Int16 :
+
+            UInt16 :
+
+            Int32 :
+
+            UInt32 :
+
+            Int64 :
+
+            UInt64 :
+
+            Float16 :
+
+            Float32 :
+
+            Float64 :
+
+            Invalid :
+
+        .. py:method:: __init__(*args, **kwargs)
+
+            Overloaded function.
+
+            1. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, value: int) -> None
+
+            2. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, dtype: dtype) -> None
+
+    .. py:method:: mitsuba.python.tonemap.Struct.Type.name
+        :property:
+
+    .. py:method:: mitsuba.python.tonemap.Struct.alignment(self: mitsuba.core.Struct)
+
+        Return the alignment (in bytes) of the data structure
+
+    .. py:method:: mitsuba.python.tonemap.Struct.append(self: mitsuba.core.Struct, name: str, type: mitsuba.core.Struct.Type, flags: int = <Flags.???: 0>, default: float = 0.0)
+
+        Append a new field to the ``Struct``; determines size and offset
+        automatically
+
+    .. py:method:: mitsuba.python.tonemap.Struct.byte_order(self: mitsuba.core.Struct)
+
+        Return the byte order of the ``Struct``
+
+    .. py:method:: mitsuba.python.tonemap.Struct.dtype(self: mitsuba.core.Struct)
+
+        Return a NumPy dtype corresponding to this data structure
+
+    .. py:method:: mitsuba.python.tonemap.Struct.field(self: mitsuba.core.Struct, arg0: str)
+
+        Look up a field by name (throws an exception if not found)
+
+    .. py:method:: mitsuba.python.tonemap.Struct.field_count(self: mitsuba.core.Struct)
+
+        Return the number of fields
+
+    .. py:method:: mitsuba.python.tonemap.Struct.has_field(self: mitsuba.core.Struct, arg0: str)
+
+        Check if the ``Struct`` has a field of the specified name
+
+    .. py:method:: mitsuba.python.tonemap.Struct.is_float(arg0: mitsuba.core.Struct.Type)
+
+        Check whether the given type is a floating point type
+
+    .. py:method:: mitsuba.python.tonemap.Struct.is_integer(arg0: mitsuba.core.Struct.Type)
+
+        Check whether the given type is an integer type
+
+    .. py:method:: mitsuba.python.tonemap.Struct.is_signed(arg0: mitsuba.core.Struct.Type)
+
+        Check whether the given type is a signed type
+
+    .. py:method:: mitsuba.python.tonemap.Struct.is_unsigned(arg0: mitsuba.core.Struct.Type)
+
+        Check whether the given type is an unsigned type
+
+    .. py:method:: mitsuba.python.tonemap.Struct.range(arg0: mitsuba.core.Struct.Type)
+
+        Return the representable range of the given type
+
+    .. py:method:: mitsuba.python.tonemap.Struct.size(self: mitsuba.core.Struct)
+
+        Return the size (in bytes) of the data structure, including padding
+
+.. py:class:: mitsuba.python.tonemap.Thread(self: mitsuba.core.Thread, name: str)
+
+    Base class: :py:obj:`mitsuba.core.Object`
+
+    Cross-platform thread implementation
+
+    Mitsuba threads are internally implemented via the ``std::thread``
+    class defined in C++11. This wrapper class is needed to attach
+    additional state (Loggers, Path resolvers, etc.) that is inherited
+    when a thread launches another thread.
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread`, name: str)
+
+
+    .. py:class:: mitsuba.python.tonemap.Thread.EPriority(self: mitsuba.core.Thread.EPriority, value: int)
+
+        Possible priority values for Thread::set_priority()
+
+        Members:
+
+        .. py:data:: EIdlePriority
+
+
+
+        .. py:data:: ELowestPriority
+
+
+
+        .. py:data:: ELowPriority
+
+
+
+        .. py:data:: ENormalPriority
+
+
+
+        .. py:data:: EHighPriority
+
+
+
+        .. py:data:: EHighestPriority
+
+
+
+        .. py:data:: ERealtimePriority
+
+
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread.EPriority`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Thread.EPriority.name
+        :property:
+
+    .. py:method:: mitsuba.python.tonemap.Thread.core_affinity(self: mitsuba.core.Thread)
+
+        Return the core affinity
+
+    .. py:method:: mitsuba.python.tonemap.Thread.detach(self: mitsuba.core.Thread)
+
+        Detach the thread and release resources
+
+        After a call to this function, join() cannot be used anymore. This
+        releases resources, which would otherwise be held until a call to
+        join().
+
+    .. py:method:: mitsuba.python.tonemap.Thread.file_resolver(self: mitsuba.core.Thread)
+
+        Return the file resolver associated with the current thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.is_critical(self: mitsuba.core.Thread)
+
+        Return the value of the critical flag
+
+    .. py:method:: mitsuba.python.tonemap.Thread.is_running(self: mitsuba.core.Thread)
+
+        Is this thread still running?
+
+    .. py:method:: mitsuba.python.tonemap.Thread.join(self: mitsuba.core.Thread)
+
+        Wait until the thread finishes
+
+    .. py:method:: mitsuba.python.tonemap.Thread.logger(self: mitsuba.core.Thread)
+
+        Return the thread's logger instance
+
+    .. py:method:: mitsuba.python.tonemap.Thread.name(self: mitsuba.core.Thread)
+
+        Return the name of this thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.parent(self: mitsuba.core.Thread)
+
+        Return the parent thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.priority(self: mitsuba.core.Thread)
+
+        Return the thread priority
+
+    .. py:method:: mitsuba.python.tonemap.Thread.register_external_thread(arg0: str)
+
+        Register a new thread (e.g. Enoki, Python) with Mituba thread system.
+        Returns true upon success.
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_core_affinity(self: mitsuba.core.Thread, arg0: int)
+
+        Set the core affinity
+
+        This function provides a hint to the operating system scheduler that
+        the thread should preferably run on the specified processor core. By
+        default, the parameter is set to -1, which means that there is no
+        affinity.
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_critical(self: mitsuba.core.Thread, arg0: bool)
+
+        Specify whether or not this thread is critical
+
+        When an thread marked critical crashes from an uncaught exception, the
+        whole process is brought down. The default is ``False``.
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_file_resolver(self: mitsuba.core.Thread, arg0: mitsuba.core.FileResolver)
+
+        Set the file resolver associated with the current thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_logger(self: mitsuba.core.Thread, arg0: mitsuba.core.Logger)
+
+        Set the logger instance used to process log messages from this thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_name(self: mitsuba.core.Thread, arg0: str)
+
+        Set the name of this thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.set_priority(self: mitsuba.core.Thread, arg0: mitsuba.core.Thread.EPriority)
+
+        Set the thread priority
+
+        This does not always work -- for instance, Linux requires root
+        privileges for this operation.
+
+        Returns:
+            ``True`` upon success.
+
+    .. py:method:: mitsuba.python.tonemap.Thread.sleep(arg0: int)
+
+        Sleep for a certain amount of time (in milliseconds)
+
+    .. py:method:: mitsuba.python.tonemap.Thread.start(self: mitsuba.core.Thread)
+
+        Start the thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.thread()
+
+        Return the current thread
+
+    .. py:method:: mitsuba.python.tonemap.Thread.thread_id()
+
+        Return a unique ID that is associated with this thread
+
+.. py:class:: mitsuba.python.tonemap.ThreadEnvironment(self: mitsuba.core.ThreadEnvironment)
+
+    Captures a thread environment (logger, file resolver, profiler flags).
+    Used with ScopedSetThreadEnvironment
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.core.ThreadEnvironment`)
+
+
+.. py:class:: mitsuba.python.tonemap.ThreadPoolExecutor(max_workers=None, thread_name_prefix='', initializer=None, initargs=())
+
+    Initializes a new ThreadPoolExecutor instance.
+
+    Args:
+        max_workers: The maximum number of threads that can be used to
+            execute the given calls.
+        thread_name_prefix: An optional name prefix to give our threads.
+        initializer: A callable used to initialize worker threads.
+        initargs: A tuple of arguments to pass to the initializer.
+
+    .. py:method:: mitsuba.python.tonemap.ThreadPoolExecutor.submit(fn, /, *args, **kwargs)
+
+        Submits a callable to be executed with the given arguments.
+
+        Schedules the callable to be executed as fn(*args, **kwargs) and returns
+        a Future instance representing the execution of the callable.
+
+        Returns:
+            A Future representing the given call.
+
+    .. py:method:: mitsuba.python.tonemap.ThreadPoolExecutor.shutdown(wait=True)
+
+        Clean-up the resources associated with the Executor.
+
+        It is safe to call this method several times. Otherwise, no other
+        methods can be called after this one.
+
+        Args:
+            wait: If True then shutdown will not return until all running
+                futures have finished executing and the resources used by the
+                executor have been reclaimed.
+
+.. py:function:: mitsuba.python.tonemap.te
+
+    Captures a thread environment (logger, file resolver, profiler flags).
+    Used with ScopedSetThreadEnvironment
+
+.. py:function:: mitsuba.python.tonemap.tonemap(fname, scale)
+
+.. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
+
+    Adapter to test BSDF sampling using the Chi^2 test.
+
+    Parameter ``bsdf_type`` (string):
+        Name of the BSDF plugin to instantiate.
+
+    Parameter ``extra`` (string):
+        Additional XML used to specify the BSDF's parameters.
+
+    Parameter ``wi`` (array(3,)):
+        Incoming direction, in local coordinates.
+
+.. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4, seed=0)
+
+    Implements Pearson's chi-square test for goodness of fit of a distribution
+    to a known reference distribution.
+
+    The implementation here specifically compares a Monte Carlo sampling
+    strategy on a 2D (or lower dimensional) space against a reference
+    distribution obtained by numerically integrating a probability density
+    function over grid in the distribution's parameter domain.
+
+    Parameter ``domain`` (object):
+       An implementation of the domain interface (``SphericalDomain``, etc.),
+       which transforms between the parameter and target domain of the
+       distribution
+
+    Parameter ``sample_func`` (function):
+       An importance sampling function which maps an array of uniform variates
+       of size ``[sample_dim, sample_count]`` to an array of ``sample_count``
+       samples on the target domain.
+
+    Parameter ``pdf_func`` (function):
+       Function that is expected to specify the probability density of the
+       samples produced by ``sample_func``. The test will try to collect
+       sufficient statistical evidence to reject this hypothesis.
+
+    Parameter ``sample_dim`` (int):
+       Number of random dimensions consumed by ``sample_func`` per sample. The
+       default value is ``2``.
+
+    Parameter ``sample_count`` (int):
+       Total number of samples to be generated. The test will have more
+       evidence as this number tends to infinity. The default value is
+       ``1000000``.
+
+    Parameter ``res`` (int):
+       Vertical resolution of the generated histograms. The horizontal
+       resolution will be calculated as ``res * domain.aspect()``. The
+       default value of ``101`` is intentionally an odd number to prevent
+       issues with floating point precision at sharp boundaries that may
+       separate the domain into two parts (e.g. top hemisphere of a sphere
+       parameterization).
+
+    Parameter ``ires`` (int):
+       Number of horizontal/vertical subintervals used to numerically integrate
+       the probability density over each histogram cell (using the trapezoid
+       rule). The default value is ``4``.
+
+    Parameter ``seed`` (int):
+       Seed value for the PCG32 random number generator used in the histogram
+       computation. The default value is ``0``.
+
+    Notes:
+
+    The following attributes are part of the public API:
+
+    messages: string
+        The implementation may generate a number of messages while running the
+        test, which can be retrieved via this attribute.
+
+    histogram: array
+        The histogram array is populated by the ``tabulate_histogram()`` method
+        and stored in this attribute.
+
+    pdf: array
+        The probability density function array is populated by the
+        ``tabulate_pdf()`` method and stored in this attribute.
+
+    p_value: float
+        The p-value of the test is computed in the ``run()`` method and stored
+        in this attribute.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_histogram()
+
+        Invoke the provided sampling strategy many times and generate a
+        histogram in the parameter domain. If ``sample_func`` returns a tuple
+        ``(positions, weights)`` instead of just positions, the samples are
+        considered to be weighted.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_pdf()
+
+        Numerically integrate the provided probability density function over
+        each cell to generate an array resembling the histogram computed by
+        ``tabulate_histogram()``. The function uses the trapezoid rule over
+        intervals discretized into ``self.ires`` separate function evaluations.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.run(significance_level=0.01, test_count=1, quiet=False)
+
+        Run the Chi^2 test
+
+        Parameter ``significance_level`` (float):
+            Denotes the desired significance level (e.g. 0.01 for a test at the
+            1% significance level)
+
+        Parameter ``test_count`` (int):
+            Specifies the total number of statistical tests run by the user.
+            This value will be used to adjust the provided significance level
+            so that the combination of the entire set of tests has the provided
+            significance level.
+
+        Returns → bool:
+            ``True`` upon success, ``False`` if the null hypothesis was
+            rejected.
+
+
+.. py:function:: mitsuba.python.chi2.EmitterAdapter(emitter_type, extra)
+
+    Adapter to test Emitter sampling using the Chi^2 test.
+
+    Parameter ``emitter_type`` (string):
+        Name of the emitter plugin to instantiate.
+
+    Parameter ``extra`` (string):
+        Additional XML used to specify the emitter's parameters.
+
+
+.. py:class:: mitsuba.python.chi2.LineDomain(bounds=[-1.0, 1.0])
+
+    The identity map on the line.
+
+.. py:function:: mitsuba.python.chi2.MicrofacetAdapter(md_type, alpha, sample_visible=False)
+
+    Adapter for testing microfacet distribution sampling techniques
+    (separately from BSDF models, which are also tested)
+
+.. py:function:: mitsuba.python.chi2.PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None)
+
+    Adapter to test phase function sampling using the Chi^2 test.
+
+    Parameter ``phase_type`` (string):
+        Name of the phase function plugin to instantiate.
+
+    Parameter ``extra`` (string):
+        Additional XML used to specify the phase function's parameters.
+
+    Parameter ``wi`` (array(3,)):
+        Incoming direction, in local coordinates.
+
+.. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)
+
+    The identity map on the plane
+
+.. py:function:: mitsuba.python.chi2.SpectrumAdapter(value)
+
+    Adapter which permits testing 1D spectral power distributions using the
+    Chi^2 test.
+
+.. py:class:: mitsuba.python.chi2.SphericalDomain()
+
+    Maps between the unit sphere and a [cos(theta), phi] parameterization.
+
 .. py:class:: mitsuba.python.polvis.Bitmap(*args, **kwargs)
 
     Base class: :py:obj:`mitsuba.core.Object`
@@ -15614,10 +16838,348 @@
         Accumulate the contents of another bitmap into the region with the
         specified offset
 
+        Preprocess the scene dictionary before writing it to file:
+            - Add default properties.
+            - Reorder the scene dict before writing it to file.
+            - Separate the dict into different category-specific subdicts.
+            - If not splitting files, merge them in the end.
+
+        Params
+        ------
+
+        scene_dict: The dictionary containing the scene data
+
+    .. py:method:: mitsuba.python.xml.WriteXML.format_spectrum(entry, entry_type)
+
+        Format rgb or spectrum tags to the proper XML output.
+        The entry should contain the name and value of the spectrum entry.
+        The type is passed separately, since it is popped from the dict in write_dict
+
+        Params
+        ------
+
+        entry: the dict containing the spectrum
+        entry_type: either 'spectrum' or 'rgb'
+
+    .. py:method:: mitsuba.python.xml.WriteXML.format_path(filepath, tag)
+
+        Given a filepath, either copy it in the scene folder (in the corresponding directory)
+        or convert it to a relative path.
+
+        Params
+        ------
+
+        filepath: the path to the given file
+        tag: the tag this path property belongs to in (shape, texture, spectrum)
+
+    .. py:method:: mitsuba.python.xml.WriteXML.write_dict(data)
+
+        Main XML writing routine.
+        Given a dictionary, iterate over its entries and write them to file.
+        Calls itself for nested dictionaries.
+
+        Params
+        ------
+
+        data: The dictionary to write to file.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.process(scene_dict)
+
+        Preprocess then write the input dict to XML file format
+
+        Params
+        ------
+
+        scene_dict: The dictionary containing all the scene info.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.transform_matrix(transform)
+
+        Converts a mitsuba ScalarTransform4f into a dict entry.
+        This dict entry won't have a 'type' because it's handled in a specific case.
+
+        Params
+        ------
+
+        transform: the given transform matrix
+
+    .. py:method:: mitsuba.python.xml.WriteXML.decompose_transform(transform, export_scale=False)
+
+        Export a transform as a combination of rotation, scale and translation.
+        This helps manually modifying the transform after export (for cameras for instance)
+
+        Params
+        ------
+
+        transform: The ScalarTransform4f transform matrix to decompose
+        export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
+
+.. py:function:: mitsuba.python.xml.copy2(src, dst, *, follow_symlinks=True)
+
+    Copy data and metadata. Return the file's destination.
+
+    Metadata is copied with copystat(). Please see the copystat function
+    for more information.
+
+    The destination may be a directory.
+
+    If follow_symlinks is false, symlinks won't be followed. This
+    resembles GNU's "cp -P src dst".
+
+.. py:function:: mitsuba.python.xml.dict_to_xml(scene_dict, filename, split_files=False)
+
+.. py:class:: mitsuba.python.tonemap.Bitmap(*args, **kwargs)
+
+    Base class: :py:obj:`mitsuba.core.Object`
+
+    General-purpose bitmap class with read and write support for several
+    common file formats.
+
+    This class handles loading of PNG, JPEG, BMP, TGA, as well as OpenEXR
+    files, and it supports writing of PNG, JPEG and OpenEXR files.
+
+    PNG and OpenEXR files are optionally annotated with string-valued
+    metadata, and the gamma setting can be stored as well. Please see the
+    class methods and enumerations for further detail.
+
+    .. py:method:: __init__(*args, **kwargs)
+
+        Overloaded function.
+
+        1. __init__(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, size: mitsuba::Vector<unsigned int, 2ul>, channel_count: int = 0, channel_names: List[str] = []) -> None
+
+        Create a bitmap of the specified type and allocate the necessary
+        amount of memory
+
+        Parameter ``pixel_format``:
+            Specifies the pixel format (e.g. RGBA or Luminance-only)
+
+        Parameter ``component_format``:
+            Specifies how the per-pixel components are encoded (e.g. unsigned
+            8 bit integers or 32-bit floating point values). The component
+            format struct_type_v<Float> will be translated to the
+            corresponding compile-time precision type (Float32 or Float64).
+
+        Parameter ``size``:
+            Specifies the horizontal and vertical bitmap size in pixels
+
+        Parameter ``channel_count``:
+            Channel count of the image. This parameter is only required when
+            ``pixel_format`` = PixelFormat::MultiChannel
+
+        Parameter ``channel_names``:
+            Channel names of the image. This parameter is optional, and only
+            used when ``pixel_format`` = PixelFormat::MultiChannel
+
+        Parameter ``data``:
+            External pointer to the image data. If set to ``nullptr``, the
+            implementation will allocate memory itself.
+
+        2. __init__(self: :py:obj:`mitsuba.core.Bitmap`, arg0: :py:obj:`mitsuba.core.Bitmap`) -> None
+
+        3. __init__(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+
+        4. __init__(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+
+        5. __init__(self: :py:obj:`mitsuba.core.Bitmap`, array: :py:obj:`mitsuba.core.PyObjectWrapper`, pixel_format: object = None, channel_names: List[str] = []) -> None
+
+        Initialize a Bitmap from any array that implements __array_interface__
+
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.AlphaTransform(self: mitsuba.core.Bitmap.AlphaTransform, value: int)
+
+        Members:
+
+            None : No transformation (default)
+
+            Premultiply : No transformation (default)
+
+            Unpremultiply : No transformation (default)
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.AlphaTransform`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.AlphaTransform.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.FileFormat(self: mitsuba.core.Bitmap.FileFormat, value: int)
+
+        Supported image file formats
+
+        Members:
+
+        .. py:data:: PNG
+
+            Portable network graphics
+
+            The following is supported:
+
+            * Loading and saving of 8/16-bit per component bitmaps for all pixel
+              formats (Y, YA, RGB, RGBA)
+
+            * Loading and saving of 1-bit per component mask bitmaps
+
+            * Loading and saving of string-valued metadata fields
+
+        .. py:data:: OpenEXR
+
+            OpenEXR high dynamic range file format developed by Industrial Light &
+            Magic (ILM)
+
+            The following is supported:
+
+            * Loading and saving of Float16 / Float32/ UInt32 bitmaps with all
+              supported RGB/Luminance/Alpha combinations
+
+            * Loading and saving of spectral bitmaps
+
+            * Loading and saving of XYZ tristimulus bitmaps
+
+            * Loading and saving of string-valued metadata fields
+
+            The following is *not* supported:
+
+            * Saving of tiled images, tile-based read access
+
+            * Display windows that are different than the data window
+
+            * Loading of spectrum-valued bitmaps
+
+        .. py:data:: RGBE
+
+            RGBE image format by Greg Ward
+
+            The following is supported
+
+            * Loading and saving of Float32 - based RGB bitmaps
+
+        .. py:data:: PFM
+
+            PFM (Portable Float Map) image format
+
+            The following is supported
+
+            * Loading and saving of Float32 - based Luminance or RGB bitmaps
+
+        .. py:data:: PPM
+
+            PPM (Portable Pixel Map) image format
+
+            The following is supported
+
+            * Loading and saving of UInt8 and UInt16 - based RGB bitmaps
+
+        .. py:data:: JPEG
+
+            Joint Photographic Experts Group file format
+
+            The following is supported:
+
+            * Loading and saving of 8 bit per component RGB and luminance bitmaps
+
+        .. py:data:: TGA
+
+            Truevision Advanced Raster Graphics Array file format
+
+            The following is supported:
+
+            * Loading of uncompressed 8-bit RGB/RGBA files
+
+        .. py:data:: BMP
+
+            Windows Bitmap file format
+
+            The following is supported:
+
+            * Loading of uncompressed 8-bit luminance and RGBA bitmaps
+
+        .. py:data:: Unknown
+
+            Unknown file format
+
+        .. py:data:: Auto
+
+            Automatically detect the file format
+
+            Note: this flag only applies when loading a file. In this case, the
+            source stream must support the ``seek()`` operation.
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.FileFormat`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.FileFormat.name
+        :property:
+
+    .. py:class:: mitsuba.python.tonemap.Bitmap.PixelFormat(self: mitsuba.core.Bitmap.PixelFormat, value: int)
+
+        This enumeration lists all pixel format types supported by the Bitmap
+        class. This both determines the number of channels, and how they
+        should be interpreted
+
+        Members:
+
+        .. py:data:: Y
+
+            Single-channel luminance bitmap
+
+        .. py:data:: YA
+
+            Two-channel luminance + alpha bitmap
+
+        .. py:data:: RGB
+
+            RGB bitmap
+
+        .. py:data:: RGBA
+
+            RGB bitmap + alpha channel
+
+        .. py:data:: RGBAW
+
+            RGB bitmap + alpha channel + weight
+
+        .. py:data:: XYZ
+
+            XYZ tristimulus bitmap
+
+        .. py:data:: XYZA
+
+            XYZ tristimulus + alpha channel
+
+        .. py:data:: MultiChannel
+
+            Arbitrary multi-channel bitmap without a fixed interpretation
+
+        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, value: int)
+
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.PixelFormat.name
+        :property:
+
+    .. py:method:: mitsuba.python.tonemap.Bitmap.accumulate(*args, **kwargs)
+
+        Overloaded function.
+
+        1. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, source_offset: mitsuba::Point<int, 2ul>, target_offset: mitsuba::Point<int, 2ul>, size: mitsuba::Vector<int, 2ul>) -> None
+
+        Accumulate the contents of another bitmap into the region with the
+        specified offset
+
+        Out-of-bounds regions are safely ignored. It is assumed that ``bitmap
+        != this``.
+
+        Remark:
+            This function throws an exception when the bitmaps use different
+            component formats or channels.
+
+        2. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, target_offset: mitsuba::Point<int, 2ul>) -> None
+
+        Accumulate the contents of another bitmap into the region with the
+        specified offset
+
         This convenience function calls the main ``accumulate()``
         implementation with ``size`` set to ``bitmap->size()`` and
-        ``source_offset`` and ``target_offset`` set to zero. Out-of-bounds
-        regions are ignored. It is assumed that ``bitmap != this``.
+        ``source_offset`` set to zero. Out-of-bounds regions are ignored. It
+        is assumed that ``bitmap != this``.
 
         Remark:
             This function throws an exception when the bitmaps use different
@@ -16359,278 +17921,6 @@
     Captures a thread environment (logger, file resolver, profiler flags).
     Used with ScopedSetThreadEnvironment
 
-.. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
-
-    Adapter to test BSDF sampling using the Chi^2 test.
-
-    Parameter ``bsdf_type`` (string):
-        Name of the BSDF plugin to instantiate.
-
-    Parameter ``extra`` (string):
-        Additional XML used to specify the BSDF's parameters.
-
-    Parameter ``wi`` (array(3,)):
-        Incoming direction, in local coordinates.
-
-.. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4, seed=0)
-
-    Implements Pearson's chi-square test for goodness of fit of a distribution
-    to a known reference distribution.
-
-    The implementation here specifically compares a Monte Carlo sampling
-    strategy on a 2D (or lower dimensional) space against a reference
-    distribution obtained by numerically integrating a probability density
-    function over grid in the distribution's parameter domain.
-
-    Parameter ``domain`` (object):
-       An implementation of the domain interface (``SphericalDomain``, etc.),
-       which transforms between the parameter and target domain of the
-       distribution
-
-    Parameter ``sample_func`` (function):
-       An importance sampling function which maps an array of uniform variates
-       of size ``[sample_dim, sample_count]`` to an array of ``sample_count``
-       samples on the target domain.
-
-    Parameter ``pdf_func`` (function):
-       Function that is expected to specify the probability density of the
-       samples produced by ``sample_func``. The test will try to collect
-       sufficient statistical evidence to reject this hypothesis.
-
-    Parameter ``sample_dim`` (int):
-       Number of random dimensions consumed by ``sample_func`` per sample. The
-       default value is ``2``.
-
-    Parameter ``sample_count`` (int):
-       Total number of samples to be generated. The test will have more
-       evidence as this number tends to infinity. The default value is
-       ``1000000``.
-
-    Parameter ``res`` (int):
-       Vertical resolution of the generated histograms. The horizontal
-       resolution will be calculated as ``res * domain.aspect()``. The
-       default value of ``101`` is intentionally an odd number to prevent
-       issues with floating point precision at sharp boundaries that may
-       separate the domain into two parts (e.g. top hemisphere of a sphere
-       parameterization).
-
-    Parameter ``ires`` (int):
-       Number of horizontal/vertical subintervals used to numerically integrate
-       the probability density over each histogram cell (using the trapezoid
-       rule). The default value is ``4``.
-
-    Parameter ``seed`` (int):
-       Seed value for the PCG32 random number generator used in the histogram
-       computation. The default value is ``0``.
-
-    Notes:
-
-    The following attributes are part of the public API:
-
-    messages: string
-        The implementation may generate a number of messages while running the
-        test, which can be retrieved via this attribute.
-
-    histogram: array
-        The histogram array is populated by the ``tabulate_histogram()`` method
-        and stored in this attribute.
-
-    pdf: array
-        The probability density function array is populated by the
-        ``tabulate_pdf()`` method and stored in this attribute.
-
-    p_value: float
-        The p-value of the test is computed in the ``run()`` method and stored
-        in this attribute.
-
-    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_histogram()
-
-        Invoke the provided sampling strategy many times and generate a
-        histogram in the parameter domain. If ``sample_func`` returns a tuple
-        ``(positions, weights)`` instead of just positions, the samples are
-        considered to be weighted.
-
-    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_pdf()
-
-        Numerically integrate the provided probability density function over
-        each cell to generate an array resembling the histogram computed by
-        ``tabulate_histogram()``. The function uses the trapezoid rule over
-        intervals discretized into ``self.ires`` separate function evaluations.
-
-    .. py:method:: mitsuba.python.chi2.ChiSquareTest.run(significance_level=0.01, test_count=1, quiet=False)
-
-        Run the Chi^2 test
-
-        Parameter ``significance_level`` (float):
-            Denotes the desired significance level (e.g. 0.01 for a test at the
-            1% significance level)
-
-        Parameter ``test_count`` (int):
-            Specifies the total number of statistical tests run by the user.
-            This value will be used to adjust the provided significance level
-            so that the combination of the entire set of tests has the provided
-            significance level.
-
-        Returns → bool:
-            ``True`` upon success, ``False`` if the null hypothesis was
-            rejected.
-
-
-.. py:class:: mitsuba.python.chi2.LineDomain(bounds=[-1.0, 1.0])
-
-    The identity map on the line.
-
-.. py:function:: mitsuba.python.chi2.MicrofacetAdapter(md_type, alpha, sample_visible=False)
-
-    Adapter for testing microfacet distribution sampling techniques
-    (separately from BSDF models, which are also tested)
-
-.. py:function:: mitsuba.python.chi2.PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None)
-
-    Adapter to test phase function sampling using the Chi^2 test.
-
-    Parameter ``phase_type`` (string):
-        Name of the phase function plugin to instantiate.
-
-    Parameter ``extra`` (string):
-        Additional XML used to specify the phase function's parameters.
-
-    Parameter ``wi`` (array(3,)):
-        Incoming direction, in local coordinates.
-
-.. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)
-
-    The identity map on the plane
-
-.. py:function:: mitsuba.python.chi2.SpectrumAdapter(value)
-
-    Adapter which permits testing 1D spectral power distributions using the
-    Chi^2 test.
-
-.. py:class:: mitsuba.python.chi2.SphericalDomain()
-
-    Maps between the unit sphere and a [cos(theta), phi] parameterization.
-
-.. py:class:: mitsuba.python.util.Mapping()
-
-    .. py:method:: mitsuba.python.util.Mapping.get(k[,d])
-
-    .. py:method:: mitsuba.python.util.Mapping.items()
-
-    .. py:method:: mitsuba.python.util.Mapping.keys()
-
-    .. py:method:: mitsuba.python.util.Mapping.values()
-
-.. py:class:: mitsuba.python.util.SceneParameters(properties=None, hierarchy=None)
-
-    Dictionary-like object that references various parameters used in a Mitsuba
-    scene graph. Parameters can be read and written using standard syntax
-    (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.torch`()`,
-    :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.update`()`, and
-    :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.keep`()`.
-
-    .. py:method:: __init__(properties=None, hierarchy=None)
-
-        Private constructor (use
-        :py:func:`mitsuba.python.util.traverse()` instead)
-
-
-    .. py:method:: mitsuba.python.util.SceneParameters.items()
-
-    .. py:method:: mitsuba.python.util.SceneParameters.keys()
-
-    .. py:method:: mitsuba.python.util.SceneParameters.torch()
-
-        Converts all Enoki arrays into PyTorch arrays and return them as a
-        dictionary. This is mainly useful when using PyTorch to optimize a
-        Mitsuba scene.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.set_dirty(key: str)
-
-        Marks a specific parameter and its parent objects as dirty. A subsequent call
-        to :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.update`()` will refresh their internal
-        state. This function is automatically called when overwriting a parameter using
-        :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.__setitem__`()`.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.update()
-
-        This function should be called at the end of a sequence of writes
-        to the dictionary. It automatically notifies all modified Mitsuba
-        objects and their parent objects that they should refresh their
-        internal state. For instance, the scene may rebuild the kd-tree
-        when a shape was modified, etc.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.keep(keys: list)
-
-        Reduce the size of the dictionary by only keeping elements,
-        whose keys are part of the provided list 'keys'.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.set_grad_suspended(state: bool)
-
-        Suspend/Resume tracking of all gradients in the scene.
-
-        Params
-        ------
-
-        - state : whether to stop or resume recording gradients.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.suspend_gradients()
-
-        Temporarily disable the generation of gradients.
-
-    .. py:method:: mitsuba.python.util.SceneParameters.resume_gradients()
-
-        Temporarily enable the generation of gradients
-
-.. py:function:: mitsuba.python.util.contextmanager(func)
-
-    @contextmanager decorator.
-
-    Typical usage:
-
-        @contextmanager
-        def some_generator(<arguments>):
-            <setup>
-            try:
-                yield <value>
-            finally:
-                <cleanup>
-
-    This makes this:
-
-        with some_generator(<arguments>) as <variable>:
-            <body>
-
-    equivalent to this:
-
-        <setup>
-        try:
-            <variable> = <value>
-            <body>
-        finally:
-            <cleanup>
-
-.. py:function:: mitsuba.python.util.convert_to_bitmap(data, uint8_srgb=True)
-
-    Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
-    the resulting bitmap should be translated to a uint8 sRGB bitmap.
-
-.. py:function:: mitsuba.python.util.suspend_gradients(node: mitsuba.core.Object, state: bool)
-
-    Traverse a node of Mitsuba's scene graph and suspend/resume keeping track of derivatives.
-
-.. py:function:: mitsuba.python.util.traverse(node: mitsuba.core.Object)
-
-    Traverse a node of Mitsuba's scene graph and return a dictionary-like
-    object that can be used to read and write associated scene parameters.
-
-    See also :py:class:`mitsuba.python.util.SceneParameters`.
-
-.. py:function:: mitsuba.python.util.write_bitmap(filename, data, write_async=True, quality=-1)
-
-    Write the RGB image in `data` to a PNG/EXR/.. file.
-
 .. py:class:: mitsuba.python.xml.Files()
 
     Enum for different files or dicts containing specific info
@@ -16870,1082 +18160,104 @@
 
 .. py:function:: mitsuba.python.xml.dict_to_xml(scene_dict, filename, split_files=False)
 
-.. py:class:: mitsuba.python.tonemap.Bitmap(*args, **kwargs)
+.. py:class:: mitsuba.python.util.Mapping()
 
-    Base class: :py:obj:`mitsuba.core.Object`
+    .. py:method:: mitsuba.python.util.Mapping.get(k[,d])
 
-    General-purpose bitmap class with read and write support for several
-    common file formats.
+    .. py:method:: mitsuba.python.util.Mapping.items()
 
-    This class handles loading of PNG, JPEG, BMP, TGA, as well as OpenEXR
-    files, and it supports writing of PNG, JPEG and OpenEXR files.
+    .. py:method:: mitsuba.python.util.Mapping.keys()
 
-    PNG and OpenEXR files are optionally annotated with string-valued
-    metadata, and the gamma setting can be stored as well. Please see the
-    class methods and enumerations for further detail.
+    .. py:method:: mitsuba.python.util.Mapping.values()
 
-    .. py:method:: __init__(*args, **kwargs)
+.. py:class:: mitsuba.python.util.SceneParameters(properties=None, hierarchy=None)
 
-        Overloaded function.
+    Dictionary-like object that references various parameters used in a Mitsuba
+    scene graph. Parameters can be read and written using standard syntax
+    (``parameter_map[key]``). The class exposes several non-standard functions,
+    specifically :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.torch`()`,
+    :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.update`()`, and
+    :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.keep`()`.
 
-        1. __init__(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, size: mitsuba::Vector<unsigned int, 2ul>, channel_count: int = 0, channel_names: List[str] = []) -> None
+    .. py:method:: __init__(properties=None, hierarchy=None)
 
-        Create a bitmap of the specified type and allocate the necessary
-        amount of memory
+        Private constructor (use
+        :py:func:`mitsuba.python.util.traverse()` instead)
 
-        Parameter ``pixel_format``:
-            Specifies the pixel format (e.g. RGBA or Luminance-only)
 
-        Parameter ``component_format``:
-            Specifies how the per-pixel components are encoded (e.g. unsigned
-            8 bit integers or 32-bit floating point values). The component
-            format struct_type_v<Float> will be translated to the
-            corresponding compile-time precision type (Float32 or Float64).
+    .. py:method:: mitsuba.python.util.SceneParameters.items()
 
-        Parameter ``size``:
-            Specifies the horizontal and vertical bitmap size in pixels
+    .. py:method:: mitsuba.python.util.SceneParameters.keys()
 
-        Parameter ``channel_count``:
-            Channel count of the image. This parameter is only required when
-            ``pixel_format`` = PixelFormat::MultiChannel
+    .. py:method:: mitsuba.python.util.SceneParameters.torch()
 
-        Parameter ``channel_names``:
-            Channel names of the image. This parameter is optional, and only
-            used when ``pixel_format`` = PixelFormat::MultiChannel
+        Converts all Enoki arrays into PyTorch arrays and return them as a
+        dictionary. This is mainly useful when using PyTorch to optimize a
+        Mitsuba scene.
 
-        Parameter ``data``:
-            External pointer to the image data. If set to ``nullptr``, the
-            implementation will allocate memory itself.
+    .. py:method:: mitsuba.python.util.SceneParameters.set_dirty(key: str)
 
-        2. __init__(self: :py:obj:`mitsuba.core.Bitmap`, arg0: :py:obj:`mitsuba.core.Bitmap`) -> None
+        Marks a specific parameter and its parent objects as dirty. A subsequent call
+        to :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.update`()` will refresh their internal
+        state. This function is automatically called when overwriting a parameter using
+        :py:meth:`~:py:obj:`mitsuba.python.util.SceneParameters.__setitem__`()`.
 
-        3. __init__(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+    .. py:method:: mitsuba.python.util.SceneParameters.update()
 
-        4. __init__(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
+        This function should be called at the end of a sequence of writes
+        to the dictionary. It automatically notifies all modified Mitsuba
+        objects and their parent objects that they should refresh their
+        internal state. For instance, the scene may rebuild the kd-tree
+        when a shape was modified, etc.
 
-        5. __init__(self: :py:obj:`mitsuba.core.Bitmap`, array: :py:obj:`mitsuba.core.PyObjectWrapper`, pixel_format: object = None, channel_names: List[str] = []) -> None
+    .. py:method:: mitsuba.python.util.SceneParameters.keep(keys: list)
 
-        Initialize a Bitmap from any array that implements __array_interface__
+        Reduce the size of the dictionary by only keeping elements,
+        whose keys are part of the provided list 'keys'.
 
+.. py:function:: mitsuba.python.util.contextmanager(func)
 
-    .. py:class:: mitsuba.python.tonemap.Bitmap.AlphaTransform(self: mitsuba.core.Bitmap.AlphaTransform, value: int)
+    @contextmanager decorator.
 
-        Members:
+    Typical usage:
 
-            None : No transformation (default)
+        @contextmanager
+        def some_generator(<arguments>):
+            <setup>
+            try:
+                yield <value>
+            finally:
+                <cleanup>
 
-            Premultiply : No transformation (default)
+    This makes this:
 
-            Unpremultiply : No transformation (default)
+        with some_generator(<arguments>) as <variable>:
+            <body>
 
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.AlphaTransform`, value: int)
+    equivalent to this:
 
+        <setup>
+        try:
+            <variable> = <value>
+            <body>
+        finally:
+            <cleanup>
 
-    .. py:method:: mitsuba.python.tonemap.Bitmap.AlphaTransform.name
-        :property:
+.. py:function:: mitsuba.python.util.convert_to_bitmap(data, uint8_srgb=True)
 
-    .. py:class:: mitsuba.python.tonemap.Bitmap.FileFormat(self: mitsuba.core.Bitmap.FileFormat, value: int)
+    Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
+    the resulting bitmap should be translated to a uint8 sRGB bitmap.
 
-        Supported image file formats
+.. py:function:: mitsuba.python.util.traverse(node: mitsuba.core.Object)
 
-        Members:
+    Traverse a node of Mitsuba's scene graph and return a dictionary-like
+    object that can be used to read and write associated scene parameters.
 
-        .. py:data:: PNG
+    See also :py:class:`mitsuba.python.util.SceneParameters`.
 
-            Portable network graphics
+.. py:function:: mitsuba.python.util.write_bitmap(filename, data, write_async=True, quality=-1)
 
-            The following is supported:
-
-            * Loading and saving of 8/16-bit per component bitmaps for all pixel
-              formats (Y, YA, RGB, RGBA)
-
-            * Loading and saving of 1-bit per component mask bitmaps
-
-            * Loading and saving of string-valued metadata fields
-
-        .. py:data:: OpenEXR
-
-            OpenEXR high dynamic range file format developed by Industrial Light &
-            Magic (ILM)
-
-            The following is supported:
-
-            * Loading and saving of Float16 / Float32/ UInt32 bitmaps with all
-              supported RGB/Luminance/Alpha combinations
-
-            * Loading and saving of spectral bitmaps
-
-            * Loading and saving of XYZ tristimulus bitmaps
-
-            * Loading and saving of string-valued metadata fields
-
-            The following is *not* supported:
-
-            * Saving of tiled images, tile-based read access
-
-            * Display windows that are different than the data window
-
-            * Loading of spectrum-valued bitmaps
-
-        .. py:data:: RGBE
-
-            RGBE image format by Greg Ward
-
-            The following is supported
-
-            * Loading and saving of Float32 - based RGB bitmaps
-
-        .. py:data:: PFM
-
-            PFM (Portable Float Map) image format
-
-            The following is supported
-
-            * Loading and saving of Float32 - based Luminance or RGB bitmaps
-
-        .. py:data:: PPM
-
-            PPM (Portable Pixel Map) image format
-
-            The following is supported
-
-            * Loading and saving of UInt8 and UInt16 - based RGB bitmaps
-
-        .. py:data:: JPEG
-
-            Joint Photographic Experts Group file format
-
-            The following is supported:
-
-            * Loading and saving of 8 bit per component RGB and luminance bitmaps
-
-        .. py:data:: TGA
-
-            Truevision Advanced Raster Graphics Array file format
-
-            The following is supported:
-
-            * Loading of uncompressed 8-bit RGB/RGBA files
-
-        .. py:data:: BMP
-
-            Windows Bitmap file format
-
-            The following is supported:
-
-            * Loading of uncompressed 8-bit luminance and RGBA bitmaps
-
-        .. py:data:: Unknown
-
-            Unknown file format
-
-        .. py:data:: Auto
-
-            Automatically detect the file format
-
-            Note: this flag only applies when loading a file. In this case, the
-            source stream must support the ``seek()`` operation.
-
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.FileFormat`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.FileFormat.name
-        :property:
-
-    .. py:class:: mitsuba.python.tonemap.Bitmap.PixelFormat(self: mitsuba.core.Bitmap.PixelFormat, value: int)
-
-        This enumeration lists all pixel format types supported by the Bitmap
-        class. This both determines the number of channels, and how they
-        should be interpreted
-
-        Members:
-
-        .. py:data:: Y
-
-            Single-channel luminance bitmap
-
-        .. py:data:: YA
-
-            Two-channel luminance + alpha bitmap
-
-        .. py:data:: RGB
-
-            RGB bitmap
-
-        .. py:data:: RGBA
-
-            RGB bitmap + alpha channel
-
-        .. py:data:: RGBAW
-
-            RGB bitmap + alpha channel + weight
-
-        .. py:data:: XYZ
-
-            XYZ tristimulus bitmap
-
-        .. py:data:: XYZA
-
-            XYZ tristimulus + alpha channel
-
-        .. py:data:: MultiChannel
-
-            Arbitrary multi-channel bitmap without a fixed interpretation
-
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.PixelFormat.name
-        :property:
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.accumulate(*args, **kwargs)
-
-        Overloaded function.
-
-        1. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, source_offset: mitsuba::Point<int, 2ul>, target_offset: mitsuba::Point<int, 2ul>, size: mitsuba::Vector<int, 2ul>) -> None
-
-        Accumulate the contents of another bitmap into the region with the
-        specified offset
-
-        Out-of-bounds regions are safely ignored. It is assumed that ``bitmap
-        != this``.
-
-        Remark:
-            This function throws an exception when the bitmaps use different
-            component formats or channels.
-
-        2. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`, target_offset: mitsuba::Point<int, 2ul>) -> None
-
-        Accumulate the contents of another bitmap into the region with the
-        specified offset
-
-        This convenience function calls the main ``accumulate()``
-        implementation with ``size`` set to ``bitmap->size()`` and
-        ``source_offset`` set to zero. Out-of-bounds regions are ignored. It
-        is assumed that ``bitmap != this``.
-
-        Remark:
-            This function throws an exception when the bitmaps use different
-            component formats or channels.
-
-        3. accumulate(self: :py:obj:`mitsuba.core.Bitmap`, bitmap: :py:obj:`mitsuba.core.Bitmap`) -> None
-
-        Accumulate the contents of another bitmap into the region with the
-        specified offset
-
-        This convenience function calls the main ``accumulate()``
-        implementation with ``size`` set to ``bitmap->size()`` and
-        ``source_offset`` and ``target_offset`` set to zero. Out-of-bounds
-        regions are ignored. It is assumed that ``bitmap != this``.
-
-        Remark:
-            This function throws an exception when the bitmaps use different
-            component formats or channels.
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.buffer_size(self: mitsuba.core.Bitmap)
-
-        Return the bitmap size in bytes (excluding metadata)
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.bytes_per_pixel(self: mitsuba.core.Bitmap)
-
-        Return the number bytes of storage used per pixel
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.channel_count(self: mitsuba.core.Bitmap)
-
-        Return the number of channels used by this bitmap
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.clear(self: mitsuba.core.Bitmap)
-
-        Clear the bitmap to zero
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.component_format(self: mitsuba.core.Bitmap)
-
-        Return the component format of this bitmap
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.convert(*args, **kwargs)
-
-        Overloaded function.
-
-        1. convert(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, srgb_gamma: bool, alpha_transform: :py:obj:`mitsuba.core.Bitmap.AlphaTransform` = <AlphaTransform.None: 0>) -> :py:obj:`mitsuba.core.Bitmap`
-
-        Convert the bitmap into another pixel and/or component format
-
-        This helper function can be used to efficiently convert a bitmap
-        between different underlying representations. For instance, it can
-        translate a uint8 sRGB bitmap to a linear float32 XYZ bitmap based on
-        half-, single- or double-precision floating point-backed storage.
-
-        This function roughly does the following:
-
-        * For each pixel and channel, it converts the associated value into a
-        normalized linear-space form (any gamma of the source bitmap is
-        removed)
-
-        * gamma correction (sRGB ramp) is applied if ``srgb_gamma`` is
-        ``True``
-
-        * The corrected value is clamped against the representable range of
-        the desired component format.
-
-        * The clamped gamma-corrected value is then written to the new bitmap
-
-        If the pixel formats differ, this function will also perform basic
-        conversions (e.g. spectrum to rgb, luminance to uniform spectrum
-        values, etc.)
-
-        Note that the alpha channel is assumed to be linear in both the source
-        and target bitmap, hence it won't be affected by any gamma-related
-        transformations.
-
-        Remark:
-            This ``convert()`` variant usually returns a new bitmap instance.
-            When the conversion would just involve copying the original
-            bitmap, the function becomes a no-op and returns the current
-            instance.
-
-        pixel_format Specifies the desired pixel format
-
-        component_format Specifies the desired component format
-
-        srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
-        the ouutput values.
-
-        2. convert(self: :py:obj:`mitsuba.core.Bitmap`, target: :py:obj:`mitsuba.core.Bitmap`) -> None
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.detect_file_format(arg0: mitsuba.core.Stream)
-
-        Attempt to detect the bitmap file format in a given stream
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.has_alpha(self: mitsuba.core.Bitmap)
-
-        Return whether this image has an alpha channel
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.height(self: mitsuba.core.Bitmap)
-
-        Return the bitmap's height in pixels
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.metadata(self: mitsuba.core.Bitmap)
-
-        Return a Properties object containing the image metadata
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.pixel_count(self: mitsuba.core.Bitmap)
-
-        Return the total number of pixels
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.pixel_format(self: mitsuba.core.Bitmap)
-
-        Return the pixel format of this bitmap
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.premultiplied_alpha(self: mitsuba.core.Bitmap)
-
-        Return whether the bitmap uses premultiplied alpha
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.resample(*args, **kwargs)
-
-        Overloaded function.
-
-        1. resample(self: :py:obj:`mitsuba.core.Bitmap`, target: :py:obj:`mitsuba.core.Bitmap`, rfilter: mitsuba::ReconstructionFilter<float, mitsuba::Color<float, 3ul> > = None, bc: Tuple[:py:obj:`mitsuba.core.FilterBoundaryCondition`, :py:obj:`mitsuba.core.FilterBoundaryCondition`] = (<FilterBoundaryCondition.Clamp: 0>, <FilterBoundaryCondition.Clamp: 0>), clamp: Tuple[float, float] = (-inf, inf), temp: :py:obj:`mitsuba.core.Bitmap` = None) -> None
-
-        Up- or down-sample this image to a different resolution
-
-        Uses the provided reconstruction filter and accounts for the requested
-        horizontal and vertical boundary conditions when looking up data
-        outside of the input domain.
-
-        A minimum and maximum image value can be specified to prevent to
-        prevent out-of-range values that are created by the resampling
-        process.
-
-        The optional ``temp`` parameter can be used to pass an image of
-        resolution ``Vector2u(target->width(), this->height())`` to avoid
-        intermediate memory allocations.
-
-        Parameter ``target``:
-            Pre-allocated bitmap of the desired target resolution
-
-        Parameter ``rfilter``:
-            A separable image reconstruction filter (default: 2-lobe Lanczos
-            filter)
-
-        Parameter ``bch``:
-            Horizontal and vertical boundary conditions (default: clamp)
-
-        Parameter ``clamp``:
-            Filtered image pixels will be clamped to the following range.
-            Default: -infinity..infinity (i.e. no clamping is used)
-
-        Parameter ``temp``:
-            Optional: image for intermediate computations
-
-        2. resample(self: :py:obj:`mitsuba.core.Bitmap`, res: mitsuba::Vector<unsigned int, 2ul>, rfilter: mitsuba::ReconstructionFilter<float, mitsuba::Color<float, 3ul> > = None, bc: Tuple[:py:obj:`mitsuba.core.FilterBoundaryCondition`, :py:obj:`mitsuba.core.FilterBoundaryCondition`] = (<FilterBoundaryCondition.Clamp: 0>, <FilterBoundaryCondition.Clamp: 0>), clamp: Tuple[float, float] = (-inf, inf)) -> :py:obj:`mitsuba.core.Bitmap`
-
-        Up- or down-sample this image to a different resolution
-
-        This version is similar to the above resample() function -- the main
-        difference is that it does not work with preallocated bitmaps and
-        takes the desired output resolution as first argument.
-
-        Uses the provided reconstruction filter and accounts for the requested
-        horizontal and vertical boundary conditions when looking up data
-        outside of the input domain.
-
-        A minimum and maximum image value can be specified to prevent to
-        prevent out-of-range values that are created by the resampling
-        process.
-
-        Parameter ``res``:
-            Desired output resolution
-
-        Parameter ``rfilter``:
-            A separable image reconstruction filter (default: 2-lobe Lanczos
-            filter)
-
-        Parameter ``bch``:
-            Horizontal and vertical boundary conditions (default: clamp)
-
-        Parameter ``clamp``:
-            Filtered image pixels will be clamped to the following range.
-            Default: -infinity..infinity (i.e. no clamping is used)
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.set_premultiplied_alpha(self: mitsuba.core.Bitmap, arg0: bool)
-
-        Specify whether the bitmap uses premultiplied alpha
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.set_srgb_gamma(self: mitsuba.core.Bitmap, arg0: bool)
-
-        Specify whether the bitmap uses an sRGB gamma encoding
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.size(self: mitsuba.core.Bitmap)
-
-        Return the bitmap dimensions in pixels
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.split(self: mitsuba.core.Bitmap)
-
-        Split an multi-channel image buffer (e.g. from an OpenEXR image with
-        lots of AOVs) into its constituent layers
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.srgb_gamma(self: mitsuba.core.Bitmap)
-
-        Return whether the bitmap uses an sRGB gamma encoding
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.struct_(self: mitsuba.core.Bitmap)
-
-        Return a ``Struct`` instance describing the contents of the bitmap
-        (const version)
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.vflip(self: mitsuba.core.Bitmap)
-
-        Vertically flip the bitmap
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.width(self: mitsuba.core.Bitmap)
-
-        Return the bitmap's width in pixels
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.write(*args, **kwargs)
-
-        Overloaded function.
-
-        1. write(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>, quality: int = -1) -> None
-
-        Write an encoded form of the bitmap to a stream using the specified
-        file format
-
-        Parameter ``stream``:
-            Target stream that will receive the encoded output
-
-        Parameter ``format``:
-            Target file format (OpenEXR, PNG, etc.) Detected from the filename
-            by default.
-
-        Parameter ``quality``:
-            Depending on the file format, this parameter takes on a slightly
-            different meaning:
-
-        * PNG images: Controls how much libpng will attempt to compress the
-        output (with 1 being the lowest and 9 denoting the highest
-        compression). The default argument uses the compression level 5.
-
-        * JPEG images: denotes the desired quality (between 0 and 100). The
-        default argument (-1) uses the highest quality (100).
-
-        * OpenEXR images: denotes the quality level of the DWAB compressor,
-        with higher values corresponding to a lower quality. A value of 45 is
-        recommended as the default for lossy compression. The default argument
-        (-1) causes the implementation to switch to the lossless PIZ
-        compressor.
-
-        2. write(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>, quality: int = -1) -> None
-
-        Write an encoded form of the bitmap to a file using the specified file
-        format
-
-        Parameter ``path``:
-            Target file path on disk
-
-        Parameter ``format``:
-            Target file format (FileFormat::OpenEXR, FileFormat::PNG, etc.)
-            Detected from the filename by default.
-
-        Parameter ``quality``:
-            Depending on the file format, this parameter takes on a slightly
-            different meaning:
-
-        * PNG images: Controls how much libpng will attempt to compress the
-        output (with 1 being the lowest and 9 denoting the highest
-        compression). The default argument uses the compression level 5.
-
-        * JPEG images: denotes the desired quality (between 0 and 100). The
-        default argument (-1) uses the highest quality (100).
-
-        * OpenEXR images: denotes the quality level of the DWAB compressor,
-        with higher values corresponding to a lower quality. A value of 45 is
-        recommended as the default for lossy compression. The default argument
-        (-1) causes the implementation to switch to the lossless PIZ
-        compressor.
-
-    .. py:method:: mitsuba.python.tonemap.Bitmap.write_async(self: mitsuba.core.Bitmap, path: mitsuba.core.filesystem.path, format: mitsuba.core.Bitmap.FileFormat = <FileFormat.Auto: 9>, quality: int = -1)
-
-        Equivalent to write(), but executes asynchronously on a different
-        thread
-
-.. py:function:: mitsuba.python.tonemap.Log(level: mitsuba.core.LogLevel, msg: str)
-
-.. py:class:: mitsuba.python.tonemap.LogLevel(self: mitsuba.core.LogLevel, value: int)
-
-    Available Log message types
-
-    Members:
-
-    .. py:data:: Trace
-
-        < Trace message, for extremely verbose debugging
-
-    .. py:data:: Debug
-
-        < Debug message, usually turned off
-
-    .. py:data:: Info
-
-        < More relevant debug / information message
-
-    .. py:data:: Warn
-
-        < Warning message
-
-    .. py:data:: Error
-
-        < Error message, causes an exception to be thrown
-
-    .. py:method:: __init__(self: :py:obj:`mitsuba.core.LogLevel`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.LogLevel.name
-        :property:
-
-.. py:class:: mitsuba.python.tonemap.ScopedSetThreadEnvironment(self: mitsuba.core.ScopedSetThreadEnvironment, arg0: mitsuba.core.ThreadEnvironment)
-
-    RAII-style class to temporarily switch to another thread's logger/file
-    resolver
-
-    .. py:method:: __init__(self: :py:obj:`mitsuba.core.ScopedSetThreadEnvironment`, arg0: :py:obj:`mitsuba.core.ThreadEnvironment`)
-
-
-.. py:class:: mitsuba.python.tonemap.Struct(self: mitsuba.core.Struct, pack: bool = False, byte_order: mitsuba.core.Struct.ByteOrder = <ByteOrder.HostByteOrder: 2>)
-
-    Base class: :py:obj:`mitsuba.core.Object`
-
-    Descriptor for specifying the contents and in-memory layout of a POD-
-    style data record
-
-    Remark:
-        The python API provides an additional ``dtype()`` method, which
-        returns the NumPy ``dtype`` equivalent of a given ``Struct``
-        instance.
-
-    .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct`, pack: bool = False, byte_order: :py:obj:`mitsuba.core.Struct.ByteOrder` = <ByteOrder.HostByteOrder: 2>)
-
-        Create a new ``Struct`` and indicate whether the contents are packed
-        or aligned
-
-
-    .. py:class:: mitsuba.python.tonemap.Struct.ByteOrder(self: mitsuba.core.Struct.ByteOrder, value: int)
-
-        Members:
-
-            LittleEndian :
-
-            BigEndian :
-
-            HostByteOrder :
-
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.ByteOrder`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.Struct.ByteOrder.name
-        :property:
-
-    .. py:class:: mitsuba.python.tonemap.Struct.Field
-
-        Field specifier with size and offset
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.blend
-        :property:
-
-        For use with StructConverter::convert()
-
-        Specifies a pair of weights and source field names that will be
-        linearly blended to obtain the output field value. Note that this only
-        works for floating point fields or integer fields with the
-        Flags::Normalized flag. Gamma-corrected fields will be blended in
-        linear space.
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.flags
-        :property:
-
-        Additional flags
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_float(self: mitsuba.core.Struct.Field)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_integer(self: mitsuba.core.Struct.Field)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_signed(self: mitsuba.core.Struct.Field)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.is_unsigned(self: mitsuba.core.Struct.Field)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.name
-        :property:
-
-        Name of the field
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.offset
-        :property:
-
-        Offset within the ``Struct`` (in bytes)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.range(self: mitsuba.core.Struct.Field)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.size
-        :property:
-
-        Size in bytes
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Field.type
-        :property:
-
-        Type identifier
-
-    .. py:class:: mitsuba.python.tonemap.Struct.Flags(self: mitsuba.core.Struct.Flags, value: int)
-
-        Members:
-
-        .. py:data:: Normalized
-
-            Specifies whether an integer field encodes a normalized value in the
-            range [0, 1]. The flag is ignored if specified for floating point
-            valued fields.
-
-        .. py:data:: Gamma
-
-            Specifies whether the field encodes a sRGB gamma-corrected value.
-            Assumes ``Normalized`` is also specified.
-
-        .. py:data:: Weight
-
-            In FieldConverter::convert, when an input structure contains a weight
-            field, the value of all entries are considered to be expressed
-            relative to its value. Converting to an un-weighted structure entails
-            a division by the weight.
-
-        .. py:data:: Assert
-
-            In FieldConverter::convert, check that the field value matches the
-            specified default value. Otherwise, return a failure
-
-        .. py:data:: Alpha
-
-            Specifies whether the field encodes an alpha value
-
-        .. py:data:: PremultipliedAlpha
-
-            Specifies whether the field encodes an alpha premultiplied value
-
-        .. py:data:: Default
-
-            In FieldConverter::convert, when the field is missing in the source
-            record, replace it by the specified default value
-
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.Flags`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Flags.name
-        :property:
-
-    .. py:class:: mitsuba.python.tonemap.Struct.Type(*args, **kwargs)
-
-        Members:
-
-            Int8 :
-
-            UInt8 :
-
-            Int16 :
-
-            UInt16 :
-
-            Int32 :
-
-            UInt32 :
-
-            Int64 :
-
-            UInt64 :
-
-            Float16 :
-
-            Float32 :
-
-            Float64 :
-
-            Invalid :
-
-        .. py:method:: __init__(*args, **kwargs)
-
-            Overloaded function.
-
-            1. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, value: int) -> None
-
-            2. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, dtype: dtype) -> None
-
-
-    .. py:method:: mitsuba.python.tonemap.Struct.Type.name
-        :property:
-
-    .. py:method:: mitsuba.python.tonemap.Struct.alignment(self: mitsuba.core.Struct)
-
-        Return the alignment (in bytes) of the data structure
-
-    .. py:method:: mitsuba.python.tonemap.Struct.append(self: mitsuba.core.Struct, name: str, type: mitsuba.core.Struct.Type, flags: int = <Flags.???: 0>, default: float = 0.0)
-
-        Append a new field to the ``Struct``; determines size and offset
-        automatically
-
-    .. py:method:: mitsuba.python.tonemap.Struct.byte_order(self: mitsuba.core.Struct)
-
-        Return the byte order of the ``Struct``
-
-    .. py:method:: mitsuba.python.tonemap.Struct.dtype(self: mitsuba.core.Struct)
-
-        Return a NumPy dtype corresponding to this data structure
-
-    .. py:method:: mitsuba.python.tonemap.Struct.field(self: mitsuba.core.Struct, arg0: str)
-
-        Look up a field by name (throws an exception if not found)
-
-    .. py:method:: mitsuba.python.tonemap.Struct.field_count(self: mitsuba.core.Struct)
-
-        Return the number of fields
-
-    .. py:method:: mitsuba.python.tonemap.Struct.has_field(self: mitsuba.core.Struct, arg0: str)
-
-        Check if the ``Struct`` has a field of the specified name
-
-    .. py:method:: mitsuba.python.tonemap.Struct.is_float(arg0: mitsuba.core.Struct.Type)
-
-        Check whether the given type is a floating point type
-
-    .. py:method:: mitsuba.python.tonemap.Struct.is_integer(arg0: mitsuba.core.Struct.Type)
-
-        Check whether the given type is an integer type
-
-    .. py:method:: mitsuba.python.tonemap.Struct.is_signed(arg0: mitsuba.core.Struct.Type)
-
-        Check whether the given type is a signed type
-
-    .. py:method:: mitsuba.python.tonemap.Struct.is_unsigned(arg0: mitsuba.core.Struct.Type)
-
-        Check whether the given type is an unsigned type
-
-    .. py:method:: mitsuba.python.tonemap.Struct.range(arg0: mitsuba.core.Struct.Type)
-
-        Return the representable range of the given type
-
-    .. py:method:: mitsuba.python.tonemap.Struct.size(self: mitsuba.core.Struct)
-
-        Return the size (in bytes) of the data structure, including padding
-
-.. py:class:: mitsuba.python.tonemap.Thread(self: mitsuba.core.Thread, name: str)
-
-    Base class: :py:obj:`mitsuba.core.Object`
-
-    Cross-platform thread implementation
-
-    Mitsuba threads are internally implemented via the ``std::thread``
-    class defined in C++11. This wrapper class is needed to attach
-    additional state (Loggers, Path resolvers, etc.) that is inherited
-    when a thread launches another thread.
-
-    .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread`, name: str)
-
-
-    .. py:class:: mitsuba.python.tonemap.Thread.EPriority(self: mitsuba.core.Thread.EPriority, value: int)
-
-        Possible priority values for Thread::set_priority()
-
-        Members:
-
-        .. py:data:: EIdlePriority
-
-
-
-        .. py:data:: ELowestPriority
-
-
-
-        .. py:data:: ELowPriority
-
-
-
-        .. py:data:: ENormalPriority
-
-
-
-        .. py:data:: EHighPriority
-
-
-
-        .. py:data:: EHighestPriority
-
-
-
-        .. py:data:: ERealtimePriority
-
-
-
-        .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread.EPriority`, value: int)
-
-
-    .. py:method:: mitsuba.python.tonemap.Thread.EPriority.name
-        :property:
-
-    .. py:method:: mitsuba.python.tonemap.Thread.core_affinity(self: mitsuba.core.Thread)
-
-        Return the core affinity
-
-    .. py:method:: mitsuba.python.tonemap.Thread.detach(self: mitsuba.core.Thread)
-
-        Detach the thread and release resources
-
-        After a call to this function, join() cannot be used anymore. This
-        releases resources, which would otherwise be held until a call to
-        join().
-
-    .. py:method:: mitsuba.python.tonemap.Thread.file_resolver(self: mitsuba.core.Thread)
-
-        Return the file resolver associated with the current thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.is_critical(self: mitsuba.core.Thread)
-
-        Return the value of the critical flag
-
-    .. py:method:: mitsuba.python.tonemap.Thread.is_running(self: mitsuba.core.Thread)
-
-        Is this thread still running?
-
-    .. py:method:: mitsuba.python.tonemap.Thread.join(self: mitsuba.core.Thread)
-
-        Wait until the thread finishes
-
-    .. py:method:: mitsuba.python.tonemap.Thread.logger(self: mitsuba.core.Thread)
-
-        Return the thread's logger instance
-
-    .. py:method:: mitsuba.python.tonemap.Thread.name(self: mitsuba.core.Thread)
-
-        Return the name of this thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.parent(self: mitsuba.core.Thread)
-
-        Return the parent thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.priority(self: mitsuba.core.Thread)
-
-        Return the thread priority
-
-    .. py:method:: mitsuba.python.tonemap.Thread.register_external_thread(arg0: str)
-
-        Register a new thread (e.g. Enoki, Python) with Mituba thread system.
-        Returns true upon success.
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_core_affinity(self: mitsuba.core.Thread, arg0: int)
-
-        Set the core affinity
-
-        This function provides a hint to the operating system scheduler that
-        the thread should preferably run on the specified processor core. By
-        default, the parameter is set to -1, which means that there is no
-        affinity.
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_critical(self: mitsuba.core.Thread, arg0: bool)
-
-        Specify whether or not this thread is critical
-
-        When an thread marked critical crashes from an uncaught exception, the
-        whole process is brought down. The default is ``False``.
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_file_resolver(self: mitsuba.core.Thread, arg0: mitsuba.core.FileResolver)
-
-        Set the file resolver associated with the current thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_logger(self: mitsuba.core.Thread, arg0: mitsuba.core.Logger)
-
-        Set the logger instance used to process log messages from this thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_name(self: mitsuba.core.Thread, arg0: str)
-
-        Set the name of this thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.set_priority(self: mitsuba.core.Thread, arg0: mitsuba.core.Thread.EPriority)
-
-        Set the thread priority
-
-        This does not always work -- for instance, Linux requires root
-        privileges for this operation.
-
-        Returns:
-            ``True`` upon success.
-
-    .. py:method:: mitsuba.python.tonemap.Thread.sleep(arg0: int)
-
-        Sleep for a certain amount of time (in milliseconds)
-
-    .. py:method:: mitsuba.python.tonemap.Thread.start(self: mitsuba.core.Thread)
-
-        Start the thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.thread()
-
-        Return the current thread
-
-    .. py:method:: mitsuba.python.tonemap.Thread.thread_id()
-
-        Return a unique ID that is associated with this thread
-
-.. py:class:: mitsuba.python.tonemap.ThreadEnvironment(self: mitsuba.core.ThreadEnvironment)
-
-    Captures a thread environment (logger, file resolver, profiler flags).
-    Used with ScopedSetThreadEnvironment
-
-    .. py:method:: __init__(self: :py:obj:`mitsuba.core.ThreadEnvironment`)
-
-
-.. py:class:: mitsuba.python.tonemap.ThreadPoolExecutor(max_workers=None, thread_name_prefix='', initializer=None, initargs=())
-
-    Initializes a new ThreadPoolExecutor instance.
-
-    Args:
-        max_workers: The maximum number of threads that can be used to
-            execute the given calls.
-        thread_name_prefix: An optional name prefix to give our threads.
-        initializer: A callable used to initialize worker threads.
-        initargs: A tuple of arguments to pass to the initializer.
-
-    .. py:method:: mitsuba.python.tonemap.ThreadPoolExecutor.submit(fn, /, *args, **kwargs)
-
-        Submits a callable to be executed with the given arguments.
-
-        Schedules the callable to be executed as fn(*args, **kwargs) and returns
-        a Future instance representing the execution of the callable.
-
-        Returns:
-            A Future representing the given call.
-
-    .. py:method:: mitsuba.python.tonemap.ThreadPoolExecutor.shutdown(wait=True)
-
-        Clean-up the resources associated with the Executor.
-
-        It is safe to call this method several times. Otherwise, no other
-        methods can be called after this one.
-
-        Args:
-            wait: If True then shutdown will not return until all running
-                futures have finished executing and the resources used by the
-                executor have been reclaimed.
-
-.. py:function:: mitsuba.python.tonemap.te
-
-    Captures a thread environment (logger, file resolver, profiler flags).
-    Used with ScopedSetThreadEnvironment
-
-.. py:function:: mitsuba.python.tonemap.tonemap(fname, scale)
-
-.. py:class:: mitsuba.python.test.util._empty()
-
-    Marker object for Signature.empty and Parameter.empty.
-
-.. py:function:: mitsuba.python.test.util.check_vectorization(kernel, arg_dims=[], width=125, atol=1e-06, modes=['llvm', 'cuda'])
-
-    Helper routine which compares evaluations of the vectorized and
-    non-vectorized version of a kernel using available variants (e.g. LLVM, CUDA).
-
-    Parameter ``kernel`` (function):
-        Function to be evaluated. It's arguments should be annotated if
-        ``arg_dims`` is not specified. A kernel can return any enoki supported array
-        types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
-
-    Parameter ``arg_dims`` (list(int)):
-        Dimentionalities of the function arguments. If not specified, those will be
-        deduced from the function arguemetn annotations (if available).
-
-    Parameter ``width`` (int):
-       Number of elements to be evaluated at a time for the vectorized call.
-
-    Parameter ``atol`` (float):
-       Absolute tolerance for the comparison of the returned values.
-
-.. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
-
-    Function decorator that adds the mitsuba project root
-    to the FileResolver's search path. This is useful in particular
-    for tests that e.g. load scenes, and need to specify paths to resources.
-
-    The file resolver is restored to its previous state once the test's
-    execution has finished.
-
-.. py:function:: mitsuba.python.test.util.getframeinfo(frame, context=1)
-
-    Get information about a frame or traceback object.
-
-    A tuple of five things is returned: the filename, the line number of
-    the current line, the function name, a list of lines of context from
-    the source code, and the index of the current line within that list.
-    The optional second argument specifies the number of lines of context
-    to return, which are centered around the current line.
-
-.. py:function:: mitsuba.python.test.util.make_tmpfile(request, tmpdir_factory)
-
-.. py:function:: mitsuba.python.test.util.signature(obj, *, follow_wrapped=True)
-
-    Get a signature object for the passed callable.
-
-.. py:function:: mitsuba.python.test.util.stack(context=1)
-
-    Return a list of records for the stack above the caller's frame.
-
-.. py:function:: mitsuba.python.test.util.tmpfile(request, tmpdir_factory)
-
-    Fixture to create a temporary file
-
-.. py:function:: mitsuba.python.test.util.wraps(wrapped, assigned=('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'), updated=('__dict__',))
-
-    Decorator factory to apply update_wrapper() to a wrapper function
-
-    Returns a decorator that invokes update_wrapper() with the decorated
-    function as the wrapper argument and the arguments to wraps() as the
-    remaining arguments. Default arguments are as for update_wrapper().
-    This is a convenience function to simplify applying partial() to
-    update_wrapper().
-
-.. py:function:: mitsuba.python.ad.torch.render_torch(scene, params=None, **kwargs)
+    Write the RGB image in `data` to a PNG/EXR/.. file.
 
 .. py:class:: mitsuba.python.ad.optimizers.Adam(lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08, params=None, mask_updates=False)
 
@@ -18043,18 +18355,6 @@
             Optional parameter to specify for which parameter to set the learning rate.
             If set to ``None``, the default learning rate is updated.
 
-    .. py:method:: mitsuba.python.ad.optimizers.Optimizer.set_grad_suspended(value)
-
-        Temporarily enable or disable the generation of gradients.
-
-    .. py:method:: mitsuba.python.ad.optimizers.Optimizer.suspend_gradients()
-
-        Temporarily disable the generation of gradients.
-
-    .. py:method:: mitsuba.python.ad.optimizers.Optimizer.resume_gradients()
-
-        Temporarily enable the generation of gradients
-
     .. py:method:: mitsuba.python.ad.optimizers.Optimizer.reset(key)
 
         Resets the internal state associated with a parameter, if any (e.g. momentum).
@@ -18147,6 +18447,8 @@
 
         Factory for default value called by __missing__().
 
+.. py:function:: mitsuba.python.ad.torch.render_torch(scene, params=None, **kwargs)
+
 .. py:function:: mitsuba.python.ad.integrators.integrator.mis_weight(a, b)
 
     Compute Multiple Importance Sampling weight
@@ -18208,6 +18510,105 @@
 
     Sample a 2D grid of primary rays for a given sensor
 
+.. py:class:: mitsuba.python.ad.integrators.rb.RBIntegrator(self: mitsuba.render.SamplingIntegrator, arg0: mitsuba.core.Properties)
+
+    Base class: :py:obj:`mitsuba.render.SamplingIntegrator`
+
+    This integrator implements a Radiative Backpropagation path tracer.
+
+    .. py:method:: __init__(self: :py:obj:`mitsuba.render.SamplingIntegrator`, arg0: :py:obj:`mitsuba.core.Properties`)
+
+
+    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.render_backward(scene: mitsuba.render.Scene, params: mitsuba.python.util.SceneParameters, image_adj: enoki.scalar.TensorXf, seed: int, sensor_index: int = 0, spp: int = 0)
+
+        Performed the adjoint rendering integration, backpropagating the
+        image gradients to the scene parameters.
+
+    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.sample(self: mitsuba.render.SamplingIntegrator, scene: mitsuba.render.Scene, sampler: mitsuba::Sampler<float, mitsuba::Color<float, 3ul> >, ray: mitsuba.core.RayDifferential3f, medium: mitsuba.render.Medium = None, active: bool = True)
+
+        Sample the incident radiance along a ray.
+
+        Parameter ``scene``:
+            The underlying scene in which the radiance function should be
+            sampled
+
+        Parameter ``sampler``:
+            A source of (pseudo-/quasi-) random numbers
+
+        Parameter ``ray``:
+            A ray, optionally with differentials
+
+        Parameter ``medium``:
+            If the ray is inside a medium, this parameter holds a pointer to
+            that medium
+
+        Parameter ``active``:
+            A mask that indicates which SIMD lanes are active
+
+        Parameter ``aov``:
+            Integrators may return one or more arbitrary output variables
+            (AOVs) via this parameter. If ``nullptr`` is provided to this
+            argument, no AOVs should be returned. Otherwise, the caller
+            guarantees that space for at least ``aov_names().size()`` entries
+            has been allocated.
+
+        Returns:
+            A pair containing a spectrum and a mask specifying whether a
+            surface or medium interaction was sampled. False mask entries
+            indicate that the ray "escaped" the scene, in which case the the
+            returned spectrum contains the contribution of environment maps,
+            if present. The mask can be used to estimate a suitable alpha
+            channel of a rendered image.
+
+        Remark:
+            In the Python bindings, this function returns the ``aov`` output
+            argument as an additional return value. In other words: `` (spec,
+            mask, aov) = integrator.sample(scene, sampler, ray, medium,
+            active) ``
+
+    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.sample_adjoint(scene, sampler, ray, params, grad)
+
+        Propagate adjoint radiance along a ray.
+
+        Parameter ``scene``:
+            The underlying scene in which the adjoint radiance should be propagated
+
+        Parameter ``sampler``:
+            A source of (pseudo-/quasi-) random numbers
+
+        Parameter ``ray`` (``mitsuba.core.Ray3f``):
+            Rays along which the adjoint radiance should be propagated
+
+        Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
+            Scene parameters expecting gradients
+
+        Parameter ``grad`` (``mitsuba.core.Spectrum``):
+            Gradient value to be backpropagated
+
+        Parameter ``medium`` (``mitsuba.render.MediumPtr``):
+             If the ray starts inside a medium, this argument holds a pointer
+             to that medium
+
+    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.Li(scene: mitsuba.render.Scene, sampler: mitsuba.render.Sampler, ray: mitsuba.core.RayDifferential3f, depth: int = 1, params=SceneParameters[ ], grad: Optional[mitsuba.core.Color3f] = None, emission_weight: Optional[float] = None, active_: bool = True)
+
+        Performs a recursive step of a random walk to construct a light path.
+
+        When `params=None`, this method will compute and return the incoming
+        radiance along a path in a detached way. This is the case for the primal
+        rendering phase (e.g. call to the `sample` method) or for a recursive
+        call in the adjoint phase to compute the detached incoming radiance.
+
+        When `params` is defined, the method will backpropagate `grad` to the
+        scene parameters in `params` and return nothing.
+
+.. py:function:: mitsuba.python.ad.integrators.rb.mis_weight(a, b)
+
+    Compute Multiple Importance Sampling weight
+
+.. py:function:: mitsuba.python.ad.integrators.rb.sample_sensor_rays(sensor)
+
+    Sample a 2D grid of primary rays for a given sensor
+
 .. py:class:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator(self: mitsuba.render.SamplingIntegrator, arg0: mitsuba.core.Properties)
 
     Base class: :py:obj:`mitsuba.render.SamplingIntegrator`
@@ -18217,7 +18618,17 @@
     .. py:method:: __init__(self: :py:obj:`mitsuba.render.SamplingIntegrator`, arg0: :py:obj:`mitsuba.core.Properties`)
 
 
-    .. py:method:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator.render(self: mitsuba.render.Integrator, scene: mitsuba.render.Scene, seed: int, sensor_index: int = 0, develop_film: bool = True, spp: int = 0)
+    .. py:method:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator.render(*args, **kwargs)
+
+        Overloaded function.
+
+        1. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor: mitsuba::Sensor<float, mitsuba::Color<float, 3ul> >, develop_film: bool = True, spp: int = 0) -> enoki.scalar.TensorXf
+
+        Perform the main rendering job.
+
+        Returns the rendered image if ``develop_film`` is set to ``True``.
+
+        2. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor_index: int = 0, develop_film: bool = True, spp: int = 0) -> object
 
         Perform the main rendering job.
 
@@ -18440,102 +18851,70 @@
 
     Sample a 2D grid of primary rays for a given sensor
 
-.. py:class:: mitsuba.python.ad.integrators.rb.RBIntegrator(self: mitsuba.render.SamplingIntegrator, arg0: mitsuba.core.Properties)
+.. py:class:: mitsuba.python.test.util._empty()
 
-    Base class: :py:obj:`mitsuba.render.SamplingIntegrator`
+    Marker object for Signature.empty and Parameter.empty.
 
-    This integrator implements a Radiative Backpropagation path tracer.
+.. py:function:: mitsuba.python.test.util.check_vectorization(kernel, arg_dims=[], width=125, atol=1e-06, modes=['llvm', 'cuda'])
 
-    .. py:method:: __init__(self: :py:obj:`mitsuba.render.SamplingIntegrator`, arg0: :py:obj:`mitsuba.core.Properties`)
+    Helper routine which compares evaluations of the vectorized and
+    non-vectorized version of a kernel using available variants (e.g. LLVM, CUDA).
 
+    Parameter ``kernel`` (function):
+        Function to be evaluated. It's arguments should be annotated if
+        ``arg_dims`` is not specified. A kernel can return any enoki supported array
+        types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
 
-    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.render_backward(scene: mitsuba.render.Scene, params: mitsuba.python.util.SceneParameters, image_adj: enoki.scalar.TensorXf, seed: int, sensor_index: int = 0, spp: int = 0)
+    Parameter ``arg_dims`` (list(int)):
+        Dimentionalities of the function arguments. If not specified, those will be
+        deduced from the function arguemetn annotations (if available).
 
-        Performed the adjoint rendering integration, backpropagating the
-        image gradients to the scene parameters.
+    Parameter ``width`` (int):
+       Number of elements to be evaluated at a time for the vectorized call.
 
-    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.sample(self: mitsuba.render.SamplingIntegrator, scene: mitsuba.render.Scene, sampler: mitsuba::Sampler<float, mitsuba::Color<float, 3ul> >, ray: mitsuba.core.RayDifferential3f, medium: mitsuba.render.Medium = None, active: bool = True)
+    Parameter ``atol`` (float):
+       Absolute tolerance for the comparison of the returned values.
 
-        Sample the incident radiance along a ray.
+.. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
 
-        Parameter ``scene``:
-            The underlying scene in which the radiance function should be
-            sampled
+    Function decorator that adds the mitsuba project root
+    to the FileResolver's search path. This is useful in particular
+    for tests that e.g. load scenes, and need to specify paths to resources.
 
-        Parameter ``sampler``:
-            A source of (pseudo-/quasi-) random numbers
+    The file resolver is restored to its previous state once the test's
+    execution has finished.
 
-        Parameter ``ray``:
-            A ray, optionally with differentials
+.. py:function:: mitsuba.python.test.util.getframeinfo(frame, context=1)
 
-        Parameter ``medium``:
-            If the ray is inside a medium, this parameter holds a pointer to
-            that medium
+    Get information about a frame or traceback object.
 
-        Parameter ``active``:
-            A mask that indicates which SIMD lanes are active
+    A tuple of five things is returned: the filename, the line number of
+    the current line, the function name, a list of lines of context from
+    the source code, and the index of the current line within that list.
+    The optional second argument specifies the number of lines of context
+    to return, which are centered around the current line.
 
-        Parameter ``aov``:
-            Integrators may return one or more arbitrary output variables
-            (AOVs) via this parameter. If ``nullptr`` is provided to this
-            argument, no AOVs should be returned. Otherwise, the caller
-            guarantees that space for at least ``aov_names().size()`` entries
-            has been allocated.
+.. py:function:: mitsuba.python.test.util.make_tmpfile(request, tmpdir_factory)
 
-        Returns:
-            A pair containing a spectrum and a mask specifying whether a
-            surface or medium interaction was sampled. False mask entries
-            indicate that the ray "escaped" the scene, in which case the the
-            returned spectrum contains the contribution of environment maps,
-            if present. The mask can be used to estimate a suitable alpha
-            channel of a rendered image.
+.. py:function:: mitsuba.python.test.util.signature(obj, *, follow_wrapped=True)
 
-        Remark:
-            In the Python bindings, this function returns the ``aov`` output
-            argument as an additional return value. In other words: `` (spec,
-            mask, aov) = integrator.sample(scene, sampler, ray, medium,
-            active) ``
+    Get a signature object for the passed callable.
 
-    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.sample_adjoint(scene, sampler, ray, params, grad)
+.. py:function:: mitsuba.python.test.util.stack(context=1)
 
-        Propagate adjoint radiance along a ray.
+    Return a list of records for the stack above the caller's frame.
 
-        Parameter ``scene``:
-            The underlying scene in which the adjoint radiance should be propagated
+.. py:function:: mitsuba.python.test.util.tmpfile(request, tmpdir_factory)
 
-        Parameter ``sampler``:
-            A source of (pseudo-/quasi-) random numbers
+    Fixture to create a temporary file
 
-        Parameter ``ray`` (``mitsuba.core.Ray3f``):
-            Rays along which the adjoint radiance should be propagated
+.. py:function:: mitsuba.python.test.util.wraps(wrapped, assigned=('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'), updated=('__dict__',))
 
-        Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-            Scene parameters expecting gradients
+    Decorator factory to apply update_wrapper() to a wrapper function
 
-        Parameter ``grad`` (``mitsuba.core.Spectrum``):
-            Gradient value to be backpropagated
-
-        Parameter ``medium`` (``mitsuba.render.MediumPtr``):
-             If the ray starts inside a medium, this argument holds a pointer
-             to that medium
-
-    .. py:method:: mitsuba.python.ad.integrators.rb.RBIntegrator.Li(scene: mitsuba.render.Scene, sampler: mitsuba.render.Sampler, ray: mitsuba.core.RayDifferential3f, depth: int = 1, params=SceneParameters[ ], grad: Optional[mitsuba.core.Color3f] = None, emission_weight: Optional[float] = None, active_: bool = True)
-
-        Performs a recursive step of a random walk to construct a light path.
-
-        When `params=None`, this method will compute and return the incoming
-        radiance along a path in a detached way. This is the case for the primal
-        rendering phase (e.g. call to the `sample` method) or for a recursive
-        call in the adjoint phase to compute the detached incoming radiance.
-
-        When `params` is defined, the method will backpropagate `grad` to the
-        scene parameters in `params` and return nothing.
-
-.. py:function:: mitsuba.python.ad.integrators.rb.mis_weight(a, b)
-
-    Compute Multiple Importance Sampling weight
-
-.. py:function:: mitsuba.python.ad.integrators.rb.sample_sensor_rays(sensor)
-
-    Sample a 2D grid of primary rays for a given sensor
+    Returns a decorator that invokes update_wrapper() with the decorated
+    function as the wrapper argument and the arguments to wraps() as the
+    remaining arguments. Default arguments are as for update_wrapper().
+    This is a convenience function to simplify applying partial() to
+    update_wrapper().
 

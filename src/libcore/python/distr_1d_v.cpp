@@ -76,6 +76,7 @@ MTS_PY_EXPORT(ContinuousDistribution) {
         .def_method(ContinuousDistribution, update)
         .def_method(ContinuousDistribution, integral)
         .def_method(ContinuousDistribution, normalization)
+        .def_method(ContinuousDistribution, interval_resolution)
         .def("sample",
             &ContinuousDistribution::sample,
             "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
@@ -99,6 +100,8 @@ MTS_PY_EXPORT(IrregularContinuousDistribution) {
         .def("__len__", &IrregularContinuousDistribution::size)
         .def("size", &IrregularContinuousDistribution::size, D(IrregularContinuousDistribution, size))
         .def("empty", &IrregularContinuousDistribution::empty, D(IrregularContinuousDistribution, empty))
+        .def("range", py::overload_cast<>(&IrregularContinuousDistribution::range),
+             D(IrregularContinuousDistribution, range), py::return_value_policy::reference_internal)
         .def("nodes", py::overload_cast<>(&IrregularContinuousDistribution::nodes),
              D(IrregularContinuousDistribution, nodes), py::return_value_policy::reference_internal)
         .def("pdf", py::overload_cast<>(&IrregularContinuousDistribution::pdf),
@@ -116,6 +119,7 @@ MTS_PY_EXPORT(IrregularContinuousDistribution) {
         .def_method(IrregularContinuousDistribution, update)
         .def_method(IrregularContinuousDistribution, integral)
         .def_method(IrregularContinuousDistribution, normalization)
+        .def_method(IrregularContinuousDistribution, interval_resolution)
         .def("sample",
             &IrregularContinuousDistribution::sample,
             "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))

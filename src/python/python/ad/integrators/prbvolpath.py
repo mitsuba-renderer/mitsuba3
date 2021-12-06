@@ -83,7 +83,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
         return film.develop()
 

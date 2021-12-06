@@ -34,7 +34,7 @@ def visit_subfig_html(self, node):
 
 def depart_subfig_html(self, node):
     figoutput = ''.join(self.body)
-    figoutput = figoutput.replace('class="figure', 'style="width: %g%%" class="subfigure' % (float(node['width']) * 100))
+    figoutput = figoutput.replace('class="', 'class="align-center subfigure" style="width: %g%%"' % (float(node['width']) * 100))
     self.body = self.__body
     self.body.append(figoutput)
 
@@ -48,7 +48,7 @@ def depart_subfigstart_tex(self, node):
     pass
 
 def visit_subfigstart_html(self, node):
-    atts = {'class': 'figure compound align-center'}
+    atts = {'class': 'figure subfigure compound align-center'}
     self.body.append(self.starttag(node['subfigend'], 'div', **atts))
 
 def depart_subfigstart_html(self, node):
@@ -80,7 +80,8 @@ class SubFigEndDirective(Directive):
 
     def run(self):
         label = self.options.get('label', None)
-        width = self.options.get('width', 0.49)
+        # width = self.options.get('width', 0.49)
+        width = self.options.get('width', 0.95)
         alt = self.options.get('alt', None)
 
         node = subfigend('', ids=[label] if label is not None else [])

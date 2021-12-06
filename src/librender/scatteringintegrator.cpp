@@ -70,8 +70,6 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     if (has_aovs)
         Throw("Not supported yet: AOVs in ScatteringIntegrator");
     // Insert default channels and set up the film
-    for (size_t i = 0; i < 5; ++i)
-        channels.insert(channels.begin() + i, std::string(1, "RGBAW"[i]));
     film->prepare(channels);
 
     // Special case: no emitters present in the scene.
@@ -116,11 +114,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
                 ScopedSetThreadEnvironment set_env(env);
 
                 ref<Sampler> sampler = sensor->sampler()->clone();
-                ref<ImageBlock> block = new ImageBlock(
-                    crop_size, channels.size(), film->reconstruction_filter(),
-                    /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>,
-                    /* warn_invalid */ true, /* border */ false,
-                    /* normalize */ true);
+                ref<ImageBlock> block = film->create_storage();
                 block->set_offset(film->crop_offset());
 
                 size_t samples_done = 0;
@@ -168,11 +162,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
         /* Note: we disable warnings because they trigger a horizontal
            reduction which is can be expensive, or even impossible in
            symbolic modes. */
-        ref<ImageBlock> block = new ImageBlock(
-            crop_size, channels.size(), film->reconstruction_filter(),
-            /* warn_negative */ false,
-            /* warn_invalid */ false, /* border */ false,
-            /* normalize */ true);
+        ref<ImageBlock> block = film->create_storage();
         block->set_offset(film->crop_offset());
         block->clear();
 

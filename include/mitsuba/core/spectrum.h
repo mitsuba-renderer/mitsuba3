@@ -8,14 +8,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if !defined(MTS_WAVELENGTH_MIN)
-#  define MTS_WAVELENGTH_MIN 360.f
-#endif
-
-#if !defined(MTS_WAVELENGTH_MAX)
-#  define MTS_WAVELENGTH_MAX 830.f
-#endif
-
 // =======================================================================
 //! @{ \name Data types for RGB data
 // =======================================================================
@@ -362,17 +354,6 @@ template <typename Float> Float luminance(const Color<Float, 3> &c) {
     return c[0] * F(0.212671f) + c[1] * F(0.715160f) + c[2] * F(0.072169f);
 }
 
-template <typename Value>
-std::pair<Value, Value> sample_uniform_spectrum(const Value &sample) {
-    return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
-             MTS_CIE_MAX - MTS_CIE_MIN };
-}
-
-template <typename Value>
-Value pdf_uniform_spectrum(const Value & /* wavelength */) {
-    return Value(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
-}
-
 /**
  * Importance sample a "importance spectrum" that concentrates the computation
  * on wavelengths that are relevant for rendering of RGB data
@@ -384,19 +365,14 @@ Value pdf_uniform_spectrum(const Value & /* wavelength */) {
  */
 template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
-    if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        Value wavelengths =
-            538.f - ek::atanh(0.8569106254698279f -
-                              1.8275019724092267f * sample) * 138.88888888888889f;
+    Value wavelengths =
+        538.f - ek::atanh(0.8569106254698279f -
+                          1.8275019724092267f * sample) * 138.88888888888889f;
 
-        Value tmp    = ek::cosh(0.0072f * (wavelengths - 538.f));
-        Value weight = 253.82f * tmp * tmp;
+    Value tmp    = ek::cosh(0.0072f * (wavelengths - 538.f));
+    Value weight = 253.82f * tmp * tmp;
 
-        return { wavelengths, weight };
-    } else {
-        // Fall back to uniform sampling for other wavelength ranges
-        return sample_uniform_spectrum(sample);
-    }
+    return { wavelengths, weight };
 }
 
 /**
@@ -406,13 +382,9 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  * cases, the PDF is returned per wavelength.
  */
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
-    if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
-        return ek::select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
-                          0.003939804229326285f * tmp * tmp, ek::zero<Value>());
-    } else {
-        return pdf_uniform_spectrum(wavelengths);
-    }
+    Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
+    return ek::select(wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX,
+                      0.003939804229326285f * tmp * tmp, ek::zero<Value>());
 }
 
 /// Helper function to sample a wavelength (and a weight) given a random number

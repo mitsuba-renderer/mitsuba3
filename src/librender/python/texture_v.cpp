@@ -31,5 +31,9 @@ MTS_PY_EXPORT(Texture) {
             "sample"_a, "active"_a = true, D(Texture, sample_position))
         .def("pdf_position",
             &Texture::pdf_position,
-            "p"_a, "active"_a = true, D(Texture, pdf_position));
+            "p"_a, "active"_a = true, D(Texture, pdf_position))
+        .def("spectral_resolution",
+            &Texture::spectral_resolution, D(Texture, spectral_resolution))
+        .def("wavelength_range",
+            &Texture::wavelength_range, D(Texture, wavelength_range));
 }

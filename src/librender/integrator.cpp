@@ -88,10 +88,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     size_t n_passes = (total_spp + samples_per_pass - 1) / samples_per_pass;
 
     std::vector<std::string> channels = aov_names();
-    // Insert default channels and set up the film
-    for (size_t i = 0; i < 5; ++i)
-        channels.insert(channels.begin() + i, std::string(1, "RGBAW"[i]));
-    film->prepare(channels);
+    size_t n_channels = film->prepare(channels);
 
     m_render_timer.reset();
     if constexpr (!ek::is_jit_array_v<Float>) {
@@ -127,21 +124,14 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t total_blocks = spiral.block_count() * n_passes,
                blocks_done = 0;
         size_t seed_offset = seed * total_spp * ek::hprod(film_size);
-        bool has_aovs = !channels.empty();
 
         ek::parallel_for(
             ek::blocked_range<size_t>(0, total_blocks, 1),
             [&](const ek::blocked_range<size_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
                 ref<Sampler> sampler = sensor->sampler()->fork();
-                ref<ImageBlock> block = new ImageBlock(
-                    m_block_size, channels.size(),
-                    film->reconstruction_filter(),
-                    !has_aovs && !is_spectral_v<Spectrum> /* warn_negative */,
-                    std::is_scalar_v<Float> /* warn_invalid */,
-                    true /* border */,
-                    false /* normalize */);
-                std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
+                ref<ImageBlock> block = film->create_storage(false /*normalization*/, true /*border*/);
+                std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
@@ -184,18 +174,12 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (samples_per_pass != 1)
             idx /= (uint32_t) samples_per_pass;
 
-        ref<ImageBlock> block = new ImageBlock(film->crop_size(),
-                                               channels.size(),
-                                               film->reconstruction_filter(),
-                                               false /* warn_negative */,
-                                               false /* warn_invalid */,
-                                               film->has_high_quality_edges() /* border */,
-                                               false /* normalize */);
+        ref<ImageBlock> block = film->create_storage();
         block->clear();
         block->set_offset(film->crop_offset());
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));
-        std::vector<Float> aovs(channels.size());
+        std::vector<Float> aovs(n_channels);
 
         if (film->has_high_quality_edges())
             pos -= film->reconstruction_filter()->border_size();
@@ -349,19 +333,23 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
 
-    Color3f rgb;
-    if constexpr (is_spectral_v<Spectrum>)
-        rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
-    else if constexpr (is_monochromatic_v<Spectrum>)
-        rgb = spec_u.x();
-    else
-        rgb = spec_u;
+    if (unlikely(has_flag(sensor->film()->flags(), FilmFlags::Special))) {
+        sensor->film()->prepare_sample(spec_u, ray.wavelengths, aovs, result.second);
+    } else {
+        Color3f rgb;
+        if constexpr (is_spectral_v<Spectrum>)
+            rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            rgb = spec_u.x();
+        else
+            rgb = spec_u;
 
-    aovs[0] = rgb.x();
-    aovs[1] = rgb.y();
-    aovs[2] = rgb.z();
-    aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
-    aovs[4] = 1.f;
+        aovs[0] = rgb.x();
+        aovs[1] = rgb.y();
+        aovs[2] = rgb.z();
+        aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
+        aovs[4] = 1.f;
+    }
 
     block->put(sample_pos, aovs, active);
 }
