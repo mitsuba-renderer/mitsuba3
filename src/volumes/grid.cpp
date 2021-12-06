@@ -18,6 +18,16 @@ NAMESPACE_BEGIN(mitsuba)
 enum class FilterType { Nearest, Trilinear };
 enum class WrapMode { Repeat, Mirror, Clamp };
 
+ek::FilterMode to_ek_filter_type(FilterType tp) {
+    switch (tp) {
+        case FilterType::Nearest:
+            return ek::FilterMode::Nearest;
+        case FilterType::Trilinear:
+            return ek::FilterMode::Linear;
+        default:
+            Throw("Unsupported filter type for Enoki texture: %s", (uint32_t) tp);
+    }
+};
 
 /**!
 .. _volume-gridvolume:
@@ -260,8 +270,7 @@ protected:
 #if !defined(MTS_GRID_NO_TEXTURE)
         // Only enable using hardware textures in supported cases
         if constexpr (Channels <= 4 && mitsuba::is_rgb_v<Spectrum>) {
-            if (m_filter_type == FilterType::Trilinear &&
-                m_wrap_mode == WrapMode::Clamp && m_use_hardware_texture)
+            if (m_wrap_mode == WrapMode::Clamp && m_use_hardware_texture)
                 return expand_4<Channels, Raw, true>();
         }
 #endif
@@ -305,21 +314,18 @@ public:
         if constexpr (HardwareTexture) {
             if (m_wrap_mode != WrapMode::Clamp)
                 NotImplementedError("Hardware texture with wrap mode != clamp");
-            if (filter_type != FilterType::Trilinear)
-                NotImplementedError("Hardware texture with filter type != trilinear");
-            // TODO: also point out unsupported spectral mode
             if constexpr (!mitsuba::is_rgb_v<Spectrum>)
                 NotImplementedError("Hardware texture with spectral color mode");
 
-            Log(Warn, "Using HW texture in Grid3D with Channels = %s, Raw = %s",
-                Channels, Raw);
+            Log(Warn, "Using HW texture in Grid3D with Channels = %s, Raw = %s, filter type = %s",
+                Channels, Raw, (uint32_t) m_filter_type);
         }
 
         if constexpr (HardwareTexture && Channels == 3) {
             using DynamicVector3f = mitsuba::Vector<typename Storage::Storage, 3>;
             using DynamicVector4f = mitsuba::Vector<typename Storage::Storage, 4>;
             Log(Info, "Creating an additional channel in the raw texture data "
-                    "as 3-channel textures are not supported.");
+                      "as 3-channel textures are not supported.");
             if (data.ndim() != 4 || data.shape(3) != 3)
                 Throw("Expected 4 dimensional tensor with 3 channels, found shape: (%s, %s, %s, %s)",
                     data.shape(0), data.shape(1), data.shape(2), data.shape(3));
@@ -329,7 +335,9 @@ public:
             DynamicVector4f values4(values3.x(), values3.y(), values3.z(), 0);
             size_t sh[4] = { data.shape(0), data.shape(1), data.shape(2), 4 };
             TensorXf data4(ek::ravel(values4), 4, sh);
-            m_data = Storage(data4);
+            m_data = Storage(data4, /*migrate*/ true, to_ek_filter_type(m_filter_type));
+        } else if constexpr (HardwareTexture) {
+            m_data = Storage(data, /*migrate*/ true, to_ek_filter_type(m_filter_type));
         } else {
             m_data = Storage(data);
         }
