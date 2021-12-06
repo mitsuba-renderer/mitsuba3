@@ -244,3 +244,4 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
      .def("__pos__", [](const Type &f) {              \
             return static_cast<uint32_t>(f);          \
         }, py::is_operator());
+
