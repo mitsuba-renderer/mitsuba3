@@ -6,23 +6,20 @@ def test01_chi2_disney_normal(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # without spectrans
     xml = """<float name="roughness" value="0.6"/>
-            <float name="metallic" value="0.4"/>
-            <float name="anisotropic" value="0.4"/>
-            <float name="clearcoat" value="0.8"/>
-            <float name="eta" value="1.33"/>
-        """
+             <float name="metallic" value="0.4"/>
+             <float name="anisotropic" value="0.4"/>
+             <float name="clearcoat" value="0.8"/>
+             <float name="eta" value="1.33"/>
+          """
     wi = ek.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3
     )
-
     assert chi2.run()
-
 
 
 def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
@@ -30,65 +27,57 @@ def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
     # spec_trans outside (wi.z()>0)
 
     xml = """<float name="roughness" value="0.6"/>
-            <float name="metallic" value="0.2"/>
-            <float name="anisotropic" value="0.4"/>
-            <float name="clearcoat" value="0.8"/>
-            <float name="spec_trans" value="0.7"/>
+             <float name="metallic" value="0.2"/>
+             <float name="anisotropic" value="0.4"/>
+             <float name="clearcoat" value="0.8"/>
+             <float name="spec_trans" value="0.7"/>
              <float name="eta" value="1.3296"/>
           """
     wi = ek.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3
     )
-
-
     assert chi2.run()
+
 
 def test03_chi2_spec_trans_inside(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # spec_trans inside (wi.z() < 0)
-
     xml = """<float name="roughness" value="0.6"/>
-            <float name="metallic" value="0.2"/>
-            <float name="anisotropic" value="0.4"/>
-            <float name="clearcoat" value="0.8"/>
-            <float name="spec_trans" value="0.7"/>
+             <float name="metallic" value="0.2"/>
+             <float name="anisotropic" value="0.4"/>
+             <float name="clearcoat" value="0.8"/>
+             <float name="spec_trans" value="0.7"/>
              <float name="eta" value="1.3296"/>
           """
     wi = ek.normalize(ScalarVector3f([1, 0, -1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3
     )
-
-
     assert chi2.run()
-
 
 
 def test04_chi2_spec_trans_less_dense(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # eta<1
     xml = """<float name="roughness" value="0.8"/>
-         <float name="metallic" value="0.2"/>
-         <float name="anisotropic" value="0.0"/>
-         <float name="clearcoat" value="1.0"/>
-         <float name="sheen" value="0.0"/>
-         <float name="spec_trans" value="0.5"/>
-         <float name="eta" value="0.5"/>
-        """
+             <float name="metallic" value="0.2"/>
+             <float name="anisotropic" value="0.0"/>
+             <float name="clearcoat" value="1.0"/>
+             <float name="sheen" value="0.0"/>
+             <float name="spec_trans" value="0.5"/>
+             <float name="eta" value="0.5"/>
+          """
     wi = ek.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
         sample_func=sample_func,
@@ -102,23 +91,21 @@ def test05_chi2_thin_front_side(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # front_side thin
     xml = """<float name="roughness" value="0.6"/>
-            <float name="anisotropic" value="0.5"/>
-            <float name="spec_trans" value="0.4"/>
-            <float name="eta" value="1.3296"/>
-            <float name="diff_trans" value="0.6"/>
-            <boolean name="thin" value="true"/>
+             <float name="anisotropic" value="0.5"/>
+             <float name="spec_trans" value="0.4"/>
+             <float name="eta" value="1.3296"/>
+             <float name="diff_trans" value="0.6"/>
+             <boolean name="thin" value="true"/>
          
-        """
+          """
     wi = ek.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3
     )
-
     assert chi2.run()
 
 
@@ -127,31 +114,26 @@ def test05_chi2_thin_front_side(variants_vec_backends_once_rgb):
         #back side thin
         xml = """<float name="roughness" value="0.6"/>
                  <float name="anisotropic" value="0.5"/>
-                <float name="spec_trans" value="0.6"/>
-                <float name="eta" value="1.3296"/>
-                <float name="diff_trans" value="0.9"/>
-                <boolean name="thin" value="true"/>
+                 <float name="spec_trans" value="0.6"/>
+                 <float name="eta" value="1.3296"/>
+                 <float name="diff_trans" value="0.9"/>
+                 <boolean name="thin" value="true"/>
          
-            """
+              """
         wi = ek.normalize(ScalarVector3f([1, 0, -1]))
         sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
-
         chi2 = ChiSquareTest(
             domain=SphericalDomain(),
             sample_func=sample_func,
             pdf_func=pdf_func,
             sample_dim=3
         )
-
         assert chi2.run()
-
-
 
 
 def test07_eval_pdf_3d(variant_scalar_rgb):
     from mitsuba.core import Frame3f,load_string
     from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
-
     pdf_true = [0.19930407404899597, 0.18617326021194458, 0.1747969686985016, 0.1646047681570053, 0.15516546368598938, 0.1461564600467682, 0.13733986020088196, 0.1285434067249298, 0.11964600533246994, 0.11056657880544662, 0.10125553607940674, 0.09168823808431625, 0.08185981959104538, 0.07178140431642532, 0.06147685647010803, 0.050980344414711, 0.04033433645963669, 0.029587971046566963, 0.018795616924762726, 0.008015768602490425]
     evaluate_true = [0.06745785474777222, 0.06373678892850876, 0.06044566631317139, 0.057448845356702805, 0.0546383410692215, 0.05192873254418373, 0.04925282299518585, 0.0465579479932785, 0.04380323365330696, 0.04095740616321564, 0.037996821105480194, 0.034902848303318024, 0.031657446175813675, 0.028236225247383118, 0.02459871955215931, 0.02067791484296322, 0.016373589634895325, 0.011557860299944878, 0.006108088884502649, 4.728061397366843e-18]
     bsdf = load_string("""<bsdf version='2.0.0' type='disney'>
@@ -167,7 +149,6 @@ def test07_eval_pdf_3d(variant_scalar_rgb):
                       <float name="flatness" value="0.5"/>
                       </bsdf>
                       """)
-
     si    = SurfaceInteraction3f()
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
@@ -182,6 +163,7 @@ def test07_eval_pdf_3d(variant_scalar_rgb):
         wo = [ek.sin(theta), 0, ek.cos(theta)]
         assert ek.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
         assert ek.allclose(bsdf.eval(ctx, si, wo=wo)[0],evaluate_true[i])
+
 
 def test08_eval_pdf_thin(variant_scalar_rgb):
     from mitsuba.core import Frame3f,load_string

@@ -277,8 +277,7 @@ public:
             m_spec_tint   = props.texture<Texture>("spec_tint", 0.0f);
             m_spec_srate      = props.get("main_specular_sampling_rate", 1.0f);
             m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
-            m_diff_refl_srate =
-                props.get("diffuse_reflectance_sampling_rate", 2.0f);
+            m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 2.0f);
 
             /*Eta and specular has one to one correspondence, both of them can
              * not be specified. */
@@ -372,7 +371,6 @@ public:
      * \return Schlick approximation result.
      */
     template <typename T> T calc_schlick(T R0, Float cos_theta_i) const {
-
         Mask outside_mask = cos_theta_i >= 0.0f;
         Float rcp_eta     = ek::rcp(m_eta),
               eta_it      = ek::select(outside_mask, m_eta, rcp_eta),
@@ -559,11 +557,12 @@ public:
                     : 0.0f;
 
             // Normalizing the probabilities for the specular minor lobes
-            Float total_prob = prob_spec_reflect + prob_spec_trans +
-                               prob_coshemi_reflect + prob_coshemi_trans;
-            prob_spec_reflect /= total_prob;
-            prob_spec_trans /= total_prob;
-            prob_coshemi_reflect /= total_prob;
+            Float rcp_total_prob = ek::rcp(prob_spec_reflect + prob_spec_trans +
+                               prob_coshemi_reflect + prob_coshemi_trans);
+
+            prob_spec_reflect *= rcp_total_prob;
+            prob_spec_trans *= rcp_total_prob;
+            prob_coshemi_reflect *= rcp_total_prob;
 
             // Sampling masks
             Float curr_prob(0.0f);
@@ -587,7 +586,6 @@ public:
 
             // Microfacet reflection lobe
             if (m_has_spec_trans && ek::any_or<true>(sample_spec_reflect)) {
-
                 // Defining the Microfacet Distribution.
                 auto [ax, ay] = calc_dist_params(anisotropic, roughness);
                 MicrofacetDistribution spec_reflect_distr(MicrofacetType::GGX,
@@ -609,7 +607,6 @@ public:
                            ((ek::dot(wi, m_spec_reflect) > 0.0f) &&
                             (ek::dot(wo, m_spec_reflect) > 0.0f) && reflect));
             }
-
             // Specular transmission lobe
             if (m_has_spec_trans && ek::any_or<true>(sample_spec_trans)) {
                 // Thin parameter index of refraction.
@@ -643,7 +640,6 @@ public:
                      ((ek::dot(wi, m_spec_trans) > 0.0f) &&
                       (ek::dot(wo, m_spec_trans) < 0.0f) && transmission));
             }
-
             // Cosine hemisphere reflection for  reflection lobes (diffuse,
             // sheen, retro reflection)
             if (ek::any_or<true>(sample_coshemi_reflect)) {
@@ -653,7 +649,6 @@ public:
                 ek::masked(bs.sampled_type, sample_coshemi_reflect) =
                     +BSDFFlags::DiffuseReflection;
             }
-
             // Diffuse transmission lobe (only for thin)
             if (m_has_diff_trans && ek::any_or<true>(sample_coshemi_trans)) {
                 ek::masked(bs.wo, sample_coshemi_trans) =
@@ -722,11 +717,11 @@ public:
                 ek::select(front_side, brdf * m_diff_refl_srate, 0.0f);
 
             // Normalizing the probabilities.
-            Float tot_prob = prob_spec_reflect + prob_spec_trans +
-                             prob_clearcoat + prob_diffuse;
-            prob_spec_trans /= tot_prob;
-            prob_clearcoat /= tot_prob;
-            prob_diffuse /= tot_prob;
+            Float rcp_tot_prob = ek::rcp(prob_spec_reflect + prob_spec_trans +
+                             prob_clearcoat + prob_diffuse);
+            prob_spec_trans *= rcp_tot_prob;
+            prob_clearcoat *= rcp_tot_prob;
+            prob_diffuse *= rcp_tot_prob;
 
             // Sampling mask definitions
             Float curr_prob(0.0f);
@@ -761,7 +756,6 @@ public:
                      (ek::dot(wo, ek::mulsign(m_spec, cos_theta_i)) > 0.0f) &&
                       reflect));
             }
-
             // The main specular transmission sampling
             if (m_has_spec_trans && ek::any_or<true>(sample_spec_trans)) {
                 Vector3f wo = refract(si.wi, m_spec, cos_theta_t, eta_ti);
@@ -779,7 +773,6 @@ public:
                             && (ek::dot(wo, ek::mulsign_neg(m_spec, cos_theta_i)) > 0.0f)
                             && refract));
             }
-
             // The secondary specular reflection sampling (clearcoat)
             if (m_has_clearcoat && ek::any_or<true>(sample_clearcoat)) {
                 Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
@@ -801,7 +794,6 @@ public:
                       && (ek::dot(wo, ek::mulsign(m_clearcoat, cos_theta_i)) > 0.0f)
                       && reflect));
             }
-
             // Cosine hemisphere reflection sampling
             if (ek::any_or<true>(sample_diffuse)) {
                 Vector3f wo = ek::mulsign(
@@ -901,7 +893,6 @@ public:
                         spec_trans * F_dielectric * D * G /
                         (4.0f * cos_theta_i);
                 }
-
                 // Specular Transmission lobe
                 if (ek::any_or<true>(spec_trans_active)) {
                     // Defining the scaled distribution for thin specular
@@ -926,7 +917,6 @@ public:
                         G / (4.0f * cos_theta_i);
                 }
             }
-
             // Diffuse, retro reflection, sheen and fake-subsurface evaluation
             if (ek::any_or<true>(diffuse_reflect_active)) {
                 Float Fo = schlick_weight(ek::abs(cos_theta_o)),
@@ -1001,7 +991,6 @@ public:
                             (1.0f - diff_trans) * ek::abs(cos_theta_o);
                 }
             }
-
             // Adding diffuse Lambertian transmission component.
             if (m_has_diff_trans && ek::any_or<true>(diffuse_trans_active)) {
                 ek::masked(value, diffuse_trans_active) +=
@@ -1113,7 +1102,6 @@ public:
                 ek::masked(value, spec_reflect_active) +=
                     F_disney * D * G / (4.0f * ek::abs(cos_theta_i));
             }
-
             // Main specular transmission evaluation
             if (m_has_spec_trans && ek::any_or<true>(spec_trans_active)) {
 
@@ -1132,7 +1120,6 @@ public:
                         (cos_theta_i * ek::sqr(ek::dot(si.wi, wh) +
                                                eta_path * ek::dot(wo, wh))));
             }
-
             // Secondary isotropic specular reflection.
             if (m_has_clearcoat && ek::any_or<true>(clearcoat_active)) {
                 Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
@@ -1154,7 +1141,6 @@ public:
                                                        Fcc * Dcc * G_cc *
                                                        ek::abs(cos_theta_o);
             }
-
             // Evaluation of diffuse, retro reflection, fake subsurface and
             // sheen.
             if (ek::any_or<true>(diffuse_active)) {
@@ -1196,7 +1182,6 @@ public:
                         brdf * ek::abs(cos_theta_o) * base_color *
                         ek::InvPi<Float> * (f_diff + f_retro);
                 }
-
                 // Sheen evaluation
                 if (m_has_sheen && ek::any_or<true>(sheen_active)) {
                     Float Fd = schlick_weight(ek::abs(cos_theta_d));
@@ -1282,12 +1267,12 @@ public:
                     : 0.0f;
 
             // Normalizing the probabilities
-            Float total_prob = prob_spec_reflect + prob_spec_trans +
-                               prob_coshemi_reflect + prob_coshemi_trans;
-            prob_spec_reflect /= total_prob;
-            prob_spec_trans /= total_prob;
-            prob_coshemi_reflect /= total_prob;
-            prob_coshemi_trans /= total_prob;
+            Float rcp_total_prob = ek::rcp(prob_spec_reflect + prob_spec_trans +
+                               prob_coshemi_reflect + prob_coshemi_trans);
+            prob_spec_reflect *= rcp_total_prob;
+            prob_spec_trans *= rcp_total_prob;
+            prob_coshemi_reflect *= rcp_total_prob;
+            prob_coshemi_trans *= rcp_total_prob;
 
             // Initializing the final pdf value.
             Float pdf(0.0f);
@@ -1402,12 +1387,12 @@ public:
                 ek::select(front_side, brdf * m_diff_refl_srate, 0.f);
 
             // Normalizing the probabilities.
-            Float tot_prob = prob_spec_reflect + prob_spec_trans +
-                             prob_clearcoat + prob_diffuse;
-            prob_spec_reflect /= tot_prob;
-            prob_spec_trans /= tot_prob;
-            prob_clearcoat /= tot_prob;
-            prob_diffuse /= tot_prob;
+            Float rcp_tot_prob = ek::rcp(prob_spec_reflect + prob_spec_trans +
+                             prob_clearcoat + prob_diffuse);
+            prob_spec_reflect *= rcp_tot_prob;
+            prob_spec_trans *= rcp_tot_prob;
+            prob_clearcoat *= rcp_tot_prob;
+            prob_diffuse *= rcp_tot_prob;
 
             /* Calculation of dwh/dwo term. Different for reflection and
              transmission. */
@@ -1436,12 +1421,10 @@ public:
                 prob_spec_reflect *
                 spec_distr.pdf(ek::mulsign(si.wi, cos_theta_i), wh) *
                 dwh_dwo_abs;
-
             // Adding cosine hemisphere reflection pdf
             ek::masked(pdf, reflect) +=
                 prob_diffuse * warp::square_to_cosine_hemisphere_pdf(
                                    ek::mulsign(wo, cos_theta_o));
-
             // Main specular transmission
             if (m_has_spec_trans) {
                 // Macro-micro surface mask for transmission.
@@ -1456,7 +1439,6 @@ public:
                     spec_distr.pdf(ek::mulsign(si.wi, cos_theta_i), wh) *
                     dwh_dwo_abs;
             }
-
             // Adding the secondary specular reflection pdf.(clearcoat)
             if (m_has_clearcoat) {
                 Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
@@ -1594,9 +1576,9 @@ public:
     }
     MTS_DECLARE_CLASS()
 private:
-    // whether the used model is 2D thin or 3D principled-BSDF.
+    /// Whether the used model is 2D thin or 3D principled-BSDF.
     bool m_thin;
-    // Parameters that are both used in 3D and thin.
+    /// Parameters that are both used in 3D and thin.
     ref<Texture> m_base_color;
     ref<Texture> m_roughness;
     ref<Texture> m_anisotropic;
@@ -1605,11 +1587,11 @@ private:
     ref<Texture> m_spec_trans;
     ref<Texture> m_flatness;
 
-    // Parameters peculiar to the thin model
+    /// Parameters peculiar to the thin model
     ref<Texture> m_diff_trans;
     ref<Texture> m_eta_thin;
 
-    // Parameters peculiar to 3D BSDF
+    /// Parameters peculiar to 3D BSDF
     ref<Texture> m_clearcoat;
     ref<Texture> m_clearcoat_gloss;
     ref<Texture> m_metallic;
@@ -1618,19 +1600,19 @@ private:
     Float m_specular;
     bool m_eta_specular;
 
-    // Sampling rates that are both used in 3D and thin
-    Float m_diff_refl_srate;
+    /// Sampling rates that are both used in 3D and thin
+    ScalarFloat m_diff_refl_srate;
 
-    // Sampling rates peculiar to the 3D model
-    Float m_spec_srate;
-    Float m_clearcoat_srate;
+    /// Sampling rates peculiar to the 3D model
+    ScalarFloat m_spec_srate;
+    ScalarFloat m_clearcoat_srate;
 
-    // Sampling rates peculiar to thin BSDF
-    Float m_spec_refl_srate;
-    Float m_spec_trans_srate;
-    Float m_diff_trans_srate;
+    /// Sampling rates peculiar to thin BSDF
+    ScalarFloat m_spec_refl_srate;
+    ScalarFloat m_spec_trans_srate;
+    ScalarFloat m_diff_trans_srate;
 
-    /* Whether the lobes are active or not. (specified by the input xml
+    /** Whether the lobes are active or not. (specified by the input xml
        file.) */
     bool m_has_clearcoat;
     bool m_has_sheen;
