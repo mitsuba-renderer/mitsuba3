@@ -105,7 +105,7 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
 
 MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::Wavelength, Spectrum>
 Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, Float sample,
-                       Mask active) const {
+                                            Mask active) const {
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
             return m_srf->sample_spectrum(
@@ -113,9 +113,11 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
                     math::sample_shifted<Wavelength>(sample),
                     active);
         }
+    } else {
+        ENOKI_MARK_USED(active);
     }
-    return sample_wavelength<Float, Spectrum>(sample);
 
+    return sample_wavelength<Float, Spectrum>(sample);
 }
 
 // =============================================================================
