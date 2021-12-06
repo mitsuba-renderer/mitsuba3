@@ -68,7 +68,10 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    Assert(index <= m_face_count && !ek::is_jit_array_v<Float>);
+    if constexpr (ek::is_cuda_array_v<Float>)
+        Throw("bbox(ScalarIndex) is not available in CUDA mode!");
+
+    Assert(index <= m_face_count);
 
     auto fi = face_indices(index);
 
@@ -109,7 +112,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
     if constexpr (ek::is_jit_array_v<Float>)
         ek::sync_thread();
 
-    ref<FileStream> stream = new FileStream(filename, FileStream::ETruncReadWrite);
+    ref<FileStream> stream =
+        new FileStream(filename, FileStream::ETruncReadWrite);
 
     Log(Info, "Writing mesh to \"%s\" ..", filename);
 
