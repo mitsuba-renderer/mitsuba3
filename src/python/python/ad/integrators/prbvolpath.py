@@ -41,13 +41,14 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
-               seed: int,
                sensor: Union[int, mitsuba.render.Sensor] = 0,
-               develop_film: bool = True,
-               spp: int = 0) -> mitsuba.core.TensorXf:
+               seed: int = 0,
+               spp: int = 0,
+               develop: bool = True,
+               evaluate: bool = True) -> mitsuba.core.TensorXf:
         if not self.is_prepared:
             self.prepare(scene)
-        return super().render(scene, seed, sensor, develop_film, spp)
+        return super().render(scene, sensor, seed, spp, develop, evaluate)
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,

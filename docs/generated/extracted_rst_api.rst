@@ -11476,35 +11476,38 @@
     .. py:method:: mitsuba.render.Integrator.render(overloaded)
 
 
-        .. py:method:: render(self, scene, seed, sensor, develop_film=True, spp=0)
+        .. py:method:: render(self, scene, sensor, seed, spp=0, develop=True, evaluate=True)
 
             Perform the main rendering job.
 
-            Returns the rendered image if ``develop_film`` is set to ``True``.
+            Returns the rendered image if ``develop`` is set to ``True``.
 
             Parameter ``scene`` (:py:obj:`mitsuba.render.Scene`):
-                *no description available*
-
-            Parameter ``seed`` (int):
                 *no description available*
 
             Parameter ``sensor`` (:py:obj:`mitsuba.render.Sensor`):
                 *no description available*
 
-            Parameter ``develop_film`` (bool):
+            Parameter ``seed`` (int):
                 *no description available*
 
             Parameter ``spp`` (int):
                 *no description available*
 
+            Parameter ``develop`` (bool):
+                *no description available*
+
+            Parameter ``evaluate`` (bool):
+                *no description available*
+
             Returns → enoki.scalar.TensorXf:
                 *no description available*
 
-        .. py:method:: render(self, scene, seed, sensor_index=0, develop_film=True, spp=0)
+        .. py:method:: render(self, scene, seed, sensor_index=0, develop=True, spp=0)
 
             Perform the main rendering job.
 
-            Returns the rendered image if ``develop_film`` is set to ``True``.
+            Returns the rendered image if ``develop`` is set to ``True``.
 
             Parameter ``scene`` (:py:obj:`mitsuba.render.Scene`):
                 *no description available*
@@ -11515,7 +11518,7 @@
             Parameter ``sensor_index`` (int):
                 *no description available*
 
-            Parameter ``develop_film`` (bool):
+            Parameter ``develop`` (bool):
                 *no description available*
 
             Parameter ``spp`` (int):
@@ -18622,17 +18625,17 @@
 
         Overloaded function.
 
-        1. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor: mitsuba::Sensor<float, mitsuba::Color<float, 3ul> >, develop_film: bool = True, spp: int = 0) -> enoki.scalar.TensorXf
+        1. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor: mitsuba::Sensor<float, mitsuba::Color<float, 3ul> >, develop: bool = True, spp: int = 0) -> enoki.scalar.TensorXf
 
         Perform the main rendering job.
 
-        Returns the rendered image if ``develop_film`` is set to ``True``.
+        Returns the rendered image if ``develop`` is set to ``True``.
 
-        2. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor_index: int = 0, develop_film: bool = True, spp: int = 0) -> object
+        2. render(self: :py:obj:`mitsuba.render.Integrator`, scene: :py:obj:`mitsuba.render.Scene`, seed: int, sensor_index: int = 0, develop: bool = True, spp: int = 0) -> object
 
         Perform the main rendering job.
 
-        Returns the rendered image if ``develop_film`` is set to ``True``.
+        Returns the rendered image if ``develop`` is set to ``True``.
 
     .. py:method:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator.render_backward(scene: mitsuba.render.Scene, params: mitsuba.python.util.SceneParameters, image_adj: enoki.scalar.TensorXf, seed: int, sensor_index: int = 0, spp: int = 0)
 

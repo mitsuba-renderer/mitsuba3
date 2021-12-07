@@ -169,7 +169,7 @@ def test_render(variant, scene_fname, jit_flags_key):
 
     # Load and render
     scene = load_file(scene_fname, spp=spp)
-    scene.integrator().render(scene, seed=0, develop_film=False)
+    scene.integrator().render(scene, seed=0, develop=False)
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
@@ -261,7 +261,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
                 continue
 
             scene = load_file(scene_fname, spp=spp)
-            scene.integrator().render(scene, seed=0, develop_film=False)
+            scene.integrator().render(scene, seed=0, develop=False)
 
             bmp = scene.sensors()[0].film().bitmap(raw=False)
             img, var_img = bitmap_extract(bmp)
