@@ -350,3 +350,38 @@ def test_resample_cuda_rgb(variant_cuda_rgb):
     check_resample()
 def test_resample_llvm_rgb(variant_llvm_rgb):
     check_resample()
+
+
+def test_check_weight_division():
+    mitsuba.set_variant('scalar_rgb')
+
+    from mitsuba.core import Bitmap, Struct
+
+    b = Bitmap(
+        pixel_format=Bitmap.PixelFormat.RGBAW,
+        component_format=Struct.Type.Float32,
+        size=(1, 3)
+    )
+    b.clear()
+
+    x = np.array(
+        b, copy=False
+    )
+
+    x[0, 0, :] = (2, 0, 0, 0, 1)
+    x[1, 0, :] = (2, 0, 0, 0, 2)
+    x[2, 0, :] = (2, 0, 0, 0, 0)
+
+    b = b.convert(
+        pixel_format=Bitmap.PixelFormat.RGBA,
+        component_format=Struct.Type.Float32,
+        srgb_gamma=False
+    )
+
+    x = np.array(
+        b, copy=False
+    )
+
+    assert np.all(x[0, 0, :] == (2, 0, 0, 0))
+    assert np.all(x[1, 0, :] == (1, 0, 0, 0))
+    assert np.all(x[2, 0, :] == (2, 0, 0, 0))
