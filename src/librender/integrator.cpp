@@ -426,7 +426,7 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 MTS_VARIANT AdjointIntegrator<Float, Spectrum>::AdjointIntegrator(const Properties &props)
     : Base(props) {
 
-    m_samples_per_pass = props.get<uint32_t>("spp_per_pass", (uint32_t) -1);
+    m_samples_per_pass = props.get<uint32_t>("samples_per_pass", (uint32_t) -1);
 
     m_rr_depth = props.get<int>("rr_depth", 5);
     if (m_rr_depth <= 0)

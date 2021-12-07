@@ -339,7 +339,10 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    /// Create an integrator
     AdjointIntegrator(const Properties &props);
+
+    /// Virtual destructor
     virtual ~AdjointIntegrator();
 
 protected:
@@ -366,4 +369,5 @@ protected:
 MTS_EXTERN_CLASS_RENDER(Integrator)
 MTS_EXTERN_CLASS_RENDER(SamplingIntegrator)
 MTS_EXTERN_CLASS_RENDER(MonteCarloIntegrator)
+MTS_EXTERN_CLASS_RENDER(AdjointIntegrator)
 NAMESPACE_END(mitsuba)
