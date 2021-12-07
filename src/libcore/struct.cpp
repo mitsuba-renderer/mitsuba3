@@ -1836,7 +1836,6 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 if (has_weight)
                     value.f *= inv_weight;
 
-
                 uint32_t special_channels_mask = Struct::Flags::Weight | Struct::Flags::Alpha;
                 bool source_premult = has_flag(value.flags, Struct::Flags::PremultipliedAlpha);
                 bool target_premult = has_flag(f.flags, Struct::Flags::PremultipliedAlpha);

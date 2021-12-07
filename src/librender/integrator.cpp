@@ -524,8 +524,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
                 ref<Sampler> sampler = sensor->sampler()->clone();
                 ref<ImageBlock> block = film->create_storage();
-
-                block->set_offset(seed_offset + range.begin());
+                block->set_offset(film->crop_offset());
                 block->clear();
 
                 sampler->seed(seed_offset + (uint64_t) range.begin());

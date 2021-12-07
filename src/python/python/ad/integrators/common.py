@@ -54,7 +54,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
         The value specified by the scene has precedence if ``spp=0``.
     """
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
-        image = self.render(scene, seed, sensor, spp=spp)
+        image = self.render(scene, sensor, seed, spp)
         ek.enqueue(ek.ADMode.Forward, params)
         ek.traverse(mitsuba.core.Float)
         return ek.grad(image)
@@ -109,7 +109,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
         The value specified by the scene has precedence if ``spp=0``.
     """
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
-        image = self.render(scene, seed, sensor, spp=spp)
+        image = self.render(scene, sensor, seed, spp)
         ek.set_grad(image, image_adj)
         ek.enqueue(ek.ADMode.Backward, image)
         ek.traverse(mitsuba.core.Float)
