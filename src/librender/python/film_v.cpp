@@ -12,7 +12,6 @@ MTS_PY_EXPORT(Film) {
     MTS_PY_CLASS(Film, Object)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put, "block"_a)
-        .def_method(Film, overwrite_channel, "channel_name"_a, "value"_a)
         .def_method(Film, develop, "raw"_a = false)
         .def_method(Film, bitmap, "raw"_a = false)
         .def_method(Film, write, "path"_a)
