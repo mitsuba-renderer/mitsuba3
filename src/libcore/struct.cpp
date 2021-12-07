@@ -122,6 +122,22 @@ public:
         #endif
     }
 
+    void xors(const X86Xmm &x) {
+        #if defined(ENOKI_X86_AVX)
+            #if !defined(DOUBLE_PRECISION)
+                cc.vxorps(x, x, x);
+            #else
+                cc.vxorpd(x, x, x);
+            #endif
+        #else
+            #if !defined(DOUBLE_PRECISION)
+                cc.xorps(x, x);
+            #else
+                cc.xorpd(x, x);
+            #endif
+        #endif
+    }
+
     /// Floating point blend operation
     template <typename X, typename Y, typename Z>
     void blend(const X &x, const Y &y, const Z &mask) {
@@ -1316,8 +1332,19 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     if (source_weight != nullptr && target_weight == nullptr) {
         scale_factor = cc.newXmm();
         X86Xmm value = sc.linearize(sc.load(source, input, source_weight->name)).second.xmm;
-        sc.movs(scale_factor, sc.const_(1.0));
+
+        X86Xmm zero = cc.newXmm();
+        X86Xmm one = cc.newXmm();
+        sc.xors(zero);
+        sc.movs(one, sc.const_(1.0));
+
+        sc.movs(scale_factor, one);
         sc.divs(scale_factor, value);
+
+        X86Xmm mask = cc.newXmm();
+        sc.movs(mask, value);
+        sc.cmps(mask, zero, 2);
+        sc.blend(scale_factor, one, mask);
     }
 
     const Struct::Field *source_alpha = nullptr;
@@ -1356,7 +1383,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 
         // Check if alpha is zero and set inv_alpha to zero if that is the case
         X86Xmm zero = cc.newXmm();
-        sc.movs(zero, sc.const_(0.0));
+        sc.xors(zero);
 
         X86Xmm mask = cc.newXmm();
         sc.movs(mask, value);
@@ -1574,7 +1601,6 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
 }
 
 void StructConverter::linearize(Value &value) const {
-
     if (Struct::is_integer(value.type)) {
         if (Struct::is_unsigned(value.type))
             value.f = (Float) value.u;
@@ -1762,7 +1788,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 if (!load(src, weight_field, value))
                     return false;
                 linearize(value);
-                inv_weight = 1.f / value.f;
+                inv_weight = 1.f / (value.f == 0.f ? 1.f : value.f);
             }
             Float alpha = 1.f, inv_alpha = 1.f;
             if (has_alpha) {
