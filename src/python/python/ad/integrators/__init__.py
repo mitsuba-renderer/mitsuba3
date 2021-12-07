@@ -15,6 +15,6 @@ for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
     else:
         importlib.import_module('mitsuba.python.ad.integrators.' + name)
 
-from .integrator import render
+from .common import render
 
 del os, glob, importlib, reload
