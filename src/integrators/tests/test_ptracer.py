@@ -116,7 +116,7 @@ def test01_render_simple(variants_all, emitter):
 
     scene, integrator = create_test_scene(emitter=emitter)
     assert isinstance(integrator, AdjointIntegrator)
-    image = integrator.render(scene, seed=0, spp=2, develop_film=True)
+    image = integrator.render(scene, seed=0, spp=2, develop=True)
     assert ek.count(ek.ravel(image) > 0) >= 0.2 * ek.hprod(ek.shape(image))
 
 
@@ -127,7 +127,7 @@ def test02_render_infinite_emitter(variants_all, emitter, shape):
     """Even if the scene has no shape, only the sensor and an infinite emitter,
     we should still be able to render it."""
     scene, integrator = create_test_scene(emitter=emitter, shape=shape)
-    image = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    image = integrator.render(scene, seed=0, spp=4, develop=True)
     # Infinite emitters are sampled very inefficiently, so with such low spp
     # it's possible that the vast majority of pixels are still zero.
     assert ek.count(ek.ravel(image) > 0) >= 0.02 * ek.hprod(ek.shape(image))
@@ -138,7 +138,7 @@ def test03_render_hide_emitters(variants_all, emitter):
     """Infinite emitters and directly visible emitters should not
     be visible when hide_emitters is enabled."""
     scene, integrator = create_test_scene(emitter=emitter, shape=None, hide_emitters=True)
-    image = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    image = integrator.render(scene, seed=0, spp=4, develop=True)
     assert ek.all(ek.ravel(image) == 0)
 
 @pytest.mark.slow
@@ -147,7 +147,7 @@ def test04_render_no_emitters(variants_all, develop):
     """It should be possible to render a scene with no emitter to get a black image."""
     scene, integrator = create_test_scene(emitter=None, shape='receiver')
 
-    image = integrator.render(scene, seed=0, spp=2, develop_film=develop)
+    image = integrator.render(scene, seed=0, spp=2, develop=develop)
     if not develop:
         assert len(ek.shape(image)) == 0
         image = scene.sensors()[0].film().develop()
@@ -162,7 +162,7 @@ def test05_render_crop_film(variants_all):
 
     # 1. Render full, then crop the resulting image
     scene, integrator = create_test_scene(emitter='texturedarea')
-    image1 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    image1 = integrator.render(scene, seed=0, spp=4, develop=True)
     image1_cropped = image1[offset[1]:offset[1]+size[1], offset[0]:offset[0]+size[0], :]
     ek.eval(image1_cropped)
 
@@ -172,12 +172,12 @@ def test05_render_crop_film(variants_all):
         film.set_crop_window(offset, size)
         # TODO: ideally, we shouldn't need to call this explicitly
         scene.sensors()[0].parameters_changed()
-    image2 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    image2 = integrator.render(scene, seed=0, spp=4, develop=True)
     ek.eval(image2)
 
     # 3. Specify the crop window at scene loading time
     scene, integrator = create_test_scene(emitter='texturedarea', crop_window=(offset, size))
-    image3 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    image3 = integrator.render(scene, seed=0, spp=4, develop=True)
     ek.eval(image3)
 
     if False:
