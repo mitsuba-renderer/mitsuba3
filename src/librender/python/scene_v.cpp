@@ -4,7 +4,6 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-
 #include <mitsuba/python/python.h>
 
 #if !defined(MTS_ENABLE_EMBREE)

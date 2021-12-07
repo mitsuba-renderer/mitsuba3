@@ -1,9 +1,3 @@
-#include <random>
-
-#include <enoki/morton.h>
-#include <mitsuba/core/fwd.h>
-#include <mitsuba/core/plugin.h>
-#include <mitsuba/core/progress.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/render/integrator.h>
@@ -55,7 +49,7 @@ allows splitting work in successive passes of the given sample count per pixel. 
 useful in wavefront mode.
  */
 template <typename Float, typename Spectrum>
-class ParticleTracerIntegrator : public AdjointIntegrator<Float, Spectrum> {
+class ParticleTracerIntegrator final : public AdjointIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_hide_emitters,
                     m_rr_depth, m_max_depth)
@@ -66,10 +60,9 @@ public:
 
     void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
                 ImageBlock *block) const override {
-        if (likely(m_max_depth != 0) && !m_hide_emitters) {
-            // Account for emitters directly visible from the sensor
+        // Account for emitters directly visible from the sensor
+        if (m_max_depth != 0 && !m_hide_emitters)
             sample_visible_emitters(scene, sensor, sampler, block);
-        }
 
         // Primary & further bounces illumination
         auto [ray, throughput] = prepare_ray(scene, sensor, sampler);
@@ -80,8 +73,8 @@ public:
      * Samples an emitter in the scene and connects it directly to the sensor,
      * splatting the emitted radiance to the given image block.
      */
-    Spectrum sample_visible_emitters(const Scene *scene, const Sensor *sensor,
-                                     Sampler *sampler, ImageBlock *block) const {
+    void sample_visible_emitters(const Scene *scene, const Sensor *sensor,
+                                 Sampler *sampler, ImageBlock *block) const {
         // 1. Time sampling
         Float time = sensor->shutter_open();
         if (sensor->shutter_open_time() > 0)
@@ -151,7 +144,7 @@ public:
         Spectrum weight = emitter_idx_weight * emitter_weight * wav_weight * sensor_weight;
 
         // No BSDF passed (should not evaluate it since there's no scattering)
-        return connect_sensor(scene, si, sensor_ds, nullptr, weight, block, active);
+        connect_sensor(scene, si, sensor_ds, nullptr, weight, block, active);
     }
 
     /// Samples a ray from a random emitter in the scene.
@@ -348,7 +341,20 @@ public:
            the block's offset that will be applied in `put`. */
         Float alpha = ek::select(ek::neq(bsdf, nullptr), 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
-        block->put(adjusted_position, si.wavelengths, result, alpha, active);
+
+        // Splat RGB value onto the image buffer
+        UnpolarizedSpectrum result_u = unpolarized_spectrum(result);
+
+        Color3f rgb;
+        if constexpr (is_spectral_v<Spectrum>)
+            rgb = spectrum_to_srgb(result_u, si.wavelengths, active);
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            rgb = result_u.x();
+        else
+            rgb = result_u;
+
+        Float values[5] = { rgb.x(), rgb.y(), rgb.z(), alpha, 0.f };
+        block->put(adjusted_position, values, active);
 
         return result;
     }

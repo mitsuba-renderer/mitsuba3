@@ -1788,8 +1788,9 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 if (!load(src, weight_field, value))
                     return false;
                 linearize(value);
-                inv_weight = 1.f / (value.f == 0.f ? 1.f : value.f);
+                inv_weight = value.f != 0.f ? (1.f / value.f) : 1.f;
             }
+
             Float alpha = 1.f, inv_alpha = 1.f;
             if (has_alpha) {
                 Value value;
