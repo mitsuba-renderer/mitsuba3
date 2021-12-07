@@ -623,7 +623,6 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config.update(theta)
 
     # ek.set_flag(ek.JitFlag.KernelHistory, True)
-    # ek.set_flag(ek.JitFlag.LaunchBlocking, True)
     # ek.set_log_level(3)
 
     integrator.render_backward(

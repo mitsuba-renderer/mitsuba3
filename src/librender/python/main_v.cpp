@@ -137,8 +137,6 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         the 'mitsuba::Scene' Python type is garbage collected */
     py::cpp_function cleanup_callback(
         [mts_object_type](py::handle weakref) {
-            std::cout << "shutdown librender" << std::endl;
-
             color_management_static_shutdown();
             Scene<Float, Spectrum>::static_accel_shutdown();
 
