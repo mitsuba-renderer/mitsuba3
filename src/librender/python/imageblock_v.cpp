@@ -37,7 +37,6 @@ MTS_PY_EXPORT(ImageBlock) {
                 ib.read(pos, output.data(), mask);
                 return output;
             }, "pos"_a, "active"_a = true)
-        .def_method(ImageBlock, overwrite_channel, "channel"_a, "value"_a)
         .def_method(ImageBlock, clear)
         .def_method(ImageBlock, set_offset, "offset"_a)
         .def_method(ImageBlock, offset)

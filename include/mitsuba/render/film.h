@@ -57,10 +57,6 @@ public:
     /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put(const ImageBlock *block) = 0;
 
-    /// Overwrite the desired channel with the given value
-    virtual void overwrite_channel(const std::string &channel_name,
-                                   const Float &value) = 0;
-
     /// Return a image buffer object storing the developed image
     virtual TensorXf develop(bool raw = false) const = 0;
 

@@ -186,14 +186,11 @@ public:
      */
     void read(const Point2f &pos, Float* output, Mask active = true);
 
-    /// Overwrite entire channel with the given value.
-    void overwrite_channel(size_t channel, const Float &value);
-
     /// Clear everything to zero.
     void clear();
 
     // =============================================================
-    //! @{ \name Accesors
+    //! @{ \name Accessors
     // =============================================================
 
     /**\brief Set the current block offset.
