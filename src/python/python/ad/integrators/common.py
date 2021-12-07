@@ -113,9 +113,9 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
         ek.enqueue(ek.ADMode.Backward, image)
         ek.traverse(mitsuba.core.Float)
 
-# Monkey-patch render_forward/backward into SamplingIntegrator
-mitsuba.render.SamplingIntegrator.render = render_backward_impl
-mitsuba.render.SamplingIntegrator.render = render_forward_impl
+# Monkey-patch render_forward/backward into the Integrator base class
+mitsuba.render.Integrator.render_backward = render_backward_impl
+mitsuba.render.Integrator.render_forward = render_forward_impl
 
 del render_backward_impl
 del render_forward_impl
