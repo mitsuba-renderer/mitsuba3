@@ -4,6 +4,9 @@ import os
 import importlib
 import glob
 
+# Make sure mitsuba.python.util is imported before the integrators
+import mitsuba.python.util
+
 reload = 'common' in globals()
 
 for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):

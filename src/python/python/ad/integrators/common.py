@@ -129,8 +129,7 @@ class _RenderOp(ek.CustomOp):
     """
     Differentiable rendering operation, implementation detail of mitsuba.python.ad.render
     """
-    def eval(self, scene, integrator, params, sensor, seed, spp):
-        self.args = kwargs
+    def eval(self, scene, integrator, params, sensor, seed, seed_diff, spp, spp_diff):
         self.scene = scene
         self.integrator = integrator
         self.params = params
@@ -138,18 +137,19 @@ class _RenderOp(ek.CustomOp):
         self.seed = (seed, seed_diff)
         self.spp = (spp, spp_diff)
         with ek.suspend_grad():
-            image = self.integrator.render(self.scene, seed[0], sensor, spp=spp)
+            image = self.integrator.render(self.scene, self.seed[0], sensor,
+                                           spp=self.spp[0])
         return image
 
     def forward(self):
         g = self.integrator.render_forward(self.scene, self.params,
-                                           self.seed[1], sensor, self.spp[1])
+                                           self.seed[1], self.sensor, self.spp[1])
         self.set_grad_out(g)
 
     def backward(self):
         grad_out = self.grad_out()
         self.integrator.render_backward(self.scene, self.params, grad_out,
-                                        self.seed[1], sensor, self.spp[1])
+                                        self.seed[1], self.sensor, self.spp[1])
 
     def name(self):
         return "RenderOp"

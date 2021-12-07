@@ -46,7 +46,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,\
+                        params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
                         seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
