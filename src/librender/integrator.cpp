@@ -343,7 +343,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     const Film *film = sensor->film();
 
     ScalarVector2f scale = 1.f / ScalarVector2f(film->crop_size()),
-                   offset = -film->crop_offset() * scale;
+                   offset = -ScalarVector2f(film->crop_offset()) * scale;
 
     Vector2f sample_pos   = pos + sampler->next_2d(active),
              adjusted_pos = ek::fmadd(sample_pos, scale, offset);
