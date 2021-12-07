@@ -1,6 +1,6 @@
 import enoki as ek
 import mitsuba
-from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare_sampler, sample_sensor_rays, mis_weight
 
 from typing import Union
 

@@ -1,5 +1,6 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
+import mitsuba
 import enoki as ek
 from typing import Union
 
