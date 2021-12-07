@@ -252,42 +252,53 @@ public:
 
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data;
-            uint32_t ch;
+            uint32_t source_ch;
             size_t pixel_count;
             ScalarVector2i size;
+
             /* locked */ {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                data        = m_storage->data();
-                size        = m_storage->size();
-                ch          = (uint32_t) m_storage->channel_count();
-                pixel_count = ek::hprod(m_storage->size());
+                data         = m_storage->data();
+                size         = m_storage->size();
+                source_ch    = (uint32_t) m_storage->channel_count();
+                pixel_count  = ek::hprod(m_storage->size());
             }
 
-            uint32_t target_ch = m_channels.size() - 1;
+            // Number of channels of the target tensor
+            uint32_t target_ch = (uint32_t) m_channels.size() - 1;
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * target_ch);
-            UInt32 i_channel = i % target_ch;
-            UInt32 weight_idx = (i / target_ch) * ch + m_channels.size() - 1;
-            UInt32 values_idx = (i / target_ch) * ch + i_channel;
+            // Index vectors referencing pixels & channels of the output image
+            UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
+                   pixel_idx   = idx / target_ch,
+                   channel_idx = idx - pixel_idx * target_ch;
+
+            /* Index vectors referencing source pixels/weights as follows:
+                 values_idx = R1, G1, B1, R2, G2, B2 (for RGB response functions)
+                 weight_idx = W1, W1, W1, W2, W2, W2 */
+            UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
+                   weight_idx = ek::fmadd(pixel_idx, source_ch, (uint32_t) (m_channels.size() - 1));
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::gather<Float>(data, weight_idx);
-            Float values = ek::gather<Float>(data, values_idx);
+            Float weight = ek::gather<Float>(data, weight_idx),
+                  values = ek::gather<Float>(data, values_idx);
 
-            // Apply weight
-            values = (values / weight) & (weight > 0.f);
+            // Perform the weight division unless the weight is zero
+            values /= ek::select(ek::eq(weight, 0.f), 1.f, weight);
 
-            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), target_ch };
+            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
+                                target_ch };
+
             return TensorXf(values, 3, shape);
         } else {
             ref<Bitmap> source = bitmap();
-
             ScalarVector2i size = source->size();
             size_t width = source->channel_count() * ek::hprod(size);
             auto data = ek::load<DynamicBuffer<Float>>(source->data(), width);
+
             size_t shape[3] = { (size_t) source->height(),
                                 (size_t) source->width(),
                                 source->channel_count() };
+
             return TensorXf(data, 3, shape);
         }
     }
