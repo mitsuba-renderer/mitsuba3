@@ -236,17 +236,23 @@ public:
 
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data;
-            uint32_t ch;
+            uint32_t source_ch;
             size_t pixel_count;
             ScalarVector2i size;
+
             /* locked */ {
                 std::lock_guard<std::mutex> lock(m_mutex);
                 data        = m_storage->data();
                 size        = m_storage->size();
-                ch          = (uint32_t) m_storage->channel_count();
+                source_ch   = (uint32_t) m_storage->channel_count();
                 pixel_count = ek::hprod(m_storage->size());
             }
 
+            /* The following code develops weighted image block data into
+               an output image of the desired configuration, while using
+               a minimal number of JIT kernel launches. */
+
+            // Determine what channels are needed
             bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
             bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
@@ -254,46 +260,53 @@ public:
             bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
                              m_pixel_format == Bitmap::PixelFormat::YA ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
-            bool has_aovs = ch > 5;
 
-            uint32_t img_ch = to_y ? 1 : 3;
-            uint32_t target_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
+            // Number of arbitrary output variables (AOVs)
+            uint32_t aovs = source_ch - 5;
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * target_ch);
-            UInt32 i_channel = i % target_ch;
-            UInt32 weight_idx = (i / target_ch) * ch + 4;
-            UInt32 values_idx = (i / target_ch) * ch + i_channel;
+            /// Number of desired color components
+            uint32_t color_ch = to_y ? 1 : 3;
 
-            if (has_aovs) {
-                // Apply index offset for AOV channels
-                uint32_t aovs_channel = img_ch + (has_alpha ? 1 : 0);
-                Mask aovs_mask = i_channel >= aovs_channel;
-                values_idx[aovs_mask] += 5 - aovs_channel;
+            // Number of channels of the target tensor
+            uint32_t target_ch = color_ch + aovs + (has_alpha ? 1 : 0);
+
+            // Index vectors referencing pixels & channels of the output image
+            UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
+                   pixel_idx   = idx / target_ch,
+                   channel_idx = idx - pixel_idx * target_ch;
+
+            /* Index vectors referencing source pixels/weights as follows:
+                 values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
+                 weight_idx = W1, W1, W1, W2, W2, W2 */
+            UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
+                   weight_idx = ek::fmadd(pixel_idx, source_ch, 4);
+
+            // If AOVs are desired, indices in 'values_idx' must be shifted
+            if (aovs) {
+                // Index of first AOV channel in output image
+                uint32_t first_aov = color_ch + (has_alpha ? 1 : 0);
+                values_idx[channel_idx >= first_aov] += 5 - first_aov;
             }
 
-            if (to_y) {
-                // Apply index offset for AOV channels (skip the X channel)
-                Mask Y_mask = ek::eq(i_channel, 0);
-                values_idx[Y_mask] += 1;
-            }
+            Mask value_mask = true;
 
-            if (has_alpha && to_y) {
-                // Apply index offset for Alpha channel (skip the YZ channels)
-                Mask alpha_mask = ek::eq(i_channel, img_ch);
-                values_idx[alpha_mask] += 2;
-            }
+            // XYZ/Y mode: don't gather color, will be computed below
+            if (to_xyz || to_y)
+                value_mask = values_idx >= color_ch;
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::detach(ek::gather<Float>(data, weight_idx));
-            Float values = ek::gather<Float>(data, values_idx);
+            Float weight = ek::detach(ek::gather<Float>(data, weight_idx)),
+                  values = ek::gather<Float>(data, values_idx, value_mask);
 
+            // Fill color channels with XYZ/Y data if requested
             if (to_xyz || to_y) {
-                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * ch;
+                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * source_ch,
+                       out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
+
                 Color3f rgb = Color3f(ek::gather<Float>(data, in_idx),
                                       ek::gather<Float>(data, in_idx + 1),
                                       ek::gather<Float>(data, in_idx + 2));
 
-                UInt32 out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
                 if (to_y) {
                     ek::scatter(values, luminance(rgb), out_idx);
                 } else {
@@ -304,20 +317,23 @@ public:
                 }
             }
 
-            // Apply weight
-            values = (values / weight) & (weight > 0.f);
+            // Perform the weight division unless the weight is zero
+            values /= ek::select(ek::eq(weight, 0.f), 1.f, weight);
 
-            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), target_ch };
+            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
+                                target_ch };
+
             return TensorXf(values, 3, shape);
         } else {
             ref<Bitmap> source = bitmap();
-
             ScalarVector2i size = source->size();
             size_t width = source->channel_count() * ek::hprod(size);
             auto data = ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
+
             size_t shape[3] = { (size_t) source->height(),
                                 (size_t) source->width(),
                                 source->channel_count() };
+
             return TensorXf(data, 3, shape);
         }
     }
