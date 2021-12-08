@@ -1,8 +1,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/render/integrator.h>
-
 #include <mitsuba/python/python.h>
+#include "signal.h"
 
 #if defined(__APPLE__) || defined(__linux__)
 #  define MTS_HANDLE_SIGINT 1
@@ -19,6 +19,33 @@ static std::function<void()> sigint_handler;
 /// Previously installed signal handler
 static void (*sigint_handler_prev)(int) = nullptr;
 #endif
+
+/// RAII helper to catch Ctrl-C keypresses and cancel an ongoing render job
+ScopedSignalHandler::ScopedSignalHandler(Integrator<Float, Spectrum> *integrator) {
+#if MTS_HANDLE_SIGINT
+    // Install new signal handler
+    sigint_handler = [integrator]() {
+        integrator->cancel();
+    };
+
+    sigint_handler_prev = signal(SIGINT, [](int) {
+        Log(Warn, "Received interrupt signal, winding down..");
+        if (sigint_handler) {
+            sigint_handler();
+            sigint_handler = std::function<void()>();
+            signal(SIGINT, sigint_handler_prev);
+            raise(SIGINT);
+        }
+    });
+#endif
+}
+
+ScopedSignalHandler::~ScopedSignalHandler() {
+#if MTS_HANDLE_SIGINT
+    // Restore previous signal handler
+    signal(SIGINT, sigint_handler_prev);
+#endif
+}
 
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
@@ -87,59 +114,27 @@ MTS_PY_EXPORT(Integrator) {
     MTS_PY_CLASS(Integrator, Object)
         .def(
             "render",
-            [&](Integrator *integrator,
-                Scene *scene,
-                Sensor *sensor,
-                uint32_t seed,
-                uint32_t spp,
-                bool develop,
-                bool evaluate) {
+            [&](Integrator *integrator, Scene *scene, Sensor *sensor,
+                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
                 py::gil_scoped_release release;
-
-#if MTS_HANDLE_SIGINT
-                // Install new signal handler
-                sigint_handler = [integrator]() {
-                    integrator->cancel();
-                };
-
-                sigint_handler_prev = signal(SIGINT, [](int) {
-                    Log(Warn, "Received interrupt signal, winding down..");
-                    if (sigint_handler) {
-                        sigint_handler();
-                        sigint_handler = std::function<void()>();
-                        signal(SIGINT, sigint_handler_prev);
-                        raise(SIGINT);
-                    }
-                });
-#endif
-                TensorXf result = integrator->render(scene, sensor, seed, spp,
-                                                     develop, evaluate);
-
-#if MTS_HANDLE_SIGINT
-                // Restore previous signal handler
-                signal(SIGINT, sigint_handler_prev);
-#endif
-
-                return result;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render(scene, sensor, seed, spp, develop,
+                                          evaluate);
             },
             D(Integrator, render), "scene"_a, "sensor"_a, "seed"_a = 0,
             "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
 
-        .def("render",
-            [&](Integrator *integrator,
-                Scene *scene,
-                uint32_t sensor_idx,
-                uint32_t seed,
-                uint32_t spp,
-                bool develop,
-                bool evaluate) {
-                if (sensor_idx >= scene->sensors().size())
-                    Throw("Out-of-bound sensor index: %i", sensor_idx);
-                Sensor *sensor = scene->sensors()[sensor_idx].get();
-                return py::cast(integrator).attr("render")(scene, sensor, seed, spp, develop, evaluate);
+        .def(
+            "render",
+            [&](Integrator *integrator, Scene *scene, uint32_t sensor_index,
+                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render(scene, sensor_index, seed, spp,
+                                          develop, evaluate);
             },
-            D(Integrator, render, 2), "scene"_a, "sensor_index"_a = 0, "seed"_a = 0,
-            "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
+            D(Integrator, render, 2), "scene"_a, "sensor_index"_a = 0,
+            "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
         .def_method(Integrator, aov_names);

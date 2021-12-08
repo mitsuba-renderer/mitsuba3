@@ -10,8 +10,11 @@
 #  include <mitsuba/render/kdtree.h>
 #endif
 
+#include "signal.h"
+
 MTS_PY_EXPORT(ShapeKDTree) {
     MTS_PY_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)
+
 #if !defined(MTS_ENABLE_EMBREE)
     MTS_PY_CLASS(ShapeKDTree, Object)
         .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
@@ -42,41 +45,12 @@ MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
         .def("render",
-            [&](Scene *scene, uint32_t seed, uint32_t sensor_idx, uint32_t spp) {
+            [&](Scene *scene, uint32_t sensor_index, uint32_t seed, uint32_t spp) {
                 py::gil_scoped_release release;
-
-#if MTS_HANDLE_SIGINT
-                // Install new signal handler
-                sigint_handler = [scene]() {
-                    scene->integrator()->cancel();
-                };
-
-                sigint_handler_prev = signal(SIGINT, [](int) {
-                    Log(Warn, "Received interrupt signal, winding down..");
-                    if (sigint_handler) {
-                        sigint_handler();
-                        sigint_handler = std::function<void()>();
-                        signal(SIGINT, sigint_handler_prev);
-                        raise(SIGINT);
-                    }
-                });
-#endif
-
-                if (sensor_idx >= scene->sensors().size())
-                    Throw("Out-of-bound sensor index: %i", sensor_idx);
-
-                if (spp > 0)
-                    scene->sensors()[sensor_idx]->sampler()->set_sample_count(spp);
-                ref<Bitmap> bitmap = scene->render(seed, sensor_idx);
-
-#if MTS_HANDLE_SIGINT
-                // Restore previous signal handler
-                signal(SIGINT, sigint_handler_prev);
-#endif
-
-                return bitmap;
+                ScopedSignalHandler sh(scene->integrator());
+                return scene->render(sensor_index, seed, spp);
             },
-            D(Scene, render), "seed"_a = 0, "sensor_index"_a = 0, "spp"_a = 0)
+            D(Scene, render), "sensor_index"_a = 0, "seed"_a = 0,  "spp"_a = 0)
         .def("ray_intersect_preliminary",
              py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect_preliminary, py::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect_preliminary))
