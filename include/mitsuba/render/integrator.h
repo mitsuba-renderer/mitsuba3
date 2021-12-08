@@ -318,9 +318,14 @@ public:
      *
      * \param block
      *    An image block that will be updated during the sampling process
+     *
+     * \param sample_scale
+     *    A scale factor that must be applied to each sample to account
+     *    for the film resolution and number of samples.
      */
     virtual void sample(const Scene *scene, const Sensor *sensor,
-                        Sampler *sampler, ImageBlock *block) const = 0;
+                        Sampler *sampler, ImageBlock *block,
+                        ScalarFloat sample_scale) const = 0;
 
     // =========================================================================
     //! @{ \name Integrator interface implementation
