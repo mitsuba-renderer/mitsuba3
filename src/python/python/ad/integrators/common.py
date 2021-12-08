@@ -11,8 +11,8 @@ from typing import Union
 def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        seed: int = 0,
                         spp: int = 0) -> mitsuba.core.TensorXf:
     """
     Evaluates the forward-mode derivative of the rendering step.
@@ -34,24 +34,36 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     subsequently traversed to propagate derivatives. This tends to be
     relatively inefficient due to the need to track intermediate program state;
     in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` and ``prb`` that are specifically designed for differentiation
-    can be significantly more efficient.
+    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
+    Backpropagation) that are specifically designed for differentiation can be
+    significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure specifying input gradients.
-
-    Parameter ``seed` (``int``)
-        Seed value for the sampler.
+       Scene parameter data structure. Note that gradient tracking must be
+       explicitly enabled for each desired parameter using
+       ``enoki.enable_grad(params['parameter_name'])``. Furthermore,
+       ``enoki.set_grad(...)`` must be used to associate specific gradient
+       values with parameters in forward mode differentiation.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
-        Optional parameter to specify which sensor to use for rendering.
+        Specify a sensor or a (sensor index) to render the scene from a
+        different viewpoint. By default, the first sensor within the scene
+        description (index 0) will take precedence.
+
+    Parameter ``seed` (``int``)
+        This parameter controls the initialization of the random number
+        generator. It is crucial that you specify different seeds (e.g., an
+        increasing sequence) if subsequent calls should produce statistically
+        independent images (e.g. to de-correlate gradient-based optimization
+        steps).
 
     Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel.
-        The value specified by the scene has precedence if ``spp=0``.
+        Optional parameter to override the number of samples per pixel for the
+        differential rendering step. The value provided within the original
+        scene specification takes precedence if ``spp=0``.
     """
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
         image = self.render(scene, sensor, seed, spp)
@@ -64,9 +76,9 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                          scene: mitsuba.render.Scene,
                          params: mitsuba.python.util.SceneParameters,
                          image_adj: mitsuba.core.TensorXf,
-                         seed: int,
                          sensor: Union[int, mitsuba.render.Sensor] = 0,
-                         spp: int=0) -> None:
+                         seed: int = 0,
+                         spp: int = 0) -> None:
     """
     Evaluates the reverse-mode derivative of the rendering step.
 
@@ -77,36 +89,46 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     the ``params`` scene parameter data structure.
 
     Before calling this function, you must first enable gradients with respect
-    to some of the elements of ``params`` (via ``enoki.enable_grad()``),
-    otherwise it does not do anything. Subsequently, use ``ek.grad()`` to query
-    the gradients of elements of ``params``.
+    to some of the elements of ``params`` (via ``enoki.enable_grad()``), or it
+    will not do anything. Following the call to ``render_backward()``, use
+    ``ek.grad()`` to query the gradients of elements of ``params``.
 
     The default implementation relies on naive automatic differentiation (AD),
     which records a computation graph of the rendering step that is
     subsequently traversed to propagate derivatives. This tends to be
     relatively inefficient due to the need to track intermediate program state;
     in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` and ``prb`` that are specifically designed for differentiation
-    can be significantly more efficient.
+    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
+    Backpropagation) that are specifically designed for differentiation can be
+    significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure that will receive gradients.
+       Scene parameter data structure. Note that gradient tracking must be
+       explicitly enabled for each desired parameter using
+       ``enoki.enable_grad(params['parameter_name'])``.
 
     Parameter ``image_adj`` (``mitsuba.core.TensorXf``):
         Gradient image that should be back-propagated.
 
-    Parameter ``seed` (``int``)
-        Seed value for the sampler.
-
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
-        Optional parameter to specify which sensor to use for rendering.
+        Specify a sensor or a (sensor index) to render the scene from a
+        different viewpoint. By default, the first sensor within the scene
+        description (index 0) will take precedence.
+
+    Parameter ``seed` (``int``)
+        This parameter controls the initialization of the random number
+        generator. It is crucial that you specify different seeds (e.g., an
+        increasing sequence) if subsequent calls should produce statistically
+        independent images (e.g. to de-correlate gradient-based optimization
+        steps).
 
     Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel.
-        The value specified by the scene has precedence if ``spp=0``.
+        Optional parameter to override the number of samples per pixel for the
+        differential rendering step. The value provided within the original
+        scene specification takes precedence if ``spp=0``.
     """
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
         image = self.render(scene, sensor, seed, spp)
@@ -126,113 +148,130 @@ del render_forward_impl
 # -------------------------------------------------------------
 
 class _RenderOp(ek.CustomOp):
-    """
-    Differentiable rendering operation, implementation detail of mitsuba.python.ad.render
-    """
-    def eval(self, scene, integrator, params, sensor, seed, seed_diff, spp, spp_diff):
+    """ Differentiable rendering CustomOp, used in render() below """
+
+    def eval(self, scene, params, sensor, integrator, seed, spp):
         self.scene = scene
         self.integrator = integrator
         self.params = params
         self.sensor = sensor
-        self.seed = (seed, seed_diff)
-        self.spp = (spp, spp_diff)
+        self.seed = seed
+        self.spp = spp
+
         with ek.suspend_grad():
-            image = self.integrator.render(self.scene, self.seed[0], sensor,
-                                           spp=self.spp[0])
-        return image
+            return self.integrator.render(self.scene, sensor, seed[0], spp[0])
 
     def forward(self):
-        g = self.integrator.render_forward(self.scene, self.params,
-                                           self.seed[1], self.sensor, self.spp[1])
-        self.set_grad_out(g)
+        self.set_grad_out(
+            self.integrator.render_forward(self.scene, self.params, self.sensor,
+                                           self.seed[1], self.spp[1]))
 
     def backward(self):
-        grad_out = self.grad_out()
-        self.integrator.render_backward(self.scene, self.params, grad_out,
-                                        self.seed[1], self.sensor, self.spp[1])
+        self.integrator.render_backward(self.scene, self.params, self.grad_out(),
+                                        self.sensor, self.seed[1], self.spp[1])
 
     def name(self):
         return "RenderOp"
 
 
 def render(scene: mitsuba.render.Scene,
-           integrator: mitsuba.render.Integrator,
            params: mitsuba.python.util.SceneParameters,
-           seed: int,
            sensor: Union[int, mitsuba.render.Sensor] = 0,
-           spp: int = 0,
+           integrator: mitsuba.render.Integrator = None,
+           seed: int = 0,
            seed_diff: int = 0,
+           spp: int = 0,
            spp_diff: int = 0) -> mitsuba.core.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Enoki. Invoking the function returns an ordinary
-    rendering to be used in further computation that can subsequently be
-    differentiated in either forward or reverse mode (i.e., using
-    ``enoki.forward()`` and ``enoki.backward()``).
+    rendering algorithms in Enoki. The function returns a rendered image that
+    can be used in subsequent differentiable computation steps. At any later
+    point, the entire computation graph can be differentiated end-to-end in
+    either forward or reverse mode (i.e., using ``enoki.forward()`` and
+    ``enoki.backward()``).
 
     Under the hood, the differentiation operation will be intercepted and
-    routed to ``SamplingIntegrator.render_forward()`` or
-    ``SamplingIntegrator.render_backward()`` which realize suitable
-    differential simulations.
+    routed to ``Integrator.render_forward()`` or
+    ``Integrator.render_backward()``, which evaluate the derivative using
+    either naive AD or a more specialized differential simulation.
 
     Note the default implementation relies on naive automatic differentiation
-    (AD), which records a computation graph of the rendering step that is
-    subsequently traversed to propagate derivatives. This tends to be
+    (AD), which records a computation graph of the primal rendering step that
+    is subsequently traversed to propagate derivatives. This tends to be
     relatively inefficient due to the need to track intermediate program state;
     in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` and ``prb`` that are specifically designed for differentiation
-    can be significantly more efficient.
+    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
+    Backpropagation) that are specifically designed for differentiation can be
+    significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
-        The scene to be rendered differentially.
-
-    Parameter ``integrator`` (``mitsuba.render.Integrator``):
-        The integrator object implementing the light transport algorithm
+        The scene to be rendered in a differentiable manner.
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure.
-
-    Parameter ``seed` (``int``)
-        Seed value for the sampler.
+       Scene parameter data structure. Note that gradient tracking must be
+       explicitly enabled for each desired parameter using
+       ``enoki.enable_grad(params['parameter_name'])``. Furthermore,
+       ``enoki.set_grad(...)`` must be used to associate specific gradient
+       values with parameters if forward mode derivatives are desired.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
-        Optional parameter to specify which sensor to use for rendering.
+        Specify a sensor or a (sensor index) to render the scene from a
+        different viewpoint. By default, the first sensor within the scene
+        description (index 0) will take precedence.
+
+    Parameter ``integrator`` (``mitsuba.render.Integrator``):
+        Optional parameter to override the rendering technique to be used. By
+        default, the integrator specified in the original scene description
+        will be used.
+
+    Parameter ``seed` (``int``)
+        This parameter controls the initialization of the random number
+        generator during the primal rendering step. It is crucial that you
+        specify different seeds (e.g., an increasing sequence) if subsequent
+        calls should produce statistically independent images (e.g. to
+        de-correlate gradient-based optimization steps).
+
+    Parameter ``seed_diff` (``int``)
+        This parameter is analogous to the ``seed`` parameter but targets the
+        differential simulation phase. If not specified, the implementation
+        will automatically compute a suitable value from the primal ``seed``.
 
     Parameter ``spp`` (``int``):
         Optional parameter to override the number of samples per pixel for the
-        primal phase. The value specified by the scene has precedence if
-        ``spp=0``.
-
-    Parameter ``seed_diff` (``int``)
-        Optional seed value for the differential phase. By default, the seed
-        will be derived from the primal `seed` value.
+        primal rendering step. The value provided within the original scene
+        specification takes precedence if ``spp=0``.
 
     Parameter ``spp_diff`` (``int``):
-        Optional parameter to override the number of samples per pixel used
-        during the differential phase. The default is to use the same number
-        of samples as the primal phase.
+        This parameter is analogous to the ``seed`` parameter but targets the
+        differential simulation phase. If not specified, the implementation
+        will copy the value from ``spp``.
     """
 
     assert isinstance(scene, mitsuba.render.Scene)
-    assert isinstance(integrator, mitsuba.render.Integrator)
     assert isinstance(params, mitsuba.python.util.SceneParameters)
 
-    if spp and spp_diff == 0:
+    if integrator is None:
+        integrator = scene.integrator()
+
+    assert isinstance(integrator, mitsuba.render.Integrator)
+
+    if spp_diff == 0:
         spp_diff = spp
 
     if seed_diff == 0:
-        seed_diff = mitsuba.core.sample_tea_32(seed, 1)[0]
+        seed_diff = mitsuba.core.sample_tea_32(seed, 1)
 
-    return ek.custom(_RenderOp, scene, integrator, params,
-                     sensor, seed, seed_diff, spp, spp_diff)
+    return ek.custom(_RenderOp, scene, params, sensor,
+                     integrator, (seed, seed_diff), (spp, spp_diff))
+
 
 # -------------------------------------------------------------
 #  Helper functions used by various differentiable integrators
 # -------------------------------------------------------------
 
 def prepare_sampler(sensor: mitsuba.render.Sensor,
-                    seed: int=0,
-                    spp: int=0):
+                    seed: int = 0,
+                    spp: int = 0):
     """
     Given a sensor and a desired number of samples per pixel, this function
     computes the necessary number of Monte Carlo samples and then suitably
@@ -240,7 +279,30 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
 
     Returns the final number of samples per pixel (which may differ from the
     requested amount)
+
+    Parameter ``sensor`` (``mitsuba.render.Sensor``):
+        Specify a sensor or a (sensor index) to render the scene from a
+        different viewpoint. By default, the first sensor within the scene
+        description (index 0) will take precedence.
+
+    Parameter ``seed` (``int``)
+        This parameter controls the initialization of the random number
+        generator during the primal rendering step. It is crucial that you
+        specify different seeds (e.g., an increasing sequence) if subsequent
+        calls should produce statistically independent images (e.g. to
+        de-correlate gradient-based optimization steps).
+
+    Parameter ``seed_diff` (``int``)
+        This parameter is analogous to the ``seed`` parameter but targets the
+        differential simulation phase. If not specified, the implementation
+        will automatically compute a suitable value from the primal ``seed``.
+
+    Parameter ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel for the
+        primal rendering step. The value provided within the original scene
+        specification takes precedence if ``spp=0``.
     """
+
     film = sensor.film()
     sampler = sensor.sampler()
     if spp != 0:
@@ -251,6 +313,7 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
     if film.has_high_quality_edges():
         film_size += 2 * film.reconstruction_filter().border_size()
     sampler.seed(seed, ek.hprod(film_size) * spp)
+
     return spp
 
 
