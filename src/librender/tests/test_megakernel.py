@@ -126,11 +126,10 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
 
     # Role of each kernel
     # 0. Render visible emitters, trace and connect paths from the light source to the sensor
-    # 1. Normalization (overwrite weight channel)
-    # 2. Developing the film
-    assert len(history_1) == 3
-    assert len(history_2) == 3
-    assert len(history_3) == 3
+    # 1. Developing the film
+    assert len(history_1) == 2
+    assert len(history_2) == 2
+    assert len(history_3) == 2
 
     # TODO First run produces different kernels for some reason
     # Kernels should all be identical (reused from the cached)
@@ -140,9 +139,9 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
 
     # Only the rendering kernels should use optix
     if mitsuba.variant().startswith('cuda'):
-        assert [e['uses_optix'] for e in history_1] == [True, False, False]
-        assert [e['uses_optix'] for e in history_2] == [True, False, False]
-        assert [e['uses_optix'] for e in history_3] == [True, False, False]
+        assert [e['uses_optix'] for e in history_1] == [True, False]
+        assert [e['uses_optix'] for e in history_2] == [True, False]
+        assert [e['uses_optix'] for e in history_3] == [True, False]
 
     # Check rendering wavefront size
     render_wavefront_size = ek.hprod(film_size) * spp
@@ -150,17 +149,11 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     assert history_2[0]['size'] == render_wavefront_size
     assert history_3[0]['size'] == render_wavefront_size
 
-    # Check film renormalization wavefront size
-    normalization_wavefront_size = ek.hprod(film_size) * 1 #(W)
-    assert history_1[1]['size'] == normalization_wavefront_size
-    assert history_2[1]['size'] == normalization_wavefront_size
-    assert history_3[1]['size'] == normalization_wavefront_size
-
     # Check film development wavefront size
     film_wavefront_size = ek.hprod(film_size) * 3 #(RGB)
-    assert history_1[2]['size'] == film_wavefront_size
-    assert history_2[2]['size'] == film_wavefront_size
-    assert history_3[2]['size'] == film_wavefront_size
+    assert history_1[1]['size'] == film_wavefront_size
+    assert history_2[1]['size'] == film_wavefront_size
+    assert history_3[1]['size'] == film_wavefront_size
 
 
 def test03_kernel_launches_optimization(variants_all_ad_rgb):
