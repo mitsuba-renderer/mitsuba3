@@ -288,6 +288,10 @@ public:
                 values_idx[channel_idx >= first_aov] += 5 - first_aov;
             }
 
+            // If luminance + alpha, shift alpha channel to skip the GB channels
+            if (has_alpha && to_y)
+                values_idx[ek::eq(channel_idx, color_ch)] += 2;
+
             Mask value_mask = true;
 
             // XYZ/Y mode: don't gather color, will be computed below
