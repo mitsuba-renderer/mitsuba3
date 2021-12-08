@@ -59,14 +59,14 @@ public:
     ParticleTracerIntegrator(const Properties &props) : Base(props) { }
 
     void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
-                ImageBlock *block) const override {
+                ImageBlock *block, ScalarFloat sample_scale) const override {
         // Account for emitters directly visible from the sensor
         if (m_max_depth != 0 && !m_hide_emitters)
-            sample_visible_emitters(scene, sensor, sampler, block);
+            sample_visible_emitters(scene, sensor, sampler, block, sample_scale);
 
         // Primary & further bounces illumination
         auto [ray, throughput] = prepare_ray(scene, sensor, sampler);
-        trace_light_ray(ray, scene, sensor, sampler, throughput, block);
+        trace_light_ray(ray, scene, sensor, sampler, throughput, block, sample_scale);
     }
 
     /**
@@ -74,7 +74,8 @@ public:
      * splatting the emitted radiance to the given image block.
      */
     void sample_visible_emitters(const Scene *scene, const Sensor *sensor,
-                                 Sampler *sampler, ImageBlock *block) const {
+                                 Sampler *sampler, ImageBlock *block,
+                                 ScalarFloat sample_scale) const {
         // 1. Time sampling
         Float time = sensor->shutter_open();
         if (sensor->shutter_open_time() > 0)
@@ -144,7 +145,7 @@ public:
         Spectrum weight = emitter_idx_weight * emitter_weight * wav_weight * sensor_weight;
 
         // No BSDF passed (should not evaluate it since there's no scattering)
-        connect_sensor(scene, si, sensor_ds, nullptr, weight, block, active);
+        connect_sensor(scene, si, sensor_ds, nullptr, weight, block, sample_scale, active);
     }
 
     /// Samples a ray from a random emitter in the scene.
@@ -183,7 +184,7 @@ public:
     std::pair<Spectrum, Float>
     trace_light_ray(Ray3f ray, const Scene *scene, const Sensor *sensor,
                     Sampler *sampler, Spectrum throughput, ImageBlock *block,
-                    Mask active = true) const {
+                    ScalarFloat sample_scale, Mask active = true) const {
         // Tracks radiance scaling due to index of refraction changes
         Float eta(1.f);
 
@@ -216,7 +217,8 @@ public:
             auto [sensor_ds, sensor_weight] =
                 sensor->sample_direction(si, sampler->next_2d(), active);
             connect_sensor(scene, si, sensor_ds, bsdf,
-                           throughput * sensor_weight, block, active);
+                           throughput * sensor_weight, block, sample_scale,
+                           active);
 
             /* ----------------------- BSDF sampling ------------------------ */
             // Sample BSDF * cos(theta).
@@ -279,7 +281,8 @@ public:
     Spectrum connect_sensor(const Scene *scene, const SurfaceInteraction3f &si,
                             const DirectionSample3f &sensor_ds,
                             const BSDFPtr &bsdf, const Spectrum &weight,
-                            ImageBlock *block, Mask active) const {
+                            ImageBlock *block, ScalarFloat sample_scale,
+                            Mask active) const {
         active &= (sensor_ds.pdf > 0.f) &&
                   ek::any(ek::neq(unpolarized_spectrum(weight), 0.f));
         if (ek::none_or<false>(active))
@@ -352,6 +355,8 @@ public:
             rgb = result_u.x();
         else
             rgb = result_u;
+
+        rgb *= sample_scale;
 
         Float values[5] = { rgb.x(), rgb.y(), rgb.z(), alpha, 0.f };
         block->put(adjusted_position, values, active);

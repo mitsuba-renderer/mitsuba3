@@ -490,6 +490,9 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         return result;
     }
 
+    ScalarFloat sample_scale =
+        ek::hprod(crop_size) / ScalarFloat(spp * ek::hprod(film_size));
+
     TensorXf result;
     if constexpr (!ek::is_jit_array_v<Float>) {
         size_t n_threads = Thread::thread_count();
@@ -531,7 +534,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
                 size_t ctr = 0;
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
-                    sample(scene, sensor, sampler, block);
+                    sample(scene, sensor, sampler, block, sample_scale);
                     sampler->advance();
 
                     ctr++;
@@ -581,7 +584,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
-            sample(scene, sensor, sampler, block);
+            sample(scene, sensor, sampler, block, sample_scale);
 
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1

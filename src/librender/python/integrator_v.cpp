@@ -167,5 +167,5 @@ MTS_PY_EXPORT(Integrator) {
 
     MTS_PY_CLASS(AdjointIntegrator, Integrator)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
-                    "sampler"_a, "block"_a);
+                    "sampler"_a, "block"_a, "sample_scale"_a);
 }

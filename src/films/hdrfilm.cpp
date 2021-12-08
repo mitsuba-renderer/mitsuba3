@@ -281,7 +281,7 @@ public:
             UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
                    weight_idx = ek::fmadd(pixel_idx, source_ch, 4);
 
-            // If AOVs are desired, indices in 'values_idx' must be shifted
+            // If AOVs are desired, their indices in 'values_idx' must be shifted
             if (aovs) {
                 // Index of first AOV channel in output image
                 uint32_t first_aov = color_ch + (has_alpha ? 1 : 0);
@@ -290,7 +290,7 @@ public:
 
             // If luminance + alpha, shift alpha channel to skip the GB channels
             if (has_alpha && to_y)
-                values_idx[ek::eq(channel_idx, color_ch)] += 2;
+                values_idx[ek::eq(channel_idx, color_ch /* alpha */)] += 2;
 
             Mask value_mask = true;
 
