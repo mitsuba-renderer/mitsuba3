@@ -480,36 +480,48 @@ public:
     }
 
     /**
-     * \brief Separable shadowing-masking for GGX1. Mitsuba does not have a GGX1
+     * \brief Separable shadowing-masking for GGX. Mitsuba does not have a GGX1
      * support in microfacet so it is added in Disney material plugin.
      * \param wi
      *     Incident Direction.
      * \param wo
      *     Outgoing direction.
+     * \param wh
+     *     Halfway vector.
      * \param alpha
      *     Roughness of the clearcoat lobe.
-     * \return Shadowing-Masking term for GGX1. Used in clearcoat lobe.
+     * \return Shadowing-Masking term for GGX. Used in clearcoat lobe.
      */
     Float clearcoat_G(const Vector3f &wi, const Vector3f &wo,
-                      const Float &alpha) const {
-        return smith_ggx1(wi, alpha) * smith_ggx1(wo, alpha);
+                      const Vector3f &wh, const Float &alpha) const {
+        return smith_ggx1(wi,wh, alpha) * smith_ggx1(wo,wh, alpha);
     }
 
     /**
-     * \brief Calculates Smith ggx1 shadowing-masking function. Used in
+     * \brief Calculates Smith ggx shadowing-masking function. Used in
      * separable masking-shadowing term calculation.
      * \param v
      *     Direction for the calculation of the function.
+     * \param wh
+     *     Halfway vector.
      * \param alpha
      *     Roughness of the clearcoat lobe.
      * \return Smith ggx1 shadowing-masking function.
      */
-    Float smith_ggx1(const Vector3f &v, const Float &alpha) const {
+    Float smith_ggx1(const Vector3f &v, const Vector3f &wh,const Float &alpha) const {
         Float alpha_2     = ek::sqr(alpha),
               cos_theta   = ek::abs(Frame3f::cos_theta(v)),
-              cos_theta_2 = ek::sqr(cos_theta);
-        return 1.0f / (cos_theta +
-                       ek::sqrt(alpha_2 + cos_theta_2 - alpha_2 * cos_theta_2));
+              cos_theta_2 = ek::sqr(cos_theta),
+              tan_theta_2 = (1.0f-cos_theta_2)/cos_theta_2;
+
+        Float result =2.0f * ek::rcp(1.0f + ek::sqrt(1.0f + alpha_2 * tan_theta_2));
+
+        // Perpendicular incidence -- no shadowing/masking
+        ek::masked(result, ek::eq(v.z(), 1.f)) = 1.f;
+        /* Ensure consistent orientation (can't see the back
+           of the microfacet from the front and vice versa) */
+        ek::masked(result, ek::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
+        return result;
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -1134,7 +1146,7 @@ public:
                 Float Dcc = mfacet_dist.eval(wh);
 
                 // Shadowing shadowing-masking term
-                Float G_cc = clearcoat_G(si.wi, wo, 0.25f);
+                Float G_cc = clearcoat_G(si.wi, wo, wh, 0.25f);
 
                 // Adding the clearcoat component.
                 ek::masked(value, clearcoat_active) += (clearcoat * 0.25f) *
@@ -1402,7 +1414,7 @@ public:
                 Float dot_wo_h = ek::dot(wo, wh);
                 dwh_dwo_abs    = ek::abs(
                        ek::select(reflect, ek::rcp(4.0f * dot_wo_h),
-                                  (eta_path * eta_path * dot_wo_h) /
+                                  (ek::sqr(eta_path) * dot_wo_h) /
                                       ek::sqr(dot_wi_h + eta_path * dot_wo_h)));
             } else {
                 dwh_dwo_abs = ek::abs(ek::rcp(4.0f * ek::dot(wo, wh)));
