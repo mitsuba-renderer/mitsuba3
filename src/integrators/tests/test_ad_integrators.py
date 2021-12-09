@@ -662,7 +662,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     ek.enable_grad(theta)
     config.update(theta)
 
-    image_primal = render(config.scene, integrator, config.params, seed=0, spp=config.spp)
+    image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
     error = ek.abs(ek.detach(image_primal) - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
     error_mean = ek.hmean(error)
@@ -698,7 +698,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     ek.enable_grad(theta)
     config.update(theta)
 
-    image_primal = render(config.scene, integrator, config.params, seed=0, spp=config.spp)
+    image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
     ek.forward(theta)
 

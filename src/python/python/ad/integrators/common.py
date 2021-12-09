@@ -259,7 +259,7 @@ def render(scene: mitsuba.render.Scene,
         spp_diff = spp
 
     if seed_diff == 0:
-        seed_diff = mitsuba.core.sample_tea_32(seed, 1)
+        seed_diff = mitsuba.core.sample_tea_32(seed, 1)[0]
 
     return ek.custom(_RenderOp, scene, params, sensor,
                      integrator, (seed, seed_diff), (spp, spp_diff))
@@ -291,11 +291,6 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
         specify different seeds (e.g., an increasing sequence) if subsequent
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
-
-    Parameter ``seed_diff` (``int``)
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will automatically compute a suitable value from the primal ``seed``.
 
     Parameter ``spp`` (``int``):
         Optional parameter to override the number of samples per pixel for the
