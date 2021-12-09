@@ -222,4 +222,4 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     integrator.render_backward(scene, params, adjoint, seed=3, spp=4)
     g = ek.grad(params[key])
     assert ek.shape(g) == ek.shape(params[key])
-    assert ek.allclose(g, 0.3269110321)
+    assert ek.allclose(g, 0.35821, atol=1e-5)

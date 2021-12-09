@@ -38,9 +38,9 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
 
     ek.set_flag(ek.JitFlag.LoopRecord, False)
 
-    num_aux_rays = 2
+    num_aux_rays = 8
     power = 3.0
-    kappa = 1e5
+    kappa = 1e6
 
     ray = Ray3f(ray_o, ray_d, 0.0, [])
 
@@ -85,7 +85,6 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     ek.traverse(mitsuba.core.Float)
 
     grad_d = ek.grad(d)
-    grad_div = ek.grad(div)
 
     # Compute attached ray direction if the shape moves along the translation axis
     si_p = scene.ray_intersect(ray).p

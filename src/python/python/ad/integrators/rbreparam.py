@@ -20,9 +20,9 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> mitsuba.core.TensorXf:
+                       seed: int = 0,
+                       spp: int = 0) -> mitsuba.core.TensorXf:
         from mitsuba.core import Float, Spectrum
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
@@ -87,9 +87,9 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
-                        seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
-                        spp: int=0) -> None:
+                        seed: int = 0,
+                        spp: int = 0) -> None:
         """
         Performed the adjoint rendering integration, backpropagating the
         image gradients to the scene parameters.
