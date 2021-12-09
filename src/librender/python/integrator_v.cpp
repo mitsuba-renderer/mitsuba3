@@ -21,7 +21,7 @@ static void (*sigint_handler_prev)(int) = nullptr;
 #endif
 
 /// RAII helper to catch Ctrl-C keypresses and cancel an ongoing render job
-ScopedSignalHandler::ScopedSignalHandler(Integrator<Float, Spectrum> *integrator) {
+ScopedSignalHandler::ScopedSignalHandler(IntegratorT *integrator) {
 #if MTS_HANDLE_SIGINT
     // Install new signal handler
     sigint_handler = [integrator]() {
