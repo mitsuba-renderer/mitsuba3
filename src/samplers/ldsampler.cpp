@@ -93,9 +93,9 @@ public:
         return new LowDiscrepancySampler (*this);
     }
 
-    void seed(uint64_t seed_offset, size_t wavefront_size) override {
-        Base::seed(seed_offset, wavefront_size);
-        m_scramble_seed = compute_per_sequence_seed((uint32_t) seed_offset);
+    void seed(uint32_t seed, uint32_t wavefront_size) override {
+        Base::seed(seed, wavefront_size);
+        m_scramble_seed = compute_per_sequence_seed(seed);
     }
 
     Float next_1d(Mask /*active*/ = true) override {
@@ -108,7 +108,7 @@ public:
         UInt32 i = permute(sample_indices, m_sample_count, perm_seed);
 
         // Compute scramble value (unique per sequence)
-        UInt32 scramble = sample_tea_32(m_scramble_seed, UInt32(0x48bc48eb));
+        UInt32 scramble = sample_tea_32(m_scramble_seed, UInt32(0x48bc48eb)).first;
 
         return radical_inverse_2(i, scramble);
     }
@@ -123,8 +123,8 @@ public:
         UInt32 i = permute(sample_indices, m_sample_count, perm_seed);
 
         // Compute scramble values (unique per sequence) for both axis
-        UInt32 scramble_x = sample_tea_32(m_scramble_seed, UInt32(0x98bc51ab));
-        UInt32 scramble_y = sample_tea_32(m_scramble_seed, UInt32(0x04223e2d));
+        auto [scramble_x, scramble_y] =
+            sample_tea_32(m_scramble_seed, UInt32(0x98bc51ab));
 
         Float x = radical_inverse_2(i, scramble_x),
               y = sobol_2(i, scramble_y);
