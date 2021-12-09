@@ -39,7 +39,7 @@ MTS_PY_EXPORT(sample_tea) {
 
     m.def("permute",
           permute<UInt32>,
-          "value"_a, "sample_count"_a, "seed"_a, "rounds"_a = 4, D(permute));
+          "value"_a, "size"_a, "seed"_a, "rounds"_a = 4, D(permute));
 
     m.def("permute_kensler",
           permute_kensler<UInt32>,

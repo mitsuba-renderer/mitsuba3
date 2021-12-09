@@ -13,37 +13,51 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * \brief Base class of all sample generators.
  *
- * For each sample in a pixel, a sample generator produces a (hypothetical)
- * point in the infinite dimensional random number cube. A rendering
- * algorithm can then request subsequent 1D or 2D components of this point
- * using the \c next_1d and \c next_2d functions.
+ * A \a sampler provides a convenient abstraction around methods that generate
+ * uniform pseudo- or quasi-random points within a conceptual
+ * infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves two
+ * main operations: by quering successive component values of such an
+ * infinite-dimensional point (\ref next_1d(), \ref next_2d()), or by
+ * discarding the current point and generating another one (\ref advance()).
  *
- * Scalar and wavefront rendering algorithms will need interact with the sampler
+ * Scalar and vectorized rendering algorithms interact with the sampler
  * interface in a slightly different way:
  *
  * Scalar rendering algorithm:
  *
- *   1. Before beginning to render a pixel block, the rendering algorithm calls
- *      \c seed to initialize a new sequence with the specific seed offset.
- *   2. The first pixel sample can now be computed, after which \c advance needs to be
- *      invoked. This repeats until all pixel samples have been generated. Note that some
- *      implementations need to be configured for a certain number of pixel samples, and
- *      exceeding these will lead to an exception being thrown.
- *   3. While computing a pixel sample, the rendering algorithm usually requests batches
- *      of (pseudo-) random numbers using the \c next_1d and \c next_2d functions
- *      before moving on to the next sample.
+ *   1. The rendering algorithm first invokes \ref seed() to initialize the
+ *      sampler state.
  *
- * Wavefront rendering algorithm:
+ *   2. The first pixel sample can now be computed, after which \ref advance()
+ *      needs to be invoked. This repeats until all pixel samples have been
+ *      generated. Note that some implementations need to be configured for a
+ *      certain number of pixel samples, and exceeding these will lead to an
+ *      exception being thrown.
  *
- *   1. Before beginning to render the wavefront, the rendering algorithm needs to inform the
- *      sampler of the amount of samples rendered in parallel for every pixel in the wavefront.
- *      This can be achieved by calling \c set_samples_per_wavefront .
- *   2. Then the rendering algorithm should seed the sampler and set the appropriate wavefront
- *      size by calling \c seed. A different seed value, based on the \c base_seed and
- *      the seed offset, will be used for every sample (of every pixel) in the wavefront.
- *   3. \c advance can be used to advance to the next sample in the sequence.
- *   4. As in the scalar approach, the rendering algorithm can request batches of (pseudo-)
- *      random numbers using the \c next_1d and \c next_2d functions.
+ *   3. While computing a pixel sample, the rendering algorithm usually
+ *      requests 1D or 2D component blocks using the \ref next_1d() and
+ *      \ref next_2d() functions before moving on to the next sample.
+ *
+ * A vectorized rendering algorithm effectively queries multiple sample
+ * generators that advance in parallel. This involves the following steps:
+ *
+ *   1. The rendering algorithm invokes \ref set_samples_per_wavefront()
+ *      if each rendering step is split into multiple passes (in which
+ *      case fewer samples should be returned per \ref sample_1d()
+ *      or \ref sample_2d() call).
+ *
+ *   2. The rendering algorithm then invokes \ref seed() to initialize the
+ *      sampler state, and to inform the sampler of the wavefront size,
+ *      i.e., how many sampler evaluations should be performed in parallel,
+ *      accounting for all passes. The initialization ensures that the set of
+ *      parallel samplers is mutually statistically independent (in a
+ *      pseudo/quasi-random sense).
+ *
+ *   3. \ref advance() can be used to advance to the next point.
+ *
+ *   4. As in the scalar approach, the rendering algorithm can request batches
+ *      of (pseudo-) random numbers using the \ref next_1d() and \ref next_2d()
+ *      functions.
  *
  */
 template <typename Float, typename Spectrum>
@@ -60,7 +74,6 @@ public:
      * May throw an exception if not supported.
      */
     virtual ref<Sampler> fork() = 0;
-
 
     /**
      * \brief Create a clone of this sampler.
@@ -80,7 +93,8 @@ public:
      * In the context of wavefront ray tracing & dynamic arrays, this function
      * must be called with \c wavefront_size matching the size of the wavefront.
      */
-    virtual void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1);
+    virtual void seed(uint32_t seed,
+                      uint32_t wavefront_size = (uint32_t) -1);
 
     /**
      * \brief Advance to the next sample.
@@ -125,13 +139,13 @@ protected:
     virtual ~Sampler();
 
     /// Generates a array of seeds where the seed values are unique per sequence
-    UInt32 compute_per_sequence_seed(uint32_t seed_offset) const;
+    UInt32 compute_per_sequence_seed(uint32_t seed) const;
     /// Return the index of the current sample
     UInt32 current_sample_index() const;
 
 protected:
     /// Base seed value
-    uint64_t m_base_seed;
+    uint32_t m_base_seed;
     /// Number of samples per pixel
     uint32_t m_sample_count;
     /// Number of samples per pass in wavefront modes (default is 1)
@@ -152,13 +166,15 @@ public:
     MTS_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    virtual void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1) override;
+    virtual void seed(uint32_t seed,
+                      uint32_t wavefront_size = (uint32_t) -1) override;
     virtual void schedule_state() override;
     virtual void loop_register(ek::Loop<Mask> &loop) override;
 
     MTS_DECLARE_CLASS()
 protected:
     PCG32Sampler(const Properties &props);
+
     /// Copy state to a new PCG32Sampler object
     PCG32Sampler(const PCG32Sampler &sampler);
 protected:

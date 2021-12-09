@@ -61,26 +61,32 @@ template <typename UInt32> using PCG32 = ek::PCG32<UInt32>;
  *
  * \param v0
  *     First input value to be encrypted (could be the sample index)
+ *
  * \param v1
  *     Second input value to be encrypted (e.g. the requested random number dimension)
+ *
  * \param rounds
  *     How many rounds should be executed? The default for random number
  *     generation is 4.
+ *
  * \return
- *     A uniformly distributed 32-bit integer
+ *     Two uniformly distributed 32-bit integers
  */
 
 template <typename UInt32>
-UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
-    UInt32 sum = 0;
+std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
+    static_assert(
+        std::is_same_v<ek::scalar_t<UInt32>, uint32_t>,
+        "sample_tea_32(): template type should be a 32 bit unsigned integer!");
 
+    UInt32 sum = 0;
     ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
         v0 += (ek::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (ek::sr<5>(v1) + 0xc8013ea4);
         v1 += (ek::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (ek::sr<5>(v0) + 0x7e95761e);
     }
 
-    return v1;
+    return { v0, v1 };
 }
 
 /**
@@ -103,15 +109,10 @@ UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
 
 template <typename UInt32>
 ek::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
-    UInt32 sum = 0;
+    std::tie(v0, v1) = sample_tea_32(v0, v1, rounds);
 
-    ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
-        sum += 0x9e3779b9;
-        v0 += (ek::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (ek::sr<5>(v1) + 0xc8013ea4);
-        v1 += (ek::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (ek::sr<5>(v0) + 0x7e95761e);
-    }
-
-    return ek::uint64_array_t<UInt32>(v0) + ek::sl<32>(ek::uint64_array_t<UInt32>(v1));
+    return ek::uint64_array_t<UInt32>(v0) +
+           ek::sl<32>(ek::uint64_array_t<UInt32>(v1));
 }
 
 
@@ -135,7 +136,7 @@ ek::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
 template <typename UInt32>
 ek::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
     return ek::reinterpret_array<ek::float32_array_t<UInt32>>(
-        ek::sr<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
+        ek::sr<9>(sample_tea_32(v0, v1, rounds).second) | 0x3f800000u) - 1.f;
 }
 
 /**
@@ -173,13 +174,15 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
 }
 
 /**
- * \brief Generate pseudorandom permutation vector using a shuffling network and the
- * \ref sample_tea function. This algorithm has a O(log2(sample_count)) complexity but
- * only supports permutation vectors whose lengths are a power of 2.
+ * \brief Generate pseudorandom permutation vector using a shuffling network
+ *
+ * This algorithm repeatedly invokes \ref sample_tea_32() internally and has
+ * O(log2(sample_count)) complexity. It only supports permutation vectors,
+ * whose lengths are a power of 2.
  *
  * \param index
- *     Input index to be mapped
- * \param sample_count
+ *     Input index to be permuted
+ * \param size
  *     Length of the permutation vector
  * \param seed
  *     Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
@@ -191,14 +194,18 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
  */
 
 template <typename UInt32>
-UInt32 permute(UInt32 index, uint32_t sample_count, UInt32 seed, int rounds = 2) {
-    uint32_t  n = ek::log2i(sample_count);
-    Assert(uint32_t(1 << n) == sample_count, "sample_count should be a power of 2");
+UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
+    uint32_t n = ek::log2i(size);
 
-    for (uint32_t  level = 0; level < n; ++level) {
-        UInt32 bit = UInt32(1 << level);
-        // Take a random integer indentical for indices that might be swapped at this level
-        UInt32 rand = sample_tea_32(index | bit, seed, rounds);
+    Assert(uint32_t(1 << n) == size, "permute(): size must be a power of 2!");
+
+    for (uint32_t level = 0; level < n; ++level) {
+        UInt32 bit = 1 << level;
+
+        // Consistently generate a random integer for indices that might be swapped at this level
+        UInt32 rand = sample_tea_32(index | bit, seed, rounds).first;
+
+        // Perform the flip if 'bit' is set
         ek::masked(index, ek::eq(rand & bit, bit)) = index ^ bit;
     }
 

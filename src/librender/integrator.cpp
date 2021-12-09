@@ -147,8 +147,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         uint32_t grain_size = std::max(total_blocks / (4 * n_threads), 1u);
 
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
-        uint64_t seed_offset =
-            (uint64_t) seed * (uint64_t) ek::hprod(film_size);
+        seed *= ek::hprod(film_size);
 
         ThreadEnvironment env;
         ek::parallel_for(
@@ -174,8 +173,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                     block->set_offset(offset);
 
                     render_block(scene, sensor, sampler, block, aovs.get(),
-                                 spp_per_pass, seed_offset, block_id,
-                                 block_size);
+                                 spp_per_pass, seed, block_id, block_size);
 
                     film->put(block);
 
@@ -288,7 +286,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                                                                    ImageBlock *block,
                                                                    Float *aovs,
                                                                    uint32_t sample_count,
-                                                                   uint64_t seed_offset,
+                                                                   uint64_t seed,
                                                                    uint32_t block_id,
                                                                    uint32_t block_size) const {
 
@@ -296,7 +294,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         uint32_t pixel_count = block_size * block_size;
 
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
-        seed_offset += block_id * pixel_count;
+        seed += block_id * pixel_count;
 
         // Scale down ray differentials when tracing multiple rays per pixel
         Float diff_scale_factor = ek::rsqrt((Float) sample_count);
@@ -304,7 +302,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         block->clear();
 
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
-            sampler->seed(seed_offset + i);
+            sampler->seed(seed + i);
 
             Point2u pos = ek::morton_decode<Point2u>(i);
             if (ek::any(pos >= block->size()))
@@ -324,7 +322,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         ENOKI_MARK_USED(block);
         ENOKI_MARK_USED(aovs);
         ENOKI_MARK_USED(sample_count);
-        ENOKI_MARK_USED(seed_offset);
+        ENOKI_MARK_USED(seed);
         ENOKI_MARK_USED(block_id);
         ENOKI_MARK_USED(block_size);
         Throw("Not implemented for JIT arrays.");
@@ -513,7 +511,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
 
         size_t total_samples = samples_per_pass * n_passes;
-        uint64_t seed_offset = (uint64_t) seed * (uint64_t) total_samples;
+
+        seed *= (uint32_t) total_samples;
         std::atomic<size_t> samples_done(0);
 
         // Start the render timer (used for timeouts & log messages)
@@ -530,7 +529,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                 block->set_offset(film->crop_offset());
                 block->clear();
 
-                sampler->seed(seed_offset + (uint64_t) range.begin());
+                sampler->seed(seed + (uint64_t) range.begin());
 
                 size_t ctr = 0;
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {

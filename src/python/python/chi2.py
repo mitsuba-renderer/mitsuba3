@@ -113,11 +113,14 @@ class ChiSquareTest:
 
         # Generate a table of uniform variates
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
-            UInt64, PCG32, sample_tea_64
+            UInt64, PCG32, sample_tea_32
 
         idx = ek.arange(UInt64, self.sample_count)
-        rng = PCG32(initstate=sample_tea_64(idx, self.seed),
-                    initseq=sample_tea_64(self.seed, idx))
+        v0, v1 = sample_tea_32(idx, self.seed)
+
+        # Scramble seed and stream index using TEA, a linearly increasing sequence 
+        # does not produce a sufficiently statistically independent set of streams
+        rng = PCG32(initstate=v0, initseq=v1)
 
         samples_in = getattr(mitsuba.core, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):

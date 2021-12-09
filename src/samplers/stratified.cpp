@@ -95,9 +95,9 @@ public:
         return new StratifiedSampler(*this);
     }
 
-    void seed(uint64_t seed_offset, size_t wavefront_size) override {
-        Base::seed(seed_offset, wavefront_size);
-        m_permutation_seed = compute_per_sequence_seed((uint32_t) seed_offset);
+    void seed(uint32_t seed, uint32_t wavefront_size) override {
+        Base::seed(seed, wavefront_size);
+        m_permutation_seed = compute_per_sequence_seed(seed);
     }
 
     Float next_1d(Mask active = true) override {
@@ -110,7 +110,7 @@ public:
         UInt32 p = permute_kensler(sample_indices, m_sample_count, perm_seed, active);
 
         // Add a random perturbation
-        Float j = m_jitter ? m_rng.template next_float<Float>(active) : 0.5f;
+        Float j = m_jitter ? m_rng.template next_float<Float>(active) : .5f;
 
         return (p + j) * m_inv_sample_count;
     }
@@ -129,7 +129,7 @@ public:
         UInt32 x = p - y * m_resolution; // p % m_resolution
 
         // Add a random perturbation
-        Float jx = 0.5f, jy = 0.5f;
+        Float jx = .5f, jy = .5f;
         if (m_jitter) {
             jx = m_rng.template next_float<Float>(active);
             jy = m_rng.template next_float<Float>(active);
