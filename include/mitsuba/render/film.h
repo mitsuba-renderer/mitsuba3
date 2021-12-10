@@ -55,7 +55,7 @@ public:
     virtual size_t prepare(const std::vector<std::string> &aovs) = 0;
 
     /// Merge an image block into the film. This methods should be thread-safe.
-    virtual void put(const ImageBlock *block) = 0;
+    virtual void put_block(const ImageBlock *block) = 0;
 
     /// Return a image buffer object storing the developed image
     virtual TensorXf develop(bool raw = false) const = 0;
@@ -75,16 +75,26 @@ public:
                                 Float* aovs, Mask active) const;
 
     /**
-     * \brief Return a reference to a newly created storage similar to the
-     * underlying one used by the film
+     * \brief Return an \ref ImageBlock instance, whose internal representation
+     * is compatible with that of the film.
+     *
+     * Image blocks created using this method can later be merged into the
+     * film using \ref put_block().
+     *
+     * \param size
+     *   Desired size of the returned image block.
      *
      * \param normalize
-     *    Enable normalization in the film's storage
-     * \param borders
-     *    Enable quality borders in the film's storage independently of
-     *    film's configuration
+     *    Force normalization of filter weights in \ref ImageBlock::put()?
+     *    See the \ref ImageBlock constructor for details.
+     *
+     * \param border
+     *    Should \c ImageBlock add an additional border region around around
+     *    the image boundary? See the \ref ImageBlock constructor for details.
      */
-    virtual ref<ImageBlock> create_storage(bool normalize=false, bool borders=false) = 0;
+    virtual ref<ImageBlock> create_block(const ScalarVector2u &size = 0,
+                                         bool normalize             = false,
+                                         bool border                = false) = 0;
 
     // =============================================================
     //! @{ \name Accessor functions

@@ -55,7 +55,15 @@ Remark:
     The adjoint integrator does not support renderings with arbitrary
     output variables (AOVs).)doc";
 
-static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(//! @})doc";
+static const char *__doc_mitsuba_AdjointIntegrator_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc()doc";
 
@@ -88,7 +96,11 @@ Parameter ``sampler``:
     A source of (pseudo-/quasi-) random numbers
 
 Parameter ``block``:
-    An image block that will be updated during the sampling process)doc";
+    An image block that will be updated during the sampling process
+
+Parameter ``sample_scale``:
+    A scale factor that must be applied to each sample to account for
+    the film resolution and number of samples.)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform =
 R"doc(Encapsulates an animated 4x4 homogeneous coordinate transformation
@@ -332,6 +344,8 @@ static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -1989,6 +2003,8 @@ static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2065,6 +2081,8 @@ static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -2428,6 +2446,8 @@ static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
 static const char *__doc_mitsuba_FilmFlags_None = R"doc(No flags set (default value))doc";
@@ -2445,16 +2465,24 @@ static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object stor
 
 static const char *__doc_mitsuba_Film_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_create_storage =
-R"doc(Return a reference to a newly created storage similar to the
-underlying one used by the film
+static const char *__doc_mitsuba_Film_create_block =
+R"doc(Return an ImageBlock instance, whose internal representation is
+compatible with that of the film.
+
+Image blocks created using this method can later be merged into the
+film using put_block().
+
+Parameter ``size``:
+    Desired size of the returned image block.
 
 Parameter ``normalize``:
-    Enable normalization in the film's storage
+    Force normalization of filter weights in ImageBlock::put()? See
+    the ImageBlock constructor for details.
 
-Parameter ``borders``:
-    Enable quality borders in the film's storage independently of
-    film's configuration)doc";
+Parameter ``border``:
+    Should ``ImageBlock`` add an additional border region around
+    around the image boundary? See the ImageBlock constructor for
+    details.)doc";
 
 static const char *__doc_mitsuba_Film_crop_offset = R"doc(Return the offset of the crop window)doc";
 
@@ -2483,15 +2511,13 @@ static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_srf = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_overwrite_channel = R"doc(Overwrite the desired channel with the given value)doc";
-
 static const char *__doc_mitsuba_Film_prepare =
 R"doc(Configure the film for rendering a specified set of extra channels
 (AOVS). Returns the total number of channels that the film will store)doc";
 
 static const char *__doc_mitsuba_Film_prepare_sample = R"doc(Prepare spectrum samples to be in the format expected by the film)doc";
 
-static const char *__doc_mitsuba_Film_put =
+static const char *__doc_mitsuba_Film_put_block =
 R"doc(Merge an image block into the film. This methods should be thread-
 safe.)doc";
 
@@ -2781,14 +2807,29 @@ static const char *__doc_mitsuba_IOREntry_name = R"doc()doc";
 static const char *__doc_mitsuba_IOREntry_value = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock =
-R"doc(Storage for an image sub-block (a.k.a render bucket)
+R"doc(Intermediate storage for an image or image sub-region being rendered
 
-This class is used by image-based parallel processes and encapsulates
-computed rectangular regions of an image. This allows for easy and
-efficient distributed rendering of large images. Image blocks usually
-also include a border region storing contributions that are slightly
-outside of the block, which is required to support image
-reconstruction filters.)doc";
+This class facilitates parallel rendering of images in both scalar and
+JIT-based variants of Mitsuba.
+
+In scalar mode, image blocks represent independent rectangular image
+regions that are simultaneously processed by worker threads. They are
+finally merged into a master ImageBlock controlled by the Film
+instance via the put_block() method. The smaller image blocks can
+include a border region storing contributions that are slightly
+outside of the block, which is required to correctly account for image
+reconstruction filters.
+
+In JIT variants there is only a single ImageBlock, whose contents are
+computed in parallel. A border region is usually not needed in this
+case.
+
+In addition to receiving samples via the put() method, the image block
+can also be queried via the read() method, in which case the
+reconstruction filter is used to compute suitable interpolation
+weights. This is feature is useful for differentiable rendering, where
+we one needs to evaluate the reverse-mode derivative of the put()
+method.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 
@@ -2796,68 +2837,91 @@ static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
-R"doc(Construct a new image block of the requested properties
+R"doc(Construct a zero-initialized image block with the desired shape and
+channel count
 
 Parameter ``size``:
-    Specifies the block dimensions (not accounting for additional
-    border pixels required to support image reconstruction filters)
+    Specifies the desired horizontal and vertical block size. This
+    value excludes additional border pixels that ``ImageBlock`` will
+    internally add to support image reconstruction filters (if
+    ``border=true`` and a reconstruction filter is furthermore
+    specified)
 
 Parameter ``channel_count``:
-    Specifies the number of image channels.
+    Specifies the desired number of image channels.
 
-Parameter ``filter``:
-    Pointer to the film's reconstruction filter. If passed, it is used
-    to compute and store reconstruction weights. Note that it is
-    mandatory when any of the block's put operations are used, except
-    for ``put``(const ImageBlock*).
-
-Parameter ``warn_negative``:
-    Warn when writing samples with negative components?
-
-Parameter ``warn_invalid``:
-    Warn when writing samples with components that are equal to NaN
-    (not a number) or +/- infinity?
+Parameter ``rfilter``:
+    The desired reconstruction filter to be used in read() and put().
+    A box filter will be used if when ``rfilter==nullptr``.
 
 Parameter ``border``:
-    Allocate a border region around the image block to support
-    contributions to adjacent pixels when using wide (i.e. non-box)
-    reconstruction filters?
+    Should ``ImageBlock`` add an additional border region around
+    around the image boundary to capture contributions to neighboring
+    pixels caused by a nontrivial (non-box) reconstruction filter?
+    This is mainly useful when a larger image is partitioned into
+    smaller blocks that are rendered in parallel. Enabled by default
+    in scalar variants.
 
 Parameter ``normalize``:
-    Ensure that splats created via ``ImageBlock::put()`` add a unit
-    amount of energy? Stratified sampling techniques that sample rays
-    in image space should set this to ``False``, since the samples
-    will eventually be divided by the accumulated sample weight to
-    remove any non-uniformity.)doc";
+    This parameter affects the behavior of read() and put().
 
-static const char *__doc_mitsuba_ImageBlock_ImageBlock_2 =
-R"doc(Construct a new image block from an existing pixel buffer.
+If set to ``True``, each call to put() explicitly normalizes the
+computed filter weights so that the operation adds a unit amount of
+energy to the image. This is useful for methods like particle tracing
+that invoke put() with an arbitrary distribution of image positions.
+Other methods (e.g., path tracing) that uniformly sample positions in
+image space should set this parameter to ``False``, since the image
+block contents will eventually be divided by a dedicated channel
+tracking the accumulated sample weight to remove any non-uniformity.
 
-Parameter ``data``:
-    Pixel buffer that will be used to initialize the image block
-    (copied). Block dimensions and number of channels are specified in
-    the buffer.
+Furthermore, if ``normalize`` is set to ``True``, the read() operation
+will normalize the filter weights to compute a convex combination of
+pixel values.
 
-Parameter ``filter``:
-    Pointer to the film's reconstruction filter. If passed, it is used
-    to compute and store reconstruction weights. Note that it is
-    mandatory when any of the block's put operations are used, except
-    for ``put``(const ImageBlock*).
+Disabled by default.
+
+Parameter ``coalesce``:
+    This parameter is only relevant for JIT variants (CUDA, LLVM) and
+    subtly affects the behavior of the performance-critical put()
+    method.
+
+In coalesced mode, put() conservatively bounds the footprint and
+traverses it in lockstep across the whole wavefront. This causes
+unnecessary atomic memory operations targeting pixels with a zero
+filter weight. At the same time, this greatly reduces thread
+divergence and can lead to significant speedups when put() writes to
+pixels that in a regular (e.g., scanline) order.
+
+Non-coalesced mode is preferable when the input positions are random
+and will in any case be subject to thread divergence.
 
 Parameter ``warn_negative``:
-    Warn when writing samples with negative components?
+    If set to ``True``, put() will warn when writing samples with
+    negative components. This test is only enabled in scalar variants
+    by default, since checking/error reporting is relatively costly in
+    JIT-compiled modes.
 
 Parameter ``warn_invalid``:
-    Warn when writing samples with components that are equal to NaN
-    (not a number) or +/- infinity?
+    If set to ``True``, put() will warn when writing samples with NaN
+    (not a number) or positive/negative infinity component values.
+    This test is only enabled in scalar variants by default, since
+    checking/error reporting is relatively costly in JIT-compiled
+    modes.)doc";
 
-Parameter ``normalize``:
-    Ensure that splats created via ``ImageBlock::put()`` add a unit
-    amount of energy? Stratified sampling techniques that sample rays
-    in image space should set this to ``False``, since the samples
-    will eventually be divided by the accumulated sample weight to
-    remove any non-uniformity.)doc";
+static const char *__doc_mitsuba_ImageBlock_ImageBlock_2 =
+R"doc(Construct an image block from an existing image tensor
+
+In contrast to the above constructor, this one infers the block size
+and channel count from a provided 3D image tensor of shape ``(height,
+width, channels)``. It then initializes the image block contents with
+a copy of the tensor. This is useful for differentiable rendering
+phases that want to query an existing image using a pixel filter via
+the read() function.
+
+See the other constructor for an explanation of the parameters.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_border_size = R"doc(Return the border region used by the reconstruction filter)doc";
 
@@ -2865,11 +2929,9 @@ static const char *__doc_mitsuba_ImageBlock_channel_count = R"doc(Return the num
 
 static const char *__doc_mitsuba_ImageBlock_class = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear everything to zero.)doc";
+static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear the image block contents to zero.)doc";
 
-static const char *__doc_mitsuba_ImageBlock_data = R"doc(Return the underlying pixel buffer)doc";
-
-static const char *__doc_mitsuba_ImageBlock_data_2 = R"doc(Return the underlying pixel buffer (const version))doc";
+static const char *__doc_mitsuba_ImageBlock_coalesce = R"doc(Try to coalesce reads/writes in JIT modes?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_height = R"doc(Return the bitmap's height in pixels)doc";
 
@@ -2877,86 +2939,81 @@ static const char *__doc_mitsuba_ImageBlock_m_border_size = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_channel_count = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_m_data = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_m_filter = R"doc()doc";
+static const char *__doc_mitsuba_ImageBlock_m_coalesce = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_normalize = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_offset = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_m_rfilter = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_m_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_m_tensor = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_warn_invalid = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_warn_negative = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_m_weights_x = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_m_weights_y = R"doc()doc";
+static const char *__doc_mitsuba_ImageBlock_normalize = R"doc(Re-normalize filter weights in put() and read())doc";
 
 static const char *__doc_mitsuba_ImageBlock_offset = R"doc(Return the current block offset)doc";
 
-static const char *__doc_mitsuba_ImageBlock_overwrite_channel = R"doc(Overwrite entire channel with the given value.)doc";
+static const char *__doc_mitsuba_ImageBlock_put =
+R"doc(Accumulate a single sample or a wavefront of samples into the image
+block.
 
-static const char *__doc_mitsuba_ImageBlock_put = R"doc(Accumulate another image block into this one)doc";
-
-static const char *__doc_mitsuba_ImageBlock_put_2 =
-R"doc(Store a single sample / packets of samples inside the image block.
-
-\note This method is only valid if a reconstruction filter was given
-at the construction of the block.
+Remark:
+    This variant of the put() function assumes that the ImageBlock has
+    a standard layout, namely: ``RGB``, ``alpha``, and a ``weight``
+    channel. Use the other variant if the channel configuration
+    deviations from this default.
 
 Parameter ``pos``:
-    Denotes the sample position in fractional pixel coordinates. It is
-    not checked, and so must be valid. The block's offset is
-    subtracted from the given position to obtain the
+    Denotes the sample position in fractional pixel coordinates
 
 Parameter ``wavelengths``:
     Sample wavelengths in nanometers
 
 Parameter ``value``:
-    Sample value assocated with the specified wavelengths
+    Sample value associated with the specified wavelengths
 
 Parameter ``alpha``:
-    Alpha value assocated with the sample
+    Alpha value assocated with the sample)doc";
 
-Returns:
-    ``False`` if one of the sample values was *invalid*, e.g. NaN or
-    negative. A warning is also printed if ``m_warn_negative`` or
-    ``m_warn_invalid`` is enabled.)doc";
-
-static const char *__doc_mitsuba_ImageBlock_put_3 =
-R"doc(Store a single sample inside the block.
-
-\note This method is only valid if a reconstruction filter was
-provided when the block was constructed.
+static const char *__doc_mitsuba_ImageBlock_put_2 =
+R"doc(Accumulate a single sample or a wavefront of samples into the image
+block.
 
 Parameter ``pos``:
-    Denotes the sample position in fractional pixel coordinates. It is
-    not checked, and so must be valid. The block's offset is
-    subtracted from the given position to obtain the
+    Denotes the sample position in fractional pixel coordinates
 
-Parameter ``value``:
-    Pointer to an array containing each channel of the sample values.
-    The array must match the length given by channel_count()
+Parameter ``values``:
+    Points to an array of length channel_count(), which specifies the
+    sample value for each channel.)doc";
 
-Returns:
-    ``False`` if one of the sample values was *invalid*, e.g. NaN or
-    negative. A warning is also printed if ``m_warn_negative`` or
-    ``m_warn_invalid`` is enabled.)doc";
+static const char *__doc_mitsuba_ImageBlock_put_block = R"doc(Accumulate another image block into this one)doc";
 
 static const char *__doc_mitsuba_ImageBlock_read =
-R"doc(Read a single sample inside the block using the pixel filter.
+R"doc(Fetch a single sample or a wavefront of samples from the image block.
+
+This function is the opposite of put(): instead of performing a
+weighted accumulation of sample values based on the reconstruction
+filter, it performs a weighted interpolation using gather operations.
 
 Parameter ``pos``:
-    Denotes the sample position in fractional pixel coordinates. It is
-    not checked, and so must be valid. The block's offset is
-    subtracted from the given position to obtain the
+    Denotes the sample position in fractional pixel coordinates
 
-Parameter ``output``:
-    Pointer to an array containing each channel of the output values.
-    The array must match the length given by channel_count())doc";
+Parameter ``values``:
+    Points to an array of length channel_count(), which will receive
+    the result of the read operation for each channel. In Python, the
+    function returns these values as a list.)doc";
+
+static const char *__doc_mitsuba_ImageBlock_rfilter = R"doc(Return the image reconstruction filter underlying the ImageBlock)doc";
+
+static const char *__doc_mitsuba_ImageBlock_set_coalesce = R"doc(Try to coalesce reads/writes in JIT modes?)doc";
+
+static const char *__doc_mitsuba_ImageBlock_set_normalize = R"doc(Re-normalize filter weights in put() and read())doc";
 
 static const char *__doc_mitsuba_ImageBlock_set_offset =
 R"doc(Set the current block offset.
@@ -2972,6 +3029,10 @@ static const char *__doc_mitsuba_ImageBlock_set_warn_invalid = R"doc(Warn when w
 static const char *__doc_mitsuba_ImageBlock_set_warn_negative = R"doc(Warn when writing negative sample values?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_size = R"doc(Return the current block size)doc";
+
+static const char *__doc_mitsuba_ImageBlock_tensor = R"doc(Return the underlying image tensor)doc";
+
+static const char *__doc_mitsuba_ImageBlock_tensor_2 = R"doc(Return the underlying image tensor (const version))doc";
 
 static const char *__doc_mitsuba_ImageBlock_to_string = R"doc(//! @})doc";
 
@@ -3003,6 +3064,8 @@ static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -3486,6 +3549,8 @@ static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
@@ -3764,6 +3829,8 @@ static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -4157,6 +4224,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -4317,6 +4386,8 @@ static const char *__doc_mitsuba_PCG32Sampler_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -4338,6 +4409,8 @@ static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -4800,6 +4873,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_2 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -5267,6 +5342,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -5385,46 +5462,59 @@ static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-read
 static const char *__doc_mitsuba_Sampler =
 R"doc(Base class of all sample generators.
 
-For each sample in a pixel, a sample generator produces a
-(hypothetical) point in the infinite dimensional random number cube. A
-rendering algorithm can then request subsequent 1D or 2D components of
-this point using the ``next_1d`` and ``next_2d`` functions.
+A *sampler* provides a convenient abstraction around methods that
+generate uniform pseudo- or quasi-random points within a conceptual
+infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves
+two main operations: by quering successive component values of such an
+infinite-dimensional point (next_1d(), next_2d()), or by discarding
+the current point and generating another one (advance()).
 
-Scalar and wavefront rendering algorithms will need interact with the
-sampler interface in a slightly different way:
+Scalar and vectorized rendering algorithms interact with the sampler
+interface in a slightly different way:
 
 Scalar rendering algorithm:
 
-1. Before beginning to render a pixel block, the rendering algorithm
-calls ``seed`` to initialize a new sequence with the specific seed
-offset. 2. The first pixel sample can now be computed, after which
-``advance`` needs to be invoked. This repeats until all pixel samples
-have been generated. Note that some implementations need to be
-configured for a certain number of pixel samples, and exceeding these
-will lead to an exception being thrown. 3. While computing a pixel
-sample, the rendering algorithm usually requests batches of (pseudo-)
-random numbers using the ``next_1d`` and ``next_2d`` functions before
-moving on to the next sample.
+1. The rendering algorithm first invokes seed() to initialize the
+sampler state.
 
-Wavefront rendering algorithm:
+2. The first pixel sample can now be computed, after which advance()
+needs to be invoked. This repeats until all pixel samples have been
+generated. Note that some implementations need to be configured for a
+certain number of pixel samples, and exceeding these will lead to an
+exception being thrown.
 
-1. Before beginning to render the wavefront, the rendering algorithm
-needs to inform the sampler of the amount of samples rendered in
-parallel for every pixel in the wavefront. This can be achieved by
-calling ``set_samples_per_wavefront`` . 2. Then the rendering
-algorithm should seed the sampler and set the appropriate wavefront
-size by calling ``seed``. A different seed value, based on the
-``base_seed`` and the seed offset, will be used for every sample (of
-every pixel) in the wavefront. 3. ``advance`` can be used to advance
-to the next sample in the sequence. 4. As in the scalar approach, the
-rendering algorithm can request batches of (pseudo-) random numbers
-using the ``next_1d`` and ``next_2d`` functions.)doc";
+3. While computing a pixel sample, the rendering algorithm usually
+requests 1D or 2D component blocks using the next_1d() and next_2d()
+functions before moving on to the next sample.
+
+A vectorized rendering algorithm effectively queries multiple sample
+generators that advance in parallel. This involves the following
+steps:
+
+1. The rendering algorithm invokes set_samples_per_wavefront() if each
+rendering step is split into multiple passes (in which case fewer
+samples should be returned per sample_1d() or sample_2d() call).
+
+2. The rendering algorithm then invokes seed() to initialize the
+sampler state, and to inform the sampler of the wavefront size, i.e.,
+how many sampler evaluations should be performed in parallel,
+accounting for all passes. The initialization ensures that the set of
+parallel samplers is mutually statistically independent (in a
+pseudo/quasi-random sense).
+
+3. advance() can be used to advance to the next point.
+
+4. As in the scalar approach, the rendering algorithm can request
+batches of (pseudo-) random numbers using the next_1d() and next_2d()
+functions.)doc";
 
 static const char *__doc_mitsuba_Sampler_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
@@ -5519,6 +5609,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -5587,6 +5679,8 @@ static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -5721,7 +5815,25 @@ static const char *__doc_mitsuba_Scene_ray_test_cpu = R"doc(Trace a shadow ray)d
 
 static const char *__doc_mitsuba_Scene_ray_test_gpu = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_render = R"doc(Render the scene with the sensor specified by its index)doc";
+static const char *__doc_mitsuba_Scene_render =
+R"doc(Convenience function to render the scene and return a bitmap
+
+This function renders the scene from the viewpoint of the sensor with
+index ``sensor_index``. All other parameters are optional and control
+different aspects of the rendering process. In particular:
+
+Parameter ``seed``:
+    This parameter controls the initialization of the random number
+    generator. It is crucial that you specify different seeds (e.g.,
+    an increasing sequence) if subsequent ``render``() calls should
+    produce statistically independent images.
+
+Parameter ``spp``:
+    Set this parameter to a nonzero value to override the number of
+    samples per pixel. This value then takes precedence over whatever
+    was specified in the construction of ``sensor->sampler()``. This
+    parameter may be useful in research applications where an image
+    must be rendered multiple times using different quality levels.)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter =
 R"doc(Sample one emitter in the scene and rescale the random sample for
@@ -5860,6 +5972,8 @@ static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -5978,6 +6092,8 @@ static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -5985,6 +6101,8 @@ static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -6027,6 +6145,8 @@ static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -7614,6 +7734,8 @@ static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
@@ -8126,6 +8248,8 @@ static const char *__doc_mitsuba_Volume_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -8133,6 +8257,8 @@ static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -9384,15 +9510,16 @@ function for a single wavelength (Float), a set of wavelengths
 the PDF is returned per wavelength.)doc";
 
 static const char *__doc_mitsuba_permute =
-R"doc(Generate pseudorandom permutation vector using a shuffling network and
-the sample_tea function. This algorithm has a O(log2(sample_count))
-complexity but only supports permutation vectors whose lengths are a
-power of 2.
+R"doc(Generate pseudorandom permutation vector using a shuffling network
+
+This algorithm repeatedly invokes sample_tea_32() internally and has
+O(log2(sample_count)) complexity. It only supports permutation
+vectors, whose lengths are a power of 2.
 
 Parameter ``index``:
-    Input index to be mapped
+    Input index to be permuted
 
-Parameter ``sample_count``:
+Parameter ``size``:
     Length of the permutation vector
 
 Parameter ``seed``:
@@ -9638,7 +9765,7 @@ Parameter ``rounds``:
     generation is 4.
 
 Returns:
-    A uniformly distributed 32-bit integer)doc";
+    Two uniformly distributed 32-bit integers)doc";
 
 static const char *__doc_mitsuba_sample_tea_64 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny

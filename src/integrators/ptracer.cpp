@@ -336,7 +336,7 @@ public:
             surface_weight[not_on_surface && invalid_side] = 0.f;
         }
 
-        result = weight * surface_weight;
+        result = weight * surface_weight * sample_scale;
 
         /* Splatting, adjusting UVs for sensor's crop window if needed.
            The crop window is already accounted for in the UV positions
@@ -345,21 +345,10 @@ public:
         Float alpha = ek::select(ek::neq(bsdf, nullptr), 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
 
-        // Splat RGB value onto the image buffer
-        UnpolarizedSpectrum result_u = unpolarized_spectrum(result);
-
-        Color3f rgb;
-        if constexpr (is_spectral_v<Spectrum>)
-            rgb = spectrum_to_srgb(result_u, si.wavelengths, active);
-        else if constexpr (is_monochromatic_v<Spectrum>)
-            rgb = result_u.x();
-        else
-            rgb = result_u;
-
-        rgb *= sample_scale;
-
-        Float values[5] = { rgb.x(), rgb.y(), rgb.z(), alpha, 0.f };
-        block->put(adjusted_position, values, active);
+        /* Splat RGB value onto the image buffer. The particle tracer
+           does not use the weight channel at all */
+        block->put(adjusted_position, si.wavelengths, result, alpha,
+                   /* weight = */ 0.f, active);
 
         return result;
     }

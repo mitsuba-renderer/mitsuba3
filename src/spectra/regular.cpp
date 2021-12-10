@@ -57,8 +57,9 @@ public:
             } else {
                 std::vector<ScalarFloat> values(size);
                 for (size_t i=0; i < size; ++i)
-                    values[i] = ptr[i];
-                m_distr = ContinuousDistribution<Wavelength>(wavelength_range, values.data(), size);
+                    values[i] = (ScalarFloat) ptr[i];
+                m_distr = ContinuousDistribution<Wavelength>(
+                    wavelength_range, values.data(), size);
             }
         }
     }

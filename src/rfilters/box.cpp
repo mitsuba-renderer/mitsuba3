@@ -24,16 +24,13 @@ public:
     MTS_IMPORT_TYPES()
 
     BoxFilter(const Properties &props) : Base(props) {
-        /* Filter radius in pixels. A tiny epsilon is added, since some
-           samplers (Hammersley and Halton in particular) place samples
-           at positions like (0, 0). Without such an epsilon and rounding
-           errors, samples may end up not contributing to any pixel. */
-        m_radius = props.get<ScalarFloat>("radius", 0.5f) + math::RayEpsilon<Float>;
+        m_radius = props.get<ScalarFloat>("radius", .5f);
         init_discretization();
     }
 
-    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        return ek::select(ek::abs(x) <= m_radius, Float(1.f), Float(0.f));
+    Float eval(Float x, Mask /* active */) const override {
+        return ek::select(x >= -m_radius && x < m_radius, Float(1.f),
+                          Float(0.f));
     }
 
     std::string to_string() const override {

@@ -1,4 +1,5 @@
 #include <mitsuba/core/rfilter.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -25,7 +26,7 @@ public:
     MTS_IMPORT_TYPES()
 
     TentFilter(const Properties &props) : Base(props) {
-        m_radius = 1.f;
+        m_radius = props.get<ScalarFloat>("radius", 1.f);
         m_inv_radius = 1.f / m_radius;
         init_discretization();
     }

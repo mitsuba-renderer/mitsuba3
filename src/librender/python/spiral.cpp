@@ -2,9 +2,9 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Spiral) {
-    using Vector2i = typename Spiral::Vector2i;
+    using Vector2u = typename Spiral::Vector2u;
     MTS_PY_CLASS(Spiral, Object)
-        .def(py::init<Vector2i, Vector2i, size_t, size_t>(),
+        .def(py::init<Vector2u, Vector2u, uint32_t, uint32_t>(),
             "size"_a, "offset"_a, "block_size"_a = MTS_BLOCK_SIZE, "passes"_a = 1,
             D(Spiral, Spiral))
         .def_method(Spiral, max_block_size)

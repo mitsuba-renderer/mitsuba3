@@ -37,6 +37,8 @@ ScopedSignalHandler::ScopedSignalHandler(IntegratorT *integrator) {
             raise(SIGINT);
         }
     });
+#else
+    (void) integrator;
 #endif
 }
 

@@ -1,3 +1,5 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import enoki as ek
 import mitsuba
 from .common import prepare_sampler, sample_sensor_rays, mis_weight
@@ -36,12 +38,12 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                            ray, params=params, grad=weight)[0]
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=False)
+                           rfilter=rfilter, border=False)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img, 1.0)
         film.prepare([])
-        film.put(block)
+        film.put_block(block)
         return film.develop()
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,

@@ -104,7 +104,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
             block.put([y+0.5, x+0.5], contents[x, y, :])
 
     film.prepare([])
-    film.put(block)
+    film.put_block(block)
 
     filename = str(tmpdir.join('test_image.' + file_format))
     film.write(filename)
@@ -181,7 +181,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
                 block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
 
     film.prepare(aovs_channels)
-    film.put(block)
+    film.put_block(block)
 
     image = film.develop()
 

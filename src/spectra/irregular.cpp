@@ -64,10 +64,11 @@ public:
             } else {
                 std::vector<ScalarFloat> values(size), wavelengths(size);
                 for (size_t i=0; i < size; ++i) {
-                    values[i] = ptr[i];
-                    wavelengths[i] = whl[i];
+                    values[i] = (ScalarFloat) ptr[i];
+                    wavelengths[i] = (ScalarFloat) whl[i];
                 }
-                m_distr = IrregularContinuousDistribution<Wavelength>(wavelengths.data(), values.data(), size);
+                m_distr = IrregularContinuousDistribution<Wavelength>(
+                    wavelengths.data(), values.data(), size);
             }
         }
     }

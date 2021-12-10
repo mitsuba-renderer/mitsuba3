@@ -31,28 +31,58 @@ public:
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation
-        m_stddev = props.get<ScalarFloat>("stddev", 0.5f);
+        ScalarFloat stddev = props.get<ScalarFloat>("stddev", .5f);
 
         // Cut off after 4 standard deviations
-        m_radius = 4 * m_stddev;
+        m_radius = 4 * stddev;
 
-        m_alpha = -1.f / (2.f * m_stddev * m_stddev);
-        m_bias = ek::exp(m_alpha * ek::sqr(m_radius));
+        /*
+          Remez fit to exp(-x/2), obtained using:
+
+          f[x_] = MiniMaxApproximation[Exp[-x/2], {x, {0, 16}, 9, 0},
+              WorkingPrecision -> 50, Brake -> {400, 400},
+              MaxIterations -> 100, Bias -> 0][[2, 1]];
+
+          N[CoefficientList[h[x] - h[16], x], 10]
+        */
+
+        double coeff[10] = { 9.992604880e-1, -4.977025247e-1,
+                             1.222248550e-1, -1.932406282e-2,
+                             2.136713061e-3, -1.679873860e-4,
+                             9.202145248e-6, -3.329417433e-7,
+                             7.128382794e-9, -6.821193280e-11 };
+
+        ScalarFloat coeff_s[10];
+
+        // Scale Remez approximation
+        double scale = 1;
+        for (int i = 0; i < 10; ++i) {
+            coeff_s[i] = ScalarFloat(coeff[i] * scale);
+            scale /= ek::sqr((double) stddev);
+        }
+
+        // Ensure that we really reach zero at the boundary
+        coeff_s[0] -= ek::detail::estrin_impl(ek::sqr(m_radius), coeff_s);
+
+        for (int i = 0; i < 10; ++i)
+            m_coeff[i] = coeff_s[i];
 
         init_discretization();
     }
 
-    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        return ek::max(0.f, ek::exp(m_alpha * ek::sqr(x)) - m_bias);
-    }
+    Float eval(Float x, Mask /* active */) const override {
+        return ek::max(ek::detail::estrin_impl(ek::sqr(x), m_coeff), 0.f);
+      }
 
     std::string to_string() const override {
-        return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
+        return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]",
+                           m_radius * .25f, m_radius);
     }
 
     MTS_DECLARE_CLASS()
+
 protected:
-    ScalarFloat m_stddev, m_alpha, m_bias;
+    Float m_coeff[10];
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)

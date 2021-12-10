@@ -205,13 +205,15 @@ public:
         return m_channels.size();
     }
 
-    ref<ImageBlock> create_storage(bool normalize, bool borders) override {
-        return new ImageBlock(m_crop_size, m_channels.size(),
-                              m_filter.get(),
+    ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
+                                 bool border) override {
+        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_size : size,
+                              m_channels.size(), m_filter.get(),
+                              border || m_high_quality_edges /* border */,
+                              normalize /* normalize */,
+                              !std::is_scalar_v<Float> /* coalesce */,
                               false /* warn_negative */,
-                              false /* warn_invalid */,
-                              borders || m_high_quality_edges /* border */,
-                              normalize /* normalize */);
+                              false /* warn_invalid */);
     }
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
@@ -229,16 +231,18 @@ public:
         for (size_t j = 0; j < m_srfs.size(); ++j) {
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
             aovs[j] = ek::zero<Float>();
+
             for (size_t i = 0; i<Spectrum::Size; ++i)
                 aovs[j] = ek::fmadd(weights[i], values[i], aovs[j]);
+
             aovs[j] *= 1.f / Spectrum::Size;
         }
     }
 
-    void put(const ImageBlock *block) override {
+    void put_block(const ImageBlock *block) override {
         Assert(m_storage != nullptr);
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_storage->put(block);
+        m_storage->put_block(block);
     }
 
     TensorXf develop(bool raw = false) const override {
@@ -247,7 +251,7 @@ public:
 
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
-            return m_storage->data();
+            return m_storage->tensor();
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
@@ -258,7 +262,7 @@ public:
 
             /* locked */ {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                data         = m_storage->data();
+                data         = m_storage->tensor().array();
                 size         = m_storage->size();
                 source_ch    = (uint32_t) m_storage->channel_count();
                 pixel_count  = ek::hprod(m_storage->size());
@@ -309,7 +313,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = ek::migrate(m_storage->data().array(), AllocType::Host);
+        auto &&storage = ek::migrate(m_storage->tensor().array(), AllocType::Host);
 
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
@@ -374,7 +378,7 @@ public:
     }
 
     void schedule_storage() override {
-        ek::schedule(m_storage->data());
+        ek::schedule(m_storage->tensor());
     };
 
     std::string to_string() const override {

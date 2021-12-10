@@ -111,7 +111,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     TensorXf result;
     if constexpr (!ek::is_jit_array_v<Float>) {
         // Render on the CPU using a spiral pattern
-        uint32_t n_threads = Thread::thread_count();
+        uint32_t n_threads = (uint32_t) Thread::thread_count();
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
@@ -156,8 +156,12 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 ScopedSetThreadEnvironment set_env(env);
                 // Fork a non-overlapping sampler for the current worker
                 ref<Sampler> sampler = sensor->sampler()->fork();
-                ref<ImageBlock> block = film->create_storage(false /* normalization */,
-                                                             true /* border */);
+
+                ref<ImageBlock> block = film->create_block(
+                    ScalarVector2u(block_size) /* size */,
+                    false /* normalize */,
+                    true /* border */);
+
                 std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
                 // Render up to 'grain_size' image blocks
@@ -175,7 +179,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                     render_block(scene, sensor, sampler, block, aovs.get(),
                                  spp_per_pass, seed, block_id, block_size);
 
-                    film->put(block);
+                    film->put_block(block);
 
                     /* Critical section: update progress bar */ {
                         std::lock_guard<std::mutex> lock(mutex);
@@ -206,7 +210,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t wavefront_size = ek::hprod(film_size) * (size_t) spp_per_pass;
         sampler->seed(seed, wavefront_size);
 
-        ref<ImageBlock> block = film->create_storage();
+        ref<ImageBlock> block = film->create_block();
+
         block->clear();
         block->set_offset(film->crop_offset());
 
@@ -238,10 +243,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
                 sampler->schedule_state();
-                ek::eval(block->data());
+                ek::eval(block->tensor());
             }
         }
-        film->put(block);
+        film->put_block(block);
 
         if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
             jit_flag(JitFlag::LoopRecord)) {
@@ -286,7 +291,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                                                                    ImageBlock *block,
                                                                    Float *aovs,
                                                                    uint32_t sample_count,
-                                                                   uint64_t seed,
+                                                                   uint32_t seed,
                                                                    uint32_t block_id,
                                                                    uint32_t block_size) const {
 
@@ -495,7 +500,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     if constexpr (!ek::is_jit_array_v<Float>) {
         size_t n_threads = Thread::thread_count();
 
-        Log(Info, "Starting render job (%ux%u, %u sample%s,%s %i thread%s)",
+        Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(" %d passes,", n_passes) : "", n_threads,
             n_threads == 1 ? "" : "s");
@@ -512,7 +517,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         size_t total_samples = samples_per_pass * n_passes;
 
-        seed *= (uint32_t) total_samples;
+        seed *= (uint32_t) total_samples / (uint32_t) grain_size;
         std::atomic<size_t> samples_done(0);
 
         // Start the render timer (used for timeouts & log messages)
@@ -524,12 +529,19 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             [&](const ek::blocked_range<size_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
 
+                // Fork a non-overlapping sampler for the current worker
                 ref<Sampler> sampler = sensor->sampler()->clone();
-                ref<ImageBlock> block = film->create_storage();
+
+                ref<ImageBlock> block = film->create_block(
+                    ScalarVector2u(0) /* use crop size */,
+                    true /* normalize */,
+                    false /* border */);
+
                 block->set_offset(film->crop_offset());
                 block->clear();
 
-                sampler->seed(seed + (uint64_t) range.begin());
+                sampler->seed(seed +
+                              (uint32_t) range.begin() / (uint32_t) grain_size);
 
                 size_t ctr = 0;
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
@@ -550,7 +562,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                 /* locked */ {
                     std::lock_guard<std::mutex> lock(mutex);
                     progress->update(samples_done / (ScalarFloat) total_samples);
-                    film->put(block);
+                    film->put_block(block);
                 }
             }
         );
@@ -573,12 +585,13 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         sampler->set_samples_per_wavefront(spp_per_pass);
         sampler->seed(seed, samples_per_pass);
 
-        /* Note: we disable warnings because they trigger a horizontal
-           reduction which is can be expensive, or even impossible in
-           symbolic modes. */
+        ref<ImageBlock> block = film->create_block(
+            ScalarVector2u(0) /* use crop size */,
+            true /* normalize */,
+            false /* border */);
 
-        ref<ImageBlock> block = film->create_storage();
         block->set_offset(film->crop_offset());
+        block->set_coalesce(false);
         block->clear();
 
         Timer timer;
@@ -588,11 +601,11 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
                 sampler->schedule_state();
-                ek::eval(block->data());
+                ek::eval(block->tensor());
             }
         }
 
-        film->put(block);
+        film->put_block(block);
 
         if (develop) {
             result = film->develop();

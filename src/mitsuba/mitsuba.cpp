@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     auto arg_no_optim  = parser.add(StringVec{ "-j0" });
     auto arg_source    = parser.add(StringVec{ "-js" });
 
-    bool profile = true, print_profile = false;
+    bool profile = false, print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
 

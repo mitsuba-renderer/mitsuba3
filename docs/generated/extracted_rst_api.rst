@@ -10988,7 +10988,7 @@
         Returns → :py:obj:`mitsuba.core.Bitmap`:
             *no description available*
 
-    .. py:method:: mitsuba.render.Film.create_storage(self, normalize=False)
+    .. py:method:: mitsuba.render.Film.create_block(self, normalize=False)
 
         Return a reference to a newly created storage similar to the
         underlying one used by the film

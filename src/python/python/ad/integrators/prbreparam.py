@@ -1,3 +1,5 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import time
 import enoki as ek
 import mitsuba
@@ -67,7 +69,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
@@ -150,10 +152,10 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
-        block.put(ds.uv, ray.wavelengths, Li * w_reparam)
+        block.put_block(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
         film.put(block)
         Li_attached = film.develop()

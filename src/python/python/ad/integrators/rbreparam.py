@@ -1,3 +1,5 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import enoki as ek
 import mitsuba
 from .common import prepare_sampler, sample_sensor_rays, mis_weight
@@ -63,12 +65,12 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
-        film.put(block)
+        film.put_block(block)
         Li_attached = film.develop()
 
         ek.enqueue(ek.ADMode.Forward, params)
@@ -79,7 +81,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         block.clear()
         block.put(pos, ray.wavelengths, grad_img + div_grad)
         film.prepare([])
-        film.put(block)
+        film.put_block(block)
 
         return ek.grad(Li_attached) + film.develop()
 
@@ -137,12 +139,12 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
-        film.put(block)
+        film.put_block(block)
         Li_attached = film.develop()
 
         ek.set_grad(Li_attached, image_adj)

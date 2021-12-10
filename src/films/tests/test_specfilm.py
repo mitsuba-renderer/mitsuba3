@@ -130,7 +130,7 @@ def test05_multiple_channels(variants_all_spectral):
         }
         film = mitsuba.core.load_dict(dic)
         chnl = film.prepare([])
-        block = film.create_storage(False)
+        block = film.create_block(False)
         assert(block.channel_count() == chnl)
         assert(block.channel_count() == i+1)
 
@@ -149,7 +149,7 @@ def test06_aovs(variants_all_spectral):
         for j in range(1,5):
             film = mitsuba.core.load_dict(dic)
             chnl = film.prepare(['AOV{}'.format(x) for x in range(1, j+1)])
-            block = film.create_storage(False)
+            block = film.create_block(False)
             assert(block.channel_count() == chnl)
             assert(block.channel_count() == (i+1+j))
 

@@ -229,7 +229,7 @@ protected:
                               ImageBlock *block,
                               Float *aovs,
                               uint32_t sample_count,
-                              uint64_t seed_offset,
+                              uint32_t seed,
                               uint32_t block_id,
                               uint32_t block_size) const;
 
