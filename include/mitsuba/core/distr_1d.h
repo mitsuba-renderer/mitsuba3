@@ -467,6 +467,10 @@ public:
         return m_interval_size_scalar;
     }
 
+    ScalarFloat max() const {
+        return m_max;
+    }
+
 private:
     void compute_cdf(const ScalarFloat *pdf, size_t size) {
         if (size < 2)
@@ -477,6 +481,7 @@ private:
 
         std::vector<ScalarFloat> cdf(size - 1);
         m_valid = (uint32_t) -1;
+        m_max = -dr::Infinity<ScalarFloat>;
 
         double range = double(m_range.y()) - double(m_range.x()),
                interval_size = range / (size - 1),
@@ -487,6 +492,9 @@ private:
                    y1 = (double) pdf[1];
 
             double value = 0.5 * interval_size * (y0 + y1);
+
+            m_max = dr::max(m_max, y0);
+            m_max = dr::max(m_max, y1);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;
@@ -523,6 +531,7 @@ private:
     Float m_inv_interval_size = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
+    ScalarFloat m_max = 0.f;
 };
 
 /**
@@ -777,6 +786,10 @@ public:
         return m_interval_size;
     }
 
+    ScalarFloat max() const {
+        return m_max;
+    }
+
 private:
     void compute_cdf(const ScalarFloat *nodes, const ScalarFloat *pdf, size_t size) {
         if (size < 2)
@@ -788,6 +801,7 @@ private:
              dr::Infinity<ScalarFloat>,
             -dr::Infinity<ScalarFloat>
         );
+        m_max = -dr::Infinity<ScalarFloat>;
 
         double integral = 0.;
         std::vector<ScalarFloat> cdf(size - 1);
@@ -799,6 +813,9 @@ private:
                    y1 = (double) pdf[1];
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
+
+            m_max = dr::max(m_max, y0);
+            m_max = dr::max(m_max, y1);
 
             m_range.x() = dr::min(m_range.x(), (ScalarFloat) x0);
             m_range.y() = dr::max(m_range.y(), (ScalarFloat) x1);
@@ -838,6 +855,7 @@ private:
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
     ScalarFloat m_interval_size = 0.f;
+    ScalarFloat m_max = 0.f;
 };
 
 template <typename Value>

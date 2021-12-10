@@ -9,6 +9,9 @@
 
 MI_PY_EXPORT(Film) {
     MI_PY_IMPORT_TYPES(Film)
+
+    m.def("has_flag", [](UInt32 flags, FilmFlags f) {return has_flag(flags, f);});
+
     MI_PY_CLASS(Film, Object)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
@@ -21,8 +24,17 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, crop_offset)
         .def_method(Film, set_crop_window)
         .def_method(Film, rfilter)
-        .def_method(Film, prepare_sample, "spec"_a, "wavelengths"_a, "aovs"_a,
-                    "active"_a)
+        .def("prepare_sample",
+        [] (const Film *film, const UnpolarizedSpectrum &spec,
+            const Wavelength &wavelengths, size_t nChannels,
+            Float weight, Float alpha, Mask active) {
+            std::vector<Float> aovs(nChannels);
+            film->prepare_sample(spec, wavelengths, aovs.data(), weight, alpha, active);
+            return aovs;
+        },
+        "spec"_a, "wavelengths"_a, "nChannels"_a,
+        "weight"_a = 1.f, "alpha"_a = 1.f, "active"_a = true,
+        D(Film, prepare_sample))
         .def_method(Film, create_block, "size"_a = ScalarVector2u(0, 0),
                     "normalize"_a = false, "borders"_a = false)
         .def_method(Film, schedule_storage)

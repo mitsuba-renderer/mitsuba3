@@ -86,6 +86,7 @@ MI_PY_EXPORT(Texture) {
         .def(py::init<const Properties &>(), "props"_a)
         .def_static("D65", &Texture::D65, "scale"_a = 1.f)
         .def_method(Texture, mean, D(Texture, mean))
+        .def_method(Texture, max, D(Texture, max))
         .def_method(Texture, is_spatially_varying)
         .def_method(Texture, eval, "si"_a, "active"_a = true)
         .def_method(Texture, eval_1, "si"_a, "active"_a = true)
