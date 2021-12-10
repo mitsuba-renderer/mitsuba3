@@ -72,10 +72,22 @@ public:
     /// dr::schedule() variables that represent the internal film storage
     virtual void schedule_storage() = 0;
 
-    /// Prepare spectrum samples to be in the format expected by the film
+    /**
+      * \brief Prepare spectrum samples to be in the format expected by the film
+      *
+      * \param spec
+      *    Sample value associated with the specified wavelengths
+      *
+      * \param wavelengths
+      *    Sample wavelengths in nanometers
+      *
+      * \param aovs
+      *    Points to an array of length equal to the number of spectral sensitivities
+      *    of the film, which specifies the sample value for each channel.
+      */
     virtual void prepare_sample(const UnpolarizedSpectrum &spec,
                                 const Wavelength &wavelengths,
-                                Float* aovs, Mask active) const;
+                                Float* aovs, Float weight = 1.f, Float alpha = 1.f, Mask active = true) const;
 
     /**
      * \brief Return an \ref ImageBlock instance, whose internal representation

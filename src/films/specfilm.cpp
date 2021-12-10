@@ -130,7 +130,7 @@ public:
 
         // Load all SRF and store both name and data
         for (auto &[name, obj] : props.objects(false)) {
-            auto srf = dynamic_cast<Texture *>(obj.get());
+            Texture *srf = dynamic_cast<Texture *>(obj.get());
             if (srf != nullptr) {
                 m_srfs.push_back(srf);
                 m_names.push_back(name);
@@ -242,8 +242,8 @@ public:
     }
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
-                        Float* aovs, Mask /* active */) const override {
-        aovs[m_channels.size() - 1] = 1.f;   // Set sample weight
+                        Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
+        aovs[m_channels.size() - 1] = weight;   // Set sample weight
 
         SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
@@ -406,6 +406,13 @@ public:
         dr::schedule(m_storage->tensor());
     };
 
+    void traverse(TraversalCallback *callback) override {
+        for (size_t i=0; i<m_srfs.size(); ++i) {
+            callback->put_object(m_names[i], m_srfs[i].get());
+        }
+        Base::traverse(callback);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpecFilm[" << std::endl
@@ -417,6 +424,10 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  FilmSRF = [" << std::endl
+            << "       range = " << m_srf->wavelength_range() << "," << std::endl
+            << "       spec_res = " << m_srf->spectral_resolution() << "," << std::endl
+            << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)
             oss << m_srfs[c] << std::endl;

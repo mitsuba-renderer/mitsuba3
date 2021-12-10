@@ -34,6 +34,16 @@ Volume<Float, Spectrum>::eval_6(const Interaction3f &, Mask) const {
     NotImplementedError("eval_6");
 }
 
+MI_VARIANT std::vector<Spectrum>
+Volume<Float, Spectrum>::eval_generic(const Interaction3f &, Mask) const {
+    NotImplementedError("eval_generic");
+}
+
+MI_VARIANT std::vector<Float>
+Volume<Float, Spectrum>::eval_generic_1(const Interaction3f &, Mask) const {
+    NotImplementedError("eval_generic_1");
+}
+
 MI_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,
                       typename Volume<Float, Spectrum>::Vector3f>
 Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*active*/) const {
@@ -42,6 +52,9 @@ Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*acti
 
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
 Volume<Float, Spectrum>::max() const { NotImplementedError("max"); }
+
+MI_VARIANT typename std::vector< typename Volume<Float, Spectrum>::ScalarFloat>
+Volume<Float, Spectrum>::max_generic() const { NotImplementedError("max_generic"); }
 
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {

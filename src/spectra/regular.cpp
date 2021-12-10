@@ -152,6 +152,10 @@ public:
         return m_distr.interval_resolution();
     }
 
+    ScalarFloat max() const override {
+        return m_distr.max();
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RegularSpectrum[" << std::endl

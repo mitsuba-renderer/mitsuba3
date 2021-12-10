@@ -35,6 +35,13 @@ public:
     virtual dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
+     * Evaluate this volume as a n-channel quantity with no color processing
+     * This interface is specifically intended to encode a variable number of parameters
+     */
+    virtual std::vector<Spectrum> eval_generic(const Interaction3f &it, Mask active = true) const;
+    virtual std::vector<Float> eval_generic_1(const Interaction3f &it, Mask active = true) const;
+
+    /**
      * Evaluate the volume at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */
@@ -43,6 +50,9 @@ public:
 
     /// Returns the maximum value of the volume over all dimensions.
     virtual ScalarFloat max() const;
+
+    /// Returns the maximum value of the volume over all dimensions per channel.
+    virtual std::vector<ScalarFloat> max_generic() const;
 
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }

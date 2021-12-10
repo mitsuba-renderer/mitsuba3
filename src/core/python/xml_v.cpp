@@ -194,7 +194,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
         obj = mitsuba::xml::detail::create_texture_from_spectrum(
                 "spectrum", const_value, wavelengths, values, GET_VARIANT(),
                 within_emitter, is_spectral_v<Spectrum>,
-                is_monochromatic_v<Spectrum>);
+                is_monochromatic_v<Spectrum>, false);
     }
 
     return obj;

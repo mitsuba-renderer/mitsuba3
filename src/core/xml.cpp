@@ -250,6 +250,7 @@ struct XMLParseContext {
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
+    bool spectral_unbounded = false;
     std::string variant;
     bool parallel;
 
@@ -537,6 +538,14 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 name      = node.attribute("name").value(),
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
+
+                    // CUSTOM : Improve it at some point
+                    // Detect we are using spectral film and change context
+                    // We need to put the spectral film as the first thing before everything else in the xml
+                    if (type == "specfilm") {
+                        ctx.spectral_unbounded = true;
+                        Log(Info, "Enabled spectral unbounded mode");
+                    }
 
                     Properties props_nested(type);
                     props_nested.set_id(id);
@@ -844,7 +853,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         name, const_value, wavelengths, values, ctx.variant,
                         within_emitter,
                         ctx.color_mode == ColorMode::Spectral,
-                        ctx.color_mode == ColorMode::Monochromatic);
+                        ctx.color_mode == ColorMode::Monochromatic,
+                        ctx.spectral_unbounded);
 
                     props.set_object(name, obj);
                 }
@@ -1122,12 +1132,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                                          const std::string &variant,
                                          bool within_emitter,
                                          bool is_spectral_mode,
-                                         bool is_monochromatic_mode) {
+                                         bool is_monochromatic_mode,
+                                         bool spectral_unbounded) {
     const Class *class_ = Class::for_name("Texture", variant);
 
     if (wavelengths.empty()) {
         Properties props("uniform");
-        if (within_emitter && is_spectral_mode) {
+        if (within_emitter && is_spectral_mode && !spectral_unbounded) {
             props.set_plugin_name("d65");
             props.set_float("scale", const_value);
         } else {
@@ -1144,7 +1155,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         /* Values are scaled so that integrating the spectrum against the CIE curves
             and converting to sRGB yields (1, 1, 1) for D65. */
         Float unit_conversion = 1;
-        if (within_emitter || !is_spectral_mode)
+        if ((within_emitter && spectral_unbounded) || !is_spectral_mode)
             unit_conversion = Float(MI_CIE_Y_NORMALIZATION);
 
         /* Detect whether wavelengths are regularly sampled and potentially
@@ -1172,7 +1183,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             /* The regular spectrum class is more efficient, so tolerate a small
                amount of imprecision in the parsed interval positions.. */
             bool is_regular =
-                (max_interval - min_interval) > Float(1e-3) * min_interval;
+                (max_interval - min_interval) < Float(1e-3) * min_interval;
 
             if (is_regular) {
                 props.set_plugin_name("regular");

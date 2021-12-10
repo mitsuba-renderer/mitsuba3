@@ -56,6 +56,8 @@ MI_VARIANT void
 Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
                                       const Wavelength & /* wavelengths */,
                                       Float * /* aovs */,
+                                      Float /* weight */,
+                                      Float /* alpha */,
                                       Mask /* active */) const {
     NotImplementedError("prepare_sample");
 }

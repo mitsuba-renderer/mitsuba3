@@ -410,6 +410,16 @@ MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                         std::vector<Scalar> &wavelengths,
                                         std::vector<Scalar> &values);
 
+/*
+ * Write a file containing the information of the spectra.
+ * Depending on the extension of the file, it will write it in text format
+ * or in binary format.
+ */
+template <typename Scalar>
+MTS_EXPORT_CORE void spectrum_to_file(const std::string &filename,
+                                      const std::vector<Scalar> &wavelengths,
+                                      const std::vector<Scalar> &values);
+
 template <typename Scalar>
 MI_EXPORT_LIB Color<Scalar, 3>
 spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
