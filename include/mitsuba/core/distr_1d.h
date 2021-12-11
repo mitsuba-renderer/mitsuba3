@@ -509,7 +509,7 @@ private:
         m_integral = ek::opaque<Float>(integral);
         m_normalization = ek::opaque<Float>(1. / integral);
         m_interval_size = ek::opaque<Float>(interval_size);
-        m_interval_size_scalar = interval_size;
+        m_interval_size_scalar = (ScalarFloat) interval_size;
         m_inv_interval_size = ek::opaque<Float>(1. / interval_size);
         m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
     }
