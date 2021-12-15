@@ -48,6 +48,12 @@ tutorials = glob.glob(join(tutorials_dir, '*', '**.ipynb'))
 @pytest.mark.slow
 @pytest.mark.parametrize("notebook", tutorials)
 def test_tutorials(notebook, tmp_path):
+    try:
+        # Check if various packages needed by the tutorial tests are present
+        import nbformat, nbconvert, ipywidgets
+    except ImportError:
+        pytest.skip('Skipping tutorial testcase (missing dependencies)')
+
     nb = run_notebook(notebook, tmp_path)
     errors = []
     for cell in nb.cells:
