@@ -41,3 +41,7 @@
 [submodule "ext/fastfloat"]
 	path = ext/fastfloat
 	url = https://github.com/fastfloat/fast_float
+[submodule "tutorials"]
+	path = tutorials
+	url = https://github.com/mitsuba-renderer/mitsuba-tutorials
+	shallow = true
