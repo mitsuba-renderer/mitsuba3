@@ -105,7 +105,7 @@ public:
      * the quality of the reconstruction at the edges? This only makes
      * sense when reconstruction filters other than the box filter are used.
      */
-    bool has_high_quality_edges() const { return m_high_quality_edges; }
+    bool sample_border() const { return m_sample_border; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
     const ScalarVector2u &size() const { return m_size; }
@@ -121,7 +121,7 @@ public:
                          const ScalarVector2u &crop_size);
 
     /// Return the image reconstruction filter (const version)
-    const ReconstructionFilter *reconstruction_filter() const {
+    const ReconstructionFilter *rfilter() const {
         return m_filter.get();
     }
 
@@ -151,7 +151,7 @@ protected:
     ScalarVector2u m_size;
     ScalarVector2u m_crop_size;
     ScalarPoint2u m_crop_offset;
-    bool m_high_quality_edges;
+    bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
 };

@@ -43,7 +43,7 @@ High dynamic range film (:monosp:`hdrfilm`)
    - These parameters can optionally be provided to select a sub-rectangle
      of the output. In this case, only the requested regions
      will be rendered. (Default: Unused)
- * - high_quality_edges
+ * - sample_border
    - |bool|
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
      improve the image quality at the edges, especially when using very large reconstruction
@@ -96,7 +96,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_high_quality_edges, m_filter, m_flags)
+                    m_sample_border, m_filter, m_flags)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -195,9 +195,7 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, channels.size());
-            m_storage->set_offset(m_crop_offset);
-            m_storage->clear();
+            m_storage = new ImageBlock(m_crop_offset, m_crop_size, channels.size());
             m_channels = channels;
         }
 
@@ -214,9 +212,10 @@ public:
         bool warn = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) &&
                     !is_spectral_v<Spectrum>;
 
-        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_size : size,
+        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_offset : ScalarPoint2u(0),
+                              size == ScalarVector2u(0) ? m_crop_size : size,
                               m_channels.size(), m_filter.get(),
-                              border || m_high_quality_edges /* border */,
+                              border || m_sample_border /* border */,
                               normalize /* normalize */,
                               ek::is_llvm_array_v<Float> /* coalesce */,
                               warn /* warn_negative */,
@@ -518,7 +517,7 @@ public:
             << "  size = " << m_size        << "," << std::endl
             << "  crop_size = " << m_crop_size   << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
-            << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
+            << "  sample_border = " << m_sample_border << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl

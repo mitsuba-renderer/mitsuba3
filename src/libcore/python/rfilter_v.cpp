@@ -9,6 +9,8 @@ void bind_rfilter(py::module &m, const char *name) {
             m, name, D(ReconstructionFilter))
             .def("border_size", &ReconstructionFilter::border_size,
                  D(ReconstructionFilter, border_size))
+            .def("is_box_filter", &ReconstructionFilter::is_box_filter,
+                 D(ReconstructionFilter, is_box_filter))
             .def("radius", &ReconstructionFilter::radius,
                  D(ReconstructionFilter, radius))
             .def("eval", &ReconstructionFilter::eval,

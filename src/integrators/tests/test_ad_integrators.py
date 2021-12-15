@@ -62,7 +62,7 @@ class ConfigBase:
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
                 'width': self.res,
                 'height': self.res,
-                'high_quality_edges': True,
+                'sample_border': True,
             }
         }
 
@@ -248,7 +248,7 @@ class CropWindowConfig(ConfigBase):
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
                 'width': self.res,
                 'height': self.res,
-                'high_quality_edges': True,
+                'sample_border': True,
                 "crop_width" : 32,
                 "crop_height" : 32,
                 "crop_offset_x" : 32,

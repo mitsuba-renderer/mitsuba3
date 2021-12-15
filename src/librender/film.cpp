@@ -29,7 +29,7 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     /* If set to true, regions slightly outside of the film plane will also be
        sampled, which improves the image quality at the edges especially with
        large reconstruction filters. */
-    m_high_quality_edges = props.get<bool>("high_quality_edges", false);
+    m_sample_border = props.get<bool>("sample_border", false);
 
     // Use the provided reconstruction filter, if any.
     for (auto &[name, obj] : props.objects(false)) {
@@ -82,7 +82,7 @@ MTS_VARIANT std::string Film<Float, Spectrum>::to_string() const {
         << "  size = "        << m_size        << "," << std::endl
         << "  crop_size = "   << m_crop_size   << "," << std::endl
         << "  crop_offset = " << m_crop_offset << "," << std::endl
-        << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
+        << "  sample_border = " << m_sample_border << "," << std::endl
         << "  m_filter = " << m_filter << std::endl
         << "]";
     return oss.str();

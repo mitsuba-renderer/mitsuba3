@@ -9,7 +9,7 @@ def test01_construct(variant_scalar_rgb):
     # With default reconstruction filter
     film = load_string("""<film version="2.0.0" type="hdrfilm"></film>""")
     assert film is not None
-    assert film.reconstruction_filter() is not None
+    assert film.rfilter() is not None
 
     # With a provided reconstruction filter
     film = load_string("""<film version="2.0.0" type="hdrfilm">
@@ -18,7 +18,7 @@ def test01_construct(variant_scalar_rgb):
             </rfilter>
         </film>""")
     assert film is not None
-    assert film.reconstruction_filter().radius() == (4 * 18.5)
+    assert film.rfilter().radius() == (4 * 18.5)
 
     # Certain parameter values are not allowed
     with pytest.raises(RuntimeError):
@@ -41,14 +41,14 @@ def test02_crops(variant_scalar_rgb):
             <integer name="crop_height" value="5"/>
             <integer name="crop_offset_x" value="2"/>
             <integer name="crop_offset_y" value="3"/>
-            <boolean name="high_quality_edges" value="true"/>
+            <boolean name="sample_border" value="true"/>
             <string name="pixel_format" value="rgba"/>
         </film>""")
     assert film is not None
     assert ek.all(film.size() == [32, 21])
     assert ek.all(film.crop_size() == [11, 5])
     assert ek.all(film.crop_offset() == [2, 3])
-    assert film.has_high_quality_edges()
+    assert film.sample_border()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
     # resulting crop window goes out of bounds.
@@ -96,9 +96,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
     # Use unit weights.
     contents[:, :, 4] = 1.0
 
-    block = ImageBlock(film.size(), 5, film.reconstruction_filter())
-
-    block.clear()
+    block = ImageBlock(0, film.size(), 5, film.rfilter())
     for x in range(film.size()[1]):
         for y in range(film.size()[0]):
             block.put([y+0.5, x+0.5], contents[x, y, :])
@@ -162,8 +160,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     })
 
     res = film.size()
-    block = ImageBlock(res, 5 + len(aovs_channels), film.reconstruction_filter())
-    block.clear()
+    block = ImageBlock(0, res, 5 + len(aovs_channels), film.rfilter())
 
     if ek.is_jit_array_v(Float):
         pixel_idx = ek.arange(UInt32, ek.hprod(res))

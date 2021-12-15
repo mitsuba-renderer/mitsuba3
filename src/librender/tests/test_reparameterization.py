@@ -238,12 +238,12 @@ if __name__ == '__main__':
     grad_div = ek.grad(div)
 
     block = mitsuba.render.ImageBlock(
+        0,
         [res, res],
         channel_count=5,
-        filter=camera.film().reconstruction_filter(),
+        filter=camera.film().rfilter(),
         border=False
     )
-    block.clear()
     block.put(pos, rays.wavelengths, grad_d, 1)
     bmp_grad_d = Bitmap(block.data(), Bitmap.PixelFormat.RGBAW)
     bmp_grad_d = bmp_grad_d.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)

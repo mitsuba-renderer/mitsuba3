@@ -32,17 +32,24 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
         film = sensor.film()
-        rfilter = film.reconstruction_filter()
+        rfilter = film.rfilter()
         sampler = sensor.sampler()
 
-        assert not rfilter.class_().name() == 'BoxFilter'
-        assert film.has_high_quality_edges()
+        if rfilter.is_box_filter():
+            raise Exception("Please switch to a different reconstruction filter, "
+                            "the box filter cannot be used with this integrator!")
+
+        if not sample_border():
+            raise Exception("This integrator requires that the film's "
+                            "'sample_border' parameter is set to true.")
+
+        assert film.sample_border()
 
         # Seed the sampler and compute the number of sample per pixels
         spp = prepare_sampler(sensor, seed, spp)
 
         # Sample primary rays
-        ray, weight, pos, _, aperture_samples = sample_sensor_rays(sensor)
+        ray, weight, pos, aperture_samples = sample_sensor_rays(sensor)
 
         grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
                            ray, params=params, grad=Spectrum(weight))[0]
@@ -64,10 +71,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_size(), channel_count=5,
-                           rfilter=rfilter, border=True)
-        block.set_offset(film.crop_offset())
-        block.clear()
+        block = ImageBlock(film.crop_offset(), film.crop_size(),
+                           channel_count=5, rfilter=rfilter, border=True)
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
         film.put_block(block)
@@ -103,16 +108,16 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
         film = sensor.film()
-        rfilter = film.reconstruction_filter()
+        rfilter = film.rfilter()
         sampler = sensor.sampler()
 
         assert not rfilter.class_().name() == 'BoxFilter'
-        assert film.has_high_quality_edges()
+        assert film.sample_border()
 
         # Seed the sampler and compute the number of sample per pixels
         spp = prepare_sampler(sensor, seed, spp)
 
-        ray, weight, pos, _, aperture_samples = sample_sensor_rays(sensor)
+        ray, weight, pos, aperture_samples = sample_sensor_rays(sensor)
 
         # Read image gradient values per sample through the pixel filter
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
@@ -138,10 +143,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_size(), channel_count=5,
-                           rfilter=rfilter, border=True)
-        block.set_offset(film.crop_offset())
-        block.clear()
+        block = ImageBlock(film.crop_offset(), film.crop_size(),
+                           channel_count=5, rfilter=rfilter, border=True)
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
         film.put_block(block)

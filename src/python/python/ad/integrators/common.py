@@ -65,10 +65,22 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
         differential rendering step. The value provided within the original
         scene specification takes precedence if ``spp=0``.
     """
+
+    # Recorded loops cannot be differentiated, so let's disable them
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
-        image = self.render(scene, sensor, seed, spp)
+        image = self.render(
+            scene=scene,
+            sensor=sensor,
+            seed=seed,
+            spp=spp,
+            develop=True,
+            evalute=False
+        )
+
+        # Process the computation graph using forward-mode AD
         ek.enqueue(ek.ADMode.Forward, params)
         ek.traverse(mitsuba.core.Float)
+
         return ek.grad(image)
 
 
@@ -130,8 +142,19 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
         differential rendering step. The value provided within the original
         scene specification takes precedence if ``spp=0``.
     """
+
+    # Recorded loops cannot be differentiated, so let's disable them
     with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
-        image = self.render(scene, sensor, seed, spp)
+        image = self.render(
+            scene=scene,
+            sensor=sensor,
+            seed=seed,
+            spp=spp,
+            develop=True,
+            evalute=False
+        )
+
+        # Process the computation graph using reverse-mode AD
         ek.set_grad(image, image_adj)
         ek.enqueue(ek.ADMode.Backward, image)
         ek.traverse(mitsuba.core.Float)
@@ -300,19 +323,31 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
 
     film = sensor.film()
     sampler = sensor.sampler()
+
     if spp != 0:
         sampler.set_sample_count(spp)
+
     spp = sampler.sample_count()
+    sampler.set_samples_per_wavefront(spp)
 
     film_size = film.crop_size()
-    if film.has_high_quality_edges():
-        film_size += 2 * film.reconstruction_filter().border_size()
-    sampler.seed(seed, ek.hprod(film_size) * spp)
+
+    if film.sample_border():
+        film_size += 2 * film.rfilter().border_size()
+
+    wavefront_size = ek.hprod(film_size) * spp
+
+    if wavefront_size > 0xffffffff:
+        raise Exception("Tried to perform a JIT rendering with a total sample "
+                        "count exceeding 2^32=4294967296, which is too large.")
+
+    sampler.seed(seed, wavefront_size)
 
     return spp
 
 
-def sample_sensor_rays(sensor: mitsuba.render.Sensor):
+def sample_sensor_rays(sensor: mitsuba.render.Sensor,
+                       reparameterize = False):
     """
     Sample a 2D grid of primary rays for a given sensor
 
@@ -326,30 +361,42 @@ def sample_sensor_rays(sensor: mitsuba.render.Sensor):
     """
     from mitsuba.core import Float, UInt32, Vector2f, ScalarVector2f, Vector2u
 
-    film = sensor.film()
     sampler = sensor.sampler()
+    film = sensor.film()
     film_size = film.crop_size()
-    border_size = film.reconstruction_filter().border_size()
+    rfilter = film.rfilter()
+    border_size = rfilter.border_size()
 
-    if film.has_high_quality_edges():
+    if film.sample_border():
         film_size += 2 * border_size
 
     spp = sampler.sample_count()
-    total_sample_count = ek.hprod(film_size) * spp
 
-    assert sampler.wavefront_size() == total_sample_count
+    if reparameterize:
+        if rfilter.is_box_filter():
+            raise Exception("Please use a different reconstruction filter, the "
+                            "box filter cannot be used with this integrator!")
+
+        if not film.sample_border():
+            raise Exception("This integrator requires that the film's "
+                            "'sample_border' parameter is set to true.")
 
     # Compute discrete sample position
-    idx = ek.arange(UInt32, total_sample_count)
+    idx = ek.arange(UInt32, ek.hprod(film_size) * spp)
 
-    if spp != 1:
-        idx //= ek.opaque(UInt32, spp)
+    # Try to avoid a division by an unknown constant if we can help it
+    log_spp = ek.log2i(spp)
+    if 1 << log_spp == spp:
+        idx >>= ek.opaque(UInt32, log_spp)
+    else:
+        idx /= ek.opaque(UInt32, spp)
 
+    # Compute the position on the image plane
     pos = Vector2u()
     pos.y = idx // film_size[0]
-    pos.x = idx - pos.y * film_size[0]
+    pos.x = ek.fnmadd(film_size[0], pos.y, idx)
 
-    if film.has_high_quality_edges():
+    if film.sample_border():
         pos -= border_size
 
     pos += film.crop_offset()
@@ -357,7 +404,7 @@ def sample_sensor_rays(sensor: mitsuba.render.Sensor):
     # Cast to floating point and add random offset
     pos_f = Vector2f(pos) + sampler.next_2d()
 
-    # Re-scaled to [0, 1]^2
+    # Re-scale the position to [0, 1]^2
     scale = ek.rcp(ScalarVector2f(film.crop_size()))
     offset = -ScalarVector2f(film.crop_offset()) * scale
     pos_adjusted = ek.fmadd(pos_f, scale, offset)
@@ -366,14 +413,22 @@ def sample_sensor_rays(sensor: mitsuba.render.Sensor):
     if sensor.needs_aperture_sample():
         aperture_sample = sampler.next_2d()
 
+    time = sensor.shutter_open()
+    if sensor.shutter_open_time() > 0:
+        time += sampler.next_1d() * sensor.shutter_open_time()
+
+    wavelength_sample = 0
+    if mitsuba.core.is_spectral:
+        wavelength_sample = sampler.next_1d()
+
     rays, weights = sensor.sample_ray_differential(
-        time=0.0,
+        time=wavelength_sample,
         sample1=sampler.next_1d(),
         sample2=pos_adjusted,
         sample3=aperture_sample
     )
 
-    return rays, weights, pos_f, idx, aperture_sample
+    return rays, weights, pos_f, aperture_sample
 
 
 def mis_weight(pdf_a, pdf_b):
@@ -381,5 +436,5 @@ def mis_weight(pdf_a, pdf_b):
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
     """
-    a2, b2 = ek.sqr(pdf_a), ek.sqr(pdf_b)
-    return ek.detach(ek.select(pdf_a > 0, a2 / (a2 + b2), 0), True)
+    a2 = ek.sqr(pdf_a)
+    return ek.detach(ek.select(pdf_a > 0, a2 / ek.fmadd(pdf_b, pdf_b, a2), 0), True)

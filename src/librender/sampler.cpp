@@ -98,7 +98,8 @@ Sampler<Float, Spectrum>::current_sample_index() const {
     if (m_samples_per_wavefront > 1)
         wavefront_sample_offsets = ek::arange<UInt32>(m_wavefront_size) % m_samples_per_wavefront;
 
-    return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
+    return ek::fmadd(m_sample_index, m_samples_per_wavefront,
+                     wavefront_sample_offsets);
 }
 
 //! @}

@@ -2492,11 +2492,6 @@ static const char *__doc_mitsuba_Film_develop = R"doc(Return a image buffer obje
 
 static const char *__doc_mitsuba_Film_flags = R"doc(Flags for all properties combined.)doc";
 
-static const char *__doc_mitsuba_Film_has_high_quality_edges =
-R"doc(Should regions slightly outside the image plane be sampled to improve
-the quality of the reconstruction at the edges? This only makes sense
-when reconstruction filters other than the box filter are used.)doc";
-
 static const char *__doc_mitsuba_Film_m_crop_offset = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_crop_size = R"doc()doc";
@@ -2505,7 +2500,7 @@ static const char *__doc_mitsuba_Film_m_filter = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_flags = R"doc(Combined flags for all properties of this film.)doc";
 
-static const char *__doc_mitsuba_Film_m_high_quality_edges = R"doc()doc";
+static const char *__doc_mitsuba_Film_m_sample_border = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 
@@ -2521,7 +2516,12 @@ static const char *__doc_mitsuba_Film_put_block =
 R"doc(Merge an image block into the film. This methods should be thread-
 safe.)doc";
 
-static const char *__doc_mitsuba_Film_reconstruction_filter = R"doc(Return the image reconstruction filter (const version))doc";
+static const char *__doc_mitsuba_Film_rfilter = R"doc(Return the image reconstruction filter (const version))doc";
+
+static const char *__doc_mitsuba_Film_sample_border =
+R"doc(Should regions slightly outside the image plane be sampled to improve
+the quality of the reconstruction at the edges? This only makes sense
+when reconstruction filters other than the box filter are used.)doc";
 
 static const char *__doc_mitsuba_Film_schedule_storage = R"doc(ek::schedule() variables that represent the internal film storage)doc";
 
@@ -2843,6 +2843,10 @@ static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
 
+Parameter ``offset``:
+    Specifies the offset in case this block represents sub-region of a
+    larger image. Otherwise, this can be set to zero.
+
 Parameter ``size``:
     Specifies the desired horizontal and vertical block size. This
     value excludes additional border pixels that ``ImageBlock`` will
@@ -2884,19 +2888,22 @@ pixel values.
 Disabled by default.
 
 Parameter ``coalesce``:
-    This parameter is only relevant for JIT variants (CUDA, LLVM) and
-    subtly affects the behavior of the performance-critical put()
-    method.
+    This parameter is only relevant for JIT variants (it is enabled by
+    default only in LLVM mode), where it subtly affects the behavior
+    of the performance-critical put() method.
 
 In coalesced mode, put() conservatively bounds the footprint and
 traverses it in lockstep across the whole wavefront. This causes
 unnecessary atomic memory operations targeting pixels with a zero
 filter weight. At the same time, this greatly reduces thread
 divergence and can lead to significant speedups when put() writes to
-pixels that in a regular (e.g., scanline) order.
+pixels in a regular (e.g., scanline) order. Coalesced mode is
+preferable for rendering algorithms like path tracing that uniformly
+generate samples within pixels on the sensor.
 
-Non-coalesced mode is preferable when the input positions are random
-and will in any case be subject to thread divergence.
+In contrast, non-coalesced mode is preferable when the input positions
+are random and will in any case be subject to thread divergence (e.g.
+in a particle tracer that makes random connections to the sensor).
 
 Parameter ``warn_negative``:
     If set to ``True``, put() will warn when writing samples with
@@ -5357,6 +5364,8 @@ R"doc(Evaluate a discretized version of the filter (generally faster than
 'eval'))doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_init_discretization = R"doc(Mandatory initialization prior to calls to eval_discretized())doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_is_box_filter = R"doc(Check whether this is a box filter?)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_m_border_size = R"doc()doc";
 

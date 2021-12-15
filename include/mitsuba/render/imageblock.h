@@ -42,6 +42,10 @@ public:
      * \brief Construct a zero-initialized image block with the desired shape
      * and channel count
      *
+     * \param offset
+     *    Specifies the offset in case this block represents sub-region of a
+     *    larger image. Otherwise, this can be set to zero.
+     *
      * \param size
      *    Specifies the desired horizontal and vertical block size. This value
      *    excludes additional border pixels that \c ImageBlock will internally
@@ -111,7 +115,8 @@ public:
      *    This test is only enabled in scalar variants by default, since
      *    checking/error reporting is relatively costly in JIT-compiled modes.
      */
-    ImageBlock(const ScalarVector2u &size,
+    ImageBlock(const ScalarPoint2u &offset,
+               const ScalarVector2u &size,
                uint32_t channel_count,
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
@@ -132,7 +137,8 @@ public:
      *
      * See the other constructor for an explanation of the parameters.
      */
-    ImageBlock(const TensorXf &tensor,
+    ImageBlock(const ScalarPoint2u &offset,
+               const TensorXf &tensor,
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,

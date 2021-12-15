@@ -58,6 +58,9 @@ public:
     /// Evaluate the filter function
     virtual Float eval(Float x, Mask active = true) const = 0;
 
+    /// Check whether this is a box filter?
+    bool is_box_filter() const;
+
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!ek::is_jit_array_v<Float>) {
