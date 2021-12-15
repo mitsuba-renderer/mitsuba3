@@ -14,7 +14,7 @@ def test01_construct(variant_scalar_spectral):
             <spectrum name="srf_test" value="500:1.0 700:2.0 750:3.0"/>
         </film>""")
     assert film is not None
-    assert film.reconstruction_filter() is not None
+    assert film.rfilter() is not None
 
     # With a provided reconstruction filter
     film = load_string("""<film version="2.0.0" type="specfilm">
@@ -24,7 +24,7 @@ def test01_construct(variant_scalar_spectral):
             </rfilter>
         </film>""")
     assert film is not None
-    assert film.reconstruction_filter().radius() == (4 * 18.5)
+    assert film.rfilter().radius() == (4 * 18.5)
 
     # Certain parameter values are not allowed
     with pytest.raises(RuntimeError):
@@ -52,14 +52,14 @@ def test03_crops(variant_scalar_spectral):
             <integer name="crop_height" value="5"/>
             <integer name="crop_offset_x" value="2"/>
             <integer name="crop_offset_y" value="3"/>
-            <boolean name="high_quality_edges" value="true"/>
+            <boolean name="sample_border" value="true"/>
             <spectrum name="srf_test" value="500:1.0 700:2.0 750:3.0"/>
         </film>""")
     assert film is not None
     assert ek.all(film.size() == [32, 21])
     assert ek.all(film.crop_size() == [11, 5])
     assert ek.all(film.crop_offset() == [2, 3])
-    assert film.has_high_quality_edges()
+    assert film.sample_border()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
     # resulting crop window goes out of bounds.

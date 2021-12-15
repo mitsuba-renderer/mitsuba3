@@ -23,6 +23,12 @@ MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
     m_border_size = (int) ek::ceil(m_radius - .5f - 2.f * math::RayEpsilon<ScalarFloat>);
 }
 
+MTS_VARIANT bool ReconstructionFilter<Float, Spectrum>::is_box_filter() const {
+    // The box filter is the only filter in Mitsuba 2 with 1/2px radius
+    return m_radius == .5f;
+}
+
+
 std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value) {
     switch (value) {
         case FilterBoundaryCondition::Clamp: os << "clamp"; break;

@@ -54,7 +54,7 @@ public:
                   "The irradiance meter inherits this transformation from its parent "
                   "shape.");
 
-        if (m_film->reconstruction_filter()->radius() > .5f + math::RayEpsilon<Float>)
+        if (m_film->rfilter()->radius() > .5f + math::RayEpsilon<Float>)
             Log(Warn, "This sensor should only be used with a reconstruction filter"
                "of radius 0.5 or lower (e.g. default 'box' filter)");
     }

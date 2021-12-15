@@ -6,18 +6,19 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
+ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2u &offset,
+                                        const ScalarVector2u &size,
                                         uint32_t channel_count,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
                                         bool coalesce, bool warn_negative,
                                         bool warn_invalid)
-    : m_offset(0), m_size(0), m_channel_count(channel_count),
+    : m_offset(offset), m_size(0), m_channel_count(channel_count),
       m_rfilter(rfilter), m_normalize(normalize), m_coalesce(coalesce),
       m_warn_negative(warn_negative), m_warn_invalid(warn_invalid) {
 
-    // Detect if a box filter is being used, and discard m_rfilter in that case
-    if (rfilter && rfilter->radius() == .5f)
+    // Detect if a box filter is being used, and just discard it in that case
+    if (rfilter && rfilter->is_box_filter())
         m_rfilter = nullptr;
 
     // Determine the size of the boundary region from the reconstruction filter
@@ -28,20 +29,21 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
 }
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
+ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2u &offset,
+                                        const TensorXf &tensor,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
                                         bool coalesce, bool warn_negative,
                                         bool warn_invalid)
-    : m_offset(0), m_rfilter(rfilter), m_normalize(normalize),
+    : m_offset(offset), m_rfilter(rfilter), m_normalize(normalize),
       m_coalesce(coalesce), m_warn_negative(warn_negative),
       m_warn_invalid(warn_invalid) {
 
 	if (tensor.ndim() != 3)
 		Throw("ImageBlock(const TensorXf&): expected a 3D tensor (height x width x channels)!");
 
-    // Detect if a box filter is being used, and discard m_rfilter in that case
-    if (rfilter && rfilter->radius() == .5f)
+    // Detect if a box filter is being used, and just discard it in that case
+    if (rfilter && rfilter->is_box_filter())
         m_rfilter = nullptr;
 
     // Determine the size of the boundary region from the reconstruction filter
@@ -82,7 +84,7 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
     if (size == m_size)
         return;
 
-    ScalarVector2u size_ext = m_size + 2 * m_border_size;
+    ScalarVector2u size_ext = size + 2 * m_border_size;
 
     size_t size_flat = m_channel_count * ek::hprod(size_ext),
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
@@ -738,7 +740,7 @@ MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
         << "  coalesce = " << m_coalesce << "," << std::endl
         << "  warn_negative = " << m_warn_negative << "," << std::endl
         << "  warn_invalid = " << m_warn_invalid << "," << std::endl
-        << "  rfilter = " << (m_rfilter ? string::indent(m_rfilter) : "nullptr")
+        << "  rfilter = " << (m_rfilter ? string::indent(m_rfilter) : "BoxFilter[]")
         << std::endl
         << "]";
 

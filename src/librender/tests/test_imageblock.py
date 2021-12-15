@@ -10,9 +10,9 @@ def test01_construct(variant_scalar_rgb):
     from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
-    im = ImageBlock([33, 12], 4)
+    im = ImageBlock([2, 3], [33, 12], 4)
     assert im is not None
-    assert ek.all(im.offset() == 0)
+    assert ek.all(im.offset() == [2, 3])
     im.set_offset([10, 20])
     assert ek.all(im.offset() == [10, 20])
 
@@ -25,7 +25,7 @@ def test01_construct(variant_scalar_rgb):
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="15"/>
         </rfilter>""")
-    im = ImageBlock([10, 11], 2, rfilter=rfilter, warn_invalid=False)
+    im = ImageBlock(0, [10, 11], 2, rfilter=rfilter, warn_invalid=False)
     assert im.border_size() == rfilter.border_size()
     assert im.channel_count() == 2
     assert not im.warn_invalid()
@@ -56,15 +56,14 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
 
             size = ScalarVector2u(6, 6)
 
-            block = ImageBlock(size=size, channel_count=1,
+            block = ImageBlock(offset=offset,
+                               size=size,
+                               channel_count=1,
                                rfilter=rfilter,
                                border=border,
                                normalize=normalize,
                                coalesce=coalesce)
 
-            block.set_offset(offset)
-
-            block.clear()
             block.put(pos=pos, values=[1])
 
             size += 2 * block.border_size()
@@ -116,7 +115,7 @@ def test03_put_boundary(variants_all_rgb, filter_name):
     from mitsuba.render import ImageBlock
 
     rfilter = load_dict({'type': filter_name})
-    im = ImageBlock([3, 3], 1, rfilter=rfilter, warn_negative=False, border=False)
+    im = ImageBlock(0, [3, 3], 1, rfilter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
     if ek.is_jit_array_v(Float):
@@ -166,11 +165,10 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
 
     source_tensor = TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
 
-    block = ImageBlock(source_tensor,
+    block = ImageBlock(offset, source_tensor,
                        rfilter=rfilter,
                        border=border,
                        normalize=normalize)
-    block.set_offset(offset)
 
     for j in range(5):
         for i in range(5):

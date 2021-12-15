@@ -82,8 +82,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     // Render on a larger film if the 'high quality edges' feature is enabled
     ref<Film> film = sensor->film();
     ScalarVector2u film_size = film->crop_size();
-    if (film->has_high_quality_edges())
-        film_size += 2 * film->reconstruction_filter()->border_size();
+    if (film->sample_border())
+        film_size += 2 * film->rfilter()->border_size();
 
     // Potentially adjust the number of samples per pixel if spp != 0
     Sampler *sampler = sensor->sampler();
@@ -170,8 +170,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                     auto [offset, size, block_id] = spiral.next_block();
                     Assert(ek::hprod(size) != 0);
 
-                    if (film->has_high_quality_edges())
-                        offset -= film->reconstruction_filter()->border_size();
+                    if (film->sample_border())
+                        offset -= film->rfilter()->border_size();
 
                     block->set_size(size);
                     block->set_offset(offset);
@@ -203,34 +203,48 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
-        ref<Sampler> sampler = sensor->sampler();
+        if ((size_t) film_size.x() * (size_t) film_size.y() *
+            (size_t) spp_per_pass > 0xffffffffu)
+            Throw("Tried to perform a JIT rendering with a total sample count "
+                  "exceeding 2^32 = 4294967296, which is too large. Please use "
+                  "fewer samples per pixel or render using multiple passes.");
+
+        // Inform the sampler about the passes (needed in vectorized modes)
         sampler->set_samples_per_wavefront(spp_per_pass);
 
-        ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
-        size_t wavefront_size = ek::hprod(film_size) * (size_t) spp_per_pass;
+        // Seed the underlying random number generators, if applicable
+        uint32_t wavefront_size = ek::hprod(film_size) * spp_per_pass;
         sampler->seed(seed, wavefront_size);
 
+        // Allocate a large image block that will receive the entire rendering
         ref<ImageBlock> block = film->create_block();
-
-        block->clear();
         block->set_offset(film->crop_offset());
 
         // Compute discrete sample position
         UInt32 idx = ek::arange<UInt32>(wavefront_size);
-        if (spp_per_pass != 1)
+
+        // Try to avoid a division by an unknown constant if we can help it
+        uint32_t log_spp_per_pass = ek::log2i(spp_per_pass);
+        if ((1 << log_spp_per_pass) == spp_per_pass)
+            idx >>= ek::opaque<UInt32>(log_spp_per_pass);
+        else
             idx /= ek::opaque<UInt32>(spp_per_pass);
 
+        // Compute the position on the image plane
         Vector2u pos;
         pos.y() = idx / film_size[0];
-        pos.x() = idx - pos.y() * film_size[0];
+        pos.x() = ek::fnmadd(film_size[0], pos.y(), idx);
 
-        if (film->has_high_quality_edges())
-            pos -= film->reconstruction_filter()->border_size();
+        if (film->sample_border())
+            pos -= film->rfilter()->border_size();
 
         pos += film->crop_offset();
 
         // Cast to floating point, random offset is added in \ref render_sample()
         Vector2f pos_f = Vector2f(pos);
+
+        // Scale factor that will be applied to ray differentials
+        ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) spp);
 
         Timer timer;
         std::unique_ptr<Float[]> aovs(new Float[n_channels]);
@@ -304,6 +318,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         // Scale down ray differentials when tracing multiple rays per pixel
         Float diff_scale_factor = ek::rsqrt((Float) sample_count);
 
+        // Clear block (it's being reused)
         block->clear();
 
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
@@ -359,7 +374,10 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     if (sensor->shutter_open_time() > 0.f)
         time += sampler->next_1d(active) * sensor->shutter_open_time();
 
-    Float wavelength_sample = sampler->next_1d(active);
+    Float wavelength_sample = 0.f;
+
+    if constexpr (is_spectral_v<Spectrum>)
+        wavelength_sample = sampler->next_1d(active);
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_pos, aperture_sample);
@@ -538,6 +556,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                     false /* border */);
 
                 block->set_offset(film->crop_offset());
+
+                // Clear block (it's being reused)
                 block->clear();
 
                 sampler->seed(seed +
@@ -576,14 +596,20 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
+        if (samples_per_pass > 0xffffffffu)
+            Throw("Tried to perform a JIT rendering with a total sample count "
+                  "exceeding 2^32 = 4294967296, which is too large. Please use "
+                  "fewer samples per pixel or render using multiple passes.");
+
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(", %u passes,", n_passes) : "");
 
-        ref<Sampler> sampler = sensor->sampler();
-        // The sampler expects samples per pixel per pass.
+        // Inform the sampler about the passes (needed in vectorized modes)
         sampler->set_samples_per_wavefront(spp_per_pass);
-        sampler->seed(seed, samples_per_pass);
+
+        // Seed the underlying random number generators, if applicable
+        sampler->seed(seed, (uint32_t) samples_per_pass);
 
         ref<ImageBlock> block = film->create_block(
             ScalarVector2u(0) /* use crop size */,
@@ -595,7 +621,6 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         /* Disable coalescing of atomic writes performed within the ImageBlock
            (they are highly irregular in any particle tracing-based method) */
         block->set_coalesce(false);
-        block->clear();
 
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {

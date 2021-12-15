@@ -24,18 +24,15 @@ public:
     MTS_IMPORT_TYPES()
 
     BoxFilter(const Properties &props) : Base(props) {
-        m_radius = props.get<ScalarFloat>("radius", .5f);
+        m_radius = .5f;
         init_discretization();
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        return ek::select(x >= -m_radius && x < m_radius, Float(1.f),
-                          Float(0.f));
+        return ek::select(x >= -.5f && x < .5f, Float(1.f), Float(0.f));
     }
 
-    std::string to_string() const override {
-        return tfm::format("BoxFilter[radius=%f]", m_radius);
-    }
+    std::string to_string() const override { return "BoxFilter[]"; }
 
     MTS_DECLARE_CLASS()
 };

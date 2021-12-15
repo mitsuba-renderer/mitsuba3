@@ -66,12 +66,12 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
         film = sensor.film()
-        rfilter = film.reconstruction_filter()
+        rfilter = film.rfilter()
         sampler = sensor.sampler()
 
         spp = prepare_sampler(sensor, seed, spp)
 
-        ray, weight, pos, _, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
@@ -81,10 +81,8 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                            ray, params=params, grad=weight,
                            primal_result=primal_result)[0]
 
-        block = ImageBlock(film.crop_size(), channel_count=5,
-                           rfilter=rfilter, border=False)
-        block.set_offset(film.crop_offset())
-        block.clear()
+        block = ImageBlock(film.crop_offset(), film.crop_size(),
+                           channel_count=5, rfilter=rfilter, border=False)
         block.put(pos, ray.wavelengths, grad_img)
         film.prepare([])
         film.put_block(block)
@@ -106,19 +104,18 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
         film = sensor.film()
-        rfilter = sensor.film().reconstruction_filter()
+        rfilter = sensor.film().rfilter()
         sampler = sensor.sampler()
 
         spp = prepare_sampler(sensor, seed, spp)
 
-        ray, weight, pos, _, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_sensor_rays(sensor)
 
         # sample forward path (not differentiable)
         with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
-        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
-        block.set_offset(film.crop_offset())
+        block = ImageBlock(film.crop_offset(), ek.detach(image_adj), rfilter, normalize=True)
         grad_values = Spectrum(block.read(pos)) * weight / spp
 
         # Replay light paths and accumulate gradients
