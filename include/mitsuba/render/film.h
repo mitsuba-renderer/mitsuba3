@@ -93,8 +93,8 @@ public:
      *    the image boundary? See the \ref ImageBlock constructor for details.
      */
     virtual ref<ImageBlock> create_block(const ScalarVector2u &size = 0,
-                                         bool normalize             = false,
-                                         bool border                = false) = 0;
+                                         bool normalize = false,
+                                         bool border = false) = 0;
 
     // =============================================================
     //! @{ \name Accessor functions

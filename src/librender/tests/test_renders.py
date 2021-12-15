@@ -153,6 +153,8 @@ def test_render(variant, scene_fname, jit_flags_key):
         pytest.skip("Missing reference data:\n- Reference image: {}\n- Variance image: {}".format(
             ref_fname, ref_var_fname))
 
+    if os.name == 'nt' and 'test_various_emitters' in ref_fname and 'cuda' in variant:
+        pytest.skip('Skipping flaky test (likely an OptiX miscompilation) on Windows')
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)
