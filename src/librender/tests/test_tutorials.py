@@ -41,7 +41,7 @@ def run_notebook(notebook_path, tmp_dir=None):
     return nb
 
 
-tutorials_dir = realpath(join(dirname(__file__), '../../../docs/tutorials'))
+tutorials_dir = realpath(join(dirname(__file__), '../../../tutorials'))
 tutorials = glob.glob(join(tutorials_dir, '*', '**.ipynb'))
 
 

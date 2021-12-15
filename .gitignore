@@ -21,3 +21,4 @@ __pycache__
 
 # Auto-generated documentation files
 /docs/generated/plugins_*.rst
+/docs/tutorials
