@@ -31,57 +31,70 @@ public:
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation
-        ScalarFloat stddev = props.get<ScalarFloat>("stddev", .5f);
+        m_stddev = props.get<ScalarFloat>("stddev", .5f);
 
         // Cut off after 4 standard deviations
-        m_radius = 4 * stddev;
+        m_radius = 4 * m_stddev;
 
-        /*
-          Remez fit to exp(-x/2), obtained using:
+        /* Precompute a cheap approximation to the filter kernel.
+           Unnecessary on NVIDIA GPUs that provide a fast exponential
+           instruction via the MUFU (multi-function genrator). */
+        if constexpr (!ek::is_cuda_array_v<Float>) {
+            /*
+              Remez fit to exp(-x/2), obtained using:
 
-          f[x_] = MiniMaxApproximation[Exp[-x/2], {x, {0, 16}, 9, 0},
-              WorkingPrecision -> 50, Brake -> {400, 400},
-              MaxIterations -> 100, Bias -> 0][[2, 1]];
+              f[x_] = MiniMaxApproximation[Exp[-x/2], {x, {0, 16}, 9, 0},
+                  WorkingPrecision -> 50, Brake -> {400, 400},
+                  MaxIterations -> 100, Bias -> 0][[2, 1]];
 
-          N[CoefficientList[h[x] - h[16], x], 10]
-        */
+              N[CoefficientList[h[x] - h[16], x], 10]
+            */
 
-        double coeff[10] = { 9.992604880e-1, -4.977025247e-1,
-                             1.222248550e-1, -1.932406282e-2,
-                             2.136713061e-3, -1.679873860e-4,
-                             9.202145248e-6, -3.329417433e-7,
-                             7.128382794e-9, -6.821193280e-11 };
+            double coeff[10] = { 9.992604880e-1, -4.977025247e-1,
+                                 1.222248550e-1, -1.932406282e-2,
+                                 2.136713061e-3, -1.679873860e-4,
+                                 9.202145248e-6, -3.329417433e-7,
+                                 7.128382794e-9, -6.821193280e-11 };
 
-        ScalarFloat coeff_s[10];
+            ScalarFloat coeff_s[10];
 
-        // Scale Remez approximation
-        double scale = 1;
-        for (int i = 0; i < 10; ++i) {
-            coeff_s[i] = ScalarFloat(coeff[i] * scale);
-            scale /= ek::sqr((double) stddev);
+            // Scale Remez approximation
+            double scale = 1;
+            for (int i = 0; i < 10; ++i) {
+                coeff_s[i] = ScalarFloat(coeff[i] * scale);
+                scale /= ek::sqr((double) m_stddev);
+            }
+
+            // Ensure that we really reach zero at the boundary
+            coeff_s[0] -= ek::detail::estrin_impl(ek::sqr(m_radius), coeff_s);
+
+            for (int i = 0; i < 10; ++i)
+                m_coeff[i] = coeff_s[i];
         }
-
-        // Ensure that we really reach zero at the boundary
-        coeff_s[0] -= ek::detail::estrin_impl(ek::sqr(m_radius), coeff_s);
-
-        for (int i = 0; i < 10; ++i)
-            m_coeff[i] = coeff_s[i];
 
         init_discretization();
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        return ek::max(ek::detail::estrin_impl(ek::sqr(x), m_coeff), 0.f);
-      }
+        if constexpr (!ek::is_cuda_array_v<Float>) {
+            return ek::max(ek::detail::estrin_impl(ek::sqr(x), m_coeff), 0.f);
+        } else {
+            // Use the base-2 exponential functions on NVIDIA hardware
+            ScalarFloat alpha = -1.f / (2.f * ek::sqr(m_stddev));
+            ScalarFloat bias = ek::exp(alpha * ek::sqr(m_radius));
+            return ek::max(0.f, ek::exp2((ek::InvLogTwo<Float> * alpha) * ek::sqr(x)) - bias);
+        }
+    }
 
     std::string to_string() const override {
         return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]",
-                           m_radius * .25f, m_radius);
+                           m_stddev, m_radius);
     }
 
     MTS_DECLARE_CLASS()
 
 protected:
+    ScalarFloat m_stddev;
     Float m_coeff[10];
 };
 
