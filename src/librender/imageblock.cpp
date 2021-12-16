@@ -241,8 +241,9 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 return;
             count = count_u;
         } else {
-            // The value must be bounded in the vectorized case
+            // Conservative bounds must be used in the vectorized case
             count = ek::ceil2int<uint32_t>(2.f * radius);
+            active &= ek::all(pos_0_u <= pos_1_u);
         }
 
         Point2f rel_f = Point2f(pos_0_u) - pos_f;
@@ -584,8 +585,9 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             return;
         count = count_u;
     } else {
-        // The value must be bounded in the vectorized case
+        // Conservative bounds must be used in the vectorized case
         count = ek::ceil2int<uint32_t>(2.f * radius);
+        active &= ek::all(pos_0_u <= pos_1_u);
     }
 
     Point2f rel_f = Point2f(pos_0_u) - pos_f;
