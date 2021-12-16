@@ -10,7 +10,7 @@ MTS_PY_EXPORT(ImageBlock) {
             "size"_a, "channel_count"_a, "rfilter"_a = nullptr,
             "border"_a = std::is_scalar_v<Float>,
             "normalize"_a = false,
-            "coalesce"_a = !std::is_scalar_v<Float>,
+            "coalesce"_a = ek::is_llvm_array_v<Float>,
             "warn_negative"_a = std::is_scalar_v<Float>,
             "warn_invalid"_a = std::is_scalar_v<Float>)
         .def(py::init<const TensorXf &, const ReconstructionFilter *,
@@ -18,7 +18,7 @@ MTS_PY_EXPORT(ImageBlock) {
             "tensor"_a, "rfilter"_a = nullptr,
             "border"_a = std::is_scalar_v<Float>,
             "normalize"_a = false,
-            "coalesce"_a = !std::is_scalar_v<Float>,
+            "coalesce"_a = ek::is_llvm_array_v<Float>,
             "warn_negative"_a = std::is_scalar_v<Float>,
             "warn_invalid"_a = std::is_scalar_v<Float>)
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put), "block"_a)

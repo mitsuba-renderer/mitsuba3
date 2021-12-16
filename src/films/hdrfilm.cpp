@@ -218,7 +218,7 @@ public:
                               m_channels.size(), m_filter.get(),
                               border || m_high_quality_edges /* border */,
                               normalize /* normalize */,
-                              !std::is_scalar_v<Float> /* coalesce */,
+                              ek::is_llvm_array_v<Float> /* coalesce */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */);
     }

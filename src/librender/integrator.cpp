@@ -591,6 +591,9 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             false /* border */);
 
         block->set_offset(film->crop_offset());
+
+        /* Disable coalescing of atomic writes performed within the ImageBlock
+           (they are highly irregular in any particle tracing-based method) */
         block->set_coalesce(false);
         block->clear();
 
