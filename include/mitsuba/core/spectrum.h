@@ -1,19 +1,19 @@
 #pragma once
 
-#include <mitsuba/core/fwd.h>
-#include <mitsuba/core/traits.h>
-#include <mitsuba/core/math.h>
-#include <enoki/matrix.h>
 #include <enoki/dynamic.h>
+#include <enoki/matrix.h>
+#include <mitsuba/core/fwd.h>
+#include <mitsuba/core/math.h>
+#include <mitsuba/core/traits.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 #if !defined(MTS_WAVELENGTH_MIN)
-#  define MTS_WAVELENGTH_MIN 360.f
+#define MTS_WAVELENGTH_MIN 360.f
 #endif
 
 #if !defined(MTS_WAVELENGTH_MAX)
-#  define MTS_WAVELENGTH_MAX 830.f
+#define MTS_WAVELENGTH_MAX 830.f
 #endif
 
 // =======================================================================
@@ -22,13 +22,14 @@ NAMESPACE_BEGIN(mitsuba)
 
 template <typename Value_, size_t Size_ = 3>
 struct Color : ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
-    using Base = ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
+    using Base =
+        ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Color<T, Size_>;
 
     using ArrayType = Color;
-    using MaskType = ek::Mask<Value_, Size_>;
+    using MaskType  = ek::Mask<Value_, Size_>;
 
     decltype(auto) r() const { return Base::x(); }
     decltype(auto) r() { return Base::x(); }
@@ -53,30 +54,35 @@ struct Color : ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 4>
-struct Spectrum : ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
-    using Base = ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
+struct Spectrum
+    : ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
+    using Base =
+        ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
 
-    // Never allow matrix-vector products involving this type (important for polarized rendering)
+    // Never allow matrix-vector products involving this type (important for
+    // polarized rendering)
     static constexpr bool IsVector = false;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
     using ArrayType = Spectrum;
-    using MaskType = ek::Mask<Value_, Size_>;
+    using MaskType  = ek::Mask<Value_, Size_>;
 
     ENOKI_ARRAY_IMPORT(Spectrum, Base)
 };
 
 /**
- * Return the (1,1) entry of a Mueller matrix. Identity function for all other types.
+ * Return the (1,1) entry of a Mueller matrix. Identity function for all other
+ * types.
  *
  * This is useful for places in the renderer where we do not care about the
  * additional information tracked by the Mueller matrix.
  * For instance when performing Russian Roulette based on the path throughput or
  * when writing a final RGB pixel value to the image block.
  */
-template <typename T> unpolarized_spectrum_t<T> unpolarized_spectrum(const T& spectrum) {
+template <typename T>
+unpolarized_spectrum_t<T> unpolarized_spectrum(const T &spectrum) {
     if constexpr (is_polarized_v<T>) {
         // First entry of the Mueller matrix is the unpolarized spectrum
         return spectrum(0, 0);
@@ -95,7 +101,7 @@ template <typename T> unpolarized_spectrum_t<T> unpolarized_spectrum(const T& sp
  */
 template <typename T> auto depolarizer(const T &spectrum = T(1)) {
     if constexpr (is_polarized_v<T>) {
-        T result = ek::zero<T>();
+        T result     = ek::zero<T>();
         result(0, 0) = spectrum(0, 0);
         return result;
     } else {
@@ -116,7 +122,7 @@ struct Color<ek::detail::MaskedArray<Value_>, Size_>
     using Base = ek::detail::MaskedArray<Color<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
-    Color(const Base &b) : Base(b) { }
+    Color(const Base &b) : Base(b) {}
 };
 
 template <typename Value_, size_t Size_>
@@ -125,15 +131,15 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
     using Base = ek::detail::MaskedArray<Spectrum<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
-    Spectrum(const Base &b) : Base(b) { }
+    Spectrum(const Base &b) : Base(b) {}
 };
 
 //! @}
 // =======================================================================
 
-#define MTS_CIE_MIN           360.f
-#define MTS_CIE_MAX           830.f
-#define MTS_CIE_SAMPLES       95
+#define MTS_CIE_MIN 360.f
+#define MTS_CIE_MAX 830.f
+#define MTS_CIE_SAMPLES 95
 
 /* Scaling the CIE curves by the following constant ensures that
    a unit-valued spectrum integrates to a luminance of 1.0 */
@@ -148,7 +154,7 @@ NAMESPACE_BEGIN(detail)
 template <typename Float> struct CIE1932Tables {
     using FloatStorage = DynamicBuffer<Float>;
 
-    void initialize(const float* ptr) {
+    void initialize(const float *ptr) {
         if (initialized)
             return;
         initialized = true;
@@ -156,8 +162,7 @@ template <typename Float> struct CIE1932Tables {
         xyz = Color<FloatStorage, 3>(
             ek::load<FloatStorage>(ptr, MTS_CIE_SAMPLES),
             ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES),
-            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES)
-        );
+            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES));
 
         srgb = xyz_to_srgb(xyz);
     }
@@ -181,10 +186,12 @@ private:
 
 extern MTS_EXPORT_CORE CIE1932Tables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-extern MTS_EXPORT_CORE CIE1932Tables<ek::LLVMArray<float>> color_space_tables_llvm;
+extern MTS_EXPORT_CORE CIE1932Tables<ek::LLVMArray<float>>
+    color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-extern MTS_EXPORT_CORE CIE1932Tables<ek::CUDAArray<float>> color_space_tables_cuda;
+extern MTS_EXPORT_CORE CIE1932Tables<ek::CUDAArray<float>>
+    color_space_tables_cuda;
 #endif
 
 template <typename Float> auto get_color_space_tables() {
@@ -194,16 +201,17 @@ template <typename Float> auto get_color_space_tables() {
     else
 #endif
 #if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>)
+        if constexpr (ek::is_cuda_array_v<Float>)
         return color_space_tables_cuda;
     else
 #endif
-    return color_space_tables_scalar;
+        return color_space_tables_scalar;
 }
 NAMESPACE_END(detail)
 
 /// Allocate arrays for the color space tables
-extern MTS_EXPORT_CORE void color_management_static_initialization(bool cuda, bool llvm);
+extern MTS_EXPORT_CORE void color_management_static_initialization(bool cuda,
+                                                                   bool llvm);
 extern MTS_EXPORT_CORE void color_management_static_shutdown();
 
 /**
@@ -223,23 +231,24 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(),
+                          UInt32(MTS_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
-    Float v0_x = (Float) ek::gather<Float32>(tables.xyz.x(), i0, active);
-    Float v1_x = (Float) ek::gather<Float32>(tables.xyz.x(), i1, active);
-    Float v0_y = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
-    Float v1_y = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
-    Float v0_z = (Float) ek::gather<Float32>(tables.xyz.z(), i0, active);
-    Float v1_z = (Float) ek::gather<Float32>(tables.xyz.z(), i1, active);
+    Float v0_x  = (Float) ek::gather<Float32>(tables.xyz.x(), i0, active);
+    Float v1_x  = (Float) ek::gather<Float32>(tables.xyz.x(), i1, active);
+    Float v0_y  = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1_y  = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
+    Float v0_z  = (Float) ek::gather<Float32>(tables.xyz.z(), i0, active);
+    Float v1_z  = (Float) ek::gather<Float32>(tables.xyz.z(), i1, active);
 
-    Float w1 = t - Float(i0),
-          w0 = (ScalarFloat) 1.f - w1;
+    Float w1 = t - Float(i0), w0 = (ScalarFloat) 1.f - w1;
 
     return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
                   ek::fmadd(w0, v0_y, w1 * v1_y),
-                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active, active, active);
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) &
+           ek::mask_t<Result>(active, active, active);
 }
 
 /**
@@ -259,15 +268,15 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
-          i1 = i0 + 1;
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(),
+                          UInt32(MTS_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
-    Float v0 = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
-    Float v1 = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
+    Float v0    = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1    = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
 
-    Float w1 = t - Float(i0),
-          w0 = (ScalarFloat) 1.f - w1;
+    Float w1 = t - Float(i0), w0 = (ScalarFloat) 1.f - w1;
 
     return ek::select(active, ek::fmadd(w0, v0, w1 * v1), 0.f);
 }
@@ -289,23 +298,24 @@ Result linear_rgb_rec(Float wavelength, ek::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(),
+                          UInt32(MTS_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
-    Float v0_r = (Float) ek::gather<Float32>(tables.srgb.x(), i0, active);
-    Float v1_r = (Float) ek::gather<Float32>(tables.srgb.x(), i1, active);
-    Float v0_g = (Float) ek::gather<Float32>(tables.srgb.y(), i0, active);
-    Float v1_g = (Float) ek::gather<Float32>(tables.srgb.y(), i1, active);
-    Float v0_b = (Float) ek::gather<Float32>(tables.srgb.z(), i0, active);
-    Float v1_b = (Float) ek::gather<Float32>(tables.srgb.z(), i1, active);
+    Float v0_r  = (Float) ek::gather<Float32>(tables.srgb.x(), i0, active);
+    Float v1_r  = (Float) ek::gather<Float32>(tables.srgb.x(), i1, active);
+    Float v0_g  = (Float) ek::gather<Float32>(tables.srgb.y(), i0, active);
+    Float v1_g  = (Float) ek::gather<Float32>(tables.srgb.y(), i1, active);
+    Float v0_b  = (Float) ek::gather<Float32>(tables.srgb.z(), i0, active);
+    Float v1_b  = (Float) ek::gather<Float32>(tables.srgb.z(), i1, active);
 
-    Float w1 = t - Float(i0),
-          w0 = (ScalarFloat) 1.f - w1;
+    Float w1 = t - Float(i0), w0 = (ScalarFloat) 1.f - w1;
 
     return Result(ek::fmadd(w0, v0_r, w1 * v1_r),
                   ek::fmadd(w0, v0_g, w1 * v1_g),
-                  ek::fmadd(w0, v0_b, w1 * v1_b)) & ek::mask_t<Result>(active, active, active);
+                  ek::fmadd(w0, v0_b, w1 * v1_b)) &
+           ek::mask_t<Result>(active, active, active);
 }
 
 /// Spectral responses to XYZ.
@@ -314,8 +324,7 @@ Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
                                 const Spectrum<Float, Size> &wavelengths,
                                 ek::mask_t<Float> active = true) {
     ek::Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
-    return { ek::hmean(XYZ.x() * value),
-             ek::hmean(XYZ.y() * value),
+    return { ek::hmean(XYZ.x() * value), ek::hmean(XYZ.y() * value),
              ek::hmean(XYZ.z() * value) };
 }
 
@@ -324,37 +333,42 @@ template <typename Float, size_t Size>
 Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
                                  const Spectrum<Float, Size> &wavelengths,
                                  ek::mask_t<Float> active = true) {
-    ek::Array<Spectrum<Float, Size>, 3> rgb = linear_rgb_rec(wavelengths, active);
-    return { ek::hmean(rgb.x() * value),
-             ek::hmean(rgb.y() * value),
+    ek::Array<Spectrum<Float, Size>, 3> rgb =
+        linear_rgb_rec(wavelengths, active);
+    return { ek::hmean(rgb.x() * value), ek::hmean(rgb.y() * value),
              ek::hmean(rgb.z() * value) };
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
 template <typename Float>
-Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, ek::mask_t<Float> /*active*/ = true) {
+Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb,
+                            ek::mask_t<Float> /*active*/ = true) {
     using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
-    const ScalarMatrix3f M(0.412453f, 0.357580f, 0.180423f,
-                           0.212671f, 0.715160f, 0.072169f,
-                           0.019334f, 0.119193f, 0.950227f);
+    const ScalarMatrix3f M(0.412453f, 0.357580f, 0.180423f, 0.212671f,
+                           0.715160f, 0.072169f, 0.019334f, 0.119193f,
+                           0.950227f);
     return M * rgb;
 }
 
 /// Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
 template <typename Float>
-Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz, ek::mask_t<Float> /*active*/ = true) {
+Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz,
+                            ek::mask_t<Float> /*active*/ = true) {
     using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
-    const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f,
-                          -0.969256f,  1.875991f,  0.041556f,
-                           0.055648f, -0.204043f,  1.057311f);
+    const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f, -0.969256f,
+                           1.875991f, 0.041556f, 0.055648f, -0.204043f,
+                           1.057311f);
     return M * xyz;
 }
 
-template <typename Float, size_t Size>
-Float luminance(const Spectrum<Float, Size> &value,
-                const Spectrum<Float, Size> &wavelengths,
-                ek::mask_t<Float> active = true) {
-    return ek::hmean(cie1931_y(wavelengths, active) * value);
+template <typename Spectrum, typename Wavelengths>
+ek::value_t<Spectrum> luminance(const Spectrum &value,
+                                const Wavelengths &wavelengths,
+                                ek::mask_t<Spectrum> active = true) {
+    if constexpr (is_rgb_v<Spectrum>)
+        return luminance(value);
+    else
+        return ek::hmean(cie1931_y(wavelengths, active) * value);
 }
 
 template <typename Float> Float luminance(const Color<Float, 3> &c) {
@@ -385,9 +399,9 @@ Value pdf_uniform_spectrum(const Value & /* wavelength */) {
 template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        Value wavelengths =
-            538.f - ek::atanh(0.8569106254698279f -
-                              1.8275019724092267f * sample) * 138.88888888888889f;
+        Value wavelengths = 538.f - ek::atanh(0.8569106254698279f -
+                                              1.8275019724092267f * sample) *
+                                        138.88888888888889f;
 
         Value tmp    = ek::cosh(0.0072f * (wavelengths - 538.f));
         Value weight = 253.82f * tmp * tmp;
@@ -408,7 +422,8 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
-        return ek::select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
+        return ek::select(wavelengths >= MTS_WAVELENGTH_MIN &&
+                              wavelengths <= MTS_WAVELENGTH_MAX,
                           0.003939804229326285f * tmp * tmp, ek::zero<Value>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
@@ -420,7 +435,8 @@ template <typename Float, typename Spectrum>
 std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
         ENOKI_MARK_USED(sample);
-        // Wavelengths should not be used when rendering in RGB or monochromatic modes.
+        // Wavelengths should not be used when rendering in RGB or monochromatic
+        // modes.
         return { {}, 1.f };
     } else {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
