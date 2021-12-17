@@ -110,7 +110,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
         if (m_tensor.array().is_literal() && m_tensor.array()[0] == 0.f &&
             m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size()) {
-            m_tensor.array() = block->tensor().array().copy();
+            // Create a copy as far as the AD layer is concerned
+            m_tensor.array() = block->tensor().array() + 0.f;
         } else {
             accumulate_2d<Float &, const Float &>(
                 block->tensor().array(), source_size,
