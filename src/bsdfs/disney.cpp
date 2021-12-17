@@ -171,7 +171,15 @@ All of the parameters except sampling rates, `diff_trans` and
 parameters which have 0.0 default value should not be specified in the xml file
 if the 0.0 value is used. Also, the parameters which are peculiar to one
 of the models (:monosp:`regular` or :monosp:`thin`) must only be specified in
-the corresponding model. :monosp:`Thin` BSDF is an approximation for 2D surfaces
+the corresponding model.
+
+The Disney BSDF is a complex BSDF with numerous reflective and transmittive
+capabilities. In a single framework, it is able to produce great number of
+material types ranging from metals to rough dielectrics. Moreover, it is
+designed for artistic purposes so it is art directable rather than strictly
+physically correct.
+
+:monosp:`Thin` BSDF is an approximation for 2D surfaces
 while :monosp:`regular` is the main BSDF. The implementation is based on the
 papers *Physically Based Shading at Disney* :cite:`Disney2012` and *Extending
 the Disney BRDF to a BSDF with Integrated Subsurface Scattering*
@@ -179,7 +187,7 @@ the Disney BRDF to a BSDF with Integrated Subsurface Scattering*
 
  .. note::
 
-    Subsurface Scattering and Volumetric Extinction is not supported!
+    Subsurface scattering and volumetric extinction is not supported!
 
 Images below show how the input parameters affect the appearance of the objects
 while one of the parameters is changed for each column.
@@ -192,7 +200,7 @@ while one of the parameters is changed for each column.
     :caption: Blending of parameters when transmission lobe is turned on (
               :monosp:`regular` material)
 .. subfigure:: ../../resources/data/docs/images/render/thin_disney_blend.png
-    :caption: Blending of Parameters ( :monosp:`thin` material)
+    :caption: Blending of parameters ( :monosp:`thin` material)
 .. subfigend::
     :label: fig-blend-disney
 
@@ -200,9 +208,9 @@ You can see the general structure of the BSDF below.
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/bsdf/disney.png
-    :caption: General Structure of :monosp:`regular` Configuration
+    :caption: The general structure of the :monosp:`regular` configuration
 .. subfigure:: ../../resources/data/docs/images/bsdf/thin_disney.png
-    :caption: General Structure of :monosp:`thin` Configuration
+    :caption: The general structure of the :monosp:`thin` configuration
 .. subfigend::
     :label: fig-structure-disney
 
