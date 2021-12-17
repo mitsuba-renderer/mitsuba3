@@ -263,6 +263,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 ek::eval(block->tensor());
             }
         }
+
         film->put_block(block);
 
         if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
