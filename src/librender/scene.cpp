@@ -220,36 +220,50 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
-    if (unlikely(m_emitters.empty()))
-        return { Ray3f(), Spectrum(0.f), EmitterPtr(nullptr) };
+    size_t emitter_count = m_emitters.size();
 
-    // Randomly pick an emitter according to the precomputed emitter distribution
-    auto [index, emitter_weight, sample_re] = sample_emitter(sample1, active);
-    sample1 = sample_re;
-    EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
+    Ray3f ray;
+    Spectrum weight;
+    EmitterPtr emitter;
 
-    // Note that the sampling weight includes emitted radiance.
-    auto [ray, ray_weight] =
-        emitter->sample_ray(time, sample1, sample2, sample3, active);
+    if (emitter_count > 1) {
+        // Randomly pick an emitter according to the precomputed emitter distribution
+        auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
+        emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
 
-    return { ray, emitter_weight * ray_weight, emitter };
+        // Note that the sampling weight includes emitted radiance.
+        std::tie(ray, weight) =
+            emitter->sample_ray(time, sample_1_re, sample2, sample3, active);
+
+        weight *= emitter_weight;
+    } else if (emitter_count == 1) {
+        std::tie(ray, weight) =
+            m_emitters[0]->sample_ray(time, sample1, sample2, sample3, active);
+    } else {
+        ray = ek::zero<Ray3f>();
+        weight = ek::zero<Spectrum>();
+        emitter = EmitterPtr(nullptr);
+    }
+
+    return { ray, weight, emitter };
 }
 
 MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
 Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
 
-    size_t emitters_size = m_emitters.size();
-    if (unlikely(emitters_size == 0))
+    if (unlikely(m_emitters.empty()))
         return { UInt32(-1), 0.f, index_sample };
 
-    UInt32 index = ek::min(UInt32(index_sample * (ScalarFloat) emitters_size),
-                           (uint32_t) emitters_size - 1);
-    // Rescale sample to lie in [0,1) again
-    index_sample = (index_sample - index / (ScalarFloat) emitters_size) * emitters_size;
+    size_t emitter_count = m_emitters.size();
+    UInt32 index = ek::min(UInt32(index_sample * (ScalarFloat) emitter_count),
+                           (uint32_t) emitter_count - 1);
 
-    // pdf = 1 / emitters_size  =>  sampling_weight = emitters_size
-    return { index, Float(emitters_size), index_sample };
+    // Rescale sample to lie in [0,1) again
+    index_sample = (index_sample - index / (ScalarFloat) emitter_count) * emitter_count;
+
+    // pdf = 1 / emitter_count  =>  sampling_weight = emitter_count
+    return { index, Float(emitter_count), index_sample };
 }
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
@@ -261,11 +275,11 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     DirectionSample3f ds;
     Spectrum spec;
 
-    size_t emitters_size = m_emitters.size();
-    if (likely(emitters_size > 0)) {
+    size_t emitter_count = m_emitters.size();
+    if (emitter_count > 1) {
         // Randomly pick an emitter
-        auto [index, emitter_weight, sample_re] = sample_emitter(sample.x(), active);
-        sample.x() = sample_re;
+        auto [index, emitter_weight, sample_x_re] = sample_emitter(sample.x(), active);
+        sample.x() = sample_x_re;
 
         // Sample a direction towards the emitter
         EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
@@ -274,6 +288,14 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= pdf_emitter(index, active);
         spec *= emitter_weight;
+
+        active &= ek::neq(ds.pdf, 0.f);
+
+        // Perform a visibility test if requested
+        if (test_visibility && ek::any_or<true>(active))
+            spec[ray_test(ref.spawn_ray_to(ds.p), active)] = 0.f;
+    } else if (emitter_count == 1) {
+        std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
 
         active &= ek::neq(ds.pdf, 0.f);
 
@@ -290,8 +312,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
 MTS_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/, Mask /*active*/) const {
-    size_t emitters_size = m_emitters.size();
-    return (emitters_size != 0) ? 1.f / emitters_size : 0.f;
+    return m_emitters.empty() ? 0.f : (1.f / (uint32_t) m_emitters.size());
 }
 
 MTS_VARIANT Float
