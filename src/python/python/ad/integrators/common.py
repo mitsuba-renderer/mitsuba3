@@ -294,7 +294,8 @@ def render(scene: mitsuba.render.Scene,
 
 def prepare_sampler(sensor: mitsuba.render.Sensor,
                     seed: int = 0,
-                    spp: int = 0):
+                    spp: int = 0,
+                    aovs: list = []):
     """
     Given a sensor and a desired number of samples per pixel, this function
     computes the necessary number of Monte Carlo samples and then suitably
@@ -342,6 +343,7 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
                         "count exceeding 2^32=4294967296, which is too large.")
 
     sampler.seed(seed, wavefront_size)
+    film.prepare(aovs)
 
     return spp
 
@@ -438,3 +440,32 @@ def mis_weight(pdf_a, pdf_b):
     """
     a2 = ek.sqr(pdf_a)
     return ek.detach(ek.select(pdf_a > 0, a2 / ek.fmadd(pdf_b, pdf_b, a2), 0), True)
+
+
+def develop_block(block: mitsuba.render.ImageBlock):
+    """
+    Perform the weight division in an ImageBlock, returns a tensor with one
+    channel less than before.
+    """
+
+    from mitsuba.core import TensorXf, Float, UInt32
+
+    channels_in  = block.channel_count()
+    channels_out = channels_in - 1
+    tensor       = block.tensor()
+    size         = tensor.shape[0:2]
+
+    # Compute indices to access specific components of 'values_in'
+    idx         = ek.arange(UInt32, ek.hprod(size) * channels_out)
+    pixel_idx   = idx // channels_out
+    channel_idx = ek.fnmadd(channels_out, pixel_idx, idx)
+    values_idx  = ek.fmadd(pixel_idx, channels_in, channel_idx)
+    weight_idx  = ek.fmadd(pixel_idx, channels_in, channels_out)
+
+    # Gather, and perform the weight division
+    weight_in = ek.gather(Float, tensor.array, weight_idx)
+    values_out = ek.gather(Float, tensor.array, values_idx)
+    values_out /= ek.select(ek.eq(weight_in, 0), 1, weight_in)
+
+    return TensorXf(values_out, (size[1], size[0], channels_out))
+
