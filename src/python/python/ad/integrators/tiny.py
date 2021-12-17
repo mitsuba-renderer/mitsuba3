@@ -2,7 +2,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare_sampler, sample_sensor_rays, mis_weight, develop_block
 
 class TinyIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -18,10 +18,9 @@ class TinyIntegrator(mitsuba.render.SamplingIntegrator):
                seed: int = 0,
                spp: int = 0,
                develop: bool = True,
-               evaluate: bool = True) -> None:
+               evaluate: bool = True) -> mitsuba.core.TensorXf:
 
         from mitsuba.core import Mask
-        from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -48,18 +47,15 @@ class TinyIntegrator(mitsuba.render.SamplingIntegrator):
                 active=Mask(True)
             )
 
-            block = ImageBlock(offset=film.crop_offset(),
-                               size=film.crop_size(),
-                               channel_count=5,
-                               rfilter=film.rfilter(),
-                               border=False)
+            crop_size = film.crop_size()
+            block = film.create_block()
+            block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Only use the coalescing feature when rendering enough samples
-            block.set_coalesce(block.coalesce() && spp >= 4)
-
             block.put(pos, ray.wavelengths, spec)
 
-            return block.tensor()
+            return develop_block(block)
+
 
 
     #def render_backward(self: mitsuba.render.SamplingIntegrator,

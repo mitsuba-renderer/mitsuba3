@@ -736,6 +736,7 @@ MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     oss << "ImageBlock[" << std::endl
         << "  offset = " << m_offset << "," << std::endl
         << "  size = " << m_size << "," << std::endl
+        << "  channel_count = " << m_channel_count << "," << std::endl
         << "  border_size = " << m_border_size << "," << std::endl
         << "  normalize = " << m_normalize << "," << std::endl
         << "  coalesce = " << m_coalesce << "," << std::endl
