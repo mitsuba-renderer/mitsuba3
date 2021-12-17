@@ -400,7 +400,9 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     using Index = ek::replace_scalar_t<Float, ScalarIndex>;
     Index face_idx;
     Point2f sample = sample_;
-    std::tie(face_idx, sample.y()) = m_area_pmf.sample_reuse(sample.y(), active);
+
+    std::tie(face_idx, sample.y()) =
+        m_area_pmf.sample_reuse(sample.y(), active);
 
     ek::Array<Index, 3> fi = face_indices(face_idx, active);
 
@@ -412,7 +414,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     Point2f b = warp::square_to_uniform_triangle(sample);
 
     PositionSample3f ps;
-    ps.p     = p0 + e0 * b.x() + e1 * b.y();
+    ps.p     = ek::fmadd(e0, b.x(), ek::fmadd(e1, b.y(), p0));
     ps.time  = time;
     ps.pdf   = m_area_pmf.normalization();
     ps.delta = false;
@@ -421,8 +423,9 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
-        ps.uv = uv0 * (1.f - b.x() - b.y())
-              + uv1 * b.x() + uv2 * b.y();
+
+        ps.uv = ek::fmadd(uv0, (1.f - b.x() - b.y()),
+                          ek::fmadd(uv1, b.x(), uv2 * b.y()));
     } else {
         ps.uv = b;
     }
@@ -431,11 +434,14 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
-        ps.n = ek::normalize(n0 * (1.f - b.x() - b.y())
-                       + n1 * b.x() + n2 * b.y());
+
+        ps.n = ek::fmadd(n0, (1.f - b.x() - b.y()),
+                         ek::fmadd(n1, b.x(), n2 * b.y()));
     } else {
-        ps.n = ek::normalize(ek::cross(e0, e1));
+        ps.n = ek::cross(e0, e1);
     }
+
+    ps.n = ek::normalize(ps.n);
 
     if (m_flip_normals)
         ps.n = -ps.n;
@@ -604,6 +610,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         b1 = ek::detach(prim_uv.x());
         b2 = ek::detach(prim_uv.y());
     }
+
     Float b0 = 1.f - b1 - b2;
 
     Vector3f dp0 = p1 - p0,
@@ -612,7 +619,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
     // Re-interpolate intersection using barycentric coordinates
-    si.p = p0 * b0 + p1 * b1 + p2 * b2;
+    si.p = ek::fmadd(p0, b0, ek::fmadd(p1, b1, p2 * b2));
 
     // Potentially recompute the distance traveled to the surface interaction hit point
     if (!ek::is_diff_array_v<Float> ||

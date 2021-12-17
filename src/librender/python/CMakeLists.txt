@@ -63,6 +63,7 @@ pybind11_add_module(render_ext
   phase.cpp
   sensor.cpp
   spiral.cpp
+  film.cpp
 )
 
 # macOS: Avoid warnings about loop unrolling being disabled with -Os

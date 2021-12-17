@@ -100,7 +100,6 @@ public:
     using FloatStorage = DynamicBuffer<Float>;
 
     SpecFilm(const Properties &props) : Base(props) {
-
         if constexpr (!is_spectral_v<Spectrum>)
             Log(Error, "This film can only be used in Mitsuba variants that "
                        "perform a spectral simulation.");

@@ -54,6 +54,9 @@ class TinyIntegrator(mitsuba.render.SamplingIntegrator):
                                rfilter=film.rfilter(),
                                border=False)
 
+            # Only use the coalescing feature when rendering enough samples
+            block.set_coalesce(block.coalesce() && spp >= 4)
+
             block.put(pos, ray.wavelengths, spec)
 
             return block.tensor()

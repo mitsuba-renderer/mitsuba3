@@ -16,6 +16,7 @@ MTS_PY_EXPORT(Bitmap) {
         .value("YA",    Bitmap::PixelFormat::YA,    D(Bitmap, PixelFormat, YA))
         .value("RGB",   Bitmap::PixelFormat::RGB,   D(Bitmap, PixelFormat, RGB))
         .value("RGBA",  Bitmap::PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBA))
+        .value("RGBW",  Bitmap::PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBW))
         .value("RGBAW", Bitmap::PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
         .value("XYZ",   Bitmap::PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
         .value("XYZA",  Bitmap::PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))

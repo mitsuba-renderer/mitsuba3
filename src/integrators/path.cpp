@@ -163,7 +163,11 @@ public:
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 Float mis = ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
-                result[active_e] += mis * throughput * bsdf_val * emitter_val;
+
+                if constexpr (is_polarized_v<Spectrum>)
+                    result[active_e] += mis * throughput * bsdf_val * emitter_val;
+                else
+                    result[active_e] = ek::fmadd(mis * bsdf_val * emitter_val, throughput, result);
             }
 
             // ----------------------- BSDF sampling ----------------------
@@ -197,8 +201,14 @@ public:
 
                 Float mis = mis_weight(bs.pdf, emitter_pdf);
                 EmitterPtr emitter_b = si_bsdf.emitter(scene, active);
-                if (ek::any_or<true>(ek::neq(emitter_b, nullptr)))
-                    result[active] += mis * throughput * emitter_b->eval(si_bsdf, active);
+                if (ek::any_or<true>(ek::neq(emitter_b, nullptr))) {
+                    Spectrum emitter_val = emitter_b->eval(si_bsdf, active);
+
+                    if constexpr (is_polarized_v<Spectrum>)
+                        result[active] += mis * throughput * emitter_val;
+                    else
+                        result[active] = ek::fmadd(mis * emitter_val, throughput, result);
+                }
             }
 
             si = std::move(si_bsdf);

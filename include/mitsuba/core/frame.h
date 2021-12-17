@@ -37,7 +37,7 @@ template <typename Float_> struct Frame {
 
     /// Convert from local coordinates to world coordinates
     Vector3f to_world(const Vector3f &v) const {
-        return s * v.x() + t * v.y() + n * v.z();
+        return ek::fmadd(s, v.x(), ek::fmadd(t, v.y(), n * v.z()));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the

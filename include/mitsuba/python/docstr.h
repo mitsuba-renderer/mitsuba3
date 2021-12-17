@@ -833,7 +833,9 @@ static const char *__doc_mitsuba_Bitmap_PixelFormat_RGB = R"doc(RGB bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBA = R"doc(RGB bitmap + alpha channel)doc";
 
-static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBAW = R"doc(RGB bitmap + alpha channel + weight)doc";
+static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBAW = R"doc(RGB bitmap + alpha channel + weight (used by ImageBlock))doc";
+
+static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBW = R"doc(RGB bitmap + weight (used by ImageBlock))doc";
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZ = R"doc(XYZ tristimulus bitmap)doc";
 
@@ -2450,6 +2452,8 @@ static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
+static const char *__doc_mitsuba_FilmFlags_Alpha = R"doc(The film stores an alpha channel)doc";
+
 static const char *__doc_mitsuba_FilmFlags_None = R"doc(No flags set (default value))doc";
 
 static const char *__doc_mitsuba_FilmFlags_Special =
@@ -2972,9 +2976,9 @@ block.
 
 Remark:
     This variant of the put() function assumes that the ImageBlock has
-    a standard layout, namely: ``RGB``, ``alpha``, and a ``weight``
-    channel. Use the other variant if the channel configuration
-    deviations from this default.
+    a standard layout, namely: ``RGB``, potentially ``alpha``, and a
+    ``weight`` channel. Use the other variant if the channel
+    configuration deviations from this default.
 
 Parameter ``pos``:
     Denotes the sample position in fractional pixel coordinates
@@ -5990,6 +5994,8 @@ static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_film = R"doc(Return the Film instance associated with this sensor)doc";
 
 static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the Film instance associated with this sensor (const))doc";
+
+static const char *__doc_mitsuba_Sensor_m_alpha = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_film = R"doc()doc";
 
