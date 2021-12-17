@@ -1146,8 +1146,8 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
-        bool is_regular = true;
-        Float interval = 0;
+        Float min_interval = 0,
+              max_interval = std::numeric_limits<Float>::infinity();
 
         for (size_t n = 0; n < wavelengths.size(); ++n) {
             values[n] *= unit_conversion;
@@ -1158,14 +1158,19 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             Float distance = (wavelengths[n] - wavelengths[n - 1]);
             if (distance < 0)
                 Throw("Wavelengths must be specified in increasing order!");
-            if (n == 1)
-                interval = distance;
-            else if (ek::abs(distance - interval) > ek::Epsilon<Float>)
-                is_regular = false;
+
+            min_interval = std::min(distance, min_interval);
+            max_interval = std::max(distance, max_interval);
         }
 
         if (is_spectral_mode) {
             Properties props;
+
+            /* The regular spectrum class is more efficient, so tolerate a small
+               amount of imprecision in the parsed interval positions.. */
+            bool is_regular =
+                (max_interval - min_interval) > Float(1e-3) * min_interval;
+
             if (is_regular) {
                 props.set_plugin_name("regular");
                 props.set_long("size", wavelengths.size());
@@ -1178,6 +1183,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 props.set_pointer("wavelengths", wavelengths.data());
                 props.set_pointer("values", values.data());
             }
+
             return PluginManager::instance()->create_object(props, class_);
         } else {
             // In non-spectral mode, pre-integrate against the CIE matching curves
