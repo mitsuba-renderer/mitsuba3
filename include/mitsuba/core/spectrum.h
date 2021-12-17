@@ -342,11 +342,13 @@ Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz, ek::mask_t<Float> /*acti
     return M * xyz;
 }
 
-template <typename Float, size_t Size>
-Float luminance(const Spectrum<Float, Size> &value,
-                const Spectrum<Float, Size> &wavelengths,
-                ek::mask_t<Float> active = true) {
-    return ek::hmean(cie1931_y(wavelengths, active) * value);
+template <typename Spectrum, typename Wavelengths>
+ek::value_t<Spectrum> luminance(const Spectrum &value,const Wavelengths &wavelengths,
+                                 ek::mask_t<Spectrum> active = true) {
+        if constexpr (is_rgb_v<Spectrum>)
+            return luminance(value);
+        else
+            return ek::hmean(cie1931_y(wavelengths, active) * value);
 }
 
 template <typename Float> Float luminance(const Color<Float, 3> &c) {

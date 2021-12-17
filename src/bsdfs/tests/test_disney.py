@@ -48,12 +48,11 @@ def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
 def test03_chi2_spec_trans_inside(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # spec_trans inside (wi.z() < 0)
-    xml = """<float name="roughness" value="0.6"/>
-             <float name="metallic" value="0.2"/>
+    xml = """<float name="roughness" value="0.5"/>
              <float name="anisotropic" value="0.4"/>
              <float name="clearcoat" value="0.8"/>
              <float name="spec_trans" value="0.7"/>
-             <float name="eta" value="1.3296"/>
+             <float name="eta" value="1.5"/>
           """
     wi = ek.normalize(ScalarVector3f([1, 0, -1]))
     sample_func, pdf_func = BSDFAdapter("disney", xml, wi=wi)
