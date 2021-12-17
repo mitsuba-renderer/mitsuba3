@@ -359,6 +359,8 @@ public:
         m_flags = m_components[0] | m_components[1] | m_components[2] |
                   m_components[3];
         ek::set_attr(this, "flags", m_flags);
+
+        parameters_changed();
     }
     // Helper Functions
     /**
@@ -1620,6 +1622,11 @@ public:
                 m_has_flatness = true;
             if (string::contains(keys, "spec_tint"))
                 m_has_spec_tint = true;
+            ek::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                            m_sheen_tint,m_spec_trans,m_flatness,m_spec_tint,
+                            m_diff_trans,m_eta_thin,m_diff_refl_srate,
+                            m_spec_refl_srate,m_spec_trans_srate,
+                            m_diff_trans_srate);
         } else {
             if (string::contains(keys, "spec_trans"))
                 m_has_spec_trans = true;
@@ -1643,13 +1650,17 @@ public:
                 ek::masked(m_specular, m_specular == 0.0f) = 1e-3f;
                 m_eta =
                     2.0f * ek::rcp(1.0f - ek::sqrt(0.08f * m_specular)) - 1.0f;
-                ek::make_opaque(m_eta, m_specular);
             }
             if (m_eta_specular && string::contains(keys, "eta")) {
                 // Eta = 1 is not plausible for transmission.
                 ek::masked(m_eta, m_eta == 1.0f) = 1.001f;
-                ek::make_opaque(m_eta);
             }
+            ek::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                            m_sheen_tint,m_spec_trans,m_flatness,m_spec_tint,
+                            m_clearcoat,m_clearcoat_gloss,m_metallic,m_eta,
+                            m_diff_refl_srate,m_spec_srate,m_clearcoat_srate);
+            if(!m_eta_specular)
+                ek::make_opaque(m_specular);
         }
     }
 
