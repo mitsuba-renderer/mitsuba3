@@ -375,9 +375,8 @@ public:
               y1 = ek::gather<Value>(m_pdf, index + 1u, active),
               c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0u);
 
-
         Value t   = ek::clamp(x - Value(index), 0.f, 1.f),
-              cdf = c0 + t * (y0 + .5f * t * (y1 - y0)) * m_interval_size;
+              cdf = ek::fmadd(t, ek::fmadd(.5f * t, y1 - y0, y0) * m_interval_size, c0);
 
         return cdf;
     }
@@ -417,8 +416,8 @@ public:
 
         value = (value - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-              t_const  = value / y0,
+        Value t_linear = (y0 - ek::safe_sqrt(ek::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * ek::rcp(y0 - y1),
+              t_const  = value * ek::rcp(y0),
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
         return ek::fmadd(Value(index) + t, m_interval_size, m_range.x());
@@ -455,8 +454,8 @@ public:
 
         value = (value - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-              t_const  = value / y0,
+        Value t_linear = (y0 - ek::safe_sqrt(ek::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * ek::rcp(y0 - y1),
+              t_const  = value * ek::rcp(y0),
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
         return { ek::fmadd(Value(index) + t, m_interval_size, m_range.x()),
