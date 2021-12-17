@@ -165,6 +165,7 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         case PixelFormat::YA:    channels = { "Y", "A" };               break;
         case PixelFormat::RGB:   channels = { "R", "G", "B"};           break;
         case PixelFormat::RGBA:  channels = { "R", "G", "B", "A"};      break;
+        case PixelFormat::RGBW:  channels = { "R", "G", "B", "W"};      break;
         case PixelFormat::RGBAW: channels = { "R", "G", "B", "A", "W"}; break;
         case PixelFormat::XYZ:   channels = { "X", "Y", "Z"};           break;
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
@@ -408,6 +409,7 @@ void Bitmap::convert(Bitmap *target) const {
     ref<Struct> target_struct = new Struct(*(target->struct_()));
 
     bool source_is_rgb = m_pixel_format == PixelFormat::RGB ||
+                         m_pixel_format == PixelFormat::RGBW ||
                          m_pixel_format == PixelFormat::RGBA ||
                          m_pixel_format == PixelFormat::RGBAW;
     bool source_is_xyz = m_pixel_format == PixelFormat::XYZ ||
@@ -636,7 +638,7 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         if (has_xyz || has_rgb || has_y) {
             target = new Bitmap(
                 has_rgb
-                    ? (has_w ? PixelFormat::RGBAW
+                    ? (has_w ? (has_a ? PixelFormat::RGBAW : PixelFormat::RGBW)
                              : (has_a ? PixelFormat::RGBA : PixelFormat::RGB))
                     : (has_xyz ? (has_a ? PixelFormat::XYZA : PixelFormat::XYZ)
                                : (has_a ? PixelFormat::YA : PixelFormat::Y)),
@@ -2457,6 +2459,7 @@ std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value) {
         case Bitmap::PixelFormat::YA:           os << "ya"; break;
         case Bitmap::PixelFormat::RGB:          os << "rgb"; break;
         case Bitmap::PixelFormat::RGBA:         os << "rgba"; break;
+        case Bitmap::PixelFormat::RGBW:         os << "rgbw"; break;
         case Bitmap::PixelFormat::RGBAW:        os << "rgbaw"; break;
         case Bitmap::PixelFormat::XYZ:          os << "xyz"; break;
         case Bitmap::PixelFormat::XYZA:         os << "xyza"; break;

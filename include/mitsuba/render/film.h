@@ -21,16 +21,19 @@ enum class FilmFlags : uint32_t {
     // =============================================================
 
     /// No flags set (default value)
-    None                 = 0x00000,
+    None                 = 0x0,
+
+    /// The film stores an alpha channel
+    Alpha                = 0x1,
 
     /// The film stores a spectral representation of the image
-    Spectral             = 0x00001,
+    Spectral             = 0x2,
 
     /**
      * The film provides a customized \ref prepare_sample() routine that implements
      * a special treatment of the samples before storing them in the Image Block.
      */
-    Special              = 0x00002,
+    Special              = 0x4,
 };
 
 MTS_DECLARE_ENUM_OPERATORS(FilmFlags)

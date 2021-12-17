@@ -119,28 +119,36 @@ public:
                   " found %s instead.", file_format);
         }
 
+
         if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
             m_pixel_format = Bitmap::PixelFormat::Y;
+            m_flags = +FilmFlags::None;
             if (pixel_format != "luminance")
                 Log(Warn,
                     "Monochrome mode enabled, setting film output pixel format "
                     "to 'luminance' (was %s).",
                     pixel_format);
-        } else if (pixel_format == "luminance_alpha")
+        } else if (pixel_format == "luminance_alpha") {
             m_pixel_format = Bitmap::PixelFormat::YA;
-        else if (pixel_format == "rgb")
+            m_flags = +FilmFlags::Alpha;
+        } else if (pixel_format == "rgb") {
             m_pixel_format = Bitmap::PixelFormat::RGB;
-        else if (pixel_format == "rgba")
+            m_flags = +FilmFlags::None;
+        } else if (pixel_format == "rgba") {
             m_pixel_format = Bitmap::PixelFormat::RGBA;
-        else if (pixel_format == "xyz")
+            m_flags = +FilmFlags::Alpha;
+        } else if (pixel_format == "xyz") {
             m_pixel_format = Bitmap::PixelFormat::XYZ;
-        else if (pixel_format == "xyza")
+            m_flags = +FilmFlags::None;
+        } else if (pixel_format == "xyza") {
             m_pixel_format = Bitmap::PixelFormat::XYZA;
-        else
+            m_flags = +FilmFlags::Alpha;
+        } else {
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
                   " \"xyz\", \"xyza\". Found %s.",
                   pixel_format);
+        }
 
         if (component_format == "float16")
             m_component_format = Struct::Type::Float16;
@@ -178,20 +186,23 @@ public:
             }
         }
 
-        m_flags = +FilmFlags::None;
-
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
     size_t prepare(const std::vector<std::string> &aovs) override {
-        std::vector<std::string> channels(5 + aovs.size());
+        bool alpha = has_flag(m_flags, FilmFlags::Alpha);
+        size_t base_channels = alpha ? 5 : 4;
+
+        std::vector<std::string> channels(base_channels + aovs.size());
 
         // Add basic RGBAW channels to the film
-        for (size_t i = 0; i < 5; ++i)
-            channels[i] = std::string(1, "RGBAW"[i]);
+        const char *base_channel_names = alpha ? "RGBAW" : "RGBW";
+
+        for (size_t i = 0; i < base_channels; ++i)
+            channels[i] = std::string(1, base_channel_names[i]);
 
         for (size_t i = 0; i < aovs.size(); ++i)
-            channels[5 + i] = aovs[i];
+            channels[base_channels + i] = aovs[i];
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -260,18 +271,17 @@ public:
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
             bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
                              m_pixel_format == Bitmap::PixelFormat::YA;
-            bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
-                             m_pixel_format == Bitmap::PixelFormat::YA ||
-                             m_pixel_format == Bitmap::PixelFormat::XYZA;
 
             // Number of arbitrary output variables (AOVs)
-            uint32_t aovs = source_ch - 5;
+            bool alpha = has_flag(m_flags, FilmFlags::Alpha);
+            uint32_t base_ch = alpha ? 5 : 4,
+                     aovs    = source_ch - base_ch;
 
             /// Number of desired color components
             uint32_t color_ch = to_y ? 1 : 3;
 
             // Number of channels of the target tensor
-            uint32_t target_ch = color_ch + aovs + (has_alpha ? 1 : 0);
+            uint32_t target_ch = color_ch + aovs + (uint32_t) alpha;
 
             // Index vectors referencing pixels & channels of the output image
             UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
@@ -282,17 +292,17 @@ public:
                  values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
                  weight_idx = W1, W1, W1, W2, W2, W2 */
             UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
-                   weight_idx = ek::fmadd(pixel_idx, source_ch, 4);
+                   weight_idx = ek::fmadd(pixel_idx, source_ch, base_ch - 1);
 
             // If AOVs are desired, their indices in 'values_idx' must be shifted
             if (aovs) {
                 // Index of first AOV channel in output image
-                uint32_t first_aov = color_ch + (has_alpha ? 1 : 0);
-                values_idx[channel_idx >= first_aov] += 5 - first_aov;
+                uint32_t first_aov = color_ch + (uint32_t) alpha;
+                values_idx[channel_idx >= first_aov] += base_ch - first_aov;
             }
 
             // If luminance + alpha, shift alpha channel to skip the GB channels
-            if (has_alpha && to_y)
+            if (alpha && to_y)
                 values_idx[ek::eq(channel_idx, color_ch /* alpha */)] += 2;
 
             Mask value_mask = true;
@@ -355,10 +365,17 @@ public:
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
 
+        bool alpha = has_flag(m_flags, FilmFlags::Alpha);
+        uint32_t base_ch = alpha ? 5 : 4;
+        bool has_aovs  = m_channels.size() != base_ch;
+
+        Bitmap::PixelFormat source_fmt = !has_aovs
+                                     ? (alpha ? Bitmap::PixelFormat::RGBAW
+                                              : Bitmap::PixelFormat::RGBW)
+                                     : Bitmap::PixelFormat::MultiChannel;
+
         ref<Bitmap> source = new Bitmap(
-            m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
-                                   : Bitmap::PixelFormat::RGBAW,
-            struct_type_v<ScalarFloat>, m_storage->size(),
+            source_fmt, struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
 
         if (raw)
@@ -370,14 +387,11 @@ public:
                          m_pixel_format == Bitmap::PixelFormat::XYZA;
         bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
                          m_pixel_format == Bitmap::PixelFormat::YA;
-        bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
-                         m_pixel_format == Bitmap::PixelFormat::YA ||
-                         m_pixel_format == Bitmap::PixelFormat::XYZA;
-        bool has_aovs  = m_channels.size() != 5;
 
         uint32_t img_ch = to_y ? 1 : 3;
-        uint32_t aovs_channel = (has_aovs ? img_ch + (has_alpha ? 1 : 0) : 0);
-        uint32_t target_ch = (uint32_t) m_storage->channel_count() - 5 + aovs_channel;
+        uint32_t aovs_channel = has_aovs ? (img_ch + (uint32_t) alpha) : 0;
+        uint32_t target_ch =
+            (uint32_t) m_storage->channel_count() - base_ch + aovs_channel;
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
@@ -385,7 +399,8 @@ public:
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
-            source->struct_()->operator[](4).flags |= +Struct::Flags::Weight;
+            source->struct_()->operator[](base_ch - 1).flags |=
+                +Struct::Flags::Weight;
 
             for (size_t i = 0; i < target_ch; ++i) {
                 Struct::Field &dest_field = target->struct_()->operator[](i);
@@ -426,7 +441,7 @@ public:
                                 { 0.072169f, "B" }
                             };
                             break;
-                        } else if (to_y && has_alpha) {
+                        } else if (to_y && alpha) {
                             dest_field.name = "A";
                             break;
                         }
@@ -448,14 +463,14 @@ public:
                         [[fallthrough]];
 
                     case 3:
-                        if ((to_rgb || to_xyz) && has_alpha) {
+                        if ((to_rgb || to_xyz) && alpha) {
                             dest_field.name = "A";
                             break;
                         }
                         [[fallthrough]];
 
                     default:
-                        dest_field.name = m_channels[5 + i - aovs_channel];
+                        dest_field.name = m_channels[base_ch + i - aovs_channel];
                         break;
                 }
             }

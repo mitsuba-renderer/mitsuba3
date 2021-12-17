@@ -80,7 +80,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     m_stop = false;
 
     // Render on a larger film if the 'high quality edges' feature is enabled
-    ref<Film> film = sensor->film();
+    Film *film = sensor->film();
     ScalarVector2u film_size = film->crop_size();
     if (film->sample_border())
         film_size += 2 * film->rfilter()->border_size();
@@ -219,6 +219,9 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         // Allocate a large image block that will receive the entire rendering
         ref<ImageBlock> block = film->create_block();
         block->set_offset(film->crop_offset());
+
+        // Only use the ImageBlock coalescing feature when rendering enough samples
+        block->set_coalesce(block->coalesce() && spp_per_pass >= 4);
 
         // Compute discrete sample position
         UInt32 idx = ek::arange<UInt32>(wavefront_size);
@@ -359,6 +362,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    ScalarFloat diff_scale_factor,
                                                    Mask active) const {
     const Film *film = sensor->film();
+    const bool has_alpha = has_flag(film->flags(), FilmFlags::Alpha);
 
     ScalarVector2f scale = 1.f / ScalarVector2f(film->crop_size()),
                    offset = -ScalarVector2f(film->crop_offset()) * scale;
@@ -375,7 +379,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         time += sampler->next_1d(active) * sensor->shutter_open_time();
 
     Float wavelength_sample = 0.f;
-
     if constexpr (is_spectral_v<Spectrum>)
         wavelength_sample = sampler->next_1d(active);
 
@@ -386,14 +389,14 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         ray.scale_differential(diff_scale_factor);
 
     const Medium *medium = sensor->medium();
-    std::pair<Spectrum, Mask> result = sample(
-        scene, sampler, ray, medium, aovs + 5 /* skip R,G,B,A,W */, active);
-    result.first = ray_weight * result.first;
 
-    UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
+    auto [spec, valid] = sample(scene, sampler, ray, medium,
+               aovs + (has_alpha ? 5 : 4) /* skip R,G,B,[A],W */, active);
 
-    if (unlikely(has_flag(sensor->film()->flags(), FilmFlags::Special))) {
-        sensor->film()->prepare_sample(spec_u, ray.wavelengths, aovs, result.second);
+    UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
+
+    if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
+        film->prepare_sample(spec_u, ray.wavelengths, aovs, valid);
     } else {
         Color3f rgb;
         if constexpr (is_spectral_v<Spectrum>)
@@ -406,8 +409,13 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         aovs[0] = rgb.x();
         aovs[1] = rgb.y();
         aovs[2] = rgb.z();
-        aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
-        aovs[4] = 1.f;
+
+        if (likely(has_alpha)) {
+            aovs[3] = ek::select(valid, Float(1.f), Float(0.f));
+            aovs[4] = 1.f;
+        } else {
+            aovs[3] = 1.f;
+        }
     }
 
     block->put(sample_pos, aovs, active);
@@ -470,7 +478,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
-    ref<Film> film = sensor->film();
+    Film *film = sensor->film();
     ScalarVector2u film_size = film->size(),
                    crop_size = film->crop_size();
 

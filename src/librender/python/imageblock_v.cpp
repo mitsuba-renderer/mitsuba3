@@ -24,7 +24,7 @@ MTS_PY_EXPORT(ImageBlock) {
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put), "block"_a)
         .def("put",
              py::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
-                               const Spectrum &, const Float &, const Float &,
+                               const Spectrum &, Float, Float,
                                ek::mask_t<Float>>(&ImageBlock::put),
              "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a = 1.f,
              "weight"_a = 1, "active"_a = true, D(ImageBlock, put, 2))

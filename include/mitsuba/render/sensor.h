@@ -160,6 +160,7 @@ protected:
     ScalarFloat m_shutter_open;
     ScalarFloat m_shutter_open_time;
     ref<const Texture> m_srf;
+    bool m_alpha;
 };
 
 

@@ -42,7 +42,10 @@ public:
         /// RGB bitmap + alpha channel
         RGBA,
 
-        /// RGB bitmap + alpha channel + weight
+        /// RGB bitmap + weight (used by \ref ImageBlock)
+        RGBW,
+
+        /// RGB bitmap + alpha channel + weight (used by \ref ImageBlock)
         RGBAW,
 
         /// XYZ tristimulus bitmap

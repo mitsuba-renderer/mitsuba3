@@ -154,9 +154,9 @@ public:
      * image block.
      *
      * \remark This variant of the put() function assumes that the ImageBlock
-     * has a standard layout, namely: \c RGB, \c alpha, and a \c weight
-     * channel. Use the other variant if the channel configuration deviations
-     * from this default.
+     * has a standard layout, namely: \c RGB, potentially \c alpha, and a \c
+     * weight channel. Use the other variant if the channel configuration
+     * deviations from this default.
      *
      * \param pos
      *    Denotes the sample position in fractional pixel coordinates
@@ -173,12 +173,10 @@ public:
     void put(const Point2f &pos,
              const Wavelength &wavelengths,
              const Spectrum &value,
-             const Float &alpha,
-             const Float &weight = 1,
+             Float alpha = 1.f,
+             Float weight = 1.f,
              Mask active = true) {
         ENOKI_MARK_USED(wavelengths);
-        if (unlikely(m_channel_count != 5))
-            Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
 
         UnpolarizedSpectrum spec_u = unpolarized_spectrum(value);
 
@@ -190,8 +188,16 @@ public:
         else
             rgb = spec_u;
 
-        Float values[5] = { rgb.x(), rgb.y(), rgb.z(),
-                            alpha, weight };
+        Float values[5] = { rgb.x(), rgb.y(), rgb.z(), 0, 0 };
+
+        if (m_channel_count == 4) {
+            values[3] = weight;
+        } else if (m_channel_count == 5) {
+            values[3] = alpha;
+            values[4] = weight;
+        } else {
+            Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
+        }
 
         put(pos, values, active);
     }
