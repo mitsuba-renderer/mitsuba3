@@ -1,3 +1,5 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 from collections.abc import Mapping
 from contextlib import contextmanager
 
@@ -141,13 +143,15 @@ class SceneParameters(Mapping):
         Reduce the size of the dictionary by only keeping elements,
         whose keys are part of the provided list 'keys'.
         """
+        assert isinstance(keys, list)
+
         keys = set(keys)
         self.properties = {
             k: v for k, v in self.properties.items() if k in keys
         }
 
 
-def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
+def traverse(node: mitsuba.core.Object) -> SceneParameters:
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.

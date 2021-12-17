@@ -4,12 +4,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-Spiral::Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes)
-    : m_block_size(block_size),
-      m_size(size), m_offset(offset),
-      m_remaining_passes(passes) {
+Spiral::Spiral(const Vector2u &size, const Vector2u &offset,
+               uint32_t block_size, uint32_t passes)
+    : m_size(size), m_offset(offset), m_passes_left(passes),
+      m_block_size(block_size) {
 
-    m_blocks = Vector2i(ceil(Vector2f(m_size) / m_block_size));
+    m_blocks = (size + (block_size - 1)) / block_size;
     m_block_count = ek::hprod(m_blocks);
 
     reset();
@@ -17,40 +17,40 @@ Spiral::Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes)
 
 void Spiral::reset() {
     m_block_counter = 0;
-    m_current_direction = Direction::Right;
-    m_position = m_blocks / 2;
+    direction = Direction::Right;
+    m_position = Vector2u(m_blocks / 2);
     m_steps_left = 1;
-    m_steps = 1;
+    m_spiral_size = 1;
 }
 
-std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
+std::tuple<Spiral::Vector2u, Spiral::Vector2u, uint32_t> Spiral::next_block() {
     // Reimplementation of the spiraling block generator by Adam Arbree.
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (m_block_count == m_block_counter) {
-        if (m_remaining_passes > 1) {
-            --m_remaining_passes;
+    if (m_block_counter == m_block_count) {
+        if (m_passes_left > 1) {
+            --m_passes_left;
             reset();
+        } else {
+            return { 0, 0, (uint32_t) -1 };
         }
-        else
-            return { Vector2i(0), Vector2i(0), (size_t) -1 };
     }
 
     // Calculate a unique identifer per block
-    size_t block_id = m_block_counter + (m_remaining_passes - 1) * m_block_count;
+    uint32_t block_id =
+        m_block_counter + (m_passes_left - 1) * m_block_count;
 
-    Vector2i offset(m_position * (int) m_block_size);
-    Vector2i size = ek::min((int) m_block_size, m_size - offset);
-    offset += m_offset;
+    Vector2u offset = m_position * m_block_size,
+             size   = ek::min(m_block_size, m_size - offset);
 
-    Assert(ek::all(size > 0));
+    Assert(ek::all(offset <= m_size));
 
     ++m_block_counter;
 
     if (m_block_counter != m_block_count) {
         // Prepare the next block's position along the spiral.
         do {
-            switch (m_current_direction) {
+            switch (direction) {
                 case Direction::Right: ++m_position.x(); break;
                 case Direction::Down:  ++m_position.y(); break;
                 case Direction::Left:  --m_position.x(); break;
@@ -58,16 +58,16 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
             }
 
             if (--m_steps_left == 0) {
-                m_current_direction = Direction(((int) m_current_direction + 1) % 4);
-                if (m_current_direction == Direction::Left ||
-                    m_current_direction == Direction::Right)
-                    ++m_steps;
-                m_steps_left = m_steps;
+                direction = Direction(((int) direction + 1) % 4);
+                if (direction == Direction::Left ||
+                    direction == Direction::Right)
+                    ++m_spiral_size;
+                m_steps_left = m_spiral_size;
             }
         } while (ek::any(m_position < 0 || m_position >= m_blocks));
     }
 
-    return { offset, size, block_id };
+    return { offset + m_offset, size, block_id };
 }
 
 MTS_IMPLEMENT_CLASS(Spiral, Object)

@@ -3,10 +3,27 @@
 
 MTS_PY_EXPORT(sample_tea) {
     MTS_PY_IMPORT_TYPES()
+
+    if constexpr (ek::is_jit_array_v<UInt32>) {
+        m.def("sample_tea_32", sample_tea_32<uint32_t>,
+               "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_32));
+
+        m.def("sample_tea_64", sample_tea_64<uint32_t>,
+               "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_64));
+
+        m.def("sample_tea_float32",
+              sample_tea_float32<uint32_t>,
+              "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float32));
+
+        m.def("sample_tea_float64",
+              sample_tea_float64<uint32_t>,
+              "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_float64));
+    }
+
     m.def("sample_tea_32", sample_tea_32<UInt32>,
            "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_32));
 
-    m.def("sample_tea_64", sample_tea_64<UInt64>,
+    m.def("sample_tea_64", sample_tea_64<UInt32>,
            "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_64));
 
     m.def("sample_tea_float32",
@@ -22,7 +39,7 @@ MTS_PY_EXPORT(sample_tea) {
 
     m.def("permute",
           permute<UInt32>,
-          "value"_a, "sample_count"_a, "seed"_a, "rounds"_a = 4, D(permute));
+          "value"_a, "size"_a, "seed"_a, "rounds"_a = 4, D(permute));
 
     m.def("permute_kensler",
           permute_kensler<UInt32>,

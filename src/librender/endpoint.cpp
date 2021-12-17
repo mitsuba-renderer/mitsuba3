@@ -38,7 +38,7 @@ MTS_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape * shape) {
 }
 
 MTS_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
-    if (medium)
+    if (m_medium)
         Throw("An endpoint can be only be attached to a single medium.");
 
     m_medium = medium;

@@ -29,6 +29,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     texture_v.cpp
     volume_v.cpp
     volumegrid_v.cpp
+    signal.h
   )
 
   target_compile_definitions(${TARGET_NAME} PRIVATE

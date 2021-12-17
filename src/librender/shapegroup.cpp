@@ -55,8 +55,8 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
-#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_jit_array_v<Float>) {
+#if defined(MTS_ENABLE_LLVM)
+    if constexpr (ek::is_llvm_array_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
         for (size_t i = 0; i < m_shapes.size(); i++)
@@ -133,7 +133,6 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     ShapePtr shape = pi.shape;
 
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     if constexpr (!ek::is_cuda_array_v<Float>) {
         if constexpr (!ek::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
@@ -144,7 +143,6 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 #endif
         }
     }
-#endif
 
     if (recursion_depth > 0)
         return ek::zero<SurfaceInteraction3f>();
@@ -159,13 +157,11 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
         return m_kdtree->primitive_count();
 #endif
 
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     ScalarSize count = 0;
     for (auto shape : m_shapes)
         count += shape->primitive_count();
 
     return count;
-#endif
 }
 
 #if defined(MTS_ENABLE_CUDA)

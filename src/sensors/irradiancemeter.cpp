@@ -16,7 +16,10 @@ Irradiance meter (:monosp:`irradiancemeter`)
 
 .. pluginparameters::
 
- * - none
+ * - srf
+   - |spectrum|
+   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
+     of the sensor (Default: :monosp:`none`)
 
 This sensor plugin implements an irradiance meter, which measures
 the incident power per unit area over a shape which it is attached to.
@@ -42,7 +45,7 @@ simply instantiate the desired sensor shape and specify an
 
 MTS_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_shape)
+    MTS_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
     MTS_IMPORT_TYPES(Shape)
 
     IrradianceMeter(const Properties &props) : Base(props) {
@@ -71,7 +74,10 @@ public:
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
 
         // 3. Sample spectrum
-        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
 
         Vector3f d = Frame3f(ps.n).to_world(local);
         Point3f o = ps.p + d * math::RayEpsilon<Float>;

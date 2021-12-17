@@ -8,20 +8,20 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
-    m_size = ScalarVector2i(
-        props.get<int>("width", is_m_film ? 1 : 768),
-        props.get<int>("height", is_m_film ? 1 : 576)
+    m_size = ScalarVector2u(
+        props.get<uint32_t>("width", is_m_film ? 1 : 768),
+        props.get<uint32_t>("height", is_m_film ? 1 : 576)
     );
 
     // Crop window specified in pixels - by default, this matches the full sensor area.
-    ScalarPoint2i crop_offset = ScalarPoint2i(
-        props.get<int>("crop_offset_x", 0),
-        props.get<int>("crop_offset_y", 0)
+    ScalarVector2u crop_size = ScalarVector2u(
+        props.get<uint32_t>("crop_width", m_size.x()),
+        props.get<uint32_t>("crop_height", m_size.y())
     );
 
-    ScalarVector2i crop_size = ScalarVector2i(
-        props.get<int>("crop_width", m_size.x()),
-        props.get<int>("crop_height", m_size.y())
+    ScalarPoint2u crop_offset = ScalarPoint2u(
+        props.get<uint32_t>("crop_offset_x", 0),
+        props.get<uint32_t>("crop_offset_y", 0)
     );
 
     set_crop_window(crop_offset, crop_size);
@@ -37,26 +37,40 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
         if (rfilter) {
             if (m_filter)
                 Throw("A film can only have one reconstruction filter.");
+
             m_filter = rfilter;
             props.mark_queried(name);
         }
     }
 
-    if (!m_filter) {
-        // No reconstruction filter has been selected. Load a Gaussian filter by default
+    // Use a Gaussian reconstruction filter if none has been specified
+    if (!m_filter)
         m_filter =
-            PluginManager::instance()->create_object<ReconstructionFilter>(Properties("gaussian"));
-    }
+            PluginManager::instance()->create_object<ReconstructionFilter>(
+                Properties("gaussian"));
 }
 
-MTS_VARIANT Film<Float, Spectrum>::~Film() {}
+MTS_VARIANT Film<Float, Spectrum>::~Film() { }
 
-MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2i &crop_offset,
-                                                        const ScalarVector2i &crop_size) {
-    if (ek::any(crop_offset < 0 || crop_size <= 0 || crop_offset + crop_size > m_size))
-        Throw("Invalid crop window specification!\n"
-              "offset %s + crop size %s vs full size %s",
-              crop_offset, crop_size, m_size);
+MTS_VARIANT void
+Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
+                                      const Wavelength & /* wavelengths */,
+                                      Float * /* aovs */,
+                                      Mask /* active */) const {
+    NotImplementedError("prepare_sample");
+}
+
+MTS_VARIANT const typename Film<Float, Spectrum>::Texture *
+Film<Float, Spectrum>::sensor_response_function() {
+    return m_srf.get();
+}
+
+MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
+                                                        const ScalarVector2u &crop_size) {
+    if (ek::any(crop_offset + crop_size > m_size))
+        Throw("Invalid crop window specification: crop_offset(%u, %u) + "
+              "crop_size(%u, %u) > size(%u, %u)", crop_offset.x(), crop_offset.y(),
+              crop_size.x(), crop_size.y(), m_size.x(), m_size.y());
 
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;

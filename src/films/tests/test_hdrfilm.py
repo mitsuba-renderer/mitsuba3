@@ -103,8 +103,8 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
         for y in range(film.size()[0]):
             block.put([y+0.5, x+0.5], contents[x, y, :])
 
-    film.prepare(['R', 'G', 'B', 'A', 'W'])
-    film.put(block)
+    film.prepare([])
+    film.put_block(block)
 
     filename = str(tmpdir.join('test_image.' + file_format))
     film.write(filename)
@@ -180,8 +180,8 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
                 aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
                 block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
 
-    film.prepare(['R', 'G', 'B', 'A', 'W'] + aovs_channels)
-    film.put(block)
+    film.prepare(aovs_channels)
+    film.put_block(block)
 
     image = film.develop()
 
@@ -214,7 +214,7 @@ def test06_empty_film(variants_all_rgb, develop):
         'width': 3,
         'height': 2,
     })
-    film.prepare([c for c in 'RGBAW'])
+    film.prepare([])
 
     # TODO: do not allow NaNs from film
     if develop:

@@ -51,6 +51,26 @@ MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(prop
     }
 
     m_resolution = ScalarVector2f(m_film->crop_size());
+
+    // Load SRF function if working in spectral mode
+    m_srf = nullptr;
+    if (props.has_property("srf")) {
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_srf = props.texture<const Texture>("srf");
+        } else {
+            Throw("Sensor(): Spectral Response Function should be used in combination with a"
+                  "spectral variant");
+        }
+    }
+
+    if (has_flag(m_film->flags(), FilmFlags::Spectral)) {
+        if (m_srf != nullptr) {
+            Throw("Sensor(): Spectral response function defined previously in sensor,"
+                  "but another was found in film.");
+        } else {
+            m_srf = m_film->sensor_response_function();
+        }
+    }
 }
 
 MTS_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
@@ -81,6 +101,23 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     result_ray.has_differentials = true;
 
     return { result_ray, result_spec };
+}
+
+MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::Wavelength, Spectrum>
+Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, Float sample,
+                                            Mask active) const {
+    if constexpr (is_spectral_v<Spectrum>) {
+        if (m_srf != nullptr) {
+            return m_srf->sample_spectrum(
+                    ek::zero<SurfaceInteraction3f>(),
+                    math::sample_shifted<Wavelength>(sample),
+                    active);
+        }
+    } else {
+        ENOKI_MARK_USED(active);
+    }
+
+    return sample_wavelength<Float, Spectrum>(sample);
 }
 
 // =============================================================================

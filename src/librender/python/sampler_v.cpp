@@ -13,7 +13,7 @@ MTS_PY_EXPORT(Sampler) {
         .def_method(Sampler, advance)
         .def_method(Sampler, schedule_state)
         .def("loop_register", &Sampler::loop_register, "loop"_a)
-        .def_method(Sampler, seed, "seed_offset"_a, "wavefront_size"_a = (size_t) -1)
+        .def_method(Sampler, seed, "seed"_a, "wavefront_size"_a = (uint32_t) -1)
         .def_method(Sampler, next_1d, "active"_a = true)
         .def_method(Sampler, next_2d, "active"_a = true);
 }

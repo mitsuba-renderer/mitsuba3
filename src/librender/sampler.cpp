@@ -10,8 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
     : Object() {
-    m_sample_count = (uint32_t) props.get<size_t>("sample_count", 4);
-    m_base_seed = props.get<size_t>("seed", 0);
+    m_sample_count = props.get<uint32_t>("sample_count", 4);
+    m_base_seed = props.get<uint32_t>("seed", 0);
 
     m_dimension_index = ek::opaque<UInt32>(0);
     m_sample_index = ek::opaque<UInt32>(0);
@@ -31,12 +31,12 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 
 MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
-MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
-                                                size_t wavefront_size) {
+MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
+                                                uint32_t wavefront_size) {
     if constexpr (ek::is_array_v<Float>) {
         // Only overwrite when specified
-        if (wavefront_size != (size_t) -1) {
-            m_wavefront_size = (uint32_t) wavefront_size;
+        if (wavefront_size != (uint32_t) -1) {
+            m_wavefront_size = wavefront_size;
         } else {
             if (m_wavefront_size == 0)
                 Throw("Sampler::seed(): wavefront_size should be specified!");
@@ -68,8 +68,7 @@ MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
 }
 
 MTS_VARIANT
-void Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<Mask> &loop) {
+void Sampler<Float, Spectrum>::loop_register(ek::Loop<Mask> &loop) {
     loop.put(m_sample_index, m_dimension_index);
 }
 
@@ -84,11 +83,12 @@ Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefro
 }
 
 MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
-Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed_offset) const {
-    UInt32 indices = ek::arange<UInt32>(m_wavefront_size);
-    UInt32 sequence_idx = m_samples_per_wavefront * (indices / m_samples_per_wavefront);
+Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed) const {
+    UInt32 indices      = ek::arange<UInt32>(m_wavefront_size),
+           sequence_idx = m_samples_per_wavefront * (indices / m_samples_per_wavefront);
+
     return sample_tea_32(ek::opaque<UInt32>(m_base_seed, 1),
-                         sequence_idx + ek::opaque<UInt32>(seed_offset, 1));
+                         sequence_idx + ek::opaque<UInt32>(seed, 1)).first;
 }
 
 MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
@@ -109,18 +109,24 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 // =======================================================================
 
 MTS_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
-    : Base(props) {}
+    : Base(props) { }
 
-MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
-                                                     size_t wavefront_size) {
-    Base::seed(seed_offset, wavefront_size);
+MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
+                                                     uint32_t wavefront_size) {
+    Base::seed(seed, wavefront_size);
 
-    uint64_t seed_value = m_base_seed + seed_offset;
+    uint32_t seed_value = m_base_seed + seed;
 
     if constexpr (ek::is_array_v<Float>) {
-        UInt64 idx = ek::arange<UInt64>(m_wavefront_size);
-        UInt64 tmp = ek::opaque<UInt64>(seed_value);
-        m_rng.seed(m_wavefront_size, sample_tea_64(tmp, idx), sample_tea_64(idx, tmp));
+        UInt32 idx = ek::arange<UInt32>(m_wavefront_size),
+               tmp = ek::opaque<UInt32>(seed_value);
+
+        /* Scramble seed and stream index using the Tiny Encryption Algorithm.
+           Just providing a linearly increasing sequence of integers as streams
+           does not produce a sufficiently statistically independent set of RNGs */
+        auto [v0, v1] = sample_tea_32(tmp, idx);
+
+        m_rng.seed(m_wavefront_size, v0, v1);
     } else {
         m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);
     }
@@ -131,14 +137,14 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
     ek::schedule(m_rng.inc, m_rng.state);
 }
 
-MTS_VARIANT void PCG32Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<Mask> &loop) {
+MTS_VARIANT void
+PCG32Sampler<Float, Spectrum>::loop_register(ek::Loop<Mask> &loop) {
     Base::loop_register(loop);
     loop.put(m_rng.state);
 }
 
-
-MTS_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler& sampler)
+MTS_VARIANT
+PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
     : Base(sampler) {
     m_rng = sampler.m_rng;
 }

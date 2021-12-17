@@ -144,7 +144,7 @@ def test_render(variant, scene_fname, jit_flags_key):
     from mitsuba.core import load_file, Bitmap
 
     if 'cuda' in variant or 'llvm' in variant:
-        ek.malloc_trim()
+        ek.flush_malloc_cache()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
             ek.set_flag(k, v)
 
@@ -153,6 +153,8 @@ def test_render(variant, scene_fname, jit_flags_key):
         pytest.skip("Missing reference data:\n- Reference image: {}\n- Variance image: {}".format(
             ref_fname, ref_var_fname))
 
+    if os.name == 'nt' and 'test_various_emitters' in ref_fname and 'cuda' in variant:
+        pytest.skip('Skipping flaky test (likely an OptiX miscompilation) on Windows')
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)
@@ -169,7 +171,7 @@ def test_render(variant, scene_fname, jit_flags_key):
 
     # Load and render
     scene = load_file(scene_fname, spp=spp)
-    scene.integrator().render(scene, seed=0, develop_film=False)
+    scene.integrator().render(scene, seed=0, develop=False)
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
@@ -261,7 +263,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
                 continue
 
             scene = load_file(scene_fname, spp=spp)
-            scene.integrator().render(scene, seed=0, develop_film=False)
+            scene.integrator().render(scene, seed=0, develop=False)
 
             bmp = scene.sensors()[0].film().bitmap(raw=False)
             img, var_img = bitmap_extract(bmp)

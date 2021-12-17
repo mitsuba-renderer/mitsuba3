@@ -2,6 +2,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/distr_1d.h>
+#include <mitsuba/core/string.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -37,7 +38,7 @@ public:
 
             for (const auto &s : values_str) {
                 try {
-                    data.push_back((ScalarFloat) std::stod(s));
+                    data.push_back(string::stof<ScalarFloat>(s));
                 } catch (...) {
                     Throw("Could not parse floating point value '%s'", s);
                 }
@@ -47,11 +48,19 @@ public:
                 wavelength_range, data.data(), data.size()
             );
         } else {
-            size_t size = props.get<size_t>("size");
             // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            using DataInput = DynamicBuffer<ek::replace_scalar_t<Float, Properties::Float>>;
-            auto data = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("values"), size));
-            m_distr = ContinuousDistribution<Wavelength>(wavelength_range, data);
+            size_t size = props.get<size_t>("size");
+            const double *ptr = static_cast<const double*>(props.pointer("values"));
+
+            if constexpr (std::is_same_v<ScalarFloat, double>) {
+                m_distr = ContinuousDistribution<Wavelength>(wavelength_range, ptr, size);
+            } else {
+                std::vector<ScalarFloat> values(size);
+                for (size_t i=0; i < size; ++i)
+                    values[i] = (ScalarFloat) ptr[i];
+                m_distr = ContinuousDistribution<Wavelength>(
+                    wavelength_range, values.data(), size);
+            }
         }
     }
 
@@ -96,7 +105,16 @@ public:
     }
 
     Float mean() const override {
-        return m_distr.integral() / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+        ScalarVector2f range = m_distr.range();
+        return m_distr.integral() / (range[1] - range[0]);
+    }
+
+    ScalarVector2f wavelength_range() const override {
+        return m_distr.range();
+    }
+
+    ScalarFloat spectral_resolution() const override {
+        return m_distr.interval_resolution();
     }
 
     std::string to_string() const override {

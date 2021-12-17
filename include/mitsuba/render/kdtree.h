@@ -2215,7 +2215,7 @@ public:
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
 
-        ScalarFloat mint = std::max(0.f, std::get<1>(bbox_result)),
+        ScalarFloat mint = std::max(ScalarFloat(0), std::get<1>(bbox_result)),
                     maxt = std::min(ray.maxt, std::get<2>(bbox_result));
 
         ScalarVector3f d_rcp = ek::rcp(ray.d);
@@ -2511,7 +2511,7 @@ protected:
             pi.prim_index = prim_index;
 
             bool hit_inst  = (inst_index != (uint32_t) -1);
-            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape;
+            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape; // shape_index for LLVM + kdtree
             pi.instance    = hit_inst ? shape : nullptr;
             pi.shape_index = hit_inst ? inst_index : shape_index;
         }

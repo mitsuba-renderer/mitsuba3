@@ -199,8 +199,8 @@ public:
     ray_intersect_triangle_impl(const ek::uint32_array_t<T> &index,
                                 const Ray3 &ray,
                                 ek::mask_t<T> active = true) const {
-        using Point3T  = Point<T, 3>;
-        using Faces    = ek::Array<ek::uint32_array_t<T>, 3>;
+        using Point3T = Point<T, 3>;
+        using Faces = ek::Array<ek::uint32_array_t<T>, 3>;
 
         Faces fi;
         Point3T p0, p1, p2;
@@ -208,9 +208,9 @@ public:
         // Ensure we don't rely on enoki-jit when called from an LLVM kernel
         if constexpr (!ek::is_array_v<T> && ek::is_llvm_array_v<Float>) {
             fi = ek::gather<Faces>(m_faces_ptr, index, active);
-            p0 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[0], active),
-            p1 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[1], active),
-            p2 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[2], active);
+            p0 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[0], active),
+            p1 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[1], active),
+            p2 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[2], active);
         } else
 #endif
         {

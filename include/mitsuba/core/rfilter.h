@@ -61,10 +61,13 @@ public:
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!ek::is_jit_array_v<Float>) {
-            UInt32 index = ek::min(UInt32(ek::abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
+            UInt32 index = ek::min(UInt32(ek::abs(x * m_scale_factor)),
+                                   MTS_FILTER_RESOLUTION);
             return ek::gather<Float>(m_values.data(), index, active);
-        } else
-            Throw("ReconstructionFilter::eval_discretized(): not support for jit modes!");
+        } else {
+            Throw("ReconstructionFilter::eval_discretized(): not supported in "
+                  "JIT modes, use the regular eval() function!");
+        }
     }
 
     MTS_DECLARE_CLASS()

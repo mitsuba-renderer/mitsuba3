@@ -21,8 +21,28 @@ public:
     //! @{ \name Rendering
     // =============================================================
 
-    /// Render the scene with the sensor specified by its index
-    ref<Bitmap> render(uint32_t seed, uint32_t sensor_index);
+    /**
+     * \brief Convenience function to render the scene and return a bitmap
+     *
+     * This function renders the scene from the viewpoint of the sensor with
+     * index \c sensor_index. All other parameters are optional and control
+     * different aspects of the rendering process. In particular:
+     *
+     * \param seed
+     *     This parameter controls the initialization of the random number
+     *     generator. It is crucial that you specify different seeds (e.g., an
+     *     increasing sequence) if subsequent \c render() calls should produce
+     *     statistically independent images.
+     *
+     * \param spp
+     *     Set this parameter to a nonzero value to override the number of
+     *     samples per pixel. This value then takes precedence over whatever
+     *     was specified in the construction of <tt>sensor->sampler()</tt>.
+     *     This parameter may be useful in research applications where an image
+     *     must be rendered multiple times using different quality levels.
+     */
+    ref<Bitmap> render(uint32_t sensor_index = 0, uint32_t seed = 0,
+                       uint32_t spp = 0);
 
     //! @}
     // =============================================================

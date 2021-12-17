@@ -39,27 +39,60 @@ public:
     MTS_IMPORT_TYPES(Scene, Sensor)
 
     /**
-     * \brief Perform the main rendering job.
+     * \brief Render the scene
      *
-     * Returns the rendered image if \c develop_film is set to \c true.
+     * This function renders the scene from the viewpoint of \c sensor. All
+     * other parameters are optional and control different aspects of the
+     * rendering process. In particular:
+     *
+     * \param seed
+     *     This parameter controls the initialization of the random number
+     *     generator. It is crucial that you specify different seeds (e.g., an
+     *     increasing sequence) if subsequent \c render() calls should produce
+     *     statistically independent images.
+     *
+     * \param spp
+     *     Set this parameter to a nonzero value to override the number of
+     *     samples per pixel. This value then takes precedence over whatever
+     *     was specified in the construction of <tt>sensor->sampler()</tt>.
+     *     This parameter may be useful in research applications where an image
+     *     must be rendered multiple times using different quality levels.
+     *
+     * \param develop
+     *     If set to \c true, the implementation post-processes the data stored
+     *     in <tt>sensor->film()</tt>, returning the resulting image as a
+     *     \ref TensorXf. Otherwise, it returns an empty tensor.
+     *
+     * \param evaluate
+     *     This parameter is only relevant for JIT variants of Mitsuba (LLVM,
+     *     CUDA). If set to \c true, the rendering step evaluates the generated
+     *     image and waits for its completion. A log message also denotes the
+     *     rendering time. Otherwise, the returned tensor
+     *     (<tt>develop=true</tt>) or modified film (<tt>develop=false</tt>)
+     *     represent the rendering task as an unevaluated computation graph.
      */
     virtual TensorXf render(Scene *scene,
-                            uint32_t seed,
                             Sensor *sensor,
-                            bool develop_film = true) = 0;
-
-    TensorXf render(Scene *scene,
-                    uint32_t seed,
-                    uint32_t sensor_index = 0,
-                    bool develop_film = true);
+                            uint32_t seed = 0,
+                            uint32_t spp = 0,
+                            bool develop = true,
+                            bool evaluate = true) = 0;
 
     /**
-     * \brief Cancel a running render job
+     * \brief Render the scene
      *
-     * This function can be called asynchronously to cancel a running render
-     * job. In this case, \ref render() will quit with a return value of \c
-     * false.
+     * This function is just a thin wrapper around the previous \ref render()
+     * overload. It accepts a sensor *index* instead and renders the scene
+     * using sensor 0 by default.
      */
+    TensorXf render(Scene *scene,
+                    uint32_t sensor_index = 0,
+                    uint32_t seed = 0,
+                    uint32_t spp = 0,
+                    bool develop = true,
+                    bool evaluate = true);
+
+    /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
     virtual void cancel();
 
     /**
@@ -81,10 +114,6 @@ public:
      * default implementation simply returns an empty vector.
      */
     virtual std::vector<std::string> aov_names() const;
-
-    void set_graphviz_output(const fs::path &value) {
-        m_graphviz_output = value;
-    }
 
     MTS_DECLARE_CLASS()
 protected:
@@ -110,16 +139,17 @@ protected:
 
     /// Flag for disabling direct visibility of emitters
     bool m_hide_emitters;
-
-    fs::path m_graphviz_output;
 };
 
-/** \brief Integrator based on Monte Carlo sampling
+/** \brief Abstract integrator that performs Monte Carlo sampling starting from
+ * the sensor
  *
- * This integrator performs Monte Carlo integration to return an unbiased
- * statistical estimate of the radiance value along a given ray. The default
- * implementation of the \ref render() method then repeatedly invokes this
- * estimator to compute all pixels of the image.
+ * Subclasses of this interface must implement the \ref sample() method, which
+ * performs Monte Carlo integration to return an unbiased statistical estimate
+ * of the radiance value along a given ray.
+ *
+ * The \ref render() method then repeatedly invokes this estimator to compute
+ * all pixels of the image.
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
@@ -144,14 +174,14 @@ public:
      *    If the ray is inside a medium, this parameter holds a pointer to that
      *    medium
      *
-     * \param active
-     *    A mask that indicates which SIMD lanes are active
-     *
      * \param aov
      *    Integrators may return one or more arbitrary output variables (AOVs)
      *    via this parameter. If \c nullptr is provided to this argument, no
      *    AOVs should be returned. Otherwise, the caller guarantees that space
      *    for at least <tt>aov_names().size()</tt> entries has been allocated.
+     *
+     * \param active
+     *    A mask that indicates which SIMD lanes are active
      *
      * \return
      *    A pair containing a spectrum and a mask specifying whether a surface
@@ -163,9 +193,9 @@ public:
      * \remark
      *    In the Python bindings, this function returns the \c aov output
      *    argument as an additional return value. In other words:
-     *    <tt>
+     *    <pre>
      *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
-     *    </tt>
+     *    </pre>
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
@@ -179,9 +209,11 @@ public:
     // =========================================================================
 
     TensorXf render(Scene *scene,
-                    uint32_t seed,
                     Sensor *sensor,
-                    bool develop_film = true) override;
+                    uint32_t seed = 0,
+                    uint32_t spp = 0,
+                    bool develop = true,
+                    bool evaluate = true) override;
 
     //! @}
     // =========================================================================
@@ -196,9 +228,10 @@ protected:
                               Sampler *sampler,
                               ImageBlock *block,
                               Float *aovs,
-                              size_t sample_count,
-                              size_t seed_offset,
-                              size_t block_id) const;
+                              uint32_t sample_count,
+                              uint32_t seed,
+                              uint32_t block_id,
+                              uint32_t block_size) const;
 
     void render_sample(const Scene *scene,
                        const Sensor *sensor,
@@ -211,25 +244,29 @@ protected:
 
 protected:
 
-    /// Size of (square) image blocks to render per core.
+    /// Size of (square) image blocks to render in parallel (in scalar mode)
     uint32_t m_block_size;
 
     /**
      * \brief Number of samples to compute for each pass over the image blocks.
      *
      * Must be a multiple of the total sample count per pixel.
-     * If set to (size_t) -1, all the work is done in a single pass (default).
+     * If set to (uint32_t) -1, all the work is done in a single pass (default).
      */
     uint32_t m_samples_per_pass;
 };
 
-/*
- * \brief Base class of all recursive Monte Carlo integrators, which compute
- * unbiased solutions to the rendering equation (and optionally the radiative
- * transfer equation).
+/** \brief Abstract integrator that performs *recursive* Monte Carlo sampling
+ * starting from the sensor
+ *
+ * This class is almost identical to \ref SamplingIntegrator. It stores two
+ * additional fields that are helpful for recursive Monte Carlo techniques:
+ * the maximum path depth, and the depth at which the Russian Roulette path
+ * termination technique should start to become active.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
+class MTS_EXPORT_RENDER MonteCarloIntegrator
+    : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
 
@@ -246,8 +283,96 @@ protected:
     int m_rr_depth;
 };
 
+/** \brief Abstract adjoint integrator that performs Monte Carlo sampling
+ * starting from the emitters.
+ *
+ * Subclasses of this interface must implement the \ref sample() method, which
+ * performs recursive Monte Carlo integration starting from an emitter and
+ * directly accumulates the product of radiance and importance into the film.
+ * The \ref render() method then repeatedly invokes this estimator to compute
+ * the rendered image.
+ *
+ * \remark The adjoint integrator does not support renderings with arbitrary
+ * output variables (AOVs).
+ */
+template <typename Float, typename Spectrum>
+class MTS_EXPORT_RENDER AdjointIntegrator : public Integrator<Float, Spectrum> {
+public:
+    MTS_IMPORT_BASE(Integrator, should_stop, aov_names, m_stop, m_timeout,
+                    m_render_timer, m_hide_emitters)
+    MTS_IMPORT_TYPES(Scene, Sensor, Film, BSDF, BSDFPtr, ImageBlock, Sampler,
+                     EmitterPtr)
+
+    /**
+     * \brief Sample the incident importance and splat the product of
+     * importance and radiance to the film.
+     *
+     * \param scene
+     *    The underlying scene
+     *
+     * \param sensor
+     *    A sensor from which rays should be sampled
+     *
+     * \param sampler
+     *    A source of (pseudo-/quasi-) random numbers
+     *
+     * \param block
+     *    An image block that will be updated during the sampling process
+     *
+     * \param sample_scale
+     *    A scale factor that must be applied to each sample to account
+     *    for the film resolution and number of samples.
+     */
+    virtual void sample(const Scene *scene, const Sensor *sensor,
+                        Sampler *sampler, ImageBlock *block,
+                        ScalarFloat sample_scale) const = 0;
+
+    // =========================================================================
+    //! @{ \name Integrator interface implementation
+    // =========================================================================
+
+    TensorXf render(Scene *scene,
+                    Sensor *sensor,
+                    uint32_t seed = 0,
+                    uint32_t spp = 0,
+                    bool develop = true,
+                    bool evaluate = true) override;
+
+    //! @}
+    // =========================================================================
+
+    MTS_DECLARE_CLASS()
+
+protected:
+    /// Create an integrator
+    AdjointIntegrator(const Properties &props);
+
+    /// Virtual destructor
+    virtual ~AdjointIntegrator();
+
+protected:
+    /**
+     * \brief Number of samples to compute for each pass over the image blocks.
+     *
+     * Must be a multiple of the total sample count per pixel.
+     * If set to (size_t) -1, all the work is done in a single pass (default).
+     */
+    uint32_t m_samples_per_pass;
+
+    /**
+     * Longest visualized path depth (\c -1 = infinite).
+     * A value of \c 1 will visualize only directly visible light sources.
+     * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
+     */
+    int m_max_depth;
+
+    /// Depth to begin using russian roulette
+    int m_rr_depth;
+};
+
 
 MTS_EXTERN_CLASS_RENDER(Integrator)
 MTS_EXTERN_CLASS_RENDER(SamplingIntegrator)
 MTS_EXTERN_CLASS_RENDER(MonteCarloIntegrator)
+MTS_EXTERN_CLASS_RENDER(AdjointIntegrator)
 NAMESPACE_END(mitsuba)

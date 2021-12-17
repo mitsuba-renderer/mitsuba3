@@ -23,6 +23,9 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
+if not os.path.exists('tutorials'):
+    os.symlink('../tutorials', 'tutorials', target_is_directory=True)
+
 from pathlib import Path
 
 # If extensions (or modules to document with autodoc) are in another directory,

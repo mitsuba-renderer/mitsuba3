@@ -262,6 +262,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         PreliminaryIntersection3f pi;
 
         Float t(Single::steal(out[0]));
+
         pi.prim_uv = Vector2f(Single::steal(out[1]),
                               Single::steal(out[2]));
 

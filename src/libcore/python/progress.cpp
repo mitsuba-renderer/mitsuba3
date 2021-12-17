@@ -43,13 +43,21 @@ public:
 
     /// Append a line of text with the given log level
     virtual void append(mitsuba::LogLevel level, const std::string &text) override {
-        std::string col = "#000";
-        if (level == Debug)
-            col = "#bbb";
-        else if (level == Warn || level == Error)
-            col = "#f55";
-        auto html_string =
-             "<span style=\"font-family: monospace; color: " + col + "\">" + escape_html(text) + "</span>" ;
+        std::string html_string;
+
+        if (level == Info) {
+            html_string = "<span style=\"font-family: monospace\">" + escape_html(text) + "</span>";
+        } else {
+            std::string col = "#000";
+            if (level == Debug)
+                col = "#bbb";
+            else if (level == Warn || level == Error)
+                col = "#f55";
+
+            html_string = "<span style=\"font-family: monospace; color: " + col +
+                          "\">" + escape_html(text) + "</span>";
+        }
+
         py::gil_scoped_acquire gil;
         m_display_html(html_string, "raw"_a = true);
         m_flush();
@@ -73,6 +81,7 @@ public:
         }
         m_flush();
     }
+
     void make_and_display_progress_bar(bool display) {
         bool exists = !(m_label.is_none() || m_bar.is_none());
         if (!exists) {

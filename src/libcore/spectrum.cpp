@@ -45,9 +45,9 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 
     const int steps = 1000;
     for (int i = 0; i < steps; ++i) {
-        Scalar x = (Scalar) MTS_WAVELENGTH_MIN +
-                   (i / (Scalar)(steps - 1)) * ((Scalar) MTS_WAVELENGTH_MAX -
-                                                (Scalar) MTS_WAVELENGTH_MIN);
+        Scalar x = (Scalar) MTS_CIE_MIN +
+                   (i / (Scalar)(steps - 1)) * ((Scalar) MTS_CIE_MAX -
+                                                (Scalar) MTS_CIE_MIN);
 
         if (x < wavelengths.front() || x > wavelengths.back())
             continue;
@@ -72,7 +72,7 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
     }
 
     // Last specified value repeats implicitly
-    color *= ((Scalar) MTS_WAVELENGTH_MAX - (Scalar) MTS_WAVELENGTH_MIN) / (Scalar) steps;
+    color *= ((Scalar) MTS_CIE_MAX - (Scalar) MTS_CIE_MIN) / (Scalar) steps;
     color = xyz_to_srgb(color);
 
     if (bounded && ek::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {

@@ -35,8 +35,9 @@ High dynamic range film (:monosp:`hdrfilm`)
      (Default: :monosp:`rgb`)
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
-     :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
+   - Specifies the desired floating  point component format of output images (when saving to disk).
+     The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
+     (Default: :monosp:`float16`)
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
@@ -95,7 +96,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_high_quality_edges, m_filter)
+                    m_high_quality_edges, m_filter, m_flags)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -135,12 +136,11 @@ public:
             m_pixel_format = Bitmap::PixelFormat::XYZ;
         else if (pixel_format == "xyza")
             m_pixel_format = Bitmap::PixelFormat::XYZA;
-        else {
+        else
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
                   " \"xyz\", \"xyza\". Found %s.",
                   pixel_format);
-        }
 
         if (component_format == "float16")
             m_component_format = Struct::Type::Float16;
@@ -148,11 +148,10 @@ public:
             m_component_format = Struct::Type::Float32;
         else if (component_format == "uint32")
             m_component_format = Struct::Type::UInt32;
-        else {
+        else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
-        }
 
         if (m_file_format == Bitmap::FileFormat::RGBE) {
             if (m_pixel_format != Bitmap::PixelFormat::RGB) {
@@ -179,24 +178,20 @@ public:
             }
         }
 
+        m_flags = +FilmFlags::None;
+
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
-    void prepare(const std::vector<std::string> &channels) override {
-        if (channels.size() < 5)
-            Throw("Film::prepare(): expects at least 5 channels (RGBAW)!");
+    size_t prepare(const std::vector<std::string> &aovs) override {
+        std::vector<std::string> channels(5 + aovs.size());
 
-        for (size_t i = 0; i < 5; ++i) {
-            if (channels[i] != std::string(1, "RGBAW"[i])) {
-                Throw("Film::prepare(): expects the first 5 channels to be RGBAW!");
-            }
-        }
+        // Add basic RGBAW channels to the film
+        for (size_t i = 0; i < 5; ++i)
+            channels[i] = std::string(1, "RGBAW"[i]);
 
-        std::vector<std::string> sorted = channels;
-        std::sort(sorted.begin(), sorted.end());
-        auto it = std::unique(sorted.begin(), sorted.end());
-        if (it != sorted.end())
-            Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
+        for (size_t i = 0; i < aovs.size(); ++i)
+            channels[5 + i] = aovs[i];
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -205,26 +200,33 @@ public:
             m_storage->clear();
             m_channels = channels;
         }
+
+        std::sort(channels.begin(), channels.end());
+        auto it = std::unique(channels.begin(), channels.end());
+        if (it != channels.end())
+            Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
+
+        return m_channels.size();
     }
 
-    void put(const ImageBlock *block) override {
+    ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
+                                 bool border) override {
+        bool warn = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) &&
+                    !is_spectral_v<Spectrum>;
+
+        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_size : size,
+                              m_channels.size(), m_filter.get(),
+                              border || m_high_quality_edges /* border */,
+                              normalize /* normalize */,
+                              ek::is_llvm_array_v<Float> /* coalesce */,
+                              warn /* warn_negative */,
+                              warn /* warn_invalid */);
+    }
+
+    void put_block(const ImageBlock *block) override {
         Assert(m_storage != nullptr);
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_storage->put(block);
-    }
-
-    void overwrite_channel(const std::string &channel_name,
-                           const Float &value) override {
-        auto it = std::find(m_channels.begin(), m_channels.end(), channel_name);
-        if (it == m_channels.end())
-            Throw("Channel \"%s\" not found in channels: %s", channel_name,
-                  m_channels);
-
-        size_t idx = it - m_channels.begin();
-        /* locked */ {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage->overwrite_channel(idx, value);
-        }
+        m_storage->put_block(block);
     }
 
     TensorXf develop(bool raw = false) const override {
@@ -233,22 +235,28 @@ public:
 
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
-            return m_storage->data();
+            return m_storage->tensor();
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data;
-            uint32_t ch;
+            uint32_t source_ch;
             size_t pixel_count;
             ScalarVector2i size;
+
             /* locked */ {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                data        = m_storage->data();
+                data        = m_storage->tensor().array();
                 size        = m_storage->size();
-                ch          = (uint32_t) m_storage->channel_count();
+                source_ch   = (uint32_t) m_storage->channel_count();
                 pixel_count = ek::hprod(m_storage->size());
             }
 
+            /* The following code develops weighted image block data into
+               an output image of the desired configuration, while using
+               a minimal number of JIT kernel launches. */
+
+            // Determine what channels are needed
             bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
             bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
@@ -256,46 +264,57 @@ public:
             bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
                              m_pixel_format == Bitmap::PixelFormat::YA ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
-            bool has_aovs = ch > 5;
 
-            uint32_t img_ch = to_y ? 1 : 3;
-            uint32_t target_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
+            // Number of arbitrary output variables (AOVs)
+            uint32_t aovs = source_ch - 5;
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * target_ch);
-            UInt32 i_channel = i % target_ch;
-            UInt32 weight_idx = (i / target_ch) * ch + 4;
-            UInt32 values_idx = (i / target_ch) * ch + i_channel;
+            /// Number of desired color components
+            uint32_t color_ch = to_y ? 1 : 3;
 
-            if (has_aovs) {
-                // Apply index offset for AOV channels
-                uint32_t aovs_channel = img_ch + (has_alpha ? 1 : 0);
-                Mask aovs_mask = i_channel >= aovs_channel;
-                values_idx[aovs_mask] += 5 - aovs_channel;
+            // Number of channels of the target tensor
+            uint32_t target_ch = color_ch + aovs + (has_alpha ? 1 : 0);
+
+            // Index vectors referencing pixels & channels of the output image
+            UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
+                   pixel_idx   = idx / target_ch,
+                   channel_idx = idx - pixel_idx * target_ch;
+
+            /* Index vectors referencing source pixels/weights as follows:
+                 values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
+                 weight_idx = W1, W1, W1, W2, W2, W2 */
+            UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
+                   weight_idx = ek::fmadd(pixel_idx, source_ch, 4);
+
+            // If AOVs are desired, their indices in 'values_idx' must be shifted
+            if (aovs) {
+                // Index of first AOV channel in output image
+                uint32_t first_aov = color_ch + (has_alpha ? 1 : 0);
+                values_idx[channel_idx >= first_aov] += 5 - first_aov;
             }
 
-            if (to_y) {
-                // Apply index offset for AOV channels (skip the X channel)
-                Mask Y_mask = ek::eq(i_channel, 0);
-                values_idx[Y_mask] += 1;
-            }
+            // If luminance + alpha, shift alpha channel to skip the GB channels
+            if (has_alpha && to_y)
+                values_idx[ek::eq(channel_idx, color_ch /* alpha */)] += 2;
 
-            if (has_alpha && to_y) {
-                // Apply index offset for Alpha channel (skip the YZ channels)
-                Mask alpha_mask = ek::eq(i_channel, img_ch);
-                values_idx[alpha_mask] += 2;
-            }
+            Mask value_mask = true;
+
+            // XYZ/Y mode: don't gather color, will be computed below
+            if (to_xyz || to_y)
+                value_mask = values_idx >= color_ch;
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::detach(ek::gather<Float>(data, weight_idx));
-            Float values = ek::gather<Float>(data, values_idx);
+            Float weight = ek::detach(ek::gather<Float>(data, weight_idx)),
+                  values = ek::gather<Float>(data, values_idx, value_mask);
 
+            // Fill color channels with XYZ/Y data if requested
             if (to_xyz || to_y) {
-                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * ch;
+                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * source_ch,
+                       out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
+
                 Color3f rgb = Color3f(ek::gather<Float>(data, in_idx),
                                       ek::gather<Float>(data, in_idx + 1),
                                       ek::gather<Float>(data, in_idx + 2));
 
-                UInt32 out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
                 if (to_y) {
                     ek::scatter(values, luminance(rgb), out_idx);
                 } else {
@@ -306,32 +325,23 @@ public:
                 }
             }
 
-            // Apply weight
-            values = (values / weight) & (weight > 0.f);
+            // Perform the weight division unless the weight is zero
+            values /= ek::select(ek::eq(weight, 0.f), 1.f, weight);
 
-            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), target_ch };
+            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
+                                target_ch };
+
             return TensorXf(values, 3, shape);
         } else {
             ref<Bitmap> source = bitmap();
+            ScalarVector2i size = source->size();
+            size_t width = source->channel_count() * ek::hprod(size);
+            auto data = ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
 
-            // Convert to Float32 bitmap
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
-            ref<Bitmap> target = new Bitmap(
-                source->pixel_format(),
-                Struct::Type::Float32,
-                source->size(),
-                source->channel_count(),
-                channel_names);
-            source->convert(target);
+            size_t shape[3] = { (size_t) source->height(),
+                                (size_t) source->width(),
+                                source->channel_count() };
 
-            ScalarVector2i size = target->size();
-            size_t width = target->channel_count() * ek::hprod(size);
-            auto data = DynamicBuffer<Float64>(ek::load<DynamicBuffer<Float32>>(target->data(), width));
-            size_t shape[3] = { (size_t) target->height(),
-                                (size_t) target->width(),
-                                target->channel_count() };
             return TensorXf(data, 3, shape);
         }
     }
@@ -341,7 +351,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = ek::migrate(m_storage->data().array(), AllocType::Host);
+        auto &&storage = ek::migrate(m_storage->tensor().array(), AllocType::Host);
 
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
@@ -372,7 +382,7 @@ public:
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
-            m_component_format, m_storage->size(),
+            struct_type_v<ScalarFloat>, m_storage->size(),
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
@@ -477,11 +487,29 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        bitmap()->write(filename, m_file_format);
+        ref<Bitmap> source = bitmap();
+        if (m_component_format != struct_type_v<ScalarFloat>) {
+            // Mismatch between the current format and the one expected by the film
+            // Conversion is necessary before saving to disk
+            std::vector<std::string> channel_names;
+            for (size_t i = 0; i < source->channel_count(); i++)
+                channel_names.push_back(source->struct_()->operator[](i).name);
+            ref<Bitmap> target = new Bitmap(
+                source->pixel_format(),
+                m_component_format,
+                source->size(),
+                source->channel_count(),
+                channel_names);
+            source->convert(target);
+
+            target->write(filename, m_file_format);
+        } else {
+            source->write(filename, m_file_format);
+        }
     }
 
     void schedule_storage() override {
-        ek::schedule(m_storage->data());
+        ek::schedule(m_storage->tensor());
     };
 
     std::string to_string() const override {

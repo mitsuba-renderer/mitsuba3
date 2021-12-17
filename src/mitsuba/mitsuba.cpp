@@ -32,12 +32,12 @@ Options:
     -h, --help
         Display this help text.
 
-    -m, --mode Rendering mode. Defines a combination of floating point
-        and color types.
+    -m, --mode
+        Request a specific mode/variant of the renderer
 
         Default: )" MTS_DEFAULT_VARIANT R"(
 
-        Available modes:
+        Available:
               )" << string::indent(MTS_VARIANTS, 14) << R"(
     -v, --verbose
         Be more verbose. (can be specified multiple times)
@@ -46,43 +46,40 @@ Options:
         Render with the specified number of threads.
 
     -D <key>=<value>, --define <key>=<value>
-        Define a constant that can referenced as "$key"
-        within the scene description.
+        Define a constant that can referenced as "$key" within the scene
+        description.
 
     -s <index>, --sensor <index>
-        Index of the sensor to render with (following the declaration
-        order in the scene file). Default value: 0.
+        Index of the sensor to render with (following the declaration order
+        in the scene file). Default value: 0.
 
     -u, --update
-        When specified, Mitsuba will update the scene's
-        XML description to the latest version.
+        When specified, Mitsuba will update the scene's XML description
+        to the latest version.
 
-    -a <path1>;<path2>;..
+    -a <path1>;<path2>;.., --append <path1>;<path2>
         Add one or more entries to the resource search path.
 
     -o <filename>, --output <filename>
         Write the output image to the file "filename".
 
-    -w, --wavefront
-        Render in wavefront mode. Can be specified twice to
-        disable recording of virtual calls as well.
+ === The following options are only relevant for JIT (CUDA/LLVM) modes ===
 
-    -p, --parallel-loading
-        Force the loading of the scene to run on multiple threads. By default,
-        this is turned off for the cuda/llvm variants of the renderer to ensure
-        kernel consistency across different executions.
+    -jw
+        Instead of compiling a megakernel, perform rendering using a
+        series of wavefronts. Specify twice to unroll both loops *and*
+        virtual function calls.
 
-    -O0
+    -jp
+        Force parallel scene loading, which is disabled by default
+        in JIT modes since interferes with the ability to reuse
+        cached compiled kernels across separate runs of the renderer.
+
+    -j0
         Disable loop and virtual function call optimizations
 
-    -Oo
-        Force kernel evaluation in OptiX (esp. in wavefront mode)
-
-    -Os
+    -js
         Dump the kernel source code to the console
-
-    -g <out>
-        Write a GraphViz visualization of the computation
 )";
 }
 
@@ -100,8 +97,7 @@ void scene_static_accel_shutdown() {
 }
 
 template <typename Float, typename Spectrum>
-void render(Object *scene_, size_t sensor_i, fs::path filename,
-            const fs::path &graphviz_output) {
+void render(Object *scene_, size_t sensor_i, fs::path filename) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
         Throw("Root element of the input file must be a <scene> tag!");
@@ -112,17 +108,23 @@ void render(Object *scene_, size_t sensor_i, fs::path filename,
     auto integrator = scene->integrator();
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
-    integrator->set_graphviz_output(graphviz_output);
 
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
         develop_callback = [&]() { film->write(filename); };
     }
-    integrator->render(scene, 0, (uint32_t) sensor_i, false);
+
+    integrator->render(scene, (uint32_t) sensor_i,
+                       0 /* seed */,
+                       0 /* spp */,
+                       false /* develop */,
+                       true /* evaluate */);
+
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
         develop_callback = nullptr;
     }
+
     film->write(filename);
 }
 
@@ -157,20 +159,18 @@ int main(int argc, char *argv[]) {
     auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
-    auto arg_wavefront = parser.add(StringVec{ "-w", "--wavefront" });
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
-    auto arg_parallel  = parser.add(StringVec{ "-p", "--parallel-loading" });
     auto arg_extra     = parser.add("", true);
 
-    auto arg_no_optim    = parser.add(StringVec{ "-O0" });
-    auto arg_force_optix = parser.add(StringVec{ "-Oo" });
-    auto arg_dump_source = parser.add(StringVec{ "-Os" });
-    auto arg_graphviz    = parser.add(StringVec{ "-g" }, true);
+    /// Specialized flags for the JIT compiler
+    auto arg_load_par  = parser.add(StringVec{ "-jp" });
+    auto arg_wavefront = parser.add(StringVec{ "-jw" });
+    auto arg_no_optim  = parser.add(StringVec{ "-j0" });
+    auto arg_source    = parser.add(StringVec{ "-js" });
 
-    bool profile = true, print_profile = false;
+    bool profile = false, print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
-    fs::path graphviz_output;
 
 #if !defined(_WIN32)
     /* Initialize signal handlers */
@@ -260,12 +260,6 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (cuda || llvm) {
-            if (*arg_force_optix)
-                jit_set_flag(JitFlag::ForceOptiX, true);
-
-            if (*arg_dump_source)
-                jit_set_flag(JitFlag::PrintIR, true);
-
             if (*arg_no_optim) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
                 jit_set_flag(JitFlag::LoopOptimize, false);
@@ -277,15 +271,12 @@ int main(int argc, char *argv[]) {
                     jit_set_flag(JitFlag::VCallRecord, false);
             }
 
-            if (*arg_graphviz)
-                graphviz_output = arg_graphviz->as_string();
+            if (*arg_source)
+                jit_set_flag(JitFlag::PrintIR, true);
         }
 #else
-        ENOKI_MARK_USED(arg_force_optix);
-        ENOKI_MARK_USED(arg_dump_source);
         ENOKI_MARK_USED(arg_no_optim);
         ENOKI_MARK_USED(arg_wavefront);
-        ENOKI_MARK_USED(arg_graphviz);
 #endif
 
         if (profile)
@@ -296,7 +287,7 @@ int main(int argc, char *argv[]) {
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
-        bool parallel_loading = !(llvm || cuda) || (*arg_parallel);
+        bool parallel_loading = !(llvm || cuda) || (*arg_load_par);
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
@@ -344,8 +335,7 @@ int main(int argc, char *argv[]) {
                 xml::load_file(arg_extra->as_string(), mode, params,
                                *arg_update, parallel_loading);
 
-            MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename,
-                               graphviz_output);
+            MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {

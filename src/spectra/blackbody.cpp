@@ -53,26 +53,29 @@ public:
 
     BlackBodySpectrum(const Properties &props) : Texture(props) {
         m_temperature = props.get<ScalarFloat>("temperature");
+        m_wavelength_range = ScalarVector2f(
+            props.get<ScalarFloat>("lambda_min", MTS_CIE_MIN),
+            props.get<ScalarFloat>("lambda_max", MTS_CIE_MAX)
+        );
         parameters_changed();
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_integral_min = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MIN)).first;
-        m_integral = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MAX)).first - m_integral_min;
+        m_integral_min = cdf_and_pdf(ScalarFloat(m_wavelength_range.x())).first;
+        m_integral = cdf_and_pdf(ScalarFloat(m_wavelength_range.y())).first - m_integral_min;
     }
 
     UnpolarizedSpectrum eval_impl(const Wavelength &wavelengths, Mask active_) const {
         if constexpr (is_spectral_v<Spectrum>) {
-            ek::mask_t<Wavelength> active = active_;
-
-            active &= wavelengths >= MTS_WAVELENGTH_MIN
-                   && wavelengths <= MTS_WAVELENGTH_MAX;
-
             /* The scale factors of 1e-9f are needed to perform a conversion between
                densities per unit nanometer and per unit meter. */
             Wavelength lambda  = wavelengths * 1e-9f,
                        lambda2 = ek::sqr(lambda),
                        lambda5 = ek::sqr(lambda2) * lambda;
+
+            ek::mask_t<Wavelength> active = active_;
+            active &= wavelengths >= m_wavelength_range.x()
+                   && wavelengths <= m_wavelength_range.y();
 
             /* Watts per unit surface area (m^-2)
                      per unit wavelength (nm^-1)
@@ -95,17 +98,14 @@ public:
     }
 
     Wavelength pdf_spectrum(const SurfaceInteraction3f &si, Mask active_) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active_);
-
         if constexpr (is_spectral_v<Spectrum>) {
-            ek::mask_t<Wavelength> active = active_;
-
-            active &= si.wavelengths >= MTS_WAVELENGTH_MIN
-                   && si.wavelengths <= MTS_WAVELENGTH_MAX;
-
             Wavelength lambda  = si.wavelengths * 1e-9f,
                        lambda2 = ek::sqr(lambda),
                        lambda5 = ek::sqr(lambda2) * lambda;
+
+            ek::mask_t<Wavelength> active = active_;
+            active &= si.wavelengths >= m_wavelength_range.x()
+                   && si.wavelengths <= m_wavelength_range.y();
 
             // Wien's approximation to Planck's law
             Wavelength pdf = 1e-9f * c0 * ek::exp(-c1 / (lambda * m_temperature))
@@ -113,6 +113,7 @@ public:
 
             return pdf & active;
         } else {
+            ENOKI_MARK_USED(active_);
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
         }
@@ -158,12 +159,12 @@ public:
             Wavelength sample = ek::fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));
 
             const ScalarFloat eps        = 1e-5f,
-                              eps_domain = eps * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),
+                              eps_domain = eps * (m_wavelength_range.y() - m_wavelength_range.x()),
                               eps_value  = eps * m_integral;
 
-            Wavelength a = MTS_WAVELENGTH_MIN,
-                       b = MTS_WAVELENGTH_MAX,
-                       t = .5f * (MTS_WAVELENGTH_MIN + MTS_WAVELENGTH_MAX),
+            Wavelength a = m_wavelength_range.x(),
+                       b = m_wavelength_range.y(),
+                       t = .5f * (m_wavelength_range.x() + m_wavelength_range.y()),
                        value, deriv;
 
             do {
@@ -201,7 +202,7 @@ public:
     }
 
     Float mean() const override {
-        return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+        return m_integral / (m_wavelength_range.y() - m_wavelength_range.x());
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -213,6 +214,7 @@ private:
     ScalarFloat m_temperature;
     ScalarFloat m_integral_min;
     ScalarFloat m_integral;
+    ScalarVector2f m_wavelength_range;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)

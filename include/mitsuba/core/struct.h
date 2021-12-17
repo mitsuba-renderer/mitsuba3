@@ -1,6 +1,6 @@
 #pragma once
 
-#include <enoki/array_traits.h>
+#include <enoki/array_router.h>
 #include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)

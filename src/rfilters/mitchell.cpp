@@ -37,16 +37,22 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
+    Float eval(Float x, Mask /* active */) const override {
         x = ek::abs(x);
         Float x2 = ek::sqr(x), x3 = x2*x;
 
+        ScalarFloat a3 = (12.f - 9.f * m_b - 6.f * m_c),
+                    a2 = (-18.f + 12.f * m_b + 6.f * m_c),
+                    a0 = (6.f - 2.f * m_b),
+                    b3 = (-m_b - 6.f * m_c),
+                    b2 = (6.f * m_b + 30.f * m_c),
+                    b1 = (-12.f * m_b - 48.f * m_c),
+                    b0 = (8.f * m_b + 24.f * m_c);
+
         Float result = (1.f / 6.f) * ek::select(
            x < 1,
-           (12.f - 9.f * m_b - 6.f * m_c) * x3 +
-               (-18.f + 12.f * m_b + 6.f * m_c) * x2 + (6.f - 2.f * m_b),
-           (-m_b - 6.f * m_c) * x3 + (6.f * m_b + 30.f * m_c) * x2 +
-               (-12.f * m_b - 48.f * m_c) * x + (8.f * m_b + 24.f * m_c)
+           ek::fmadd(a3, x3, ek::fmadd(a2, x2, a0)),
+           ek::fmadd(b3, x3, ek::fmadd(b2, x2, ek::fmadd(b1, x, b0)))
         );
 
         return ek::select(x < 2.f, result, 0.f);

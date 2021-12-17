@@ -79,6 +79,16 @@ Texture<Float, Spectrum>::resolution() const {
     return ScalarVector2i(1, 1);
 }
 
+MTS_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
+Texture<Float, Spectrum>::spectral_resolution() const {
+    NotImplementedError("spectral_resolution");
+}
+
+MTS_VARIANT typename Texture<Float, Spectrum>::ScalarVector2f
+Texture<Float, Spectrum>::wavelength_range() const {
+    return ScalarVector2f(MTS_CIE_MIN, MTS_CIE_MAX);
+}
+
 //! @}
 // =======================================================================
 

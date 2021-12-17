@@ -1,0 +1,413 @@
+#pragma once
+
+#include <mitsuba/core/fwd.h>
+#include <mitsuba/core/traits.h>
+#include <mitsuba/core/math.h>
+#include <enoki/matrix.h>
+#include <enoki/dynamic.h>
+
+NAMESPACE_BEGIN(mitsuba)
+
+// =======================================================================
+//! @{ \name Data types for RGB data
+// =======================================================================
+
+template <typename Value_, size_t Size_ = 3>
+struct Color : ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
+
+    /// Helper alias used to implement type promotion rules
+    template <typename T> using ReplaceValue = Color<T, Size_>;
+
+    using ArrayType = Color;
+    using MaskType = ek::Mask<Value_, Size_>;
+
+    decltype(auto) r() const { return Base::x(); }
+    decltype(auto) r() { return Base::x(); }
+
+    decltype(auto) g() const { return Base::y(); }
+    decltype(auto) g() { return Base::y(); }
+
+    decltype(auto) b() const { return Base::z(); }
+    decltype(auto) b() { return Base::z(); }
+
+    decltype(auto) a() const { return Base::w(); }
+    decltype(auto) a() { return Base::w(); }
+
+    ENOKI_ARRAY_IMPORT(Color, Base)
+};
+
+//! @}
+// =======================================================================
+
+// =======================================================================
+//! @{ \name Data types for spectral quantities with sampled wavelengths
+// =======================================================================
+
+template <typename Value_, size_t Size_ = 4>
+struct Spectrum : ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
+
+    // Never allow matrix-vector products involving this type (important for polarized rendering)
+    static constexpr bool IsVector = false;
+
+    /// Helper alias used to implement type promotion rules
+    template <typename T> using ReplaceValue = Spectrum<T, Size_>;
+
+    using ArrayType = Spectrum;
+    using MaskType = ek::Mask<Value_, Size_>;
+
+    ENOKI_ARRAY_IMPORT(Spectrum, Base)
+};
+
+/**
+ * Return the (1,1) entry of a Mueller matrix. Identity function for all other types.
+ *
+ * This is useful for places in the renderer where we do not care about the
+ * additional information tracked by the Mueller matrix.
+ * For instance when performing Russian Roulette based on the path throughput or
+ * when writing a final RGB pixel value to the image block.
+ */
+template <typename T> unpolarized_spectrum_t<T> unpolarized_spectrum(const T& spectrum) {
+    if constexpr (is_polarized_v<T>) {
+        // First entry of the Mueller matrix is the unpolarized spectrum
+        return spectrum(0, 0);
+    } else {
+        return spectrum;
+    }
+}
+
+/**
+ * Turn a spectrum into a Mueller matrix representation that only has a non-zero
+ * (1,1) entry. For all non-polarized modes, this is the identity function.
+ *
+ * Apart from the obvious usecase as a depolarizing Mueller matrix (e.g. for a
+ * Lambertian diffuse material), this is also currently used in many BSDFs and
+ * emitters where it is not clear how they should interact with polarization.
+ */
+template <typename T> auto depolarizer(const T &spectrum = T(1)) {
+    if constexpr (is_polarized_v<T>) {
+        T result = ek::zero<T>();
+        result(0, 0) = spectrum(0, 0);
+        return result;
+    } else {
+        return spectrum;
+    }
+}
+
+//! @}
+// =======================================================================
+
+// =======================================================================
+//! @{ \name Masking support for color and spectrum data types
+// =======================================================================
+
+template <typename Value_, size_t Size_>
+struct Color<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Color<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Color<Value_, Size_>>;
+    using Base::Base;
+    using Base::operator=;
+    Color(const Base &b) : Base(b) { }
+};
+
+template <typename Value_, size_t Size_>
+struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Spectrum<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Spectrum<Value_, Size_>>;
+    using Base::Base;
+    using Base::operator=;
+    Spectrum(const Base &b) : Base(b) { }
+};
+
+//! @}
+// =======================================================================
+
+#define MTS_CIE_MIN           360.f
+#define MTS_CIE_MAX           830.f
+#define MTS_CIE_SAMPLES       95
+
+/* Scaling the CIE curves by the following constant ensures that
+   a unit-valued spectrum integrates to a luminance of 1.0 */
+#define MTS_CIE_Y_NORMALIZATION (1.0 / 106.7502593994140625)
+
+/**
+ * \brief Struct carrying color space tables with fits for \ref cie1931_xyz and
+ * \ref cie1931_y as well as corresponding precomputed ITU-R Rec. BT.709 linear
+ * RGB tables.
+ */
+NAMESPACE_BEGIN(detail)
+template <typename Float> struct CIE1932Tables {
+    using FloatStorage = DynamicBuffer<Float>;
+
+    void initialize(const float* ptr) {
+        if (initialized)
+            return;
+        initialized = true;
+
+        xyz = Color<FloatStorage, 3>(
+            ek::load<FloatStorage>(ptr, MTS_CIE_SAMPLES),
+            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES),
+            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES)
+        );
+
+        srgb = xyz_to_srgb(xyz);
+    }
+
+    void release() {
+        if (!initialized)
+            return;
+        initialized = false;
+
+        xyz = srgb = Color<FloatStorage, 3>();
+    }
+
+    /// CIE 1931 XYZ color tables
+    Color<FloatStorage, 3> xyz;
+    /// ITU-R Rec. BT.709 linear RGB tables
+    Color<FloatStorage, 3> srgb;
+
+private:
+    bool initialized = false;
+};
+
+extern MTS_EXPORT_CORE CIE1932Tables<float> color_space_tables_scalar;
+#if defined(MTS_ENABLE_LLVM)
+extern MTS_EXPORT_CORE CIE1932Tables<ek::LLVMArray<float>> color_space_tables_llvm;
+#endif
+#if defined(MTS_ENABLE_CUDA)
+extern MTS_EXPORT_CORE CIE1932Tables<ek::CUDAArray<float>> color_space_tables_cuda;
+#endif
+
+template <typename Float> auto get_color_space_tables() {
+#if defined(MTS_ENABLE_LLVM)
+    if constexpr (ek::is_llvm_array_v<Float>)
+        return color_space_tables_llvm;
+    else
+#endif
+#if defined(MTS_ENABLE_CUDA)
+    if constexpr (ek::is_cuda_array_v<Float>)
+        return color_space_tables_cuda;
+    else
+#endif
+    return color_space_tables_scalar;
+}
+NAMESPACE_END(detail)
+
+/// Allocate arrays for the color space tables
+extern MTS_EXPORT_CORE void color_management_static_initialization(bool cuda, bool llvm);
+extern MTS_EXPORT_CORE void color_management_static_shutdown();
+
+/**
+ * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
+ * in nanometers
+ */
+template <typename Float, typename Result = Color<Float, 3>>
+Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
+    using UInt32      = ek::uint32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
+
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
+
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0_x = (Float) ek::gather<Float32>(tables.xyz.x(), i0, active);
+    Float v1_x = (Float) ek::gather<Float32>(tables.xyz.x(), i1, active);
+    Float v0_y = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1_y = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
+    Float v0_z = (Float) ek::gather<Float32>(tables.xyz.z(), i0, active);
+    Float v1_z = (Float) ek::gather<Float32>(tables.xyz.z(), i1, active);
+
+    Float w1 = t - Float(i0),
+          w0 = (ScalarFloat) 1.f - w1;
+
+    return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
+                  ek::fmadd(w0, v0_y, w1 * v1_y),
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active, active, active);
+}
+
+/**
+ * \brief Evaluate the CIE 1931 Y color matching function given a wavelength in
+ * nanometers
+ */
+template <typename Float>
+Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
+    using UInt32      = ek::uint32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
+
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+          i1 = i0 + 1;
+
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0 = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1 = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
+
+    Float w1 = t - Float(i0),
+          w0 = (ScalarFloat) 1.f - w1;
+
+    return ek::select(active, ek::fmadd(w0, v0, w1 * v1), 0.f);
+}
+
+/**
+ * \brief Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
+ * given a wavelength in nanometers
+ */
+template <typename Float, typename Result = Color<Float, 3>>
+Result linear_rgb_rec(Float wavelength, ek::mask_t<Float> active = true) {
+    using UInt32      = ek::uint32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
+
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
+
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0_r = (Float) ek::gather<Float32>(tables.srgb.x(), i0, active);
+    Float v1_r = (Float) ek::gather<Float32>(tables.srgb.x(), i1, active);
+    Float v0_g = (Float) ek::gather<Float32>(tables.srgb.y(), i0, active);
+    Float v1_g = (Float) ek::gather<Float32>(tables.srgb.y(), i1, active);
+    Float v0_b = (Float) ek::gather<Float32>(tables.srgb.z(), i0, active);
+    Float v1_b = (Float) ek::gather<Float32>(tables.srgb.z(), i1, active);
+
+    Float w1 = t - Float(i0),
+          w0 = (ScalarFloat) 1.f - w1;
+
+    return Result(ek::fmadd(w0, v0_r, w1 * v1_r),
+                  ek::fmadd(w0, v0_g, w1 * v1_g),
+                  ek::fmadd(w0, v0_b, w1 * v1_b)) & ek::mask_t<Result>(active, active, active);
+}
+
+/// Spectral responses to XYZ.
+template <typename Float, size_t Size>
+Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
+                                const Spectrum<Float, Size> &wavelengths,
+                                ek::mask_t<Float> active = true) {
+    ek::Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
+    return { ek::hmean(XYZ.x() * value),
+             ek::hmean(XYZ.y() * value),
+             ek::hmean(XYZ.z() * value) };
+}
+
+/// Spectral responses to sRGB.
+template <typename Float, size_t Size>
+Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
+                                 const Spectrum<Float, Size> &wavelengths,
+                                 ek::mask_t<Float> active = true) {
+    ek::Array<Spectrum<Float, Size>, 3> rgb = linear_rgb_rec(wavelengths, active);
+    return { ek::hmean(rgb.x() * value),
+             ek::hmean(rgb.y() * value),
+             ek::hmean(rgb.z() * value) };
+}
+
+/// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
+template <typename Float>
+Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, ek::mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
+    const ScalarMatrix3f M(0.412453f, 0.357580f, 0.180423f,
+                           0.212671f, 0.715160f, 0.072169f,
+                           0.019334f, 0.119193f, 0.950227f);
+    return M * rgb;
+}
+
+/// Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
+template <typename Float>
+Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz, ek::mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
+    const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f,
+                          -0.969256f,  1.875991f,  0.041556f,
+                           0.055648f, -0.204043f,  1.057311f);
+    return M * xyz;
+}
+
+template <typename Float, size_t Size>
+Float luminance(const Spectrum<Float, Size> &value,
+                const Spectrum<Float, Size> &wavelengths,
+                ek::mask_t<Float> active = true) {
+    return ek::hmean(cie1931_y(wavelengths, active) * value);
+}
+
+template <typename Float> Float luminance(const Color<Float, 3> &c) {
+    using F = ek::scalar_t<Float>;
+    return c[0] * F(0.212671f) + c[1] * F(0.715160f) + c[2] * F(0.072169f);
+}
+
+/**
+ * Importance sample a "importance spectrum" that concentrates the computation
+ * on wavelengths that are relevant for rendering of RGB data
+ *
+ * Based on "An Improved Technique for Full Spectral Rendering"
+ * by Radziszewski, Boryczko, and Alda
+ *
+ * Returns a tuple with the sampled wavelength and inverse PDF
+ */
+template <typename Value>
+std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
+    Value wavelengths =
+        538.f - ek::atanh(0.8569106254698279f -
+                          1.8275019724092267f * sample) * 138.88888888888889f;
+
+    Value tmp    = ek::cosh(0.0072f * (wavelengths - 538.f));
+    Value weight = 253.82f * tmp * tmp;
+
+    return { wavelengths, weight };
+}
+
+/**
+ * PDF for the \ref sample_rgb_spectrum strategy.
+ * It is valid to call this function for a single wavelength (Float), a set
+ * of wavelengths (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all
+ * cases, the PDF is returned per wavelength.
+ */
+template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
+    Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
+    return ek::select(wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX,
+                      0.003939804229326285f * tmp * tmp, ek::zero<Value>());
+}
+
+/// Helper function to sample a wavelength (and a weight) given a random number
+template <typename Float, typename Spectrum>
+std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
+    if constexpr (!is_spectral_v<Spectrum>) {
+        ENOKI_MARK_USED(sample);
+        // Wavelengths should not be used when rendering in RGB or monochromatic modes.
+        return { {}, 1.f };
+    } else {
+        auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
+        return sample_rgb_spectrum(wav_sample);
+    }
+}
+
+template <typename Scalar>
+MTS_EXPORT_CORE void spectrum_from_file(const std::string &filename,
+                                        std::vector<Scalar> &wavelengths,
+                                        std::vector<Scalar> &values);
+
+template <typename Scalar>
+MTS_EXPORT_CORE Color<Scalar, 3>
+spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
+                      const std::vector<Scalar> &values, bool bounded = true);
+
+NAMESPACE_END(mitsuba)

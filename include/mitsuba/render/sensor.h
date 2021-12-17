@@ -10,13 +10,14 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/sampler.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Film, Sampler)
+    MTS_IMPORT_TYPES(Film, Sampler, Texture)
     MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
 
     // =============================================================
@@ -62,6 +63,30 @@ public:
     sample_ray_differential(Float time, Float sample1,
                             const Point2f &sample2, const Point2f &sample3,
                             Mask active = true) const;
+
+
+    /**
+     * \brief Importance sample a set of wavelengths proportional to the
+     * sensitivity spectrum.
+     *
+     * Any discrepancies between ideal and actual sampled profile are absorbed
+     * into a spectral importance weight that is returned along with the wavelengths.
+     *
+     * In RGB and monochromatic modes, since no wavelengths need to be sampled,
+     * this simply returns an empty vector and the value 1.
+     *
+     * \param sample
+     *     A uniformly distributed 1D value that is used to sample the spectral
+     *     dimension of the sensitivity profile.
+     *
+     * \return
+     *    The set of sampled wavelengths and importance weights.
+     *    The latter account for the difference between the
+     *    profile and the actual used sampling density function.
+     */
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active = true) const override;
 
     //! @}
     // =============================================================
@@ -134,6 +159,7 @@ protected:
     ScalarVector2f m_resolution;
     ScalarFloat m_shutter_open;
     ScalarFloat m_shutter_open_time;
+    ref<const Texture> m_srf;
 };
 
 

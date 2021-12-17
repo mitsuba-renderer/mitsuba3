@@ -1,6 +1,8 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import enoki as ek
 import mitsuba
-from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare_sampler, sample_sensor_rays, mis_weight
 
 from typing import Union
 
@@ -16,9 +18,9 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> mitsuba.core.TensorXf:
+                       seed: int = 0,
+                       spp: int = 0) -> mitsuba.core.TensorXf:
         from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
@@ -36,21 +38,21 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                            ray, params=params, grad=weight)[0]
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=False)
+                           rfilter=rfilter, border=False)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img, 1.0)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
-        film.put(block)
+        film.prepare([])
+        film.put_block(block)
         return film.develop()
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,\
+                        params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
-                        seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
-                        spp: int=0) -> None:
+                        seed: int = 0,
+                        spp: int = 0) -> None:
         """
         Performed the adjoint rendering integration, backpropagating the
         image gradients to the scene parameters.

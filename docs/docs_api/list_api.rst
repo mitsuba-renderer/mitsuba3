@@ -80,6 +80,10 @@
 
 .. autofunction:: mitsuba.core.MTS_AUTHORS
 
+.. autofunction:: mitsuba.core.MTS_CIE_MAX
+
+.. autofunction:: mitsuba.core.MTS_CIE_MIN
+
 .. autofunction:: mitsuba.core.MTS_ENABLE_CUDA
 
 .. autofunction:: mitsuba.core.MTS_ENABLE_EMBREE
@@ -178,9 +182,15 @@
 
 .. autoclass:: mitsuba.core.ScalarBool
 
+.. autoclass:: mitsuba.core.ScalarColor0d
+
 .. autoclass:: mitsuba.core.ScalarColor0f
 
+.. autoclass:: mitsuba.core.ScalarColor1d
+
 .. autoclass:: mitsuba.core.ScalarColor1f
+
+.. autoclass:: mitsuba.core.ScalarColor3d
 
 .. autoclass:: mitsuba.core.ScalarColor3f
 
@@ -428,8 +438,6 @@
 
 .. autofunction:: mitsuba.core.pdf_rgb_spectrum
 
-.. autofunction:: mitsuba.core.pdf_uniform_spectrum
-
 .. autofunction:: mitsuba.core.permute
 
 .. autofunction:: mitsuba.core.permute_kensler
@@ -458,11 +466,11 @@
 
 .. autofunction:: mitsuba.core.sample_tea_float64
 
-.. autofunction:: mitsuba.core.sample_uniform_spectrum
-
 .. autofunction:: mitsuba.core.set_property
 
 .. autofunction:: mitsuba.core.sobol_2
+
+.. autofunction:: mitsuba.core.spectrum_list_to_srgb
 
 .. autofunction:: mitsuba.core.spline.eval_1d
 
@@ -642,7 +650,7 @@
 
 .. autoclass:: mitsuba.render.SamplingIntegrator
 
-.. autoclass:: mitsuba.render.ScatteringIntegrator
+.. autoclass:: mitsuba.render.AdjointIntegrator
 
 .. autoclass:: mitsuba.render.Scene
 
@@ -730,64 +738,6 @@
 
 .. autofunction:: mitsuba.python.math.rlgamma
 
-.. autoclass:: mitsuba.python.polvis.Bitmap
-
-.. autofunction:: mitsuba.python.polvis.Log
-
-.. autoclass:: mitsuba.python.polvis.LogLevel
-
-.. autoclass:: mitsuba.python.polvis.ScopedSetThreadEnvironment
-
-.. autoclass:: mitsuba.python.polvis.Struct
-
-.. autoclass:: mitsuba.python.polvis.Thread
-
-.. autoclass:: mitsuba.python.polvis.ThreadEnvironment
-
-.. autoclass:: mitsuba.python.polvis.ThreadPoolExecutor
-
-.. autofunction:: mitsuba.python.polvis.polvis
-
-.. autofunction:: mitsuba.python.polvis.te
-
-.. autofunction:: mitsuba.python.chi2.BSDFAdapter
-
-.. autoclass:: mitsuba.python.chi2.ChiSquareTest
-
-.. autoclass:: mitsuba.python.chi2.LineDomain
-
-.. autofunction:: mitsuba.python.chi2.MicrofacetAdapter
-
-.. autofunction:: mitsuba.python.chi2.PhaseFunctionAdapter
-
-.. autoclass:: mitsuba.python.chi2.PlanarDomain
-
-.. autofunction:: mitsuba.python.chi2.SpectrumAdapter
-
-.. autoclass:: mitsuba.python.chi2.SphericalDomain
-
-.. autoclass:: mitsuba.python.util.Mapping
-
-.. autoclass:: mitsuba.python.util.SceneParameters
-
-.. autofunction:: mitsuba.python.util.contextmanager
-
-.. autofunction:: mitsuba.python.util.convert_to_bitmap
-
-.. autofunction:: mitsuba.python.util.suspend_gradients
-
-.. autofunction:: mitsuba.python.util.traverse
-
-.. autofunction:: mitsuba.python.util.write_bitmap
-
-.. autoclass:: mitsuba.python.xml.Files
-
-.. autoclass:: mitsuba.python.xml.WriteXML
-
-.. autofunction:: mitsuba.python.xml.copy2
-
-.. autofunction:: mitsuba.python.xml.dict_to_xml
-
 .. autoclass:: mitsuba.python.tonemap.Bitmap
 
 .. autofunction:: mitsuba.python.tonemap.Log
@@ -808,6 +758,104 @@
 
 .. autofunction:: mitsuba.python.tonemap.tonemap
 
+.. autofunction:: mitsuba.python.chi2.BSDFAdapter
+
+.. autoclass:: mitsuba.python.chi2.ChiSquareTest
+
+.. autofunction:: mitsuba.python.chi2.EmitterAdapter
+
+.. autoclass:: mitsuba.python.chi2.LineDomain
+
+.. autofunction:: mitsuba.python.chi2.MicrofacetAdapter
+
+.. autofunction:: mitsuba.python.chi2.PhaseFunctionAdapter
+
+.. autoclass:: mitsuba.python.chi2.PlanarDomain
+
+.. autofunction:: mitsuba.python.chi2.SpectrumAdapter
+
+.. autoclass:: mitsuba.python.chi2.SphericalDomain
+
+.. autoclass:: mitsuba.python.polvis.Bitmap
+
+.. autofunction:: mitsuba.python.polvis.Log
+
+.. autoclass:: mitsuba.python.polvis.LogLevel
+
+.. autoclass:: mitsuba.python.polvis.ScopedSetThreadEnvironment
+
+.. autoclass:: mitsuba.python.polvis.Struct
+
+.. autoclass:: mitsuba.python.polvis.Thread
+
+.. autoclass:: mitsuba.python.polvis.ThreadEnvironment
+
+.. autoclass:: mitsuba.python.polvis.ThreadPoolExecutor
+
+.. autofunction:: mitsuba.python.polvis.polvis
+
+.. autofunction:: mitsuba.python.polvis.te
+
+.. autoclass:: mitsuba.python.xml.Files
+
+.. autoclass:: mitsuba.python.xml.WriteXML
+
+.. autofunction:: mitsuba.python.xml.copy2
+
+.. autofunction:: mitsuba.python.xml.dict_to_xml
+
+.. autoclass:: mitsuba.python.util.Mapping
+
+.. autoclass:: mitsuba.python.util.SceneParameters
+
+.. autofunction:: mitsuba.python.util.contextmanager
+
+.. autofunction:: mitsuba.python.util.convert_to_bitmap
+
+.. autofunction:: mitsuba.python.util.traverse
+
+.. autofunction:: mitsuba.python.util.write_bitmap
+
+.. autoclass:: mitsuba.python.ad.optimizers.Adam
+
+.. autoclass:: mitsuba.python.ad.optimizers.Optimizer
+
+.. autoclass:: mitsuba.python.ad.optimizers.SGD
+
+.. autofunction:: mitsuba.python.ad.optimizers.contextmanager
+
+.. autoclass:: mitsuba.python.ad.optimizers.defaultdict
+
+.. autofunction:: mitsuba.python.ad.torch.render_torch
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.render_backward_impl
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_adjoint_impl
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.rb.RBIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.rb.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.rb.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.index_spectrum
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.prb.PRBIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prb.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.prb.sample_sensor_rays
+
 .. autoclass:: mitsuba.python.test.util._empty
 
 .. autofunction:: mitsuba.python.test.util.check_vectorization
@@ -825,44 +873,4 @@
 .. autofunction:: mitsuba.python.test.util.tmpfile
 
 .. autofunction:: mitsuba.python.test.util.wraps
-
-.. autofunction:: mitsuba.python.ad.torch.render_torch
-
-.. autoclass:: mitsuba.python.ad.optimizers.Adam
-
-.. autoclass:: mitsuba.python.ad.optimizers.Optimizer
-
-.. autoclass:: mitsuba.python.ad.optimizers.SGD
-
-.. autofunction:: mitsuba.python.ad.optimizers.contextmanager
-
-.. autoclass:: mitsuba.python.ad.optimizers.defaultdict
-
-.. autofunction:: mitsuba.python.ad.integrators.integrator.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.integrator.render_backward_impl
-
-.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_adjoint_impl
-
-.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_sensor_rays
-
-.. autoclass:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.index_spectrum
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.sample_sensor_rays
-
-.. autoclass:: mitsuba.python.ad.integrators.prb.PRBIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prb.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.prb.sample_sensor_rays
-
-.. autoclass:: mitsuba.python.ad.integrators.rb.RBIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.rb.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.rb.sample_sensor_rays
 

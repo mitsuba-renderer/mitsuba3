@@ -5,7 +5,6 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/phase.h>
-#include <mitsuba/render/scatteringintegrator.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/texture.h>
@@ -42,7 +41,7 @@ static py::object caster(Object *o) {
 
     PY_TRY_CAST(MonteCarloIntegrator);
     PY_TRY_CAST(SamplingIntegrator);
-    PY_TRY_CAST(ScatteringIntegrator);
+    PY_TRY_CAST(AdjointIntegrator);
     PY_TRY_CAST(Integrator);
 
     PY_TRY_CAST(Sampler);
@@ -122,21 +121,33 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Volume);
     MTS_PY_IMPORT(VolumeGrid);
 
+    auto mts_core = py::module::import("mitsuba.core_ext");
+
     /// Register the variant-specific caster with the 'core_ext' module
-    auto casters = (std::vector<void *> *) (py::capsule)(
-        py::module::import("mitsuba.core_ext").attr("casters"));
+    auto casters = (std::vector<void *> *) (py::capsule)(mts_core.attr("casters"));
     casters->push_back((void *) caster);
+
+    /* Increase the reference count of the `mitsuba.core.Object` type to make
+        sure libcore doesn't get destroyed before librender */
+    py::handle mts_object_type = mts_core.attr("Object");
+    mts_object_type.inc_ref();
 
     /* Register a cleanup callback function that is invoked when
         the 'mitsuba::Scene' Python type is garbage collected */
     py::cpp_function cleanup_callback(
-        [](py::handle weakref) {
+        [mts_object_type](py::handle weakref) {
             color_management_static_shutdown();
             Scene<Float, Spectrum>::static_accel_shutdown();
 
             /* The Enoki python module is responsible for cleaning up the
                 JIT state, so jit_shutdown() shouldn't be called here. */
             weakref.dec_ref();
+
+            /* Decrease the reference count of the `mitsuba.core.Object` type as
+                the libcore can now be destroyed. Somehow the reference counter
+                needs to be decremented twice for this to work properly. */
+            mts_object_type.dec_ref();
+            mts_object_type.dec_ref();
         }
     );
 

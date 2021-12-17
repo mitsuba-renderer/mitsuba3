@@ -21,11 +21,15 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
         s.accel = kdtree;
 
         // Get shapes registry ids
-        std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
-        for (size_t i = 0; i < m_shapes.size(); i++)
-            data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
-        s.shapes_registry_ids
-            = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+        if (!m_shapes.empty()) {
+            std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
+            for (size_t i = 0; i < m_shapes.size(); i++)
+                data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
+            s.shapes_registry_ids
+                = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+        } else {
+            s.shapes_registry_ids = ek::zero<DynamicBuffer<UInt32>>();
+        }
     } else {
         m_accel = kdtree;
     }
@@ -86,12 +90,10 @@ void kdtree_trace_func_wrapper(const int* valid, void* ptr, uint8_t* args) {
         ray_d[1] = ((ScalarFloat*) &args[offsetof(Args, d_y) * width])[i];
         ray_d[2] = ((ScalarFloat*) &args[offsetof(Args, d_z) * width])[i];
 
-        ScalarFloat& ray_mint = ((ScalarFloat*) &args[offsetof(Args, tnear) * width])[i];
         ScalarFloat& ray_maxt = ((ScalarFloat*) &args[offsetof(Args, tfar) * width])[i];
         ScalarFloat& ray_time = ((ScalarFloat*) &args[offsetof(Args, time) * width])[i];
 
-        ScalarRay3f ray = ScalarRay3f(ray_o, ray_d, ray_mint, ray_maxt,
-                                      ray_time, wavelength_t<Spectrum>());
+        ScalarRay3f ray = ScalarRay3f(ray_o, ray_d, ray_maxt, ray_time, wavelength_t<Spectrum>());
 
         if constexpr (ShadowRay) {
             bool hit = kdtree->template ray_intersect_scalar<true>(ray).is_valid();
@@ -154,7 +156,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         Float t(Float::steal(out[0]));
 
-        pi.prim_uv = Vector2f(Float::steal(out[1]), Float::steal(out[2]));
+        pi.prim_uv = Vector2f(Float::steal(out[1]),
+                              Float::steal(out[2]));
 
         pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);

@@ -5,7 +5,7 @@ import mitsuba
 def test01_parse_fov(variant_scalar_rgb):
     from mitsuba.core import Properties
     from mitsuba.render import parse_fov
-    
+
     # Focal length re-calculation tests:
     props = Properties()
     props["focal_length"] = "50mm"

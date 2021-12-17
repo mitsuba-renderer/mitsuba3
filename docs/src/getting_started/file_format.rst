@@ -239,6 +239,7 @@ all of these possibilities. An example is shown below:
   :width: 100%
   :align: center
 
+.. _color-spectra:
 
 Color spectra
 *************

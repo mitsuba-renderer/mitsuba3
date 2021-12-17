@@ -58,12 +58,7 @@ public:
                     schedule_state)
     MTS_IMPORT_TYPES()
 
-    IndependentSampler(const Properties &props) : Base(props) {
-        /* Can't seed yet on the GPU because we don't know yet
-           how many entries will be needed. */
-        if (!ek::is_dynamic_array_v<Float>)
-            seed(PCG32_DEFAULT_STATE);
-    }
+    IndependentSampler(const Properties &props) : Base(props) { }
 
     ref<Sampler<Float, Spectrum>> fork() override {
         IndependentSampler *sampler = new IndependentSampler(Properties());
@@ -74,10 +69,6 @@ public:
 
     ref<Sampler<Float, Spectrum>> clone() override {
         return new IndependentSampler(*this);
-    }
-
-    void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1) override {
-        Base::seed(seed_offset, wavefront_size);
     }
 
     Float next_1d(Mask active = true) override {

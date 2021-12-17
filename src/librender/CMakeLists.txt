@@ -62,7 +62,6 @@ add_library(mitsuba-render SHARED
   shape.cpp        ${INC_DIR}/shape.h
   texture.cpp      ${INC_DIR}/texture.h
                    ${INC_DIR}/microflake.h
-  scatteringintegrator.cpp  ${INC_DIR}/scatteringintegrator.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
                    ${INC_DIR}/optix/common.h

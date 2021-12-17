@@ -1,6 +1,8 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import enoki as ek
 import mitsuba
-from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare_sampler, sample_sensor_rays, mis_weight
 
 from typing import Union
 
@@ -20,9 +22,9 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> mitsuba.core.TensorXf:
+                       seed: int = 0,
+                       spp: int = 0) -> mitsuba.core.TensorXf:
         from mitsuba.core import Float, Spectrum
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
@@ -63,12 +65,12 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
-        film.put(block)
+        film.prepare([])
+        film.put_block(block)
         Li_attached = film.develop()
 
         ek.enqueue(ek.ADMode.Forward, params)
@@ -78,8 +80,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         block.clear()
         block.put(pos, ray.wavelengths, grad_img + div_grad)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
-        film.put(block)
+        film.prepare([])
+        film.put_block(block)
 
         return ek.grad(Li_attached) + film.develop()
 
@@ -87,9 +89,9 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
-                        seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
-                        spp: int=0) -> None:
+                        seed: int = 0,
+                        spp: int = 0) -> None:
         """
         Performed the adjoint rendering integration, backpropagating the
         image gradients to the scene parameters.
@@ -137,12 +139,12 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
-        film.put(block)
+        film.prepare([])
+        film.put_block(block)
         Li_attached = film.develop()
 
         ek.set_grad(Li_attached, image_adj)

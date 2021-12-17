@@ -1,9 +1,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/render/integrator.h>
-#include <mitsuba/render/scatteringintegrator.h>
-
 #include <mitsuba/python/python.h>
+#include "signal.h"
 
 #if defined(__APPLE__) || defined(__linux__)
 #  define MTS_HANDLE_SIGINT 1
@@ -21,6 +20,35 @@ static std::function<void()> sigint_handler;
 static void (*sigint_handler_prev)(int) = nullptr;
 #endif
 
+/// RAII helper to catch Ctrl-C keypresses and cancel an ongoing render job
+ScopedSignalHandler::ScopedSignalHandler(IntegratorT *integrator) {
+#if MTS_HANDLE_SIGINT
+    // Install new signal handler
+    sigint_handler = [integrator]() {
+        integrator->cancel();
+    };
+
+    sigint_handler_prev = signal(SIGINT, [](int) {
+        Log(Warn, "Received interrupt signal, winding down..");
+        if (sigint_handler) {
+            sigint_handler();
+            sigint_handler = std::function<void()>();
+            signal(SIGINT, sigint_handler_prev);
+            raise(SIGINT);
+        }
+    });
+#else
+    (void) integrator;
+#endif
+}
+
+ScopedSignalHandler::~ScopedSignalHandler() {
+#if MTS_HANDLE_SIGINT
+    // Restore previous signal handler
+    signal(SIGINT, sigint_handler_prev);
+#endif
+}
+
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
@@ -28,23 +56,25 @@ public:
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
         if constexpr (!ek::is_jit_array_v<Float>) {
-            Log(Warn, "Derived SamplingIntegrator defined in Python will have "
+            Log(Warn, "SamplingIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
                       "recommended to switch to a cuda_* or llvm_* mode");
         }
     }
 
     TensorXf render(Scene *scene,
-                    uint32_t seed,
                     Sensor *sensor,
-                    bool develop_film) override {
+                    uint32_t seed,
+                    uint32_t spp,
+                    bool develop,
+                    bool evaluate) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "render");
 
         if (overload) {
-            return overload(scene, seed, sensor, develop_film).template cast<TensorXf>();
+            return overload(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
         } else {
-            return SamplingIntegrator::render(scene, seed, sensor, develop_film);
+            return SamplingIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
         }
     }
 
@@ -59,8 +89,9 @@ public:
 
         if (overload) {
             using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
-            auto [spec, mask, aovs_]
-                = overload(scene, sampler, ray, medium, active).template cast<PyReturn>();
+            auto [spec, mask, aovs_] =
+                overload(scene, sampler, ray, medium, active)
+                    .template cast<PyReturn>();
 
             std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
@@ -85,58 +116,27 @@ MTS_PY_EXPORT(Integrator) {
     MTS_PY_CLASS(Integrator, Object)
         .def(
             "render",
-            [&](Integrator *integrator,
-                Scene *scene,
-                uint32_t seed,
-                Sensor *sensor,
-                bool develop_film,
-                uint32_t spp) {
+            [&](Integrator *integrator, Scene *scene, Sensor *sensor,
+                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
                 py::gil_scoped_release release;
-
-#if MTS_HANDLE_SIGINT
-                // Install new signal handler
-                sigint_handler = [integrator]() {
-                    integrator->cancel();
-                };
-
-                sigint_handler_prev = signal(SIGINT, [](int) {
-                    Log(Warn, "Received interrupt signal, winding down..");
-                    if (sigint_handler) {
-                        sigint_handler();
-                        sigint_handler = std::function<void()>();
-                        signal(SIGINT, sigint_handler_prev);
-                        raise(SIGINT);
-                    }
-                });
-#endif
-                if (spp > 0)
-                    sensor->sampler()->set_sample_count(spp);
-                auto res = integrator->render(scene, seed, sensor, develop_film);
-
-#if MTS_HANDLE_SIGINT
-                // Restore previous signal handler
-                signal(SIGINT, sigint_handler_prev);
-#endif
-
-                return res;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render(scene, sensor, seed, spp, develop,
+                                          evaluate);
             },
-            D(Integrator, render), "scene"_a, "seed"_a, "sensor"_a,
-            "develop_film"_a = true, "spp"_a = 0)
+            D(Integrator, render), "scene"_a, "sensor"_a, "seed"_a = 0,
+            "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
 
-        .def("render",
-            [&](Integrator *integrator,
-                Scene *scene,
-                uint32_t seed,
-                uint32_t sensor_idx,
-                bool develop_film,
-                uint32_t spp) {
-                if (sensor_idx >= scene->sensors().size())
-                    Throw("Out-of-bound sensor index: %i", sensor_idx);
-                Sensor *sensor = scene->sensors()[sensor_idx].get();
-                return py::cast(integrator).attr("render")(scene, seed, sensor, develop_film, spp);
+        .def(
+            "render",
+            [&](Integrator *integrator, Scene *scene, uint32_t sensor_index,
+                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render(scene, sensor_index, seed, spp,
+                                          develop, evaluate);
             },
-            D(Integrator, render), "scene"_a, "seed"_a, "sensor_index"_a = 0,
-            "develop_film"_a = true, "spp"_a = 0)
+            D(Integrator, render, 2), "scene"_a, "sensor_index"_a = 0,
+            "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
         .def_method(Integrator, aov_names);
@@ -162,7 +162,7 @@ MTS_PY_EXPORT(Integrator) {
 
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    MTS_PY_CLASS(ScatteringIntegrator, Integrator)
-        .def_method(ScatteringIntegrator, sample, "scene"_a, "sensor"_a,
-                    "sampler"_a, "block"_a, "active"_a = true);
+    MTS_PY_CLASS(AdjointIntegrator, Integrator)
+        .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
+                    "sampler"_a, "block"_a, "sample_scale"_a);
 }

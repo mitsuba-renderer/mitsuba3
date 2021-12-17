@@ -1,7 +1,9 @@
+from __future__ import annotations # Delayed parsing of type annotations
+
 import time
 import enoki as ek
 import mitsuba
-from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare_sampler, sample_sensor_rays, mis_weight
 
 from typing import Union
 
@@ -22,9 +24,9 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> mitsuba.core.TensorXf:
+                       seed: int = 0,
+                       spp: int = 0) -> mitsuba.core.TensorXf:
         from mitsuba.core import Float, Spectrum, Log, LogLevel, util
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
@@ -67,11 +69,11 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
         Li_attached = film.develop()
 
@@ -84,7 +86,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         block.clear()
         block.put(pos, ray.wavelengths, grad_img + div_grad)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
 
         grad_out = Li_grad + film.develop()
@@ -98,8 +100,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
-                        seed: int,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        seed: int = 0,
                         spp: int = 0) -> None:
         from mitsuba.core import Float, Spectrum, Log, LogLevel
         from mitsuba.render import ImageBlock, Interaction3f
@@ -150,11 +152,11 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
-                           filter=rfilter, border=True)
+                           rfilter=rfilter, border=True)
         block.set_offset(film.crop_offset())
         block.clear()
-        block.put(ds.uv, ray.wavelengths, Li * w_reparam)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        block.put_block(ds.uv, ray.wavelengths, Li * w_reparam)
+        film.prepare([])
         film.put(block)
         Li_attached = film.develop()
 
