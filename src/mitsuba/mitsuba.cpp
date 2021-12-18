@@ -65,10 +65,11 @@ Options:
 
  === The following options are only relevant for JIT (CUDA/LLVM) modes ===
 
-    -O [0-4]
-        Enables successive optimizations:
-          (0. all disabled, 1: constant propagation, 2. value numbering,
-           3. virtual call optimizations, 4. loop optimizations)
+    -O [0-5]
+        Enables successive optimizations (default: -O5):
+          (0. all disabled, 1: de-duplicate virtual functions,
+           2: constant propagation, 3. value numbering,
+           4. virtual call optimizations, 5. loop optimizations)
 
     -S
         Dump the PTX or LLVM intermediate representation to the console
@@ -263,12 +264,13 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (cuda || llvm) {
-            if (arg_optim_lev) {
+            if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
-                jit_set_flag(JitFlag::ConstProp, lev > 0);
-                jit_set_flag(JitFlag::ValueNumbering, lev > 1);
-                jit_set_flag(JitFlag::VCallOptimize, lev > 2);
-                jit_set_flag(JitFlag::LoopOptimize, lev > 3);
+                jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
+                jit_set_flag(JitFlag::ConstProp, lev > 1);
+                jit_set_flag(JitFlag::ValueNumbering, lev > 2);
+                jit_set_flag(JitFlag::VCallOptimize, lev > 3);
+                jit_set_flag(JitFlag::LoopOptimize, lev > 4);
             }
 
             if (*arg_wavefront) {
