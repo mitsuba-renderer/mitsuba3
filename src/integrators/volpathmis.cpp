@@ -148,13 +148,16 @@ public:
         Mask needs_intersection = true, last_event_was_null = false;
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
 
-        ek::Loop<Mask> loop("Volpath MIS integrator");
-        loop.put(active, depth, ray, p_over_f, p_over_f_nee, result, si, mi,
-                 medium, eta, last_scatter_event, needs_intersection,
-                 specular_chain, valid_ray);
-        sampler->loop_register(loop);
-        loop.init();
-        while (loop(ek::detach(active))) {
+        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
+           generates wavefront or megakernel renderer based on configuration).
+           Register everything that changes as part of the loop here */
+        ek::Loop<Mask> loop("Volpath MIS integrator",
+                            /* loop state: */
+                            active, depth, ray, p_over_f, p_over_f_nee, result,
+                            si, mi, medium, eta, last_scatter_event,
+                            needs_intersection, specular_chain, valid_ray);
+
+        while (loop(active)) {
             // ----------------- Handle termination of paths ------------------
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -381,7 +384,7 @@ public:
         ek::Loop<Mask> loop("Volpath MIS integrator emitter sampling");
         loop.put(active, ray, total_dist, needs_intersection, medium, si,
                  p_over_f_nee, p_over_f_uni);
-        sampler->loop_register(loop);
+        sampler->loop_put(loop);
         loop.init();
         while (loop(ek::detach(active))) {
 

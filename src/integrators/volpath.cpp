@@ -110,13 +110,16 @@ public:
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
-        ek::Loop<Mask> loop("Volpath integrator");
-        loop.put(active, depth, ray, throughput, result, si, mi, medium, eta,
-                 last_scatter_event, last_scatter_direction_pdf,
-                 needs_intersection, specular_chain, valid_ray);
-        sampler->loop_register(loop);
-        loop.init();
-        while (loop(ek::detach(active))) {
+        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
+           generates wavefront or megakernel renderer based on configuration).
+           Register everything that changes as part of the loop here */
+        ek::Loop<Mask> loop("Volpath integrator",
+                            /* loop state: */ active, depth, ray, throughput,
+                            result, si, mi, medium, eta, last_scatter_event,
+                            last_scatter_direction_pdf, needs_intersection,
+                            specular_chain, valid_ray, loop);
+
+        while (loop(active)) {
             // ----------------- Handle termination of paths ------------------
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
@@ -327,7 +330,7 @@ public:
         ek::Loop<Mask> loop("Volpath integrator emitter sampling");
         loop.put(active, ray, total_dist, needs_intersection, medium, si,
                  transmittance);
-        sampler->loop_register(loop);
+        sampler->loop_put(loop);
         loop.init();
         while (loop(ek::detach(active))) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;

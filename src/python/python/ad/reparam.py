@@ -102,19 +102,20 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     kappa = ek.opaque(mitsuba.core.Float, kappa)
     power = ek.opaque(mitsuba.core.Float, power)
 
-    class Reparameterizer(ek.CustomOp):
+    class ReparameterizeOp(ek.CustomOp):
         """
         Custom Enoki operator to reparameterize rays in order to account for
         gradient discontinuities due to moving geometry in the scene.
         """
-        def eval(self, scene, params, ray_, active_):
-            from mitsuba.core import Float
+        def eval(self, scene, params, ray, active):
             self.scene = scene
             self.params = params
-            self.ray = ray_
-            self.active = active_
-            self.add_input(self.params)
-            return self.ray.d, ek.zero(Float, ek.width(self.ray.d))
+            self.ray = ray
+            self.active = active
+
+            return self.ray.d, ek.zero(mitsuba.core.Float,
+                                       ek.width(self.ray.d))
+
 
         def forward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop, Ray3f
@@ -127,10 +128,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             ray = Ray3f(ek.detach(self.ray))
 
             it = UInt32(0)
-            loop = Loop("Auxiliary rays")
-            loop.put(lambda:(it, Z, dZ, grad_V, grad_div_lhs))
-            sampler.loop_register(loop)
-            loop.init()
+            loop = Loop(name="reparameterize_ray(): forward propagation",
+                        state=(it, Z, dZ, grad_V, grad_div_lhs, sampler))
 
             while loop(active & (it < num_auxiliary_rays)):
                 ek.enable_grad(ray.o)
@@ -158,6 +157,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
 
             self.set_grad_out((V_theta, div_V_theta))
 
+
         def backward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop
 
@@ -175,16 +175,15 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 sampler_clone = sampler.clone()
 
                 it = UInt32(0)
-                loop = Loop("Auxiliary rays - compute normalization terms")
-                loop.put(lambda:(it, Z, dZ))
-                sampler_clone.loop_register(loop)
-                loop.init()
+                loop = Loop(name="reparameterize_ray(): normalization",
+                            state=lambda: (it, Z, dZ, sampler_clone))
+
                 while loop(active & (it < num_auxiliary_rays)):
                     Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sampler_clone, self.ray,
                                                          kappa, power, self.active)
                     Z += Z_i
                     dZ += dZ_i
-                    it = it + 1
+                    it += 1
 
             # Un-normalized values
             V = ek.zero(Vector3f, ek.width(Z))
@@ -206,21 +205,20 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             grad_div_V_1 = ek.grad(div_V_1)
 
             it = UInt32(0)
-            loop = Loop("Auxiliary rays - backpropagation")
-            loop.put(lambda:(it))
-            sampler.loop_register(loop)
-            loop.init()
+            loop = Loop(name="reparameterize_ray(): backpropagation",
+                        state=lambda: (it, sampler))
+
             while loop(active & (it < num_auxiliary_rays)):
                 _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sampler, self.ray,
                                                           kappa, power, self.active)
-                # print(ek.graphviz_str(Float(1)))
+
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
                 ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
                 ek.traverse(Float, ek.ADFlag.ClearVertices)
-                it = it + 1
+                it += 1
 
         def name(self):
-            return "ray reparameterizer"
+            return "reparameterize_ray()"
 
-    return ek.custom(Reparameterizer, scene, params, ray, active)
+    return ek.custom(ReparameterizeOp, scene, params, ray, active)

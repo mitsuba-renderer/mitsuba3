@@ -4405,7 +4405,7 @@ static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state 
 
 static const char *__doc_mitsuba_PCG32Sampler_class = R"doc()doc";
 
-static const char *__doc_mitsuba_PCG32Sampler_loop_register = R"doc()doc";
+static const char *__doc_mitsuba_PCG32Sampler_loop_put = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_m_rng = R"doc()doc";
 
@@ -5566,7 +5566,7 @@ internal state of the sampler.
 
 May throw an exception if not supported.)doc";
 
-static const char *__doc_mitsuba_Sampler_loop_register = R"doc(Register internal state of this sampler with a symbolic loop)doc";
+static const char *__doc_mitsuba_Sampler_loop_put = R"doc(Register internal state of this sampler with a symbolic loop)doc";
 
 static const char *__doc_mitsuba_Sampler_m_base_seed = R"doc(Base seed value)doc";
 

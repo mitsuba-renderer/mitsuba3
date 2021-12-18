@@ -136,14 +136,11 @@ public:
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<Mask> loop("PathIntegrator");
-        loop.put(active, depth, ray, throughput, result, si, eta);
+        ek::Loop<Mask> loop("PathIntegrator",
+                            /* loop state: */ active, depth, ray,
+                            throughput, result, si, eta, sampler);
 
-        // The internal sampler state is also modified by the loop
-        sampler->loop_register(loop);
-        loop.init();
-
-        while (loop(ek::detach(active))) {
+        while (loop(active)) {
             // --------------------- Emitter sampling ---------------------
 
             BSDFContext ctx;

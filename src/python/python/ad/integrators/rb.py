@@ -2,7 +2,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare, sample_rays, mis_weight
 
 from typing import Union
 
@@ -30,9 +30,9 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         sampler = sensor.sampler()
 
         # Seed the sampler and compute the number of sample per pixels
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_rays(sensor)
 
         grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
                            ray, params=params, grad=weight)[0]
@@ -47,7 +47,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        image_adj: mitsuba.core.TensorXf,
+                        grad_in: mitsuba.core.TensorXf,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
@@ -65,11 +65,11 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         sampler = sensor.sampler()
 
         # Seed the sampler and compute the number of sample per pixels
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_rays(sensor)
 
-        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block = ImageBlock(ek.detach(grad_in), rfilter, normalize=True)
         block.set_offset(film.crop_offset())
         grad = Spectrum(block.read(pos)) * weight / spp
 
@@ -107,10 +107,10 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         emission_weight = Float(emission_weight)
 
         depth_i = UInt32(depth)
-        loop = Loop("RBPLoop" + '_recursive_li' if is_primal else '')
-        loop.put(lambda:(depth_i, active, ray, emission_weight, throughput, pi, result))
-        sampler.loop_register(loop)
-        loop.init()
+        loop = Loop(name="RBPLoop" + '_recursive_li' if is_primal else '',
+                    state=lambda:(depth_i, active, ray, emission_weight,
+                                  throughput, pi, result, sampler))
+
         while loop(active):
             si = pi.compute_surface_interaction(ray, RayFlags.All, active)
 

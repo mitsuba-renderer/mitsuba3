@@ -292,10 +292,10 @@ def render(scene: mitsuba.render.Scene,
 #  Helper functions used by various differentiable integrators
 # -------------------------------------------------------------
 
-def prepare_sampler(sensor: mitsuba.render.Sensor,
-                    seed: int = 0,
-                    spp: int = 0,
-                    aovs: list = []):
+def prepare(sensor: mitsuba.render.Sensor,
+            seed: int = 0,
+            spp: int = 0,
+            aovs: list = []):
     """
     Given a sensor and a desired number of samples per pixel, this function
     computes the necessary number of Monte Carlo samples and then suitably
@@ -348,8 +348,8 @@ def prepare_sampler(sensor: mitsuba.render.Sensor,
     return spp
 
 
-def sample_sensor_rays(sensor: mitsuba.render.Sensor,
-                       reparameterize = False):
+def sample_rays(sensor: mitsuba.render.Sensor,
+                reparameterize = False):
     """
     Sample a 2D grid of primary rays for a given sensor
 
@@ -448,7 +448,7 @@ def develop_block(block: mitsuba.render.ImageBlock):
     channel less than before.
     """
 
-    from mitsuba.core import TensorXf, Float, UInt32
+    from mitsuba.core import TensorXf, Float, UInt32, Bool
 
     channels_in  = block.channel_count()
     channels_out = channels_in - 1
@@ -469,3 +469,131 @@ def develop_block(block: mitsuba.render.ImageBlock):
 
     return TensorXf(values_out, (size[1], size[0], channels_out))
 
+
+class ADIntegrator(mitsuba.render.SamplingIntegrator):
+    def __init__(self, props = mitsuba.core.Properties()):
+        super().__init__(props)
+
+        self.max_depth = props.get('max_depth', 4)
+        self.split_kernels = props.get('split_kernels', False)
+
+
+    def aovs(self):
+        return []
+
+    def render(self: mitsuba.render.SamplingIntegrator,
+               scene: mitsuba.render.Scene,
+               sensor: Union[int, mitsuba.render.Sensor] = 0,
+               seed: int = 0,
+               spp: int = 0,
+               develop: bool = True,
+               evaluate: bool = True) -> mitsuba.core.TensorXf:
+
+        if not develop:
+            raise Exception("develop=True must be specified when "
+                            "invoking AD integrators")
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        # Disable derivatives in all of the following
+        with ek.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            spp = prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aovs()
+            )
+
+            # Generate many rays from the camera
+            ray, weight, pos, _ = sample_rays(sensor)
+
+            # Launch the Monte Carlo sampling process in primal mode
+            spec, valid, state = self.sample_impl(
+                mode=ek.ADMode.Primal,
+                scene=scene,
+                sampler=sensor.sampler(),
+                ray=ray,
+                active=mitsuba.core.Bool(True)
+            )
+
+            # Prepare an ImageBlock as specified by the film
+            block = sensor.film().create_block()
+
+            # Only use the coalescing feature when rendering enough samples
+            block.set_coalesce(block.coalesce() and spp >= 4)
+
+            # Acumulate the image block
+            block.put(pos, ray.wavelengths, spec)
+
+            # Perform the weight division and return an image tensor
+            return develop_block(block)
+
+
+    def render_backward(self: mitsuba.render.SamplingIntegrator,
+                        scene: mitsuba.render.Scene,
+                        params: mitsuba.python.util.SceneParameters,
+                        grad_in: mitsuba.core.TensorXf,
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        seed: int = 0,
+                        spp: int = 0) -> None:
+
+      from mitsuba.render import ImageBlock
+
+      if isinstance(sensor, int):
+          sensor = scene.sensors()[sensor]
+
+      film = sensor.film()
+      sampler = sensor.sampler()
+
+      # self.sample_impl() will re-enable gradients as needed, disable them here
+      with ek.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            spp = prepare(sensor, seed, spp)
+
+            # Generate many rays from the camera
+            ray, weight, pos, _ = sample_rays(sensor)
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            spec, valid, state_out = self.sample_impl(
+                mode=ek.ADMode.Primal,
+                scene=scene,
+                sampler=sensor.sampler().clone(),
+                ray=ray,
+                active=mitsuba.core.Bool(True)
+            )
+
+            # Garbage collect unused values to simplify kernel about to be run
+            del spec, valid
+
+            if not self.split_kernels:
+                ek.eval(state_out)
+
+            # Wrap the input gradient image into an ImageBlock
+            block = ImageBlock(offset=film.crop_offset(),
+                               tensor=grad_in,
+                               rfilter=film.rfilter(),
+                               normalize=True,
+                               border=False) # May need to revisit..
+
+            # Use the reconstruction filter to interpolate the values at 'pos'
+            δL = block.read(pos) * (weight * ek.rcp(spp))
+
+            # Launch Monte Carlo sampling in backward AD mode (2)
+            spec_2, valid_2, state_out_2 = self.sample_impl(
+                mode=ek.ADMode.Backward,
+                scene=scene,
+                sampler=sensor.sampler().clone(),
+                ray=ray,
+                active=mitsuba.core.Bool(True),
+                state_in=state_out,
+                δL = δL 
+            )
+
+            # We don't need any of the outputs here
+            del spec_2, valid_2, state_out, state_out_2, δL, \
+                ray, weight, pos, block
+
+            # Run kernel representing side effects of the above
+            ek.eval()

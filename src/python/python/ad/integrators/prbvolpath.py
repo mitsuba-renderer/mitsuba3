@@ -2,7 +2,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare_sampler, mis_weight, sample_sensor_rays
+from .common import prepare, mis_weight, sample_rays
 
 from typing import Union
 
@@ -69,9 +69,9 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         rfilter = film.rfilter()
         sampler = sensor.sampler()
 
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
@@ -91,7 +91,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        image_adj: mitsuba.core.TensorXf,
+                        grad_in: mitsuba.core.TensorXf,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
@@ -107,15 +107,15 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         rfilter = sensor.film().rfilter()
         sampler = sensor.sampler()
 
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_rays(sensor)
 
         # sample forward path (not differentiable)
         with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
-        block = ImageBlock(film.crop_offset(), ek.detach(image_adj), rfilter, normalize=True)
+        block = ImageBlock(film.crop_offset(), ek.detach(grad_in), rfilter, normalize=True)
         grad_values = Spectrum(block.read(pos)) * weight / spp
 
         # Replay light paths and accumulate gradients
@@ -158,11 +158,13 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             n_channels = ek.array_size_v(Spectrum)
             channel = ek.min(n_channels * sampler.next_1d(active), n_channels - 1)
 
-        loop = Loop("PRBVolpathLoop" + ('' if is_primal else '_adjoint'))
-        loop.put(lambda: (active, depth, ray, medium, throughput, si, result, needs_intersection,
-                          last_scatter_event, last_scatter_direction_pdf, eta, specular_chain, valid_ray))
-        sampler.loop_register(loop)
-        loop.init()
+        loop = Loop(name="PRBVolpathLoop" + ('' if is_primal else '_adjoint'),
+                    state=lambda: (active, depth, ray, medium, throughput, si,
+                                   result, needs_intersection,
+                                   last_scatter_event,
+                                   last_scatter_direction_pdf, eta,
+                                   specular_chain, valid_ray, sampler))
+
         while loop(active):
             active &= ek.any(ek.neq(throughput, 0.0))
             q = ek.min(ek.hmax(throughput) * ek.sqr(eta), 0.99)
@@ -347,10 +349,10 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         needs_intersection = Mask(True)
         transmittance = Spectrum(1.0)
 
-        loop = Loop("PRBVolpathNEELoop")
-        loop.put(lambda: (active, medium, ray, needs_intersection, si, total_dist, transmittance))
-        sampler.loop_register(loop)
-        loop.init()
+        loop = Loop(name="PRBVolpathNEELoop",
+                    state=lambda: (active, medium, ray, needs_intersection,
+                                   si, total_dist, transmittance, loop, sampler))
+
         while loop(active):
             remaining_dist = ds.dist * (1.0 - mitsuba.core.math.ShadowEpsilon) - total_dist
             ray.maxt = ek.detach(remaining_dist)
