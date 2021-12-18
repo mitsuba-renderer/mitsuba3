@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 import time
 import enoki as ek
 import mitsuba
-from .common import prepare_sampler, sample_sensor_rays, mis_weight
+from .common import prepare, sample_rays, mis_weight
 
 from typing import Union
 
@@ -44,9 +44,9 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         assert film.sample_border()
 
         # Seed the sampler and compute the number of sample per pixels
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, aperture_samples = sample_sensor_rays(sensor)
+        ray, weight, pos, aperture_samples = sample_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
@@ -97,7 +97,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        image_adj: mitsuba.core.TensorXf,
+                        grad_in: mitsuba.core.TensorXf,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
@@ -118,12 +118,12 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         assert film.sample_border()
 
         # Seed the sampler and compute the number of sample per pixels
-        spp = prepare_sampler(sensor, seed, spp)
+        spp = prepare(sensor, seed, spp)
 
-        ray, weight, pos, aperture_samples = sample_sensor_rays(sensor)
+        ray, weight, pos, aperture_samples = sample_rays(sensor)
 
         # Read image gradient values per sample through the pixel filter
-        block = ImageBlock(film.crop_offset(), ek.detach(image_adj), rfilter, normalize=True)
+        block = ImageBlock(film.crop_offset(), ek.detach(grad_in), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
 
         # Sample forward paths (not differentiable)
@@ -155,7 +155,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         film.put(block)
         Li_attached = film.develop()
 
-        ek.set_grad(Li_attached, image_adj)
+        ek.set_grad(Li_attached, grad_in)
         ek.set_grad(reparam_div, ek.hsum(grad * Li))
         ek.enqueue(ek.ADMode.Backward, Li_attached, reparam_div)
         ek.traverse(Float)
@@ -201,11 +201,10 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         emission_weight = Float(1.0)
 
         depth_i = UInt32(depth)
-        loop = Loop("Path Replay Backpropagation main loop" + '' if is_primal else ' - adjoint')
-        loop.put(lambda: (depth_i, active, ray, emission_weight,
-                          throughput, pi, result, primal_result))
-        sampler.loop_register(loop)
-        loop.init()
+        loop = Loop(name="Path Replay Backpropagation main loop" + '' if is_primal else ' - adjoint',
+                    state=lambda: (depth_i, active, ray, emission_weight,
+                                   throughput, pi, result, primal_result, sampler))
+
         while loop(active):
             # Attach incoming direction (reparameterization from the previous bounce)
             si = pi.compute_surface_interaction(ray, RayFlags.All, active)

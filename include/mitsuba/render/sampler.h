@@ -129,7 +129,7 @@ public:
     virtual void schedule_state();
 
     /// Register internal state of this sampler with a symbolic loop
-    virtual void loop_register(ek::Loop<Mask> &loop);
+    virtual void loop_put(ek::Loop<Mask> &loop);
 
     MTS_DECLARE_CLASS()
 protected:
@@ -169,7 +169,7 @@ public:
     virtual void seed(uint32_t seed,
                       uint32_t wavefront_size = (uint32_t) -1) override;
     virtual void schedule_state() override;
-    virtual void loop_register(ek::Loop<Mask> &loop) override;
+    virtual void loop_put(ek::Loop<Mask> &loop) override;
 
     MTS_DECLARE_CLASS()
 protected:

@@ -2,136 +2,74 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare_sampler, sample_sensor_rays, mis_weight, develop_block
 
-class TinyIntegrator(mitsuba.render.SamplingIntegrator):
-    """
-    This integrator implements a path replay backpropagation surface path tracer.
-    """
-    def __init__(self, props = mitsuba.core.Properties()):
-        super().__init__(props)
-        self.max_depth = props.get('max_depth', 4)
+from .common import ADIntegrator
 
-    def render(self: mitsuba.render.SamplingIntegrator,
-               scene: mitsuba.render.Scene,
-               sensor: Union[int, mitsuba.render.Sensor] = 0,
-               seed: int = 0,
-               spp: int = 0,
-               develop: bool = True,
-               evaluate: bool = True) -> mitsuba.core.TensorXf:
-
-        from mitsuba.core import Mask
-
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-
-        if not develop:
-            raise Exception("develop=True must be specified when "
-                            "invoking AD integrators")
-
-        film = sensor.film()
-        sampler = sensor.sampler()
-
-        # Completely disable gradient tracking here just in case..
-        with ek.suspend_grad():
-            # Seed the sampler and compute the number of sample per pixels
-            spp = prepare_sampler(sensor, seed, spp)
-
-            ray, weight, pos, _ = sample_sensor_rays(sensor)
-
-            spec, valid, state = self.sample_impl(
-                mode=ek.ADMode.Primal,
-                scene=scene,
-                sampler=sampler,
-                ray=ray,
-                active=Mask(True)
-            )
-
-            crop_size = film.crop_size()
-            block = film.create_block()
-            block.set_coalesce(block.coalesce() and spp >= 4)
-
-            # Only use the coalescing feature when rendering enough samples
-            block.put(pos, ray.wavelengths, spec)
-
-            return develop_block(block)
-
-
-
-    #def render_backward(self: mitsuba.render.SamplingIntegrator,
-    #                    scene: mitsuba.render.Scene,
-    #                    params: mitsuba.python.util.SceneParameters,
-    #                    image_adj: mitsuba.core.TensorXf,
-    #                    sensor: Union[int, mitsuba.render.Sensor] = 0,
-    #                    seed: int = 0,
-    #                    spp: int = 0) -> None:
-
-    #    if isinstance(sensor, int):
-    #        sensor = scene.sensors()[sensor]
-
-    #    film = sensor.film()
-    #    sampler = sensor.sampler()
-
-    #    # Track no derivatives by default in any of the following. Evaluating
-    #    # self.sample_impl(ADMode.Reverse, ..) will re-enable them as needed)
-
-    #    with ek.suspend_grad():
-    #        # Seed the sampler and compute the number of sample per pixels
-    #        spp = prepare_sampler(sensor, seed, spp)
-
-    #        ray, weight, pos, _ = sample_sensor_rays(sensor)
-
-    #        spec, valid, state = self.sample_impl(
-    #            mode=ek.ADMode.Primal,
-    #            scene=scene,
-    #            sampler=sampler.clone(),
-    #            ray=ray,
-    #            active=active
-    #        )
-
-    #        # Use the image reconstruction filter to
-    #        block = ImageBlock(tensor=image_adj,
-    #                           rfilter=film.rfilter(),
-    #                           normalize=True)
-    #        block.set_offset(film.crop_offset())
-
-    #        δL = block.read(pos) * (weight * ek.rcp(spp))
-
-    #        spec, valid = self.sample_impl(
-    #            mode=ek.ADMode.Reverse,
-    #            scene=scene,
-    #            sampler=sampler.clone(),
-    #            ray=ray,
-    #            active=active,
-    #            δL = δL
-    #            
-    #        )
-
-    #    return spec, valid, [] # aov
-
-
-    def sample_impl(self,
-                    mode: ek.ADMode,
+class TinyIntegrator(ADIntegrator):
+    def sample_impl(self, mode: ek.ADMode,
                     scene: mitsuba.render.Scene,
                     sampler: mitsuba.render.Sampler,
-                    ray: mitsuba.core.RayDifferential3f,
-                    active: mitsuba.core.Mask) -> Spectrum:
+                    ray: mitsuba.core.Ray3f,
+                    active: mitsuba.core.Bool,
+                    depth: mitsuba.core.UInt32 = 1,
+                    δL: mitsuba.core.Spectrum = None,
+                    state_in: object = None) -> Spectrum:
 
-        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32
+        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
         from mitsuba.render import BSDFContext
 
-        ctx = BSDFContext()
-        active = Bool(True)
-        depth = UInt32(0)
+        primal = mode == ek.ADMode.Primal
 
-        loop = Loop("Path replay", lambda: (ray, active, depth))
+        bsdf_ctx = BSDFContext()
+        active = Bool(active)
+        depth = UInt32(depth)
+        ray = Ray3f(ray)
+        β = Spectrum(1)
+        δL = Spectrum(0 if primal else δL)
+        L = Spectrum(0 if primal else state_in)
+        self.max_depth = 0
+
+        loop = Loop(name="Path replay backpropagation (%s mode)" % mode.name.lower(),
+                    state=lambda: (active, depth, ray, β, L, δL, sampler))
+
         while loop(active):
-            # Capture π-dependence of intersection for a detached input ray 
-            si = scene.ray_intersect(ray)
-            bsdf = si.bsdf(ray)
-            active = Bool(False)
+            with ek.resume_grad():
+                # Capture π-dependence of intersection for a detached input ray 
+                si = scene.ray_intersect(ray)
+                bsdf = si.bsdf(ray)
 
-        return Spectrum(ek.abs(ray.d.x)), si.is_valid(), [] # no AOVs
+                # Differentiable evaluation of intersected emitter / envmap
+                Le = si.emitter(scene).eval(si)
+
+            # Detached BSDF sampling
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, 
+                                                   sampler.next_1d(),
+                                                   sampler.next_2d())
+
+            # Update radiance, throughput, and ray based on current interaction
+            L = ek.fmadd(β, Le, L) if primal else ek.fmsub(β, Le, L) 
+
+            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
+
+            if mode == ek.ADMode.Backward:
+                with ek.resume_grad():
+                    # Recompute local outgoing direction to propagate derivatives to cosine term
+                    wo = si.to_local(ray.d)
+
+                    # Propagate derivative to emission, and BSDF * cosine term
+                    Li = L / bsdf_weight
+                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active) 
+                    assert ek.grad_enabled(bsdf_val)
+                    print(ek.grad_enabled(bsdf_val))
+                    ek.backward(δL * (Le * β + Li * bsdf_val / bsdf_sample.pdf))
+
+            β *= bsdf_weight
+
+            # Stopping criterion
+            active &= si.is_valid() & (depth < self.max_depth)
+            depth += 1
+
+        return L, True, L
 
     def to_string(self):
         return f'TinyIntegrator[max_depth = {self.max_depth}]'

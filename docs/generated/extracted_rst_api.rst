@@ -12652,7 +12652,7 @@
         Returns → :py:obj:`mitsuba.render.Sampler`:
             *no description available*
 
-    .. py:method:: mitsuba.render.Sampler.loop_register(self, loop)
+    .. py:method:: mitsuba.render.Sampler.loop_put(self, loop)
 
         Parameter ``loop`` (enoki::Loop<bool, int>):
             *no description available*

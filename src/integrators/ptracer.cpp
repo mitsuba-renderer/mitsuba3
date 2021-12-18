@@ -205,7 +205,7 @@ public:
         loop.put(active, depth, ray, throughput, si, eta);
 
         // The internal sampler state is also modified by the loop
-        sampler->loop_register(loop);
+        sampler->loop_put(loop);
         loop.init();
 
         // Incrementally build light path using BSDF sampling.
