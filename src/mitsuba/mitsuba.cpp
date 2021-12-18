@@ -65,21 +65,24 @@ Options:
 
  === The following options are only relevant for JIT (CUDA/LLVM) modes ===
 
-    -jw
+    -O [0-4]
+        Enables successive optimizations:
+          (0. all disabled, 1: constant propagation, 2. value numbering,
+           3. virtual call optimizations, 4. loop optimizations)
+
+    -S
+        Dump the PTX or LLVM intermediate representation to the console
+
+    -W
         Instead of compiling a megakernel, perform rendering using a
         series of wavefronts. Specify twice to unroll both loops *and*
         virtual function calls.
 
-    -jp
+    -P
         Force parallel scene loading, which is disabled by default
         in JIT modes since interferes with the ability to reuse
         cached compiled kernels across separate runs of the renderer.
 
-    -j0
-        Disable loop and virtual function call optimizations
-
-    -js
-        Dump the kernel source code to the console
 )";
 }
 
@@ -162,11 +165,11 @@ int main(int argc, char *argv[]) {
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
 
-    /// Specialized flags for the JIT compiler
-    auto arg_load_par  = parser.add(StringVec{ "-jp" });
-    auto arg_wavefront = parser.add(StringVec{ "-jw" });
-    auto arg_no_optim  = parser.add(StringVec{ "-j0" });
-    auto arg_source    = parser.add(StringVec{ "-js" });
+    // Specialized flags for the JIT compiler
+    auto arg_optim_lev = parser.add(StringVec{ "-O" }, true);
+    auto arg_load_par  = parser.add(StringVec{ "-P" });
+    auto arg_wavefront = parser.add(StringVec{ "-W" });
+    auto arg_source    = parser.add(StringVec{ "-S" });
 
     bool profile = false, print_profile = false;
     xml::ParameterList params;
@@ -260,9 +263,12 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (cuda || llvm) {
-            if (*arg_no_optim) {
-                jit_set_flag(JitFlag::VCallOptimize, false);
-                jit_set_flag(JitFlag::LoopOptimize, false);
+            if (arg_optim_lev) {
+                int lev = arg_optim_lev->as_int();
+                jit_set_flag(JitFlag::ConstProp, lev > 0);
+                jit_set_flag(JitFlag::ValueNumbering, lev > 1);
+                jit_set_flag(JitFlag::VCallOptimize, lev > 2);
+                jit_set_flag(JitFlag::LoopOptimize, lev > 3);
             }
 
             if (*arg_wavefront) {
