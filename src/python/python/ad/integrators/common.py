@@ -5,13 +5,13 @@ import enoki as ek
 from typing import Union
 
 # -------------------------------------------------------------------
-# Default implementatio of SamplingIntegrator.render_forward/backward
+# Default implementation of Integrator.render_forward/backward
 # -------------------------------------------------------------------
 
-def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
+def render_forward_impl(self: mitsuba.render.Integrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        sensor: mitsuba.render.Sensor,
                         seed: int = 0,
                         spp: int = 0) -> mitsuba.core.TensorXf:
     """
@@ -74,7 +74,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
             seed=seed,
             spp=spp,
             develop=True,
-            evalute=False
+            evaluate=False
         )
 
         # Process the computation graph using forward-mode AD
@@ -84,11 +84,11 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
         return ek.grad(image)
 
 
-def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
+def render_backward_impl(self: mitsuba.render.Integrator,
                          scene: mitsuba.render.Scene,
                          params: mitsuba.python.util.SceneParameters,
-                         image_adj: mitsuba.core.TensorXf,
-                         sensor: Union[int, mitsuba.render.Sensor] = 0,
+                         grad_in: mitsuba.core.TensorXf,
+                         sensor: mitsuba.render.Sensor,
                          seed: int = 0,
                          spp: int = 0) -> None:
     """
@@ -97,7 +97,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     Reverse-mode differentiation transforms image-space gradients into scene
     parameter gradients, enabling simultaneous optimization of scenes with
     millions of free parameters. The function is invoked with an input
-    *gradient image* (``image_adj``) and transforms and accumulates these into
+    *gradient image* (``grad_in``) and transforms and accumulates these into
     the ``params`` scene parameter data structure.
 
     Before calling this function, you must first enable gradients with respect
@@ -122,7 +122,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
        explicitly enabled for each desired parameter using
        ``enoki.enable_grad(params['parameter_name'])``.
 
-    Parameter ``image_adj`` (``mitsuba.core.TensorXf``):
+    Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
         Gradient image that should be back-propagated.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
@@ -151,11 +151,11 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
             seed=seed,
             spp=spp,
             develop=True,
-            evalute=False
+            evaluate=False
         )
 
         # Process the computation graph using reverse-mode AD
-        ek.set_grad(image, image_adj)
+        ek.set_grad(image, grad_in)
         ek.enqueue(ek.ADMode.Backward, image)
         ek.traverse(mitsuba.core.Float)
 
@@ -182,7 +182,14 @@ class _RenderOp(ek.CustomOp):
         self.spp = spp
 
         with ek.suspend_grad():
-            return self.integrator.render(self.scene, sensor, seed[0], spp[0])
+            return self.integrator.render(
+                scene=self.scene,
+                sensor=sensor,
+                seed=seed[0],
+                spp=spp[0],
+                develop=True,
+                evaluate=False
+            )
 
     def forward(self):
         self.set_grad_out(
@@ -276,7 +283,12 @@ def render(scene: mitsuba.render.Scene,
     if integrator is None:
         integrator = scene.integrator()
 
+
+    if isinstance(sensor, int):
+        sensor = scene.sensors()[sensor]
+
     assert isinstance(integrator, mitsuba.render.Integrator)
+    assert isinstance(sensor, mitsuba.render.Sensor)
 
     if spp_diff == 0:
         spp_diff = spp
@@ -323,7 +335,7 @@ def prepare(sensor: mitsuba.render.Sensor,
     """
 
     film = sensor.film()
-    sampler = sensor.sampler()
+    sampler = sensor.sampler().clone()
 
     if spp != 0:
         sampler.set_sample_count(spp)
@@ -345,10 +357,11 @@ def prepare(sensor: mitsuba.render.Sensor,
     sampler.seed(seed, wavefront_size)
     film.prepare(aovs)
 
-    return spp
+    return sampler, spp
 
 
 def sample_rays(sensor: mitsuba.render.Sensor,
+                sampler: mitsuba.render.Sampler,
                 reparameterize = False):
     """
     Sample a 2D grid of primary rays for a given sensor
@@ -361,9 +374,9 @@ def sample_rays(sensor: mitsuba.render.Sensor,
     4. the pixel index
     5. the aperture sample (if applicable)
     """
-    from mitsuba.core import Float, UInt32, Vector2f, ScalarVector2f, Vector2u
+    from mitsuba.core import Float, UInt32, Vector2f, \
+        ScalarVector2f, Vector2u, Ray3f
 
-    sampler = sensor.sampler()
     film = sensor.film()
     film_size = film.crop_size()
     rfilter = film.rfilter()
@@ -423,7 +436,7 @@ def sample_rays(sensor: mitsuba.render.Sensor,
     if mitsuba.core.is_spectral:
         wavelength_sample = sampler.next_1d()
 
-    rays, weights = sensor.sample_ray_differential(
+    rays, weights = sensor.sample_ray(
         time=wavelength_sample,
         sample1=sampler.next_1d(),
         sample2=pos_adjusted,
@@ -475,7 +488,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         super().__init__(props)
 
         self.max_depth = props.get('max_depth', 4)
-        self.split_kernels = props.get('split_kernels', False)
+        self.split_adjoint = props.get('split_adjoint', False)
+        assert self.max_depth > 0
 
 
     def aovs(self):
@@ -483,23 +497,22 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
-               sensor: Union[int, mitsuba.render.Sensor] = 0,
+               sensor: mitsuba.render.Sensor,
                seed: int = 0,
                spp: int = 0,
                develop: bool = True,
                evaluate: bool = True) -> mitsuba.core.TensorXf:
 
+        from mitsuba.core import Bool, UInt32
+
         if not develop:
             raise Exception("develop=True must be specified when "
                             "invoking AD integrators")
 
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-
         # Disable derivatives in all of the following
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            spp = prepare(
+            sampler, spp = prepare(
                 sensor=sensor,
                 seed=seed,
                 spp=spp,
@@ -507,15 +520,18 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Generate many rays from the camera
-            ray, weight, pos, _ = sample_rays(sensor)
+            ray, weight, pos, _ = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
             spec, valid, state = self.sample_impl(
                 mode=ek.ADMode.Primal,
                 scene=scene,
-                sampler=sensor.sampler(),
+                sampler=sampler,
                 ray=ray,
-                active=mitsuba.core.Bool(True)
+                depth=UInt32(0),
+                δL=None,
+                state_in=None,
+                active=Bool(True)
             )
 
             # Prepare an ImageBlock as specified by the film
@@ -535,39 +551,81 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         grad_in: mitsuba.core.TensorXf,
-                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        sensor: mitsuba.render.Sensor,
                         seed: int = 0,
                         spp: int = 0) -> None:
+        """
+        Evaluates the reverse-mode derivative of the rendering step.
 
-      from mitsuba.render import ImageBlock
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the ``params`` scene parameter data structure.
 
-      if isinstance(sensor, int):
-          sensor = scene.sensors()[sensor]
+        Before calling this function, you must first enable gradients with respect
+        to some of the elements of ``params`` (via ``enoki.enable_grad()``), or it
+        will not do anything. Following the call to ``render_backward()``, use
+        ``ek.grad()`` to query the gradients of elements of ``params``.
 
-      film = sensor.film()
-      sampler = sensor.sampler()
+        Parameter ``scene`` (``mitsuba.render.Scene``):
+            The scene to be rendered differentially.
 
-      # self.sample_impl() will re-enable gradients as needed, disable them here
-      with ek.suspend_grad():
+        Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
+           Scene parameter data structure. Note that gradient tracking must be
+           explicitly enabled for each desired parameter using
+           ``enoki.enable_grad(params['parameter_name'])``.
+
+        Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+        """
+
+        from mitsuba.core import Bool, UInt32
+        from mitsuba.render import ImageBlock
+
+        film = sensor.film()
+
+        # self.sample_impl() will re-enable gradients as needed, disable them here
+        with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            spp = prepare(sensor, seed, spp)
+            sampler, spp = prepare(sensor, seed, spp)
 
             # Generate many rays from the camera
-            ray, weight, pos, _ = sample_rays(sensor)
+            ray, weight, pos, _ = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             spec, valid, state_out = self.sample_impl(
                 mode=ek.ADMode.Primal,
                 scene=scene,
-                sampler=sensor.sampler().clone(),
+                sampler=sampler,
                 ray=ray,
-                active=mitsuba.core.Bool(True)
+                depth=UInt32(0),
+                δL=None,
+                state_in=None,
+                active=Bool(True)
             )
 
             # Garbage collect unused values to simplify kernel about to be run
             del spec, valid
 
-            if not self.split_kernels:
+            if self.split_adjoint:
                 ek.eval(state_out)
 
             # Wrap the input gradient image into an ImageBlock
@@ -580,20 +638,22 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # Use the reconstruction filter to interpolate the values at 'pos'
             δL = block.read(pos) * (weight * ek.rcp(spp))
 
+            #  ek.set_log_level(8)
             # Launch Monte Carlo sampling in backward AD mode (2)
             spec_2, valid_2, state_out_2 = self.sample_impl(
                 mode=ek.ADMode.Backward,
                 scene=scene,
-                sampler=sensor.sampler().clone(),
+                sampler=sampler,
                 ray=ray,
-                active=mitsuba.core.Bool(True),
+                depth=UInt32(0),
+                δL=δL,
                 state_in=state_out,
-                δL = δL 
+                active=Bool(True)
             )
 
             # We don't need any of the outputs here
             del spec_2, valid_2, state_out, state_out_2, δL, \
-                ray, weight, pos, block
+                ray, weight, pos, block, sampler
 
             # Run kernel representing side effects of the above
             ek.eval()

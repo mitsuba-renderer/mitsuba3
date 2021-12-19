@@ -6,34 +6,47 @@ import mitsuba
 from .common import ADIntegrator
 
 class TinyIntegrator(ADIntegrator):
-    def sample_impl(self, mode: ek.ADMode,
-                    scene: mitsuba.render.Scene,
-                    sampler: mitsuba.render.Sampler,
-                    ray: mitsuba.core.Ray3f,
-                    active: mitsuba.core.Bool,
-                    depth: mitsuba.core.UInt32 = 1,
-                    δL: mitsuba.core.Spectrum = None,
-                    state_in: object = None) -> Spectrum:
+    def __init__(self, props):
+        super().__init__(props)
+
+    def sample_impl(
+        self,
+        mode: ek.ADMode,
+        scene: mitsuba.render.Scene,
+        sampler: mitsuba.render.Sampler,
+        ray: mitsuba.core.Ray3f,
+        depth: mitsuba.core.UInt32,
+        δL: Optional[mitsuba.core.Spectrum],
+        state_in: Any,
+        active: mitsuba.core.Bool
+    ) -> Tuple[mitsuba.core.Spectrum, mitsuba.core.Bool, Any]:
+        """
+        asdf
+        """
 
         from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
         from mitsuba.render import BSDFContext
 
         primal = mode == ek.ADMode.Primal
 
+        # Copy the input arguments to avoid mutating caller state
         bsdf_ctx = BSDFContext()
-        active = Bool(active)
-        depth = UInt32(depth)
         ray = Ray3f(ray)
-        β = Spectrum(1)
-        δL = Spectrum(0 if primal else δL)
+        depth = UInt32(depth)
         L = Spectrum(0 if primal else state_in)
-        self.max_depth = 0
+        δL = None if δL is None else Spectrum(δL)
+        active = Bool(active)
+        β = Spectrum(1)
 
+        # Label loop variables (e.g. for GraphViz plots of the computation graph)
+        ek.set_label(ray=ray, depth=depth, L=L, δL=δL, β=β, active=active)
+
+        # Recorded loop over bounces
         loop = Loop(name="Path replay backpropagation (%s mode)" % mode.name.lower(),
-                    state=lambda: (active, depth, ray, β, L, δL, sampler))
+                    state=lambda: (sampler, ray, depth, L, δL, β, active))
 
         while loop(active):
-            with ek.resume_grad():
+            with ek.resume_grad(condition=not primal):
                 # Capture π-dependence of intersection for a detached input ray 
                 si = scene.ray_intersect(ray)
                 bsdf = si.bsdf(ray)
@@ -57,18 +70,17 @@ class TinyIntegrator(ADIntegrator):
                     wo = si.to_local(ray.d)
 
                     # Propagate derivative to emission, and BSDF * cosine term
-                    Li = L / bsdf_weight
+                    Li = ek.select(ek.eq(bsdf_weight * bsdf_sample.pdf, 0), 0, L / bsdf_weight)
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active) 
-                    assert ek.grad_enabled(bsdf_val)
-                    print(ek.grad_enabled(bsdf_val))
                     ek.backward(δL * (Le * β + Li * bsdf_val / bsdf_sample.pdf))
 
             β *= bsdf_weight
 
             # Stopping criterion
-            active &= si.is_valid() & (depth < self.max_depth)
             depth += 1
+            active &= si.is_valid() & (depth < self.max_depth)
 
+        #  print(L)
         return L, True, L
 
     def to_string(self):

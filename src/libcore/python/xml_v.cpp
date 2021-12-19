@@ -293,7 +293,7 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
     auto obj = PluginManager::instance()->create_object(props, class_);
 
     if (!props.unqueried().empty())
-        Throw("Unreferenced attribute %s in %s", props.unqueried()[0], type);
+        Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);
 
     return obj;
 }

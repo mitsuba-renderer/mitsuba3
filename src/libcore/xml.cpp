@@ -1056,7 +1056,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
                 }
             }
             Throw("Error while loading \"%s\" (near %s): unreferenced %s "
-                  "%s in %s plugin of type \"%s\"",
+                  "\"%s\" in %s plugin of type \"%s\"",
                   inst.src_id, inst.offset(inst.location),
                   unqueried.size() > 1 ? "properties" : "property", unqueried,
                   string::to_lower(inst.class_->name()), props.plugin_name());
