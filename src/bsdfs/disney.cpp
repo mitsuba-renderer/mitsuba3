@@ -28,7 +28,7 @@ NAMESPACE_BEGIN(mitsuba)
  * lobes and visible normal sampling would not increase the sampling performance
  * considerably.
  */
-template <typename Float, typename Spectrum> class GTR1 {
+template <typename Float, typename Spectrum> class GTR1_isotropic {
 public:
     MTS_IMPORT_TYPES();
     /**
@@ -37,7 +37,7 @@ public:
      * \param m_alpha
      *     The roughness of the surface.
      */
-    GTR1(Float alpha) : m_alpha(alpha){};
+    GTR1_isotropic(Float alpha) : m_alpha(alpha){};
 
     Float eval(const Vector3f &m) const {
         Float cos_theta  = Frame3f::cos_theta(m),
@@ -257,7 +257,7 @@ class Disney final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
-    using GTR1 = GTR1<Float, Spectrum>;
+    using GTR1 = GTR1_isotropic<Float, Spectrum>;
 
     Disney(const Properties &props) : Base(props) {
         // Decides between the thin and the regular model.
