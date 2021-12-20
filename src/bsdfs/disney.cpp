@@ -11,7 +11,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 /**
- * \brief GTR1 Microfacet Distribution class
+ * \brief GTR1_isotropic Microfacet Distribution class
  *
  * This class implements GTR1 Microfacet Distribution Methods
  * for sampling routines of clearcoat lobe in DISNEY BSDF.
