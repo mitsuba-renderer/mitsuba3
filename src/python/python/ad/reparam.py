@@ -117,13 +117,14 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             return self.ray.d, ek.zero(Float, ek.width(self.ray.d))
 
         def forward(self):
-            from mitsuba.core import Float, UInt32, Vector3f, Loop
+            from mitsuba.core import Float, UInt32, Vector3f, Loop, Ray3f
 
             # Initialize some accumulators
             Z = Float(0.0)
             dZ = Vector3f(0.0)
             grad_V = Vector3f(0.0)
             grad_div_lhs = Float(0.0)
+            ray = Ray3f(ek.detach(self.ray))
 
             it = UInt32(0)
             loop = Loop("Auxiliary rays")
@@ -132,12 +133,13 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             loop.init()
 
             while loop(it < num_auxiliary_rays):
-                Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sampler, self.ray,
+                ek.enable_grad(ray.o)
+                ek.set_grad(ray.o, self.grad_in('ray_').o)
+                Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sampler, ray,
                                                                kappa, power, self.active)
 
-                ek.enqueue(ek.ADMode.Forward, self.params)
+                ek.enqueue(ek.ADMode.Forward, self.params, ray.o)
                 ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
-                # TODO we don't always want the interior nodes to be cleared (e.g. ray.o)
 
                 Z += Z_i
                 dZ += dZ_i
