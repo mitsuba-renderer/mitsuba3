@@ -132,7 +132,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             sampler.loop_register(loop)
             loop.init()
 
-            while loop(it < num_auxiliary_rays):
+            while loop(active & (it < num_auxiliary_rays)):
                 ek.enable_grad(ray.o)
                 ek.set_grad(ray.o, self.grad_in('ray_').o)
                 Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sampler, ray,
@@ -179,7 +179,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 loop.put(lambda:(it, Z, dZ))
                 sampler_clone.loop_register(loop)
                 loop.init()
-                while loop(it < num_auxiliary_rays):
+                while loop(active & (it < num_auxiliary_rays)):
                     Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sampler_clone, self.ray,
                                                          kappa, power, self.active)
                     Z += Z_i
@@ -210,7 +210,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             loop.put(lambda:(it))
             sampler.loop_register(loop)
             loop.init()
-            while loop(it < num_auxiliary_rays):
+            while loop(active & (it < num_auxiliary_rays)):
                 _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sampler, self.ray,
                                                           kappa, power, self.active)
                 # print(ek.graphviz_str(Float(1)))
