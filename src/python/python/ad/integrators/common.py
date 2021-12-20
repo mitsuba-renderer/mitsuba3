@@ -2,7 +2,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import mitsuba
 import enoki as ek
-from typing import Union
+import gc
 
 # -------------------------------------------------------------------
 # Default implementation of Integrator.render_forward/backward
@@ -503,7 +503,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                develop: bool = True,
                evaluate: bool = True) -> mitsuba.core.TensorXf:
 
-        from mitsuba.core import Bool, UInt32
+        from mitsuba.core import Bool, UInt32, Float
 
         if not develop:
             raise Exception("develop=True must be specified when "
@@ -520,7 +520,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Generate many rays from the camera
-            ray, weight, pos, _ = sample_rays(sensor, sampler)
+            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
             spec, valid, state = self.sample_impl(
@@ -541,7 +541,17 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Acumulate the image block
-            block.put(pos, ray.wavelengths, spec)
+            alpha = ek.select(valid, Float(1), Float(0))
+            block.put(pos, ray.wavelengths, spec * weight, alpha)
+
+            # Explicitly delete any remaining unused variables
+            del sampler, ray, weight, pos, ap_sample, spec, valid, \
+                state, alpha
+
+            # Probably a little overkill, but why not.. If there are any
+            # Enoki arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in ek.eval().
+            gc.collect()
 
             # Perform the weight division and return an image tensor
             return develop_block(block)
@@ -608,13 +618,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             sampler, spp = prepare(sensor, seed, spp)
 
             # Generate many rays from the camera
-            ray, weight, pos, _ = sample_rays(sensor, sampler)
+            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             spec, valid, state_out = self.sample_impl(
                 mode=ek.ADMode.Primal,
                 scene=scene,
-                sampler=sampler,
+                sampler=sampler.clone(),
                 ray=ray,
                 depth=UInt32(0),
                 δL=None,
@@ -623,9 +633,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Garbage collect unused values to simplify kernel about to be run
-            del spec, valid
+            del spec, valid, ap_sample
 
             if self.split_adjoint:
+                # Probably a little overkill, but why not.. If there are any
+                # Enoki arrays to be collected by Python's cyclic GC, then
+                # freeing them may enable loop simplifications in ek.eval().
+                gc.collect()
                 ek.eval(state_out)
 
             # Wrap the input gradient image into an ImageBlock
@@ -638,7 +652,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # Use the reconstruction filter to interpolate the values at 'pos'
             δL = block.read(pos) * (weight * ek.rcp(spp))
 
-            #  ek.set_log_level(8)
             # Launch Monte Carlo sampling in backward AD mode (2)
             spec_2, valid_2, state_out_2 = self.sample_impl(
                 mode=ek.ADMode.Backward,
@@ -654,6 +667,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # We don't need any of the outputs here
             del spec_2, valid_2, state_out, state_out_2, δL, \
                 ray, weight, pos, block, sampler
+
+            # Probably a little overkill, but why not.. If there are any
+            # Enoki arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in ek.eval().
+            gc.collect()
 
             # Run kernel representing side effects of the above
             ek.eval()
