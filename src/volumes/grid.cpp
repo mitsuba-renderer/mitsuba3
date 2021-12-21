@@ -204,7 +204,7 @@ public:
                 m_data = TensorXf(m_volume_grid->data(), 4, shape);
                 m_max = m_volume_grid->max();
             }
-        } else {
+        } else if (props.has_property("data")) {
             // --- Getting grid data directly from the properties
             const void *ptr = props.pointer("data");
             const TensorXf *data = (TensorXf *) ptr;
@@ -226,6 +226,32 @@ public:
             m_volume_grid =
                 VolumeGrid::empty(ScalarVector3u(shape[0], shape[1], shape[2]),
                                   shape[3], invalid_bbox, m_max);
+        } else if (props.has_property("shape_x")) {
+            size_t shape[4] = {
+                props.get<size_t>("shape_x"),
+                props.get<size_t>("shape_y"),
+                props.get<size_t>("shape_z"),
+                props.get<size_t>("channels")
+            };
+            size_t n_entries = shape[0] * shape[1] * shape[2] * shape[3];
+            m_data = TensorXf(
+                ek::full<Float>(props.get<float>("value", 0.f), n_entries), 4,
+                shape);
+
+            if (!props.get<bool>("raw", true))
+                Throw("Passing grid data directly implies raw = true");
+            if (props.get<bool>("use_grid_bbox", false))
+                Throw("Passing grid data directly implies use_grid_bbox = false");
+
+            // Initialize the rest of the fields from the given data
+            // TODO: initialize it properly if it's really needed
+            m_max = ek::NaN<ScalarFloat>;
+            ScalarBoundingBox3f invalid_bbox;
+            m_volume_grid =
+                VolumeGrid::empty(ScalarVector3u(shape[0], shape[1], shape[2]),
+                                  shape[3], invalid_bbox, m_max);
+        } else {
+            Throw("Must specify 'filename', 'data' or ('shape_x', ...)");
         }
 
         // Mark values which are only used in the implementation class as queried
