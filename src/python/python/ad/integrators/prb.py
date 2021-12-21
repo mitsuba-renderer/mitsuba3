@@ -2,196 +2,186 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare, sample_rays, mis_weight
 
-from typing import Union
+from .common import ADIntegrator, mis_weight
 
-class PRBIntegrator(mitsuba.render.SamplingIntegrator):
+class PRBIntegrator(ADIntegrator):
     """
-    This integrator implements a path replay backpropagation surface path tracer.
+    This class implements a basic Path Replay Backpropagation (PRB) integrator
+    with the following properties:
+
+    - Emitter sampling (a.k.a. next event estimation).
+
+    - Russian Roulette stopping criterion.
+
+    - No reparameterization. This means that the integrator cannot be used for
+      shape optimization (it will return incorrect/biased gradients for
+      geometric parameters like vertex positions.)
+
+    - Detached sampling. This means that the properties of ideal specular
+      objects (e.g., the IOR of a glass vase) cannot be optimized.
+
+    See 'prb_basic.py' for an even more reduced implementation that removes
+    the first two features.
+
+    See the papers
+
+      "Path Replay Backpropagation: Differentiating Light Paths using
+       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
+       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
+
+    and
+
+      "Monte Carlo Estimators for Differential Light Transport"
+      (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
+      Iliyan Georgiev, and Wenzel Jakob
+
+    for details on PRB, attached/detached sampling, and reparameterizations.
     """
 
-    def __init__(self, props=mitsuba.core.Properties()):
-        super().__init__(props)
-        self.max_depth = props.get('max_depth', 4)
+    def sample(self,
+               mode: enoki.ADMode,
+               scene: mitsuba.render.Scene,
+               sampler: mitsuba.render.Sampler,
+               ray: mitsuba.core.Ray3f,
+               depth: mitsuba.core.UInt32,
+               δL: Optional[mitsuba.core.Spectrum],
+               state_in: Any,
+               active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
+                                                   mitsuba.core.Bool, Any]:
+        """
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+        """
 
-    def render_forward(self: mitsuba.render.SamplingIntegrator,
-                       scene: mitsuba.render.Scene,
-                       params: mitsuba.python.util.SceneParameters,
-                       sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       seed: int = 0,
-                       spp: int = 0) -> mitsuba.core.TensorXf:
-        from mitsuba.render import ImageBlock
+        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
+        from mitsuba.render import SurfaceInteraction3f, DirectionSample3f, \
+            BSDFContext, BSDFFlags, has_flag
 
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-        film = sensor.film()
-        rfilter = film.rfilter()
-        sampler = sensor.sampler()
+        primal = mode == ek.ADMode.Primal
 
-        # Seed the sampler and compute the number of sample per pixels
-        spp = prepare(sensor, seed, spp)
+        # --------------------- Configure loop state ----------------------
 
-        ray, weight, pos, _ = sample_rays(sensor)
-
-        # Sample forward paths (not differentiable)
-        with ek.suspend_grad():
-            primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
-
-        grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
-                           ray, params=params, grad=weight,
-                           primal_result=primal_result)[0]
-
-        block = ImageBlock(film.crop_offset(), film.crop_size(),
-                           channel_count=5, rfilter=rfilter, border=False)
-        block.put(pos, ray.wavelengths, grad_img)
-        film.prepare([])
-        film.put_block(block)
-        return film.develop()
-
-    def render_backward(self: mitsuba.render.SamplingIntegrator,
-                        scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,
-                        grad_in: mitsuba.core.TensorXf,
-                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                        seed: int = 0,
-                        spp: int = 0) -> None:
-        from mitsuba.core import Spectrum
-        from mitsuba.render import ImageBlock
-
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-        film = sensor.film()
-        rfilter = film.rfilter()
-        sampler = sensor.sampler()
-
-        # Seed the sampler and compute the number of sample per pixels
-        spp = prepare(sensor, seed, spp)
-
-        ray, weight, pos, _ = sample_rays(sensor)
-
-        # Sample forward paths (not differentiable)
-        with ek.suspend_grad():
-            primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
-
-        block = ImageBlock(film.crop_offset(), ek.detach(grad_in), rfilter, normalize=True)
-        grad = Spectrum(block.read(pos)) * weight / spp
-
-        # Replay light paths by using the same seed and accumulate gradients
-        # This uses the result from the first pass to compute gradients
-        self.Li(ek.ADMode.Backward, scene, sampler, ray,
-                params=params, grad=grad, primal_result=primal_result)
-
-    def sample(self, scene, sampler, ray, medium, active):
-        res, valid = self.Li(None, scene, sampler, ray, active_=active)
-        return res, valid, []
-
-    def Li(self: mitsuba.render.SamplingIntegrator,
-           mode: ek.ADMode,
-           scene: mitsuba.render.Scene,
-           sampler: mitsuba.render.Sampler,
-           ray: mitsuba.core.RayDifferential3f,
-           depth: mitsuba.core.UInt32=1,
-           params=mitsuba.python.util.SceneParameters(),
-           grad: mitsuba.core.Spectrum=None,
-           active_: mitsuba.core.Mask=True,
-           primal_result: mitsuba.core.Spectrum=None):
-
-        from mitsuba.core import Spectrum, Float, Mask, UInt32, Loop, Ray3f
-        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag, RayFlags
-
-        is_primal = mode is None
+        # Copy input arguments to avoid mutating the caller's state
 
         ray = Ray3f(ray)
-        pi = scene.ray_intersect_preliminary(ray, active_)
-        valid_ray = active_ & pi.is_valid()
+        depth, depth_initial = UInt32(depth), UInt32(depth)
+        L = Spectrum(0 if primal else state_in)
+        δL = Spectrum(δL if δL is not None else 0)
+        active = Bool(active)
+        β = Spectrum(1)
+        η = Float(1)
 
-        result = Spectrum(0.0)
-        if is_primal:
-            primal_result = Spectrum(0.0)
+        # Other loop state
+        prev_si         = ek.zero(SurfaceInteraction3f)
+        prev_bsdf_pdf   = Float(1.0)
+        prev_bsdf_delta = Bool(True)
 
-        throughput = Spectrum(1.0)
-        active = Mask(active_)
-        emission_weight = Float(1.0)
+        bsdf_ctx = BSDFContext()
 
-        depth_i = UInt32(depth)
-        loop = Loop("Path Replay Backpropagation main loop" + '' if is_primal else ' - adjoint')
-        loop.put(lambda: (depth_i, active, ray, emission_weight, throughput, pi, result, primal_result, sampler))
+        # Record the following loop in its entirety
+        loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
+                    state=lambda: (sampler, ray, depth, L, δL, β, η, active,
+                                   prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
         while loop(active):
-            si = pi.compute_surface_interaction(ray, RayFlags.All, active)
+            with ek.resume_grad(condition=not primal):
+                # Capture π-dependence of intersection for a detached input ray
+                si = scene.ray_intersect(ray)
+                bsdf = si.bsdf(ray)
 
             # ---------------------- Direct emission ----------------------
 
-            emitter_val = si.emitter(scene, active).eval(si, active)
-            accum = emitter_val * throughput * emission_weight
+            # Compute MIS weight for emitter sample from previous bounce
+            ds = DirectionSample3f(scene, si, prev_si)
 
-            active &= si.is_valid()
-            active &= depth_i < self.max_depth
+            mis = mis_weight(
+                prev_bsdf_pdf,
+                scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
+            )
 
-            ctx = BSDFContext()
-            bsdf = si.bsdf(ray)
+            with ek.resume_grad(condition=not primal):
+                Le = β * mis * ds.emitter.eval(si, prev_bsdf_pdf>0)
 
             # ---------------------- Emitter sampling ----------------------
 
-            active_e = active & has_flag(bsdf.flags(), BSDFFlags.Smooth)
+            # Perform emitter sampling?
+            active_next = (depth + 1 < self.max_depth) & si.is_valid()
+            active_em = active_next & has_flag(bsdf.flags(), BSDFFlags.Smooth)
+
             ds, emitter_val = scene.sample_emitter_direction(
-                si, sampler.next_2d(active_e), True, active_e)
-            ds = ek.detach(ds, True)
-            active_e &= ek.neq(ds.pdf, 0.0)
-            wo = si.to_local(ds.d)
+                si, sampler.next_2d(), True, active_em)
+            active_em &= ek.neq(ds.pdf, 0.0)
 
-            bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
-            mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
+            with ek.resume_grad(condition=not primal):
+                # Recompute local 'wo' to propagate derivatives to cosine term
+                wo = si.to_local(ds.d)
 
-            accum += ek.select(active_e, bsdf_val * throughput * mis * emitter_val, 0.0)
-
-            # Update accumulated radiance. When propagating gradients, we subtract the
-            # emitter contributions instead of adding them
-            if not is_primal:
-                primal_result -= ek.detach(accum)
+                # Evalute BRDF*cos(theta) differentiably
+                bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
+                Lr_dir = β * mis_em * bsdf_val * emitter_val
 
             # ---------------------- BSDF sampling ----------------------
 
-            with ek.suspend_grad():
-                bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
-                                              sampler.next_2d(active), active)
-                active &= bs.pdf > 0.0
-                ray = si.spawn_ray(si.to_world(bs.wo))
+            # Perform detached BSDF sampling?
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
+                                                   sampler.next_1d(),
+                                                   sampler.next_2d(),
+                                                   active_next)
 
-            pi_bsdf = scene.ray_intersect_preliminary(ray, active)
-            si_bsdf = pi_bsdf.compute_surface_interaction(ray, RayFlags.All, active)
+            # ---- Update loop variables based on current interaction -----
 
-            # Compute MIS weight for the BSDF sampling
-            ds = DirectionSample3f(scene, si_bsdf, si)
-            ds.emitter = si_bsdf.emitter(scene, active)
-            delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            emitter_pdf = scene.pdf_emitter_direction(si, ds, ~delta)
-            emission_weight = ek.select(delta, 1.0, mis_weight(bs.pdf, emitter_pdf))
+            L = (L + Le + Lr_dir) if primal else (L - Le - Lr_dir)
+            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
+            η *= bsdf_sample.eta
+            β *= bsdf_weight
 
-            # Backpropagate gradients related to the current bounce
-            if not is_primal:
-                bsdf_eval = bsdf.eval(ctx, si, bs.wo, active)
-                accum += ek.select(active, bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval)), 0.0)
+            # Information about the current vertex needed by the next iteration
+            prev_si = si
+            prev_bsdf_pdf = bsdf_sample.pdf
+            prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags.Delta)
 
-            if mode is ek.ADMode.Backward:
-                ek.backward(accum * grad, ek.ADFlag.ClearVertices)
-            elif mode is ek.ADMode.Forward:
-                ek.enqueue(ek.ADMode.Forward, params)
-                ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
-                result += ek.grad(accum) * grad
-            else:
-                result += accum
+            # ------------------ Differential phase only ------------------
 
-            pi = pi_bsdf
-            throughput *= bsdf_weight
+            if not primal:
+                with ek.resume_grad():
+                    # Recompute local 'wo' to propagate derivatives to cosine term
+                    wo = si.to_local(ray.d)
 
-            depth_i += UInt32(1)
+                    # Re-evalute BRDF*cos(theta) differentiably
+                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
-        return result, valid_ray
+                    # Recompute the reflected indirect radiance (terminology not 100%
+                    # correct, there may be a direct component due to MIS)
+                    recip = bsdf_weight * bsdf_sample.pdf
+                    Lr_ind = L * bsdf_val * ek.select(ek.neq(recip, 0), ek.rcp(recip), 0)
 
-    def to_string(self):
-        return f'PRBIntegrator[max_depth = {self.max_depth}]'
+                    # Estimated contribution of the current vertex
+                    contrib = Le + Lr_dir + Lr_ind
 
+                    # Propagate derivatives from/to 'contrib' based on 'mode'
+                    if mode == ek.ADMode.Backward:
+                        ek.backward_from(δL * contrib)
+                    else:
+                        ek.forward_to(contrib)
+                        δL += ek.grad(contrib)
 
-mitsuba.render.register_integrator("prb", lambda props: PRBIntegrator(props))
+            # -------------------- Stopping criterion ---------------------
+
+            rr_active = depth >= self.rr_depth
+            rr_prob = ek.min(ek.hmax(β) * η**2, .95)
+            rr_result = sampler.next_1d() < rr_prob
+            β[rr_active] *= ek.rcp(rr_prob)
+
+            active = active_next & (~rr_active | rr_result)
+            depth[si.is_valid()] += 1
+
+        return (
+            L if primal else δL,          # Radiance/differential radiance
+            ek.neq(depth, depth_initial), # Ray valid flag
+            L                             # State for differential phase
+        )
+
+mitsuba.render.register_integrator("prb", lambda props:
+                                   PRBIntegrator(props))
