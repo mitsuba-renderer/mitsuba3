@@ -350,9 +350,17 @@ def prepare(sensor: mitsuba.render.Sensor,
 
     wavefront_size = ek.hprod(film_size) * spp
 
-    if wavefront_size > 0xffffffff:
-        raise Exception("Tried to perform a JIT rendering with a total sample "
-                        "count exceeding 2^32=4294967296, which is too large.")
+    is_llvm = ek.is_llvm_array_v(mitsuba.core.Float)
+    wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
+
+    if wavefront_size >  wavefront_size_limit:
+        raise Exception(
+            "Tried to perform a %s-based rendering with a total sample "
+            "count of %u, which exceeds 2^%u = %u (the upper limit "
+            "for this backend). Please use fewer samples per pixel or "
+            "render using multiple passes." %
+            ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
+             ek.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
 
     sampler.seed(seed, wavefront_size)
     film.prepare(aovs)

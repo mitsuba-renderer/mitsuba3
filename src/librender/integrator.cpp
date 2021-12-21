@@ -203,18 +203,25 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
-        if ((size_t) film_size.x() * (size_t) film_size.y() *
-            (size_t) spp_per_pass > 0xffffffffu)
-            Throw("Tried to perform a JIT rendering with a total sample count "
-                  "exceeding 2^32 = 4294967296, which is too large. Please use "
-                  "fewer samples per pixel or render using multiple passes.");
+        size_t wavefront_size = (size_t) film_size.x() *
+                                (size_t) film_size.y() * (size_t) spp_per_pass,
+               wavefront_size_limit =
+                   ek::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+
+        if (wavefront_size > wavefront_size_limit)
+            Throw("Tried to perform a %s-based rendering with a total sample "
+                  "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
+                  "for this backend). Please use fewer samples per pixel or "
+                  "render using multiple passes.",
+                  ek::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  wavefront_size, ek::log2i(wavefront_size_limit + 1),
+                  wavefront_size_limit);
 
         // Inform the sampler about the passes (needed in vectorized modes)
         sampler->set_samples_per_wavefront(spp_per_pass);
 
         // Seed the underlying random number generators, if applicable
-        uint32_t wavefront_size = ek::hprod(film_size) * spp_per_pass;
-        sampler->seed(seed, wavefront_size);
+        sampler->seed(seed, (uint32_t) wavefront_size);
 
         // Allocate a large image block that will receive the entire rendering
         ref<ImageBlock> block = film->create_block();
@@ -224,7 +231,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         block->set_coalesce(block->coalesce() && spp_per_pass >= 4);
 
         // Compute discrete sample position
-        UInt32 idx = ek::arange<UInt32>(wavefront_size);
+        UInt32 idx = ek::arange<UInt32>((uint32_t) wavefront_size);
 
         // Try to avoid a division by an unknown constant if we can help it
         uint32_t log_spp_per_pass = ek::log2i(spp_per_pass);
@@ -605,10 +612,19 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
-        if (samples_per_pass > 0xffffffffu)
-            Throw("Tried to perform a JIT rendering with a total sample count "
-                  "exceeding 2^32 = 4294967296, which is too large. Please use "
-                  "fewer samples per pixel or render using multiple passes.");
+        size_t wavefront_size = (size_t) film_size.x() *
+                                (size_t) film_size.y() * (size_t) spp_per_pass,
+               wavefront_size_limit =
+                   ek::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+
+        if (wavefront_size > wavefront_size_limit)
+            Throw("Tried to perform a %s-based rendering with a total sample "
+                  "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
+                  "for this backend). Please use fewer samples per pixel or "
+                  "render using multiple passes.",
+                  ek::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  wavefront_size, ek::log2i(wavefront_size_limit + 1),
+                  wavefront_size_limit);
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
