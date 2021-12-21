@@ -70,7 +70,8 @@ class TinyIntegrator(ADIntegrator):
                     wo = si.to_local(ray.d)
 
                     # Propagate derivative to emission, and BSDF * cosine term
-                    Li = ek.select(ek.eq(bsdf_weight * bsdf_sample.pdf, 0), 0, L / bsdf_weight)
+                    #  Li = ek.select(ek.eq(bsdf_weight * bsdf_sample.pdf, 0), 0, L / bsdf_weight)
+                    Li = L / bsdf_weight
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active) 
                     ek.backward(δL * (Le * β + Li * bsdf_val / bsdf_sample.pdf))
 
