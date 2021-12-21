@@ -208,9 +208,9 @@ def render(scene: mitsuba.render.Scene,
            sensor: Union[int, mitsuba.render.Sensor] = 0,
            integrator: mitsuba.render.Integrator = None,
            seed: int = 0,
-           seed_diff: int = 0,
+           seed_grad: int = 0,
            spp: int = 0,
-           spp_diff: int = 0) -> mitsuba.core.TensorXf:
+           spp_grad: int = 0) -> mitsuba.core.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
     rendering algorithms in Enoki. The function returns a rendered image that
@@ -260,7 +260,7 @@ def render(scene: mitsuba.render.Scene,
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_diff` (``int``)
+    Parameter ``seed_grad` (``int``)
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation
         will automatically compute a suitable value from the primal ``seed``.
@@ -270,7 +270,7 @@ def render(scene: mitsuba.render.Scene,
         primal rendering step. The value provided within the original scene
         specification takes precedence if ``spp=0``.
 
-    Parameter ``spp_diff`` (``int``):
+    Parameter ``spp_grad`` (``int``):
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation
         will copy the value from ``spp``.
@@ -288,18 +288,18 @@ def render(scene: mitsuba.render.Scene,
     assert isinstance(integrator, mitsuba.render.Integrator)
     assert isinstance(sensor, mitsuba.render.Sensor)
 
-    if spp_diff == 0:
-        spp_diff = spp
+    if spp_grad == 0:
+        spp_grad = spp
 
-    if seed_diff == 0:
+    if seed_grad == 0:
         # Compute a seed that de-correlates the primal and differential phase
-        seed_diff = mitsuba.core.sample_tea_32(seed, 1)[0]
-    elif seed_diff == seed:
+        seed_grad = mitsuba.core.sample_tea_32(seed, 1)[0]
+    elif seed_grad == seed:
         raise Exception('The primal and differential seed should be different '
                         'to ensure unbiased gradient computation!')
 
     return ek.custom(_RenderOp, scene, sensor, integrator,
-                     (seed, seed_diff), (spp, spp_diff), params)
+                     (seed, seed_grad), (spp, spp_grad), params)
 
 
 # -------------------------------------------------------------
@@ -414,7 +414,7 @@ def sample_rays(sensor: mitsuba.render.Sensor,
     if 1 << log_spp == spp:
         idx >>= ek.opaque(UInt32, log_spp)
     else:
-        idx /= ek.opaque(UInt32, spp)
+        idx //= ek.opaque(UInt32, spp)
 
     # Compute the position on the image plane
     pos = Vector2u()
@@ -498,14 +498,16 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         super().__init__(props)
 
         self.max_depth = props.get('max_depth', 4)
+        self.rr_depth = props.get('rr_depth', 2)
         self.split_derivative = props.get('split_derivative', False)
-        assert self.max_depth > 0
+        assert self.max_depth > 0 and self.rr_depth > 0
 
     def aovs(self):
         return []
 
     def to_string(self):
-        return f'{self.__name__}[max_depth = {self.max_depth}]'
+        return f'{type(self).__name__}[max_depth = {self.max_depth},' \
+               f' rr_depth = { self.rr_depth }]'
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
@@ -678,7 +680,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            alpha = ek.select(valid, Float(1), Float(0))
+            alpha = ek.select(valid_2, Float(1), Float(0))
             block.put(pos, ray.wavelengths, spec_2 * weight, alpha)
 
             # Explicitly delete any remaining unused variables
@@ -809,3 +811,91 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Run kernel representing side effects of the above
             ek.eval()
+
+
+    def sample(self,
+               mode: enoki.ADMode,
+               scene: mitsuba.render.Scene,
+               sampler: mitsuba.render.Sampler,
+               ray: mitsuba.core.Ray3f,
+               depth: mitsuba.core.UInt32,
+               δL: Optional[mitsuba.core.Spectrum],
+               state_in: Any,
+               active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
+                                                   mitsuba.core.Bool, Any]:
+        """
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``ADIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        enoki.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == enoki.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``ek.set_grad()``)
+
+        In backward mode (``mode == enoki.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mitsuba.python.ad.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``enoki.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mitsuba.render.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mitsuba.render.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mitsuba.core.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backwrd differentiable rendering phases that need to
+            obtain an incident radiadiance estimate. In this case, they may
+            recursively invoke ``sample(mode=ek.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mitsuba.core.Spectrum``):
+            When back-propagating gradients (``mode == enoki.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mitsuba.core.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mitsuba.core.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mitsuba.core.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``state_out`` (``Any``):
+            When invoked in primal mode, this return argument provides an
+            unspecified state vector that is a required input of both
+            forward/backward differential phases.
+        """
+
+        raise Exception('ADIntegrator does not implement the sample() method. '
+                        'It should be specialized by subclasses that provide '
+                        'this function.')
