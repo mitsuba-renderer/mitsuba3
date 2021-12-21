@@ -8,45 +8,46 @@ import gc
 # Default implementation of Integrator.render_forward/backward
 # -------------------------------------------------------------------
 
-def render_forward_impl(self: mitsuba.render.Integrator,
-                        scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,
-                        sensor: mitsuba.render.Sensor,
-                        seed: int = 0,
-                        spp: int = 0) -> mitsuba.core.TensorXf:
+def render_forward(self: mitsuba.render.Integrator,
+                   scene: mitsuba.render.Scene,
+                   sensor: mitsuba.render.Sensor,
+                   seed: int = 0,
+                   spp: int = 0) -> mitsuba.core.TensorXf:
     """
     Evaluates the forward-mode derivative of the rendering step.
 
-    Forward-mode differentiation propagates gradients from the ``params`` scene
-    parameter data structure through the simulation, producing a *gradient
-    image* (i.e., the corresponding derivative of the rendered image). The
-    gradient image is very helpful for debugging, and to inspect the gradient
-    variance or region of influence of a scene parameter. It is not
-    particularly useful for simultaneous optimization of many parameters, see
-    ``render_backward()`` for this.
+    Forward-mode differentiation propagates gradients from scene parameters
+    through the simulation, producing a *gradient image* (i.e., the derivative
+    of the rendered image with respect to those scene parameters). The gradient
+    image is very helpful for debugging, for example to inspect the gradient
+    variance or visualize the region of influence of a scene parameter. It is
+    not particularly useful for simultaneous optimization of many parameters,
+    since multiple differentiation passes are needed to obtain separate
+    derivatives for each scene parameter. See ``Integrator.render_backward()``
+    for an efficient way of obtaining all parameter derivatives at once, or
+    simply use the ``mitsuba.python.ad.render()`` abstraction that hides both
+    ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+    a unified interface.
 
-    Before calling this function, you must first associate gradients with
-    variables in ``params`` (via ``enoki.enable_grad()`` and
-    ``enoki.set_grad()``), otherwise the function simply returns zero.
+    Before calling this function, you must first enable gradient tracking and
+    furthermore associate concrete input gradients with one or more scene
+    parameters, or the function will just return a zero-valued gradient image.
+    This is typically done by invoking ``ek.enable_grad()`` and
+    ``ek.set_grad()`` on elements of the ``SceneParameters`` data structure
+    that can be obtained obtained via a call to
+    ``mitsuba.python.util.traverse()``.
 
-    The default implementation relies on naive automatic differentiation (AD),
-    which records a computation graph of the rendering step that is
-    subsequently traversed to propagate derivatives. This tends to be
-    relatively inefficient due to the need to track intermediate program state;
-    in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
-    Backpropagation) that are specifically designed for differentiation can be
-    significantly more efficient.
+    The default implementation of this function relies on naive automatic
+    differentiation (AD), which records a computation graph of the rendering
+    step that is subsequently traversed to propagate derivatives. This tends to
+    be relatively inefficient due to the need to track intermediate program
+    state; in particular, the calculation can easily run out of memory.
+    Integrators like ``rb`` (Radiative Backpropagation) and ``prb`` (Path
+    Replay Backpropagation) that are specifically designed for differentiation
+    can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
-
-    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure. Note that gradient tracking must be
-       explicitly enabled for each desired parameter using
-       ``enoki.enable_grad(params['parameter_name'])``. Furthermore,
-       ``enoki.set_grad(...)`` must be used to associate specific gradient
-       values with parameters in forward mode differentiation.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -77,20 +78,19 @@ def render_forward_impl(self: mitsuba.render.Integrator,
             evaluate=False
         )
 
-        # Process the computation graph using forward-mode AD
-        ek.enqueue(ek.ADMode.Forward, params)
-        ek.traverse(mitsuba.core.Float)
+        # Perform an AD traversal of all registered AD variables that
+        # influence 'image' in a differentiable manner
+        ek.forward_to(image)
 
         return ek.grad(image)
 
 
-def render_backward_impl(self: mitsuba.render.Integrator,
-                         scene: mitsuba.render.Scene,
-                         params: mitsuba.python.util.SceneParameters,
-                         grad_in: mitsuba.core.TensorXf,
-                         sensor: mitsuba.render.Sensor,
-                         seed: int = 0,
-                         spp: int = 0) -> None:
+def render_backward(self: mitsuba.render.Integrator,
+                    scene: mitsuba.render.Scene,
+                    grad_in: mitsuba.core.TensorXf,
+                    sensor: mitsuba.render.Sensor,
+                    seed: int = 0,
+                    spp: int = 0) -> None:
     """
     Evaluates the reverse-mode derivative of the rendering step.
 
@@ -98,29 +98,27 @@ def render_backward_impl(self: mitsuba.render.Integrator,
     parameter gradients, enabling simultaneous optimization of scenes with
     millions of free parameters. The function is invoked with an input
     *gradient image* (``grad_in``) and transforms and accumulates these into
-    the ``params`` scene parameter data structure.
+    the gradient arrays of scene parameters that previously had gradient
+    tracking enabled.
 
-    Before calling this function, you must first enable gradients with respect
-    to some of the elements of ``params`` (via ``enoki.enable_grad()``), or it
-    will not do anything. Following the call to ``render_backward()``, use
-    ``ek.grad()`` to query the gradients of elements of ``params``.
+    Before calling this function, you must first enable gradient tracking for
+    one or more scene parameters, or the function will not do anything. This is
+    typically done by invoking ``ek.enable_grad()`` on elements of the
+    ``SceneParameters`` data structure that can be obtained obtained via a call
+    to ``mitsuba.python.util.traverse()``. Use ``ek.grad()`` to query the
+    resulting gradients of these parameters once ``render_backward()`` returns.
 
-    The default implementation relies on naive automatic differentiation (AD),
-    which records a computation graph of the rendering step that is
-    subsequently traversed to propagate derivatives. This tends to be
-    relatively inefficient due to the need to track intermediate program state;
-    in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
-    Backpropagation) that are specifically designed for differentiation can be
-    significantly more efficient.
+    The default implementation of this function relies on naive automatic
+    differentiation (AD), which records a computation graph of the rendering
+    step that is subsequently traversed to propagate derivatives. This tends to
+    be relatively inefficient due to the need to track intermediate program
+    state; in particular, the calculation can easily run out of memory.
+    Integrators like ``rb`` (Radiative Backpropagation) and ``prb`` (Path
+    Replay Backpropagation) that are specifically designed for differentiation
+    can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
-
-    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure. Note that gradient tracking must be
-       explicitly enabled for each desired parameter using
-       ``enoki.enable_grad(params['parameter_name'])``.
 
     Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
         Gradient image that should be back-propagated.
@@ -155,16 +153,14 @@ def render_backward_impl(self: mitsuba.render.Integrator,
         )
 
         # Process the computation graph using reverse-mode AD
-        ek.set_grad(image, grad_in)
-        ek.enqueue(ek.ADMode.Backward, image)
-        ek.traverse(mitsuba.core.Float)
+        ek.backward_from(image * grad_in)
 
 # Monkey-patch render_forward/backward into the Integrator base class
-mitsuba.render.Integrator.render_backward = render_backward_impl
-mitsuba.render.Integrator.render_forward = render_forward_impl
+mitsuba.render.Integrator.render_backward = render_backward
+mitsuba.render.Integrator.render_forward = render_forward
 
-del render_backward_impl
-del render_forward_impl
+del render_backward
+del render_forward
 
 # -------------------------------------------------------------
 #                  Rendering Custom Operation
@@ -173,13 +169,16 @@ del render_forward_impl
 class _RenderOp(ek.CustomOp):
     """ Differentiable rendering CustomOp, used in render() below """
 
-    def eval(self, scene, params, sensor, integrator, seed, spp):
+    def eval(self, scene, sensor, integrator, seed, spp, params):
         self.scene = scene
         self.integrator = integrator
-        self.params = params
         self.sensor = sensor
         self.seed = seed
         self.spp = spp
+
+        # 'params' is unused and just specified to correctly wire the
+        # rendering step into the AD computation graph
+        del params
 
         with ek.suspend_grad():
             return self.integrator.render(
@@ -193,11 +192,11 @@ class _RenderOp(ek.CustomOp):
 
     def forward(self):
         self.set_grad_out(
-            self.integrator.render_forward(self.scene, self.params, self.sensor,
+            self.integrator.render_forward(self.scene, self.sensor,
                                            self.seed[1], self.spp[1]))
 
     def backward(self):
-        self.integrator.render_backward(self.scene, self.params, self.grad_out(),
+        self.integrator.render_backward(self.scene, self.grad_out(),
                                         self.sensor, self.seed[1], self.spp[1])
 
     def name(self):
@@ -205,7 +204,7 @@ class _RenderOp(ek.CustomOp):
 
 
 def render(scene: mitsuba.render.Scene,
-           params: mitsuba.python.util.SceneParameters,
+           params: Any,
            sensor: Union[int, mitsuba.render.Sensor] = 0,
            integrator: mitsuba.render.Integrator = None,
            seed: int = 0,
@@ -217,31 +216,31 @@ def render(scene: mitsuba.render.Scene,
     rendering algorithms in Enoki. The function returns a rendered image that
     can be used in subsequent differentiable computation steps. At any later
     point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``enoki.forward()`` and
-    ``enoki.backward()``).
+    either forward or reverse mode (i.e., using ``ek.forward()`` and
+    ``ek.backward()``).
 
     Under the hood, the differentiation operation will be intercepted and
     routed to ``Integrator.render_forward()`` or
     ``Integrator.render_backward()``, which evaluate the derivative using
     either naive AD or a more specialized differential simulation.
 
-    Note the default implementation relies on naive automatic differentiation
-    (AD), which records a computation graph of the primal rendering step that
-    is subsequently traversed to propagate derivatives. This tends to be
-    relatively inefficient due to the need to track intermediate program state;
-    in particular, the calculation can easily run out of memory. Integrators
-    like ``rb`` (Radiative Backpropagation) and ``prb`` (Path Replay
-    Backpropagation) that are specifically designed for differentiation can be
-    significantly more efficient.
+    Note the default implementation of this functionality relies on naive
+    automatic differentiation (AD), which records a computation graph of the
+    primal rendering step that is subsequently traversed to propagate
+    derivatives. This tends to be relatively inefficient due to the need to
+    track intermediate program state; in particular, the calculation can easily
+    run out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+    ``prb`` (Path Replay Backpropagation) that are specifically designed for
+    differentiation can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
-        The scene to be rendered in a differentiable manner.
+        Reference to the scene being rendered in a differentiable manner.
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
        Scene parameter data structure. Note that gradient tracking must be
        explicitly enabled for each desired parameter using
-       ``enoki.enable_grad(params['parameter_name'])``. Furthermore,
-       ``enoki.set_grad(...)`` must be used to associate specific gradient
+       ``ek.enable_grad(params['parameter_name'])``. Furthermore,
+       ``ek.set_grad(...)`` must be used to associate specific gradient
        values with parameters if forward mode derivatives are desired.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
@@ -278,7 +277,6 @@ def render(scene: mitsuba.render.Scene,
     """
 
     assert isinstance(scene, mitsuba.render.Scene)
-    assert isinstance(params, mitsuba.python.util.SceneParameters)
 
     if integrator is None:
         integrator = scene.integrator()
@@ -294,10 +292,14 @@ def render(scene: mitsuba.render.Scene,
         spp_diff = spp
 
     if seed_diff == 0:
+        # Compute a seed that de-correlates the primal and differential phase
         seed_diff = mitsuba.core.sample_tea_32(seed, 1)[0]
+    elif seed_diff == seed:
+        raise Exception('The primal and differential seed should be different '
+                        'to ensure unbiased gradient computation!')
 
-    return ek.custom(_RenderOp, scene, params, sensor,
-                     integrator, (seed, seed_diff), (spp, spp_diff))
+    return ek.custom(_RenderOp, scene, sensor, integrator,
+                     (seed, seed_diff), (spp, spp_diff), params)
 
 
 # -------------------------------------------------------------
@@ -496,12 +498,14 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         super().__init__(props)
 
         self.max_depth = props.get('max_depth', 4)
-        self.split_adjoint = props.get('split_adjoint', False)
+        self.split_derivative = props.get('split_derivative', False)
         assert self.max_depth > 0
-
 
     def aovs(self):
         return []
+
+    def to_string(self):
+        return f'{self.__name__}[max_depth = {self.max_depth}]'
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
@@ -531,7 +535,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
-            spec, valid, state = self.sample_impl(
+            spec, valid, state = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
@@ -548,13 +552,138 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # Only use the coalescing feature when rendering enough samples
             block.set_coalesce(block.coalesce() and spp >= 4)
 
-            # Acumulate the image block
+            # Accumulate into the image block
             alpha = ek.select(valid, Float(1), Float(0))
             block.put(pos, ray.wavelengths, spec * weight, alpha)
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, ap_sample, spec, valid, \
-                state, alpha
+            del sampler, ray, weight, pos, ap_sample, spec, \
+                valid, state, alpha
+
+            # Probably a little overkill, but why not.. If there are any
+            # Enoki arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in ek.eval().
+            gc.collect()
+
+            # Perform the weight division and return an image tensor
+            return develop_block(block)
+
+
+    def render_forward(self: mitsuba.render.SamplingIntegrator,
+                       scene: mitsuba.render.Scene,
+                       sensor: mitsuba.render.Sensor,
+                       seed: int = 0,
+                       spp: int = 0) -> mitsuba.core.TensorXf:
+        """
+        Evaluates the forward-mode derivative of the rendering step.
+
+        Forward-mode differentiation propagates gradients from scene parameters
+        through the simulation, producing a *gradient image* (i.e., the derivative
+        of the rendered image with respect to those scene parameters). The gradient
+        image is very helpful for debugging, for example to inspect the gradient
+        variance or visualize the region of influence of a scene parameter. It is
+        not particularly useful for simultaneous optimization of many parameters,
+        since multiple differentiation passes are needed to obtain separate
+        derivatives for each scene parameter. See ``Integrator.render_backward()``
+        for an efficient way of obtaining all parameter derivatives at once, or
+        simply use the ``mitsuba.python.ad.render()`` abstraction that hides both
+        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+        a unified interface.
+
+        Before calling this function, you must first enable gradient tracking and
+        furthermore associate concrete input gradients with one or more scene
+        parameters, or the function will just return a zero-valued gradient image.
+        This is typically done by invoking ``ek.enable_grad()`` and
+        ``ek.set_grad()`` on elements of the ``SceneParameters`` data structure
+        that can be obtained obtained via a call to
+        ``mitsuba.python.util.traverse()``.
+
+        Parameter ``scene`` (``mitsuba.render.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+        """
+
+        from mitsuba.core import Bool, UInt32, Float
+
+        # Disable derivatives in all of the following
+        with ek.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aovs()
+            )
+
+            # Generate many rays from the camera
+            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            spec, valid, state_out = self.sample(
+                mode=ek.ADMode.Primal,
+                scene=scene,
+                sampler=sampler.clone(),
+                ray=ray,
+                depth=UInt32(0),
+                δL=None,
+                state_in=None,
+                active=Bool(True)
+            )
+
+            # Garbage collect unused values to simplify kernel about to be run
+            del spec, valid, ap_sample
+
+            if self.split_derivative:
+                # Probably a little overkill, but why not.. If there are any
+                # Enoki arrays to be collected by Python's cyclic GC, then
+                # freeing them may enable loop simplifications in ek.eval().
+                gc.collect()
+                ek.eval(state_out)
+
+            # Launch the Monte Carlo sampling process in forward mode
+            spec_2, valid_2, state_out_2 = self.sample(
+                mode=ek.ADMode.Forward,
+                scene=scene,
+                sampler=sampler,
+                ray=ray,
+                depth=UInt32(0),
+                δL=None,
+                state_in=state_out,
+                active=Bool(True)
+            )
+
+            # Prepare an ImageBlock as specified by the film
+            block = sensor.film().create_block()
+
+            # Only use the coalescing feature when rendering enough samples
+            block.set_coalesce(block.coalesce() and spp >= 4)
+
+            # Accumulate into the image block
+            alpha = ek.select(valid, Float(1), Float(0))
+            block.put(pos, ray.wavelengths, spec_2 * weight, alpha)
+
+            # Explicitly delete any remaining unused variables
+            del sampler, ray, weight, pos, spec_2, valid_2, \
+                state_out, state_out_2, alpha
 
             # Probably a little overkill, but why not.. If there are any
             # Enoki arrays to be collected by Python's cyclic GC, then
@@ -567,7 +696,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,
                         grad_in: mitsuba.core.TensorXf,
                         sensor: mitsuba.render.Sensor,
                         seed: int = 0,
@@ -579,20 +707,18 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         parameter gradients, enabling simultaneous optimization of scenes with
         millions of free parameters. The function is invoked with an input
         *gradient image* (``grad_in``) and transforms and accumulates these into
-        the ``params`` scene parameter data structure.
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
 
-        Before calling this function, you must first enable gradients with respect
-        to some of the elements of ``params`` (via ``enoki.enable_grad()``), or it
-        will not do anything. Following the call to ``render_backward()``, use
-        ``ek.grad()`` to query the gradients of elements of ``params``.
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``ek.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mitsuba.python.util.traverse()``. Use ``ek.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
 
         Parameter ``scene`` (``mitsuba.render.Scene``):
             The scene to be rendered differentially.
-
-        Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-           Scene parameter data structure. Note that gradient tracking must be
-           explicitly enabled for each desired parameter using
-           ``enoki.enable_grad(params['parameter_name'])``.
 
         Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
             Gradient image that should be back-propagated.
@@ -620,7 +746,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         film = sensor.film()
 
-        # self.sample_impl() will re-enable gradients as needed, disable them here
+        # self.sample() will re-enable gradients as needed, disable them here
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
             sampler, spp = prepare(sensor, seed, spp)
@@ -629,7 +755,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            spec, valid, state_out = self.sample_impl(
+            spec, valid, state_out = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
@@ -643,7 +769,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # Garbage collect unused values to simplify kernel about to be run
             del spec, valid, ap_sample
 
-            if self.split_adjoint:
+            if self.split_derivative:
                 # Probably a little overkill, but why not.. If there are any
                 # Enoki arrays to be collected by Python's cyclic GC, then
                 # freeing them may enable loop simplifications in ek.eval().
@@ -661,7 +787,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             δL = block.read(pos) * (weight * ek.rcp(spp))
 
             # Launch Monte Carlo sampling in backward AD mode (2)
-            spec_2, valid_2, state_out_2 = self.sample_impl(
+            spec_2, valid_2, state_out_2 = self.sample(
                 mode=ek.ADMode.Backward,
                 scene=scene,
                 sampler=sampler,

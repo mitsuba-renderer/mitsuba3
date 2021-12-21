@@ -5,13 +5,20 @@ import mitsuba
 
 from .common import ADIntegrator
 
-class TinyIntegrator(ADIntegrator):
-    def __init__(self, props):
-        super().__init__(props)
+class TinyPRBIntegrator(ADIntegrator):
+    """
+    Tiny PRB-style integrator *without* next event estimation / multiple
+    importance sampling / re-parameterization. The lack of all of these
+    features means that gradients are relatively noisy and don't correctly
+    account for visibility discontinuties.
 
-    def sample_impl(
+    This class exists to illustrate how a very basic rendering algorithm can be
+    implemented in Python along with efficient forward/reverse-mode derivatives
+    """
+
+    def sample(
         self,
-        mode: ek.ADMode,
+        mode: enoki.ADMode,
         scene: mitsuba.render.Scene,
         sampler: mitsuba.render.Sampler,
         ray: mitsuba.core.Ray3f,
@@ -21,7 +28,48 @@ class TinyIntegrator(ADIntegrator):
         active: mitsuba.core.Bool
     ) -> Tuple[mitsuba.core.Spectrum, mitsuba.core.Bool, Any]:
         """
-        asdf
+        Parameter ``mode`` (``enoki.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mitsuba.render.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mitsuba.render.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mitsuba.core.UInt32``):
+            Path depth of `ray` (typically set to zero).
+
+        Parameter ``δL`` (``mitsuba.core.Spectrum``):
+            When back-propagating gradients (``mode == enoki.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mitsuba.core.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mitsuba.core.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mitsuba.core.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``state_out`` (``Any``):
+            When invoked in primal mode, this return argument provides an
+            unspecified state vector that is a required input of both
+            forward/backward differential phases.
         """
 
         from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
@@ -32,9 +80,9 @@ class TinyIntegrator(ADIntegrator):
         # Copy the input arguments to avoid mutating caller state
         bsdf_ctx = BSDFContext()
         ray = Ray3f(ray)
-        depth = UInt32(depth)
+        depth, depth_initial = UInt32(depth), UInt32(depth)
         L = Spectrum(0 if primal else state_in)
-        δL = None if δL is None else Spectrum(δL)
+        δL = Spectrum(δL if δL is not None else 0)
         active = Bool(active)
         β = Spectrum(1)
 
@@ -47,7 +95,7 @@ class TinyIntegrator(ADIntegrator):
 
         while loop(active):
             with ek.resume_grad(condition=not primal):
-                # Capture π-dependence of intersection for a detached input ray 
+                # Capture π-dependence of intersection for a detached input ray
                 si = scene.ray_intersect(ray)
                 bsdf = si.bsdf(ray)
 
@@ -55,36 +103,49 @@ class TinyIntegrator(ADIntegrator):
                 Le = si.emitter(scene).eval(si)
 
             # Detached BSDF sampling
-            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, 
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
                                                    sampler.next_1d(),
                                                    sampler.next_2d())
 
-            # Update radiance, throughput, and ray based on current interaction
-            L = ek.fmadd(β, Le, L) if primal else ek.fmsub(β, Le, L) 
-
+            # Generate an outgoing ray from the current surface interaction
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
 
-            if mode == ek.ADMode.Backward:
+            # Update radiance, throughput, and ray based on current interaction
+            L = ek.fmadd(β, Le, L) if primal else ek.fnmadd(β, Le, L)
+
+            if not primal:
                 with ek.resume_grad():
-                    # Recompute local outgoing direction to propagate derivatives to cosine term
+                    # Recompute local 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Propagate derivative to emission, and BSDF * cosine term
-                    #  Li = ek.select(ek.eq(bsdf_weight * bsdf_sample.pdf, 0), 0, L / bsdf_weight)
-                    Li = L / bsdf_weight
-                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active) 
-                    ek.backward(δL * (Le * β + Li * bsdf_val / bsdf_sample.pdf))
+                    # Re-evalute BRDF*cos(theta) differentiably
+                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
+
+                    # Recompute the reflected radiance
+                    recip = bsdf_weight * bsdf_sample.pdf
+                    Lr = L * bsdf_val * ek.select(ek.neq(recip, 0), ek.rcp(recip), 0)
+
+                    # Estimated contribution of the current vertex
+                    contrib = ek.fmadd(Le, β, Lr)
+
+                    if mode == ek.ADMode.Backward:
+                        ek.backward(δL * contrib)
+                    else:
+                        ek.forward_to(contrib)
+                        δL += ek.grad(contrib)
 
             β *= bsdf_weight
 
             # Stopping criterion
-            depth += 1
+            depth[si.is_valid()] += 1
             active &= si.is_valid() & (depth < self.max_depth)
 
-        #  print(L)
-        return L, True, L
+        # Return radiance, sample status, state vector for differential phase
+        result_spec = L if primal else δL
+        result_valid = eq.neq(depth, depth_initial)
+        result_state = L
 
-    def to_string(self):
-        return f'TinyIntegrator[max_depth = {self.max_depth}]'
+        return result_spec, result_valid, result_state
 
-mitsuba.render.register_integrator("tiny", lambda props: TinyIntegrator(props))
+mitsuba.render.register_integrator("prb_tiny", lambda props:
+                                   TinyPRBIntegrator(props))
