@@ -410,9 +410,11 @@ public:
         if (m_wrap_mode == WrapMode::Clamp) {
             return clamp(value, 0, res - 1);
         } else {
-            T div = T(m_inv_resolution_x(value.x()),
-                      m_inv_resolution_y(value.y())),
-              mod = value - div * res;
+            T value_shift_neg = ek::select(value < 0, value + 1, value);
+            T div = T(m_inv_resolution_x(value_shift_neg.x()),
+                       m_inv_resolution_y(value_shift_neg.y()));
+
+            T mod = value - div * res;
 
             ek::masked(mod, mod < 0) += T(res);
 
@@ -482,7 +484,7 @@ public:
             // Scale to bitmap resolution, no shift
             uv *= res;
 
-            // Integer pixel positions for bilinear interpolation
+            // Integer pixel positions for nearest-neighbor interpolation
             Vector2i uv_i   = ek::floor2int<Vector2i>(uv),
                      uv_i_w = wrap(uv_i);
 
@@ -577,7 +579,7 @@ public:
             // Scale to bitmap resolution, no shift
             Point2f uv = pos_ * res;
 
-            // Integer pixel positions for bilinear interpolation
+            // Integer pixel positions for nearest-neighbor interpolation
             Vector2i uv_i = wrap(ek::floor2int<Vector2i>(uv));
 
             return m_distr2d->pdf(uv_i, active) * ek::hprod(res);
