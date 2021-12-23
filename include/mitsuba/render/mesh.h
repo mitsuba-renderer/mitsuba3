@@ -160,7 +160,7 @@ public:
 
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
-                                                             uint32_t hit_flags,
+                                                             uint32_t ray_flags,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const override;
 
@@ -175,7 +175,7 @@ public:
                                      Mask active = true) const override;
 
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +RayFlags::All,
+                                                       uint32_t ray_flags = +RayFlags::All,
                                                        Mask active = true) const override;
 
     /** \brief Ray-triangle intersection test

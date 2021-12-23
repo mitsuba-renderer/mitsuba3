@@ -61,7 +61,7 @@ class BasicPRBIntegrator(ADIntegrator):
 
             with ek.resume_grad(condition=not primal):
                 # Capture π-dependence of intersection for a detached input ray
-                si = scene.ray_intersect(ray)
+                si = scene.ray_intersect(ray, coherent=ek.eq(depth, 0))
                 bsdf = si.bsdf(ray)
 
                 # Differentiable evaluation of intersected emitter / envmap
@@ -86,7 +86,7 @@ class BasicPRBIntegrator(ADIntegrator):
                     # Recompute local 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evalute BRDF*cos(theta) differentiably
+                    # Re-evalute BRDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
                     # Recompute the reflected radiance

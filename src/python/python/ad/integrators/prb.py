@@ -56,7 +56,7 @@ class PRBIntegrator(ADIntegrator):
 
         from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
         from mitsuba.render import SurfaceInteraction3f, DirectionSample3f, \
-            BSDFContext, BSDFFlags, has_flag
+            BSDFContext, BSDFFlags, RayFlags, has_flag
 
         primal = mode == ek.ADMode.Primal
 
@@ -87,7 +87,9 @@ class PRBIntegrator(ADIntegrator):
         while loop(active):
             with ek.resume_grad(condition=not primal):
                 # Capture π-dependence of intersection for a detached input ray
-                si = scene.ray_intersect(ray)
+                si = scene.ray_intersect(ray, 
+                                         ray_flags=RayFlags.All,
+                                         coherent=ek.eq(depth, 0))
                 bsdf = si.bsdf(ray)
 
             # ---------------------- Direct emission ----------------------
@@ -117,7 +119,7 @@ class PRBIntegrator(ADIntegrator):
                 # Recompute local 'wo' to propagate derivatives to cosine term
                 wo = si.to_local(ds.d)
 
-                # Evalute BRDF*cos(theta) differentiably
+                # Evalute BRDF * cos(theta) differentiably
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
                 Lr_dir = β * mis_em * bsdf_val * emitter_val

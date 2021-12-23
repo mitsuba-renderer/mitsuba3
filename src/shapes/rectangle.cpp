@@ -134,7 +134,7 @@ public:
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                               uint32_t /*hit_flags*/,
+                                               uint32_t /*ray_flags*/,
                                                Mask /*active*/) const override {
         auto si = ek::zero<SurfaceInteraction3f>();
         si.t    = 0.f;  // Mark interaction as valid
@@ -207,7 +207,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t /*hit_flags*/,
+                                                     uint32_t /*ray_flags*/,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);

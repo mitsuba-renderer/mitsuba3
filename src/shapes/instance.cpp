@@ -129,29 +129,29 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t hit_flags,
+                                                     uint32_t ray_flags,
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
-            m_to_object.value().transform_affine(ray), pi, hit_flags, recursion_depth, active);
+            m_to_object.value().transform_affine(ray), pi, ray_flags, recursion_depth, active);
 
         si.p = m_to_world.value().transform_affine(si.p);
         si.n = ek::normalize(m_to_world.value().transform_affine(si.n));
 
-        if (likely(has_flag(hit_flags, RayFlags::ShadingFrame))) {
+        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
             si.sh_frame.n = ek::normalize(m_to_world.value().transform_affine(si.sh_frame.n));
             si.initialize_sh_frame();
         }
 
-        if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
+        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             si.dp_du = m_to_world.value().transform_affine(si.dp_du);
             si.dp_dv = m_to_world.value().transform_affine(si.dp_dv);
         }
 
-        if (has_flag(hit_flags, RayFlags::dNGdUV) || has_flag(hit_flags, RayFlags::dNSdUV)) {
-            Normal3f n = has_flag(hit_flags, RayFlags::dNGdUV) ? si.n : si.sh_frame.n;
+        if (has_flag(ray_flags, RayFlags::dNGdUV) || has_flag(ray_flags, RayFlags::dNSdUV)) {
+            Normal3f n = has_flag(ray_flags, RayFlags::dNGdUV) ? si.n : si.sh_frame.n;
 
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.value().transform_affine(

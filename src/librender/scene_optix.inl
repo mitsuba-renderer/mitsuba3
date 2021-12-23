@@ -469,14 +469,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, hit_flags, active);
-        return pi.compute_surface_interaction(ray, hit_flags, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, ray_flags, active);
+        return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(hit_flags);
+        ENOKI_MARK_USED(ray_flags);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }

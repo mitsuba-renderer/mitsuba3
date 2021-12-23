@@ -188,7 +188,7 @@ public:
      *      Ray associated with the ray intersection
      * \param pi
      *      Data structure carrying information about the ray intersection
-     * \param hit_flags
+     * \param ray_flags
      *      Flags specifying which information should be computed
      * \param recursion_depth
      *      Integer specifying the recursion depth for nested virtual function
@@ -198,7 +198,7 @@ public:
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
-                                                             uint32_t hit_flags = +RayFlags::All,
+                                                             uint32_t ray_flags = +RayFlags::All,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
@@ -215,7 +215,7 @@ public:
      *     Describe how the detailed information should be computed
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       uint32_t hit_flags = +RayFlags::All,
+                                       uint32_t ray_flags = +RayFlags::All,
                                        Mask active = true) const;
 
     //! @}
@@ -378,7 +378,7 @@ public:
      * The default implementation throws.
      */
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +RayFlags::All,
+                                                       uint32_t ray_flags = +RayFlags::All,
                                                        Mask active = true) const;
 
     //! @}

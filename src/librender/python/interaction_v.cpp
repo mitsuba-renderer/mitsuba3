@@ -137,7 +137,7 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("compute_surface_interaction",
            &PreliminaryIntersection3f::compute_surface_interaction,
            D(PreliminaryIntersection, compute_surface_interaction),
-           "ray"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true)
+           "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true)
         .def_repr(PreliminaryIntersection3f);
 
     MTS_PY_ENOKI_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,

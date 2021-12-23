@@ -25,7 +25,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
-            ray, +RayFlags::Coherent, active);
+            ray, /* ray_flags = */ 0, /* coherent = */ true, active);
 
         return {
             ek::select(pi.is_valid(), pi.t, 0.f),

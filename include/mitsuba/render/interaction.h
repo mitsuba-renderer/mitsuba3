@@ -512,13 +512,6 @@ enum class RayFlags : uint32_t {
     DetachShape      = 0x00080,
 
     // =============================================================
-    //!                      Miscellaneous
-    // =============================================================
-
-    /// Inform Embree that these rays are coherent (for primary rays)
-    Coherent              = 0x00100,
-
-    // =============================================================
     //!                 Compound compute flags
     // =============================================================
 
@@ -610,13 +603,13 @@ struct PreliminaryIntersection {
      *
      * \param ray
      *      Ray associated with the ray intersection
-     * \param hit_flags
+     * \param ray_flags
      *      Flags specifying which information should be computed
      * \return
      *      A data structure containing the detailed information
      */
     auto compute_surface_interaction(const Ray3f &ray,
-                                     uint32_t hit_flags,
+                                     uint32_t ray_flags,
                                      Mask active) {
         if constexpr (!std::is_same_v<Shape_, Shape<Float, Spectrum>>) {
             Throw("PreliminaryIntersection::compute_surface_interaction(): not implemented!");
@@ -636,7 +629,7 @@ struct PreliminaryIntersection {
 
             ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
             SurfaceInteraction3f si =
-                target->compute_surface_interaction(ray, *this, hit_flags, 0u, active);
+                target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
 
             ek::masked(si.t, !active) = ek::Infinity<Float>;
             active &= si.is_valid();
@@ -648,7 +641,7 @@ struct PreliminaryIntersection {
             si.time        = ray.time;
             si.wavelengths = ray.wavelengths;
 
-            if (has_flag(hit_flags, RayFlags::ShadingFrame))
+            if (has_flag(ray_flags, RayFlags::ShadingFrame))
                 si.initialize_sh_frame();
 
             // Incident direction in local coordinates

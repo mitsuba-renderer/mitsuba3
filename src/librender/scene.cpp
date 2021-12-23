@@ -150,17 +150,18 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>)
         return ray_intersect_gpu(ray, +RayFlags::All, active);
     else
-        return ray_intersect_cpu(ray, +RayFlags::All, active);
+        return ray_intersect_cpu(ray, +RayFlags::All, false, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+    ENOKI_MARK_USED(coherent);
 
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_intersect_gpu(ray, hit_flags, active);
+        return ray_intersect_gpu(ray, ray_flags, active);
     else
-        return ray_intersect_cpu(ray, hit_flags, active);
+        return ray_intersect_cpu(ray, ray_flags, coherent, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
@@ -168,15 +169,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask active)
     if constexpr (ek::is_cuda_array_v<Float>)
         return ray_intersect_preliminary_gpu(ray, 0, active);
     else
-        return ray_intersect_preliminary_cpu(ray, 0, active);
+        return ray_intersect_preliminary_cpu(ray, 0, false, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
+    ENOKI_MARK_USED(coherent);
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_intersect_preliminary_gpu(ray, hit_flags, active);
+        return ray_intersect_preliminary_gpu(ray, ray_flags, active);
     else
-        return ray_intersect_preliminary_cpu(ray, hit_flags, active);
+        return ray_intersect_preliminary_cpu(ray, ray_flags, coherent, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -199,17 +201,18 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>)
         return ray_test_gpu(ray, 0, active);
     else
-        return ray_test_cpu(ray, 0, active);
+        return ray_test_cpu(ray, 0, false, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Scene<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
+    ENOKI_MARK_USED(coherent);
 
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_test_gpu(ray, hit_flags, active);
+        return ray_test_gpu(ray, ray_flags, active);
     else
-        return ray_test_cpu(ray, hit_flags, active);
+        return ray_test_cpu(ray, ray_flags, coherent, active);
 }
 
 MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,

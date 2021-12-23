@@ -110,7 +110,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, RayFlags::All | RayFlags::Coherent, active);
+            ray, +RayFlags::All, /* coherent = */ true, active);
         Mask valid_ray = active && si.is_valid();
 
         Spectrum result(0.f);
