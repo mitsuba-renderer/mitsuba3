@@ -379,7 +379,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t hit_flags,
+                                                     uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
@@ -392,10 +392,10 @@ public:
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
         // Fields requirement dependencies
-        bool need_dn_duv = has_flag(hit_flags, RayFlags::dNSdUV) ||
-                           has_flag(hit_flags, RayFlags::dNGdUV);
-        bool need_dp_duv = has_flag(hit_flags, RayFlags::dPdUV) || need_dn_duv;
-        bool need_uv     = has_flag(hit_flags, RayFlags::UV) || need_dp_duv;
+        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV) ||
+                           has_flag(ray_flags, RayFlags::dNGdUV);
+        bool need_dp_duv = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
+        bool need_uv     = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, t, ek::Infinity<Float>);

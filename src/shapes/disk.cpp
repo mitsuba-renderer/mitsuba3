@@ -193,7 +193,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t hit_flags,
+                                                     uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
@@ -217,8 +217,8 @@ public:
         Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
         si.p = p + dist * m_frame.n;
 
-        if (likely(has_flag(hit_flags, RayFlags::UV) ||
-                   has_flag(hit_flags, RayFlags::dPdUV))) {
+        if (likely(has_flag(ray_flags, RayFlags::UV) ||
+                   has_flag(ray_flags, RayFlags::dPdUV))) {
             Float r = ek::norm(Point2f(prim_uv.x(), prim_uv.y())),
                   inv_r = ek::rcp(r);
 
@@ -226,7 +226,7 @@ public:
             ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
-            if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
+            if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
                 Float cos_phi = ek::select(ek::neq(r, 0.f), prim_uv.x() * inv_r, 1.f),
                       sin_phi = ek::select(ek::neq(r, 0.f), prim_uv.y() * inv_r, 0.f);
 

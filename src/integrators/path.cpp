@@ -119,7 +119,7 @@ public:
         // ---------------------- First intersection ----------------------
 
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, RayFlags::All | RayFlags::Coherent, active);
+            ray, +RayFlags::All, /* coherent = */ true, active);
 
         // Used to compute the alpha channel of the image
         Mask valid_ray = active && si.is_valid();

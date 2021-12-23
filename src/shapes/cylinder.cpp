@@ -375,7 +375,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t hit_flags,
+                                                     uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
@@ -413,8 +413,8 @@ public:
 
         si.sh_frame.n = si.n;
 
-        if (has_flag(hit_flags, RayFlags::dNSdUV) ||
-            has_flag(hit_flags, RayFlags::dNGdUV)) {
+        if (has_flag(ray_flags, RayFlags::dNSdUV) ||
+            has_flag(ray_flags, RayFlags::dNGdUV)) {
             si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }

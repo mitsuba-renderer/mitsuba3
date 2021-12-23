@@ -445,17 +445,17 @@ bool Shape<Float, Spectrum>::ray_test_scalar(const ScalarRay3f & /*ray*/) const 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
                                                     const PreliminaryIntersection3f &/*pi*/,
-                                                    uint32_t /*hit_flags*/,
+                                                    uint32_t /*ray_flags*/,
                                                     uint32_t /*recursion_depth*/,
                                                     Mask /*active*/) const {
     NotImplementedError("compute_surface_interaction");
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
-Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
     MTS_MASK_ARGUMENT(active);
     auto pi = ray_intersect_preliminary(ray, active);
-    return pi.compute_surface_interaction(ray, hit_flags, active);
+    return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
 MTS_VARIANT

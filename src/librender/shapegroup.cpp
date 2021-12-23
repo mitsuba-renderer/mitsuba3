@@ -126,7 +126,7 @@ bool ShapeGroup<Float, Spectrum>::ray_test_scalar(const ScalarRay3f &ray) const 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
 ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          const PreliminaryIntersection3f &pi,
-                                                         uint32_t hit_flags,
+                                                         uint32_t ray_flags,
                                                          uint32_t recursion_depth,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
@@ -147,7 +147,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     if (recursion_depth > 0)
         return ek::zero<SurfaceInteraction3f>();
 
-    return shape->compute_surface_interaction(ray, pi, hit_flags, 1, active);
+    return shape->compute_surface_interaction(ray, pi, ray_flags, 1, active);
 }
 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize

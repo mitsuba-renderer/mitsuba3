@@ -4717,7 +4717,7 @@ interaction
 Parameter ``ray``:
     Ray associated with the ray intersection
 
-Parameter ``hit_flags``:
+Parameter ``ray_flags``:
     Flags specifying which information should be computed
 
 Returns:
@@ -6279,7 +6279,7 @@ Parameter ``ray``:
 Parameter ``pi``:
     Data structure carrying information about the ray intersection
 
-Parameter ``hit_flags``:
+Parameter ``ray_flags``:
     Flags specifying which information should be computed
 
 Parameter ``recursion_depth``:

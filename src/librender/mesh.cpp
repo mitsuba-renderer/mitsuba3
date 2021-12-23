@@ -453,7 +453,7 @@ MTS_VARIANT
 
 typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
-                                             uint32_t hit_flags,
+                                             uint32_t ray_flags,
                                              Mask active) const {
     if (!m_parameterization)
         const_cast<Mesh *>(this)->build_parameterization();
@@ -467,7 +467,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     pi.shape = this;
 
-    return pi.compute_surface_interaction(ray, hit_flags, active);
+    return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
 MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
@@ -575,7 +575,7 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
 MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
-                                                   uint32_t hit_flags,
+                                                   uint32_t ray_flags,
                                                    uint32_t /*recursion_depth*/,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
@@ -589,11 +589,11 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Float t = pi.t;
     Point2f prim_uv = pi.prim_uv;
     if constexpr (ek::is_diff_array_v<Float>) {
-        if (has_flag(hit_flags, RayFlags::DetachShape) &&
-            has_flag(hit_flags, RayFlags::FollowShape))
+        if (has_flag(ray_flags, RayFlags::DetachShape) &&
+            has_flag(ray_flags, RayFlags::FollowShape))
             Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
 
-        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+        if (has_flag(ray_flags, RayFlags::DetachShape)) {
             p0 = ek::detach<true>(p0);
             p1 = ek::detach<true>(p1);
             p2 = ek::detach<true>(p2);
@@ -606,7 +606,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     Float b1 = prim_uv.x(), b2 = prim_uv.y();
     if (ek::is_diff_array_v<Float> &&
-        has_flag(hit_flags, RayFlags::FollowShape)) {
+        has_flag(ray_flags, RayFlags::FollowShape)) {
         b1 = ek::detach(prim_uv.x());
         b2 = ek::detach(prim_uv.y());
     }
@@ -623,7 +623,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Potentially recompute the distance traveled to the surface interaction hit point
     if (!ek::is_diff_array_v<Float> ||
-        !has_flag(hit_flags, RayFlags::FollowShape))
+        !has_flag(ray_flags, RayFlags::FollowShape))
         si.t = ek::select(active, t, ek::Infinity<Float>);
     else
         si.t = ek::select(
@@ -638,14 +638,14 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.uv = Point2f(b1, b2);
     std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
     if (has_vertex_texcoords() &&
-        likely(has_flag(hit_flags, RayFlags::UV) ||
-               has_flag(hit_flags, RayFlags::dPdUV))) {
+        likely(has_flag(ray_flags, RayFlags::UV) ||
+               has_flag(ray_flags, RayFlags::dPdUV))) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
         if (ek::is_diff_array_v<Float> &&
-            has_flag(hit_flags, RayFlags::DetachShape)) {
+            has_flag(ray_flags, RayFlags::DetachShape)) {
             uv0 = ek::detach<true>(uv0);
             uv1 = ek::detach<true>(uv1);
             uv2 = ek::detach<true>(uv2);
@@ -653,7 +653,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
 
-        if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
+        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
@@ -669,14 +669,14 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Shading normal (if available)
     if (has_vertex_normals() &&
-        likely(has_flag(hit_flags, RayFlags::ShadingFrame) ||
-               has_flag(hit_flags, RayFlags::dNSdUV))) {
+        likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
+               has_flag(ray_flags, RayFlags::dNSdUV))) {
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
         if (ek::is_diff_array_v<Float> &&
-            has_flag(hit_flags, RayFlags::DetachShape)) {
+            has_flag(ray_flags, RayFlags::DetachShape)) {
             n0 = ek::detach<true>(n0);
             n1 = ek::detach<true>(n1);
             n2 = ek::detach<true>(n2);
@@ -688,7 +688,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.sh_frame.n = n;
 
-        if (has_flag(hit_flags, RayFlags::dNSdUV)) {
+        if (has_flag(ray_flags, RayFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
                with respect to [u, v] in the local triangle parameterization.
 

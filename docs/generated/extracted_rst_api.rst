@@ -11838,12 +11838,12 @@
         Returns → enoki.scalar.ArrayXf:
             *no description available*
 
-    .. py:method:: mitsuba.render.Mesh.eval_parameterization(self, uv, hit_flags=14, active=True)
+    .. py:method:: mitsuba.render.Mesh.eval_parameterization(self, uv, ray_flags=14, active=True)
 
         Parameter ``uv`` (:py:obj:`mitsuba.core.Point2f`):
             *no description available*
 
-        Parameter ``hit_flags`` (int):
+        Parameter ``ray_flags`` (int):
             *no description available*
 
         Parameter ``active`` (bool):
@@ -12482,7 +12482,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.render.PreliminaryIntersection3f.compute_surface_interaction(self, ray, hit_flags=14, active=True)
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.compute_surface_interaction(self, ray, ray_flags=14, active=True)
 
         Compute and return detailed information related to a surface
         interaction
@@ -12490,7 +12490,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
             Ray associated with the ray intersection
 
-        Parameter ``hit_flags`` (int):
+        Parameter ``ray_flags`` (int):
             Flags specifying which information should be computed
 
         Parameter ``active`` (bool):
@@ -13087,7 +13087,7 @@
             Parameter ``active`` (bool):
                 Mask to specify active lanes.
 
-        .. py:method:: ray_intersect(self, ray, hit_flags, active=True)
+        .. py:method:: ray_intersect(self, ray, ray_flags, active=True)
 
             Intersect a ray against all primitives stored in the scene and return
             information about the resulting surface interaction
@@ -13101,7 +13101,7 @@
                 A detailed surface interaction record. Query its ``is_valid()``
                 method to determine whether an intersection was actually found.
 
-            Parameter ``hit_flags`` (int):
+            Parameter ``ray_flags`` (int):
                 *no description available*
 
             Parameter ``active`` (bool):
@@ -13121,12 +13121,12 @@
             Returns → :py:obj:`mitsuba.render.PreliminaryIntersection`:
                 *no description available*
 
-        .. py:method:: ray_intersect_preliminary(self, ray, hit_flags, active=True)
+        .. py:method:: ray_intersect_preliminary(self, ray, ray_flags, active=True)
 
             Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
                 *no description available*
 
-            Parameter ``hit_flags`` (int):
+            Parameter ``ray_flags`` (int):
                 *no description available*
 
             Parameter ``active`` (bool):
@@ -13158,7 +13158,7 @@
             Parameter ``active`` (bool):
                 Mask to specify active lanes.
 
-        .. py:method:: ray_test(self, ray, hit_flags, active=True)
+        .. py:method:: ray_test(self, ray, ray_flags, active=True)
 
             Intersect a ray against all primitives stored in the scene and *only*
             determine whether or not there is an intersection.
@@ -13175,7 +13175,7 @@
             Returns → bool:
                 ``True`` if an intersection was found
 
-            Parameter ``hit_flags`` (int):
+            Parameter ``ray_flags`` (int):
                 *no description available*
 
             Parameter ``active`` (bool):
@@ -13376,7 +13376,7 @@
         Returns → :py:obj:`mitsuba.render.BSDF`:
             *no description available*
 
-    .. py:method:: mitsuba.render.Shape.compute_surface_interaction(self, ray, pi, hit_flags=14, active=True)
+    .. py:method:: mitsuba.render.Shape.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
 
         Compute and return detailed information related to a surface
         interaction
@@ -13398,7 +13398,7 @@
         Parameter ``pi`` (:py:obj:`mitsuba.render.PreliminaryIntersection`):
             Data structure carrying information about the ray intersection
 
-        Parameter ``hit_flags`` (int):
+        Parameter ``ray_flags`` (int):
             Flags specifying which information should be computed
 
         Parameter ``recursion_depth``:
@@ -13594,7 +13594,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.render.Shape.ray_intersect(self, ray, hit_flags=14, active=True)
+    .. py:method:: mitsuba.render.Shape.ray_intersect(self, ray, ray_flags=14, active=True)
 
         Test for an intersection and return detailed information
 
@@ -13607,7 +13607,7 @@
         Parameter ``flags``:
             Describe how the detailed information should be computed
 
-        Parameter ``hit_flags`` (int):
+        Parameter ``ray_flags`` (int):
             *no description available*
 
         Parameter ``active`` (bool):
