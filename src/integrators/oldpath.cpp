@@ -107,115 +107,124 @@ public:
         if (unlikely(m_max_depth == 0))
             return { 0.f, false };
 
-        // --------------------- Configure loop state ----------------------
+        // Tracks radiance scaling due to index of refraction changes
+        Float eta(1.f);
+        Ray3f ray(ray_);
+        Spectrum result(0.f), throughput(1.f);
+        BSDFContext ctx;
+        Int32 depth = 1;
 
-        Ray3f ray                     = Ray3f(ray_);
-        Spectrum throughput           = 1.f;
-        Spectrum result               = 0.f;
-        Float eta                     = 1.f;
-        Int32 depth                   = 0;
+        // ---------------------- First intersection ----------------------
 
-        // Variables caching information from the previous bounce
-        Interaction3f prev_si         = ek::zero<Interaction3f>();
-        Float         prev_bsdf_pdf   = 1.f;
-        Bool          prev_bsdf_delta = true;
-        BSDFContext   bsdf_ctx;
+        SurfaceInteraction3f si = scene->ray_intersect(
+            ray, +RayFlags::All, /* coherent = */ true, active);
+
+        // Used to compute the alpha channel of the image
+        Bool valid_ray = active && si.is_valid();
+
+        // Account for directly visible emitter
+        EmitterPtr emitter = si.emitter(scene);
+        if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+            result = emitter->eval(si, active);
+
+        active &= si.is_valid();
+        if (m_max_depth >= 0)
+            active &= depth < m_max_depth;
 
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result, eta,
-                            depth, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
+        ek::Loop<Bool> loop("PathIntegrator",
+                            /* loop state: */ active, depth, ray,
+                            throughput, result, si, eta, sampler);
 
         while (loop(active)) {
-            SurfaceInteraction3f si =
-                scene->ray_intersect(ray,
-                                     /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ek::eq(depth, 0));
-
-            if (ek::none_or<false>(si.is_valid()))
-                break; // early exit
-
-            // ---------------------- Direct emission ----------------------
-
-            if (ek::any_or<true>(si.shape->is_emitter())) {
-                DirectionSample3f ds(scene, si, prev_si);
-                Float em_pdf = 0;
-
-                if (ek::any_or<true>(!prev_bsdf_delta))
-                    em_pdf = scene->pdf_emitter_direction(prev_si, ds,
-                                                          !prev_bsdf_delta);
-
-                // Compute MIS weight for emitter sample from previous bounce
-                Float mis_bsdf = mis_weight(prev_bsdf_pdf, em_pdf);
-
-                // Accumulate, be careful with polarized spetra here
-                result = spec_fma(
-                    throughput,
-                    ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf,
-                    result);
-            }
+            // --------------------- Emitter sampling ---------------------
 
             BSDFPtr bsdf = si.bsdf(ray);
+            Bool active_e = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
-            // Perform emitter sampling?
-            Bool active_next = (depth + 1 < m_max_depth) && si.is_valid(),
-                 active_em   = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
-
-            if (ek::any_or<true>(active_em)) {
-                // Sample the emitter
+            if (likely(ek::any_or<true>(active_e))) {
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
-                    si, sampler->next_2d(), true, active_em);
-                active_em &= ek::neq(ds.pdf, 0.f);
+                    si, sampler->next_2d(active_e), true, active_e);
+                active_e &= ek::neq(ds.pdf, 0.f);
 
-                // Evalute BRDF * cos(theta)
+                // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
-                auto [bsdf_val, bsdf_pdf] =
-                    bsdf->eval_pdf(bsdf_ctx, si, wo, active_em);
 
-                // Compute the MIS weight
-                Float mis_em =
-                    mis_weight(ek::select(ds.delta, 0.f, ds.pdf), bsdf_pdf);
+                // Determine BSDF value and density of sampling that direction using BSDF sampling
+                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
+                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                // Accumulate, be careful with polarized spetra here
-                result = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);
+                Float mis = ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+
+                if constexpr (is_polarized_v<Spectrum>)
+                    result[active_e] += mis * throughput * bsdf_val * emitter_val;
+                else
+                    result[active_e] = ek::fmadd(mis * bsdf_val * emitter_val, throughput, result);
             }
 
-            // ---------------------- BSDF sampling ----------------------
+            // ----------------------- BSDF sampling ----------------------
 
-            Float sample_1 = sampler->next_1d();
-            Point2f sample_2 = sampler->next_2d();
+            // Sample BSDF * ek::cos(theta)
+            auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
+                                               sampler->next_2d(active), active);
+            bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
-            auto [bsdf_sample, bsdf_weight] =
-                bsdf->sample(bsdf_ctx, si, sample_1, sample_2, active_next);
+            throughput = throughput * bsdf_val;
+            active &= ek::any(ek::neq(unpolarized_spectrum(throughput), 0.f));
+            if (ek::none_or<false>(active))
+                break;
 
-            // ---- Update loop variables based on current interaction -----
-            ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
-            eta *= bsdf_sample.eta;
-            throughput *= bsdf_weight;
+            eta *= bs.eta;
 
-            // Information about the current vertex needed by the next iteration
-            prev_si = si;
-            prev_bsdf_pdf = bsdf_sample.pdf;
-            prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags::Delta);
+            // Intersect the BSDF ray against the scene geometry
+            ray = si.spawn_ray(si.to_world(bs.wo));
+            SurfaceInteraction3f si_bsdf = scene->ray_intersect(ray, active);
 
-            // -------------------- Stopping criterion ---------------------
+            DirectionSample3f ds(scene, si_bsdf, si);
 
-            Float rr_prob = ek::min(
-                ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
-            Mask rr_active = depth >= m_rr_depth,
-                 rr_result = sampler->next_1d() < rr_prob;
+            // Did we happen to hit an emitter?
+            if (ek::any_or<true>(ek::neq(ds.emitter, nullptr))) {
+                Bool delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
-            throughput[rr_active] *= ek::rcp(ek::detach(rr_prob));
+                /* If so, determine probability of having sampled that same
+                   direction using the emitter sampling. */
+                Float emitter_pdf =
+                    ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
 
-            active = active_next && (!rr_active || rr_result);
-            ek::masked(depth, si.is_valid()) += 1;
+                Float mis = mis_weight(bs.pdf, emitter_pdf);
+                EmitterPtr emitter_b = si_bsdf.emitter(scene, active);
+                if (ek::any_or<true>(ek::neq(emitter_b, nullptr))) {
+                    Spectrum emitter_val = emitter_b->eval(si_bsdf, active);
+
+                    if constexpr (is_polarized_v<Spectrum>)
+                        result[active] += mis * throughput * emitter_val;
+                    else
+                        result[active] = ek::fmadd(mis * emitter_val, throughput, result);
+                }
+            }
+
+            si = std::move(si_bsdf);
+
+            depth++;
+            if (m_max_depth >= 0)
+                active &= depth < m_max_depth;
+            active &= si.is_valid();
+
+            /* Russian roulette: try to keep path weights equal to one,
+               while accounting for the solid angle compression at refractive
+               index boundaries. Stop with at least some probability to avoid
+               getting stuck (e.g. due to total internal reflection) */
+            Bool use_rr = depth > m_rr_depth;
+            if (ek::any_or<true>(use_rr)) {
+                Float q = ek::min(ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
+                ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
+                ek::masked(throughput, use_rr) *= ek::detach(ek::rcp(q));
+            }
         }
 
-        return {
-            /* spec  = */ result,
-            /* valid = */ ek::neq(depth, 0)
-        };
+        return { result, valid_ray };
     }
 
     //! @}
