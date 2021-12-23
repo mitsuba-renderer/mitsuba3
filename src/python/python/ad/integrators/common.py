@@ -490,7 +490,7 @@ def develop_block(block: mitsuba.render.ImageBlock):
     values_out = ek.gather(Float, tensor.array, values_idx)
     values_out /= ek.select(ek.eq(weight_in, 0), 1, weight_in)
 
-    return TensorXf(values_out, (size[1], size[0], channels_out))
+    return TensorXf(values_out, (size[0], size[1], channels_out))
 
 
 class ADIntegrator(mitsuba.render.SamplingIntegrator):
