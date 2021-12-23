@@ -93,6 +93,7 @@ template <typename Float_> struct CoreAliases {
     using Float = Float_;
 
     using Mask = ek::mask_t<Float>;
+    using Bool = Mask;
 
     using Int8    = ek::replace_scalar_t<Float, int8_t>;
     using Int32   = ek::int32_array_t<Float>;
@@ -195,6 +196,7 @@ template <typename Float_> struct CoreAliases {
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
+    using prefix ## Bool                 = typename prefix ## CoreAliases::Bool;                   \
     using prefix ## Int8                 = typename prefix ## CoreAliases::Int8;                   \
     using prefix ## Int32                = typename prefix ## CoreAliases::Int32;                  \
     using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \

@@ -72,7 +72,7 @@ class PRBIntegrator(ADIntegrator):
         β = Spectrum(1)
         η = Float(1)
 
-        # Other loop state
+        # Variables caching information from the previous bounce
         prev_si         = ek.zero(SurfaceInteraction3f)
         prev_bsdf_pdf   = Float(1.0)
         prev_bsdf_delta = Bool(True)
