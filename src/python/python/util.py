@@ -32,18 +32,22 @@ class SceneParameters(Mapping):
         return self.properties.__contains__(key)
 
     def __getitem__(self, key: str):
-        value, value_type, node = self.properties[key]
-        if value_type is None:
+        value, cpp_type, node = self.properties[key]
+        if cpp_type is None:
             return value
         else:
-            return self.get_property(value, value_type, node)
+            return self.get_property(value, cpp_type, node)
 
     def __setitem__(self, key: str, value):
-        cur, value_type, node = self.set_dirty(key)
-        if value_type is None:
-            cur.assign(value)
+        cur, cpp_type, node = self.set_dirty(key)
+        if cpp_type is None:
+            # TODO: workaround, not great
+            if ek.is_tensor_v(cur) and ek.is_tensor_v(value):
+                cur.array.assign(value.array)
+            else:
+                cur.assign(value)
         else:
-            self.set_property(cur, value_type, value)
+            self.set_property(cur, cpp_type, value)
 
     def __delitem__(self, key: str) -> None:
         del self.properties[key]
@@ -135,6 +139,23 @@ class SceneParameters(Mapping):
             node.parameters_changed(keys)
         self.update_list.clear()
         ek.eval()
+
+    def put(self, key: str, value, cpptype=None, node=None, parent=None) -> None:
+        """
+        Add a differentiable parameter.
+        Useful for parameters that are not part of the Scene hierarchy.
+
+        Inputs:
+            cpptype: if the value is a C++ object that must be updated in place,
+                     pass its type here.
+            node: Mitsuba object holding this parameter, if any
+            node: parent object holding `node`, if any
+        """
+        if key in self.properties:
+            raise KeyError(f'Key already present in scene parameters: {key}')
+        # TODO: this is probably incorrect / incomplete
+        self.properties[key] = (value, cpptype, node)
+        self.hierarchy[node] = (parent, 0)
 
     def keep(self, keys: list) -> None:
         """
