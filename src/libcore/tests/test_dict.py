@@ -330,7 +330,7 @@ def test08_dict_unreferenced_attribute_error(variants_all):
             "type" : "point",
             "foo": 0.44
         })
-    e.match("Unreferenced attribute")
+    e.match("Unreferenced property")
 
 
 

@@ -3,7 +3,7 @@ import pytest
 import enoki as ek
 
 
-def make_simple_scene(res=1, integrator="path"):
+def make_simple_scene(res=1, integrator="oldpath"): # TODO change this back to `path`
     from mitsuba.core import load_dict, ScalarTransform4f
 
     return load_dict({
@@ -263,7 +263,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     ek.set_grad(loss, loss_grad)
     ek.enqueue(ek.ADMode.Backward, loss)
-    ek.traverse(Float, ek.ADFlag.ClearVertices)
+    ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
 
     # Check gradients
     grad = ek.grad(bsdf_params['reflectance.value'])
@@ -368,7 +368,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
         ek.set_grad(loss, loss_grad)
         ek.enqueue(ek.ADMode.Backward, loss)
-        ek.traverse(Float, ek.ADFlag.ClearVertices)
+        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
 
         # Check gradients
         grad1 = ek.grad(p1)
@@ -383,13 +383,13 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         ek.set_grad(p2, 0)
         ek.enqueue(ek.ADMode.Forward, p1)
         ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, ek.ADFlag.ClearVertices)
+        ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearVertices)
 
         ek.set_grad(p1, 0)
         ek.set_grad(p2, 1)
         ek.enqueue(ek.ADMode.Forward, p1)
         ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, ek.ADFlag.ClearVertices)
+        ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearVertices)
 
         assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
 

@@ -161,7 +161,7 @@ def test15_incorrect_parameter_type(variant_scalar_rgb):
 
 def test16_invalid_integer(variant_scalar_rgb):
     def test_input(value, valid):
-        expected = (r'.*unreferenced property ."test_number".*' if valid
+        expected = (r'.*unreferenced property .."test_number"..*' if valid
                     else r'could not parse integer value "{}".'.format(value))
         with pytest.raises(Exception, match=expected):
             mitsuba.core.load_string("""<scene version="2.0.0">
@@ -182,7 +182,7 @@ def test16_invalid_integer(variant_scalar_rgb):
 
 def test17_invalid_float(variant_scalar_rgb):
     def test_input(value, valid):
-        expected = (r'.*unreferenced property ."test_number".*' if valid
+        expected = (r'.*unreferenced property .."test_number"..*' if valid
                     else r'could not parse floating point value "{}".'.format(value))
         with pytest.raises(Exception, match=expected):
             mitsuba.core.load_string("""<scene version="2.0.0">
