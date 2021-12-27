@@ -343,7 +343,8 @@ Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz, ek::mask_t<Float> /*acti
 }
 
 template<typename Spectrum>
-ek::value_t<Spectrum> luminance(const Spectrum &value, const wavelength_t<Spectrum> &wavelengths,
+ek::value_t<Spectrum> luminance(const Spectrum &value,
+                                const wavelength_t<Spectrum> &wavelengths,
                                 ek::mask_t<Spectrum> active = true) {
     if constexpr (is_rgb_v<Spectrum>)
         return luminance(value);
