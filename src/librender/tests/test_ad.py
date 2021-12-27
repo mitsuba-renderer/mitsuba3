@@ -3,7 +3,7 @@ import pytest
 import enoki as ek
 
 
-def make_simple_scene(res=1, integrator="oldpath"): # TODO change this back to `path`
+def make_simple_scene(res=1, integrator="path"):
     from mitsuba.core import load_dict, ScalarTransform4f
 
     return load_dict({

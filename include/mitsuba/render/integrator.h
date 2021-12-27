@@ -279,8 +279,8 @@ protected:
 
     MTS_DECLARE_CLASS()
 protected:
-    int m_max_depth;
-    int m_rr_depth;
+    uint32_t m_max_depth;
+    uint32_t m_rr_depth;
 };
 
 /** \brief Abstract adjoint integrator that performs Monte Carlo sampling

@@ -443,17 +443,21 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
-    // Depth to begin using russian roulette
-    m_rr_depth = props.get<int>("rr_depth", 5);
-    if (m_rr_depth <= 0)
-        Throw("\"rr_depth\" must be set to a value greater than zero!");
-
     /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
         visualize only directly visible light sources. \c 2 will lead to
         single-bounce (direct-only) illumination, and so on. */
-    m_max_depth = props.get<int>("max_depth", -1);
-    if (m_max_depth < 0 && m_max_depth != -1)
+    int max_depth = props.get<int>("max_depth", -1);
+    if (max_depth < 0 && max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
+
+    m_max_depth = (uint32_t) max_depth; // This maps -1 to 2^32 bounces
+
+    // Depth to begin using russian roulette
+    int rr_depth = props.get<int>("rr_depth", 5);
+    if (rr_depth <= 0)
+        Throw("\"rr_depth\" must be set to a value greater than zero!");
+
+    m_rr_depth = (uint32_t) rr_depth;
 }
 
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
