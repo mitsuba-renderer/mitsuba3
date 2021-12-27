@@ -494,13 +494,50 @@ def develop_block(block: mitsuba.render.ImageBlock):
 
 
 class ADIntegrator(mitsuba.render.SamplingIntegrator):
+    """
+    Abstract base class of numerous differentiable integrators in Mitsuba
+
+    .. pluginparameters::
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth in the generated output image (where -1
+         corresponds to :math:`\infty`). A value of |1| will only render directly
+         visible light sources. |2| will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: |-1|)
+     * - rr_depth
+       - |int|
+       - Specifies the path depth, at which the implementation will begin to use
+         the *russian roulette* path termination criterion. For example, if set to
+         |1|, then path generation many randomly cease after encountering directly
+         visible surfaces. (Default: |5|)
+     * - split_derivatives
+       - |bool|
+       - The differential phase of path replay-style integrators is split into
+         two sub-phases that must communicate with each other. When
+         |split_derivatives| is set to |true|, those two phases are executed
+         using separate kernel launches that exchange information through
+         global memory. If set to |false|, they are merged into a single kernel
+         that keeps this information within registers. There are various
+         pros/cons to either approach, so it's best to try both and use
+         whichever is faster.
+    """
+
     def __init__(self, props = mitsuba.core.Properties()):
         super().__init__(props)
 
-        self.max_depth = props.get('max_depth', 4)
-        self.rr_depth = props.get('rr_depth', 2)
+        max_depth = props.get('max_depth', 4)
+        if max_depth < 0 and max_depth != -1:
+            raise Exception("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
+
+        # Map -1 (infinity) to 2^32 bounces
+        self.max_depth = max_depth if max_depth != -1 else 0xffffffff
+
+        self.rr_depth = props.get('rr_depth', 5)
+        if rr_depth <= 0:
+            raise Exception("\"rr_depth\" must be set to a value greater than zero!")
+
         self.split_derivative = props.get('split_derivative', False)
-        assert self.max_depth > 0 and self.rr_depth > 0
 
     def aovs(self):
         return []
@@ -896,6 +933,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             forward/backward differential phases.
         """
 
-        raise Exception('ADIntegrator does not implement the sample() method. '
-                        'It should be specialized by subclasses that provide '
-                        'this function.')
+        raise Exception('ADIntegrator does not provide the sample() method. '
+                        'It should be implemented by subclasses that '
+                        'specialize the abstract ADIntegrator interface.')

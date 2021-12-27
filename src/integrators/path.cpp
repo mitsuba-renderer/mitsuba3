@@ -19,13 +19,16 @@ Path tracer (:monosp:`path`)
 
  * - max_depth
    - |int|
-   - Specifies the longest path depth in the generated output image (where -1 corresponds to
-     :math:`\infty`). A value of 1 will only render directly visible light sources. 2 will lead
-     to single-bounce (direct-only) illumination, and so on. (Default: -1)
+   - Specifies the longest path depth in the generated output image (where -1
+     corresponds to :math:`\infty`). A value of |1| will only render directly
+     visible light sources. |2| will lead to single-bounce (direct-only)
+     illumination, and so on. (Default: |-1|)
  * - rr_depth
    - |int|
-   - Specifies the minimum path depth, after which the implementation will start to use the
-     *russian roulette* path termination criterion. (Default: 5)
+   - Specifies the path depth, at which the implementation will begin to use
+     the *russian roulette* path termination criterion. For example, if set to
+     |1|, then path generation many randomly cease after encountering directly
+     visible surfaces. (Default: |5|)
  * - hide_emitters
    - |bool|
    - Hide directly visible emitters. (Default: no, i.e. |false|)
@@ -50,17 +53,17 @@ the light source in an attempt to find a *complete* path along which
 light can flow from the emitter to the sensor. This of course only works
 when there is no occluding object between the intersection and the emitter.
 
-This directly translates into a category of scenes where
-a path tracer can be expected to produce reasonable results: this is the case
-when the emitters are easily "accessible" by the contents of the scene. For instance,
-an interior scene that is lit by an area light will be considerably harder
-to render when this area light is inside a glass enclosure (which
-effectively counts as an occluder).
+This directly translates into a category of scenes where a path tracer can be
+expected to produce reasonable results: this is the case when the emitters are
+easily "accessible" by the contents of the scene. For instance, an interior
+scene that is lit by an area light will be considerably harder to render when
+this area light is inside a glass enclosure (which effectively counts as an
+occluder).
 
-Like the :ref:`direct <integrator-direct>` plugin, the path tracer internally relies on multiple importance
-sampling to combine BSDF and emitter samples. The main difference in comparison
-to the former plugin is that it considers light paths of arbitrary length to compute
-both direct and indirect illumination.
+Like the :ref:`direct <integrator-direct>` plugin, the path tracer internally
+relies on multiple importance sampling to combine BSDF and emitter samples. The
+main difference in comparison to the former plugin is that it considers light
+paths of arbitrary length to compute both direct and indirect illumination.
 
 .. _sec-path-strictnormals:
 
@@ -113,7 +116,7 @@ public:
         Spectrum throughput           = 1.f;
         Spectrum result               = 0.f;
         Float eta                     = 1.f;
-        Int32 depth                   = 0;
+        UInt32 depth                  = 0;
 
         // Variables caching information from the previous bounce
         Interaction3f prev_si         = ek::zero<Interaction3f>();
@@ -131,10 +134,10 @@ public:
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
                                      /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ek::eq(depth, 0));
+                                     /* coherent = */ ek::eq(depth, 0u));
 
             if (ek::none_or<false>(si.is_valid()))
-                break; // early exit
+                break; // early exit for scalar mode
 
             // ---------------------- Direct emission ----------------------
 
@@ -162,6 +165,9 @@ public:
             Bool active_next = (depth + 1 < m_max_depth) && si.is_valid(),
                  active_em   = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
+            if (ek::none_or<false>(active_next))
+                break; // early exit for scalar mode
+
             if (ek::any_or<true>(active_em)) {
                 // Sample the emitter
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
@@ -172,6 +178,7 @@ public:
                 Vector3f wo = si.to_local(ds.d);
                 auto [bsdf_val, bsdf_pdf] =
                     bsdf->eval_pdf(bsdf_ctx, si, wo, active_em);
+                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 // Compute the MIS weight
                 Float mis_em =
@@ -188,11 +195,12 @@ public:
 
             auto [bsdf_sample, bsdf_weight] =
                 bsdf->sample(bsdf_ctx, si, sample_1, sample_2, active_next);
+            bsdf_weight = si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, si.wi);
 
             // ---- Update loop variables based on current interaction -----
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
             eta *= bsdf_sample.eta;
-            throughput *= bsdf_weight;
+            throughput = throughput * bsdf_weight;
 
             // Information about the current vertex needed by the next iteration
             prev_si = si;
@@ -201,20 +209,23 @@ public:
 
             // -------------------- Stopping criterion ---------------------
 
-            Float rr_prob = ek::min(
-                ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
+            ek::masked(depth, si.is_valid()) += 1;
+
+            Float throughput_max = ek::hmax(unpolarized_spectrum(throughput));
+
+            Float rr_prob = ek::min(throughput_max * ek::sqr(eta), .95f);
             Mask rr_active = depth >= m_rr_depth,
-                 rr_result = sampler->next_1d() < rr_prob;
+                 rr_continue = sampler->next_1d() < rr_prob;
 
             throughput[rr_active] *= ek::rcp(ek::detach(rr_prob));
 
-            active = active_next && (!rr_active || rr_result);
-            ek::masked(depth, si.is_valid()) += 1;
+            active = active_next && (!rr_active || rr_continue) &&
+                     ek::neq(throughput_max, 0.f);
         }
 
         return {
             /* spec  = */ result,
-            /* valid = */ ek::neq(depth, 0)
+            /* valid = */ ek::neq(depth, 0u)
         };
     }
 
@@ -223,8 +234,8 @@ public:
 
     std::string to_string() const override {
         return tfm::format("PathIntegrator[\n"
-            "  max_depth = %i,\n"
-            "  rr_depth = %i\n"
+            "  max_depth = %u,\n"
+            "  rr_depth = %u\n"
             "]", m_max_depth, m_rr_depth);
     }
 

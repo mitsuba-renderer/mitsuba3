@@ -119,7 +119,7 @@ class PRBIntegrator(ADIntegrator):
                 # Recompute local 'wo' to propagate derivatives to cosine term
                 wo = si.to_local(ds.d)
 
-                # Evalute BRDF * cos(theta) differentially
+                # Evalute BRDF * cos(theta) differentiably
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
                 Lr_dir = β * mis_em * bsdf_val * emitter_val
@@ -151,7 +151,7 @@ class PRBIntegrator(ADIntegrator):
                     # Recompute local 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evalute BRDF*cos(theta) differentially
+                    # Re-evalute BRDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
                     # Recompute the reflected indirect radiance (terminology not 100%
@@ -171,12 +171,15 @@ class PRBIntegrator(ADIntegrator):
 
             # -------------------- Stopping criterion ---------------------
 
+            β_max = ek.hmax(β)
             rr_active = depth >= self.rr_depth
-            rr_prob = ek.min(ek.hmax(β) * η**2, .95)
-            rr_result = sampler.next_1d() < rr_prob
+            rr_prob = ek.min(β_max * η**2, .95)
+            rr_continue = sampler.next_1d() < rr_prob
             β[rr_active] *= ek.rcp(rr_prob)
 
-            active = active_next & (~rr_active | rr_result)
+            active = active_next & ek.neq(β_max, 0) & \
+                     (~rr_active | rr_continue)
+
             depth[si.is_valid()] += 1
 
         return (

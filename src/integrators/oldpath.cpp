@@ -112,7 +112,7 @@ public:
         Ray3f ray(ray_);
         Spectrum result(0.f), throughput(1.f);
         BSDFContext ctx;
-        Int32 depth = 1;
+        UInt32 depth = 1;
 
         // ---------------------- First intersection ----------------------
 
@@ -127,9 +127,7 @@ public:
         if (ek::any_or<true>(ek::neq(emitter, nullptr)))
             result = emitter->eval(si, active);
 
-        active &= si.is_valid();
-        if (m_max_depth >= 0)
-            active &= depth < m_max_depth;
+        active &= si.is_valid() && depth < m_max_depth;
 
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
@@ -206,11 +204,9 @@ public:
             }
 
             si = std::move(si_bsdf);
-
             depth++;
-            if (m_max_depth >= 0)
-                active &= depth < m_max_depth;
-            active &= si.is_valid();
+
+            active &= si.is_valid() && depth < m_max_depth;
 
             /* Russian roulette: try to keep path weights equal to one,
                while accounting for the solid angle compression at refractive
@@ -232,8 +228,8 @@ public:
 
     std::string to_string() const override {
         return tfm::format("PathIntegrator[\n"
-            "  max_depth = %i,\n"
-            "  rr_depth = %i\n"
+            "  max_depth = %u,\n"
+            "  rr_depth = %u\n"
             "]", m_max_depth, m_rr_depth);
     }
 
