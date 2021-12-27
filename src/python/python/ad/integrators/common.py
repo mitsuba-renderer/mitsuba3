@@ -534,7 +534,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         self.max_depth = max_depth if max_depth != -1 else 0xffffffff
 
         self.rr_depth = props.get('rr_depth', 5)
-        if rr_depth <= 0:
+        if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
 
         self.split_derivative = props.get('split_derivative', False)

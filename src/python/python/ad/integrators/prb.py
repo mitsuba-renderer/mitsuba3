@@ -122,7 +122,7 @@ class PRBIntegrator(ADIntegrator):
                 # Evalute BRDF * cos(theta) differentiably
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
-                Lr_dir = β * mis_em * bsdf_val * emitter_val
+                Lr_dir = β * ek.detach(mis_em) * bsdf_val * emitter_val
 
             # ---------------------- BSDF sampling ----------------------
 
