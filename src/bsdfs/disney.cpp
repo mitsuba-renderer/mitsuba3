@@ -10,6 +10,7 @@
 #include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
 /**
  * \brief GTR1_isotropic Microfacet Distribution class
  *
@@ -28,7 +29,8 @@ NAMESPACE_BEGIN(mitsuba)
  * lobes and visible normal sampling would not increase the sampling performance
  * considerably.
  */
-template <typename Float, typename Spectrum> class GTR1_isotropic {
+template <typename Float, typename Spectrum>
+class GTR1Isotropic {
 public:
     MTS_IMPORT_TYPES();
     /**
@@ -37,7 +39,7 @@ public:
      * \param m_alpha
      *     The roughness of the surface.
      */
-    GTR1_isotropic(Float alpha) : m_alpha(alpha){};
+    GTR1Isotropic(Float alpha) : m_alpha(alpha){};
 
     Float eval(const Vector3f &m) const {
         Float cos_theta  = Frame3f::cos_theta(m),
@@ -257,7 +259,7 @@ class Disney final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
-    using GTR1 = GTR1_isotropic<Float, Spectrum>;
+    using GTR1 = GTR1Isotropic<Float, Spectrum>;
 
     Disney(const Properties &props) : Base(props) {
         // Decides between the thin and the regular model.
@@ -492,8 +494,8 @@ public:
      */
     UnpolarizedSpectrum
     thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
-                   const UnpolarizedSpectrum &base_color, const Float &lum,
-                   const Float &cos_theta_i,const Float &eta_t) const {
+                 const UnpolarizedSpectrum &base_color, const Float &lum,
+                 const Float &cos_theta_i,const Float &eta_t) const {
         UnpolarizedSpectrum F_schlick(0.0f);
         // Tinted dielectric component based on Schlick.
         if (m_has_spec_tint) {
