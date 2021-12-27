@@ -495,7 +495,7 @@ public:
     UnpolarizedSpectrum
     thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
                  const UnpolarizedSpectrum &base_color, const Float &lum,
-                 const Float &cos_theta_i,const Float &eta_t) const {
+                 const Float &cos_theta_i, const Float &eta_t) const {
         UnpolarizedSpectrum F_schlick(0.0f);
         // Tinted dielectric component based on Schlick.
         if (m_has_spec_tint) {
