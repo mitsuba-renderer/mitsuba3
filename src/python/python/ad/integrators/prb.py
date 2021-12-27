@@ -87,7 +87,7 @@ class PRBIntegrator(ADIntegrator):
         while loop(active):
             with ek.resume_grad(condition=not primal):
                 # Capture π-dependence of intersection for a detached input ray
-                si = scene.ray_intersect(ray, 
+                si = scene.ray_intersect(ray,
                                          ray_flags=RayFlags.All,
                                          coherent=ek.eq(depth, 0))
                 bsdf = si.bsdf(ray)
@@ -119,7 +119,7 @@ class PRBIntegrator(ADIntegrator):
                 # Recompute local 'wo' to propagate derivatives to cosine term
                 wo = si.to_local(ds.d)
 
-                # Evalute BRDF * cos(theta) differentiably
+                # Evalute BRDF * cos(theta) differentially
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
                 Lr_dir = β * mis_em * bsdf_val * emitter_val
@@ -151,7 +151,7 @@ class PRBIntegrator(ADIntegrator):
                     # Recompute local 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evalute BRDF*cos(theta) differentiably
+                    # Re-evalute BRDF*cos(theta) differentially
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
                     # Recompute the reflected indirect radiance (terminology not 100%

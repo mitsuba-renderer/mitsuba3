@@ -530,7 +530,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = TensorXf(Bitmap(filename))
-    image = integrator.render(config.scene, seed=0, spp=config.spp)
+    image = integrator.render(config.scene, config.scene.sensors()[0], seed=0, spp=config.spp)
 
     error = ek.abs(image - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
     error_mean = ek.hmean(error)
@@ -576,7 +576,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 
     ek.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
-        config.scene, config.params, seed=0, spp=config.spp)
+        config.scene, config.scene.sensors()[0], seed=0, spp=config.spp)
     image_fwd = ek.detach(image_fwd)
 
     error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
@@ -626,7 +626,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     # ek.set_log_level(3)
 
     integrator.render_backward(
-        config.scene, config.params, image_adj, seed=0, spp=config.spp)
+        config.scene, image_adj, config.scene.sensors()[0], seed=0, spp=config.spp)
 
     grad = ek.grad(theta)[0] / ek.width(image_fwd_ref)
     grad_ref = ek.hmean(image_fwd_ref)
@@ -750,7 +750,9 @@ if __name__ == "__main__":
             'max_depth': config.max_depth
         })
 
-        image_ref = integrator.render(config.scene, seed=0, spp=args.spp)
+        sensor = config.scene.sensors()[0]
+
+        image_ref = integrator.render(config.scene, sensor, seed=0, spp=args.spp)
 
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
         write_bitmap(filename, image_ref)
@@ -758,7 +760,7 @@ if __name__ == "__main__":
         theta = Float(config.ref_fd_epsilon)
         config.update(theta)
 
-        image_2 = integrator.render(config.scene, seed=0, spp=args.spp)
+        image_2 = integrator.render(config.scene, sensor, seed=0, spp=args.spp)
         image_fd = (image_2 - image_ref) / config.ref_fd_epsilon
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
