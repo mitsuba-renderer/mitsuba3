@@ -20,6 +20,65 @@ static void embree_error_callback(void * /*user_ptr */, RTCError code, const cha
     Log(Warn, "Embree device error %i: %s.", (int) code, str);
 }
 
+/// Wraps rtcOccluded16 when Enoki-JIT operates on vectors of length 32
+void rtcOccluded32(const int *valid, RTCScene scene,
+                   RTCIntersectContext *context, uint32_t *in) {
+    constexpr size_t N = 16, M = 2;
+
+    RTC_ALIGN(N * 4) uint32_t tmp[N * 12];
+
+    for (size_t i = 0; i < M; ++i) {
+        uint32_t *ptr_in  = in + N * i,
+                 *ptr_tmp = tmp;
+
+        for (size_t j = 0; j < 12; ++j) {
+            memcpy(ptr_tmp, ptr_in, N * sizeof(uint32_t));
+            ptr_in += N * M;
+            ptr_tmp += N;
+        }
+
+        static_assert(sizeof(tmp) == sizeof(RTCRay16));
+        rtcOccluded16(valid + N * i, scene, context, (RTCRay16 *) tmp);
+
+        memcpy(in + N * (i + M * 8), tmp + N * 8, N * sizeof(uint32_t));
+    }
+}
+
+/// Wraps rtcIntersect16 when Enoki-JIT operates on vectors of length 32
+void rtcIntersect32(const int *valid, RTCScene scene,
+                    RTCIntersectContext *context, uint32_t *in) {
+    constexpr size_t N = 16, M = 2;
+
+    RTC_ALIGN(N * 4) uint32_t tmp[N * 20];
+
+    for (size_t i = 0; i < M; ++i) {
+        uint32_t *ptr_in  = in + N * i,
+                 *ptr_tmp = tmp;
+
+        for (size_t j = 0; j < 20; ++j) {
+            memcpy(ptr_tmp, ptr_in, N * sizeof(uint32_t));
+            ptr_in += N * M;
+            ptr_tmp += N;
+        }
+
+        memcpy(tmp + N * 17, in + N * (i + M * 17), N * sizeof(uint32_t));
+
+        static_assert(sizeof(tmp) == sizeof(RTCRayHit16));
+        rtcIntersect16(valid + N * i, scene, context, (RTCRayHit16 *) tmp);
+
+        memcpy(in + N * (i + M * 8), tmp + N * 8, N * sizeof(uint32_t));
+
+        ptr_in  = in + N * (i + M * 12);
+        ptr_tmp = tmp + N * 12;
+
+        for (int j = 0; j < 8; ++j) {
+            memcpy(ptr_in, ptr_tmp, N * sizeof(uint32_t));
+            ptr_in += N * 2;
+            ptr_tmp += N;
+        }
+    }
+}
+
 MTS_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     if (!embree_device) {
@@ -202,6 +261,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             case 4:  func_ptr = (void *) rtcIntersect4;  break;
             case 8:  func_ptr = (void *) rtcIntersect8;  break;
             case 16: func_ptr = (void *) rtcIntersect16; break;
+            case 32: func_ptr = (void *) rtcIntersect32; break;
             default:
                 Throw("ray_intersect_preliminary_cpu(): Enoki-JIT is "
                       "configured for vectors of width %u, which is not "
@@ -319,6 +379,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t ray_flags,
             case 4:  func_ptr = (void *) rtcOccluded4;  break;
             case 8:  func_ptr = (void *) rtcOccluded8;  break;
             case 16: func_ptr = (void *) rtcOccluded16; break;
+            case 32: func_ptr = (void *) rtcOccluded32; break;
             default:
                 Throw("ray_test_cpu(): Enoki-JIT is configured for vectors of "
                       "width %u, which is not supported by Embree!", jit_width);
