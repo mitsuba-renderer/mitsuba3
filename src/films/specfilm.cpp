@@ -191,7 +191,7 @@ public:
         /* locked */ {
             m_channels = sorted;
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, m_channels.size());
+            m_storage = new ImageBlock(m_crop_offset, m_crop_size, m_channels.size());
         }
 
         std::sort(sorted.begin(), sorted.end());
