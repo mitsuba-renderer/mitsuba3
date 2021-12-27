@@ -159,8 +159,10 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
         # 'rfilter': { 'type': 'box' }
     })
 
+    has_alpha = pixel_format.endswith('A') or pixel_format.endswith('alpha')
+
     res = film.size()
-    block = ImageBlock(0, res, 5 + len(aovs_channels), film.rfilter())
+    block = ImageBlock(0, res, (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
 
     if ek.is_jit_array_v(Float):
         pixel_idx = ek.arange(UInt32, ek.hprod(res))
@@ -168,14 +170,21 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
         y = pixel_idx // res[0]
 
         pos = Point2f(x, y) + 0.5
-
-        aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
-        block.put(pos, [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+        v = [x, 2 * y, 0.1, 0.5]
+        if has_alpha:
+            v += [1.0]
+        if has_aovs:
+            v += [10 + x, 20 + y, 10.1]
+        block.put(pos, v)
     else:
         for x in range(res[1]):
             for y in range(res[0]):
-                aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
-                block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+                v = [x, 2 * y, 0.1, 0.5]
+                if has_alpha:
+                    v += [1.0]
+                if has_aovs:
+                    v += [10 + x, 20 + y, 10.1]
+                block.put([y + 0.5, x + 0.5], v)
 
     film.prepare(aovs_channels)
     film.put_block(block)

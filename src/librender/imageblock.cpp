@@ -97,7 +97,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
 
     if (unlikely(block->channel_count() != channel_count()))
-        Throw("ImageBlock::accum_block(): mismatched channel counts!");
+        Throw("ImageBlock::put_block(): mismatched channel counts! (%u, "
+              "expected %u)", block->channel_count(), channel_count());
 
     ScalarVector2i source_size   = block->size() + 2 * block->border_size(),
                    target_size   =        size() + 2 *        border_size();
