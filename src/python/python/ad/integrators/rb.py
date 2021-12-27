@@ -69,8 +69,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
         ray, weight, pos, _ = sample_rays(sensor)
 
-        block = ImageBlock(ek.detach(grad_in), rfilter, normalize=True)
-        block.set_offset(film.crop_offset())
+        block = ImageBlock(film.crop_offset(), ek.detach(grad_in), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
 
         self.Li(ek.ADMode.Backward, scene, sampler, ray, params=params, grad=grad)
