@@ -44,11 +44,11 @@ public:
     void reset();
 
     /**
-     * \brief Return the offset, size, and unique identifer of the next block.
+     * \brief Return the offset, size, and unique identifier of the next block.
      *
      * A size of zero indicates that the spiral traversal is done.
      */
-    std::tuple<Vector2u, Vector2u, uint32_t> next_block();
+    std::tuple<Vector2i, Vector2u, uint32_t> next_block();
 
     MTS_DECLARE_CLASS()
 protected:

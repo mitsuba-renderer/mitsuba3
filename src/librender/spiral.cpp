@@ -23,7 +23,7 @@ void Spiral::reset() {
     m_spiral_size = 1;
 }
 
-std::tuple<Spiral::Vector2u, Spiral::Vector2u, uint32_t> Spiral::next_block() {
+std::tuple<Spiral::Vector2i, Spiral::Vector2u, uint32_t> Spiral::next_block() {
     // Reimplementation of the spiraling block generator by Adam Arbree.
     std::lock_guard<std::mutex> lock(m_mutex);
 
