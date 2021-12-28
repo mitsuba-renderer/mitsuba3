@@ -245,13 +245,13 @@ public:
      * This corresponds to the offset from the top-left corner of a larger
      * image (e.g. a Film) to the top-left corner of this ImageBlock instance.
      */
-    void set_offset(const ScalarPoint2u &offset) { m_offset = offset; }
+    void set_offset(const ScalarPoint2i &offset) { m_offset = offset; }
 
     /// Set the block size. This potentially destroys the block's content.
     void set_size(const ScalarVector2u &size);
 
     /// Return the current block offset
-    const ScalarPoint2u &offset() const { return m_offset; }
+    const ScalarPoint2i &offset() const { return m_offset; }
 
     /// Return the current block size
     const ScalarVector2u &size() const { return m_size; }
@@ -311,7 +311,7 @@ protected:
     /// Virtual destructor
     virtual ~ImageBlock();
 protected:
-    ScalarPoint2u m_offset;
+    ScalarPoint2i m_offset;
     ScalarVector2u m_size;
     uint32_t m_channel_count;
     uint32_t m_border_size;

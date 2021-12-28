@@ -339,7 +339,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
             if (ek::any(pos >= block->size()))
                 continue;
 
-            ScalarPoint2f pos_f = ScalarPoint2f(pos + block->offset());
+            ScalarPoint2f pos_f = ScalarPoint2f(Point2i(pos) + block->offset());
             for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
                 render_sample(scene, sensor, sampler, block, aovs,
                               pos_f, diff_scale_factor);
