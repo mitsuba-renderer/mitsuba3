@@ -79,6 +79,13 @@ Options:
         series of wavefronts. Specify twice to unroll both loops *and*
         virtual function calls.
 
+    -V <width>
+        Override the vector width of the LLVM backend ('width' must be
+        a power of two). Values of 4/8/16 cause SSE/NEON, AVX, or AVX512
+        registers being used (if supported). Going beyond the natively
+        supported width is legal and causes arithmetic operations to be
+        replicated multiple times.
+
     -P
         Force parallel scene loading, which is disabled by default
         in JIT modes since interferes with the ability to reuse
@@ -171,6 +178,7 @@ int main(int argc, char *argv[]) {
     auto arg_load_par  = parser.add(StringVec{ "-P" });
     auto arg_wavefront = parser.add(StringVec{ "-W" });
     auto arg_source    = parser.add(StringVec{ "-S" });
+    auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
     bool profile = false, print_profile = false;
     xml::ParameterList params;
@@ -281,12 +289,29 @@ int main(int argc, char *argv[]) {
 
             if (*arg_source)
                 jit_set_flag(JitFlag::PrintIR, true);
+
+            if (*arg_vec_width && llvm) {
+                uint32_t width = arg_vec_width->as_int();
+                if (!math::is_power_of_two(width))
+                    Throw("Value specified to the -V argument must be a power of two!");
+
+                std::string target_cpu = jit_llvm_target_cpu(),
+                            target_features = jit_llvm_target_features();
+
+                jit_llvm_set_target(target_cpu.c_str(),
+                                    target_features.c_str(),
+                                    (uint32_t) width);
+            }
         }
 #else
         ENOKI_MARK_USED(arg_wavefront);
         ENOKI_MARK_USED(arg_optim_lev);
         ENOKI_MARK_USED(arg_source);
 #endif
+
+        if (!cuda && !llvm &&
+            (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
+            Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA) mode!");
 
         if (profile)
             Profiler::static_initialization();
