@@ -56,11 +56,11 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     with ek.scoped_set_flag(ek.JitFlag.KernelHistory, True):
         # Perform 3 rendering in a row
         integrator.render(scene, seed=0, spp=spp)
-        history_1 = ek.kernel_history()
+        history_1 = ek.kernel_history([ek.KernelType.JIT])
         integrator.render(scene, seed=0, spp=spp)
-        history_2 = ek.kernel_history()
+        history_2 = ek.kernel_history([ek.KernelType.JIT])
         integrator.render(scene, seed=0, spp=spp)
-        history_3 = ek.kernel_history()
+        history_3 = ek.kernel_history([ek.KernelType.JIT])
 
         # Should only be 2 kernels (rendering, film develop)
         assert len(history_1) == 2
@@ -70,7 +70,7 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
         # print(history_1[0]['ir'].read())
         # print(history_2[0]['ir'].read())
 
-        # Only the rendering kernel should use optix
+        # Only the rendering kernel should use OptiX
         if mitsuba.variant().startswith('cuda'):
             assert [e['uses_optix'] for e in history_1] == [True, False]
             assert [e['uses_optix'] for e in history_2] == [True, False]
@@ -117,11 +117,11 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     with ek.scoped_set_flag(ek.JitFlag.KernelHistory, True):
         # Perform 3 rendering in a row
         integrator.render(scene, seed=0, spp=spp)
-        history_1 = ek.kernel_history()
+        history_1 = ek.kernel_history([ek.KernelType.JIT])
         integrator.render(scene, seed=0, spp=spp)
-        history_2 = ek.kernel_history()
+        history_2 = ek.kernel_history([ek.KernelType.JIT])
         integrator.render(scene, seed=0, spp=spp)
-        history_3 = ek.kernel_history()
+        history_3 = ek.kernel_history([ek.KernelType.JIT])
 
         # Role of each kernel
         # 0. Render visible emitters, trace and connect paths from the light source to the sensor
@@ -155,6 +155,7 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
         assert history_3[1]['size'] == film_wavefront_size
 
 
+@pytest.mark.skip('TODO')
 def test03_kernel_launches_optimization(variants_all_ad_rgb):
     """
     Check the history of kernel launches during a simple optimization loop
@@ -171,7 +172,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     wavefront_size = ek.hprod(film_size) * spp
 
     integrator = load_dict({
-        'type': 'rb',
+        'type': 'prb',
         'max_depth': 3
     })
 
@@ -188,14 +189,14 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
         params.update()
 
         # Updating the scene here shouldn't produce any kernel launch
-        assert len(ek.kernel_history()) == 0
+        assert len(ek.kernel_history([ek.KernelType.JIT])) == 0
 
         opt = mitsuba.python.ad.SGD(lr=0.05, params=params)
         opt.load(key)
         opt.update()
 
         # Creating the optimizer shouldn't produce any kernel launch
-        assert len(ek.kernel_history()) == 0
+        assert len(ek.kernel_history([ek.KernelType.JIT])) == 0
 
         # Use a different spp for the optimization loop (produce different kernels)
         spp = 2
@@ -211,7 +212,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
             with ek.suspend_grad():
                 image = integrator.render(scene, seed=0, spp=spp)
 
-            history_primal = ek.kernel_history()
+            history_primal = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_primal) == 2 # (render, develop film)
             assert history_primal[0]['size'] == wavefront_size
             assert history_primal[1]['size'] == film_wavefront_size
@@ -225,7 +226,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
             image_adj = ek.grad(image)
             ek.set_grad(image, 0.0)
 
-            history_loss = ek.kernel_history()
+            history_loss = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_loss) == 1 # (horizontal reduction with hsum)
             assert history_loss[0]['size'] == film_wavefront_size
 
@@ -234,7 +235,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
             # Adjoint rendering of the scene
             integrator.render_backward(scene, params, image_adj, seed=0, spp=spp)
 
-            history_adjoint = ek.kernel_history()
+            history_adjoint = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_adjoint) == 1 # (gather rays weights in image_adj)
             assert history_adjoint[0]['size'] == film_wavefront_size
 
@@ -242,7 +243,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
             # Optimizer: take a gradient step
             opt.step()
-            history_step = ek.kernel_history()
+            history_step = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_step) == 2 # (adjoint render, eval optimizer state)
             assert history_step[0]['size'] == wavefront_size
             assert history_step[1]['size'] == 1
@@ -251,7 +252,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
             # Optimizer: Update the scene parameters
             opt.update()
-            history_update = ek.kernel_history()
+            history_update = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_update) == 0
 
             histories.append(history_primal + history_loss + history_adjoint + history_step)
