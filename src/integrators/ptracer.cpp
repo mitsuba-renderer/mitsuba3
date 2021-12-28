@@ -201,15 +201,11 @@ public:
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<Mask> loop("Particle Tracer Integrator");
-        loop.put(active, depth, ray, throughput, si, eta);
-
-        // The internal sampler state is also modified by the loop
-        sampler->loop_put(loop);
-        loop.init();
+        ek::Loop<Mask> loop("Particle Tracer Integrator", active, depth, ray,
+                            throughput, si, eta, sampler);
 
         // Incrementally build light path using BSDF sampling.
-        while (loop(ek::detach(active))) {
+        while (loop(active)) {
             BSDFPtr bsdf = si.bsdf(ray);
 
             /* Connect to sensor and splat if successful. Sample a direction
