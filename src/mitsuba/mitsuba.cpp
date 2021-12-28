@@ -283,8 +283,9 @@ int main(int argc, char *argv[]) {
                 jit_set_flag(JitFlag::PrintIR, true);
         }
 #else
-        ENOKI_MARK_USED(arg_no_optim);
         ENOKI_MARK_USED(arg_wavefront);
+        ENOKI_MARK_USED(arg_optim_lev);
+        ENOKI_MARK_USED(arg_source);
 #endif
 
         if (profile)
