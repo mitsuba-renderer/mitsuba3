@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2u &offset,
+ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2i &offset,
                                         const ScalarVector2u &size,
                                         uint32_t channel_count,
                                         const ReconstructionFilter *rfilter,
@@ -29,7 +29,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2u &offset,
 }
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2u &offset,
+ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2i &offset,
                                         const TensorXf &tensor,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
@@ -100,7 +100,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
         Throw("ImageBlock::put_block(): mismatched channel counts! (%u, "
               "expected %u)", block->channel_count(), channel_count());
 
-    ScalarVector2i source_size   = block->size() + 2 * block->border_size(),
+    ScalarVector2u source_size   = block->size() + 2 * block->border_size(),
                    target_size   =        size() + 2 *        border_size();
 
     ScalarPoint2i  source_offset = block->offset() - block->border_size(),
@@ -167,7 +167,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // ===================================================================
 
     if (!m_rfilter) {
-        Point2u p = Point2u(ek::floor2int<Point2i>(pos) - ScalarPoint2i(m_offset));
+        Point2u p = Point2u(ek::floor2int<Point2i>(pos) - m_offset);
 
         // Switch over to unsigned integers, compute pixel index
         UInt32 index = ek::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
@@ -224,7 +224,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // ===================================================================
 
     if (!JIT || !m_coalesce) {
-        Point2f pos_f   = pos + ((int) m_border_size - ScalarPoint2i(m_offset) - .5f),
+        Point2f pos_f   = pos + ((int) m_border_size - m_offset - .5f),
                 pos_0_f = pos_f - radius,
                 pos_1_f = pos_f + radius;
 
@@ -389,8 +389,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         Point2i pos_i = ek::floor2int<Point2i>(pos) - int(n);
 
         // Account for pixel offset of the image block instance
-        Point2i pos_i_local =
-            pos_i + ((int) m_border_size - ScalarPoint2i(m_offset));
+        Point2i pos_i_local = pos_i + ((int) m_border_size - m_offset);
 
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),

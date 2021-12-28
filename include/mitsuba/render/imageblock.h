@@ -115,7 +115,7 @@ public:
      *    This test is only enabled in scalar variants by default, since
      *    checking/error reporting is relatively costly in JIT-compiled modes.
      */
-    ImageBlock(const ScalarPoint2u &offset,
+    ImageBlock(const ScalarPoint2i &offset,
                const ScalarVector2u &size,
                uint32_t channel_count,
                const ReconstructionFilter *rfilter = nullptr,
@@ -137,7 +137,7 @@ public:
      *
      * See the other constructor for an explanation of the parameters.
      */
-    ImageBlock(const ScalarPoint2u &offset,
+    ImageBlock(const ScalarPoint2i &offset,
                const TensorXf &tensor,
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
