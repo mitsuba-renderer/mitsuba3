@@ -292,7 +292,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
+        // callback->put_parameter("scale", m_scale);
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
         callback->put_object("emission", m_emission.get());

@@ -1,11 +1,12 @@
+#include <map>
+
 #include <mitsuba/core/filesystem.h>
-#include <mitsuba/core/xml.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/xml.h>
 #include <mitsuba/python/python.h>
-#include <map>
 
 using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
