@@ -9,3 +9,7 @@ target_link_libraries(mitsuba PRIVATE mitsuba-core mitsuba-render)
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
   target_link_libraries(mitsuba PRIVATE asmjit)
 endif()
+
+if (UNIX AND NOT APPLE)
+  target_link_libraries(mitsuba PRIVATE dl)
+endif()
