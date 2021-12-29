@@ -84,6 +84,9 @@ class PRBIntegrator(ADIntegrator):
                     state=lambda: (sampler, ray, depth, L, δL, β, η, active,
                                    prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
+        # Inform the loop about the maximum number of loop iterations.
+        loop.set_max_iterations(self.max_depth)
+
         while loop(active):
             with ek.resume_grad(condition=not primal):
                 # Capture π-dependence of intersection for a detached input ray

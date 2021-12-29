@@ -130,6 +130,11 @@ public:
         ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result, eta,
                             depth, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
 
+        /* Inform the loop about the maximum number of loop iterations.
+           This accelerates wavefront-style rendering by avoiding costly
+           synchronization points that check the 'active' flag. */
+        loop.set_max_iterations(m_max_depth);
+
         while (loop(active)) {
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,

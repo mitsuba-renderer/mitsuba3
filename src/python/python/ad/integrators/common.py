@@ -530,7 +530,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if max_depth < 0 and max_depth != -1:
             raise Exception("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
 
-        # Map -1 (infinity) to 2^32 bounces
+        # Map -1 (infinity) to 2^32-1 bounces
         self.max_depth = max_depth if max_depth != -1 else 0xffffffff
 
         self.rr_depth = props.get('rr_depth', 5)
