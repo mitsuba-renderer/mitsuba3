@@ -450,7 +450,7 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
     if (max_depth < 0 && max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 
-    m_max_depth = (uint32_t) max_depth; // This maps -1 to 2^32 bounces
+    m_max_depth = (uint32_t) max_depth; // This maps -1 to 2^32-1 bounces
 
     // Depth to begin using russian roulette
     int rr_depth = props.get<int>("rr_depth", 5);
