@@ -58,3 +58,83 @@ def test02_eval_grad(variant_scalar_rgb, np_rng):
             gradient_finite_difference = Vector2f((fu - f)/delta, (fv - f)/delta)
             gradient_analytic = bitmap.eval_1_grad(si)
             assert ek.allclose(0, ek.abs(gradient_finite_difference/gradient_analytic - 1.0), atol = 1e04)
+
+
+@fresolver_append_path
+@pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
+def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
+    from mitsuba.core import Float, load_string
+    from mitsuba.render import SurfaceInteraction3f
+    import numpy as np
+    import enoki as ek
+
+    bitmap = load_string("""
+    <texture type="bitmap" version="2.0.0">
+        <string name="filename" value="resources/data/common/textures/noise_8x8.png"/>
+        <string name="wrap_mode" value="%s"/>
+    </texture>""" % (wrap_mode)).expand()[0]
+
+    def eval_ranges(range_x, range_y):
+        xv, yv = ek.meshgrid(range_x, range_y)
+
+        si = ek.zero(SurfaceInteraction3f)
+        si.uv = [xv, yv]
+
+        return bitmap.eval_3(si)
+
+    axis_res = 20
+
+    x = ek.linspace(Float, 0, 1, axis_res)
+    y = ek.linspace(Float, 0, 1, axis_res)
+    ref = eval_ranges(x, y)
+
+    if wrap_mode == 'repeat':
+        # Top left
+        x = ek.linspace(Float, -1, 0, axis_res)
+        y = ek.linspace(Float, -1, 0, axis_res)
+        assert ek.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
+
+        # Bottom right
+        x = ek.linspace(Float, 1, 2, axis_res)
+        y = ek.linspace(Float, 1, 2, axis_res)
+        assert ek.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
+
+    elif wrap_mode == 'clamp':
+        # Top
+        x = ek.linspace(Float, 0, 1, axis_res)
+        y = ek.linspace(Float, -1, 0, axis_res)
+        top = np.array(ref)[:axis_res]
+        assert ek.allclose(0, top - np.reshape(
+            eval_ranges(x, y), (axis_res, axis_res, 3)), atol=1e-04)
+
+        # Bottom
+        x = ek.linspace(Float, 0, 1, axis_res)
+        y = ek.linspace(Float, 1, 2, axis_res)
+        bottom = np.array(ref)[-axis_res:]
+        assert ek.allclose(0, bottom - np.reshape(
+            eval_ranges(x, y), (axis_res, axis_res, 3)), atol=1e-04)
+
+        # Left
+        x = ek.linspace(Float, -1, 0, axis_res)
+        y = ek.linspace(Float, 0, 1, axis_res)
+        left = np.array(ref)[::axis_res]
+        assert ek.allclose(0, np.repeat(left, axis_res, axis=0) -
+            eval_ranges(x, y), atol=1e-04)
+
+        # Right
+        x = ek.linspace(Float, 1, 2, axis_res)
+        y = ek.linspace(Float, 0, 1, axis_res)
+        right = np.array(ref)[axis_res - 1::axis_res]
+        assert ek.allclose(0, np.repeat(right, axis_res, axis=0) -
+            eval_ranges(x, y), atol=1e-04)
+
+    elif wrap_mode == 'mirror':
+        # Top left
+        x = ek.linspace(Float, -1, 0, axis_res)[::-1]
+        y = ek.linspace(Float, -1, 0, axis_res)[::-1]
+        assert ek.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
+
+        # Bottom right
+        x = ek.linspace(Float, 1, 2, axis_res)[::-1]
+        y = ek.linspace(Float, 1, 2, axis_res)[::-1]
+        assert ek.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
