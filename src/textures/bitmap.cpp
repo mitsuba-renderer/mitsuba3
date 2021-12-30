@@ -410,9 +410,12 @@ public:
         if (m_wrap_mode == WrapMode::Clamp) {
             return clamp(value, 0, res - 1);
         } else {
+            // In a N-wide texture, pixel positions from -N to -1 should have
+            // div == 0, however at pixel -N we have -1. This also appears at
+            // -2N,-3N,.. all negative positions are therefore shifted by 1.
             T value_shift_neg = ek::select(value < 0, value + 1, value);
             T div = T(m_inv_resolution_x(value_shift_neg.x()),
-                       m_inv_resolution_y(value_shift_neg.y()));
+                      m_inv_resolution_y(value_shift_neg.y()));
 
             T mod = value - div * res;
 

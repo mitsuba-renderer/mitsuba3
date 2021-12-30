@@ -77,10 +77,10 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
     def eval_ranges(range_x, range_y):
         xv, yv = ek.meshgrid(range_x, range_y)
 
-        siv = SurfaceInteraction3f()
-        siv.uv = [xv, yv]
+        si = ek.zero(SurfaceInteraction3f)
+        si.uv = [xv, yv]
 
-        return bitmap.eval_3(siv)
+        return bitmap.eval_3(si)
 
     axis_res = 20
 
