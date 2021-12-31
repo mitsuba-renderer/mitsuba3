@@ -526,7 +526,10 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 MTS_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
-        ek::make_opaque(m_to_world, m_to_object);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (!is_mesh())
+                ek::make_opaque(m_to_world, m_to_object);
+        }
 
         if (m_emitter)
             m_emitter->parameters_changed({"parent"});
@@ -545,7 +548,11 @@ MTS_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::initialize() {
-    ek::make_opaque(m_to_world, m_to_object);
+    if constexpr (ek::is_jit_array_v<Float>) {
+        if (!is_mesh())
+            ek::make_opaque(m_to_world, m_to_object);
+    }
+
     // Explicitly register this shape as the parent of the provided sub-objects
     if (m_emitter)
         m_emitter->set_shape(this);
