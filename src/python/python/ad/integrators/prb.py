@@ -106,7 +106,7 @@ class PRBIntegrator(ADIntegrator):
             )
 
             with ek.resume_grad(condition=not primal):
-                Le = β * mis * ds.emitter.eval(si, prev_bsdf_pdf>0)
+                Le = β * mis * ds.emitter.eval(si, prev_bsdf_pdf > 0)
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -114,18 +114,24 @@ class PRBIntegrator(ADIntegrator):
             active_next = (depth + 1 < self.max_depth) & si.is_valid()
             active_em = active_next & has_flag(bsdf.flags(), BSDFFlags.Smooth)
 
-            ds, emitter_val = scene.sample_emitter_direction(
+            ds, weight = scene.sample_emitter_direction(
                 si, sampler.next_2d(), True, active_em)
             active_em &= ek.neq(ds.pdf, 0.0)
 
             with ek.resume_grad(condition=not primal):
-                # Recompute local 'wo' to propagate derivatives to cosine term
+                # Compute 'wo' with AD to propagate derivatives to cosine term
                 wo = si.to_local(ds.d)
 
+                if not primal and not ds.delta:
+                    # Given the detached emitter sample, recompute its
+                    # contribution with AD to enable light source optimization
+                    em_val, em_pdf = scene.eval_emitter_direction(ds, active_em)
+                    em_weight = ek.select(ek.neq(em_pdf, 0), em_val / em_pdf, 0)
+
                 # Evalute BRDF * cos(theta) differentiably
-                bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                bsdf_weight, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
-                Lr_dir = β * ek.detach(mis_em) * bsdf_val * emitter_val
+                Lr_dir = β * ek.detach(mis_em) * bsdf_weight * em_weight
 
             # ---------------------- BSDF sampling ----------------------
 
@@ -151,7 +157,7 @@ class PRBIntegrator(ADIntegrator):
 
             if not primal:
                 with ek.resume_grad():
-                    # Recompute local 'wo' to propagate derivatives to cosine term
+                    # Recompute 'wo' with AD to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
                     # Re-evalute BRDF * cos(theta) differentiably
