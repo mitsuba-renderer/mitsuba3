@@ -8,6 +8,29 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * \brief Central scene data structure
+ *
+ * Mitsuba's scene class encapsulates a tree of mitsuba \ref Object instances
+ * including emitters, sensors, shapes, materials, participating media, etc.
+ *
+ * It organizes these objects into groups that can be accessed through getters
+ * (see \ref shapes(), \ref emitters(), \ref sensors(), etc.), and it provides
+ * three key abstractions implemented on top of these groups, specifically:
+ *
+ * <ul>
+ *    <li>Ray intersection queries and shadow ray tests
+ *        (See \ray_intersect_preliminary(), \ref ray_intersect(),
+ *         and \ref ray_test()).</li>
+ *
+ *    <li>Sampling rays approximately proportional to the emission profile of
+ *        light sources in the scene (see \ref sample_emitter_ray())</li>
+ *
+ *    <li>Sampling directions approximately proportional to the
+ *        direct radiance from emitters received at a given scene location
+ *        (see \ref sample_emitter_direction()).</li>
+ * </ul>
+ */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
@@ -22,11 +45,12 @@ public:
     // =============================================================
 
     /**
-     * \brief Convenience function to render the scene and return a bitmap
+     * \brief Render the scene and return a bitmap
      *
-     * This function renders the scene from the viewpoint of the sensor with
-     * index \c sensor_index. All other parameters are optional and control
-     * different aspects of the rendering process. In particular:
+     * This convenience function invokes the scene's integrator to render the
+     * scene from the viewpoint of the sensor with index \c sensor_index
+     * (default: 0). All parameters are optional and control different aspects
+     * of the rendering process. In particular:
      *
      * \param seed
      *     This parameter controls the initialization of the random number
@@ -41,7 +65,8 @@ public:
      *     This parameter may be useful in research applications where an image
      *     must be rendered multiple times using different quality levels.
      */
-    ref<Bitmap> render(uint32_t sensor_index = 0, uint32_t seed = 0,
+    ref<Bitmap> render(uint32_t sensor_index = 0,
+                       uint32_t seed = 0,
                        uint32_t spp = 0);
 
     //! @}
@@ -52,37 +77,212 @@ public:
     // =============================================================
 
     /**
-     * \brief Intersect a ray against all primitives stored in the scene
-     * and return information about the resulting surface interaction
+     * \brief Intersect a ray with the shapes comprising the scene and return a
+     * detailed data structure describing the intersection, if one is found.
+     *
+     * In vectorized variants of Mitsuba (<tt>cuda_*</tt> or <tt>llvm_*</tt>),
+     * the function processes arrays of rays and returns arrays of booleans
+     * following the usual conventions.
+     *
+     * This method is a convenience wrapper of the generalized version of
+     * \c ray_intersect() below. It assumes that incoherent rays are being traced,
+     * and that the user desires access to all fields of the
+     * \ref SurfaceInteraction. In other words, it simply invokes the general
+     * \c ray_intersect() overload with <tt>coherent=false</tt> and
+     * \c ray_flags equal to \ref RayFlags::All.
      *
      * \param ray
-     *    A 3-dimensional ray data structure with minimum/maximum
-     *    extent information, as well as a time value (which matters
-     *    when the shapes are in motion)
+     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    Ray::time) information, which matters when the shapes are in motion
      *
      * \return
-     *    A detailed surface interaction record. Query its \ref
-     *    <tt>is_valid()</tt> method to determine whether an
-     *    intersection was actually found.
+     *    A detailed surface interaction record. Its <tt>is_valid()</tt> method
+     *    should be queried to check if an intersection was actually found.
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       Mask active = true) const;
+                                       Mask active = true) const {
+        return ray_intersect(ray, +RayFlags::All, false, active);
+    }
 
+    /**
+     * \brief Intersect a ray with the shapes comprising the scene and return a
+     * detailed data structure describing the intersection, if one is found
+     *
+     * In vectorized variants of Mitsuba (<tt>cuda_*</tt> or <tt>llvm_*</tt>),
+     * the function processes arrays of rays and returns arrays of booleans
+     * following the usual conventions.
+     *
+     * This generalized ray intersection method exposes two additional flags to
+     * control the intersection process. Internally, it is split into two
+     * steps:
+     *
+     * <ol>
+     *   <li> Finding a \ref PreliminaryInteraction using the ray tracing
+     *        backend underlying the current variant (i.e., Mitsuba's builtin
+     *        kd-tree, Embree, or OptiX). This is done using the
+     *        \ref ray_intersect_preliminary() function that can also available
+     *        directly below (and preferable if a full \ref SurfaceInteraction
+     *        is not needed.).
+     *   </li>
+     *
+     *   <li> Expanding the \ref PreliminaryInteraction into a full
+     *        \ref SurfaceInteraction (this part happens within Mitsuba/Enoki
+     *        and tracks derivative information in AD variants of the system).
+     *   </li>
+     * </ol>
+     *
+     * The \ref SurfaceInteraction data structure is large, and computing its
+     * contents in the section step requires a non-trivial amount of
+     * computation and sequence of memory accesses. The \c ray_flags parameter
+     * can be used to specify that only a sub-set of the full intersection data
+     * structure actually needs to be computed, which can improve performance.
+     *
+     * In the context of differentiable rendering, the \c ray_flags parameter
+     * also influences how derivatives propagate between the input ray, the
+     * shape parameters, and the computed intersection (see
+     * \ref RayFlags::FollowShape and \ref RayFlags::DetachShape for details on
+     * this). The default, \ref RayFlags::All, propagates derivatives through
+     * all steps of the intersection computation.
+     *
+     * The \c coherent flag is a hint that can improve performance in the first
+     * step of finding the \ref PreliminaryInteraction if the input set of rays
+     * is coherent (e.g., when they are generated by \ref Sensor::sample_ray(),
+     * which means that adjacent rays will traverse essentially the same region
+     * of space). This flag is currently only used by the combination of
+     * <tt>llvm_*</tt> variants and the Embree ray intersector.
+     *
+     * \param ray
+     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    Ray::time) information, which matters when the shapes are in motion
+     *
+     * \param ray_flags
+     *    An integer combining flag bits from \ref RayFlags (merged using
+     *    binary or).
+     *
+     * \param coherent
+     *    Setting this flag to \c true can noticeably improve performance when
+     *    \c ray contains a coherent set of rays (e.g. primary camera rays),
+     *    and when using <tt>llvm_*</tt> variants of the renderer along with
+     *    Embree. It has no effect in scalar or CUDA/OptiX variants.
+     *
+     * \return
+     *    A detailed surface interaction record. Its <tt>is_valid()</tt> method
+     *    should be queried to check if an intersection was actually found.
+     */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
                                        uint32_t ray_flags,
-                                       Mask coherent = true,
+                                       Mask coherent,
                                        Mask active = true) const;
 
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask active = true) const;
+    /**
+     * \brief Intersect a ray with the shapes comprising the scene and return a
+     * boolean specifying whether or not an intersection was found.
+     *
+     * In vectorized variants of Mitsuba (<tt>cuda_*</tt> or <tt>llvm_*</tt>),
+     * the function processes arrays of rays and returns arrays of booleans
+     * following the usual conventions.
+     *
+     * Testing for the mere presence of intersections is considerably faster
+     * than finding an actual intersection, hence this function should be
+     * preferred over \ref ray_intersect() when geometric information about the
+     * first visible intersection is not needed.
+     *
+     * This method is a convenience wrapper of the generalized version of \c
+     * ray_test() below, which assumes that incoherent rays are being traced.
+     * In other words, it simply invokes the general \c ray_test() overload
+     * with <tt>coherent=false</tt>.
+     *
+     * \param ray
+     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    Ray::time) information, which matters when the shapes are in motion
+     *
+     * \return \c true if an intersection was found
+     */
+    Mask ray_test(const Ray3f &ray, Mask active = true) const {
+        return ray_test(ray, false, active);
+    }
 
+    /**
+     * \brief Intersect a ray with the shapes comprising the scene and return a
+     * boolean specifying whether or not an intersection was found.
+     *
+     * In vectorized variants of Mitsuba (<tt>cuda_*</tt> or <tt>llvm_*</tt>),
+     * the function processes arrays of rays and returns arrays of booleans
+     * following the usual conventions.
+     *
+     * Testing for the mere presence of intersections is considerably faster
+     * than finding an actual intersection, hence this function should be
+     * preferred over \ref ray_intersect() when geometric information about the
+     * first visible intersection is not needed.
+     *
+     * This method is a convenience wrapper of the generalized version of \c
+     * ray_test() below, which assumes that incoherent rays are being traced.
+     * In other words, it simply invokes the general \c ray_test() overload
+     * with <tt>coherent=false</tt>.
+     *
+     * \param ray
+     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    Ray::time) information, which matters when the shapes are in motion
+     *
+     * \return \c true if an intersection was found
+     */
+    Mask ray_test(const Ray3f &ray, Mask coherent, Mask active) const;
+
+    /**
+     * \brief Intersect a ray with the shapes comprising the scene and return
+     * preliminary information, if one is found
+     *
+     * This function invokes the ray tracing backend underlying the current
+     * variant (i.e., Mitsuba's builtin kd-tree, Embree, or OptiX) and returns
+     * preliminary intersection information consisting of
+     *
+     * <ul>
+     *    <li>the ray distance up to the intersection (if one is found).</li>
+     *    <li>the intersected shape and primitive index.</li>
+     *    <li>local UV coordinates of the intersection within the primitive.</li>
+     *    <li>A pointer to the intersected shape or instance.</li>
+     * </ul>
+     *
+     * The information is only preliminary at this point, because it lacks
+     * various other information (geometric and shading frame, texture
+     * coordinates, curvature, etc.) that is generally needed by shading
+     * models. In variants of Mitsuba that perform automatic differentiation,
+     * it is important to know that computation done by the ray tracing
+     * backend is not reflected in Enoki's computation graph. The \ref
+     * ray_intersect() method will re-evaluate certain parts of the computation
+     * with derivative tracking to rectify this.
+     *
+     * In vectorized variants of Mitsuba (<tt>cuda_*</tt> or <tt>llvm_*</tt>),
+     * the function processes arrays of rays and returns arrays of preliminary
+     * intersection records following the usual conventions.
+     *
+     * The \c coherent flag is a hint that can improve performance if the input
+     * set of rays is coherent (e.g., when they are generated by \ref
+     * Sensor::sample_ray(), which means that adjacent rays will traverse
+     * essentially the same region of space). This flag is currently only used
+     * by the combination of <tt>llvm_*</tt> variants and the Embree ray
+     * intersector.
+     *
+     * \param ray
+     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    Ray::time) information, which matters when the shapes are in motion
+     *
+     * \param coherent
+     *    Setting this flag to \c true can noticeably improve performance when
+     *    \c ray contains a coherent set of rays (e.g. primary camera rays),
+     *    and when using <tt>llvm_*</tt> variants of the renderer along with
+     *    Embree. It has no effect in scalar or CUDA/OptiX variants.
+     *
+     * \return
+     *    A preliminary surface interaction record. Its <tt>is_valid()</tt> method
+     *    should be queried to check if an intersection was actually found.
+     */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        uint32_t ray_flags,
-                                                        Mask coherent = true,
+                                                        Mask coherent,
                                                         Mask active = true) const;
 
     /**
-     * \brief Ray intersection using brute force search. Used in
+     * \brief Ray intersection using a brute force search. Used in
      * unit tests to validate the kdtree-based ray tracer.
      *
      * \remark Not implemented by the Embree/OptiX backends
@@ -90,43 +290,23 @@ public:
     SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray,
                                              Mask active = true) const;
 
-    /**
-     * \brief Intersect a ray against all primitives stored in the scene
-     * and \a only determine whether or not there is an intersection.
-     *
-     * Testing for the mere presence of intersections (as in \ref
-     * ray_intersect) is considerably faster than finding an actual
-     * intersection, hence this function should be preferred when
-     * detailed information is not needed.
-     *
-     * \param ray
-     *    A 3-dimensional ray data structure with minimum/maximum
-     *    extent information, as well as a time value (which matterns
-     *    when the shapes are in motion)
-     *
-     * \return \c true if an intersection was found
-     */
-    Mask ray_test(const Ray3f &ray, Mask active = true) const;
-    Mask ray_test(const Ray3f &ray, uint32_t ray_flags,
-                  Mask coherent = true, Mask active = true) const;
-
     //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Sampling interface
+    //! @{ \name Emitter sampling interface
     // =============================================================
 
     /**
-     * \brief Sample one emitter in the scene and rescale the random sample for reuse.
-     * If possible, it is sampled proportional to its radiance.
+     * \brief Sample one emitter in the scene and rescale the random sample for
+     * reuse. If possible, it is sampled proportional to its radiance.
      *
      * \param sample
      *    A uniformly distributed number in [0, 1).
      *
      * \return
      *    The index of the chosen emitter along with the sampling weight (equal
-     *    to the inverse PDF), and the rescaled random sample for reusing.
+     *    to the inverse PDF), and the transformed random sample for reuse.
      */
     std::tuple<UInt32, Float, Float>
     sample_emitter(Float index_sample, Mask active = true) const;
@@ -136,15 +316,9 @@ public:
      * defined by the emitters in the scene.
      *
      * This function combines both steps of choosing a ray origin on a light
-     * source and an outgoing ray direction.
-     * It does not return any auxiliary sampling information and is mainly
-     * meant to be used by unidirectional rendering techniques.
-     *
-     * Note that this function may use a different sampling strategy compared to
-     * the sequence of running \ref sample_emitter_position()
-     * and \ref Emitter::sample_direction(). The reason for this is that it may
-     * be possible to switch to a better technique when sampling both
-     * position and direction at the same time.
+     * source and an outgoing ray direction. It does not return any auxiliary
+     * sampling information and is mainly meant to be used by unidirectional
+     * rendering techniques.
      *
      * \param time
      *    The scene time associated with the ray to be sampled.
@@ -266,13 +440,23 @@ public:
     //! @}
     // =============================================================
 
-    /// Perform a custom traversal over the scene graph
+    /// Traverse the scene graph and invoke the given callback for each object
     void traverse(TraversalCallback *callback) override;
 
     /// Update internal state following a parameter update
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
-    /// Return whether any of the shape's parameters require gradient
+    /**
+     * \brief Specifies whether any of the scene's shape parameters have
+     * tracking enabled
+     *
+     * Knowing this is important in the context of differentiable rendering:
+     * intersections (e.g. provided by OptiX or Embree) must then be
+     * re-computed differentiably within Enoki to correctly track gradient
+     * information. Furthermore, differentiable geometry introduces bias
+     * through visibility-induced discontinuities, and re-parameterizations
+     * (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.
+     */
     bool shapes_grad_enabled() const { return m_shapes_grad_enabled; };
 
     /// Return a human-readable string representation of the scene contents.
@@ -308,9 +492,9 @@ protected:
 
     /// Trace a ray and only return a preliminary intersection data structure
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
-        const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
+        const Ray3f &ray, Mask coherent, Mask active) const;
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
-        const Ray3f &ray, uint32_t ray_flags, Mask active) const;
+        const Ray3f &ray, Mask active) const;
 
     /// Trace a ray
     MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
@@ -318,8 +502,8 @@ protected:
     MTS_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray
-    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
-    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, uint32_t ray_flags, Mask active) const;
+    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
+    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 

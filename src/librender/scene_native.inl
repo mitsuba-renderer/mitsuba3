@@ -165,7 +165,6 @@ void kdtree_trace_func_wrapper(const int *valid, void *ptr,
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
-                                                      uint32_t,
                                                       Mask coherent,
                                                       Mask active) const {
     if constexpr (!ek::is_jit_array_v<Float>) {
@@ -235,7 +234,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask coherent, Mask active) const {
     if constexpr (!ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi =
-            ray_intersect_preliminary_cpu(ray, ray_flags, coherent, active);
+            ray_intersect_preliminary_cpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         ENOKI_MARK_USED(ray);
@@ -260,7 +259,7 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*ray_flags*/,
+Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
                                      Mask coherent, Mask active) const {
     if constexpr (!ek::is_jit_array_v<Float>) {
         ENOKI_MARK_USED(coherent);

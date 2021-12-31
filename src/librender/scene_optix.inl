@@ -390,7 +390,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t,
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
@@ -419,8 +419,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
-        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
-            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
+
+        // Be careful with 'ray.maxt' in double precision variants
+        if constexpr (!std::is_same_v<Single, Float>)
+            ray_maxt = ek::min((Float32) ray.maxt, ek::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
@@ -472,7 +474,7 @@ MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, ray_flags, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         ENOKI_MARK_USED(ray);
@@ -483,7 +485,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
