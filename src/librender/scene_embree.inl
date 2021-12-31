@@ -84,7 +84,7 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     if (!embree_device) {
         embree_threads = std::max((uint32_t) 1, pool_size());
         std::string config_str = tfm::format(
-            "threads=%i,user_threads=%i", embree_threads, embree_threads);
+            "hugepages=1,threads=%i,user_threads=%i", embree_threads, embree_threads);
         embree_device = rtcNewDevice(config_str.c_str());
         rtcSetDeviceErrorFunction(embree_device, embree_error_callback, nullptr);
     }
@@ -200,11 +200,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     using Single = ek::float32_array_t<Float>;
 
-    Float32 ray_maxt = ray.maxt;
-
     // Be careful with 'ray.maxt' in double precision variants
+    Single ray_maxt = Single(ray.maxt);
     if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = ek::min((Float32) ray.maxt, ek::Largest<Single>);
+        ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
 
     if constexpr (!ek::is_jit_array_v<Float>) {
         ENOKI_MARK_USED(active);
@@ -215,16 +214,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
-        RTCRayHit rh = {};
-        rh.ray.org_x = (float) ray.o.x();
-        rh.ray.org_y = (float) ray.o.y();
-        rh.ray.org_z = (float) ray.o.z();
-        rh.ray.dir_x = (float) ray.d.x();
-        rh.ray.dir_y = (float) ray.d.y();
-        rh.ray.dir_z = (float) ray.d.z();
-        rh.ray.tnear = (float) 0.f;
-        rh.ray.tfar  = ray_maxt;
-        rh.ray.time  = (float) ray.time;
+        using Vector3s = Vector<Single, 3>;
+
+        RTCRayHit rh;
+        ek::store(&rh.ray.org_x, ek::concat(Vector3s(ray.o), float(0.f)));
+        ek::store(&rh.ray.dir_x, ek::concat(Vector3s(ray.d), float(ray.time)));
+        rh.ray.tfar = ray_maxt;
+        rh.ray.mask = 0;
+        rh.ray.id = 0;
+        rh.ray.flags = 0;
+        rh.hit.geomID = (uint32_t) -1;
 
         rtcIntersect1(s.accel, &context, &rh);
 
@@ -279,14 +278,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         UInt32 zero = ek::zero<UInt32>();
 
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt_(ray_maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_time(ray.time);
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray_o.x().index(), ray_o.y().index(),
                             ray_o.z().index(), ray_mint.index(),
                             ray_d.x().index(), ray_d.y().index(),
                             ray_d.z().index(), ray_time.index(),
-                            ray_maxt_.index(), zero.index(),
+                            ray_maxt.index(),  zero.index(),
                             zero.index(),      zero.index() };
 
         uint32_t out[6] { };
@@ -305,7 +304,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && ek::neq(t, ray_maxt_);
+        Mask hit = active && ek::neq(t, ray_maxt);
 
         pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
@@ -342,28 +341,28 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    using Single = ek::float32_array_t<Float>;
 
-    // Embree doesn't support double precision maxt
-    Float32 ray_maxt = ek::min((Float32) ray.maxt, ek::Largest<float>);
+    // Be careful with 'ray.maxt' in double precision variants
+    Single ray_maxt = Single(ray.maxt);
+    if constexpr (!std::is_same_v<Single, Float>)
+        ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
 
     if constexpr (!ek::is_jit_array_v<Float>) {
         ENOKI_MARK_USED(active);
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
-        if (coherent)
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
-        RTCRay ray2 = {};
-        ray2.org_x = (float) ray.o.x();
-        ray2.org_y = (float) ray.o.y();
-        ray2.org_z = (float) ray.o.z();
-        ray2.dir_x = (float) ray.d.x();
-        ray2.dir_y = (float) ray.d.y();
-        ray2.dir_z = (float) ray.d.z();
-        ray2.tnear = (float) 0.f;
-        ray2.tfar  = ray_maxt;
-        ray2.time  = (float) ray.time;
+        using Vector3s = Vector<Single, 3>;
+
+        RTCRay ray2;
+        ek::store(&ray2.org_x, ek::concat(Vector3s(ray.o), float(0.f)));
+        ek::store(&ray2.dir_x, ek::concat(Vector3s(ray.d), float(ray.time)));
+        ray2.tfar = (float) ray_maxt;
+        ray2.mask = 0;
+        ray2.id = 0;
+        ray2.flags = 0;
 
         rtcOccluded1(s.accel, &context, &ray2);
 
@@ -393,23 +392,22 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         UInt32 zero = ek::zero<UInt32>();
 
         // Conversion, in case this is a double precision build
-        using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt_(ray_maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_time(ray.time);
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray_o.x().index(), ray_o.y().index(),
                             ray_o.z().index(), ray_mint.index(),
                             ray_d.x().index(), ray_d.y().index(),
                             ray_d.z().index(), ray_time.index(),
-                            ray_maxt_.index(), zero.index(),
+                            ray_maxt.index(),  zero.index(),
                             zero.index(),      zero.index() };
 
         uint32_t out[1] { };
 
         jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
 
-        return active && ek::neq(Single::steal(out[0]), ray_maxt_);
+        return active && ek::neq(Single::steal(out[0]), ray_maxt);
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);

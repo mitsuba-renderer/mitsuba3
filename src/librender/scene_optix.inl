@@ -422,7 +422,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
         // Be careful with 'ray.maxt' in double precision variants
         if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = ek::min((Float32) ray.maxt, ek::Largest<Single>);
+            ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
@@ -508,8 +508,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
-        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
-            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
+
+        // Be careful with 'ray.maxt' in double precision variants
+        if constexpr (!std::is_same_v<Single, Float>)
+            ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
