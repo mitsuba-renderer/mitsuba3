@@ -19,6 +19,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
+#include <mitsuba/core/timer.h>
 #include <pugixml.hpp>
 #include <enoki-thread/thread.h>
 
@@ -1253,8 +1254,8 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
-    Log(Info, "Loading XML file \"%s\" ..", filename);
-    Log(Info, "Using variant \"%s\"", variant);
+    Timer timer;
+    Log(Info, "Loading XML file \"%s\" with variant \"%s\"..", filename, variant);
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
@@ -1311,6 +1312,10 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
+
+        Log(Info, "Done loading XML file \"%s\" (took %s).",
+            filename, util::time_string((float) timer.value(), true));
+
         return obj;
     } catch(...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
