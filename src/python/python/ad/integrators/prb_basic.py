@@ -83,7 +83,7 @@ class BasicPRBIntegrator(ADIntegrator):
 
             if not primal:
                 with ek.resume_grad():
-                    # Recompute local 'wo' to propagate derivatives to cosine term
+                    # Recompute 'wo' with AD to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
                     # Re-evalute BRDF * cos(theta) differentiably
