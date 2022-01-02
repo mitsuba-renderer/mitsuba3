@@ -123,7 +123,7 @@ public:
      * \brief Fast ray intersection
      *
      * Efficiently test whether the shape is intersected by the given ray, and
-     * cache preliminary information about the intersection if that is the
+     * return preliminary information about the intersection if that is the
      * case.
      *
      * If the intersection is deemed relevant (e.g. the closest to the ray
@@ -461,11 +461,11 @@ public:
 
 #if defined(MTS_ENABLE_CUDA)
     /**
-     * \brief Populates the GPU data buffer, used in the Optix Hitgroup sbt records.
+     * \brief Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
      *
      * \remark
      *      Actual implementations of this method should allocate the field \ref
-     *      m_optix_data_ptr on the GPU and populate it with the Optix representation
+     *      m_optix_data_ptr on the GPU and populate it with the OptiX representation
      *      of the class.
      *
      * The default implementation throws an exception.
@@ -488,7 +488,7 @@ public:
 
     /**
      * \brief Prepares and fills the \ref OptixInstance(s) associated with this
-     * shape. This process includes generating the Optix instance acceleration
+     * shape. This process includes generating the OptiX instance acceleration
      * structure (IAS) represented by this shape, and pushing OptixInstance
      * structs to the provided instances vector.
      *
@@ -497,14 +497,14 @@ public:
      *     and \ref ShapeGroup plugin.
      *
      * \param context
-     *     The Optix context that was used to construct the rest of the scene's
-     *     Optix representation.
+     *     The OptiX context that was used to construct the rest of the scene's
+     *     OptiX representation.
      *
      * \param instances
      *     The array to which new OptixInstance should be appended.
      *
      * \param instance_id
-     *     The instance id, used internally inside Optix to detect when a Shape
+     *     The instance id, used internally inside OptiX to detect when a Shape
      *     is part of an Instance.
      *
      * \param transf
@@ -530,7 +530,7 @@ public:
      *     appended.
      *
      * \param program_groups
-     *     The array of available program groups (used to pack the Optix header
+     *     The array of available program groups (used to pack the OptiX header
      *     at the beginning of the record).
      *
      * The default implementation creates a new HitGroupSbtRecord and fills its
