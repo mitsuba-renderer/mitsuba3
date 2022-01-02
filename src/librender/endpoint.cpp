@@ -20,16 +20,15 @@ MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(
     }
 
     /* For some emitters, set_shape() will never be called, so we
-     * make sure that m_shape is at least initialized. */
+       must ensure that m_shape is at least initialized. */
     ek::set_attr(this, "shape", m_shape);
 }
 
 MTS_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
 
-MTS_VARIANT void Endpoint<Float, Spectrum>::set_scene(const Scene *) {
-}
+MTS_VARIANT void Endpoint<Float, Spectrum>::set_scene(const Scene *) { }
 
-MTS_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape * shape) {
+MTS_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape *shape) {
     if (m_shape)
         Throw("An endpoint can be only be attached to a single shape.");
 
@@ -80,6 +79,13 @@ MTS_VARIANT Float Endpoint<Float, Spectrum>::pdf_direction(const Interaction3f &
                                                            const DirectionSample3f & /*ds*/,
                                                            Mask /*active*/) const {
     NotImplementedError("pdf_direction");
+}
+
+MTS_VARIANT Spectrum
+Endpoint<Float, Spectrum>::eval_direction(const Interaction3f & /*it*/,
+                                          const DirectionSample3f & /*ds*/,
+                                          Mask /*active*/) const {
+    NotImplementedError("eval_direction");
 }
 
 MTS_VARIANT Float Endpoint<Float, Spectrum>::pdf_position(

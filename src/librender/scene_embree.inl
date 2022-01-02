@@ -84,7 +84,7 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     if (!embree_device) {
         embree_threads = std::max((uint32_t) 1, pool_size());
         std::string config_str = tfm::format(
-            "hugepages=1,threads=%i,user_threads=%i", embree_threads, embree_threads);
+            "threads=%i,user_threads=%i", embree_threads, embree_threads);
         embree_device = rtcNewDevice(config_str.c_str());
         rtcSetDeviceErrorFunction(embree_device, embree_error_callback, nullptr);
     }
