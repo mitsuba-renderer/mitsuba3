@@ -85,17 +85,18 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p     = m_position.value();
-        ds.n     = 0.f;
-        ds.uv    = 0.f;
-        ds.time  = it.time;
-        ds.pdf   = 1.f;
-        ds.delta = true;
+        ds.p       = m_position.value();
+        ds.n       = 0.f;
+        ds.uv      = 0.f;
+        ds.time    = it.time;
+        ds.pdf     = 1.f;
+        ds.delta   = true;
         ds.emitter = this;
-        ds.d     = ds.p - it.p;
-        ds.dist  = ek::norm(ds.d);
+        ds.d       = ds.p - it.p;
+        ds.dist    = ek::norm(ds.d);
 
         Float inv_dist = ek::rcp(ds.dist);
+
         ds.d *= inv_dist;
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
@@ -129,11 +130,11 @@ public:
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        PositionSample3f ps(
-            /* position */ m_position.value(),
-            /* normal (invalid) */ ScalarVector3f(0.f),
-            /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
-        );
+        PositionSample3f ps = ek::zero<PositionSample3f>();
+        ps.p = m_position.value();
+        ps.time = time;
+        ps.delta = true;
+
         return { ps, Float(1.f) };
     }
 
@@ -153,8 +154,13 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        // callback->put_parameter("position", m_position.value()); TODO
+        callback->put_parameter("position", (Point3f &) m_position.value());
         callback->put_object("intensity", m_intensity.get());
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
+        m_position = m_position.value(); // update scalar part as well
+        ek::make_opaque(m_position);
     }
 
     std::string to_string() const override {

@@ -114,7 +114,7 @@ class PRBIntegrator(ADIntegrator):
             active_next = (depth + 1 < self.max_depth) & si.is_valid()
             active_em = active_next & has_flag(bsdf.flags(), BSDFFlags.Smooth)
 
-            ds, weight = scene.sample_emitter_direction(
+            ds, em_weight = scene.sample_emitter_direction(
                 si, sampler.next_2d(), True, active_em)
             active_em &= ek.neq(ds.pdf, 0.0)
 
@@ -122,15 +122,15 @@ class PRBIntegrator(ADIntegrator):
                 # Compute 'wo' with AD to propagate derivatives to cosine term
                 wo = si.to_local(ds.d)
 
-                if not primal and not ds.delta:
-                    # Given the detached emitter sample, recompute its
+                if not primal:
+                    # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
-                    em_val, em_pdf = scene.eval_emitter_direction(ds, active_em)
-                    em_weight = ek.select(ek.neq(em_pdf, 0), em_val / em_pdf, 0)
+                    em_val = scene.eval_emitter_direction(si, ds, active_em)
+                    em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
 
                 # Evalute BRDF * cos(theta) differentiably
                 bsdf_weight, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-                mis_em = mis_weight(ek.select(ds.delta, 0.0, ds.pdf), bsdf_pdf)
+                mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf))
                 Lr_dir = β * ek.detach(mis_em) * bsdf_weight * em_weight
 
             # ---------------------- BSDF sampling ----------------------
@@ -171,11 +171,22 @@ class PRBIntegrator(ADIntegrator):
                     # Estimated contribution of the current vertex
                     contrib = Le + Lr_dir + Lr_ind
 
+                    if not ek.grad_enabled(contrib):
+                        raise Exception(
+                            "The contribution computed by the differential "
+                            "rendering phase is not attached to the AD graph! "
+                            "Raising an exception since this is usually "
+                            "indicative of a bug (for example, you may have "
+                            "forgotten to call ek.enable_grad(..) on one of "
+                            "the scene parameters, or you may be trying to "
+                            "optimize a parameter that does not generate "
+                            "derivatives in detached PRB.)")
+
                     # Propagate derivatives from/to 'contrib' based on 'mode'
                     if mode == ek.ADMode.Backward:
-                        ek.backward_from(δL * contrib)
+                        ek.backward_from(δL * contrib, ek.ADFlag.ClearInterior)
                     else:
-                        ek.forward_to(contrib)
+                        ek.forward_to(contrib, ek.ADFlag.ClearNone)
                         δL += ek.grad(contrib)
 
             # -------------------- Stopping criterion ---------------------
