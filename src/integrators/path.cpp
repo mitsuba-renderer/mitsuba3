@@ -151,8 +151,8 @@ public:
                                      /* ray_flags = */ +RayFlags::All,
                                      /* coherent = */ ek::eq(depth, 0u));
 
-            /* ek.none_or<false> returns false in JIT variants (i.e. the test is
-               skipped), and it enables a potential early exit in scalar
+            /* ek.none_or<false> returns false in JIT variants (i.e. the test
+               is skipped), and it enables a potential early exit in scalar
                variants */
             if (ek::none_or<false>(si.is_valid()))
                 break;
@@ -200,7 +200,7 @@ public:
 
                 // Compute the MIS weight
                 Float mis_em =
-                    mis_weight(ek::select(ds.delta, 0.f, ds.pdf), bsdf_pdf);
+                    ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
                 // Accumulate, being careful with polarization (see spec_fma)
                 result = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);

@@ -111,7 +111,7 @@ private:
 template <typename DeviceType, typename HostType>
 std::ostream &operator<<(std::ostream &os,
                          const field<DeviceType, HostType> &f) {
-    os << f.value();
+    os << f.scalar();
     return os;
 }
 

@@ -71,15 +71,17 @@ MTS_PY_EXPORT(Scene) {
             &Scene::ray_intersect_naive,
             "ray"_a, "active"_a = true)
 #endif
-        .def("sample_emitter",
-            &Scene::sample_emitter, "sample"_a, "active"_a = true)
-        .def("sample_emitter_direction",
-            &Scene::sample_emitter_direction,
-            "ref"_a, "sample"_a, "test_visibility"_a = true, "active"_a = true)
-        .def("pdf_emitter",
-            &Scene::pdf_emitter, "index"_a, "active"_a = true)
-        .def("pdf_emitter_direction",
-            &Scene::pdf_emitter_direction, "ref"_a, "ds"_a, "active"_a = true)
+        .def("sample_emitter", &Scene::sample_emitter,
+             "sample"_a, "active"_a = true, D(Scene, sample_emitter))
+        .def("pdf_emitter", &Scene::pdf_emitter,
+             "index"_a, "active"_a = true, D(Scene, pdf_emitter))
+        .def("sample_emitter_direction", &Scene::sample_emitter_direction,
+             "ref"_a, "sample"_a, "test_visibility"_a = true, "active"_a = true,
+             D(Scene, sample_emitter_direction))
+        .def("pdf_emitter_direction", &Scene::pdf_emitter_direction,
+             "ref"_a, "ds"_a, "active"_a = true, D(Scene, pdf_emitter_direction))
+        .def("eval_emitter_direction", &Scene::eval_emitter_direction,
+             "ref"_a, "ds"_a, "active"_a = true, D(Scene, eval_emitter_direction))
         // Accessors
         .def_method(Scene, bbox)
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
@@ -97,7 +99,7 @@ MTS_PY_EXPORT(Scene) {
                     result.append(py::cast(s));
             }
             return result;
-        })
+        }, D(Scene, shapes))
         .def("integrator",
             [](Scene &scene) {
                 Integrator *o = scene.integrator();

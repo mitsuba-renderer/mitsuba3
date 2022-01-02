@@ -274,18 +274,24 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         active &= ek::neq(ds.pdf, 0.f);
 
-        // Perform a visibility test if requested
-        if (test_visibility && ek::any_or<true>(active))
-            spec[ray_test(ref.spawn_ray_to(ds.p), active)] = 0.f;
+        // Mark occluded samles as invalid if requested by the user
+        if (test_visibility && ek::any_or<true>(active)) {
+            Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
+            ek::masked(spec, occluded) = 0.f;
+            ek::masked(ds.pdf, occluded) = 0.f;
+        }
     } else if (emitter_count == 1) {
         // Sample a direction towards the (single) emitter
         std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
 
         active &= ek::neq(ds.pdf, 0.f);
 
-        // Perform a visibility test if requested
-        if (test_visibility && ek::any_or<true>(active))
-            spec[ray_test(ref.spawn_ray_to(ds.p), active)] = 0.f;
+        // Mark occluded samles as invalid if requested by the user
+        if (test_visibility && ek::any_or<true>(active)) {
+            Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
+            ek::masked(spec, occluded) = 0.f;
+            ek::masked(ds.pdf, occluded) = 0.f;
+        }
     } else {
         ds = ek::zero<DirectionSample3f>();
         spec = 0.f;
