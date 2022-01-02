@@ -67,7 +67,7 @@ def test02_eval(variants_vec_spectral, spectrum_key):
     it = ek.zero(SurfaceInteraction3f, 3)
     assert ek.allclose(emitter.eval(it), spectrum.eval(it))
 
-    # Check that eval return 0.0 when direction points inside the shape
+    # Check that eval returns 0.0 when the direction points into the shape
 
     it.wi = ek.normalize(ScalarVector3f(0.2, 0.2, -0.5))
     assert ek.allclose(emitter.eval(it), 0.0)
@@ -109,7 +109,7 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
 def test04_sample_direction(variants_vec_spectral, spectrum_key):
-    # Check the correctness of the sample_direction() and pdf_direction() methods
+    # Check the correctness of the sample_direction(), pdf_direction(), and eval_direction() methods
 
     from mitsuba.render import SurfaceInteraction3f
 
@@ -134,6 +134,8 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     assert ek.allclose(ds.d, shape_ds.d)
     assert ek.allclose(ds.time, it.time)
 
-    # Evalutate the spectrum (divide by the pdf)
+    # Evaluate the spectrum (divide by the pdf)
     spec = spectrum.eval(it) / ds.pdf
     assert ek.allclose(res, spec)
+
+    assert ek.allclose(emitter.eval_direction(it, ds), spec)

@@ -51,10 +51,9 @@ public:
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
                 ek::max(math::RayEpsilon<Float>,
-                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
+                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
         } else {
-            m_bsphere.center = 0.f;
-            m_bsphere.radius = math::RayEpsilon<Float>;
+            m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         }
         m_surface_area = 4.f * ek::Pi<ScalarFloat> * ek::sqr(m_bsphere.radius);
     }
@@ -72,39 +71,35 @@ public:
 
         // 1. Sample spatial component
         Vector3f v0 = warp::square_to_uniform_sphere(sample2);
-        Point3f origin = m_bsphere.center + v0 * m_bsphere.radius;
+        Point3f orig = ek::fmadd(v0, m_bsphere.radius, m_bsphere.center);
 
-        // 2. Sample directional component
-        Vector3f v1 = warp::square_to_cosine_hemisphere(sample3);
-        Vector3f direction = Frame3f(-v0).to_world(v1);
+        // 2. Sample diral component
+        Vector3f v1 = warp::square_to_cosine_hemisphere(sample3),
+                 dir = Frame3f(-v0).to_world(v1);
 
         // 3. Sample spectrum
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t    = 0.f;
-        si.time = time;
-        si.p    = origin;
-        si.uv   = sample2;
-        auto [wavelengths, weight] = sample_wavelengths(si, wavelength_sample, active);
+        auto [wavelengths, weight] = sample_wavelengths(
+            ek::zero<SurfaceInteraction3f>(), wavelength_sample, active);
 
-        /* Note: removed a 1/cos_theta term compared to `square_to_cosine_hemisphere`
-         * because we are not sampling from a surface here. */
-        ScalarFloat inv_pdf = m_surface_area * ek::Pi<ScalarFloat>;
+        weight *= m_surface_area * ek::Pi<ScalarFloat>;
 
-        return std::make_pair(Ray3f(origin, direction, time, wavelengths),
-                              depolarizer<Spectrum>(weight) * inv_pdf);
+        return { Ray3f(orig, dir, time, wavelengths),
+                 depolarizer<Spectrum>(weight) };
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         Vector3f d = warp::square_to_uniform_sphere(sample);
-        // Needed when the reference point is on the sensor, which is not part of the bbox
-        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
-        Float dist = 2.f * radius;
+
+        // Automatically enlarge the bounding sphere when it does not contain the reference point
+        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center)),
+              dist   = 2.f * radius;
 
         DirectionSample3f ds;
-        ds.p       = it.p + d * dist;
+        ds.p       = ek::fmadd(d, dist, it.p);
         ds.n       = -d;
         ds.uv      = sample;
         ds.time    = it.time;
@@ -130,6 +125,14 @@ public:
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
 
+    Spectrum eval_direction(const Interaction3f &it, const DirectionSample3f &,
+                            Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+        return depolarizer<Spectrum>(m_radiance->eval(si, active));
+    }
+
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
@@ -141,8 +144,8 @@ public:
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (ek::is_jit_array_v<Float>) {
-            // When vcalls are recorded in symbolic mode, we can't throw an exception,
-            // even though this result will be unused.
+            /* When virtual function calls are recorded in symbolic mode,
+               we can't throw an exception here. */
             return { ek::zero<PositionSample3f>(),
                      ek::full<Float>(ek::NaN<ScalarFloat>) };
         } else {

@@ -48,9 +48,12 @@ public:
                 Throw("Only one of the parameters 'position' and 'to_world' "
                       "can be specified at the same time!'");
 
-            m_to_world = ScalarTransform4f::translate(ScalarVector3f(props.get<ScalarPoint3f>("position")));
-            ek::make_opaque(m_to_world);
+            m_position = props.get<ScalarPoint3f>("position");
+        } else {
+            m_position = ScalarPoint3f(m_to_world.scalar().translation());
         }
+
+        ek::make_opaque(m_position);
 
         m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
         m_needs_sample_3 = false;
@@ -59,20 +62,18 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f & /*pos_sample*/, const Point2f &dir_sample,
+                                          const Point2f & /*pos_sample*/,
+                                          const Point2f &dir_sample,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto si = ek::zero<SurfaceInteraction3f>();
-        si.t    = 0.f;
-        si.p    = m_to_world.value().translation();
-        si.time = time;
-        auto [wavelengths, weight] =
-            sample_wavelengths(si, wavelength_sample, active);
+        auto [wavelengths, weight] = sample_wavelengths(
+            ek::zero<SurfaceInteraction3f>(), wavelength_sample, active);
 
         weight *= 4.f * ek::Pi<Float>;
 
-        Ray3f ray(si.p, warp::square_to_uniform_sphere(dir_sample), time,
+        Ray3f ray(m_position.value(),
+                  warp::square_to_uniform_sphere(dir_sample), time,
                   wavelengths);
 
         return { ray, depolarizer<Spectrum>(weight) };
@@ -84,7 +85,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p     = m_to_world.value().translation();
+        ds.p     = m_position.value();
         ds.n     = 0.f;
         ds.uv    = 0.f;
         ds.time  = it.time;
@@ -111,13 +112,25 @@ public:
         return 0.f;
     }
 
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+
+        UnpolarizedSpectrum spec = m_intensity->eval(si, active) *
+                                   ek::rcp(ek::squared_norm(ds.p - it.p));
+
+        return depolarizer<Spectrum>(spec);
+    }
+
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f & /*sample*/,
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         PositionSample3f ps(
-            /* position */ m_to_world.value().translation(),
+            /* position */ m_position.value(),
             /* normal (invalid) */ ScalarVector3f(0.f),
             /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
         );
@@ -136,20 +149,20 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
+        return ScalarBoundingBox3f(m_position.scalar());
     }
 
     void traverse(TraversalCallback *callback) override {
+        // callback->put_parameter("position", m_position.value()); TODO
         callback->put_object("intensity", m_intensity.get());
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  position = " << string::indent(m_position) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
-            << "  medium = " << (m_medium ? string::indent(m_medium) : "")
+            << "  medium = " << (m_medium ? string::indent(m_medium) : "none")
             << "]";
         return oss.str();
     }
@@ -157,6 +170,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_intensity;
+    field<Point3f> m_position;
 };
 
 

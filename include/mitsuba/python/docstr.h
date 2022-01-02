@@ -259,6 +259,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc()doc";
@@ -544,6 +546,8 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -2208,6 +2212,8 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2299,6 +2305,8 @@ static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_bbox = R"doc(Return an axis-aligned box bounding the spatial extents of the emitter)doc";
@@ -2323,14 +2331,14 @@ Returns:
     The emitted radiance or importance)doc";
 
 static const char *__doc_mitsuba_Endpoint_eval_direction =
-R"doc(Re-evaluate the incident direct radiance/importance and sampling
-probability of the sample_direction() method.
+R"doc(Re-evaluate the incident direct radiance/importance of the
+sample_direction() method.
 
 This function re-evaluates the incident direct radiance or importance
-and sample probability due to the endpoint so that their ratio equals
-the sampling weight returned by sample_direction(). This may appear
-redundant, and indeed such a function would not find use in "normal"
-rendering algorithms.
+and sample probability due to the endpoint so that division by
+``ds.pdf`` equals the sampling weight returned by sample_direction().
+This may appear redundant, and indeed such a function would not find
+use in "normal" rendering algorithms.
 
 However, the ability to re-evaluate the contribution of a generated
 sample is important for differentiable rendering. For example, we
@@ -2342,10 +2350,9 @@ discontinuities during differentiation. Both steps require re-
 evaluating the contribution of the emitter while tracking derivative
 information through the calculation.
 
-In contrast to pdf_direction(), the sampling probability returned by
-this function will also be nonzero even in the case of emission
-profiles containing a Dirac delta term (e.g. point or directional
-lights).
+In contrast to pdf_direction(), evaluating this function can yield a
+nonzero result in the case of emission profiles containing a Dirac
+delta term (e.g. point or directional lights).
 
 Parameter ``ref``:
     A 3D reference location within the scene, which may influence the
@@ -2355,8 +2362,7 @@ Parameter ``ds``:
     A direction sampling record, which specifies the query location.
 
 Returns:
-    The incident radiance and discrete or solid angle density of the
-    sample.)doc";
+    The incident direct radiance/importance accoated with the sample.)doc";
 
 static const char *__doc_mitsuba_Endpoint_id = R"doc(Return a string identifier)doc";
 
@@ -2712,6 +2718,8 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -3108,6 +3116,8 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3344,6 +3354,8 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -3831,6 +3843,8 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
@@ -4113,6 +4127,8 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -4516,6 +4532,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -4680,6 +4698,8 @@ static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -4705,6 +4725,8 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -5167,6 +5189,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -5636,6 +5660,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -5812,6 +5838,8 @@ static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -5909,6 +5937,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -6002,6 +6032,8 @@ static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
 static const char *__doc_mitsuba_Scene_accel_init_cpu = R"doc(Create the ray-intersection acceleration data structure)doc";
@@ -6029,14 +6061,14 @@ static const char *__doc_mitsuba_Scene_emitters_ek = R"doc(Return the list of em
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
 static const char *__doc_mitsuba_Scene_eval_emitter_direction =
-R"doc(Re-evaluate the incident direct radiance and sampling probability of
-the sample_emitter_direction() method.
+R"doc(Re-evaluate the incident direct radiance of the
+sample_emitter_direction() method.
 
 This function re-evaluates the incident direct radiance and sample
-probability due to the emitter so that their ratio equals the sampling
-weight returned by sample_emitter_direction(). This may appear
-redundant, and indeed such a function would not find use in "normal"
-rendering algorithms.
+probability due to the emitter *so that division by * ``ds.pdf``
+equals the sampling weight returned by sample_emitter_direction().
+This may appear redundant, and indeed such a function would not find
+use in "normal" rendering algorithms.
 
 However, the ability to re-evaluate the contribution of a direct
 illumination sample is important for differentiable rendering. For
@@ -6048,10 +6080,9 @@ discontinuities during differentiation. Both steps require re-
 evaluating the contribution of the emitter while tracking derivative
 information through the calculation.
 
-In contrast to pdf_emitter_direction(), the sampling probability
-returned by this function will also be nonzero even in the case of
-emission profiles containing a Dirac delta term (e.g. point or
-directional lights).
+In contrast to pdf_emitter_direction(), evaluating this function can
+yield a nonzero result in the case of emission profiles containing a
+Dirac delta term (e.g. point or directional lights).
 
 Parameter ``ref``:
     A 3D reference location within the scene, which may influence the
@@ -6531,6 +6562,8 @@ static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -6655,6 +6688,8 @@ static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -6666,6 +6701,8 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -6724,6 +6761,8 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -7010,7 +7049,7 @@ Parameter ``hitgroup_records``:
     be appended.
 
 Parameter ``program_groups``:
-    The array of available program groups (used to pack the Optix
+    The array of available program groups (used to pack the OptiX
     header at the beginning of the record).
 
 The default implementation creates a new HitGroupSbtRecord and fills
@@ -7020,18 +7059,18 @@ program_groups array (the actual program group index is infered by the
 type of the Shape, see get_shape_descr_idx()).)doc";
 
 static const char *__doc_mitsuba_Shape_optix_prepare_geometry =
-R"doc(Populates the GPU data buffer, used in the Optix Hitgroup sbt records.
+R"doc(Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
 
 Remark:
     Actual implementations of this method should allocate the field
-    m_optix_data_ptr on the GPU and populate it with the Optix
+    m_optix_data_ptr on the GPU and populate it with the OptiX
     representation of the class.
 
 The default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_Shape_optix_prepare_ias =
 R"doc(Prepares and fills the OptixInstance(s) associated with this shape.
-This process includes generating the Optix instance acceleration
+This process includes generating the OptiX instance acceleration
 structure (IAS) represented by this shape, and pushing OptixInstance
 structs to the provided instances vector.
 
@@ -7040,14 +7079,14 @@ Remark:
     ShapeGroup plugin.
 
 Parameter ``context``:
-    The Optix context that was used to construct the rest of the
-    scene's Optix representation.
+    The OptiX context that was used to construct the rest of the
+    scene's OptiX representation.
 
 Parameter ``instances``:
     The array to which new OptixInstance should be appended.
 
 Parameter ``instance_id``:
-    The instance id, used internally inside Optix to detect when a
+    The instance id, used internally inside OptiX to detect when a
     Shape is part of an Instance.
 
 Parameter ``transf``:
@@ -7106,7 +7145,7 @@ static const char *__doc_mitsuba_Shape_ray_intersect_preliminary =
 R"doc(Fast ray intersection
 
 Efficiently test whether the shape is intersected by the given ray,
-and cache preliminary information about the intersection if that is
+and return preliminary information about the intersection if that is
 the case.
 
 If the intersection is deemed relevant (e.g. the closest to the ray
@@ -8390,6 +8429,8 @@ static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
@@ -8904,6 +8945,8 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -8915,6 +8958,8 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename

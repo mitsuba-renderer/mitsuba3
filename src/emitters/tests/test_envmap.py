@@ -39,7 +39,8 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 
     assert chi2.run()
 
-# Ensure that sampling weights remain bounded
+# Ensure that sampling weights remain bounded even in an extremely
+# challenging case (envmap zero, with one pixel turned on)
 def test02_sampling_weights(variants_vec_backends_once_rgb):
     from mitsuba.core import load_string, PCG32, Point2f, Bitmap
     from mitsuba.render import SurfaceInteraction3f
@@ -69,13 +70,15 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     ds, w = emitter.sample_direction(si, sample)
     si.wi = -ds.d
     w2 = emitter.eval(si) / emitter.pdf_direction(si, ds)
+    w3 = emitter.eval_direction(si, ds) / ds.pdf
 
     assert ek.allclose(w, w2, rtol=1e-3)
+    assert ek.allclose(w, w3, rtol=1e-3)
     assert ek.hmin(w[0]) > 0.018 and ek.hmax(w[0]) < 0.02
 
     # Test the sample_ray() interface
     ray, w = emitter.sample_ray(0, 0, sample, sample_2)
     si.wi = ray.d
     ds.d = -ray.d
-    w2 = emitter.eval(si) / emitter.pdf_direction(si, ds) * ek.Pi
-    assert ek.allclose(w2, w, rtol=1e-3)
+    w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * ek.Pi
+    assert ek.allclose(w4, w, rtol=1e-3)

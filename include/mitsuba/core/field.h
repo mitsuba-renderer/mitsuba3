@@ -13,9 +13,9 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Convenience wrapper to simultaneously instantiate a host and a device
  * version of a type
  *
- * This class implements a simple wrapper that replicates instance attributes on
- * the host and device. This is only relevant when T is a JIT-compiled Enoki
- * array (when compiling the renderer in CUDA/LLVM mode).
+ * This class implements a simple wrapper that replicates instance attributes
+ * on the host and device. This is only relevant when \c DeviceType is a
+ * JIT-compiled Enoki array (when compiling the renderer in CUDA/LLVM mode).
  *
  * Why is this needed? Mitsuba plugins represent their internal state using
  * attributes like position, intensity, etc., which are typically represented
