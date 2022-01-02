@@ -124,9 +124,16 @@ public:
         Bool          prev_bsdf_delta = true;
         BSDFContext   bsdf_ctx;
 
-        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
-           generates wavefront or megakernel renderer based on configuration).
-           Register everything that changes as part of the loop here */
+        /* Set up an Enoki loop. This optimizes away to a normal loop in scalar
+           mode, and it generates either a a megakernel (default) or
+           wavefront-style renderer in JIT variants. This can be controlled by
+           passing the '-W' command line flag to the mitsuba binary or
+           enabling/disabling the JitFlag.LoopRecord bit in Enoki-JIT.
+
+           The first argument identifies the loop by name, which is helpful for
+           debugging. The subsequent list registers all variables that encode
+           the loop state variables. This is crucial: omitting a variable may
+           lead to undefined behavior. */
         ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result, eta,
                             depth, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
 
@@ -136,13 +143,19 @@ public:
         loop.set_max_iterations(m_max_depth);
 
         while (loop(active)) {
+            /* ek::Loop implicitly masks all code in the loop using the 'active'
+               flag, so there is no need to pass it to every function */
+
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
                                      /* ray_flags = */ +RayFlags::All,
                                      /* coherent = */ ek::eq(depth, 0u));
 
+            /* ek.none_or<false> returns false in JIT variants (i.e. the test is
+               skipped), and it enables a potential early exit in scalar
+               variants */
             if (ek::none_or<false>(si.is_valid()))
-                break; // early exit for scalar mode
+                break;
 
             // ---------------------- Direct emission ----------------------
 
@@ -157,7 +170,7 @@ public:
                 // Compute MIS weight for emitter sample from previous bounce
                 Float mis_bsdf = mis_weight(prev_bsdf_pdf, em_pdf);
 
-                // Accumulate, be careful with polarized spetra here
+                // Accumulate, being careful with polarization (see spec_fma)
                 result = spec_fma(
                     throughput,
                     ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf,
@@ -189,7 +202,7 @@ public:
                 Float mis_em =
                     mis_weight(ek::select(ds.delta, 0.f, ds.pdf), bsdf_pdf);
 
-                // Accumulate, be careful with polarized spetra here
+                // Accumulate, being careful with polarization (see spec_fma)
                 result = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);
             }
 
@@ -222,6 +235,9 @@ public:
             Mask rr_active = depth >= m_rr_depth,
                  rr_continue = sampler->next_1d() < rr_prob;
 
+            /* Differentiable variants of the renderer require the the russian
+               roulette sampling weight to be detached to avoid bias. This is a
+               no-op in non-differentiable variants. */
             throughput[rr_active] *= ek::rcp(ek::detach(rr_prob));
 
             active = active_next && (!rr_active || rr_continue) &&
@@ -244,6 +260,7 @@ public:
             "]", m_max_depth, m_rr_depth);
     }
 
+    /// Compute a multiple importance sampling weight using the power heuristic
     Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
@@ -251,10 +268,14 @@ public:
         return ek::select(ek::isfinite(w), w, 0.f);
     }
 
+    /**
+     * \brief Perform a Mueller matrix multiplication in polarized modes, and a
+     * fused multiply-add otherwise.
+     */
     Spectrum spec_fma(const Spectrum &a, const Spectrum &b,
                       const Spectrum &c) const {
         if constexpr (is_polarized_v<Spectrum>)
-            return a * b + c; // Mueller matrix multiplication
+            return a * b + c;
         else
             return ek::fmadd(a, b, c);
     }
