@@ -100,7 +100,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         accel_init_cpu(props);
 
     if (!m_emitters.empty()) {
-        // Create emitters' shapes (environment luminaires)
+        // Inform environment emitters etc. about the scene bounds
         for (Emitter *emitter: m_emitters)
             emitter->set_scene(this);
 
@@ -111,6 +111,8 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
     m_emitters_ek = ek::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
+
+    m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / m_emitters.size());
 
     m_shapes_grad_enabled = false;
 }
@@ -141,6 +143,8 @@ Scene<Float, Spectrum>::render(uint32_t sensor_index, uint32_t seed, uint32_t sp
     m_integrator->render(this, sensor_index, seed, spp, /* develop = */ false);
     return m_sensors[sensor_index]->film()->bitmap();
 }
+
+// -----------------------------------------------------------------------
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
@@ -186,6 +190,31 @@ Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const
     NotImplementedError("ray_intersect_naive");
 }
 
+// -----------------------------------------------------------------------
+
+MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
+Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
+
+    if (unlikely(m_emitters.empty()))
+        return { UInt32(-1), 0.f, index_sample };
+
+    size_t emitter_count = m_emitters.size();
+    UInt32 index = ek::min(UInt32(index_sample * (ScalarFloat) emitter_count),
+                           (uint32_t) emitter_count - 1u);
+
+    // Rescale sample to lie in [0,1) again
+    index_sample = (index_sample - index / (ScalarFloat) emitter_count) * emitter_count;
+
+    // pdf = 1 / emitter_count  =>  sampling_weight = emitter_count
+    return { index, ScalarFloat(emitter_count), index_sample };
+}
+
+MTS_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
+                                                      Mask /*active*/) const {
+    return m_emitter_pmf;
+}
+
 MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
                        const typename Scene<Float, Spectrum>::EmitterPtr>
 Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
@@ -201,11 +230,9 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     EmitterPtr emitter;
 
     if (emitter_count > 1) {
-        // Randomly pick an emitter according to the precomputed emitter distribution
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
         emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
 
-        // Note that the sampling weight includes emitted radiance.
         std::tie(ray, weight) =
             emitter->sample_ray(time, sample_1_re, sample2, sample3, active);
 
@@ -220,24 +247,6 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     }
 
     return { ray, weight, emitter };
-}
-
-MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
-Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
-
-    if (unlikely(m_emitters.empty()))
-        return { UInt32(-1), 0.f, index_sample };
-
-    size_t emitter_count = m_emitters.size();
-    UInt32 index = ek::min(UInt32(index_sample * (ScalarFloat) emitter_count),
-                           (uint32_t) emitter_count - 1);
-
-    // Rescale sample to lie in [0,1) again
-    index_sample = (index_sample - index / (ScalarFloat) emitter_count) * emitter_count;
-
-    // pdf = 1 / emitter_count  =>  sampling_weight = emitter_count
-    return { index, Float(emitter_count), index_sample };
 }
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
@@ -269,6 +278,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         if (test_visibility && ek::any_or<true>(active))
             spec[ray_test(ref.spawn_ray_to(ds.p), active)] = 0.f;
     } else if (emitter_count == 1) {
+        // Sample a direction towards the (single) emitter
         std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
 
         active &= ek::neq(ds.pdf, 0.f);
@@ -285,16 +295,17 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 }
 
 MTS_VARIANT Float
-Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/, Mask /*active*/) const {
-    return m_emitters.empty() ? 0.f : (1.f / (uint32_t) m_emitters.size());
-}
-
-MTS_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MTS_MASK_ARGUMENT(active);
-    return ds.emitter->pdf_direction(ref, ds, active) / m_emitters.size();
+    return ds.emitter->pdf_direction(ref, ds, active) * m_emitter_pmf;
+}
+
+MTS_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
+    const Interaction3f &ref, const DirectionSample3f &ds, Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+    return ds.emitter->eval_direction(ref, ds, active);
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
@@ -323,9 +334,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
             accel_parameters_changed_cpu();
     }
 
-    // Checks whether any of the shape's parameters require gradient
+    // Check whether any shape parameters have gradient tracking enabled
     m_shapes_grad_enabled = false;
-    for (auto& s : m_shapes) {
+    for (auto &s : m_shapes) {
         m_shapes_grad_enabled |= s->parameters_grad_enabled();
         if (m_shapes_grad_enabled)
             break;

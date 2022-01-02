@@ -27,11 +27,205 @@ static const char *__doc_EmptySbtRecord = R"doc()doc";
 
 static const char *__doc_EmptySbtRecord_header = R"doc()doc";
 
+static const char *__doc_OptixAccelBufferSizes = R"doc()doc";
+
+static const char *__doc_OptixAccelBufferSizes_outputSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixAccelBufferSizes_tempSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixAccelBufferSizes_tempUpdateSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixAccelBuildOptions = R"doc()doc";
+
+static const char *__doc_OptixAccelBuildOptions_buildFlags = R"doc()doc";
+
+static const char *__doc_OptixAccelBuildOptions_motionOptions = R"doc()doc";
+
+static const char *__doc_OptixAccelBuildOptions_operation = R"doc()doc";
+
+static const char *__doc_OptixAccelEmitDesc = R"doc()doc";
+
+static const char *__doc_OptixAccelEmitDesc_result = R"doc()doc";
+
+static const char *__doc_OptixAccelEmitDesc_type = R"doc()doc";
+
+static const char *__doc_OptixBuildInput = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_aabbBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_flags = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_numPrimitives = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_numSbtRecords = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_primitiveIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_sbtIndexOffsetBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_sbtIndexOffsetSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_sbtIndexOffsetStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputCustomPrimitiveArray_strideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputInstanceArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputInstanceArray_instances = R"doc()doc";
+
+static const char *__doc_OptixBuildInputInstanceArray_numInstances = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_flags = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_indexBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_indexFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_indexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_numIndexTriplets = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_numSbtRecords = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_numVertices = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_preTransform = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_primitiveIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_sbtIndexOffsetBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_sbtIndexOffsetSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_sbtIndexOffsetStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_transformFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_vertexBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_vertexFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_vertexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInput_type = R"doc()doc";
+
 static const char *__doc_OptixHitGroupData = R"doc(Stores information about a Shape on the Optix side)doc";
 
 static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory region of Shape data (e.g. ``OptixSphereData`` ))doc";
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Enoki's pointer registry)doc";
+
+static const char *__doc_OptixInstance = R"doc()doc";
+
+static const char *__doc_OptixInstance_flags = R"doc()doc";
+
+static const char *__doc_OptixInstance_instanceId = R"doc()doc";
+
+static const char *__doc_OptixInstance_pad = R"doc()doc";
+
+static const char *__doc_OptixInstance_sbtOffset = R"doc()doc";
+
+static const char *__doc_OptixInstance_transform = R"doc()doc";
+
+static const char *__doc_OptixInstance_traversableHandle = R"doc()doc";
+
+static const char *__doc_OptixInstance_visibilityMask = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions_boundValues = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions_debugLevel = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions_maxRegisterCount = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions_numBoundValues = R"doc()doc";
+
+static const char *__doc_OptixModuleCompileOptions_optLevel = R"doc()doc";
+
+static const char *__doc_OptixMotionOptions = R"doc()doc";
+
+static const char *__doc_OptixMotionOptions_flags = R"doc()doc";
+
+static const char *__doc_OptixMotionOptions_numKeys = R"doc()doc";
+
+static const char *__doc_OptixMotionOptions_timeBegin = R"doc()doc";
+
+static const char *__doc_OptixMotionOptions_timeEnd = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_exceptionFlags = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_numAttributeValues = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_numPayloadValues = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_pipelineLaunchParamsVariableName = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_traversableGraphFlags = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_usesMotionBlur = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_usesPrimitiveTypeFlags = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupDesc = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupDesc_flags = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupDesc_kind = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_entryFunctionNameAH = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_entryFunctionNameCH = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_entryFunctionNameIS = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_moduleAH = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_moduleCH = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupHitgroup_moduleIS = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupOptions = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupOptions_placeholder = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupSingleModule = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupSingleModule_entryFunctionName = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupSingleModule_module = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_callablesRecordBase = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_callablesRecordCount = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_callablesRecordStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_exceptionRecord = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_hitgroupRecordBase = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_hitgroupRecordCount = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_hitgroupRecordStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_missRecordBase = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_missRecordCount = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_missRecordStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixShaderBindingTable_raygenRecord = R"doc()doc";
 
 static const char *__doc_SbtRecord = R"doc()doc";
 
@@ -62,6 +256,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_3 = R"doc()doc";
 static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
@@ -346,6 +542,8 @@ static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -645,11 +843,11 @@ Parameter ``si``:
     field ``si.wi``.
 
 Parameter ``sample1``:
-    A uniformly distributed sample on $[0,1]$. It is used to select
-    the BSDF lobe in multi-lobe models.
+    A uniformly distributed sample on :math:`[0,1]`. It is used to
+    select the BSDF lobe in multi-lobe models.
 
 Parameter ``sample2``:
-    A uniformly distributed sample on $[0,1]^2$. It is used to
+    A uniformly distributed sample on :math:`[0,1]^2`. It is used to
     generate the sampled direction.
 
 Returns:
@@ -1195,7 +1393,7 @@ static const char *__doc_mitsuba_BoundingBox_BoundingBox =
 R"doc(Create a new invalid bounding box
 
 Initializes the components of the minimum and maximum position to
-$\infty$ and $-\infty$, respectively.)doc";
+:math:`\infty` and :math:`-\infty`, respectively.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_BoundingBox_2 = R"doc(Create a collapsed bounding box from a single point)doc";
 
@@ -1233,9 +1431,10 @@ static const char *__doc_mitsuba_BoundingBox_contains_2 =
 R"doc(Check whether a specified bounding box lies *on* or *within* the
 current bounding box
 
-Note that by definition, an 'invalid' bounding box (where min=$\infty$
-and max=$-\infty$) does not cover any space. Hence, this method will
-always return *true* when given such an argument.
+Note that by definition, an 'invalid' bounding box (where
+min=:math:`\infty` and max=:math:`-\infty`) does not cover any space.
+Hence, this method will always return *true* when given such an
+argument.
 
 Template parameter ``Strict``:
     Set this parameter to ``True`` if the bounding box boundary should
@@ -1303,7 +1502,7 @@ static const char *__doc_mitsuba_BoundingBox_reset =
 R"doc(Mark the bounding box as invalid.
 
 This operation sets the components of the minimum and maximum position
-to $\infty$ and $-\infty$, respectively.)doc";
+to :math:`\infty` and :math:`-\infty`, respectively.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_squared_distance =
 R"doc(Calculate the shortest squared distance between the axis-aligned
@@ -2007,6 +2206,8 @@ static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2044,39 +2245,49 @@ static const char *__doc_mitsuba_Emitter_operator_new = R"doc()doc";
 static const char *__doc_mitsuba_Emitter_operator_new_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint =
-R"doc(Endpoint: an abstract interface to light sources and sensors
+R"doc(Abstract interface subsuming emitters and sensors in Mitsuba.
 
-This class implements an abstract interface to all sensors and light
-sources emitting radiance and importance, respectively. Subclasses
-implement functions to evaluate and sample the profile, and to compute
-probability densities associated with the provided sampling
-techniques.
+This class provides an abstract interface to emitters and sensors in
+Mitsuba, which are named *endpoints* since they represent the first
+and last vertices of a light path. Thanks to symmetries underlying the
+equations of light transport and scattering, sensors and emitters can
+be treated as essentially the same thing, their main difference being
+type of emitted radiation: light sources emit *radiance*, while
+sensors emit a conceptual radiation named *importance*. This class
+casts these symmetries into a unified API that enables access to both
+types of endpoints using the same set of functions.
 
-The name *endpoint* refers to the property that while a light path may
-involve any number of scattering events, it always starts and ends
-with emission and a measurement, respectively.
+Subclasses of this interface must implement functions to evaluate and
+sample the emission/response profile, and to compute probability
+densities associated with the provided sampling techniques.
 
-In addition to Endpoint::sample_ray, which generates a sample from the
-profile, subclasses also provide a specialized direction sampling
-method. This is a generalization of direct illumination techniques to
-both emitters *and* sensors. A direction sampling method is given an
-arbitrary reference position in the scene and samples a direction from
-the reference point towards the endpoint (ideally proportional to the
+In addition to Endpoint::sample_ray(), which generates a sample from
+the profile, subclasses also provide a specialized *direction
+sampling* method in Endpoint::sample_direction(). This is a
+generalization of direct illumination techniques to both emitters
+*and* sensors. A direction sampling method is given an arbitrary
+reference position in the scene and samples a direction from the
+reference point towards the endpoint (ideally proportional to the
 emission/sensitivity profile). This reduces the sampling domain from
 4D to 2D, which often enables the construction of smarter specialized
 sampling techniques.
 
 When rendering scenes involving participating media, it is important
-to know what medium surrounds the sensors and light sources. For this
+to know what medium surrounds the sensors and emitters. For this
 reason, every endpoint instance keeps a reference to a medium (which
-may be set to ``nullptr`` when it is surrounded by vacuum).
+may be set to ``nullptr`` when the endpoint is surrounded by vacuum).
 
-For polarized rendering algorithms, the emitter and sensor sides are
-less symmetric as they use either Stokes vector or Mueller matrix
-representations. This is avoided here by also useing Mueller matrices
-for Stokes vectors where only their first column is non-zero. This
-comes at the cost of some additional arithmetic but simplifies the
-API.)doc";
+In the context of polarized simulation, the perfect symmetry between
+emitters and sensors technically breaks down: the former emit 4D
+*Stokes vectors* encoding the polarization state of light, while
+sensors are characterized by 4x4 *Mueller matrices* that transform the
+incident polarization prior to measurement. We sidestep this non-
+symmetry by simply using Mueller matrices everywere: in the case of
+emitters, only the first column will be used (the remainder being
+filled with zeros). This API simplification comes at a small extra
+cost in terms of register usage and arithmetic. The JIT (LLVM, CUDA)
+variants of Mitsuba can recognize these redundancies and remove them
+retroactively.)doc";
 
 static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 
@@ -2085,6 +2296,8 @@ static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -2108,6 +2321,42 @@ Parameter ``si``:
 
 Returns:
     The emitted radiance or importance)doc";
+
+static const char *__doc_mitsuba_Endpoint_eval_direction =
+R"doc(Re-evaluate the incident direct radiance/importance and sampling
+probability of the sample_direction() method.
+
+This function re-evaluates the incident direct radiance or importance
+and sample probability due to the endpoint so that their ratio equals
+the sampling weight returned by sample_direction(). This may appear
+redundant, and indeed such a function would not find use in "normal"
+rendering algorithms.
+
+However, the ability to re-evaluate the contribution of a generated
+sample is important for differentiable rendering. For example, we
+might want to track derivatives in the sampled direction (``ds.d``)
+without also differentiating the sampling technique. Alternatively (or
+additionally), it may be necessary to apply a spherical
+reparameterization to ``ds.d`` to handle visibility-induced
+discontinuities during differentiation. Both steps require re-
+evaluating the contribution of the emitter while tracking derivative
+information through the calculation.
+
+In contrast to pdf_direction(), the sampling probability returned by
+this function will also be nonzero even in the case of emission
+profiles containing a Dirac delta term (e.g. point or directional
+lights).
+
+Parameter ``ref``:
+    A 3D reference location within the scene, which may influence the
+    sampling process.
+
+Parameter ``ds``:
+    A direction sampling record, which specifies the query location.
+
+Returns:
+    The incident radiance and discrete or solid angle density of the
+    sample.)doc";
 
 static const char *__doc_mitsuba_Endpoint_id = R"doc(Return a string identifier)doc";
 
@@ -2149,6 +2398,10 @@ static const char *__doc_mitsuba_Endpoint_pdf_direction =
 R"doc(Evaluate the probability density of the *direct* sampling method
 implemented by the sample_direction() method.
 
+The returned probability will always be zero when the
+emission/sensitivity profile contains a Dirac delta term (e.g. point
+or directional emitters/sensors).
+
 Parameter ``ds``:
     A direct sampling record, which specifies the query location.)doc";
 
@@ -2173,7 +2426,7 @@ Parameter ``wavelengths``:
     The sampled wavelengths.
 
 Returns:
-    The corresponding sampling density (for each wavelength).)doc";
+    The corresponding sampling density per wavelength (units of 1/nm).)doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_direction =
 R"doc(Given a reference point in the scene, sample a direction from the
@@ -2258,30 +2511,38 @@ Returns:
     and the actual used sampling density function.)doc";
 
 static const char *__doc_mitsuba_Endpoint_sample_wavelengths =
-R"doc(Importance sample a set of wavelengths proportional to the
+R"doc(Importance sample a set of wavelengths according to the endpoint's
 sensitivity/emission spectrum.
 
-Any discrepancies between ideal and actual sampled profile are
-absorbed into a spectral importance weight that is returned along with
-the wavelengths.
+This function takes a uniformly distributed 1D sample and generates a
+sample that is approximately distributed according to the endpoint's
+spectral sensitivity/emission profile.
 
-In RGB and monochromatic modes, since no wavelengths need to be
-sampled, this simply returns the value of the spectrum (pdf = 1).
+For this, the input 1D sample is first replicated into
+``Spectrum::Size`` separate samples using simple arithmetic
+tranformations (see math::sample_shifted()), which can be interpreted
+as a type of Quasi-Monte-Carlo integration scheme. Following this, a
+standard technique (e.g. inverse transform sampling) is used to find
+the corresponding wavelengths. Any discrepancies between ideal and
+actual sampled profile are absorbed into a spectral importance weight
+that is returned along with the wavelengths.
+
+This function should not be called in RGB or monochromatic modes.
 
 Parameter ``si``:
-    Surface interaction, used to condition on the spatial dimensions
-    in case of a spatially-varying spectrum. In that case, at least
-    the `uv` field must be correctly filled.
+    In the case of a spatially-varying spectral sensitivity/emission
+    profile, this parameter conditions sampling on a specific spatial
+    position. The ``si.uv`` field must be specified in this case.
 
 Parameter ``sample``:
-    A uniformly distributed 1D value that is used to sample the
-    spectral dimension of the emission profile.
+    A 1D uniformly distributed random variate
 
 Returns:
     The set of sampled wavelengths and (potentially spectrally
     varying) importance weights. The latter account for the difference
     between the profile and the actual used sampling density function.
-    In the case of emitters, this will include the emitted radiance.)doc";
+    In the case of emitters, the weight will include the emitted
+    radiance.)doc";
 
 static const char *__doc_mitsuba_Endpoint_set_id = R"doc(Set a string identifier)doc";
 
@@ -2449,6 +2710,8 @@ static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -2843,6 +3106,8 @@ static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3077,6 +3342,8 @@ static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -3562,6 +3829,8 @@ static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
@@ -3843,6 +4112,8 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
@@ -3948,6 +4219,8 @@ static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_parameterization = R"doc(Optional: used in eval_parameterization())doc";
 
+static const char *__doc_mitsuba_Mesh_m_vertex_buffer_ptr = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_normals = R"doc()doc";
@@ -3980,6 +4253,10 @@ Returns:
     distance from the ray origin to the intersection point, and ``u``
     and ``v`` contains the first two components of the intersection in
     barycentric coordinates)doc";
+
+static const char *__doc_mitsuba_Mesh_optix_build_input = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_optix_prepare_geometry = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
@@ -4237,6 +4514,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -4399,6 +4678,8 @@ static const char *__doc_mitsuba_PCG32Sampler_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -4422,6 +4703,8 @@ static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -4544,11 +4827,11 @@ Parameter ``mi``:
     ``mi.wi``.
 
 Parameter ``sample1``:
-    A uniformly distributed sample on $[0,1]$. It is used to select
-    the phase function component in multi-component models.
+    A uniformly distributed sample on :math:`[0,1]`. It is used to
+    select the phase function component in multi-component models.
 
 Parameter ``sample2``:
-    A uniformly distributed sample on $[0,1]^2$. It is used to
+    A uniformly distributed sample on :math:`[0,1]^2`. It is used to
     generate the sampled direction.
 
 Returns:
@@ -4814,10 +5097,6 @@ static const char *__doc_mitsuba_ProfilerPhase_TextureEvaluate = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_TextureSample = R"doc()doc";
 
-static const char *__doc_mitsuba_Profiler_Profiler = R"doc()doc";
-
-static const char *__doc_mitsuba_Profiler_class = R"doc()doc";
-
 static const char *__doc_mitsuba_Profiler_print_report = R"doc()doc";
 
 static const char *__doc_mitsuba_Profiler_static_initialization = R"doc()doc";
@@ -4886,6 +5165,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -5265,8 +5546,6 @@ static const char *__doc_mitsuba_RayFlags_All = R"doc(Compute all fields of the 
 
 static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable = R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
 
-static const char *__doc_mitsuba_RayFlags_Coherent = R"doc(Inform Embree that these rays are coherent (for primary rays))doc";
-
 static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
 static const char *__doc_mitsuba_RayFlags_FollowShape = R"doc(Derivatives of the SurfaceInteraction fields follow shape's motion)doc";
@@ -5354,6 +5633,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
@@ -5529,6 +5810,8 @@ static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -5624,6 +5907,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -5685,7 +5970,27 @@ Remark:
 (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
 ```)doc";
 
-static const char *__doc_mitsuba_Scene = R"doc()doc";
+static const char *__doc_mitsuba_Scene =
+R"doc(Central scene data structure
+
+Mitsuba's scene class encapsulates a tree of mitsuba Object instances
+including emitters, sensors, shapes, materials, participating media,
+the integrator (i.e. the method used to render the image) etc.
+
+It organizes these objects into groups that can be accessed through
+getters (see shapes(), emitters(), sensors(), etc.), and it provides
+three key abstractions implemented on top of these groups,
+specifically:
+
+* Ray intersection queries and shadow ray tests (See
+\ray_intersect_preliminary(), ray_intersect(), and ray_test()).
+
+* Sampling rays approximately proportional to the emission profile of
+light sources in the scene (see sample_emitter_ray())
+
+* Sampling directions approximately proportional to the direct
+radiance from emitters received at a given scene location (see
+sample_emitter_direction()).)doc";
 
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
@@ -5694,6 +5999,8 @@ static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -5721,6 +6028,42 @@ static const char *__doc_mitsuba_Scene_emitters_ek = R"doc(Return the list of em
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
+static const char *__doc_mitsuba_Scene_eval_emitter_direction =
+R"doc(Re-evaluate the incident direct radiance and sampling probability of
+the sample_emitter_direction() method.
+
+This function re-evaluates the incident direct radiance and sample
+probability due to the emitter so that their ratio equals the sampling
+weight returned by sample_emitter_direction(). This may appear
+redundant, and indeed such a function would not find use in "normal"
+rendering algorithms.
+
+However, the ability to re-evaluate the contribution of a direct
+illumination sample is important for differentiable rendering. For
+example, we might want to track derivatives in the sampled direction
+(``ds.d``) without also differentiating the sampling technique.
+Alternatively (or additionally), it may be necessary to apply a
+spherical reparameterization to ``ds.d`` to handle visibility-induced
+discontinuities during differentiation. Both steps require re-
+evaluating the contribution of the emitter while tracking derivative
+information through the calculation.
+
+In contrast to pdf_emitter_direction(), the sampling probability
+returned by this function will also be nonzero even in the case of
+emission profiles containing a Dirac delta term (e.g. point or
+directional lights).
+
+Parameter ``ref``:
+    A 3D reference location within the scene, which may influence the
+    sampling process.
+
+Parameter ``ds``:
+    A direction sampling record, which specifies the query location.
+
+Returns:
+    The incident radiance and discrete or solid angle density of the
+    sample.)doc";
+
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
 static const char *__doc_mitsuba_Scene_integrator_2 = R"doc(Return the scene's integrator)doc";
@@ -5732,6 +6075,8 @@ static const char *__doc_mitsuba_Scene_m_accel_handle = R"doc(Handle to the IAS 
 static const char *__doc_mitsuba_Scene_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_emitter_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
 
@@ -5754,43 +6099,123 @@ static const char *__doc_mitsuba_Scene_m_shapes_grad_enabled = R"doc()doc";
 static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter =
-R"doc(Evaluate the probability density of the sample_emitter() technique
-given a sampled emitter index.)doc";
+R"doc(Evaluate the discrete probability of the sample_emitter() technique
+for the given a emitter index.)doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction =
-R"doc(Evaluate the probability density of the sample_emitter_direct()
-technique given an filled-in DirectionSample record.
+R"doc(Evaluate the PDF of direct illumination sampling
+
+This function evaluates the probability density (per unit solid angle)
+of the sampling technique implemented by the sample_emitter_direct()
+function. The returned probability will always be zero when the
+emission profile contains a Dirac delta term (e.g. point or
+directional emitters/sensors).
 
 Parameter ``ref``:
-    A reference point somewhere within the scene
+    A 3D reference location within the scene, which may influence the
+    sampling process.
 
 Parameter ``ds``:
     A direction sampling record, which specifies the query location.
 
 Returns:
-    The solid angle density expressed of the sample)doc";
+    The solid angle density of the sample)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect =
-R"doc(Intersect a ray against all primitives stored in the scene and return
-information about the resulting surface interaction
+R"doc(Intersect a ray with the shapes comprising the scene and return a
+detailed data structure describing the intersection, if one is found.
+
+In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+function processes arrays of rays and returns arrays of surface
+interactions following the usual conventions.
+
+This method is a convenience wrapper of the generalized version of
+``ray_intersect``() below. It assumes that incoherent rays are being
+traced, and that the user desires access to all fields of the
+SurfaceInteraction. In other words, it simply invokes the general
+``ray_intersect``() overload with ``coherent=false`` and ``ray_flags``
+equal to RayFlags::All.
 
 Parameter ``ray``:
-    A 3-dimensional ray data structure with minimum/maximum extent
-    information, as well as a time value (which matters when the
-    shapes are in motion)
+    A 3D ray inluding maximum extent (Ray::maxt) and time (Ray::time)
+    information, which matters when the shapes are in motion
 
 Returns:
-    A detailed surface interaction record. Query its ``is_valid()``
-    method to determine whether an intersection was actually found.)doc";
+    A detailed surface interaction record. Its ``is_valid()`` method
+    should be queried to check if an intersection was actually found.)doc";
 
-static const char *__doc_mitsuba_Scene_ray_intersect_2 = R"doc()doc";
+static const char *__doc_mitsuba_Scene_ray_intersect_2 =
+R"doc(Intersect a ray with the shapes comprising the scene and return a
+detailed data structure describing the intersection, if one is found
+
+In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+function processes arrays of rays and returns arrays of surface
+interactions following the usual conventions.
+
+This generalized ray intersection method exposes two additional flags
+to control the intersection process. Internally, it is split into two
+steps:
+
+<ol>
+
+* Finding a PreliminaryInteraction using the ray tracing backend
+underlying the current variant (i.e., Mitsuba's builtin kd-tree,
+Embree, or OptiX). This is done using the ray_intersect_preliminary()
+function that is also available directly below (and preferable if a
+full SurfaceInteraction is not needed.).
+
+* Expanding the PreliminaryInteraction into a full SurfaceInteraction
+(this part happens within Mitsuba/Enoki and tracks derivative
+information in AD variants of the system).
+
+</ol>
+
+The SurfaceInteraction data structure is large, and computing its
+contents in the second step requires a non-trivial amount of
+computation and sequence of memory accesses. The ``ray_flags``
+parameter can be used to specify that only a sub-set of the full
+intersection data structure actually needs to be computed, which can
+improve performance.
+
+In the context of differentiable rendering, the ``ray_flags``
+parameter also influences how derivatives propagate between the input
+ray, the shape parameters, and the computed intersection (see
+RayFlags::FollowShape and RayFlags::DetachShape for details on this).
+The default, RayFlags::All, propagates derivatives through all steps
+of the intersection computation.
+
+The ``coherent`` flag is a hint that can improve performance in the
+first step of finding the PreliminaryInteraction if the input set of
+rays is coherent (e.g., when they are generated by
+Sensor::sample_ray(), which means that adjacent rays will traverse
+essentially the same region of space). This flag is currently only
+used by the combination of ``llvm_*`` variants and the Embree ray
+tracing backend.
+
+Parameter ``ray``:
+    A 3D ray inluding maximum extent (Ray::maxt) and time (Ray::time)
+    information, which matters when the shapes are in motion
+
+Parameter ``ray_flags``:
+    An integer combining flag bits from RayFlags (merged using binary
+    or).
+
+Parameter ``coherent``:
+    Setting this flag to ``True`` can noticeably improve performance
+    when ``ray`` contains a coherent set of rays (e.g. primary camera
+    rays), and when using ``llvm_*`` variants of the renderer along
+    with Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+Returns:
+    A detailed surface interaction record. Its ``is_valid()`` method
+    should be queried to check if an intersection was actually found.)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_cpu = R"doc(Trace a ray)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_gpu = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_naive =
-R"doc(Ray intersection using brute force search. Used in unit tests to
+R"doc(Ray intersection using a brute force search. Used in unit tests to
 validate the kdtree-based ray tracer.
 
 Remark:
@@ -5798,42 +6223,140 @@ Remark:
 
 static const char *__doc_mitsuba_Scene_ray_intersect_naive_cpu = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_ray_intersect_preliminary = R"doc()doc";
+static const char *__doc_mitsuba_Scene_ray_intersect_preliminary =
+R"doc(Intersect a ray with the shapes comprising the scene and return
+preliminary information, if one is found
 
-static const char *__doc_mitsuba_Scene_ray_intersect_preliminary_2 = R"doc()doc";
+This function invokes the ray tracing backend underlying the current
+variant (i.e., Mitsuba's builtin kd-tree, Embree, or OptiX) and
+returns preliminary intersection information consisting of
+
+* the ray distance up to the intersection (if one is found).
+
+* the intersected shape and primitive index.
+
+* local UV coordinates of the intersection within the primitive.
+
+* A pointer to the intersected shape or instance.
+
+The information is only preliminary at this point, because it lacks
+various other information (geometric and shading frame, texture
+coordinates, curvature, etc.) that is generally needed by shading
+models. In variants of Mitsuba that perform automatic differentiation,
+it is important to know that computation done by the ray tracing
+backend is not reflected in Enoki's computation graph. The
+ray_intersect() method will re-evaluate certain parts of the
+computation with derivative tracking to rectify this.
+
+In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+function processes arrays of rays and returns arrays of preliminary
+intersection records following the usual conventions.
+
+The ``coherent`` flag is a hint that can improve performance if the
+input set of rays is coherent (e.g., when they are generated by
+Sensor::sample_ray(), which means that adjacent rays will traverse
+essentially the same region of space). This flag is currently only
+used by the combination of ``llvm_*`` variants and the Embree ray
+intersector.
+
+Parameter ``ray``:
+    A 3D ray inluding maximum extent (Ray::maxt) and time (Ray::time)
+    information, which matters when the shapes are in motion
+
+Parameter ``coherent``:
+    Setting this flag to ``True`` can noticeably improve performance
+    when ``ray`` contains a coherent set of rays (e.g. primary camera
+    rays), and when using ``llvm_*`` variants of the renderer along
+    with Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+Returns:
+    A preliminary surface interaction record. Its ``is_valid()``
+    method should be queried to check if an intersection was actually
+    found.)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_preliminary_cpu = R"doc(Trace a ray and only return a preliminary intersection data structure)doc";
 
 static const char *__doc_mitsuba_Scene_ray_intersect_preliminary_gpu = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_ray_test =
-R"doc(Intersect a ray against all primitives stored in the scene and *only*
-determine whether or not there is an intersection.
+R"doc(Intersect a ray with the shapes comprising the scene and return a
+boolean specifying whether or not an intersection was found.
 
-Testing for the mere presence of intersections (as in ray_intersect)
-is considerably faster than finding an actual intersection, hence this
-function should be preferred when detailed information is not needed.
+In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+function processes arrays of rays and returns arrays of booleans
+following the usual conventions.
+
+Testing for the mere presence of intersections is considerably faster
+than finding an actual intersection, hence this function should be
+preferred over ray_intersect() when geometric information about the
+first visible intersection is not needed.
+
+This method is a convenience wrapper of the generalized version of
+``ray_test``() below, which assumes that incoherent rays are being
+traced. In other words, it simply invokes the general ``ray_test``()
+overload with ``coherent=false``.
 
 Parameter ``ray``:
-    A 3-dimensional ray data structure with minimum/maximum extent
-    information, as well as a time value (which matterns when the
-    shapes are in motion)
+    A 3D ray inluding maximum extent (Ray::maxt) and time (Ray::time)
+    information, which matters when the shapes are in motion
 
 Returns:
     ``True`` if an intersection was found)doc";
 
-static const char *__doc_mitsuba_Scene_ray_test_2 = R"doc()doc";
+static const char *__doc_mitsuba_Scene_ray_test_2 =
+R"doc(Intersect a ray with the shapes comprising the scene and return a
+boolean specifying whether or not an intersection was found.
+
+In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``), the
+function processes arrays of rays and returns arrays of booleans
+following the usual conventions.
+
+Testing for the mere presence of intersections is considerably faster
+than finding an actual intersection, hence this function should be
+preferred over ray_intersect() when geometric information about the
+first visible intersection is not needed.
+
+The ``coherent`` flag is a hint that can improve performance in the
+first step of finding the PreliminaryInteraction if the input set of
+rays is coherent, which means that adjacent rays will traverse
+essentially the same region of space. This flag is currently only used
+by the combination of ``llvm_*`` variants and the Embree ray tracing
+backend.
+
+Parameter ``ray``:
+    A 3D ray inluding maximum extent (Ray::maxt) and time (Ray::time)
+    information, which matters when the shapes are in motion
+
+Parameter ``coherent``:
+    Setting this flag to ``True`` can noticeably improve performance
+    when ``ray`` contains a coherent set of rays (e.g. primary camera
+    rays), and when using ``llvm_*`` variants of the renderer along
+    with Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+Returns:
+    ``True`` if an intersection was found)doc";
 
 static const char *__doc_mitsuba_Scene_ray_test_cpu = R"doc(Trace a shadow ray)doc";
 
 static const char *__doc_mitsuba_Scene_ray_test_gpu = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_render =
-R"doc(Convenience function to render the scene and return a bitmap
+R"doc(Render the scene and return a bitmap
 
-This function renders the scene from the viewpoint of the sensor with
-index ``sensor_index``. All other parameters are optional and control
-different aspects of the rendering process. In particular:
+This convenience function invokes the scene's integrator to render the
+scene from the default sensor. All parameters are optional and control
+different aspects of the rendering process.
+
+This method should not be used for differentiable rendering, since the
+rendered image will be returned in the form of a Bitmap instance that
+isn't associated with Enoki's AD graph. We recommended that you use
+the Python interface for this, specifically the function
+``mitsuba.python.ad.render()``.
+
+Parameter ``sensor_index``:
+    When the scene contains multiple sensors, this parameter can be
+    used to select the desired viewpoint. Ssensor indices are assigned
+    according to the order in the scene description.
 
 Parameter ``seed``:
     This parameter controls the initialization of the random number
@@ -5849,32 +6372,42 @@ Parameter ``spp``:
     must be rendered multiple times using different quality levels.)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter =
-R"doc(Sample one emitter in the scene and rescale the random sample for
-reuse. If possible, it is sampled proportional to its radiance.
+R"doc(Sample one emitter in the scene and rescale the input sample for
+reuse.
+
+Currently, the sampling scheme implemented by the Scene class is very
+simplistic (uniform).
 
 Parameter ``sample``:
     A uniformly distributed number in [0, 1).
 
 Returns:
     The index of the chosen emitter along with the sampling weight
-    (equal to the inverse PDF), and the rescaled random sample for
-    reusing.)doc";
+    (equal to the inverse PDF), and the transformed random sample for
+    reuse.)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter_direction =
 R"doc(Direct illumination sampling routine
 
-Given an arbitrary reference point in the scene, this method samples a
-direction from the reference point to towards an emitter.
+This method implements stochastic connections to emitters, which is
+variously known as *emitter sampling*, *direct illumination sampling*,
+or *next event estimation*.
 
-Ideally, the implementation should importance sample the product of
-the emission profile and the geometry term between the reference point
-and the position on the emitter.
+The function expects a 3D reference location ``ref`` as input, which
+may influence the sampling process. Normally, this would be the
+location of a surface position being shaded. Ideally, the
+implementation of this function should then draw samples proportional
+to the scene's emission profile and the inverse square distance
+between the reference point and the sampled emitter position. However,
+approximations are acceptable as long as these are reflected in the
+returned Monte Carlo sampling weight.
 
 Parameter ``ref``:
-    A reference point somewhere within the scene
+    A 3D reference location within the scene, which may influence the
+    sampling process.
 
 Parameter ``sample``:
-    A uniformly distributed 2D vector
+    A uniformly distributed 2D random variate
 
 Parameter ``test_visibility``:
     When set to ``True``, a shadow ray will be cast to ensure that the
@@ -5882,23 +6415,30 @@ Parameter ``test_visibility``:
     visible.
 
 Returns:
-    Radiance received along the sampled ray divided by the sample
-    probability.)doc";
+    A tuple ``(ds, spec)`` where
+
+* ``ds`` is a fully populated DirectionSample3f data structure, which
+provides further detail about the sampled emitter position (e.g. its
+surface normal, solid angle density, whether Dirac delta distributions
+were involved, etc.)
+
+*
+
+* ``spec`` is a Monte Carlo sampling weight specifying the ratio of
+the radiance incident from the emitter and the sample probability per
+unit solid angle.)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter_ray =
-R"doc(Importance sample a ray according to the emission profile defined by
-the emitters in the scene.
+R"doc(Sample a ray according to the emission profile of scene emitters
 
 This function combines both steps of choosing a ray origin on a light
 source and an outgoing ray direction. It does not return any auxiliary
 sampling information and is mainly meant to be used by unidirectional
-rendering techniques.
+rendering techniques like particle tracing.
 
-Note that this function may use a different sampling strategy compared
-to the sequence of running sample_emitter_position() and
-Emitter::sample_direction(). The reason for this is that it may be
-possible to switch to a better technique when sampling both position
-and direction at the same time.
+Sampling is ideally perfectly proportional to the emission profile,
+though approximations are acceptable as long as these are reflected in
+the returned Monte Carlo sampling weight.
 
 Parameter ``time``:
     The scene time associated with the ray to be sampled.
@@ -5914,12 +6454,15 @@ Parameter ``sample3``:
     A uniformly distributed sample on the domain ``[0,1]^2``.
 
 Returns:
-    (ray, importance weight, emitter, radiance) ray: sampled ray,
-    starting from the surface of an emitter in the scene importance
-    weight: accounts for the difference between the profile and the
-    sampling density function actualy used. emitter: pointer to the
-    selected emitter. radiance: emitted radiance along the sampled
-    ray.)doc";
+    A tuple ``(ray, weight, emitter, radiance)``, where
+
+* ``ray`` is the sampled ray (e.g. starting on the surface of an area
+emitter)
+
+* ``weight`` returns the emitted radiance divided by the spatio-
+directional sampling density
+
+* ``emitter`` is a pointer specifying the sampled emitter)doc";
 
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
@@ -5931,7 +6474,16 @@ static const char *__doc_mitsuba_Scene_shapes_2 = R"doc(Return the list of shape
 
 static const char *__doc_mitsuba_Scene_shapes_ek = R"doc(Return the list of shapes as an Enoki array)doc";
 
-static const char *__doc_mitsuba_Scene_shapes_grad_enabled = R"doc(Return whether any of the shape's parameters require gradient)doc";
+static const char *__doc_mitsuba_Scene_shapes_grad_enabled =
+R"doc(Specifies whether any of the scene's shape parameters have tracking
+enabled
+
+Knowing this is important in the context of differentiable rendering:
+intersections (e.g. provided by OptiX or Embree) must then be re-
+computed differentiably within Enoki to correctly track gradient
+information. Furthermore, differentiable geometry introduces bias
+through visibility-induced discontinuities, and re-parameterizations
+(Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.)doc";
 
 static const char *__doc_mitsuba_Scene_static_accel_initialization = R"doc(Static initialization of ray-intersection acceleration data structure)doc";
 
@@ -5947,19 +6499,11 @@ static const char *__doc_mitsuba_Scene_static_accel_shutdown_gpu = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
-static const char *__doc_mitsuba_Scene_traverse = R"doc(Perform a custom traversal over the scene graph)doc";
+static const char *__doc_mitsuba_Scene_traverse = R"doc(Traverse the scene graph and invoke the given callback for each object)doc";
 
 static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedPhase_ScopedPhase = R"doc()doc";
-
-static const char *__doc_mitsuba_ScopedPhase_ScopedPhase_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_ScopedPhase_m_flag = R"doc()doc";
-
-static const char *__doc_mitsuba_ScopedPhase_m_target = R"doc()doc";
-
-static const char *__doc_mitsuba_ScopedPhase_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment =
 R"doc(RAII-style class to temporarily switch to another thread's logger/file
@@ -5973,8 +6517,6 @@ static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_file_resolver = R"
 
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_logger = R"doc()doc";
 
-static const char *__doc_mitsuba_ScopedSetThreadEnvironment_m_profiler_flags = R"doc()doc";
-
 static const char *__doc_mitsuba_ScopedSetThreadEnvironment_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor = R"doc()doc";
@@ -5986,6 +6528,8 @@ static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
@@ -6109,6 +6653,8 @@ static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -6118,6 +6664,8 @@ static const char *__doc_mitsuba_ShapeGroup_3 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -6135,6 +6683,8 @@ static const char *__doc_mitsuba_ShapeGroup_has_meshes = R"doc(Return whether th
 
 static const char *__doc_mitsuba_ShapeGroup_has_others = R"doc(Return whether this shapegroup contains other type of shapes)doc";
 
+static const char *__doc_mitsuba_ShapeGroup_m_accel = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_embree_scene = R"doc()doc";
@@ -6143,9 +6693,19 @@ static const char *__doc_mitsuba_ShapeGroup_m_has_meshes = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_has_others = R"doc()doc";
 
+static const char *__doc_mitsuba_ShapeGroup_m_sbt_offset = R"doc(OptiX hitgroup sbt offset)doc";
+
 static const char *__doc_mitsuba_ShapeGroup_m_shapes = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_shapes_registry_ids = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_optix_accel_ready = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_optix_build_gas = R"doc(Build OptiX geometry acceleration structures)doc";
+
+static const char *__doc_mitsuba_ShapeGroup_optix_fill_hitgroup_records = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_optix_prepare_ias = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_primitive_count = R"doc()doc";
 
@@ -6162,6 +6722,8 @@ static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -6403,6 +6965,8 @@ static const char *__doc_mitsuba_Shape_m_id = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_interior_medium = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_m_optix_data_ptr = R"doc(OptiX hitgroup data buffer)doc";
+
 static const char *__doc_mitsuba_Shape_m_sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_to_object = R"doc()doc";
@@ -6418,6 +6982,79 @@ static const char *__doc_mitsuba_Shape_operator_delete_2 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_operator_new = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_optix_build_input =
+R"doc(Fills the OptixBuildInput associated with this shape.
+
+Parameter ``build_input``:
+    A reference to the build input to be filled. The field
+    build_input.type has to be set, along with the associated members.
+    For now, Mistuba only supports the types
+    OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES and
+    OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
+
+The default implementation assumes that an implicit Shape (custom
+primitive build type) is begin constructed, with its GPU data stored
+at m_optix_data_ptr.)doc";
+
+static const char *__doc_mitsuba_Shape_optix_fill_hitgroup_records =
+R"doc(Creates and appends the HitGroupSbtRecord(s) associated with this
+shape to the provided array.
+
+Remark:
+    This method can append multiple hitgroup records to the array (see
+    the Shapegroup plugin for an example).
+
+Parameter ``hitgroup_records``:
+    The array of hitgroup records where the new HitGroupRecords should
+    be appended.
+
+Parameter ``program_groups``:
+    The array of available program groups (used to pack the Optix
+    header at the beginning of the record).
+
+The default implementation creates a new HitGroupSbtRecord and fills
+its data field with m_optix_data_ptr. It then calls
+optixSbtRecordPackHeader with one of the OptixProgramGroup of the
+program_groups array (the actual program group index is infered by the
+type of the Shape, see get_shape_descr_idx()).)doc";
+
+static const char *__doc_mitsuba_Shape_optix_prepare_geometry =
+R"doc(Populates the GPU data buffer, used in the Optix Hitgroup sbt records.
+
+Remark:
+    Actual implementations of this method should allocate the field
+    m_optix_data_ptr on the GPU and populate it with the Optix
+    representation of the class.
+
+The default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_Shape_optix_prepare_ias =
+R"doc(Prepares and fills the OptixInstance(s) associated with this shape.
+This process includes generating the Optix instance acceleration
+structure (IAS) represented by this shape, and pushing OptixInstance
+structs to the provided instances vector.
+
+Remark:
+    This method is currently only implemented for the Instance and
+    ShapeGroup plugin.
+
+Parameter ``context``:
+    The Optix context that was used to construct the rest of the
+    scene's Optix representation.
+
+Parameter ``instances``:
+    The array to which new OptixInstance should be appended.
+
+Parameter ``instance_id``:
+    The instance id, used internally inside Optix to detect when a
+    Shape is part of an Instance.
+
+Parameter ``transf``:
+    The current to_world transformation (should allow for recursive
+    instancing).
+
+The default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
@@ -6647,7 +7284,7 @@ static const char *__doc_mitsuba_Spiral_m_steps_left = R"doc()doc";
 static const char *__doc_mitsuba_Spiral_max_block_size = R"doc(Return the maximum block size)doc";
 
 static const char *__doc_mitsuba_Spiral_next_block =
-R"doc(Return the offset, size, and unique identifer of the next block.
+R"doc(Return the offset, size, and unique identifier of the next block.
 
 A size of zero indicates that the spiral traversal is done.)doc";
 
@@ -7751,6 +8388,8 @@ static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
@@ -7916,8 +8555,6 @@ static const char *__doc_mitsuba_ThreadEnvironment_ThreadEnvironment_2 = R"doc()
 static const char *__doc_mitsuba_ThreadEnvironment_m_file_resolver = R"doc()doc";
 
 static const char *__doc_mitsuba_ThreadEnvironment_m_logger = R"doc()doc";
-
-static const char *__doc_mitsuba_ThreadEnvironment_m_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_ThreadEnvironment_operator_assign = R"doc()doc";
 
@@ -8265,6 +8902,8 @@ static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -8274,6 +8913,8 @@ static const char *__doc_mitsuba_VolumeGrid_3 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -9516,6 +10157,10 @@ static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points sho
 
 static const char *__doc_mitsuba_operator_sub_2 = R"doc(Subtracting a vector from a point should always yield a point)doc";
 
+static const char *__doc_mitsuba_optix_initialize = R"doc()doc";
+
+static const char *__doc_mitsuba_optix_shutdown = R"doc()doc";
+
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse the field of view field of a camera)doc";
 
 static const char *__doc_mitsuba_pdf_rgb_spectrum =
@@ -9580,13 +10225,11 @@ static const char *__doc_mitsuba_prepare_ias =
 R"doc(Prepares and fills the OptixInstance array associated with a given
 list of shapes.)doc";
 
-static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
-
 static const char *__doc_mitsuba_quad_chebyshev =
 R"doc(Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
 polynomials of the first kind
 
-The output array contains positions on the interval $[-1, 1]$.
+The output array contains positions on the interval :math:`[-1, 1]`.
 
 Parameter ``n``:
     Desired number of points)doc";
@@ -9595,10 +10238,10 @@ static const char *__doc_mitsuba_quad_composite_simpson =
 R"doc(Computes the nodes and weights of a composite Simpson quadrature rule
 with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$, which will be split into
-$(n-1) / 2$ sub-intervals with overlapping endpoints. A 3-point
-Simpson rule is applied per interval, which is exact for polynomials
-of degree three or less.
+Integration is over the interval :math:`[-1, 1]`, which will be split
+into :math:`(n-1) / 2` sub-intervals with overlapping endpoints. A
+3-point Simpson rule is applied per interval, which is exact for
+polynomials of degree three or less.
 
 Parameter ``n``:
     Desired number of evalution points. Must be an odd number bigger
@@ -9612,10 +10255,10 @@ static const char *__doc_mitsuba_quad_composite_simpson_38 =
 R"doc(Computes the nodes and weights of a composite Simpson 3/8 quadrature
 rule with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$, which will be split into
-$(n-1) / 3$ sub-intervals with overlapping endpoints. A 4-point
-Simpson rule is applied per interval, which is exact for polynomials
-of degree four or less.
+Integration is over the interval :math:`[-1, 1]`, which will be split
+into :math:`(n-1) / 3` sub-intervals with overlapping endpoints. A
+4-point Simpson rule is applied per interval, which is exact for
+polynomials of degree four or less.
 
 Parameter ``n``:
     Desired number of evalution points. Must be an odd number bigger
@@ -9629,14 +10272,15 @@ static const char *__doc_mitsuba_quad_gauss_legendre =
 R"doc(Computes the nodes and weights of a Gauss-Legendre quadrature (aka
 "Gaussian quadrature") rule with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$. Gauss-Legendre quadrature
-maximizes the order of exactly integrable polynomials achieves this up
-to degree $2n-1$ (where $n$ is the number of function evaluations).
+Integration is over the interval :math:`[-1, 1]`. Gauss-Legendre
+quadrature maximizes the order of exactly integrable polynomials
+achieves this up to degree :math:`2n-1` (where :math:`n` is the number
+of function evaluations).
 
-This method is numerically well-behaved until about $n=200$ and then
-becomes progressively less accurate. It is generally not a good idea
-to go much higher---in any case, a composite or adaptive integration
-scheme will be superior for large $n$.
+This method is numerically well-behaved until about :math:`n=200` and
+then becomes progressively less accurate. It is generally not a good
+idea to go much higher---in any case, a composite or adaptive
+integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
     Desired number of evalution points
@@ -9649,17 +10293,17 @@ static const char *__doc_mitsuba_quad_gauss_lobatto =
 R"doc(Computes the nodes and weights of a Gauss-Lobatto quadrature rule with
 the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$. Gauss-Lobatto quadrature
-is preferable to Gauss-Legendre quadrature whenever the endpoints of
-the integration domain should explicitly be included. It maximizes the
-order of exactly integrable polynomials subject to this constraint and
-achieves this up to degree $2n-3$ (where $n$ is the number of function
-evaluations).
+Integration is over the interval :math:`[-1, 1]`. Gauss-Lobatto
+quadrature is preferable to Gauss-Legendre quadrature whenever the
+endpoints of the integration domain should explicitly be included. It
+maximizes the order of exactly integrable polynomials subject to this
+constraint and achieves this up to degree :math:`2n-3` (where
+:math:`n` is the number of function evaluations).
 
-This method is numerically well-behaved until about $n=200$ and then
-becomes progressively less accurate. It is generally not a good idea
-to go much higher---in any case, a composite or adaptive integration
-scheme will be superior for large $n$.
+This method is numerically well-behaved until about :math:`n=200` and
+then becomes progressively less accurate. It is generally not a good
+idea to go much higher---in any case, a composite or adaptive
+integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
     Desired number of evalution points
@@ -10370,9 +11014,13 @@ Returns:
 static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
 
 static const char *__doc_mitsuba_srgb_model_fetch =
-R"doc(Look up the model coefficients for a sRGB color value @param c An sRGB
-color value where all components are in [0, 1]. @return Coefficients
-for use with srgb_model_eval)doc";
+R"doc(Look up the model coefficients for a sRGB color value
+
+Parameter ``c``:
+    An sRGB color value where all components are in [0, 1].
+
+Returns:
+    Coefficients for use with srgb_model_eval)doc";
 
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 
@@ -10586,7 +11234,7 @@ Parameter ``cos_cutoff``:
     Cosine of the cutoff angle
 
 Parameter ``sample``:
-    A uniformly distributed sample on $[0,1]^2$)doc";
+    A uniformly distributed sample on :math:`[0,1]^2`)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_cone_pdf =
 R"doc(Density of square_to_uniform_cone per unit area.

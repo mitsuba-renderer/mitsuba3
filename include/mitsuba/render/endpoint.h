@@ -8,36 +8,47 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Endpoint: an abstract interface to light sources and sensors
+ * \brief Abstract interface subsuming emitters and sensors in Mitsuba.
  *
- * This class implements an abstract interface to all sensors and light sources
- * emitting radiance and importance, respectively. Subclasses implement
- * functions to evaluate and sample the profile, and to compute probability
- * densities associated with the provided sampling techniques.
+ * This class provides an abstract interface to emitters and sensors in
+ * Mitsuba, which are named \a endpoints since they represent the first and
+ * last vertices of a light path. Thanks to symmetries underlying the equations
+ * of light transport and scattering, sensors and emitters can be treated as
+ * essentially the same thing, their main difference being type of emitted
+ * radiation: light sources emit \a radiance, while sensors emit a conceptual
+ * radiation named \a importance. This class casts these symmetries into a
+ * unified API that enables access to both types of endpoints using the same
+ * set of functions.
  *
- * The name \a endpoint refers to the property that while a light path may
- * involve any number of scattering events, it always starts and ends with
- * emission and a measurement, respectively.
+ * Subclasses of this interface must implement functions to evaluate and sample
+ * the emission/response profile, and to compute probability densities
+ * associated with the provided sampling techniques.
  *
- * In addition to \ref Endpoint::sample_ray, which generates a sample from the
- * profile, subclasses also provide a specialized direction sampling method.
- * This is a generalization of direct illumination techniques to both emitters
- * \a and sensors. A direction sampling method is given an arbitrary reference
+ * In addition to \ref Endpoint::sample_ray(), which generates a sample from
+ * the profile, subclasses also provide a specialized <em>direction
+ * sampling</em> method in \ref Endpoint::sample_direction(). This is a
+ * generalization of direct illumination techniques to both emitters \a and
+ * sensors. A direction sampling method is given an arbitrary reference
  * position in the scene and samples a direction from the reference point
  * towards the endpoint (ideally proportional to the emission/sensitivity
  * profile). This reduces the sampling domain from 4D to 2D, which often
  * enables the construction of smarter specialized sampling techniques.
  *
  * When rendering scenes involving participating media, it is important to know
- * what medium surrounds the sensors and light sources. For this reason, every
- * endpoint instance keeps a reference to a medium (which may be set to \c
- * nullptr when it is surrounded by vacuum).
+ * what medium surrounds the sensors and emitters. For this reason, every
+ * endpoint instance keeps a reference to a medium (which may be set to
+ * \c nullptr when the endpoint is surrounded by vacuum).
  *
- * For polarized rendering algorithms, the emitter and sensor sides are less
- * symmetric as they use either Stokes vector or Mueller matrix representations.
- * This is avoided here by also useing Mueller matrices for Stokes vectors where
- * only their first column is non-zero. This comes at the cost of some
- * additional arithmetic but simplifies the API.
+ * In the context of polarized simulation, the perfect symmetry between
+ * emitters and sensors technically breaks down: the former emit 4D <em>Stokes
+ * vectors</em> encoding the polarization state of light, while sensors are
+ * characterized by 4x4 <em>Mueller matrices</em> that transform the incident
+ * polarization prior to measurement. We sidestep this non-symmetry by simply
+ * using Mueller matrices everywere: in the case of emitters, only the first
+ * column will be used (the remainder being filled with zeros). This API
+ * simplification comes at a small extra cost in terms of register usage and
+ * arithmetic. The JIT (LLVM, CUDA) variants of Mitsuba can recognize
+ * these redundancies and remove them retroactively.
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
@@ -45,7 +56,64 @@ public:
     MTS_IMPORT_TYPES(Medium, Scene, Shape)
 
     // =============================================================
-    //! @{ \name Sampling interface
+    //! @{ \name Wavelength sampling interface
+    // =============================================================
+
+    /**
+     * \brief Importance sample a set of wavelengths according to the
+     * endpoint's sensitivity/emission spectrum.
+     *
+     * This function takes a uniformly distributed 1D sample and generates a
+     * sample that is approximately distributed according to the endpoint's
+     * spectral sensitivity/emission profile.
+     *
+     * For this, the input 1D sample is first replicated into
+     * <tt>Spectrum::Size</tt> separate samples using simple arithmetic
+     * tranformations (see \ref math::sample_shifted()), which can be interpreted
+     * as a type of Quasi-Monte-Carlo integration scheme. Following this, a
+     * standard technique (e.g. inverse transform sampling) is used to find the
+     * corresponding wavelengths. Any discrepancies between ideal and actual
+     * sampled profile are absorbed into a spectral importance weight that is
+     * returned along with the wavelengths.
+     *
+     * This function should not be called in RGB or monochromatic modes.
+     *
+     * \param si
+     *     In the case of a spatially-varying spectral sensitivity/emission
+     *     profile, this parameter conditions sampling on a specific spatial
+     *     position. The <tt>si.uv</tt> field must be specified in this case.
+     *
+     * \param sample
+     *     A 1D uniformly distributed random variate
+     *
+     * \return
+     *    The set of sampled wavelengths and (potentially spectrally varying)
+     *    importance weights. The latter account for the difference between the
+     *    profile and the actual used sampling density function. In the case of
+     *    emitters, the weight will include the emitted radiance.
+     */
+    virtual std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active = true) const;
+
+    /**
+     * \brief Evaluate the probability density of the wavelength sampling
+     * method implemented by \ref sample_wavelengths().
+     *
+     * \param wavelengths
+     *    The sampled wavelengths.
+     *
+     * \return
+     *    The corresponding sampling density per wavelength (units of 1/nm).
+     */
+    virtual Spectrum pdf_wavelengths(const Spectrum &wavelengths,
+                                     Mask active = true) const;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Ray sampling interface
     // =============================================================
 
     /**
@@ -88,6 +156,13 @@ public:
     sample_ray(Float time, Float sample1, const Point2f &sample2,
                const Point2f &sample3, Mask active = true) const;
 
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Direction sampling interface
+    // =============================================================
+
     /**
      * \brief Given a reference point in the scene, sample a direction from the
      * reference point towards the endpoint (ideally proportional to the
@@ -126,6 +201,10 @@ public:
      * \brief Evaluate the probability density of the \a direct sampling
      * method implemented by the \ref sample_direction() method.
      *
+     * The returned probability will always be zero when the
+     * emission/sensitivity profile contains a Dirac delta term (e.g. point or
+     * directional emitters/sensors).
+     *
      * \param ds
      *    A direct sampling record, which specifies the query
      *    location.
@@ -133,6 +212,49 @@ public:
     virtual Float pdf_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds,
                                 Mask active = true) const;
+
+    /**
+     * \brief Re-evaluate the incident direct radiance/importance of the \ref
+     * sample_direction() method.
+     *
+     * This function re-evaluates the incident direct radiance or importance
+     * and sample probability due to the endpoint so that division by
+     * <tt>ds.pdf</tt> equals the sampling weight returned by \ref
+     * sample_direction(). This may appear redundant, and indeed such a
+     * function would not find use in "normal" rendering algorithms.
+     *
+     * However, the ability to re-evaluate the contribution of a generated
+     * sample is important for differentiable rendering. For example, we might
+     * want to track derivatives in the sampled direction (<tt>ds.d</tt>)
+     * without also differentiating the sampling technique. Alternatively (or
+     * additionally), it may be necessary to apply a spherical
+     * reparameterization to <tt>ds.d</tt>  to handle visibility-induced
+     * discontinuities during differentiation. Both steps require re-evaluating
+     * the contribution of the emitter while tracking derivative information
+     * through the calculation.
+     *
+     * In contrast to \ref pdf_direction(), evaluating this function can yield
+     * a nonzero result in the case of emission profiles containing a Dirac
+     * delta term (e.g. point or directional lights).
+     *
+     * \param ref
+     *    A 3D reference location within the scene, which may influence the
+     *    sampling process.
+     *
+     * \param ds
+     *    A direction sampling record, which specifies the query location.
+     *
+     * \return
+     *    The incident direct radiance/importance accoated with the sample.
+     */
+    virtual Spectrum
+    eval_direction(const Interaction3f &ref,
+                   const DirectionSample3f &ds,
+                   Mask active = true) const;
+
+    // =============================================================
+    //! @{ \name Position sampling interface
+    // =============================================================
 
     /**
      * \brief Importance sample the spatial component of the
@@ -166,51 +288,8 @@ public:
      * \return
      *    The corresponding sampling density.
      */
-    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const;
-
-    /**
-     * \brief Importance sample a set of wavelengths proportional to the
-     * sensitivity/emission spectrum.
-     *
-     * Any discrepancies between ideal and actual sampled profile are absorbed
-     * into a spectral importance weight that is returned along with the wavelengths.
-     *
-     * In RGB and monochromatic modes, since no wavelengths need to be sampled,
-     * this simply returns the value of the spectrum (pdf = 1).
-     *
-     * \param si
-     *     Surface interaction, used to condition on the spatial dimensions
-     *     in case of a spatially-varying spectrum. In that case, at least
-     *     the `uv` field must be correctly filled.
-     * \param sample
-     *     A uniformly distributed 1D value that is used to sample the spectral
-     *     dimension of the emission profile.
-     *
-     * \return
-     *    The set of sampled wavelengths and (potentially spectrally varying)
-     *    importance weights. The latter account for the difference between the
-     *    profile and the actual used sampling density function.
-     *    In the case of emitters, this will include the emitted radiance.
-     */
-    virtual std::pair<Wavelength, Spectrum>
-    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
-                       Mask active = true) const;
-
-    /**
-     * \brief Evaluate the probability density of the wavelength sampling
-     * method implemented by \ref sample_wavelengths().
-     *
-     * \param wavelengths
-     *    The sampled wavelengths.
-     * \return
-     *    The corresponding sampling density (for each wavelength).
-     */
-    virtual Spectrum pdf_wavelengths(const Spectrum &wavelengths,
-                                     Mask active = true) const;
-
-    //! @}
-    // =============================================================
-
+    virtual Float pdf_position(const PositionSample3f &ps,
+                               Mask active = true) const;
 
     // =============================================================
     //! @{ \name Other query functions
