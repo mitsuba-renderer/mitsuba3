@@ -87,7 +87,7 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     assert ds.delta
     assert ek.allclose(ds.d, d)
 
-    # Evalutate the spectrum
+    # Evaluate the spectrum
     spec = spectrum.eval(it) / (dist**2)
     assert ek.allclose(res, spec)
 
@@ -118,7 +118,9 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     assert ek.all(ds.pdf == 1.0)
     assert ek.all(ds.delta)
     assert ek.allclose(ds.d, d, atol=1e-3)
+    assert emitter.pdf_direction(it, ds) == 0
 
-    # Evalutate the spectrum
+    # Evaluate the spectrum
     spec = spectrum.eval(it) / (dist**2)
     assert ek.allclose(res, spec)
+    assert ek.allclose(emitter.eval_direction(it, ds), spec)

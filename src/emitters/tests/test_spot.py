@@ -79,7 +79,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     # Sample a direction from the emitter
     ds, res = emitter.sample_direction(it, [0, 0])
 
-    # Evalutate the spectrum
+    # Evaluate the spectrum
     spec = spectrum.eval(it)
     spec = ek.select(angle <= beam_width_rad, spec, spec *
                      ((cutoff_angle_rad - angle) * inv_transition_width))

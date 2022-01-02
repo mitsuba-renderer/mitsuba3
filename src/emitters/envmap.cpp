@@ -287,6 +287,13 @@ public:
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
     }
 
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        return eval_spectrum(ds.uv, it.wavelengths, active);
+    }
+
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
@@ -401,7 +408,7 @@ protected:
                 w0 = 1.f - w1;
 
         const uint32_t width = res.x();
-        UInt32 index = pos.x() + pos.y() * width;
+        UInt32 index = ek::fmadd(pos.y(), width, pos.x());
 
         Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
                  v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
