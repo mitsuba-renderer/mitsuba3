@@ -129,16 +129,16 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
 
             it = UInt32(0)
             loop = Loop(name="reparameterize_ray(): forward propagation",
-                        state=(it, Z, dZ, grad_V, grad_div_lhs, sampler))
+                        state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, sampler))
 
             while loop(active & (it < num_auxiliary_rays)):
                 ek.enable_grad(ray.o)
-                ek.set_grad(ray.o, self.grad_in('ray_').o)
+                ek.set_grad(ray.o, self.grad_in('ray').o)
                 Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sampler, ray,
                                                                kappa, power, self.active)
 
                 ek.enqueue(ek.ADMode.Forward, self.params, ray.o)
-                ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+                ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
                 Z += Z_i
                 dZ += dZ_i
@@ -199,7 +199,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             ek.set_grad(direction, grad_direction)
             ek.set_grad(divergence, grad_divergence)
             ek.enqueue(ek.ADMode.Backward, direction, divergence)
-            ek.traverse(Float)
+            ek.traverse(Float, ek.ADMode.Backward)
 
             grad_V = ek.grad(V)
             grad_div_V_1 = ek.grad(div_V_1)
@@ -215,7 +215,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
                 ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
-                ek.traverse(Float, ek.ADFlag.ClearVertices)
+                ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
                 it += 1
 
         def name(self):

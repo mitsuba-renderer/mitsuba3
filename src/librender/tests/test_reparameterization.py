@@ -82,7 +82,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     # print(ek.graphviz_str(Float(1)))
 
     ek.enqueue(ek.ADMode.Forward, params)
-    ek.traverse(mitsuba.core.Float)
+    ek.traverse(mitsuba.core.Float, ek.ADMode.Forward)
 
     grad_d = ek.grad(d)
 
@@ -151,7 +151,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         ek.set_grad(d, grad_direction)
         ek.set_grad(div, grad_divergence)
         ek.enqueue(ek.ADMode.Backward, d, div)
-        ek.traverse(Float, ek.ADFlag.ClearVertices)
+        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
 
         res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
 
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     # print(ek.graphviz_str(Float(1)))
 
     ek.enqueue(ek.ADMode.Forward, params)
-    ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+    ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
     grad_d = ek.grad(d)
     grad_div = ek.grad(div)
