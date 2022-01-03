@@ -465,34 +465,6 @@ def mis_weight(pdf_a, pdf_b):
     return ek.detach(ek.select(pdf_a > 0, a2 / ek.fmadd(pdf_b, pdf_b, a2), 0), True)
 
 
-def develop_block(block: mitsuba.render.ImageBlock):
-    """
-    Perform the weight division in an ImageBlock, returns a tensor with one
-    channel less than before.
-    """
-
-    from mitsuba.core import TensorXf, Float, UInt32, Bool
-
-    channels_in  = block.channel_count()
-    channels_out = channels_in - 1
-    tensor       = block.tensor()
-    size         = tensor.shape[0:2]
-
-    # Compute indices to access specific components of 'values_in'
-    idx         = ek.arange(UInt32, ek.hprod(size) * channels_out)
-    pixel_idx   = idx // channels_out
-    channel_idx = ek.fnmadd(channels_out, pixel_idx, idx)
-    values_idx  = ek.fmadd(pixel_idx, channels_in, channel_idx)
-    weight_idx  = ek.fmadd(pixel_idx, channels_in, channels_out)
-
-    # Gather, and perform the weight division
-    weight_in = ek.gather(Float, tensor.array, weight_idx)
-    values_out = ek.gather(Float, tensor.array, values_idx)
-    values_out /= ek.select(ek.eq(weight_in, 0), 1, weight_in)
-
-    return TensorXf(values_out, (size[0], size[1], channels_out))
-
-
 class ADIntegrator(mitsuba.render.SamplingIntegrator):
     """
     Abstract base class of numerous differentiable integrators in Mitsuba
@@ -605,7 +577,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             gc.collect()
 
             # Perform the weight division and return an image tensor
-            return develop_block(block)
+            sensor.film().put_block(block)
+            return sensor.film().develop()
 
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
@@ -730,7 +703,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             gc.collect()
 
             # Perform the weight division and return an image tensor
-            return develop_block(block)
+            sensor.film().put_block(block)
+            return sensor.film().develop()
 
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
