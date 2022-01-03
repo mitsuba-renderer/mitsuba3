@@ -151,15 +151,9 @@ public:
                                      /* ray_flags = */ +RayFlags::All,
                                      /* coherent = */ ek::eq(depth, 0u));
 
-            /* ek.none_or<false> returns false in JIT variants (i.e. the test
-               is skipped), and it enables a potential early exit in scalar
-               variants */
-            if (ek::none_or<false>(si.is_valid()))
-                break;
-
             // ---------------------- Direct emission ----------------------
 
-            if (ek::any_or<true>(si.shape->is_emitter())) {
+            if (ek::any_or<true>(si.emitter(scene))) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0;
 

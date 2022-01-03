@@ -8,7 +8,7 @@ import mitsuba
 def sensor_shape_dict(radius, center):
     from mitsuba.core import ScalarTransform4f
 
-    d = {
+    return {
         "type": "sphere",
         "radius": radius,
         "to_world": ScalarTransform4f.translate(center),
@@ -22,8 +22,6 @@ def sensor_shape_dict(radius, center):
             },
         }
     }
-
-    return d
 
 
 def test_construct(variant_scalar_rgb):
