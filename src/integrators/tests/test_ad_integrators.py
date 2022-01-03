@@ -497,11 +497,8 @@ REPARAM_CONFIGS_LIST = [  # TODO re-enable
 
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
-    # ('path', False), # TODO re-enable
-    # ('rb', False),
-    # ('prb', False),
-    # ('rbreparam', True),  # TODO re-enable
-    # ('prbreparam', True), # TODO re-enable
+    ('path', False),
+    ('prb', False),
 ]
 
 CONFIGS = []
@@ -641,7 +638,6 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         assert False
 
 
-@pytest.mark.skip("TODO fix this")
 @pytest.mark.slow
 def test04_render_custom_op(variants_all_ad_rgb):
     from mitsuba.core import load_dict, Float, TensorXf, Bitmap
