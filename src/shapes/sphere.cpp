@@ -223,7 +223,7 @@ public:
             ds.dist     = ek::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_theta_max);
-            ek::masked(ds.pdf, ds.dist == 0.f) = 0.f;
+            ek::masked(ds.pdf, ek::eq(ds.dist, 0.f)) = 0.f;
 
             ek::masked(result, outside_mask) = ds;
         }
