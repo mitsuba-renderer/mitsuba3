@@ -146,7 +146,7 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
         if shadow:
             return scene.ray_test(ray)
         else:
-            return scene.ray_intersect_preliminary(ray)
+            return scene.ray_intersect_preliminary(ray, coherent=True)
 
     pi = render()
 
