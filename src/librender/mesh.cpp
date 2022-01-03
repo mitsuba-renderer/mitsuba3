@@ -460,7 +460,9 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     Ray3f ray(Point3f(uv.x(), uv.y(), -1), Vector3f(0, 0, 1), 0, Wavelength(0));
 
-    PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
+    PreliminaryIntersection3f pi =
+        m_parameterization->ray_intersect_preliminary(
+            ray, /* coherent = */ true, active);
 
     if (ek::none_or<false>(pi.is_valid()))
         return ek::zero<SurfaceInteraction3f>();

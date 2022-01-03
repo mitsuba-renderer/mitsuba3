@@ -266,7 +266,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     ''')
 
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     assert ek.allclose(pi.t, 10)
     assert pi.prim_index == 0
@@ -280,7 +280,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
     ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
     assert ek.allclose(pi.t, 10)
     assert pi.prim_index == 1
     assert ek.allclose(pi.prim_uv, [0.3, 0.35])
@@ -349,7 +349,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
     ''')
 
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # si should not be attached if not necessary
     si = pi.compute_surface_interaction(ray)
@@ -401,7 +401,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
     ''')
 
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     ek.enable_grad(ray.o)
     ek.enable_grad(ray.d)
@@ -447,7 +447,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
     ''')
 
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     ek.enable_grad(ray.o)
 
@@ -501,7 +501,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # Test translation
 
     ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # # If the vertices are shifted along z-axis, so does si.t
     apply_transformation(lambda v : Transform4f.translate(v))
@@ -532,7 +532,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # Test rotation
 
     ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # If the vertices are rotated around the center, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.rotate([0, 0, 1], v.x))
@@ -573,7 +573,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 
     # Hit the upper right corner of the rectangle (the 4th vertex)
     ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # ---------------------------------------
     # Test vertex positions
@@ -720,7 +720,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # Test translation
 
     ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0))
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # If the vertices are shifted along x-axis, si.p won't move
     apply_transformation(lambda v : Transform4f.translate(v))
@@ -872,20 +872,20 @@ def test19_update_geometry(variants_vec_rgb):
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
     ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
-    init_t = scene.ray_intersect_preliminary(ray).t
+    init_t = scene.ray_intersect_preliminary(ray, coherent=True).t
     ek.eval(init_t)
 
     v = [0, 0, 10]
     translate(v)
     ray.o += v
-    t = scene.ray_intersect_preliminary(ray).t
+    t = scene.ray_intersect_preliminary(ray, coherent=True).t
     ray.o -= v
     assert(ek.allclose(t, init_t))
 
     v = [-5, 0, 10]
     translate(v)
     ray.o += v
-    t = scene.ray_intersect_preliminary(ray).t
+    t = scene.ray_intersect_preliminary(ray, coherent=True).t
     ray.o -= v
     assert(ek.allclose(t, init_t))
 

@@ -189,7 +189,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                       kappa=self.kappa, power=self.power)
 
         ray = Ray3f(ray_)
-        pi = scene.ray_intersect_preliminary(ray, active_)
+        pi = scene.ray_intersect_preliminary(ray, coherent=True, active=active_)
         valid_ray = active_ & pi.is_valid()
 
         result = Spectrum(0.0)
@@ -255,7 +255,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                               sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0
                 ray = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
-                pi_bsdf = scene.ray_intersect_preliminary(ray, active)
+                pi_bsdf = scene.ray_intersect_preliminary(ray, coherent=False, active=active)
                 si_bsdf = pi_bsdf.compute_surface_interaction(ray, RayFlags.All, active)
 
             # Compute MIS weight for the BSDF sampling
