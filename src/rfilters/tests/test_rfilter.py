@@ -58,9 +58,7 @@ def test07_resampler_box(variant_scalar_rgb):
     import numpy as np
 
     f = load_string("""
-        <rfilter version='2.0.0' type='box'>
-            <float name='radius' value='0.5'/>
-        </rfilter>
+        <rfilter version='2.0.0' type='box'/>
     """)
 
     a = np.linspace(0, 1, 5, dtype=float_dtype)
@@ -85,7 +83,7 @@ def test08_resampler_boundary_conditions(variant_scalar_rgb):
 
     # Use a slightly larger filter
     f = load_string("""
-        <rfilter version='2.0.0' type='box'>
+        <rfilter version='2.0.0' type='tent'>
             <float name='radius' value='0.85'/>
         </rfilter>
     """)
@@ -93,23 +91,27 @@ def test08_resampler_boundary_conditions(variant_scalar_rgb):
     a = np.linspace(0, 1, 5, dtype=float_dtype)
     b = np.zeros(3, dtype=float_dtype)
 
+    w0 = f.eval(0.8) / (f.eval(0.8) + f.eval(0.2) + f.eval(0.4))
+    w1 = f.eval(0.4) / (f.eval(0.8) + f.eval(0.2) + f.eval(0.4))
+    w2 = f.eval(0.2) / (f.eval(0.8) + f.eval(0.2) + f.eval(0.4))
+
     resampler = Resampler(f, 5, 3)
     resampler.set_boundary_condition(FilterBoundaryCondition.Clamp)
     assert resampler.taps() == 3
     resampler.resample(a, 1, b, 1, 1)
-    assert np.allclose(b, [(0 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 1) / 3])
+    assert np.allclose(b, [(0 + 0 + w1*0.25), 0.5, (w1*0.75 + w2*1 + w0*1)])
     resampler.set_boundary_condition(FilterBoundaryCondition.Zero)
     resampler.resample(a, 1, b, 1, 1)
-    assert np.allclose(b, [(0 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0) / 3])
+    assert np.allclose(b, [(0 + 0 + w1*0.25), 0.5, (w1*0.75 + w2*1 + 0)])
     resampler.set_boundary_condition(FilterBoundaryCondition.One)
     resampler.resample(a, 1, b, 1, 1)
-    assert np.allclose(b, [(1 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 1) / 3])
+    assert np.allclose(b, [(w0*1 + 0 + w1*0.25), 0.5, (w1*0.75 + w2*1 + w0*1)])
     resampler.set_boundary_condition(FilterBoundaryCondition.Repeat)
     resampler.resample(a, 1, b, 1, 1)
-    assert np.allclose(b, [(1 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0) / 3])
+    assert np.allclose(b, [(w0*1 + 0 + w1*0.25), 0.5, (w1*0.75 + w2*1 + 0)])
     resampler.set_boundary_condition(FilterBoundaryCondition.Mirror)
     resampler.resample(a, 1, b, 1, 1)
-    assert np.allclose(b, [(0.25 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0.75) / 3])
+    assert np.allclose(b, [(w0*0.25 + 0 + w1*0.25), 0.5, (w1*0.75 + w2*1 + w0*0.75)])
 
 
 def test09_resampler_filter_only(variant_scalar_rgb):
