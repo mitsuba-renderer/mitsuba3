@@ -68,8 +68,8 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
             assert si_found == si_found_inst
 
             if si_found:
-                si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
-                si_inst = s_inst.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
+                si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, coherent=True, active=True)
+                si_inst = s_inst.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, coherent=True, active=True)
 
                 assert si.prim_index == si_inst.prim_index
                 assert si.instance is None
@@ -119,8 +119,8 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
                 for dn_flags in [RayFlags.dNGdUV, RayFlags.dNSdUV]:
                     if si_found:
-                        si = s.ray_intersect(ray, RayFlags.All | dn_flags, True)
-                        si_inst = s_inst.ray_intersect(ray, RayFlags.All | dn_flags, True)
+                        si = s.ray_intersect(ray, RayFlags.All | dn_flags, coherent=True, active=True)
+                        si_inst = s_inst.ray_intersect(ray, RayFlags.All | dn_flags, coherent=True, active=True)
 
                         assert si.prim_index == si_inst.prim_index
                         assert si.instance is None
