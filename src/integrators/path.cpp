@@ -153,7 +153,12 @@ public:
 
             // ---------------------- Direct emission ----------------------
 
-            if (ek::any_or<true>(si.emitter(scene))) {
+            /* ek::any_or() checks for active entries in the provided boolean
+               array. JIT/Megakernel modes can't do this test efficiently as
+               each Monte Carlo sample runs independently. In this case,
+               ek::any_or<..>() returns the template argument (true) which means
+               that the 'if' statement is always conservatively taken. */
+            if (ek::any_or<true>(ek::neq(si.emitter(scene), nullptr))) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0;
 

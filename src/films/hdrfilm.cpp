@@ -251,7 +251,7 @@ public:
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data;
             uint32_t source_ch;
-            size_t pixel_count;
+            uint32_t pixel_count;
             ScalarVector2i size;
 
             /* locked */ {
@@ -286,7 +286,7 @@ public:
             // Index vectors referencing pixels & channels of the output image
             UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
                    pixel_idx   = idx / target_ch,
-                   channel_idx = idx - pixel_idx * target_ch;
+                   channel_idx = ek::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
 
             /* Index vectors referencing source pixels/weights as follows:
                  values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
