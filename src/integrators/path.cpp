@@ -171,14 +171,15 @@ public:
                     result);
             }
 
-            BSDFPtr bsdf = si.bsdf(ray);
-
-            // Perform emitter sampling?
-            Bool active_next = (depth + 1 < m_max_depth) && si.is_valid(),
-                 active_em   = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
+            // Continue tracing the path at this point?
+            Bool active_next = (depth + 1 < m_max_depth) && si.is_valid();
 
             if (ek::none_or<false>(active_next))
                 break; // early exit for scalar mode
+
+            // Perform emitter sampling?
+            BSDFPtr bsdf = si.bsdf(ray);
+            Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
             if (ek::any_or<true>(active_em)) {
                 // Sample the emitter
