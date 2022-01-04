@@ -545,7 +545,7 @@ MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
 template <typename Value>
 MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sample,
                                                        const Value &kappa) {
-#if 0
+#if 1
     // Approach 1: warping method based on standard disk mapping
 
     #if 0
@@ -557,9 +557,9 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
         /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
            distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
         Value sy = ek::max(1.f - sample.y(), 1e-6f);
-        Value cos_theta = 1.f + ek::log(sy + (1.f - sy)
-            * ek::exp(-2.f * kappa)) / kappa;
-    #endif
+        Value cos_theta = 1.f +
+            ek::log(ek::fmadd(1.f - sy, ek::exp(-2.f * kappa), sy)) / kappa;
+#endif
 
     auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
     Value sin_theta = ek::safe_sqrt(1.f - ek::sqr(cos_theta));

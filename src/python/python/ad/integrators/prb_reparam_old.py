@@ -293,4 +293,4 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         return f'PRBReparamIntegrator[max_depth = {self.max_depth}]'
 
 
-mitsuba.render.register_integrator("prbreparam", lambda props: PRBReparamIntegrator(props))
+#  mitsuba.render.register_integrator("prbreparam", lambda props: PRBReparamIntegrator(props))

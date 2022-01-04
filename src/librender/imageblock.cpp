@@ -108,10 +108,12 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
 
     if constexpr (ek::is_jit_array_v<Float>) {
         // If target block is cleared and match size, directly copy data
-        if (m_tensor.array().is_literal() && m_tensor.array()[0] == 0.f &&
-            m_size == block->size() && m_offset == block->offset() &&
+        if (m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size()) {
-            m_tensor.array() = block->tensor().array();
+            if (m_tensor.array().is_literal() && m_tensor.array()[0] == 0.f)
+                m_tensor.array() = block->tensor().array();
+            else
+                m_tensor.array() += block->tensor().array();
         } else {
             accumulate_2d<Float &, const Float &>(
                 block->tensor().array(), source_size,
@@ -185,8 +187,9 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 *ptr++ += values[k];
         } else {
             for (uint32_t k = 0; k < m_channel_count; ++k) {
-                ek::scatter_reduce(ReduceOp::Add, m_tensor.array(), values[k],
-                                   index, active);
+                if (!values[k].is_literal() || values[k][0] != 0)
+                    ek::scatter_reduce(ReduceOp::Add, m_tensor.array(), values[k],
+                                       index, active);
                 index++;
             }
         }
@@ -320,8 +323,9 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                             ENOKI_MARK_USED(active_2);
                             ptr[index] = ek::fmadd(values[k], weight, ptr[index]);
                         } else {
-                            ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                               values[k] * weight, index, active_2);
+                            if (!values[k].is_literal() || values[k][0] != 0)
+                                ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                                                   values[k] * weight, index, active_2);
                         }
 
                         index++;
@@ -380,7 +384,10 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // 2. Coalesced accumulation method (see ImageBlock constructor)
     // ===================================================================
 
-    if (JIT && m_coalesce) {
+    if constexpr (JIT) {
+        if (!m_coalesce)
+            return;
+
         // Number of pixels that may need to be visited on either side (-n..n)
         uint32_t n = ek::ceil2int<uint32_t>(radius - .5f);
 
@@ -450,8 +457,9 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Float weight = weights_y[ys] * weights_x[xs];
 
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                           values[k] * weight, index, active_2);
+                        if (!values[k].is_literal() || values[k][0] != 0)
+                            ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                                               values[k] * weight, index, active_2);
                         index++;
                     }
 
