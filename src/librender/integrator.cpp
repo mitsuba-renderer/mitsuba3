@@ -193,6 +193,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (develop)
             result = film->develop();
     } else {
+        ek::sync_thread(); // Separate from scene initialization (for timings)
+
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(", %u passes,", n_passes) : "");
