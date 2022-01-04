@@ -180,7 +180,6 @@ int main(int argc, char *argv[]) {
     auto arg_source    = parser.add(StringVec{ "-S" });
     auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
-    bool profile = false, print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
 
@@ -257,17 +256,13 @@ int main(int argc, char *argv[]) {
         bool llvm = string::starts_with(mode, "llvm_");
 
 #if defined(MTS_ENABLE_CUDA)
-        if (cuda) {
+        if (cuda)
             jit_init((uint32_t) JitBackend::CUDA);
-            profile = false;
-        }
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
-        if (llvm) {
+        if (llvm)
             jit_init((uint32_t) JitBackend::LLVM);
-            profile = false;
-        }
 #endif
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
@@ -313,8 +308,7 @@ int main(int argc, char *argv[]) {
             (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
             Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA) mode!");
 
-        if (profile)
-            Profiler::static_initialization();
+        Profiler::static_initialization();
         color_management_static_initialization(cuda, llvm);
 
         MTS_INVOKE_VARIANT(mode, scene_static_accel_initialization);
@@ -407,11 +401,7 @@ int main(int argc, char *argv[]) {
 
     MTS_INVOKE_VARIANT(mode, scene_static_accel_shutdown);
     color_management_static_shutdown();
-    if (profile) {
-        Profiler::static_shutdown();
-        if (print_profile)
-            Profiler::print_report();
-    }
+    Profiler::static_shutdown();
     Bitmap::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();

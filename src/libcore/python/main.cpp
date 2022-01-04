@@ -3,6 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_DECLARE(atomic);
@@ -64,6 +65,7 @@ PYBIND11_MODULE(core_ext, m) {
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
+    Profiler::static_initialization();
 
     // Append the mitsuba directory to the FileResolver search path list
     ref<FileResolver> fr = Thread::thread()->file_resolver();
@@ -99,6 +101,7 @@ PYBIND11_MODULE(core_ext, m) {
        the 'mitsuba::Object' Python type is garbage collected */
     py::cpp_function cleanup_callback(
         [](py::handle weakref) {
+            Profiler::static_shutdown();
             Bitmap::static_shutdown();
             Logger::static_shutdown();
             Thread::static_shutdown();

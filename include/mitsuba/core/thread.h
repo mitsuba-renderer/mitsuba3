@@ -182,7 +182,7 @@ private:
 };
 
 /**
- * \brief Captures a thread environment (logger, file resolver, profiler flags).
+ * \brief Captures a thread environment (logger and file resolver).
  * Used with \ref ScopedSetThreadEnvironment
  */
 class MTS_EXPORT_CORE ThreadEnvironment {
@@ -195,9 +195,6 @@ public:
 private:
     ref<Logger> m_logger;
     ref<FileResolver> m_file_resolver;
-#if defined(MTS_ENABLE_PROFILER)
-    uint64_t m_profiler_flags;
-#endif
 };
 
 /// RAII-style class to temporarily switch to another thread's logger/file resolver
@@ -212,9 +209,6 @@ public:
 private:
     ref<Logger> m_logger;
     ref<FileResolver> m_file_resolver;
-#if defined(MTS_ENABLE_PROFILER)
-    uint64_t m_profiler_flags;
-#endif
 };
 
 NAMESPACE_END(mitsuba)
