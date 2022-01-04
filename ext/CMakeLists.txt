@@ -10,7 +10,7 @@ list(REMOVE_ITEM MTS_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 #  Link against Intel ITT (profiler events for VTune, optional)
 # ---------------------------------------------------------------------------
 
-if (MTS_ENABLE_PROFILER AND MTS_PROFILER_ITTNOTIFY)
+if (MTS_PROFILER_ITTNOTIFY)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS_NOWARN}")
   add_subdirectory(ittnotify/ittnotify)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
@@ -27,7 +27,7 @@ set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS}"
 set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-if (MTS_ENABLE_PROFILER AND MTS_PROFILER_NVTX)
+if (MTS_PROFILER_NVTX)
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
     set(ENOKI_JIT_ENABLE_NVTX ON)
 endif()

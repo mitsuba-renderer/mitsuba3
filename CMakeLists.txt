@@ -27,12 +27,6 @@ option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 # Build the graphical user interface? (Note that this feature remains incomplete)
 option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
 
-if (UNIX)
-  # Mitsuba 2 ships with a built-in sampling profiler that highlights where
-  # rendering time is spent. Only supported on Linux/macOS at the moment.
-  option(MTS_ENABLE_PROFILER "Enable sampling profiler" ON)
-endif()
-
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
 # On OSX:
@@ -359,14 +353,6 @@ if (IS_BIG_ENDIAN)
   add_definitions(-DBIG_ENDIAN)
 else()
   add_definitions(-DLITTLE_ENDIAN)
-endif()
-
-# Completely disable this for now
-if (MTS_ENABLE_PROFILER)
-  add_definitions(-DMTS_ENABLE_PROFILER=1)
-  message(STATUS "Mitsuba: sampling profiler enabled.")
-else()
-  message(STATUS "Mitsuba: sampling profiler disabled.")
 endif()
 
 # Get the current working branch

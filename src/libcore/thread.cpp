@@ -2,7 +2,6 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/profiler.h>
 #include <enoki-thread/thread.h>
 #include <condition_variable>
 #include <thread>
@@ -553,9 +552,6 @@ ThreadEnvironment::ThreadEnvironment() {
     Assert(thread);
     m_logger = thread->logger();
     m_file_resolver = thread->file_resolver();
-#if defined(MTS_ENABLE_PROFILER)
-    m_profiler_flags = *profiler_flags();
-#endif
 }
 
 ScopedSetThreadEnvironment::ScopedSetThreadEnvironment(ThreadEnvironment &env) {
@@ -565,20 +561,12 @@ ScopedSetThreadEnvironment::ScopedSetThreadEnvironment(ThreadEnvironment &env) {
     m_file_resolver = thread->file_resolver();
     thread->set_logger(env.m_logger);
     thread->set_file_resolver(env.m_file_resolver);
-#if defined(MTS_ENABLE_PROFILER)
-    uint64_t *profiler_flags = mitsuba::profiler_flags();
-    m_profiler_flags = *profiler_flags;
-    *profiler_flags = env.m_profiler_flags;
-#endif
 }
 
 ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
     Thread *thread = Thread::thread();
     thread->set_logger(m_logger);
     thread->set_file_resolver(m_file_resolver);
-#if defined(MTS_ENABLE_PROFILER)
-    *profiler_flags() = m_profiler_flags;
-#endif
 }
 
 MTS_IMPLEMENT_CLASS(Thread, Object)
