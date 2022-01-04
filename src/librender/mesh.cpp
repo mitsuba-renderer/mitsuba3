@@ -26,24 +26,27 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
-    if (props.get<bool>("face_normals", false))
-        m_disable_vertex_normals = true;
 
+    m_face_normals = props.get<bool>("face_normals", false);
     m_flip_normals = props.get<bool>("flip_normals", false);
 }
 
 MTS_VARIANT
 Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
                             ScalarSize face_count, const Properties &props,
-                            bool has_vertex_normals, bool has_vertex_texcoords)
-    : Base(props), m_name(name), m_vertex_count(vertex_count), m_face_count(face_count) {
+                            bool has_vertex_normals, bool has_vertex_texcoords) : Mesh(props) {
+    m_name = name;
+    m_vertex_count = vertex_count;
+    m_face_count = face_count;
 
     m_faces = ek::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
     m_vertex_positions = ek::zero<FloatStorage>(m_vertex_count * 3);
+
     if (has_vertex_normals)
         m_vertex_normals = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
         m_vertex_texcoords = ek::zero<FloatStorage>(m_vertex_count * 2);
+
     initialize();
 }
 
@@ -270,7 +273,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             Log(Warn, "\"%s\": computed vertex normals (%i invalid vertices!)",
                 m_name, invalid_counter);
     } else {
-        auto fi = face_indices(ek::arange<UInt32>(m_face_count));
+        // The following is JITed into two separate kernel launches
+
+        // --------------------- Kernel 1 starts here ---------------------
+        Vector3u fi = face_indices(ek::arange<UInt32>(m_face_count));
 
         Vector3f v[3] = { vertex_position(fi[0]),
                           vertex_position(fi[1]),
@@ -288,9 +294,12 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             for (int j = 0; j < 3; ++j)
                 ek::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
         }
+
+        // --------------------- Kernel 2 starts here ---------------------
+
         normals = ek::normalize(normals);
 
-        auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
+        UInt32 ni = ek::arange<UInt32>(m_vertex_count) * 3;
         for (size_t i = 0; i < 3; ++i)
             ek::scatter(m_vertex_normals,
                         ek::float32_array_t<Float>(normals[i]), ni + i);
@@ -342,6 +351,75 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         table.data(),
         m_face_count
     );
+}
+
+MTS_VARIANT
+ref<Mesh<Float, Spectrum>>
+Mesh<Float, Spectrum>::merge(const Mesh *other) const {
+    if (other->emitter() != m_emitter || other->sensor() != m_sensor ||
+        other->bsdf() != m_bsdf ||
+        other->interior_medium() != m_interior_medium ||
+        other->exterior_medium() != m_exterior_medium ||
+        other->has_vertex_normals() != has_vertex_normals() ||
+        other->has_vertex_texcoords() != has_vertex_texcoords() ||
+        other->has_face_normals() != has_face_normals() ||
+        other->has_mesh_attributes() || has_mesh_attributes())
+        Throw("Mesh::merge(): the two meshes are incompatible (%s and %s)!",
+              to_string(), other->to_string());
+
+    Properties props;
+    if (m_bsdf)
+        props.set_object("bsdf", (Object *) m_bsdf.get());
+    if (m_interior_medium)
+        props.set_object("interior", (Object *) m_interior_medium.get());
+    if (m_exterior_medium)
+        props.set_object("exterior", (Object *) m_exterior_medium.get());
+    if (m_sensor)
+        props.set_object("sensor", (Object *) m_sensor.get());
+    if (m_emitter)
+        props.set_object("emitter", (Object *) m_emitter.get());
+    props.set_bool("face_normals", m_face_normals);
+
+    ref<Mesh> result = new Mesh(
+        m_name + " + " + other->m_name, m_vertex_count + other->vertex_count(),
+        m_face_count + other->face_count(), props, has_vertex_normals(),
+        has_vertex_texcoords());
+
+    result->m_vertex_positions =
+        ek::concat(m_vertex_positions, other->m_vertex_positions);
+
+    if (has_vertex_normals())
+        result->m_vertex_normals =
+            ek::concat(m_vertex_normals, other->m_vertex_normals);
+
+    if (has_vertex_texcoords())
+        result->m_vertex_texcoords =
+            ek::concat(m_vertex_texcoords, other->m_vertex_texcoords);
+
+    result->m_faces = ek::concat(m_faces, other->m_faces);
+    result->m_bbox = m_bbox;
+    result->m_bbox.expand(other->m_bbox);
+
+    if constexpr (ek::is_jit_array_v<Float>) {
+        UInt32 threshold = ek::opaque<UInt32>(face_count() * 3),
+               offset    = ek::opaque<UInt32>(vertex_count()),
+               index     = ek::arange<UInt32>(result->face_count() * 3);
+
+        result->m_faces = ek::select(index < threshold, result->m_faces,
+                                     result->m_faces + offset);
+
+        ek::eval(result->m_faces, result->m_vertex_positions,
+                 result->m_vertex_normals, result->m_vertex_texcoords);
+    } else {
+        uint32_t  offset = vertex_count(),
+                 *ptr    = result->m_faces.data() + face_count() * 3;
+        for (size_t i = 0; i < other->face_count() * 3; ++i)
+            *ptr++ += offset;
+    }
+
+    result->initialize();
+
+    return result;
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
@@ -916,7 +994,7 @@ MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     if (!m_area_pmf.empty())
         oss << "  surface_area = " << m_area_pmf.sum() << "," << std::endl;
 
-    oss << "  disable_vertex_normals = " << m_disable_vertex_normals;
+    oss << "  face_normals = " << m_face_normals;
 
     if (!m_mesh_attributes.empty()) {
         oss << "," << std::endl << "  mesh attributes = [" << std::endl;

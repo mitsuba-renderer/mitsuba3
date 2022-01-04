@@ -27,7 +27,7 @@ def test01_create_mesh(variant_scalar_rgb):
   face_count = 2,
   faces = [24 B of face data],
   surface_area = 0.96,
-  disable_vertex_normals = 0
+  face_normals = 0
 ]"""
 
 
@@ -195,7 +195,7 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
   vertices = [72 B of vertex data],
   face_count = 1,
   faces = [24 B of face data],
-  disable_vertex_normals = 0,
+  face_normals = 0,
   mesh attributes = [
     face_color: 3 floats
   ]
@@ -223,7 +223,7 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
   vertices = [72 B of vertex data],
   face_count = 2,
   faces = [24 B of face data],
-  disable_vertex_normals = 0,
+  face_normals = 0,
   mesh attributes = [
     vertex_color: 3 floats
   ]

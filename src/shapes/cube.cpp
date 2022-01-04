@@ -34,7 +34,7 @@ public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, m_mesh_attributes,
-                    m_disable_vertex_normals, has_vertex_normals,
+                    m_face_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals,
                     initialize)
     MTS_IMPORT_TYPES()

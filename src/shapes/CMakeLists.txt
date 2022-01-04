@@ -13,6 +13,7 @@ add_plugin(cube        cube.cpp)
 
 add_plugin(shapegroup  shapegroup.cpp)
 add_plugin(instance    instance.cpp)
+add_plugin(merge       merge.cpp)
 
 if (MTS_ENABLE_EMBREE)
     target_link_libraries(sphere   PRIVATE embree)

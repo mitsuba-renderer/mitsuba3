@@ -148,7 +148,7 @@ class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    m_vertex_texcoords, m_faces, m_face_normals,
                     has_vertex_normals, has_vertex_texcoords,
                     recompute_vertex_normals, vertex_position, vertex_normal,
                     initialize)
@@ -284,7 +284,7 @@ public:
         read_helper(stream, double_precision, vertex_positions.get(), 3);
 
         if (has_normals) {
-            if (m_disable_vertex_normals)
+            if (m_face_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
             else
@@ -319,13 +319,13 @@ public:
 
         m_faces = ek::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
         m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             m_vertex_normals = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (has_texcoords)
             m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             vertex_data_bytes += 3 * sizeof(InputFloat);
         if (has_texcoords)
             vertex_data_bytes += 2 * sizeof(InputFloat);
@@ -337,7 +337,7 @@ public:
             util::time_string((float) timer.value())
         );
 
-        if (!m_disable_vertex_normals && !has_normals) {
+        if (!m_face_normals && !has_normals) {
             Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,

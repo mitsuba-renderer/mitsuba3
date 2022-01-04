@@ -4217,7 +4217,7 @@ static const char *__doc_mitsuba_Mesh_m_area_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_disable_vertex_normals =
+static const char *__doc_mitsuba_Mesh_m_face_normals =
 R"doc(Flag that can be set by the user to disable loading/computation of
 vertex normals)doc";
 
