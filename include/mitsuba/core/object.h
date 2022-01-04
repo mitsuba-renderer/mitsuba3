@@ -273,8 +273,10 @@ private:
 class TraversalCallback {
 public:
     /// Inform the traversal callback about an attribute of an instance
-    template <typename T> void put_parameter(const std::string &name, T &v) {
-        put_parameter_impl(name, &v, typeid(T));
+    template <typename T>
+    void put_parameter(const std::string &name, T &v,
+                       bool shape_parameter = false) {
+        put_parameter_impl(name, &v, typeid(T), shape_parameter);
     }
 
     /// Inform the tranversal callback that the instance references another Mitsuba object
@@ -285,7 +287,8 @@ protected:
     /// Actual implementation of \ref put_parameter(). [To be provided by subclass]
     virtual void put_parameter_impl(const std::string &name,
                                     void *ptr,
-                                    const std::type_info &type) = 0;
+                                    const std::type_info &type,
+                                    bool shape_parameter) = 0;
 };
 
 /// Prints the canonical string representation of an object instance

@@ -10,6 +10,7 @@ import gc
 
 def render_forward(self: mitsuba.render.Integrator,
                    scene: mitsuba.render.Scene,
+                   params: Any,
                    sensor: Union[int, mitsuba.render.Sensor] = 0,
                    seed: int = 0,
                    spp: int = 0) -> mitsuba.core.TensorXf:
@@ -37,17 +38,30 @@ def render_forward(self: mitsuba.render.Integrator,
     that can be obtained obtained via a call to
     ``mitsuba.python.util.traverse()``.
 
-    The default implementation of this function relies on naive automatic
-    differentiation (AD), which records a computation graph of the rendering
-    step that is subsequently traversed to propagate derivatives. This tends to
-    be relatively inefficient due to the need to track intermediate program
-    state; in particular, the calculation can easily run out of memory.
-    Integrators like ``rb`` (Radiative Backpropagation) and ``prb`` (Path
-    Replay Backpropagation) that are specifically designed for differentiation
-    can be significantly more efficient.
+    Note the default implementation of this functionality relies on naive
+    automatic differentiation (AD), which records a computation graph of the
+    primal rendering step that is subsequently traversed to propagate
+    derivatives. This tends to be relatively inefficient due to the need to
+    track intermediate program state. In particular, it means that
+    differentiation of nontrivial scenes at high sample counts will often run
+    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+    ``prb`` (Path Replay Backpropagation) that are specifically designed for
+    differentiation can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
+
+    Parameter ``params``:
+       An arbitrary container of scene parameters that should receive
+       gradients. Typically this will be an instance of type
+       ``mitsuba.python.utils.SceneParameters`` obtained via
+       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       list/dict/object tree (Enoki will traverse it to find all parameters).
+       Gradient tracking must be explicitly enabled for each of these
+       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       ``render_forward()`` will not do this for you). Furthermore,
+       ``ek.set_grad(...)`` must be used to associate specific gradient values
+       with each parameter.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -87,6 +101,7 @@ def render_forward(self: mitsuba.render.Integrator,
 
 def render_backward(self: mitsuba.render.Integrator,
                     scene: mitsuba.render.Scene,
+                    params: Any,
                     grad_in: mitsuba.core.TensorXf,
                     sensor: Union[int, mitsuba.render.Sensor] = 0,
                     seed: int = 0,
@@ -108,17 +123,28 @@ def render_backward(self: mitsuba.render.Integrator,
     to ``mitsuba.python.util.traverse()``. Use ``ek.grad()`` to query the
     resulting gradients of these parameters once ``render_backward()`` returns.
 
-    The default implementation of this function relies on naive automatic
-    differentiation (AD), which records a computation graph of the rendering
-    step that is subsequently traversed to propagate derivatives. This tends to
-    be relatively inefficient due to the need to track intermediate program
-    state; in particular, the calculation can easily run out of memory.
-    Integrators like ``rb`` (Radiative Backpropagation) and ``prb`` (Path
-    Replay Backpropagation) that are specifically designed for differentiation
-    can be significantly more efficient.
+    Note the default implementation of this functionality relies on naive
+    automatic differentiation (AD), which records a computation graph of the
+    primal rendering step that is subsequently traversed to propagate
+    derivatives. This tends to be relatively inefficient due to the need to
+    track intermediate program state. In particular, it means that
+    differentiation of nontrivial scenes at high sample counts will often run
+    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+    ``prb`` (Path Replay Backpropagation) that are specifically designed for
+    differentiation can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to be rendered differentially.
+
+    Parameter ``params``:
+       An arbitrary container of scene parameters that should receive
+       gradients. Typically this will be an instance of type
+       ``mitsuba.python.utils.SceneParameters`` obtained via
+       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       list/dict/object tree (Enoki will traverse it to find all parameters).
+       Gradient tracking must be explicitly enabled for each of these
+       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       ``render_backward()`` will not do this for you).
 
     Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
         Gradient image that should be back-propagated.
@@ -169,16 +195,13 @@ del render_forward
 class _RenderOp(ek.CustomOp):
     """ Differentiable rendering CustomOp, used in render() below """
 
-    def eval(self, scene, sensor, integrator, seed, spp, params):
+    def eval(self, scene, sensor, params, integrator, seed, spp):
         self.scene = scene
-        self.integrator = integrator
         self.sensor = sensor
+        self.params = params
+        self.integrator = integrator
         self.seed = seed
         self.spp = spp
-
-        # 'params' is unused and just specified to correctly wire the
-        # rendering step into the AD computation graph
-        del params
 
         with ek.suspend_grad():
             return self.integrator.render(
@@ -192,11 +215,11 @@ class _RenderOp(ek.CustomOp):
 
     def forward(self):
         self.set_grad_out(
-            self.integrator.render_forward(self.scene, self.sensor,
+            self.integrator.render_forward(self.scene, self.params, self.sensor,
                                            self.seed[1], self.spp[1]))
 
     def backward(self):
-        self.integrator.render_backward(self.scene, self.grad_out(),
+        self.integrator.render_backward(self.scene, self.params, self.grad_out(),
                                         self.sensor, self.seed[1], self.spp[1])
 
     def name(self):
@@ -204,7 +227,7 @@ class _RenderOp(ek.CustomOp):
 
 
 def render(scene: mitsuba.render.Scene,
-           params: Any,
+           params: Any = None,
            sensor: Union[int, mitsuba.render.Sensor] = 0,
            integrator: mitsuba.render.Integrator = None,
            seed: int = 0,
@@ -228,20 +251,26 @@ def render(scene: mitsuba.render.Scene,
     automatic differentiation (AD), which records a computation graph of the
     primal rendering step that is subsequently traversed to propagate
     derivatives. This tends to be relatively inefficient due to the need to
-    track intermediate program state; in particular, the calculation can easily
-    run out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+    track intermediate program state. In particular, it means that
+    differentiation of nontrivial scenes at high sample counts will often run
+    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
     Parameter ``scene`` (``mitsuba.render.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-       Scene parameter data structure. Note that gradient tracking must be
-       explicitly enabled for each desired parameter using
-       ``ek.enable_grad(params['parameter_name'])``. Furthermore,
-       ``ek.set_grad(...)`` must be used to associate specific gradient
-       values with parameters if forward mode derivatives are desired.
+    Parameter ``params``:
+       An arbitrary container of scene parameters that should receive
+       gradients. Typically this will be an instance of type
+       ``mitsuba.python.utils.SceneParameters`` obtained via
+       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       list/dict/object tree (Enoki will traverse it to find all parameters).
+       Gradient tracking must be explicitly enabled for each of these
+       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       ``render()`` will not do this for you). Furthermore,
+       ``ek.set_grad(...)`` must be used to associate specific gradient values
+       with parameters if forward mode derivatives are desired.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -297,8 +326,8 @@ def render(scene: mitsuba.render.Scene,
         raise Exception('The primal and differential seed should be different '
                         'to ensure unbiased gradient computation!')
 
-    return ek.custom(_RenderOp, scene, sensor, integrator,
-                     (seed, seed_grad), (spp, spp_grad), params)
+    return ek.custom(_RenderOp, scene, sensor, params, integrator,
+                     (seed, seed_grad), (spp, spp_grad))
 
 
 # -------------------------------------------------------------
@@ -366,23 +395,31 @@ def prepare(sensor: mitsuba.render.Sensor,
 
     return sampler, spp
 
-
-def sample_rays(sensor: mitsuba.render.Sensor,
-                sampler: mitsuba.render.Sampler,
-                reparameterize = False):
+def sample_rays(
+    scene: mitsuba.render.Scene,
+    sensor: mitsuba.render.Sensor,
+    sampler: mitsuba.render.Sampler,
+    reparam: Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
+                      Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]] = None
+) -> Tuple[mitsuba.render.RayDifferential3f, mitsuba.core.Spectrum, mitsuba.core.Vector2f]:
     """
     Sample a 2D grid of primary rays for a given sensor
 
     Returns a tuple containing
 
-    1. a set of rays of type ``mitsuba.render.RayDifferential3f``.
-    2. sampling weights of type ``mitsuba.core.Spectrum`.
-    3. the continuous 2D sample positions of type ``Vector2f``
-    4. the pixel index
-    5. the aperture sample (if applicable)
+    - the set of sampled rays
+    - a ray weight (usually 1 if the sensor's response function is sampled
+      perfectly)
+    - the continuous 2D image-space positions associated with each ray
+
+    When a reparameterization is provided, the returned image-space position
+    will will be reparameterized (however, the returned weights and ray
+    direction are detached).
     """
+
     from mitsuba.core import Float, UInt32, Vector2f, \
-        ScalarVector2f, Vector2u, Ray3f
+        ScalarVector2f, Vector2u
+    from mitsuba.render import Interaction3f
 
     film = sensor.film()
     film_size = film.crop_size()
@@ -393,15 +430,6 @@ def sample_rays(sensor: mitsuba.render.Sensor,
         film_size += 2 * border_size
 
     spp = sampler.sample_count()
-
-    if reparameterize:
-        if rfilter.is_box_filter():
-            raise Exception("Please use a different reconstruction filter, the "
-                            "box filter cannot be used with this integrator!")
-
-        if not film.sample_border():
-            raise Exception("This integrator requires that the film's "
-                            "'sample_border' parameter is set to true.")
 
     # Compute discrete sample position
     idx = ek.arange(UInt32, ek.hprod(film_size) * spp)
@@ -443,14 +471,38 @@ def sample_rays(sensor: mitsuba.render.Sensor,
     if mitsuba.core.is_spectral:
         wavelength_sample = sampler.next_1d()
 
-    rays, weights = sensor.sample_ray(
+    ray, weight = sensor.sample_ray(
         time=wavelength_sample,
         sample1=sampler.next_1d(),
         sample2=pos_adjusted,
         sample3=aperture_sample
     )
 
-    return rays, weights, pos_f, aperture_sample
+    if reparam is not None:
+        if rfilter.is_box_filter():
+            raise Exception(
+                "This differentiable integrator reparameterizes the "
+                "integration domain, which is incompatible with the box "
+                "filter. Please use a smooth reconstruction filter (e.g. "
+                "'gaussian', which is the default)")
+
+        if not film.sample_border():
+            raise Exception("This integrator requires that the film's "
+                            "'sample_border' parameter is set to true.")
+
+        with ek.resume_grad():
+            reparam_d, _ = reparam(ray)
+
+            # Create a fake interaction along the sampled ray and use it to
+            # recompute importance and image position with derivative tracking
+            it = ek.zero(Interaction3f)
+            it.p = ray.o + reparam_d
+            ds, _ = sensor.sample_direction(it, aperture_sample)
+
+            # Return a reparameterized image position
+            pos_f = ds.uv
+
+    return ray, weight, pos_f
 
 
 def mis_weight(pdf_a, pdf_b):
@@ -480,11 +532,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
          the *russian roulette* path termination criterion. For example, if set to
          |1|, then path generation many randomly cease after encountering directly
          visible surfaces. (Default: |5|)
-     * - split_derivatives
+     * - split_differential
        - |bool|
        - The differential phase of path replay-style integrators is split into
          two sub-phases that must communicate with each other. When
-         |split_derivatives| is set to |true|, those two phases are executed
+         |split_differential| is set to |true|, those two phases are executed
          using separate kernel launches that exchange information through
          global memory. If set to |false|, they are merged into a single kernel
          that keeps this information within registers. There are various
@@ -506,7 +558,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
 
-        self.split_derivative = props.get('split_derivative', False)
+        self.split_differential = props.get('split_differential', False)
 
     def aovs(self):
         return []
@@ -542,11 +594,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 aovs=self.aovs()
             )
 
-            # Generate many rays from the camera
-            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
+            # Generate a set of rays starting at the sensor
+            ray, weight, pos = sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
-            spec, valid, state = self.sample(
+            L, valid, state = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
@@ -565,11 +617,10 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Accumulate into the image block
             alpha = ek.select(valid, Float(1), Float(0))
-            block.put(pos, ray.wavelengths, spec * weight, alpha)
+            block.put(pos, ray.wavelengths, L * weight, alpha)
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, ap_sample, spec, \
-                valid, state, alpha
+            del sampler, ray, weight, pos, L, valid, state, alpha
 
             # Probably a little overkill, but why not.. If there are any
             # Enoki arrays to be collected by Python's cyclic GC, then
@@ -578,11 +629,52 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Perform the weight division and return an image tensor
             sensor.film().put_block(block)
-            return sensor.film().develop()
+            self.primal_image = sensor.film().develop()
+
+            return self.primal_image
+
+    def create_reparam(self,
+                       scene: mitsuba.render.Scene,
+                       wavefront_size: int,
+                       seed: int,
+                       params: Any):
+
+        # Give up if the integrator doesn't provide a 'reparam' function
+        if not hasattr(self, 'reparam'):
+            return None
+
+        from mitsuba.core import UInt32, sample_tea_32, PCG32, Bool
+
+        # Create a uniform random number generator that won't show any
+        # correlation with the main sampler. PCG32Sampler.seed() uses
+        # the same logic except for the XOR with -1
+        idx = ek.arange(UInt32, wavefront_size)
+        tmp = ek.opaque(UInt32, 0xffffffff ^ seed)
+        v0, v1 = sample_tea_32(tmp, idx)
+        rng = PCG32(initstate=v0, initseq=v1)
+
+        # Only link the reparameterization CustomOp to differentiable scene
+        # parameters with the AD computation graph if they control shape
+        # information (vertex positions, etc.)
+        if isinstance(params, mitsuba.python.util.SceneParameters):
+            params = params.copy()
+            params.keep_shape()
+
+        # Return wrapper capturing 'scene', 'rng', 'params' for convenience. It
+        # takes a ray and a boolean active mask as input and returns the
+        # reparameterized ray direction and the Jacobian determinant of the
+        # change of variables.
+        def reparam_func(
+            ray: mitsuba.core.Ray3f, active: Bool = Bool(True)
+        ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
+            return self.reparam(scene, rng, params, ray, active)
+
+        return reparam_func
 
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
+                       params: Any,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
                        seed: int = 0,
                        spp: int = 0) -> mitsuba.core.TensorXf:
@@ -613,8 +705,17 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         Parameter ``scene`` (``mitsuba.render.Scene``):
             The scene to be rendered differentially.
 
-        Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
-            Gradient image that should be back-propagated.
+        Parameter ``params``:
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mitsuba.python.utils.SceneParameters`` obtained via
+           ``mitsuba.python.util.traverse()``. However, it could also be a Python
+           list/dict/object tree (Enoki will traverse it to find all parameters).
+           Gradient tracking must be explicitly enabled for each of these
+           parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+           ``render_forward()`` will not do this for you). Furthermore,
+           ``ek.set_grad(...)`` must be used to associate specific gradient values
+           with each parameter.
 
         Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
             Specify a sensor or a (sensor index) to render the scene from a
@@ -634,7 +735,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             scene specification takes precedence if ``spp=0``.
         """
 
-        from mitsuba.core import Bool, UInt32, Float
+        from mitsuba.core import Bool, UInt32, Float, PCG32
+        from mitsuba.render import ImageBlock
+
+        film = sensor.film()
+        aovs = self.aovs()
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -642,40 +747,84 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         # Disable derivatives in all of the following
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = prepare(
-                sensor=sensor,
-                seed=seed,
-                spp=spp,
-                aovs=self.aovs()
-            )
+            sampler, spp = prepare(sensor, seed, spp, aovs)
 
-            # Generate many rays from the camera
-            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
+            # Try to create a reparameterization
+            reparam = self.create_reparam(scene, sampler.wavefront_size(),
+                                          seed, params)
+
+            # Generate a set of rays starting at the sensor
+            ray, weight, pos = sample_rays(scene, sensor, sampler, reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            spec, valid, state_out = self.sample(
+            L, valid, state_out = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ray,
+                ray=ek.detach(ray),
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
                 active=Bool(True)
             )
 
-            # Garbage collect unused values to simplify kernel about to be run
-            del spec, valid, ap_sample
+            # No image-space reparameterization derivatives by default
+            reparam_deriv = None
 
-            if self.split_derivative:
+            # Pontentially account for the effect of the reparameterization on
+            # the measurement integral performed at the sensor. When specifying
+            # split_differential=True, it will be merged into the first of two
+            # differential megakernels, which can be useful for balancing their
+            # size/complexity.
+            with ek.resume_grad():
+                if ek.grad_enabled(pos):
+                    reparam_deriv = film.create_block()
+
+                    # Only use the coalescing feature when rendering enough samples
+                    reparam_deriv.set_coalesce(reparam_deriv.coalesce() and spp >= 4)
+
+                    # Deposit samples with gradient tracking for 'pos'. Why is
+                    # the Jacobian determinant ignored here? That's because it
+                    # would also need to be applied to the weight channel of
+                    # the ImageBlock, which would then cancel out in
+                    # film.develop() where the weight division is performed.
+                    reparam_deriv.put(
+                        pos=pos,
+                        wavelengths=ray.wavelengths,
+                        value=L * weight,
+                        alpha=ek.select(valid, Float(1), Float(0))
+                    )
+
+                    # Compute the derivative of the reparameterized image ..
+                    tensor = reparam_deriv.tensor()
+                    ek.forward_to(tensor,
+                                  ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
+
+                    # Ensure image+derivative are evaluated in the next kernel launch
+                    ek.schedule(tensor, ek.grad(tensor))
+                    del tensor
+
+                    # Done with this part, let's detach the image-space position
+                    ek.disable_grad(pos)
+
+            # Split the two differential phases into two kernels or merge? The
+            # advantage of merging is that the two phases then don't need to
+            # exchange per-sample information through global memory. The
+            # advantage of splitting is that a merged kernel might become very
+            # large and tricky to compile (register allocation, etc.)
+
+            if self.split_differential:
                 # Probably a little overkill, but why not.. If there are any
                 # Enoki arrays to be collected by Python's cyclic GC, then
                 # freeing them may enable loop simplifications in ek.eval().
                 gc.collect()
                 ek.eval(state_out)
 
+            # Garbage collect unused values to simplify kernel about to be run
+            del L, valid, params
+
             # Launch the Monte Carlo sampling process in forward mode
-            spec_2, valid_2, state_out_2 = self.sample(
+            δL, valid_2, state_out_2 = self.sample(
                 mode=ek.ADMode.Forward,
                 scene=scene,
                 sampler=sampler,
@@ -687,31 +836,44 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Prepare an ImageBlock as specified by the film
-            block = sensor.film().create_block()
+            block = film.create_block()
 
             # Only use the coalescing feature when rendering enough samples
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
             alpha = ek.select(valid_2, Float(1), Float(0))
-            block.put(pos, ray.wavelengths, spec_2 * weight, alpha)
+            block.put(pos, ray.wavelengths, δL * weight, alpha)
+
+            # Perform the weight division and return an image tensor
+            film.put_block(block)
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, spec_2, valid_2, \
-                state_out, state_out_2, alpha
+            del sampler, ray, weight, pos, δL, valid_2, \
+                state_out, state_out_2, alpha, block
 
             # Probably a little overkill, but why not.. If there are any
             # Enoki arrays to be collected by Python's cyclic GC, then
             # freeing them may enable loop simplifications in ek.eval().
             gc.collect()
 
-            # Perform the weight division and return an image tensor
-            sensor.film().put_block(block)
-            return sensor.film().develop()
+            result_grad = film.develop()
+
+            # Potentially add the derivative of the reparameterized samples
+            if reparam_deriv is not None:
+                with ek.resume_grad():
+                    film.prepare(aovs)
+                    film.put_block(reparam_deriv)
+                    reparam_result = film.develop()
+                    ek.forward_to(reparam_result)
+                    result_grad += ek.grad(reparam_result)
+
+        return result_grad
 
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
+                        params: Any,
                         grad_in: mitsuba.core.TensorXf,
                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                         seed: int = 0,
@@ -735,6 +897,16 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         Parameter ``scene`` (``mitsuba.render.Scene``):
             The scene to be rendered differentially.
+
+        Parameter ``params``:
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mitsuba.python.utils.SceneParameters`` obtained via
+           ``mitsuba.python.util.traverse()``. However, it could also be a Python
+           list/dict/object tree (Enoki will traverse it to find all parameters).
+           Gradient tracking must be explicitly enabled for each of these
+           parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+           ``render_backward()`` will not do this for you).
 
         Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
             Gradient image that should be back-propagated.
@@ -768,17 +940,22 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         # self.sample() will re-enable gradients as needed, disable them here
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = prepare(sensor, seed, spp)
+            sampler, spp = prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aovs()
+            )
 
-            # Generate many rays from the camera
-            ray, weight, pos, ap_sample = sample_rays(sensor, sampler)
+            # Generate a set of rays starting at the sensor
+            ray, weight, pos = sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            spec, valid, state_out = self.sample(
+            L, valid, state_out = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ray,
+                ray=ek.detach(ray),
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
@@ -786,9 +963,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Garbage collect unused values to simplify kernel about to be run
-            del spec, valid, ap_sample
+            del L, valid
 
-            if self.split_derivative:
+            if self.split_differential:
                 # Probably a little overkill, but why not.. If there are any
                 # Enoki arrays to be collected by Python's cyclic GC, then
                 # freeing them may enable loop simplifications in ek.eval().
@@ -800,13 +977,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                                offset=film.crop_offset(),
                                rfilter=film.rfilter(),
                                normalize=True,
-                               border=False) # May need to revisit..
+                               border=False)
 
             # Use the reconstruction filter to interpolate the values at 'pos'
             δL = block.read(pos) * (weight * ek.rcp(spp))
 
             # Launch Monte Carlo sampling in backward AD mode (2)
-            spec_2, valid_2, state_out_2 = self.sample(
+            L_2, valid_2, state_out_2 = self.sample(
                 mode=ek.ADMode.Backward,
                 scene=scene,
                 sampler=sampler,
@@ -818,7 +995,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # We don't need any of the outputs here
-            del spec_2, valid_2, state_out, state_out_2, δL, \
+            del L_2, valid_2, state_out, state_out_2, δL, \
                 ray, weight, pos, block, sampler
 
             # Probably a little overkill, but why not.. If there are any

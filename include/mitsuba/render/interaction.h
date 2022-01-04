@@ -481,41 +481,42 @@ enum class RayFlags : uint32_t {
     // =============================================================
 
     /// No flags set
-    None                  = 0x00000,
+    None = 0x0,
 
     /// Compute position and geometric normal
-    Minimal               = 0x00001,
+    Minimal = 0x1,
 
     /// Compute UV coordinates
-    UV                    = 0x00002,
+    UV = 0x2,
 
     /// Compute position partials wrt. UV coordinates
-    dPdUV                 = 0x00004,
+    dPdUV = 0x4,
 
     /// Compute shading normal and shading frame
-    ShadingFrame          = 0x00008,
+    ShadingFrame = 0x8,
 
     /// Compute the geometric normal partials wrt. the UV coordinates
-    dNGdUV                = 0x00010,
+    dNGdUV = 0x10,
 
     /// Compute the shading normal partials wrt. the UV coordinates
-    dNSdUV                = 0x00020,
+    dNSdUV = 0x20,
 
     // =============================================================
     //!              Differentiability compute flags
     // =============================================================
 
     /// Derivatives of the SurfaceInteraction fields follow shape's motion
-    FollowShape      = 0x00040,
+    FollowShape = 0x40,
 
     /// Derivatives of the SurfaceInteraction fields ignore shape's motion
-    DetachShape      = 0x00080,
+    DetachShape = 0x80,
 
     // =============================================================
     //!                 Compound compute flags
     // =============================================================
 
-    /// Compute all fields of the surface interaction data structure (default)
+    /* \brief Default: compute all fields of the surface interaction data
+       structure except shading/geometric normal derivatives */
     All = UV | dPdUV | ShadingFrame,
 
     /// Compute all fields of the surface interaction ignoring shape's motion

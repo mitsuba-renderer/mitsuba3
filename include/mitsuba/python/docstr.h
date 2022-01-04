@@ -3211,6 +3211,8 @@ See the other constructor for an explanation of the parameters.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_border_size = R"doc(Return the border region used by the reconstruction filter)doc";
 
+static const char *__doc_mitsuba_ImageBlock_has_border = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_channel_count = R"doc(Return the number of channels stored by the image block)doc";
 
 static const char *__doc_mitsuba_ImageBlock_class = R"doc()doc";
