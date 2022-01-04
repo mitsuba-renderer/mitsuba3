@@ -30,18 +30,23 @@ class SceneParameters(Mapping):
         self.set_property = set_property
         self.get_property = get_property
 
+    def copy(self):
+        return SceneParameters(
+            dict(self.properties),
+            dict(self.hierarchy))
+
     def __contains__(self, key: str):
         return self.properties.__contains__(key)
 
     def __getitem__(self, key: str):
-        value, value_type, node = self.properties[key]
+        value, value_type, node, _ = self.properties[key]
         if value_type is None:
             return value
         else:
             return self.get_property(value, value_type, node)
 
     def __setitem__(self, key: str, value):
-        cur, value_type, node = self.set_dirty(key)
+        cur, value_type, node, _ = self.set_dirty(key)
         if value_type is None:
             cur.assign(value)
         else:
@@ -54,7 +59,7 @@ class SceneParameters(Mapping):
         return len(self.properties)
 
     def __repr__(self) -> str:
-        param_list = ''
+        param_list = '\n'
         for k, v in self.items():
             def is_diff(x):
                 return ek.is_diff_array_v(x) and ek.is_floating_point_v(x)
@@ -63,7 +68,7 @@ class SceneParameters(Mapping):
                 for k2 in type(v).ENOKI_STRUCT.keys():
                     diff |= is_diff(getattr(v, k2))
             param_list += '  %s %s,\n' % (('*' if is_diff else ' '), k)
-        return 'SceneParameters[\n%s]' % param_list
+        return 'SceneParameters[%s\n]' % param_list[:-2]
 
     def __iter__(self):
         class SceneParametersItemIterator:
@@ -85,12 +90,6 @@ class SceneParameters(Mapping):
 
     def keys(self):
         return self.properties.keys()
-
-    def all_differentiable(self):
-        for k, v in self.items():
-            if not (ek.is_diff_array_v(v) and ek.is_floating_point_v(v)):
-                return False
-        return True
 
     def torch(self) -> dict:
         """
@@ -150,6 +149,11 @@ class SceneParameters(Mapping):
             k: v for k, v in self.properties.items() if k in keys
         }
 
+    def keep_shape(self) -> None:
+        self.properties = {
+            k: v for k, v in self.properties.items() if v[3] == True
+        }
+
 
 def traverse(node: mitsuba.core.Object) -> SceneParameters:
     """
@@ -180,9 +184,10 @@ def traverse(node: mitsuba.core.Object) -> SceneParameters:
             self.depth = depth
             self.hierarchy[node] = (parent, depth)
 
-        def put_parameter(self, name, ptr, cpptype=None):
+        def put_parameter(self, name, ptr, cpptype, shape_parameter):
             name = name if self.name is None else self.name + '.' + name
-            self.properties[name] = (ptr, cpptype, self.node)
+            self.properties[name] = (ptr, cpptype, self.node,
+                                     shape_parameter)
 
         def put_object(self, name, node):
             if node in self.hierarchy:

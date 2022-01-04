@@ -19,26 +19,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(MTS_ENABLE_EMBREE)
-#if defined(ENOKI_DISABLE_VECTORIZATION)
-#  define MTS_RAY_WIDTH 1
-#elif defined(__AVX512F__)
-#  define MTS_RAY_WIDTH 16
-#elif defined(__AVX2__)
-#  define MTS_RAY_WIDTH 8
-#elif defined(__SSE4_2__) || defined(__ARM_NEON)
-#  define MTS_RAY_WIDTH 4
-#else
-#  error Expected to use vectorization
-#endif
-
-#define JOIN(x, y)        JOIN_AGAIN(x, y)
-#define JOIN_AGAIN(x, y)  x ## y
-#define RTCRayHitW        JOIN(RTCRayHit,    MTS_RAY_WIDTH)
-#define RTCRayW           JOIN(RTCRay,       MTS_RAY_WIDTH)
-#define RTCHitW           JOIN(RTCHit,       MTS_RAY_WIDTH)
-#endif
-
 MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     m_to_world =
         (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
@@ -307,7 +287,6 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 }
 
 MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    ENOKI_MARK_USED(device);
     if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
@@ -318,6 +297,7 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
         rtcCommitGeometry(geom);
         return geom;
     } else {
+        ENOKI_MARK_USED(device);
         Throw("embree_geometry() should only be called in CPU mode.");
     }
 }

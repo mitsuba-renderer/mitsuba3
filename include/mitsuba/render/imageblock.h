@@ -138,7 +138,7 @@ public:
      * See the other constructor for an explanation of the parameters.
      */
     ImageBlock(const TensorXf &tensor,
-               const ScalarPoint2i &offset,
+               const ScalarPoint2i &offset = ScalarPoint2i(0),
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
@@ -291,6 +291,9 @@ public:
 
     /// Return the border region used by the reconstruction filter
     uint32_t border_size() const { return m_border_size; }
+
+    /// Does the image block have a border region?
+    bool has_border() const { return m_border_size != 0; }
 
     /// Return the image reconstruction filter underlying the ImageBlock
     const ReconstructionFilter *rfilter() const { return m_rfilter; }

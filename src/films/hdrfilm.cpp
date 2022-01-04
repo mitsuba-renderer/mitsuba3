@@ -221,13 +221,15 @@ public:
 
     ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
                                  bool border) override {
-        bool warn = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) &&
-                    !is_spectral_v<Spectrum>;
+        bool warn = !ek::is_jit_array_v<Float> && !is_spectral_v<Spectrum> &&
+                    m_channels.size() <= 5;
 
-        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_size : size,
-                              size == ScalarVector2u(0) ? m_crop_offset : ScalarPoint2u(0),
+        bool default_config = size == ScalarVector2u(0);
+
+        return new ImageBlock(default_config ? m_crop_size : size,
+                              default_config ? m_crop_offset : ScalarPoint2u(0),
                               (uint32_t) m_channels.size(), m_filter.get(),
-                              border || m_sample_border /* border */,
+                              border /* border */,
                               normalize /* normalize */,
                               ek::is_llvm_array_v<Float> /* coalesce */,
                               warn /* warn_negative */,
@@ -313,7 +315,7 @@ public:
                 value_mask = values_idx >= color_ch;
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::detach(ek::gather<Float>(data, weight_idx)),
+            Float weight = ek::gather<Float>(data, weight_idx),
                   values = ek::gather<Float>(data, values_idx, value_mask);
 
             // Fill color channels with XYZ/Y data if requested

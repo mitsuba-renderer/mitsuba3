@@ -5,39 +5,89 @@ import mitsuba
 
 from .common import ADIntegrator, mis_weight
 
-class PRBIntegrator(ADIntegrator):
+class PRBReparamIntegrator(ADIntegrator):
     """
-    This class implements a basic Path Replay Backpropagation (PRB) integrator
-    with the following properties:
+    This class implements a re-parameterized Path Replay Backpropagation (PRB)
+    integrator with the following properties:
 
     - Emitter sampling (a.k.a. next event estimation).
 
     - Russian Roulette stopping criterion.
 
-    - No reparameterization. This means that the integrator cannot be used for
-      shape optimization (it will return incorrect/biased gradients for
-      geometric parameters like vertex positions.)
+    - The integrator re-parameterizes the incident hemisphere to handle
+      visibility-induced discontinuities. This makes it possible to optimize
+      geometric parameters like vertex positions. Discontinuities observed
+      through ideal specular reflection/refraction are not supported and
+      produce biased gradients (see also the next point).
 
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See 'prb_basic.py' for an even more reduced implementation that removes
-    the first two features.
+    See 'prb.py' and 'prb_basic.py' for simplified implementations that remove
+    some of these features.
 
     See the papers
 
       "Path Replay Backpropagation: Differentiating Light Paths using
        Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
+       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob.
 
     and
 
       "Monte Carlo Estimators for Differential Light Transport"
       (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
-      Iliyan Georgiev, and Wenzel Jakob
+      Iliyan Georgiev, and Wenzel Jakob.
 
-    for details on PRB, attached/detached sampling, and reparameterizations.
+    for details on PRB, attached/detached sampling. Re-parameterizations
+    for differentiable rendering were proposed in
+
+      "Reparameterizing discontinuous integrands for differentiable rendering"
+      (Proceedings of SIGGRAPH Asia'19) by Guillaume Loubet,
+      Nicolas Holzschuch, and Wenzel Jakob.
+
+    The specific change of variables used in Mitsuba is described here:
+
+      "Unbiased Warped-Area Sampling for Differentiable Rendering"
+      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
+      Tzu-Mao Li, and Frédo Durand.
     """
+
+    def __init__(self, props):
+        super().__init__(props)
+
+        # The reparameterization is computed stochastically and removes
+        # gradient bias at the cost of additional variance. Use this parameter
+        # to disable the reparameterization after a certain path depth to
+        # control this tradeoff.
+        self.reparam_max_depth = props.get('reparam_max_depth', self.max_depth)
+
+        # Specifies the number of auxiliary rays used to evaluate the
+        # reparameterization
+        self.reparam_rays = props.get('reparam_rays', 16)
+
+        # Specifies the von Mises Fisher distribution parameter for sampling
+        # auxiliary rays in Bangaru et al.'s [2000] parameterization
+        self.reparam_kappa = props.get('reparam_kappa', 1e5)
+
+        # Harmonic weight exponent in Bangaru et al.'s [2000] parameterization
+        self.reparam_exp = props.get('reparam_exp', 3.0)
+
+    def reparam(self,
+                scene: mitsuba.render.Scene,
+                rng: mitsuba.core.PCG32,
+                params: Any,
+                ray: mitsuba.core.Ray3f,
+                active: mitsuba.core.Bool):
+        """
+        Used to reparameterize rays internally and within ADIntegrator
+        """
+
+        from mitsuba.python.ad import reparameterize_ray
+        return reparameterize_ray(scene, rng, params, ray,
+                                  num_rays=self.reparam_rays,
+                                  kappa=self.reparam_kappa,
+                                  exponent=self.reparam_exp,
+                                  active=active)
 
     def sample(self,
                mode: enoki.ADMode,
@@ -63,6 +113,7 @@ class PRBIntegrator(ADIntegrator):
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
+
         ray = Ray3f(ray)
         depth, depth_initial = UInt32(depth), UInt32(depth)
         L = Spectrum(0 if primal else state_in)
@@ -206,5 +257,5 @@ class PRBIntegrator(ADIntegrator):
             L                             # State for differential phase
         )
 
-mitsuba.render.register_integrator("prb", lambda props:
-                                   PRBIntegrator(props))
+mitsuba.render.register_integrator("prb_reparam", lambda props:
+                                   PRBReparamIntegrator(props))

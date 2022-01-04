@@ -76,7 +76,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
 
     Assert(index <= m_face_count);
 
-    auto fi = face_indices(index);
+    ScalarVector3u fi = face_indices(index);
 
     Assert(fi[0] < m_vertex_count &&
            fi[1] < m_vertex_count &&
@@ -482,7 +482,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     std::tie(face_idx, sample.y()) =
         m_area_pmf.sample_reuse(sample.y(), active);
 
-    ek::Array<Index, 3> fi = face_indices(face_idx, active);
+    Vector3u fi = face_indices(face_idx, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
@@ -558,7 +558,7 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, 
 MTS_VARIANT typename Mesh<Float, Spectrum>::Point3f
 Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
                                                Mask active) const {
-    auto fi = face_indices(si.prim_index, active);
+    Vector3u fi = face_indices(si.prim_index, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
@@ -586,7 +586,7 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
 MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
                                                        const SurfaceInteraction3f &si,
                                                        Mask active) const {
-    auto fi = face_indices(si.prim_index, active);
+    Vector3u fi = face_indices(si.prim_index, active);
 
     Point3f vp0 = vertex_position(fi[0], active),
             vp1 = vertex_position(fi[1], active),
@@ -660,7 +660,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    auto fi = face_indices(pi.prim_index, active);
+    constexpr bool IsDiff = ek::is_diff_array_v<Float>;
+
+    Vector3u fi = face_indices(pi.prim_index, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
@@ -668,7 +670,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     Float t = pi.t;
     Point2f prim_uv = pi.prim_uv;
-    if constexpr (ek::is_diff_array_v<Float>) {
+    if constexpr (IsDiff) {
         if (has_flag(ray_flags, RayFlags::DetachShape) &&
             has_flag(ray_flags, RayFlags::FollowShape))
             Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
@@ -680,13 +682,16 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
 
         auto [t_d, prim_uv_d, hit] = moeller_trumbore(ray, p0, p1, p2, active);
+
+        /* Don't recompute the primal intersection, only use the
+           Moeller-Trumbore code to track its derivatives, if eventually
+           differentiated */
         prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
         t = ek::replace_grad(t, t_d);
     }
 
     Float b1 = prim_uv.x(), b2 = prim_uv.y();
-    if (ek::is_diff_array_v<Float> &&
-        has_flag(ray_flags, RayFlags::FollowShape)) {
+    if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape)) {
         b1 = ek::detach(prim_uv.x());
         b2 = ek::detach(prim_uv.y());
     }
@@ -702,8 +707,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.p = ek::fmadd(p0, b0, ek::fmadd(p1, b1, p2 * b2));
 
     // Potentially recompute the distance traveled to the surface interaction hit point
-    if (!ek::is_diff_array_v<Float> ||
-        !has_flag(ray_flags, RayFlags::FollowShape))
+    if (!IsDiff || !has_flag(ray_flags, RayFlags::FollowShape))
         si.t = ek::select(active, t, ek::Infinity<Float>);
     else
         si.t = ek::select(
@@ -724,8 +728,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
-        if (ek::is_diff_array_v<Float> &&
-            has_flag(ray_flags, RayFlags::DetachShape)) {
+        if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
             uv0 = ek::detach<true>(uv0);
             uv1 = ek::detach<true>(uv1);
             uv2 = ek::detach<true>(uv2);
@@ -755,8 +758,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        if (ek::is_diff_array_v<Float> &&
-            has_flag(ray_flags, RayFlags::DetachShape)) {
+        if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
             n0 = ek::detach<true>(n0);
             n1 = ek::detach<true>(n1);
             n2 = ek::detach<true>(n2);
@@ -943,7 +945,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
 
     Assert(index <= m_face_count);
 
-    auto fi = face_indices(index);
+    ScalarVector3u fi = face_indices(index);
     Assert(fi[0] < m_vertex_count);
     Assert(fi[1] < m_vertex_count);
     Assert(fi[2] < m_vertex_count);
@@ -1078,7 +1080,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_parameter("vertex_count",     m_vertex_count);
     callback->put_parameter("face_count",       m_face_count);
     callback->put_parameter("faces",            m_faces);
-    callback->put_parameter("vertex_positions", m_vertex_positions);
+    callback->put_parameter("vertex_positions", m_vertex_positions, true);
     callback->put_parameter("vertex_normals",   m_vertex_normals);
     callback->put_parameter("vertex_texcoords", m_vertex_texcoords);
 

@@ -16,7 +16,7 @@ MTS_PY_EXPORT(ImageBlock) {
         .def(py::init<const TensorXf &, const ScalarPoint2i &,
                       const ReconstructionFilter *, bool, bool, bool, bool,
                       bool>(),
-             "tensor"_a, "offset"_a, "rfilter"_a = nullptr,
+             "tensor"_a, "offset"_a = ScalarPoint2i(0), "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
              "coalesce"_a      = ek::is_llvm_array_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
@@ -52,11 +52,13 @@ MTS_PY_EXPORT(ImageBlock) {
         .def_method(ImageBlock, height)
         .def_method(ImageBlock, rfilter)
         .def_method(ImageBlock, normalize)
+        .def_method(ImageBlock, set_normalize)
         .def_method(ImageBlock, warn_invalid)
         .def_method(ImageBlock, warn_negative)
         .def_method(ImageBlock, set_warn_invalid, "value"_a)
         .def_method(ImageBlock, set_warn_negative, "value"_a)
         .def_method(ImageBlock, border_size)
+        .def_method(ImageBlock, has_border)
         .def_method(ImageBlock, channel_count)
         .def("tensor", py::overload_cast<>(&ImageBlock::tensor),
              py::return_value_policy::reference_internal,
