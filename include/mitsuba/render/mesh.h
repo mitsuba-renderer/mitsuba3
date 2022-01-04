@@ -17,7 +17,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor)
+    MTS_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
+                    m_interior_medium, m_exterior_medium)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -118,11 +119,20 @@ public:
     /// Does this mesh have per-vertex texture coordinates?
     bool has_vertex_texcoords() const { return ek::width(m_vertex_texcoords) != 0; }
 
+    /// Does this mesh have additional mesh attributes?
+    bool has_mesh_attributes() const { return m_mesh_attributes.size() > 0; }
+
+    /// Does this mesh use face normals?
+    bool has_face_normals() const { return m_face_normals; }
+
     /// @}
     // =========================================================================
 
     /// Export mesh as a binary PLY file
     void write_ply(const std::string &filename) const;
+
+    /// Merge two meshes into one
+    ref<Mesh> merge(const Mesh *other) const;
 
     /// Compute smooth vertex normals and replace the current normal values
     void recompute_vertex_normals();
@@ -444,7 +454,7 @@ protected:
 #endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
-    bool m_disable_vertex_normals = false;
+    bool m_face_normals = false;
     bool m_flip_normals = false;
 
     /* Surface area distribution -- generated on demand when \ref

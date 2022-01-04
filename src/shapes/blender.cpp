@@ -64,7 +64,7 @@ class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    m_vertex_texcoords, m_faces, m_face_normals,
                     add_attribute, initialize)
     MTS_IMPORT_TYPES()
 
@@ -131,14 +131,14 @@ public:
         // Determine whether the object is globally smooth or flat shaded and set the flag accordingly
         // Blender meshes can be partially smooth AND flat (e.g. with edge split modifier)
         // In this case, flat face vertices will be duplicated.
-        m_disable_vertex_normals = true;
+        m_face_normals = true;
         for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
             const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
             const blender::MPoly &face        = polygons[tri_loop.poly];
             if (blender::ME_SMOOTH & face.flag) {
                 // If at least one face is smooth shaded, we need to disable face normals
                 // and duplicate the (potential) flat shaded face vertices.
-                m_disable_vertex_normals = false;
+                m_face_normals = false;
                 break;
             }
         }
@@ -150,7 +150,7 @@ public:
         std::vector<ScalarIndex3> tmp_triangles;
 
         tmp_vertices.reserve(vertex_count);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             tmp_normals.reserve(vertex_count);
         tmp_triangles.reserve(loop_tri_count);
 
@@ -218,7 +218,7 @@ public:
             face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
 
             InputNormal3f normal(0.f);
-            if (!(blender::ME_SMOOTH & face.flag) && !m_disable_vertex_normals) {
+            if (!(blender::ME_SMOOTH & face.flag) && !m_face_normals) {
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
@@ -240,7 +240,7 @@ public:
                 const blender::MVert &vert = verts[vert_index];
 
                 Key vert_key;
-                if (blender::ME_SMOOTH & face.flag || m_disable_vertex_normals) {
+                if (blender::ME_SMOOTH & face.flag || m_face_normals) {
                     // Store per vertex normals if the face is smooth or if the mesh is globally flat
                     normal = m_to_world.scalar().transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
                     if(unlikely(ek::all(ek::eq(normal, 0.f))))
@@ -283,7 +283,7 @@ public:
                     // Add stuff to the temporary buffers
                     InputPoint3f pt = m_to_world.scalar().transform_affine(face_points[i]);
                     tmp_vertices.push_back({pt.x(), pt.y(), pt.z()});
-                    if (!m_disable_vertex_normals)
+                    if (!m_face_normals)
                         tmp_normals.push_back({normal.x(), normal.y(), normal.z()});
                     if (has_uvs)
                         tmp_uvs.push_back(vert_key.uv);
@@ -311,7 +311,7 @@ public:
 
         m_vertex_count = vertex_ctr;
         m_vertex_positions = ek::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             m_vertex_normals = ek::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)

@@ -74,7 +74,7 @@ public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, add_attribute,
-                    m_disable_vertex_normals, has_vertex_normals,
+                    m_face_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals,
                     initialize)
     MTS_IMPORT_TYPES()
@@ -153,7 +153,7 @@ public:
                 for (auto name : { "x", "y", "z" })
                     vertex_struct->append(name, struct_type_v<InputFloat>);
 
-                if (!m_disable_vertex_normals) {
+                if (!m_face_normals) {
                     for (auto name : { "nx", "ny", "nz" })
                         vertex_struct->append(name, struct_type_v<InputFloat>,
                                                 +Struct::Flags::Default, 0.0);
@@ -248,7 +248,7 @@ public:
 
                         if (has_vertex_texcoords) {
                             InputVector2f uv = ek::load<InputVector2f>(
-                                target + (m_disable_vertex_normals
+                                target + (m_face_normals
                                               ? sizeof(InputFloat) * 3
                                               : sizeof(InputFloat) * 6));
                             ek::store(texcoord_ptr, uv);
@@ -257,7 +257,7 @@ public:
 
                         size_t target_offset =
                             sizeof(InputFloat) *
-                            (!m_disable_vertex_normals
+                            (!m_face_normals
                                  ? (has_vertex_texcoords ? 8 : 6)
                                  : (has_vertex_texcoords ? 5 : 3));
 
@@ -277,7 +277,7 @@ public:
                     add_attribute(descr.name, descr.dim, descr.buf);
 
                 m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-                if (!m_disable_vertex_normals)
+                if (!m_face_normals)
                     m_vertex_normals = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
                 if (has_vertex_texcoords)
                     m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
@@ -378,7 +378,7 @@ public:
             util::time_string((float) timer.value())
         );
 
-        if (!m_disable_vertex_normals && !has_vertex_normals) {
+        if (!m_face_normals && !has_vertex_normals) {
             Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,

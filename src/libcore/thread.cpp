@@ -3,7 +3,6 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <enoki-thread/thread.h>
-#include <condition_variable>
 #include <thread>
 #include <mutex>
 #include <vector>

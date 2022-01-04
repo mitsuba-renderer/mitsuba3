@@ -589,7 +589,7 @@ protected:
 
 private:
     /// True if the shape's geometry has changed
-    bool m_dirty;
+    bool m_dirty = true;
 };
 
 MTS_EXTERN_CLASS_RENDER(Shape)

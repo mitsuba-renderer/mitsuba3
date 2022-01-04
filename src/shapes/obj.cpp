@@ -83,7 +83,7 @@ class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    m_vertex_texcoords, m_faces, m_face_normals,
                     recompute_vertex_normals, has_vertex_normals, initialize)
     MTS_IMPORT_TYPES()
 
@@ -304,7 +304,7 @@ public:
                     ek::store(texcoord_ptr, texcoords[map_index]);
                 }
 
-                if (!m_disable_vertex_normals && key[2]) {
+                if (!m_face_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index >= normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
@@ -317,13 +317,13 @@ public:
 
         m_faces = ek::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
         m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             m_vertex_normals   = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (!texcoords.empty())
             m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
-        if (!m_disable_vertex_normals)
+        if (!m_face_normals)
             vertex_data_bytes += 3 * sizeof(InputFloat);
         if (!texcoords.empty())
             vertex_data_bytes += 2 * sizeof(InputFloat);
@@ -335,7 +335,7 @@ public:
             util::time_string((float) timer.value())
         );
 
-        if (!m_disable_vertex_normals && normals.empty()) {
+        if (!m_face_normals && normals.empty()) {
             Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
