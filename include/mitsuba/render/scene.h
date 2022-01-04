@@ -623,11 +623,12 @@ template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
 SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
     if constexpr (!ek::is_jit_array_v<Float>) {
+        ENOKI_MARK_USED(active);
         return is_valid() ? shape->emitter() : scene->environment();
     } else {
         EmitterPtr emitter = shape->emitter(active);
         if (scene->environment())
-            emitter = ek::select(is_valid(), emitter, scene->environment());
+            emitter = ek::select(is_valid(), emitter, scene->environment() & active);
         return emitter;
     }
 }

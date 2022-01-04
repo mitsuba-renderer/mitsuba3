@@ -320,6 +320,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         return pi;
     } else {
         ENOKI_MARK_USED(ray);
+        ENOKI_MARK_USED(coherent);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_preliminary_cpu() should only be called in CPU mode.");
     }
@@ -333,6 +334,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, 
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(ray_flags);
+        ENOKI_MARK_USED(coherent);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
     }
@@ -350,6 +352,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
 
     if constexpr (!ek::is_jit_array_v<Float>) {
         ENOKI_MARK_USED(active);
+        ENOKI_MARK_USED(coherent);
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -410,6 +413,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         return active && ek::neq(Single::steal(out[0]), ray_maxt);
     } else {
         ENOKI_MARK_USED(ray);
+        ENOKI_MARK_USED(coherent);
         ENOKI_MARK_USED(active);
         Throw("ray_test_cpu() should only be called in CPU mode.");
     }

@@ -303,6 +303,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             ScalarFloat *ptr = nullptr;
             if constexpr (!JIT)
                 ptr = m_tensor.array().data();
+            else
+                (void) ptr;
 
             // Accumulate!
             for (uint32_t y = 0; y < count.y(); ++y) {
