@@ -235,7 +235,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         // Try to avoid a division by an unknown constant if we can help it
         uint32_t log_spp_per_pass = ek::log2i(spp_per_pass);
-        if ((1 << log_spp_per_pass) == spp_per_pass)
+        if ((1u << log_spp_per_pass) == spp_per_pass)
             idx >>= ek::opaque<UInt32>(log_spp_per_pass);
         else
             idx /= ek::opaque<UInt32>(spp_per_pass);

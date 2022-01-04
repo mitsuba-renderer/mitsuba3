@@ -239,23 +239,10 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(ray_flags);
+        ENOKI_MARK_USED(coherent);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
     }
-}
-
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
-    const ShapeKDTree *kdtree;
-    if constexpr (ek::is_llvm_array_v<Float>)
-        kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
-    else
-        kdtree = (const ShapeKDTree *) m_accel;
-
-    PreliminaryIntersection3f pi =
-        kdtree->template ray_intersect_naive<false>(ray, active);
-
-    return pi.compute_surface_interaction(ray, +RayFlags::All, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
@@ -293,6 +280,20 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
 
         return active && ek::neq(Float::steal(out[0]), ray.maxt);
     }
+}
+
+MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
+    const ShapeKDTree *kdtree;
+    if constexpr (ek::is_llvm_array_v<Float>)
+        kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
+    else
+        kdtree = (const ShapeKDTree *) m_accel;
+
+    PreliminaryIntersection3f pi =
+        kdtree->template ray_intersect_naive<false>(ray, active);
+
+    return pi.compute_surface_interaction(ray, +RayFlags::All, active);
 }
 
 NAMESPACE_END(mitsuba)
