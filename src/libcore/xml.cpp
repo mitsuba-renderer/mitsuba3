@@ -1029,7 +1029,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
             #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                if (ctx.is_jit()) {
+                if (ctx.is_jit() && ctx.parallel) {
                     ek::eval();
                     ek::sync_thread();
                 }
