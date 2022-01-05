@@ -174,10 +174,9 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
                     const SurfaceInteraction3f &it,
                     const Interaction3f &ref) : Base(it) {
         Vector3f rel = it.p - ref.p;
-        Mask valid = it.is_valid();
         dist = ek::norm(rel);
-        d    = select(valid, rel / dist, -it.wi);
-        emitter = it.emitter(scene, valid);
+        d    = select(it.is_valid(), rel / dist, -it.wi);
+        emitter = it.emitter(scene);
     }
 
     /// Element-by-element constructor
