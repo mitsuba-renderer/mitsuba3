@@ -238,8 +238,8 @@ if __name__ == '__main__':
     grad_div = ek.grad(div)
 
     block = mitsuba.render.ImageBlock(
-        0,
         [res, res],
+        [0, 0],
         channel_count=5,
         filter=camera.film().rfilter(),
         border=False

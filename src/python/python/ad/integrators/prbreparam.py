@@ -68,7 +68,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_offset(), film.crop_size(),
+        block = ImageBlock(film.crop_size(), film.crop_offset(),
                            channel_count=5, rfilter=rfilter, border=True)
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
@@ -123,7 +123,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ray, weight, pos, aperture_samples = sample_rays(sensor)
 
         # Read image gradient values per sample through the pixel filter
-        block = ImageBlock(film.crop_offset(), ek.detach(grad_in), rfilter, normalize=True)
+        block = ImageBlock(ek.detach(grad_in), film.crop_offset(), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
 
         # Sample forward paths (not differentiable)
@@ -148,7 +148,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_offset(), film.crop_size(),
+        block = ImageBlock(film.crop_size(), film.crop_offset(),
                            channel_count=5, rfilter=rfilter, border=True)
         block.put_block(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])

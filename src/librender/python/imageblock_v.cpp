@@ -5,18 +5,18 @@
 MTS_PY_EXPORT(ImageBlock) {
     MTS_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MTS_PY_CLASS(ImageBlock, Object)
-        .def(py::init<const ScalarPoint2i &, const ScalarVector2u &, uint32_t,
+        .def(py::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool, bool,
                       bool>(),
-             "offset"_a, "size"_a, "channel_count"_a, "rfilter"_a = nullptr,
+             "size"_a, "offset"_a, "channel_count"_a, "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
              "coalesce"_a      = ek::is_llvm_array_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>)
-        .def(py::init<const ScalarPoint2i &, const TensorXf &,
+        .def(py::init<const TensorXf &, const ScalarPoint2i &,
                       const ReconstructionFilter *, bool, bool, bool, bool,
                       bool>(),
-             "offset"_a, "tensor"_a, "rfilter"_a = nullptr,
+             "tensor"_a, "offset"_a, "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
              "coalesce"_a      = ek::is_llvm_array_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,

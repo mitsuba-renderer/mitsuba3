@@ -6,8 +6,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2i &offset,
-                                        const ScalarVector2u &size,
+ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
+                                        const ScalarPoint2i &offset,
                                         uint32_t channel_count,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
@@ -29,8 +29,8 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2i &offset,
 }
 
 MTS_VARIANT
-ImageBlock<Float, Spectrum>::ImageBlock(const ScalarPoint2i &offset,
-                                        const TensorXf &tensor,
+ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
+                                        const ScalarPoint2i &offset,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
                                         bool coalesce, bool warn_negative,

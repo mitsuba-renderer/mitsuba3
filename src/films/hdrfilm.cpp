@@ -206,7 +206,7 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_offset, m_crop_size,
+            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
                                        (uint32_t) channels.size());
             m_channels = channels;
         }
@@ -224,8 +224,8 @@ public:
         bool warn = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) &&
                     !is_spectral_v<Spectrum>;
 
-        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_offset : ScalarPoint2u(0),
-                              size == ScalarVector2u(0) ? m_crop_size : size,
+        return new ImageBlock(size == ScalarVector2u(0) ? m_crop_size : size,
+                              size == ScalarVector2u(0) ? m_crop_offset : ScalarPoint2u(0),
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border || m_sample_border /* border */,
                               normalize /* normalize */,

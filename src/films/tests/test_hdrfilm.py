@@ -96,7 +96,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
     # Use unit weights.
     contents[:, :, 4] = 1.0
 
-    block = ImageBlock(0, film.size(), 5, film.rfilter())
+    block = ImageBlock(film.size(), [0, 0], 5, film.rfilter())
     for x in range(film.size()[1]):
         for y in range(film.size()[0]):
             block.put([y+0.5, x+0.5], contents[x, y, :])
@@ -162,7 +162,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     has_alpha = pixel_format.endswith('A') or pixel_format.endswith('alpha')
 
     res = film.size()
-    block = ImageBlock(0, res, (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
+    block = ImageBlock(res, [0, 0], (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
 
     if ek.is_jit_array_v(Float):
         pixel_idx = ek.arange(UInt32, ek.hprod(res))
