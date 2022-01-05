@@ -10,7 +10,7 @@ import gc
 
 def render_forward(self: mitsuba.render.Integrator,
                    scene: mitsuba.render.Scene,
-                   sensor: mitsuba.render.Sensor,
+                   sensor: Union[int, mitsuba.render.Sensor] = 0,
                    seed: int = 0,
                    spp: int = 0) -> mitsuba.core.TensorXf:
     """
@@ -88,7 +88,7 @@ def render_forward(self: mitsuba.render.Integrator,
 def render_backward(self: mitsuba.render.Integrator,
                     scene: mitsuba.render.Scene,
                     grad_in: mitsuba.core.TensorXf,
-                    sensor: mitsuba.render.Sensor,
+                    sensor: Union[int, mitsuba.render.Sensor] = 0,
                     seed: int = 0,
                     spp: int = 0) -> None:
     """
