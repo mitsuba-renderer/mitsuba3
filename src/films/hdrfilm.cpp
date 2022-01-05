@@ -206,7 +206,8 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_offset, m_crop_size, channels.size());
+            m_storage = new ImageBlock(m_crop_offset, m_crop_size,
+                                       (uint32_t) channels.size());
             m_channels = channels;
         }
 
@@ -225,7 +226,7 @@ public:
 
         return new ImageBlock(size == ScalarVector2u(0) ? m_crop_offset : ScalarPoint2u(0),
                               size == ScalarVector2u(0) ? m_crop_size : size,
-                              m_channels.size(), m_filter.get(),
+                              (uint32_t) m_channels.size(), m_filter.get(),
                               border || m_sample_border /* border */,
                               normalize /* normalize */,
                               ek::is_llvm_array_v<Float> /* coalesce */,
