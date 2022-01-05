@@ -102,8 +102,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     uint32_t n_passes = spp / spp_per_pass;
 
     // Determine output channels and prepare the film with this information
-    std::vector<std::string> aovs = aov_names();
-    size_t n_channels = film->prepare(aovs);
+    size_t n_channels = film->prepare(aov_names());
 
     // Start the render timer (used for timeouts & log messages)
     m_render_timer.reset();
