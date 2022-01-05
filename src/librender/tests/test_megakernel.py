@@ -59,11 +59,11 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
 
     with ek.scoped_set_flag(ek.JitFlag.KernelHistory, True):
         # Perform 3 rendering in a row
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_1 = ek.kernel_history([ek.KernelType.JIT])
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_2 = ek.kernel_history([ek.KernelType.JIT])
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_3 = ek.kernel_history([ek.KernelType.JIT])
 
         # Should only be 2 kernels (rendering, film develop)
@@ -120,11 +120,11 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
 
     with ek.scoped_set_flag(ek.JitFlag.KernelHistory, True):
         # Perform 3 rendering in a row
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_1 = ek.kernel_history([ek.KernelType.JIT])
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_2 = ek.kernel_history([ek.KernelType.JIT])
-        integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        integrator.render(scene, seed=0, spp=spp)
         history_3 = ek.kernel_history([ek.KernelType.JIT])
 
         # Role of each kernel
@@ -181,7 +181,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     })
 
     with ek.scoped_set_flag(ek.JitFlag.KernelHistory, True):
-        image_ref = integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+        image_ref = integrator.render(scene, seed=0, spp=spp)
         ek.kernel_history_clear()
 
         # ek.set_log_level(3)
@@ -214,7 +214,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
             # Primal rendering of the scene
             with ek.suspend_grad():
-                image = integrator.render(scene, scene.sensors()[0], seed=0, spp=spp)
+                image = integrator.render(scene, seed=0, spp=spp)
 
             history_primal = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_primal) == 2 # (render, develop film)
@@ -237,7 +237,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
             # print(f"\n----- ADJOINT\n")
 
             # Adjoint rendering of the scene
-            integrator.render_backward(scene, scene.sensors()[0], params, image_adj, seed=0, spp=spp)
+            integrator.render_backward(scene, params, image_adj, seed=0, spp=spp)
 
             history_adjoint = ek.kernel_history([ek.KernelType.JIT])
             assert len(history_adjoint) == 1 # (gather rays weights in image_adj)

@@ -281,7 +281,6 @@ def render(scene: mitsuba.render.Scene,
     if integrator is None:
         integrator = scene.integrator()
 
-
     if isinstance(sensor, int):
         sensor = scene.sensors()[sensor]
 
@@ -318,10 +317,8 @@ def prepare(sensor: mitsuba.render.Sensor,
     Returns the final number of samples per pixel (which may differ from the
     requested amount)
 
-    Parameter ``sensor`` (``mitsuba.render.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
+    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+        Specify a sensor to render the scene from a different viewpoint.
 
     Parameter ``seed` (``int``)
         This parameter controls the initialization of the random number
@@ -520,7 +517,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
-               sensor: mitsuba.render.Sensor,
+               sensor: Union[int, mitsuba.render.Sensor] = 0,
                seed: int = 0,
                spp: int = 0,
                develop: bool = True,
@@ -531,6 +528,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if not develop:
             raise Exception("develop=True must be specified when "
                             "invoking AD integrators")
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
 
         # Disable derivatives in all of the following
         with ek.suspend_grad():
@@ -583,7 +583,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
-                       sensor: mitsuba.render.Sensor,
+                       sensor: Union[int, mitsuba.render.Sensor] = 0,
                        seed: int = 0,
                        spp: int = 0) -> mitsuba.core.TensorXf:
         """
@@ -635,6 +635,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         """
 
         from mitsuba.core import Bool, UInt32, Float
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
 
         # Disable derivatives in all of the following
         with ek.suspend_grad():
@@ -710,7 +713,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         grad_in: mitsuba.core.TensorXf,
-                        sensor: mitsuba.render.Sensor,
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
         """
@@ -757,6 +760,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         from mitsuba.core import Bool, UInt32
         from mitsuba.render import ImageBlock
 
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
         film = sensor.film()
 
         # self.sample() will re-enable gradients as needed, disable them here
@@ -790,8 +796,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 ek.eval(state_out)
 
             # Wrap the input gradient image into an ImageBlock
-            block = ImageBlock(offset=film.crop_offset(),
-                               tensor=grad_in,
+            block = ImageBlock(tensor=grad_in,
+                               offset=film.crop_offset(),
                                rfilter=film.rfilter(),
                                normalize=True,
                                border=False) # May need to revisit..
@@ -871,8 +877,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         Parameter ``depth`` (``mitsuba.core.UInt32``):
             Path depth of `ray` (typically set to zero). This is mainly useful
-            for forward/backwrd differentiable rendering phases that need to
-            obtain an incident radiadiance estimate. In this case, they may
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
             recursively invoke ``sample(mode=ek.ADMode.Primal)`` with a nonzero
             depth.
 

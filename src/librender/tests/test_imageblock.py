@@ -10,7 +10,7 @@ def test01_construct(variant_scalar_rgb):
     from mitsuba.core import load_string
     from mitsuba.render import ImageBlock
 
-    im = ImageBlock([2, 3], [33, 12], 4)
+    im = ImageBlock([33, 12], [2, 3], 4)
     assert im is not None
     assert ek.all(im.offset() == [2, 3])
     im.set_offset([10, 20])
@@ -25,7 +25,7 @@ def test01_construct(variant_scalar_rgb):
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="15"/>
         </rfilter>""")
-    im = ImageBlock(0, [10, 11], 2, rfilter=rfilter, warn_invalid=False)
+    im = ImageBlock([10, 11], [0, 0], 2, rfilter=rfilter, warn_invalid=False)
     assert im.border_size() == rfilter.border_size()
     assert im.channel_count() == 2
     assert not im.warn_invalid()
@@ -56,8 +56,8 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
 
             size = ScalarVector2u(6, 6)
 
-            block = ImageBlock(offset=offset,
-                               size=size,
+            block = ImageBlock(size=size,
+                               offset=offset,
                                channel_count=1,
                                rfilter=rfilter,
                                border=border,
@@ -115,7 +115,7 @@ def test03_put_boundary(variants_all_rgb, filter_name):
     from mitsuba.render import ImageBlock
 
     rfilter = load_dict({'type': filter_name})
-    im = ImageBlock(0, [3, 3], 1, rfilter=rfilter, warn_negative=False, border=False)
+    im = ImageBlock([3, 3], [0, 0], 1, rfilter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
     if ek.is_jit_array_v(Float):
@@ -165,7 +165,7 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
 
     source_tensor = TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
 
-    block = ImageBlock(offset, source_tensor,
+    block = ImageBlock(source_tensor, offset,
                        rfilter=rfilter,
                        border=border,
                        normalize=normalize)
@@ -206,4 +206,4 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                 if normalize:
                     ref /= ek.hsum(weight)
 
-            assert ek.allclose(value, ref, atol=1e-5) 
+            assert ek.allclose(value, ref, atol=1e-5)

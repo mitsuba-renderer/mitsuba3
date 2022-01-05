@@ -71,7 +71,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_offset(), film.crop_size(),
+        block = ImageBlock(film.crop_size(), film.crop_offset(),
                            channel_count=5, rfilter=rfilter, border=True)
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
@@ -143,7 +143,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ds, w_reparam = sensor.sample_direction(it, aperture_samples)
         w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
-        block = ImageBlock(film.crop_offset(), film.crop_size(),
+        block = ImageBlock(film.crop_size(), film.crop_offset(),
                            channel_count=5, rfilter=rfilter, border=True)
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare([])
