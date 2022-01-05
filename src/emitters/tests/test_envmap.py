@@ -26,7 +26,8 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 
     Bitmap(img).write(fname)
 
-    xml = f'<string name="filename" value="{fname}"/>'
+    xml = f'<string name="filename" value="{fname}"/>' \
+           '<boolean name="mis_compensation" value="false"/>'
     sample_func, pdf_func = EmitterAdapter("envmap", xml)
 
     chi2 = ChiSquareTest(

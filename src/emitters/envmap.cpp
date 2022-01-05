@@ -34,6 +34,12 @@ Environment emitter (:monosp:`envmap`)
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
 
+ * - mis_compensation
+   - |bool|
+   - Compensate sampling for the presence of other Monte Carlo techniques that
+     will be combined using multiple importance sampling (MIS)? This is
+     extremely cheap to do and can slightly reduce variance. (Default: true)
+
 This plugin provides a HDRI (high dynamic range imaging) environment map,
 which is a type of light source that is well-suited for representing "natural"
 illumination.
@@ -102,11 +108,39 @@ public:
 
         ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * ek::Pi<Float>;
 
+        /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
+           Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
+           Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019 */
+        ScalarFloat luminance_offset = 0.f;
+        if (props.get<bool>("mis_compensation", true)) {
+            ScalarFloat min_lum = 0.f;
+            double lum_accum_d = 0.0;
+
+            for (size_t y = 0; y < bitmap->size().y(); ++y) {
+                for (size_t x = 0; x < bitmap->size().x(); ++x) {
+                    ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                    ScalarFloat lum = mitsuba::luminance(rgb);
+                    min_lum = ek::min(min_lum, lum);
+                    lum_accum_d += (double) lum;
+                    in_ptr += 4;
+                }
+            }
+            in_ptr = (ScalarFloat *) bitmap->data();
+
+            luminance_offset = ScalarFloat(lum_accum_d / ek::hprod(bitmap->size()));
+
+            /* Be wary of constant environment maps: average and minimum
+               should be sufficiently different */
+            if (luminance_offset - min_lum <= 0.01f * luminance_offset)
+                luminance_offset = 0.f; // disable
+        }
+
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
             ScalarFloat sin_theta = ek::sin(y * theta_scale);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+
                 ScalarFloat lum = mitsuba::luminance(rgb);
 
                 ScalarVector4f coeff;
@@ -125,6 +159,8 @@ public:
                     coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
                                        ek::Array<ScalarFloat, 1>(scale));
                 }
+
+                lum = ek::max(lum - luminance_offset, 0.f);
 
                 *lum_ptr++ = lum * sin_theta;
                 ek::store(out_ptr, coeff);
