@@ -119,16 +119,15 @@ class PRBIntegrator(ADIntegrator):
             active_em &= ek.neq(ds.pdf, 0.0)
 
             with ek.resume_grad(condition=not primal):
-                # Compute 'wo' with AD to propagate derivatives to cosine term
-                wo = si.to_local(ds.d)
-
                 if not primal:
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
+                    ds.d = ek.normalize(ds.p - si.p)
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
                     em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
 
                 # Evalute BRDF * cos(theta) differentiably
+                wo = si.to_local(ds.d)
                 bsdf_weight, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf))
                 Lr_dir = β * ek.detach(mis_em) * bsdf_weight * em_weight
