@@ -187,7 +187,7 @@ public:
         oss << "DirectionalEmitter[" << std::endl
             << "  irradiance = " << string::indent(m_irradiance) << ","
             << std::endl
-            << "  bsphere = " << m_bsphere << "," << std::endl
+            << "  bsphere = " << string::indent(m_bsphere) << "," << std::endl
             << "]";
         return oss.str();
     }
