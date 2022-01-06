@@ -413,9 +413,9 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.spp = 2500
-        self.error_mean_threshold = 0.06
-        self.error_max_threshold = 35.5
+        self.spp = 500
+        self.error_mean_threshold = 0.1
+        self.error_max_threshold = 50.0
 
 
 # Translate occluder casting shadow on itself
