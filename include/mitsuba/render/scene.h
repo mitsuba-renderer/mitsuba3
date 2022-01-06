@@ -60,7 +60,7 @@ public:
      *
      * \param sensor_index
      *     When the scene contains multiple sensors, this parameter can be used
-     *     to select the desired viewpoint. Ssensor indices are assigned
+     *     to select the desired viewpoint. Sensor indices are assigned
      *     according to the order in the scene description.
      *
      * \param seed

@@ -128,14 +128,14 @@ MTS_PY_EXPORT(Integrator) {
 
         .def(
             "render",
-            [&](Integrator *integrator, Scene *scene, uint32_t sensor_index,
+            [&](Integrator *integrator, Scene *scene, uint32_t sensor,
                 uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
                 py::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
-                return integrator->render(scene, sensor_index, seed, spp,
+                return integrator->render(scene, sensor, seed, spp,
                                           develop, evaluate);
             },
-            D(Integrator, render, 2), "scene"_a, "sensor_index"_a = 0,
+            D(Integrator, render, 2), "scene"_a, "sensor"_a = 0,
             "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
