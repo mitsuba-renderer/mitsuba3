@@ -1029,9 +1029,11 @@ static Task *instantiate_node(XMLParseContext &ctx,
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
             #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                if (ctx.is_jit() && ctx.parallel) {
+                if (ctx.is_jit()) {
+                    // Ensures ek::scatter occuring in object constructors are flushed
                     ek::eval();
-                    ek::sync_thread();
+                    if (ctx.parallel)
+                        ek::sync_thread();
                 }
             #endif
         } catch (const std::exception &e) {
