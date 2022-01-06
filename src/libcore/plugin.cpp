@@ -6,6 +6,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 
 #if !defined(_WIN32)
 # include <dlfcn.h>
@@ -79,7 +80,7 @@ private:
 
 struct PluginManager::PluginManagerPrivate {
     std::unordered_map<std::string, Plugin *> m_plugins;
-    std::vector<std::string> m_python_plugins;
+    std::unordered_set<std::string> m_python_plugins;
     std::mutex m_mutex;
 
     Plugin *plugin(const std::string &name) {
@@ -138,7 +139,7 @@ const Class *PluginManager::get_plugin_class(const std::string &name,
     const Class *plugin_class;
 
     auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(),
-                        name + variant);
+                        name + "@" + variant);
     if (it != d->m_python_plugins.end()) {
         plugin_class = Class::for_name(name, variant);
     } else {
@@ -159,7 +160,7 @@ std::vector<std::string> PluginManager::loaded_plugins() const {
 
 void PluginManager::register_python_plugin(const std::string &plugin_name,
                                            const std::string &variant) {
-    d->m_python_plugins.push_back(plugin_name + variant);
+    d->m_python_plugins.insert(plugin_name + "@" + variant);
     Class::static_initialization();
 }
 
@@ -179,10 +180,10 @@ ref<Object> PluginManager::create_object(const Properties &props,
         if (oc->parent())
             oc = oc->parent();
 
-        Throw("Type mismatch when loading plugin \"%s\": Expected "
-              "an instance of type \"%s\" (variant \"%s\"), got an instance of type \"%s\" (variant \"%s\")",
-              props.plugin_name(), class_->name(), class_->variant(),
-              oc->name(), oc->variant());
+        Throw("Type mismatch when loading plugin \"%s\": Expected an instance "
+              "of type \"%s\" (variant \"%s\"), got an instance of type \"%s\" "
+              "(variant \"%s\")", props.plugin_name(), class_->name(),
+              class_->variant(), oc->name(), oc->variant());
     }
 
    return object;
