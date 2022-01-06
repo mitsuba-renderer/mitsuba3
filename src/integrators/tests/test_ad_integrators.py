@@ -25,6 +25,7 @@ reference data (e.g. for a new configurations). Please see the following command
 
 import mitsuba
 import enoki as ek
+import importlib
 
 import pytest, sys, inspect, os, argparse
 from os.path import join, realpath, exists
@@ -520,6 +521,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
+    importlib.reload(mitsuba.python.ad.integrators)
     integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
@@ -555,6 +557,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
+    importlib.reload(mitsuba.python.ad.integrators)
     integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
@@ -605,6 +608,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
+    importlib.reload(mitsuba.python.ad.integrators)
     integrator = load_dict({
         'type': integrator_name,
         'max_depth': config.max_depth
@@ -647,6 +651,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     config = DiffuseAlbedoConfig()
     config.initialize()
 
+    importlib.reload(mitsuba.python.ad.integrators)
     integrator = load_dict({ 'type': 'prb' })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
