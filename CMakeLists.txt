@@ -66,7 +66,13 @@ endif()
 # ----------------------------------------------------------
 
 if (PROJECT_SOURCE_DIR STREQUAL "${PROJECT_BINARY_DIR}")
-  message(FATAL_ERROR "In-tree builds are not permitted.")
+  message(FATAL_ERROR "In-tree builds are not permitted. To recover, delete "
+          "'CMakeCache.txt', the 'CMakeFiles' directory and inform CMake about "
+          "the source (-S) and build (-B) paths. For example to compile to a "
+          "directory labeled 'build' using the Ninja generator, enter\n"
+          "  $ rm -Rf CMakeCache CMakeFiles\n"
+          "  $ cmake -S . -B build -G Ninja"
+          "  $ cmake --build build")
 endif()
 
 # ----------------------------------------------------------
