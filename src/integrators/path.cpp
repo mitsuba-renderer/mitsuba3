@@ -160,7 +160,7 @@ public:
                that the 'if' statement is always conservatively taken. */
             if (ek::any_or<true>(ek::neq(si.emitter(scene), nullptr))) {
                 DirectionSample3f ds(scene, si, prev_si);
-                Float em_pdf = 0;
+                Float em_pdf = 0.f;
 
                 if (ek::any_or<true>(!prev_bsdf_delta))
                     em_pdf = scene->pdf_emitter_direction(prev_si, ds,
