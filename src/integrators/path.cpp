@@ -201,10 +201,9 @@ public:
                 // Compute the MIS weight
                 Float mis_em =
                     ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
-                mis_em = ek::select(active_em, mis_em, 0.f);
 
                 // Accumulate, being careful with polarization (see spec_fma)
-                result = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);
+                result[active_em] = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);
             }
 
             // ---------------------- BSDF sampling ----------------------
