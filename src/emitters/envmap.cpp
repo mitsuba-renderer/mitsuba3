@@ -112,7 +112,7 @@ public:
            Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
            Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019 */
         ScalarFloat luminance_offset = 0.f;
-        if (props.get<bool>("mis_compensation", true)) {
+        if (props.get<bool>("mis_compensation", false)) {
             ScalarFloat min_lum = 0.f;
             double lum_accum_d = 0.0;
 
