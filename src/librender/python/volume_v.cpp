@@ -16,6 +16,7 @@ MTS_PY_EXPORT(Volume) {
              D(Volume, eval_6))
         .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,
              D(Volume, eval_gradient))
+        .def("world_transform", &Volume::world_transform)
         .def("voxel_size", &Volume::voxel_size, D(Volume, voxel_size))
              ;
 }

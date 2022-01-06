@@ -65,11 +65,12 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
             // Figure out which axis we hit first.
             // `t_next` is the ray's `t` parameter when hitting that axis.
             Float t_next = ek::hmin(dda_tmax);
-            // TODO: this selection scheme looks dangerous in case of exact equality
-            //       with more than one component.
             Vector3f tmax_update;
+            Mask got_assigned = false;
             for (size_t k = 0; k < 3; ++k) {
-                tmax_update[k] = ek::select(ek::eq(dda_tmax[k], t_next), dda_tdelta[k], 0);
+                Mask active_k = ek::eq(dda_tmax[k], t_next);
+                tmax_update[k] = ek::select(!got_assigned && active_k, dda_tdelta[k], 0);
+                got_assigned |= active_k;
             }
 
             // Lookup and accumulate majorant in current cell.
@@ -83,7 +84,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
             // For rays that will stop within this cell, figure out
             // the precise `t` parameter where `desired_tau` is reached.
             Float t_precise = dda_t + (desired_tau - tau_acc) / majorant;
-            reached |= active_dda && (t_precise < maxt) && (tau_next >= desired_tau);
+            reached |= active_dda && (majorant > 0) && (t_precise < maxt) && (tau_next >= desired_tau);
             ek::masked(dda_t, active_dda) = ek::select(reached, t_precise, t_next);
 
             // Prepare for next iteration
@@ -468,12 +469,20 @@ std::tuple<Float, typename Medium<Float, Spectrum>::Vector3f,
            typename Medium<Float, Spectrum>::Vector3f>
 Medium<Float, Spectrum>::prepare_dda_traversal(const Volume *majorant_grid,
                                                const Ray3f &ray, Float mint,
-                                               Float maxt, Mask /*active*/) const {
+                                               Float maxt, Mask active) const {
+    ENOKI_MARK_USED(active);
     Vector3f voxel_size = majorant_grid->voxel_size();
 
     // Current ray parameter throughout DDA traversal
     Float dda_t = mint;
 
+    // Offset of the world-space medium bbox to the local grid coordinates,
+    // expressed in local grid coordinates.
+    // We could get this from mint when the ray starts outside of the bbox,
+    // but it wouldn't work anymore when it's inside (because mint gets
+    // clamped to zero).
+    const auto ray1 = ray(maxt);
+    Vector3f grid_offset = (ray1 / voxel_size) - ek::floor(ray1 / voxel_size);
     // The id of the first and last voxels hit by the ray
     Vector3i current_voxel(ek::floor(ray(mint) / voxel_size));
     Vector3i last_voxel(ek::floor(ray(maxt) / voxel_size));
@@ -481,9 +490,9 @@ Medium<Float, Spectrum>::prepare_dda_traversal(const Volume *majorant_grid,
     Vector3i step = ek::select(ray.d >= 0, 1, -1);
 
     // Distance along the ray to the next voxel border from the current position
-    Vector3f next_voxel_boundary = (current_voxel + step) * voxel_size;
-    next_voxel_boundary += ek::select(ek::neq(current_voxel, last_voxel) && (ray.d < 0),
-                                        voxel_size, 0);
+    Vector3f next_voxel_boundary = (current_voxel + step + grid_offset) * voxel_size;
+    next_voxel_boundary += ek::select(
+        ek::neq(current_voxel, last_voxel) && (ray.d < 0), voxel_size, 0);
 
     // Value of ray parameter until next intersection with voxel-border along each axis
     auto ray_nonzero = ek::neq(ray.d, 0);
@@ -491,7 +500,7 @@ Medium<Float, Spectrum>::prepare_dda_traversal(const Volume *majorant_grid,
         ek::select(ray_nonzero, (next_voxel_boundary - ray.o) / ray.d,
                     ek::Infinity<Float>);
 
-    // How far along the ray we must move for the horizontal component to equal the width of a voxel
+    // How far along each component of the ray we must move to move by one voxel
     Vector3f dda_tdelta = ek::select(
         ray_nonzero, step * voxel_size / ray.d, ek::Infinity<Float>);
 
