@@ -6384,9 +6384,9 @@ isn't associated with Enoki's AD graph. We recommended that you use
 the Python interface for this, specifically the function
 ``mitsuba.python.ad.render()``.
 
-Parameter ``sensor_index``:
+Parameter ``sensor``:
     When the scene contains multiple sensors, this parameter can be
-    used to select the desired viewpoint. Ssensor indices are assigned
+    used to select the desired viewpoint. Sensor indices are assigned
     according to the order in the scene description.
 
 Parameter ``seed``:

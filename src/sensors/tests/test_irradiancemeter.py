@@ -140,9 +140,8 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     }
 
     scene = load_dict(scene_dict)
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, seed=0, sensor_index=0)
-    film = sensor.film()
+    scene.integrator().render(scene, seed=0)
+    film = scene.sensors()[0].film()
 
     img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.Y,
                                         Struct.Type.Float32, srgb_gamma=False)
