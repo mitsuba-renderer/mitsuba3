@@ -64,7 +64,9 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
                 name, #Name, variant,                                          \
                 [=](const Properties &p) {                                     \
                     py::object o = constructor(&p);                            \
-                    return o.release().cast<ref<Name>>();                      \
+                    ref<Name> o2 = o.cast<Name*>();                            \
+                    o.release();                                               \
+                    return o2;                                                 \
                 },                                                             \
                 nullptr);                                                      \
             PluginManager::instance()->register_python_plugin(name, variant);  \
