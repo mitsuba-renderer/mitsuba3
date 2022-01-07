@@ -576,7 +576,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 
     ek.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
-        config.scene, seed=0, spp=config.spp)
+        config.scene, seed=0, spp=config.spp, params=theta)
     image_fwd = ek.detach(image_fwd)
 
     error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
@@ -627,7 +627,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     # ek.set_log_level(3)
 
     integrator.render_backward(
-        config.scene, image_adj, seed=0, spp=config.spp)
+        config.scene, grad_in=image_adj, seed=0, spp=config.spp, params=theta)
 
     grad = ek.grad(theta)[0] / ek.width(image_fwd_ref)
     grad_ref = ek.hmean(image_fwd_ref)

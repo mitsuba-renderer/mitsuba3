@@ -36,10 +36,8 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
-    ek.set_flag(ek.JitFlag.LoopRecord, False)
-
-    num_aux_rays = 8
-    power = 3.0
+    num_rays = 32
+    exponent = 3.0
     kappa = 1e6
 
     ray = Ray3f(ray_o, ray_d, 0.0, [])
@@ -49,8 +47,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     else:
         scene = make_sphere_mesh_scene()
 
-    sampler = load_dict({ 'type': 'independent'})
-    sampler.seed(0, 1)
+    rng = mitsuba.core.PCG32()
 
     params = traverse(scene)
     key = 'mesh.vertex_positions'
@@ -70,14 +67,22 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     ek.set_label(theta, 'theta')
     ek.set_label(params, 'params')
 
-    d, div = reparameterize_ray(scene, sampler, ray, params, True,
-                                num_aux_rays, kappa, power)
+    d, det = reparameterize_ray(
+        scene=scene,
+        rng=rng,
+        ray=ray,
+        params=params,
+        active=True,
+        num_rays=num_rays,
+        kappa=kappa,
+        exponent=exponent
+    )
 
     assert d == ray.d
-    assert div == 0.0
+    assert det == 1.0
 
     ek.set_label(d, 'd')
-    ek.set_label(div, 'div')
+    ek.set_label(det, 'det')
 
     # print(ek.graphviz_str(Float(1)))
 
@@ -113,16 +118,15 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
 
     grad_direction = Vector3f(1, 0, 0)
-    grad_divergence = 0.0
+    grad_detergence = 0.0
     n_passes = 4
-    num_auxiliary_rays = 128
+    num_rays = 128
     kappa = 1e6
-    power = 3.0
+    exponent = 3.0
 
     scene = make_rectangle_mesh_scene()
 
-    sampler = load_dict({ 'type': 'independent'})
-    sampler.seed(0, 1)
+    rng = mitsuba.core.PCG32()
 
     params = traverse(scene)
     key = 'mesh.vertex_positions'
@@ -140,17 +144,25 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         params.update()
         ek.eval()
 
-        d, div = reparameterize_ray(scene, sampler, ray, params, True,
-                                    num_auxiliary_rays, kappa, power)
+        d, det = reparameterize_ray(
+            scene=scene,
+            rng=rng,
+            ray=ray,
+            params=params,
+            active=True,
+            num_rays=num_rays,
+            kappa=kappa,
+            exponent=exponent
+        )
 
         ek.set_label(d, 'd')
-        ek.set_label(div, 'div')
+        ek.set_label(det, 'det')
 
         # print(ek.graphviz_str(Float(1)))
 
         ek.set_grad(d, grad_direction)
-        ek.set_grad(div, grad_divergence)
-        ek.enqueue(ek.ADMode.Backward, d, div)
+        ek.set_grad(det, grad_detergence)
+        ek.enqueue(ek.ADMode.Backward, d, det)
         ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
 
         res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
@@ -189,15 +201,9 @@ if __name__ == '__main__':
             "rfilter" : { "type" : "box"},
             "width" : res,
             "height" : res,
-        },
-
-        "sampler" : {
-            "type" : "independent",
-            "sample_count" : spp,
-        },
+        }
     })
-    sampler = camera.sampler()
-    sampler.seed(0, res*res*spp)
+    rng = mitsuba.core.PCG32(size=res*res*spp)
 
     rays, weight, pos, pos_idx, _ = sample_sensor_rays(camera)
 
@@ -220,14 +226,23 @@ if __name__ == '__main__':
 
     ek.forward(theta, ek.ADFlag.ClearEdges)
 
-    num_aux_rays = 64
-    power = 3.0
+    num_rays = 64
+    exponent = 3.0
     kappa = 1e5
 
-    d, div = reparameterize_ray(scene, sampler, rays, params, True,
-                                num_aux_rays, kappa, power)
+    d, det = reparameterize_ray(
+        scene=scene,
+        rng=rng,
+        ray=ray,
+        params=params,
+        active=True,
+        num_rays=num_rays,
+        kappa=kappa,
+        exponent=exponent
+    )
+
     ek.set_label(d, 'd')
-    ek.set_label(div, 'div')
+    ek.set_label(det, 'det')
 
     # print(ek.graphviz_str(Float(1)))
 
@@ -235,7 +250,7 @@ if __name__ == '__main__':
     ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
     grad_d = ek.grad(d)
-    grad_div = ek.grad(div)
+    grad_det = ek.grad(det)
 
     block = mitsuba.render.ImageBlock(
         [res, res],
@@ -250,7 +265,7 @@ if __name__ == '__main__':
     bmp_grad_d.write('output_grad_d.exr')
 
     block.clear()
-    block.put(pos, rays.wavelengths, Color3f(grad_div), 1)
-    bmp_grad_div = Bitmap(block.data(), Bitmap.PixelFormat.RGBAW)
-    bmp_grad_div = bmp_grad_div.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False)
-    bmp_grad_div.write('output_grad_div.exr')
+    block.put(pos, rays.wavelengths, Color3f(grad_det), 1)
+    bmp_grad_det = Bitmap(block.data(), Bitmap.PixelFormat.RGBAW)
+    bmp_grad_det = bmp_grad_det.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False)
+    bmp_grad_det.write('output_grad_det.exr')

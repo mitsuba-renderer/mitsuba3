@@ -738,6 +738,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         from mitsuba.core import Bool, UInt32, Float, PCG32
         from mitsuba.render import ImageBlock
 
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
         film = sensor.film()
         aovs = self.aovs()
 

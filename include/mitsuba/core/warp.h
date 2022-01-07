@@ -587,12 +587,20 @@ template <typename Value>
 MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
                                                       Value kappa) {
     Value expm2k = ek::exp(-2.f * kappa),
-          t      = ek::exp((v.z() - 1.f) * kappa),
-          sy     = (expm2k - t) / (expm2k - 1.f),
+          t      = ek::exp((v.z() - 1.f) * kappa);
+
+#if 0
+    Value sy     = (expm2k - t) / (expm2k - 1.f),
           r2     = 1.f - sy;
 
     Point<Value, 2> p(v.x(), v.y());
     return uniform_disk_to_square_concentric(p * ek::safe_sqrt(r2 / ek::squared_norm(p)));
+#else
+    Value x = ek::atan2(v.y(), v.x()) * ek::InvTwoPi<Value>;
+    ek::masked(x, x < 0.f) += 1.f;
+
+    return { x, (1.f - t) / (1.f - expm2k) };
+#endif
 }
 
 /// Probability density of \ref square_to_von_mises_fisher()
