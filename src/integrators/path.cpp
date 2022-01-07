@@ -94,7 +94,7 @@ paths of arbitrary length to compute both direct and indirect illumination.
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
@@ -118,6 +118,10 @@ public:
         Float eta                     = 1.f;
         UInt32 depth                  = 0;
 
+        // If m_hide_emitters == false, the environment emitter will be visible
+        Mask valid_ray                = !m_hide_emitters && ek::neq(scene->environment(), nullptr);
+
+
         // Variables caching information from the previous bounce
         Interaction3f prev_si         = ek::zero<Interaction3f>();
         Float         prev_bsdf_pdf   = 1.f;
@@ -135,7 +139,7 @@ public:
            the loop state variables. This is crucial: omitting a variable may
            lead to undefined behavior. */
         ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result, eta,
-                            depth, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
+                            depth, valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
 
         /* Inform the loop about the maximum number of loop iterations.
            This accelerates wavefront-style rendering by avoiding costly
@@ -219,6 +223,8 @@ public:
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
             eta *= bsdf_sample.eta;
             throughput = throughput * bsdf_weight;
+            valid_ray |= active && si.is_valid() &&
+                         !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
             // Information about the current vertex needed by the next iteration
             prev_si = si;
@@ -245,8 +251,8 @@ public:
         }
 
         return {
-            /* spec  = */ result,
-            /* valid = */ ek::neq(depth, 0u)
+            /* spec  = */ ek::select(valid_ray, result, 0.f),
+            /* valid = */ valid_ray
         };
     }
 
