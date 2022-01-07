@@ -63,77 +63,46 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 #  pragma pack(push, 1)
 #endif
 
-struct RayHit {
-    ScalarFloat o_x, o_y, o_z, tnear, d_x, d_y, d_z, time, tfar;
-    ScalarUInt32 mask, id, flags;
+template <typename ScalarFloat> struct RayHitT {
+    ScalarFloat o_x, o_y, o_z, tnear;
+    ScalarFloat d_x, d_y, d_z, time;
+    ScalarFloat tfar;
+    uint32_t mask, id, flags;
     ScalarFloat ng_x, ng_y, ng_z, u, v;
-    ScalarUInt32 prim_id, geom_id, inst_id;
+    uint32_t prim_id, geom_id, inst_id;
 } ENOKI_PACK;
 
 #if defined(_MSC_VER)
 #  pragma pack(pop)
 #endif
 
-template <typename Float, typename Spectrum, bool ShadowRay>
-void kdtree_trace_func_wrapper_1(void *ptr, void * /* context */, RayHit *args) {
-    MTS_IMPORT_TYPES()
-    using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
-    using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
-
-    NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) ptr;
-    const ShapeKDTree *kdtree = s->accel;
-
-    ScalarRay3f ray(ScalarPoint3f(args->o_x, args->o_y, args->o_z),
-                    ScalarVector3f(args->d_x, args->d_y, args->d_z),
-                    args->tfar, args->time, wavelength_t<Spectrum>());
-
-    if constexpr (ShadowRay) {
-        bool hit = kdtree->template ray_intersect_scalar<true>(ray).is_valid();
-        if (hit)
-            args->tfar = 0.f;
-    } else {
-        auto pi = kdtree->template ray_intersect_scalar<false>(ray);
-        if (pi.is_valid()) {
-            // Write outputs
-            args->tfar    = pi.t;
-            args->u       = pi.prim_uv[0];
-            args->v       = pi.prim_uv[1];
-            args->prim_id = pi.prim_index;
-            args->geom_id = pi.shape_index;
-            args->inst_id = pi.instance
-                                ? (ScalarUInt32)(size_t) pi.shape // shape_index
-                                : (ScalarUInt32) -1;
-        }
-    }
-}
-
-template <typename Float, typename Spectrum, bool ShadowRay>
+template <typename Float, typename Spectrum, bool ShadowRay, size_t Width>
 void kdtree_trace_func_wrapper(const int *valid, void *ptr,
-                               void * /* context */, uint8_t *args) {
+                               void* /* context */, uint8_t *args) {
     MTS_IMPORT_TYPES()
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
     using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
 
     NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) ptr;
     const ShapeKDTree *kdtree = s->accel;
+    using RayHit = RayHitT<ScalarFloat>;
 
-    uint32_t width = jit_llvm_vector_width();
-    for (size_t i = 0; i < width; i++) {
+    for (size_t i = 0; i < Width; i++) {
         if (valid[i] == 0)
             continue;
 
         ScalarPoint3f ray_o;
-        ray_o[0] = ((ScalarFloat*) &args[offsetof(RayHit, o_x) * width])[i];
-        ray_o[1] = ((ScalarFloat*) &args[offsetof(RayHit, o_y) * width])[i];
-        ray_o[2] = ((ScalarFloat*) &args[offsetof(RayHit, o_z) * width])[i];
+        ray_o[0] = ((ScalarFloat*) &args[offsetof(RayHit, o_x) * Width])[i];
+        ray_o[1] = ((ScalarFloat*) &args[offsetof(RayHit, o_y) * Width])[i];
+        ray_o[2] = ((ScalarFloat*) &args[offsetof(RayHit, o_z) * Width])[i];
 
         ScalarVector3f ray_d;
-        ray_d[0] = ((ScalarFloat*) &args[offsetof(RayHit, d_x) * width])[i];
-        ray_d[1] = ((ScalarFloat*) &args[offsetof(RayHit, d_y) * width])[i];
-        ray_d[2] = ((ScalarFloat*) &args[offsetof(RayHit, d_z) * width])[i];
+        ray_d[0] = ((ScalarFloat*) &args[offsetof(RayHit, d_x) * Width])[i];
+        ray_d[1] = ((ScalarFloat*) &args[offsetof(RayHit, d_y) * Width])[i];
+        ray_d[2] = ((ScalarFloat*) &args[offsetof(RayHit, d_z) * Width])[i];
 
-        ScalarFloat& ray_maxt = ((ScalarFloat*) &args[offsetof(RayHit, tfar) * width])[i];
-        ScalarFloat& ray_time = ((ScalarFloat*) &args[offsetof(RayHit, time) * width])[i];
+        ScalarFloat& ray_maxt = ((ScalarFloat*) &args[offsetof(RayHit, tfar) * Width])[i];
+        ScalarFloat& ray_time = ((ScalarFloat*) &args[offsetof(RayHit, time) * Width])[i];
 
         ScalarRay3f ray = ScalarRay3f(ray_o, ray_d, ray_maxt, ray_time, wavelength_t<Spectrum>());
 
@@ -144,11 +113,11 @@ void kdtree_trace_func_wrapper(const int *valid, void *ptr,
         } else {
             auto pi = kdtree->template ray_intersect_scalar<false>(ray);
             if (pi.is_valid()) {
-                ScalarFloat& prim_u = ((ScalarFloat*) &args[offsetof(RayHit, u) * width])[i];
-                ScalarFloat& prim_v = ((ScalarFloat*) &args[offsetof(RayHit, v) * width])[i];
-                ScalarUInt32& prim_id = ((ScalarUInt32*) &args[offsetof(RayHit, prim_id) * width])[i];
-                ScalarUInt32& geom_id = ((ScalarUInt32*) &args[offsetof(RayHit, geom_id) * width])[i];
-                ScalarUInt32& inst_id = ((ScalarUInt32*) &args[offsetof(RayHit, inst_id) * width])[i];
+                ScalarFloat& prim_u = ((ScalarFloat*) &args[offsetof(RayHit, u) * Width])[i];
+                ScalarFloat& prim_v = ((ScalarFloat*) &args[offsetof(RayHit, v) * Width])[i];
+                uint32_t& prim_id = ((uint32_t*) &args[offsetof(RayHit, prim_id) * Width])[i];
+                uint32_t& geom_id = ((uint32_t*) &args[offsetof(RayHit, geom_id) * Width])[i];
+                uint32_t& inst_id = ((uint32_t*) &args[offsetof(RayHit, inst_id) * Width])[i];
 
                 // Write outputs
                 ray_maxt  = pi.t;
@@ -156,8 +125,8 @@ void kdtree_trace_func_wrapper(const int *valid, void *ptr,
                 prim_v = pi.prim_uv[1];
                 prim_id = pi.prim_index;
                 geom_id = pi.shape_index;
-                inst_id = pi.instance ? (ScalarUInt32)(size_t) pi.shape // shape_index
-                                      : (ScalarUInt32) -1;
+                inst_id = pi.instance ? (uint32_t) (size_t) pi.shape // shape_index
+                                      : (uint32_t) -1;
             }
         }
     }
@@ -173,13 +142,20 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         return kdtree->template ray_intersect_preliminary<false>(ray, active);
     } else {
         NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) m_accel;
-        int jit_width = jit_llvm_vector_width();
-
-        void *func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false>,
+        void *func_ptr = nullptr,
              *scene_ptr = m_accel;
 
-        if (unlikely(jit_width == 1))
-            func_ptr = (void *) kdtree_trace_func_wrapper_1<Float, Spectrum, false>;
+        int jit_width = jit_llvm_vector_width();
+        switch (jit_width) {
+            case 1:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 1>; break;
+            case 4:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 4>; break;
+            case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 8>; break;
+            case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 16>; break;
+            default:
+                Throw("ray_intersect_preliminary_cpu(): Enoki-JIT is "
+                      "configured for vectors of width %u, which is not "
+                      "supported by the kd-tree ray tracing backend!", jit_width);
+        }
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
@@ -253,11 +229,19 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
     } else {
-        void *func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true>,
-             *scene_ptr = m_accel;
+        void *func_ptr = nullptr, *scene_ptr = m_accel;
 
-        if (unlikely(jit_width == 1))
-            func_ptr = (void *) kdtree_trace_func_wrapper_1<Float, Spectrum, true>;
+        int jit_width = jit_llvm_vector_width();
+        switch (jit_width) {
+            case 1:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 1>; break;
+            case 4:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 4>; break;
+            case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 8>; break;
+            case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 16>; break;
+            default:
+                Throw("ray_test_cpu(): Enoki-JIT is configured for vectors of "
+                      "width %u, which is not supported by the kd-tree ray "
+                      "tracing backend!", jit_width);
+        }
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
