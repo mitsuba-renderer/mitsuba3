@@ -206,6 +206,8 @@ public:
             }
         } else if (props.has_property("data")) {
             // --- Getting grid data directly from the properties
+            // Note: we expect the tensor data to be directly given
+            // with the correct data layout, i.e. (Z, Y, X, C).
             const void *ptr = props.pointer("data");
             const TensorXf *data = (TensorXf *) ptr;
             const auto &shape = data->shape();
@@ -224,13 +226,13 @@ public:
             m_max = ek::NaN<ScalarFloat>;
             ScalarBoundingBox3f invalid_bbox;
             m_volume_grid =
-                VolumeGrid::empty(ScalarVector3u(shape[0], shape[1], shape[2]),
+                VolumeGrid::empty(ScalarVector3u(shape[2], shape[1], shape[0]),
                                   shape[3], invalid_bbox, m_max);
         } else if (props.has_property("shape_x")) {
             size_t shape[4] = {
-                props.get<size_t>("shape_x"),
-                props.get<size_t>("shape_y"),
                 props.get<size_t>("shape_z"),
+                props.get<size_t>("shape_y"),
+                props.get<size_t>("shape_x"),
                 props.get<size_t>("channels")
             };
             size_t n_entries = shape[0] * shape[1] * shape[2] * shape[3];
@@ -248,7 +250,7 @@ public:
             m_max = ek::NaN<ScalarFloat>;
             ScalarBoundingBox3f invalid_bbox;
             m_volume_grid =
-                VolumeGrid::empty(ScalarVector3u(shape[0], shape[1], shape[2]),
+                VolumeGrid::empty(ScalarVector3u(shape[2], shape[1], shape[0]),
                                   shape[3], invalid_bbox, m_max);
         } else {
             Throw("Must specify 'filename', 'data' or ('shape_x', ...)");
@@ -654,6 +656,8 @@ public:
                 ek::eval(m_data);
                 ek::sync_thread();
             }
+            // This is the real (user-facing) resolution, but recall
+            // that the layout in memory is (Z, Y, X, C).
             const ScalarVector3i full_resolution = resolution();
             if ((full_resolution.x() % resolution_factor) != 0 ||
                 (full_resolution.y() % resolution_factor) != 0 ||
@@ -672,9 +676,10 @@ public:
             size_t n = ek::hprod(resolution);
             Value result = ek::full<Value>(-ek::Infinity<Float>, n);
 
+            // Z is the slowest axis, X is the fastest.
             auto [Z, Y, X] = ek::meshgrid(
-                ek::arange<Index>(resolution.x()), ek::arange<Index>(resolution.y()),
-                ek::arange<Index>(resolution.z()), /*index_xy*/ false);
+                ek::arange<Index>(resolution.z()), ek::arange<Index>(resolution.y()),
+                ek::arange<Index>(resolution.x()), /*index_xy*/ false);
             Index3i cell_indices = resolution_factor * Index3i(X, Y, Z);
 
             // We have to include all values that participate in interpolated
@@ -712,8 +717,8 @@ public:
                         // Linearize indices
                         const Index idx =
                             offset_indices.x() +
-                            offset_indices.y() * full_resolution.z() +
-                            offset_indices.z() * full_resolution.z() *
+                            offset_indices.y() * full_resolution.x() +
+                            offset_indices.z() * full_resolution.x() *
                                 full_resolution.y();
 
                         Value values =
@@ -755,9 +760,9 @@ public:
             }
 #endif
 
-            size_t shape[4] = { (size_t) resolution.x(),
+            size_t shape[4] = { (size_t) resolution.z(),
                                 (size_t) resolution.y(),
-                                (size_t) resolution.z(),
+                                (size_t) resolution.x(),
                                 1 };
             return TensorXf(result, 4, shape);
         } else {
