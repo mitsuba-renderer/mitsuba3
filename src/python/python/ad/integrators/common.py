@@ -4,9 +4,9 @@ import mitsuba
 import enoki as ek
 import gc
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Default implementation of Integrator.render_forward/backward
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 def render_forward(self: mitsuba.render.Integrator,
                    scene: mitsuba.render.Scene,
@@ -188,12 +188,17 @@ mitsuba.render.Integrator.render_forward = render_forward
 del render_backward
 del render_forward
 
-# -------------------------------------------------------------
-#                  Rendering Custom Operation
-# -------------------------------------------------------------
+# ---------------------------------------------------------------------------
+#                         Rendering Custom Operation
+# ---------------------------------------------------------------------------
 
 class _RenderOp(ek.CustomOp):
-    """ Differentiable rendering CustomOp, used in render() below """
+    """
+    This class is an implementation detail of the render() function. It
+    realizes a CustomOp that provides evaluation, and forward/reverse-mode
+    differentiation callbacks that will be invoked as needed (e.g. when a
+    rendering operation is encountered by an AD graph traversal).
+    """
 
     def eval(self, scene, sensor, params, integrator, seed, spp):
         self.scene = scene
@@ -236,7 +241,7 @@ def render(scene: mitsuba.render.Scene,
            spp_grad: int = 0) -> mitsuba.core.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Enoki. The function returns a rendered image that
+    rendering algorithms in Mitsuba. The function returns a rendered image that
     can be used in subsequent differentiable computation steps. At any later
     point, the entire computation graph can be differentiated end-to-end in
     either forward or reverse mode (i.e., using ``ek.forward()`` and
@@ -329,181 +334,71 @@ def render(scene: mitsuba.render.Scene,
     return ek.custom(_RenderOp, scene, sensor, params, integrator,
                      (seed, seed_grad), (spp, spp_grad))
 
+# ---------------------------------------------------------------------------
 
-# -------------------------------------------------------------
+class _ReparamWrapper:
+    """
+    This class is an implementation detail of ``ADIntegrator``, which performs
+    necessary initialization steps and subsequently wraps a reparameterization
+    technique. It serves the following important purposes:
+
+    1. Ensuring the availability of uncorrelated random variates.
+    2. Connecting reparameterization calls to relevant shape-related.
+       variables in the AD graph.
+    3. Exposing the underlying RNG state to recorded loops.
+    """
+
+    # ReparamWrapper instances can be provided as ek.Loop state
+    # variables. For this to work we must declare relevant fields
+    ENOKI_STRUCT = { 'rng' : mitsuba.core.PCG32 }
+
+    def __init__(self,
+                 scene : mitsuba.render.Scene,
+                 params: Any,
+                 reparam: Callable[
+                     [mitsuba.render.Scene, mitsuba.core.PCG32, Any,
+                      mitsuba.core.Ray3f, mitsuba.core.Bool],
+                     Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]],
+                 wavefront_size : int,
+                 seed : int):
+
+        from mitsuba.core import UInt32, sample_tea_32, PCG32, Bool
+
+        self.scene = scene
+        self.params = params
+        self.reparam = reparam
+
+        # Only link the reparameterization CustomOp to differentiable scene
+        # parameters with the AD computation graph if they control shape
+        # information (vertex positions, etc.)
+        if isinstance(params, mitsuba.python.util.SceneParameters):
+            params = params.copy()
+            params.keep_shape()
+
+        # Create a uniform random number generator that won't show any
+        # correlation with the main sampler. PCG32Sampler.seed() uses
+        # the same logic except for the XOR with -1
+
+        idx = ek.arange(UInt32, wavefront_size)
+        tmp = ek.opaque(UInt32, 0xffffffff ^ seed)
+        v0, v1 = sample_tea_32(tmp, idx)
+        self.rng = PCG32(initstate=v0, initseq=v1)
+
+    def __call__(self,
+                 ray: mitsuba.core.Ray3f,
+                 active: Union[mitsuba.core.Bool, bool] = True
+    ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
+        """
+        This function takes a ray and a boolean active mask as input and
+        returns the reparameterized ray direction and the Jacobian determinant
+        of the change of variables.
+        """
+        return self.reparam(self.scene, self.rng, self.params, ray, active)
+
+
+# ---------------------------------------------------------------------------
 #  Helper functions used by various differentiable integrators
-# -------------------------------------------------------------
-
-def prepare(sensor: mitsuba.render.Sensor,
-            seed: int = 0,
-            spp: int = 0,
-            aovs: list = []):
-    """
-    Given a sensor and a desired number of samples per pixel, this function
-    computes the necessary number of Monte Carlo samples and then suitably
-    seeds the sampler underlying the sensor.
-
-    Returns the final number of samples per pixel (which may differ from the
-    requested amount)
-
-    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
-        Specify a sensor to render the scene from a different viewpoint.
-
-    Parameter ``seed` (``int``)
-        This parameter controls the initialization of the random number
-        generator during the primal rendering step. It is crucial that you
-        specify different seeds (e.g., an increasing sequence) if subsequent
-        calls should produce statistically independent images (e.g. to
-        de-correlate gradient-based optimization steps).
-
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        primal rendering step. The value provided within the original scene
-        specification takes precedence if ``spp=0``.
-    """
-
-    film = sensor.film()
-    sampler = sensor.sampler().clone()
-
-    if spp != 0:
-        sampler.set_sample_count(spp)
-
-    spp = sampler.sample_count()
-    sampler.set_samples_per_wavefront(spp)
-
-    film_size = film.crop_size()
-
-    if film.sample_border():
-        film_size += 2 * film.rfilter().border_size()
-
-    wavefront_size = ek.hprod(film_size) * spp
-
-    is_llvm = ek.is_llvm_array_v(mitsuba.core.Float)
-    wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
-
-    if wavefront_size >  wavefront_size_limit:
-        raise Exception(
-            "Tried to perform a %s-based rendering with a total sample "
-            "count of %u, which exceeds 2^%u = %u (the upper limit "
-            "for this backend). Please use fewer samples per pixel or "
-            "render using multiple passes." %
-            ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
-             ek.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
-
-    sampler.seed(seed, wavefront_size)
-    film.prepare(aovs)
-
-    return sampler, spp
-
-def sample_rays(
-    scene: mitsuba.render.Scene,
-    sensor: mitsuba.render.Sensor,
-    sampler: mitsuba.render.Sampler,
-    reparam: Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
-                      Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]] = None
-) -> Tuple[mitsuba.render.RayDifferential3f, mitsuba.core.Spectrum, mitsuba.core.Vector2f]:
-    """
-    Sample a 2D grid of primary rays for a given sensor
-
-    Returns a tuple containing
-
-    - the set of sampled rays
-    - a ray weight (usually 1 if the sensor's response function is sampled
-      perfectly)
-    - the continuous 2D image-space positions associated with each ray
-
-    When a reparameterization is provided, the returned image-space position
-    will will be reparameterized (however, the returned weights and ray
-    direction are detached).
-    """
-
-    from mitsuba.core import Float, UInt32, Vector2f, \
-        ScalarVector2f, Vector2u
-    from mitsuba.render import Interaction3f
-
-    film = sensor.film()
-    film_size = film.crop_size()
-    rfilter = film.rfilter()
-    border_size = rfilter.border_size()
-
-    if film.sample_border():
-        film_size += 2 * border_size
-
-    spp = sampler.sample_count()
-
-    # Compute discrete sample position
-    idx = ek.arange(UInt32, ek.hprod(film_size) * spp)
-
-    # Try to avoid a division by an unknown constant if we can help it
-    log_spp = ek.log2i(spp)
-    if 1 << log_spp == spp:
-        idx >>= ek.opaque(UInt32, log_spp)
-    else:
-        idx //= ek.opaque(UInt32, spp)
-
-    # Compute the position on the image plane
-    pos = Vector2u()
-    pos.y = idx // film_size[0]
-    pos.x = ek.fnmadd(film_size[0], pos.y, idx)
-
-    if film.sample_border():
-        pos -= border_size
-
-    pos += film.crop_offset()
-
-    # Cast to floating point and add random offset
-    pos_f = Vector2f(pos) + sampler.next_2d()
-
-    # Re-scale the position to [0, 1]^2
-    scale = ek.rcp(ScalarVector2f(film.crop_size()))
-    offset = -ScalarVector2f(film.crop_offset()) * scale
-    pos_adjusted = ek.fmadd(pos_f, scale, offset)
-
-    aperture_sample = Vector2f(0.0)
-    if sensor.needs_aperture_sample():
-        aperture_sample = sampler.next_2d()
-
-    time = sensor.shutter_open()
-    if sensor.shutter_open_time() > 0:
-        time += sampler.next_1d() * sensor.shutter_open_time()
-
-    wavelength_sample = 0
-    if mitsuba.core.is_spectral:
-        wavelength_sample = sampler.next_1d()
-
-    ray, weight = sensor.sample_ray(
-        time=wavelength_sample,
-        sample1=sampler.next_1d(),
-        sample2=pos_adjusted,
-        sample3=aperture_sample
-    )
-
-    if reparam is not None:
-        if rfilter.is_box_filter():
-            raise Exception(
-                "This differentiable integrator reparameterizes the "
-                "integration domain, which is incompatible with the box "
-                "filter. Please use a smooth reconstruction filter (e.g. "
-                "'gaussian', which is the default)")
-
-        if not film.sample_border():
-            raise Exception("This integrator requires that the film's "
-                            "'sample_border' parameter is set to true.")
-
-        with ek.resume_grad():
-            reparam_d, _ = reparam(ray)
-
-            # Create a fake interaction along the sampled ray and use it to
-            # recompute importance and image position with derivative tracking
-            it = ek.zero(Interaction3f)
-            it.p = ray.o + reparam_d
-            ds, _ = sensor.sample_direction(it, aperture_sample)
-
-            # Return a reparameterized image position
-            pos_f = ds.uv
-
-    return ray, weight, pos_f
-
+# ---------------------------------------------------------------------------
 
 def mis_weight(pdf_a, pdf_b):
     """
@@ -560,6 +455,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         self.split_differential = props.get('split_differential', False)
 
+        # Warn about potential biase due to shapes entering/leaving the frame
+        self.sample_border_warning = True
+
     def aovs(self):
         return []
 
@@ -587,7 +485,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         # Disable derivatives in all of the following
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = prepare(
+            sampler, spp = self.prepare(
                 sensor=sensor,
                 seed=seed,
                 spp=spp,
@@ -595,7 +493,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos = sample_rays(scene, sensor, sampler)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, state = self.sample(
@@ -606,6 +504,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
+                reparam=None,
                 active=Bool(True)
             )
 
@@ -632,45 +531,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             self.primal_image = sensor.film().develop()
 
             return self.primal_image
-
-    def create_reparam(self,
-                       scene: mitsuba.render.Scene,
-                       wavefront_size: int,
-                       seed: int,
-                       params: Any):
-
-        # Give up if the integrator doesn't provide a 'reparam' function
-        if not hasattr(self, 'reparam'):
-            return None
-
-        from mitsuba.core import UInt32, sample_tea_32, PCG32, Bool
-
-        # Create a uniform random number generator that won't show any
-        # correlation with the main sampler. PCG32Sampler.seed() uses
-        # the same logic except for the XOR with -1
-        idx = ek.arange(UInt32, wavefront_size)
-        tmp = ek.opaque(UInt32, 0xffffffff ^ seed)
-        v0, v1 = sample_tea_32(tmp, idx)
-        rng = PCG32(initstate=v0, initseq=v1)
-
-        # Only link the reparameterization CustomOp to differentiable scene
-        # parameters with the AD computation graph if they control shape
-        # information (vertex positions, etc.)
-        if isinstance(params, mitsuba.python.util.SceneParameters):
-            params = params.copy()
-            params.keep_shape()
-
-        # Return wrapper capturing 'scene', 'rng', 'params' for convenience. It
-        # takes a ray and a boolean active mask as input and returns the
-        # reparameterized ray direction and the Jacobian determinant of the
-        # change of variables.
-        def reparam_func(
-            ray: mitsuba.core.Ray3f, active: Bool = Bool(True)
-        ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
-            return self.reparam(scene, rng, params, ray, active)
-
-        return reparam_func
-
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
@@ -750,60 +610,80 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         # Disable derivatives in all of the following
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = prepare(sensor, seed, spp, aovs)
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
 
-            # Try to create a reparameterization
-            reparam = self.create_reparam(scene, sampler.wavefront_size(),
-                                          seed, params)
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
 
-            # Generate a set of rays starting at the sensor
-            ray, weight, pos = sample_rays(scene, sensor, sampler, reparam)
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler,
+                                                reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ek.detach(ray),
+                ray=ray,
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
+                reparam=None,
                 active=Bool(True)
             )
 
-            # No image-space reparameterization derivatives by default
-            reparam_deriv = None
+            # Differentiable camera pose parameters or a reparameterization
+            # have an effect on the measurement integral performed at the
+            # sensor. We account for this here by differentiating the
+            # 'ImageBlock.put()' operation using differentiable sample
+            # positions. One important aspect of how this operation works in
+            # Mitsuba is that it computes a separate 'weight' channel
+            # containing the (potentially quite non-uniform) accumulated filter
+            # weights of all samples. This non-uniformity is then divided out
+            # at the end. It's crucial that we also account for this when
+            # computing derivatives, or they will be unusably noisy.
 
-            # Pontentially account for the effect of the reparameterization on
-            # the measurement integral performed at the sensor. When specifying
-            # split_differential=True, it will be merged into the first of two
-            # differential megakernels, which can be useful for balancing their
-            # size/complexity.
+            sample_pos_deriv = None # disable by default
+
             with ek.resume_grad():
                 if ek.grad_enabled(pos):
-                    reparam_deriv = film.create_block()
+                    sample_pos_deriv = film.create_block()
 
                     # Only use the coalescing feature when rendering enough samples
-                    reparam_deriv.set_coalesce(reparam_deriv.coalesce() and spp >= 4)
+                    sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
 
                     # Deposit samples with gradient tracking for 'pos'. Why is
                     # the Jacobian determinant ignored here? That's because it
                     # would also need to be applied to the weight channel of
                     # the ImageBlock, which would then cancel out in
                     # film.develop() where the weight division is performed.
-                    reparam_deriv.put(
+                    sample_pos_deriv.put(
                         pos=pos,
                         wavelengths=ray.wavelengths,
                         value=L * weight,
                         alpha=ek.select(valid, Float(1), Float(0))
                     )
 
-                    # Compute the derivative of the reparameterized image ..
-                    tensor = reparam_deriv.tensor()
+                    # # Compute the derivative of the reparameterized image ..
+                    tensor = sample_pos_deriv.tensor()
                     ek.forward_to(tensor,
-                                  ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
+                                  flags=ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
 
-                    # Ensure image+derivative are evaluated in the next kernel launch
+                    # If self.split_differential is enabled, the computation of
+                    # 'sample_pos_deriv' will be merged into the first of two
+                    # large differential kernels.
                     ek.schedule(tensor, ek.grad(tensor))
                     del tensor
 
@@ -835,6 +715,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 depth=UInt32(0),
                 δL=None,
                 state_in=state_out,
+                reparam=reparam,
                 active=Bool(True)
             )
 
@@ -863,10 +744,10 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             result_grad = film.develop()
 
             # Potentially add the derivative of the reparameterized samples
-            if reparam_deriv is not None:
+            if sample_pos_deriv is not None:
                 with ek.resume_grad():
                     film.prepare(aovs)
-                    film.put_block(reparam_deriv)
+                    film.put_block(sample_pos_deriv)
                     reparam_result = film.develop()
                     ek.forward_to(reparam_result)
                     result_grad += ek.grad(reparam_result)
@@ -939,6 +820,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
+        reparam = None
 
         # self.sample() will re-enable gradients as needed, disable them here
         with ek.suspend_grad():
@@ -951,17 +833,19 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos = sample_rays(scene, sensor, sampler)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler,
+                                                reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ek.detach(ray),
+                ray=ray,
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
+                reparam=None,
                 active=Bool(True)
             )
 
@@ -994,6 +878,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 depth=UInt32(0),
                 δL=δL,
                 state_in=state_out,
+                reparam=None,
                 active=Bool(True)
             )
 
@@ -1010,6 +895,199 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             ek.eval()
 
 
+    def sample_rays(
+        self,
+        scene: mitsuba.render.Scene,
+        sensor: mitsuba.render.Sensor,
+        sampler: mitsuba.render.Sampler,
+        reparam: Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
+                          Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]] = None
+    ) -> Tuple[mitsuba.render.RayDifferential3f, mitsuba.core.Spectrum, mitsuba.core.Vector2f]:
+        """
+        Sample a 2D grid of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous 2D image-space positions associated with each ray
+
+        When a remareterization function is provided via the 'reparam'
+        argument, it will be applied to the returned image-space position (i.e.
+        the sample positions will be moving). The other two return values
+        remain detached.
+        """
+
+        from mitsuba.core import Float, UInt32, Vector2f, \
+            ScalarVector2f, Vector2u, Log, LogLevel
+
+        from mitsuba.render import Interaction3f
+
+        film = sensor.film()
+        film_size = film.crop_size()
+        rfilter = film.rfilter()
+        border_size = rfilter.border_size()
+
+        if film.sample_border():
+            film_size += 2 * border_size
+
+        spp = sampler.sample_count()
+
+        # Compute discrete sample position
+        idx = ek.arange(UInt32, ek.hprod(film_size) * spp)
+
+        # Try to avoid a division by an unknown constant if we can help it
+        log_spp = ek.log2i(spp)
+        if 1 << log_spp == spp:
+            idx >>= ek.opaque(UInt32, log_spp)
+        else:
+            idx //= ek.opaque(UInt32, spp)
+
+        # Compute the position on the image plane
+        pos = Vector2u()
+        pos.y = idx // film_size[0]
+        pos.x = ek.fnmadd(film_size[0], pos.y, idx)
+
+        if film.sample_border():
+            pos -= border_size
+
+        pos += film.crop_offset()
+
+        # Cast to floating point and add random offset
+        pos_f = Vector2f(pos) + sampler.next_2d()
+
+        # Re-scale the position to [0, 1]^2
+        scale = ek.rcp(ScalarVector2f(film.crop_size()))
+        offset = -ScalarVector2f(film.crop_offset()) * scale
+        pos_adjusted = ek.fmadd(pos_f, scale, offset)
+
+        aperture_sample = Vector2f(0.0)
+        if sensor.needs_aperture_sample():
+            aperture_sample = sampler.next_2d()
+
+        time = sensor.shutter_open()
+        if sensor.shutter_open_time() > 0:
+            time += sampler.next_1d() * sensor.shutter_open_time()
+
+        wavelength_sample = 0
+        if mitsuba.core.is_spectral:
+            wavelength_sample = sampler.next_1d()
+
+        ray, weight = sensor.sample_ray(
+            time=wavelength_sample,
+            sample1=sampler.next_1d(),
+            sample2=pos_adjusted,
+            sample3=aperture_sample
+        )
+
+        if reparam is not None:
+            if rfilter.is_box_filter():
+                raise Exception(
+                    "ADIntegrator detected the potential for image-space "
+                    "motion due to differentiable shape or camera pose "
+                    "parameters. This is, however, incompatible with the box "
+                    "reconstruction filter that is currently used. Please "
+                    "specify a a smooth reconstruction filter in your scene "
+                    "description (e.g. 'gaussian', which is actually the "
+                    "default)")
+
+            # This is less serious, so let's just warn once
+            if not film.sample_border() and self.sample_border_warning:
+                self.sample_border_warning = True
+
+                Log(LogLevel.Warn,
+                    "ADIntegrator detected the potential for image-space "
+                    "motion due to differentiable shape or camera pose "
+                    "parameters. To correctly account for shapes entering "
+                    "or leaving the viewport, it is recommended that you set "
+                    "the film's 'sample_border' parameter to True.")
+
+            with ek.resume_grad():
+                # Reparameterize the camera ray. We don't need the Jacobian
+                # determinant here due to the subsequent division by the
+                # ImageBlock weight channel (the determinant would affect both
+                # sample value and weight and then cancel out during the
+                # division).
+                reparam_d, _ = reparam(ray)
+
+                # Create a fake interaction along the sampled ray and use it to the
+                # position with derivative tracking
+                it = ek.zero(Interaction3f)
+                it.p = ray.o + reparam_d
+                ds, _ = sensor.sample_direction(it, aperture_sample)
+
+                # Return a reparameterized image position
+                pos_f = ds.uv
+
+            ek.disable_grad(ray, weight)
+
+        return ray, weight, pos_f
+
+
+    def prepare(self,
+                sensor: mitsuba.render.Sensor,
+                seed: int = 0,
+                spp: int = 0,
+                aovs: list = []):
+        """
+        Given a sensor and a desired number of samples per pixel, this function
+        computes the necessary number of Monte Carlo samples and then suitably
+        seeds the sampler underlying the sensor.
+
+        Returns the created sampler and the final number of samples per pixel
+        (which may differ from the requested amount depending on the type of
+        ``Sampler`` being used)
+
+        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+            Specify a sensor to render the scene from a different viewpoint.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator during the primal rendering step. It is crucial that you
+            specify different seeds (e.g., an increasing sequence) if subsequent
+            calls should produce statistically independent images (e.g. to
+            de-correlate gradient-based optimization steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            primal rendering step. The value provided within the original scene
+            specification takes precedence if ``spp=0``.
+        """
+
+        film = sensor.film()
+        sampler = sensor.sampler().clone()
+
+        if spp != 0:
+            sampler.set_sample_count(spp)
+
+        spp = sampler.sample_count()
+        sampler.set_samples_per_wavefront(spp)
+
+        film_size = film.crop_size()
+
+        if film.sample_border():
+            film_size += 2 * film.rfilter().border_size()
+
+        wavefront_size = ek.hprod(film_size) * spp
+
+        is_llvm = ek.is_llvm_array_v(mitsuba.core.Float)
+        wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
+
+        if wavefront_size >  wavefront_size_limit:
+            raise Exception(
+                "Tried to perform a %s-based rendering with a total sample "
+                "count of %u, which exceeds 2^%u = %u (the upper limit "
+                "for this backend). Please use fewer samples per pixel or "
+                "render using multiple passes." %
+                ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
+                 ek.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
+
+        sampler.seed(seed, wavefront_size)
+        film.prepare(aovs)
+
+        return sampler, spp
+
     def sample(self,
                mode: enoki.ADMode,
                scene: mitsuba.render.Scene,
@@ -1018,6 +1096,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                depth: mitsuba.core.UInt32,
                δL: Optional[mitsuba.core.Spectrum],
                state_in: Any,
+               reparam: Optional[
+                   Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
+                            Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]]],
                active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
                                                    mitsuba.core.Bool, Any]:
         """
@@ -1073,6 +1154,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             that this state vector is provided to them via this argument. When
             invoked in primal mode, it should be set to ``None``.
 
+        Parameter ``reparam`` (see above):
+            If provided, this callable takes a ray and a mask of active SIMD
+            lanes and returns a reparameterized ray and Jacobian determinant.
+            The implementation of the ``sample`` function should then use it to
+            correctly account for visibility-induced discontinuities during
+            differentiation.
+
         Parameter ``active`` (``mitsuba.core.Bool``):
             This mask array can optionally be used to indicate that some of
             the rays are disabled.
@@ -1096,3 +1184,4 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         raise Exception('ADIntegrator does not provide the sample() method. '
                         'It should be implemented by subclasses that '
                         'specialize the abstract ADIntegrator interface.')
+

@@ -29,6 +29,7 @@ class BasicPRBIntegrator(ADIntegrator):
                depth: mitsuba.core.UInt32,
                δL: Optional[mitsuba.core.Spectrum],
                state_in: Any,
+               reparam: Any, # unused
                active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
                                                    mitsuba.core.Bool, Any]:
         """

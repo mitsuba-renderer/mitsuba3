@@ -35,22 +35,21 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     hit = si.is_valid()
     V_direct = ek.select(hit, ek.normalize(si.p - ray.o), ray.d)
 
-    # Compute harmonic weight while being careful of division by almost zero
-    B = ek.select(hit, ek.detach(si.boundary_test(aux_ray)), 1.0)
-    D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
-    w_denom = D + B
-    w_denom_p = ek.pow(w_denom, exponent)
-    w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
-    w /= pdf_omega
+    with ek.suspend_grad():
+        # Compute harmonic weight while being careful of division by almost zero
+        B = ek.select(hit, si.boundary_test(aux_ray), 1.0)
+        D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
+        w_denom = D + B
+        w_denom_p = ek.pow(w_denom, exponent)
+        w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
+        w /= pdf_omega
 
-    # Analytic weight gradients w.r.t. `ray.d`
-    tmp0 = ek.pow(w_denom, exponent + 1.0)
-    tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * exponent
-    tmp2 = omega - ray.d * ek.dot(ray.d, omega)
-    d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
-    d_w_omega /= pdf_omega
-
-    ek.disable_grad(w, d_w_omega)
+        # Analytic weight gradients w.r.t. `ray.d`
+        tmp0 = ek.pow(w_denom, exponent + 1.0)
+        tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * exponent
+        tmp2 = omega - ray.d * ek.dot(ray.d, omega)
+        d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
+        d_w_omega /= pdf_omega
 
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
@@ -91,14 +90,14 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_div_lhs = Float(0.0)
         it = UInt32(0)
         rng = self.rng
+        ray_grad = self.grad_in('ray')
 
         loop = Loop(name="reparameterize_ray(): forward propagation",
                     state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
-
         while loop(self.active & (it < self.num_rays)):
             ray = Ray3f(self.ray)
             ek.enable_grad(ray.o)
-            ek.set_grad(ray.o, self.grad_in('ray').o)
+            ek.set_grad(ray.o, ray_grad.o)
 
             sample = Point2f(rng.next_float32(),
                              rng.next_float32())
@@ -106,8 +105,8 @@ class _ReparameterizeOp(ek.CustomOp):
             Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(
                 self.scene, sample, ray, self.kappa, self.exponent)
 
-            ek.enqueue(ek.ADMode.Forward, self.params, ray.o)
-            ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+            ek.forward_to(V_i, div_lhs_i,
+                          flags=ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
             Z += Z_i
             dZ += dZ_i
@@ -215,7 +214,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         Scene containing all shapes.
 
     Parameter ``rng`` (``mitsuba.core.PCG32``):
-        Random number generator used to sample auxiliary ray direction.
+        Random number generator used to sample auxiliary ray directions.
 
     Parameter ``ray`` (``mitsuba.core.RayDifferential3f``):
         Ray to be reparameterized

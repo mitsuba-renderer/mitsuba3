@@ -47,6 +47,7 @@ class PRBIntegrator(ADIntegrator):
                depth: mitsuba.core.UInt32,
                δL: Optional[mitsuba.core.Spectrum],
                state_in: Any,
+               reparam: Any, # unused
                active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
                                                    mitsuba.core.Bool, Any]:
         """
@@ -83,7 +84,8 @@ class PRBIntegrator(ADIntegrator):
                     state=lambda: (sampler, ray, depth, L, δL, β, η, active,
                                    prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
-        # Inform the loop about the maximum number of loop iterations.
+        # Inform the loop about the maximum number of loop iterations (helpful
+        # in case wavefront-style loops are generated).
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
@@ -182,7 +184,7 @@ class PRBIntegrator(ADIntegrator):
 
                     # Propagate derivatives from/to 'contrib' based on 'mode'
                     if mode == ek.ADMode.Backward:
-                        ek.backward_from(δL * contrib, ek.ADFlag.ClearInterior)
+                        ek.backward_from(δL * contrib, flags=ek.ADFlag.ClearInterior)
                     else:
                         ek.forward_to(contrib, flags=ek.ADFlag.ClearNone)
                         δL += ek.grad(contrib)

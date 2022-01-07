@@ -721,7 +721,7 @@ private:
 
             auto pos = field.name.find_last_of('_');
             if (pos == std::string::npos) {
-                Log(Warn, "Attribute without postifx are not handled for now: attribute \"%s\" ignored.", field.name.c_str());
+                Log(Warn, "Attributes without postfix are not handled for now: attribute \"%s\" ignored.", field.name.c_str());
                 if (reading_attribute)
                     flush_attribute();
                 continue; // Don't do anything with attributes without postfix (for now)

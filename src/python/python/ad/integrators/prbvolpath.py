@@ -2,7 +2,6 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare, mis_weight, sample_rays
 
 from typing import Union
 
@@ -418,6 +417,3 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'
-
-
-mitsuba.render.register_integrator("prbvolpath", lambda props: PRBVolpathIntegrator(props))

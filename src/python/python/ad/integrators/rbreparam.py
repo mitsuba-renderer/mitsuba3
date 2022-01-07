@@ -2,9 +2,6 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare, sample_rays, mis_weight
-
-from typing import Union
 
 class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -287,6 +284,3 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
     def to_string(self):
         return f'RBReparamIntegrator[max_depth = {self.max_depth}]'
-
-
-mitsuba.render.register_integrator("rbreparam", lambda props: RBReparamIntegrator(props))
