@@ -469,41 +469,47 @@ std::tuple<Float, typename Medium<Float, Spectrum>::Vector3f,
            typename Medium<Float, Spectrum>::Vector3f>
 Medium<Float, Spectrum>::prepare_dda_traversal(const Volume *majorant_grid,
                                                const Ray3f &ray, Float mint,
-                                               Float maxt, Mask active) const {
-    ENOKI_MARK_USED(active);
-    Vector3f voxel_size = majorant_grid->voxel_size();
+                                               Float maxt, Mask /*active*/) const {
+    const auto &bbox   = majorant_grid->bbox();
+    const auto extents = bbox.extents();
+    Ray3f local_ray(
+        /* o */ (ray.o - bbox.min) / extents,
+        /* d */ ray.d / extents, ray.time, ray.wavelengths);
+    const ScalarVector3i res  = majorant_grid->resolution();
+    Vector3f local_voxel_size = 1.f / res;
+
+    // The id of the first and last voxels hit by the ray
+    Vector3i current_voxel(ek::floor(local_ray(mint) / local_voxel_size));
+    Vector3i last_voxel(ek::floor(local_ray(maxt) / local_voxel_size));
+    // By definition, current and last voxels should be valid voxel indices.
+    current_voxel = ek::clamp(current_voxel, 0, res - 1);
+    last_voxel    = ek::clamp(last_voxel, 0, res - 1);
+
+    // Increment (in number of voxels) to take at each step
+    Vector3i step = ek::select(local_ray.d >= 0, 1, -1);
+
+    // Distance along the ray to the next voxel border from the current position
+    Vector3f next_voxel_boundary = (current_voxel + step) * local_voxel_size;
+    next_voxel_boundary += ek::select(
+        ek::neq(current_voxel, last_voxel) && (local_ray.d < 0), local_voxel_size, 0);
+
+    // Value of ray parameter until next intersection with voxel-border along each axis
+    auto ray_nonzero = ek::neq(local_ray.d, 0);
+    Vector3f dda_tmax =
+        ek::select(ray_nonzero, (next_voxel_boundary - local_ray.o) / local_ray.d,
+                   ek::Infinity<Float>);
+
+    // How far along each component of the ray we must move to move by one voxel
+    Vector3f dda_tdelta = ek::select(
+        ray_nonzero, step * local_voxel_size / local_ray.d, ek::Infinity<Float>);
 
     // Current ray parameter throughout DDA traversal
     Float dda_t = mint;
 
-    // Offset of the world-space medium bbox to the local grid coordinates,
-    // expressed in local grid coordinates.
-    // We could get this from mint when the ray starts outside of the bbox,
-    // but it wouldn't work anymore when it's inside (because mint gets
-    // clamped to zero).
-    const auto ray1 = ray(maxt);
-    Vector3f grid_offset = (ray1 / voxel_size) - ek::floor(ray1 / voxel_size);
-    // The id of the first and last voxels hit by the ray
-    Vector3i current_voxel(ek::floor(ray(mint) / voxel_size));
-    Vector3i last_voxel(ek::floor(ray(maxt) / voxel_size));
-    // Increment (in number of voxels) to take at each step
-    Vector3i step = ek::select(ray.d >= 0, 1, -1);
-
-    // Distance along the ray to the next voxel border from the current position
-    Vector3f next_voxel_boundary = (current_voxel + step + grid_offset) * voxel_size;
-    next_voxel_boundary += ek::select(
-        ek::neq(current_voxel, last_voxel) && (ray.d < 0), voxel_size, 0);
-
-    // Value of ray parameter until next intersection with voxel-border along each axis
-    auto ray_nonzero = ek::neq(ray.d, 0);
-    Vector3f dda_tmax =
-        ek::select(ray_nonzero, (next_voxel_boundary - ray.o) / ray.d,
-                    ek::Infinity<Float>);
-
-    // How far along each component of the ray we must move to move by one voxel
-    Vector3f dda_tdelta = ek::select(
-        ray_nonzero, step * voxel_size / ray.d, ek::Infinity<Float>);
-
+    // Note: `t` parameters on the reparametrized ray yield locations on the
+    // normalized majorant supergrid in [0, 1]^3. But they are also directly
+    // valid parameters on the original ray, yielding positions in the
+    // bbox-aligned supergrid.
     return { dda_t, dda_tmax, dda_tdelta };
 }
 
