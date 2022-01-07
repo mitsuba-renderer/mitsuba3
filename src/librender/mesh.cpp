@@ -643,7 +643,8 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
     Normal3f n[3] = { vertex_normal(fi[0], active),
                       vertex_normal(fi[1], active),
                       vertex_normal(fi[2], active) };
-    Normal3f normal = n[0] * w + n[1] * u + n[2] * v;
+
+    Normal3f normal = ek::fmadd(n[0], w, ek::fmadd(n[1], u, n[2] * v));
 
     // Dot product between surface normal and the ray direction is 0 at silhouette points
     Float dp = ek::dot(normal, -ray.d);
@@ -692,8 +693,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     Float b1 = prim_uv.x(), b2 = prim_uv.y();
     if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape)) {
-        b1 = ek::detach(prim_uv.x());
-        b2 = ek::detach(prim_uv.y());
+        b1 = ek::detach(b1);
+        b2 = ek::detach(b2);
     }
 
     Float b0 = 1.f - b1 - b2;

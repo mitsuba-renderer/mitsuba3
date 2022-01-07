@@ -2,9 +2,6 @@ from __future__ import annotations # Delayed parsing of type annotations
 
 import enoki as ek
 import mitsuba
-from .common import prepare, sample_rays, mis_weight
-
-from typing import Union
 
 class RBIntegrator(mitsuba.render.SamplingIntegrator):
     """

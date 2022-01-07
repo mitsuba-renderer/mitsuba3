@@ -73,21 +73,21 @@ class PRBReparamIntegrator(ADIntegrator):
         self.reparam_exp = props.get('reparam_exp', 3.0)
 
     def reparam(self,
-                scene: mitsuba.render.Scene,
-                rng: mitsuba.core.PCG32,
-                params: Any,
-                ray: mitsuba.core.Ray3f,
-                active: mitsuba.core.Bool):
-        """
-        Used to reparameterize rays internally and within ADIntegrator
-        """
+              scene: mitsuba.render.Scene,
+              rng: mitsuba.core.PCG32,
+              params: Any,
+              ray: mitsuba.core.Ray3f,
+              active: mitsuba.core.Bool):
+      """
+      Used to reparameterize rays internally and within ADIntegrator
+      """
 
-        from mitsuba.python.ad import reparameterize_ray
-        return reparameterize_ray(scene, rng, params, ray,
-                                  num_rays=self.reparam_rays,
-                                  kappa=self.reparam_kappa,
-                                  exponent=self.reparam_exp,
-                                  active=active)
+      from mitsuba.python.ad import reparameterize_ray
+      return reparameterize_ray(scene, rng, params, ray,
+                                num_rays=self.reparam_rays,
+                                kappa=self.reparam_kappa,
+                                exponent=self.reparam_exp,
+                                active=active)
 
     def sample(self,
                mode: enoki.ADMode,
@@ -97,6 +97,9 @@ class PRBReparamIntegrator(ADIntegrator):
                depth: mitsuba.core.UInt32,
                δL: Optional[mitsuba.core.Spectrum],
                state_in: Any,
+               reparam: Optional[
+                   Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
+                            Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]]],
                active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
                                                    mitsuba.core.Bool, Any]:
         """
@@ -132,15 +135,27 @@ class PRBReparamIntegrator(ADIntegrator):
         # Record the following loop in its entirety
         loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
                     state=lambda: (sampler, ray, depth, L, δL, β, η, active,
-                                   prev_si, prev_bsdf_pdf, prev_bsdf_delta))
+                                   prev_si, prev_bsdf_pdf, prev_bsdf_delta,
+                                   reparam))
 
-        # Inform the loop about the maximum number of loop iterations.
+        # Inform the loop about the maximum number of loop iterations (helpful
+        # in case wavefront-style loops are generated).
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
             with ek.resume_grad(condition=not primal):
+                ray_reparam = Ray3f(ray)
+                det = 1
+
+                if not primal:
+                    ray_reparam.d, det = reparam(ray)
+
                 # Capture π-dependence of intersection for a detached input ray
-                si = scene.ray_intersect(ray,
+                si = scene.ray_intersect(ray_reparam,
+                                         ray_flags=RayFlags.All,
+                                         coherent=ek.eq(depth, 0))
+
+                si2 = scene.ray_intersect(ek.detach(ray),
                                          ray_flags=RayFlags.All,
                                          coherent=ek.eq(depth, 0))
                 bsdf = si.bsdf(ray)
@@ -172,9 +187,10 @@ class PRBReparamIntegrator(ADIntegrator):
                 if not primal:
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
-                    ds.d = ek.normalize(ds.p - si.p)
+                    em_ray = si.spawn_ray_to(ds.p)
+                    em_ray.d, em_det = reparam(em_ray)
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
-                    em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
+                    em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0) * em_det
 
                 # Evalute BRDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
@@ -220,6 +236,9 @@ class PRBReparamIntegrator(ADIntegrator):
                     # Estimated contribution of the current vertex
                     contrib = Le + Lr_dir + Lr_ind
 
+                    # Account for determinant of the reparameterization (TODO, revisit this!!!!!!!!!)
+                    contrib *= ek.select(depth > 1, det, 1)
+
                     if not ek.grad_enabled(contrib):
                         raise Exception(
                             "The contribution computed by the differential "
@@ -233,9 +252,9 @@ class PRBReparamIntegrator(ADIntegrator):
 
                     # Propagate derivatives from/to 'contrib' based on 'mode'
                     if mode == ek.ADMode.Backward:
-                        ek.backward_from(δL * contrib, ek.ADFlag.ClearInterior)
+                        ek.backward_from(δL * contrib, flags=ek.ADFlag.ClearInterior)
                     else:
-                        ek.forward_to(contrib, ek.ADFlag.ClearNone)
+                        ek.forward_to(contrib, flags=ek.ADFlag.ClearNone)
                         δL += ek.grad(contrib)
 
             # -------------------- Stopping criterion ---------------------
