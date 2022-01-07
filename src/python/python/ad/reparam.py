@@ -8,20 +8,19 @@ from typing import Tuple
 def _sample_warp_field(scene: mitsuba.render.Scene,
                        sample: mitsuba.core.Point2f,
                        ray: mitsuba.core.Ray3f,
-                       ray_frame: mitsuba.core.Frame3f,
                        kappa: float,
                        exponent: float):
     """
     Sample the warp field of moving geometries by tracing an auxiliary ray and
     computing the appropriate convolution weight using the shape's boundary-test.
     """
-    from mitsuba.core import Ray3f
+    from mitsuba.core import Ray3f, Frame3f
     from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
     from mitsuba.render import RayFlags
 
     # Sample an auxiliary ray from a von Mises Fisher distribution (+ antithetic sampling)
     omega_local = square_to_von_mises_fisher(sample, kappa)
-    omega = ray_frame.to_world(omega_local)
+    omega = Frame3f(ray.d).to_world(omega_local)
     pdf_omega = square_to_von_mises_fisher_pdf(omega_local, kappa)
     aux_ray = Ray3f(ray)
     aux_ray.d = omega
@@ -83,7 +82,7 @@ class _ReparameterizeOp(ek.CustomOp):
 
     def forward(self):
         from mitsuba.core import (Bool, Float, UInt32, Loop, Point2f,
-                                  Vector3f, Ray3f, Frame3f)
+                                  Vector3f, Ray3f)
 
         # Initialize some accumulators
         Z = Float(0.0)
@@ -91,7 +90,6 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_V = Vector3f(0.0)
         grad_div_lhs = Float(0.0)
         it = UInt32(0)
-        ray_frame = Frame3f(self.ray.d)
         rng = self.rng
 
         loop = Loop(name="reparameterize_ray(): forward propagation",
@@ -106,7 +104,7 @@ class _ReparameterizeOp(ek.CustomOp):
                              rng.next_float32())
 
             Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(
-                self.scene, sample, ray, ray_frame, self.kappa, self.exponent)
+                self.scene, sample, ray, self.kappa, self.exponent)
 
             ek.enqueue(ek.ADMode.Forward, self.params, ray.o)
             ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
@@ -129,30 +127,32 @@ class _ReparameterizeOp(ek.CustomOp):
 
 
     def backward(self):
-        from mitsuba.core import Float, UInt32, Vector3f, Loop, Frame3f
+        from mitsuba.core import Float, UInt32, Point2f, Vector3f, Loop, PCG32
 
         grad_direction, grad_divergence = self.grad_out()
 
         # Ignore inactive lanes
         grad_direction  = ek.select(self.active, grad_direction, 0.0)
         grad_divergence = ek.select(self.active, grad_divergence, 0.0)
-        ray_frame = Frame3f(self.ray.d)
+        rng = self.rng
+        rng_clone = PCG32(rng)
 
         with ek.suspend_grad():
             # We need to trace the auxiliary rays a first time to compute the
             # constants Z and dZ in order to properly weight the incoming gradients
             Z = Float(0.0)
             dZ = Vector3f(0.0)
-            rng_clone = rng.clone()
 
             it = UInt32(0)
             loop = Loop(name="reparameterize_ray(): normalization",
-                        state=lambda: (it, Z, dZ, rng_clone))
+                        state=lambda: (it, Z, dZ, rng_clone.state))
 
-            while loop(active & (it < num_rays)):
-                Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, rng_clone, self.ray,
-                                                     ray_frame, self.kappa, self.exponent,
-                                                     self.active)
+            while loop(self.active & (it < self.num_rays)):
+                sample = Point2f(rng_clone.next_float32(),
+                                 rng_clone.next_float32())
+
+                Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sample, self.ray,
+                                                     self.kappa, self.exponent)
                 Z += Z_i
                 dZ += dZ_i
                 it += 1
@@ -178,11 +178,15 @@ class _ReparameterizeOp(ek.CustomOp):
 
         it = UInt32(0)
         loop = Loop(name="reparameterize_ray(): backpropagation",
-                    state=lambda: (it, rng))
+                    state=lambda: (it, rng.state))
 
-        while loop(active & (it < num_rays)):
-            _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, rng, self.ray, ray_frame,
-                                                      kappa, exponent, self.active)
+        while loop(self.active & (it < self.num_rays)):
+            sample = Point2f(rng.next_float32(),
+                             rng.next_float32())
+
+            _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sample,
+                                                      self.ray, self.kappa,
+                                                      self.exponent)
 
             ek.set_grad(V_i, grad_V)
             ek.set_grad(div_V_1_i, grad_div_V_1)
@@ -210,8 +214,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     Parameter ``scene`` (``mitsuba.render.Scene``):
         Scene containing all shapes.
 
-    Parameter ``rng`` (``mitsuba.render.Sampler``):
-        Sampler object used to sample auxiliary ray direction.
+    Parameter ``rng`` (``mitsuba.core.PCG32``):
+        Random number generator used to sample auxiliary ray direction.
 
     Parameter ``ray`` (``mitsuba.core.RayDifferential3f``):
         Ray to be reparameterized
