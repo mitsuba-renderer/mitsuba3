@@ -8,69 +8,9 @@
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/texture.h>
+#include "gtr1.h"
 
 NAMESPACE_BEGIN(mitsuba)
-
-/**
- * \brief GTR1_isotropic Microfacet Distribution class
- *
- * This class implements GTR1 Microfacet Distribution Methods
- * for sampling routines of clearcoat lobe in the pricipled BSDF.
- *
- * Based on the paper
- *
- *   "Physically Based Shading at Disney"
- *    by Burley Brent
- *
- * Although it is a Microfacet distribution, it is not added in Microfacet
- * Plugin of Mitsuba since only the Principled BSDF uses it. Also,
- * visible normal sampling procedure is not applied as in Microfacet Plugin
- * because clearcoat lobe of the principled BSDF has low energy compared to the other
- * lobes and visible normal sampling would not increase the sampling performance
- * considerably.
- */
-template <typename Float, typename Spectrum>
-class GTR1Isotropic {
-public:
-    MTS_IMPORT_TYPES();
-    /**
-     * Create an isotropic microfacet distribution for clearcoat lobe
-     * based on GTR1.
-     * \param m_alpha
-     *     The roughness of the surface.
-     */
-    GTR1Isotropic(Float alpha) : m_alpha(alpha){};
-
-    Float eval(const Vector3f &m) const {
-        Float cos_theta  = Frame3f::cos_theta(m),
-              cos_theta2 = ek::sqr(cos_theta), alpha2 = ek ::sqr(m_alpha);
-
-        Float result = (alpha2 - 1.f) / (ek::Pi<Float> * ek::log(alpha2) *
-                                         (1.f + (alpha2 - 1.f) * cos_theta2));
-
-        return ek::select(result * cos_theta > 1e-20f, result, 0.f);
-    }
-
-    Float pdf(const Vector3f &m) const {
-        return ek::select(m.z() < 0.f, 0.f, Frame3f::cos_theta(m) * eval(m));
-    }
-
-    Normal3f sample(const Point2f &sample) const {
-        auto [sin_phi, cos_phi] = ek::sincos((2.f * ek::Pi<Float>) *sample.x());
-        Float alpha2            = ek::sqr(m_alpha);
-
-        Float cos_theta2 =
-            (1.f - ek::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
-
-        Float sin_theta = ek::sqrt(ek::max(0.f, 1.f - cos_theta2)),
-              cos_theta = ek::sqrt(ek::max(0.f, cos_theta2));
-
-        return Normal3f(cos_phi * sin_theta, sin_phi * sin_theta, cos_theta);
-    }
-
-private:
-    Float m_alpha;
-};
 
 /**!
 .. _bsdf-principled:
@@ -139,13 +79,13 @@ All of the parameters except sampling rates and `eta` should take values
 between 0.0 and 1.0 .
 
 The principled BSDF is a complex BSDF with numerous reflective and transmittive
-capabilities. In a single framework, it is able to produce great number of
-material types ranging from metals to rough dielectrics. Moreover, it is
-designed for artistic purposes so it is art directable rather than strictly
-physically correct.  The implementation is based on the
-papers *Physically Based Shading at Disney* :cite:`Disney2012` and *Extending
-the Disney BRDF to a BSDF with Integrated Subsurface Scattering*
-:cite:`Disney2015` by Brent Burley.
+lobes. It is able to produce great number of material types ranging from metals
+to rough dielectrics. Moreover, The set of input parameters are designed to be
+artist-friendly and do not directly correspond to physical units.
+
+The implementation is based on the papers *Physically Based Shading at Disney*
+:cite:`Disney2012` and *Extending the Disney BRDF to a BSDF with Integrated
+ Subsurface Scattering* :cite:`Disney2015` by Brent Burley.
 
  .. note::
 
@@ -277,7 +217,7 @@ public:
      *     Given properties.
      * \return the flag of the feature.
      */
-    bool get_flag(std::string name, const Properties &props) {
+    bool get_flag(const std::string &name, const Properties &props) const{
         if (props.has_property(name)) {
             if (props.type(name) == Properties::Type::Float &&
             std::stof(props.as_string(name)) == 0.0f)
@@ -370,7 +310,7 @@ public:
                    const Float &cos_theta_i, const Mask &front_side,
                    const Float &bsdf) const {
         // Outside mask based on micro surface
-        auto outside_mask = cos_theta_i >= 0.0f;
+        Mask outside_mask = cos_theta_i >= 0.0f;
         Float rcp_eta     = ek::rcp(m_eta),
               eta_it      = ek::select(outside_mask, m_eta, rcp_eta);
         UnpolarizedSpectrum F_schlick(0.0f);
@@ -383,15 +323,17 @@ public:
 
         // Tinted dielectric component based on Schlick.
         if (m_has_spec_tint) {
-            auto c_tint       = ek::select(lum > 0.0f, base_color / lum, 1.0f);
-            auto F0_spec_tint = c_tint * schlick_R0_eta(eta_it);
+            UnpolarizedSpectrum c_tint       =
+                    ek::select(lum > 0.0f, base_color / lum, 1.0f);
+            UnpolarizedSpectrum F0_spec_tint =
+                    c_tint * schlick_R0_eta(eta_it);
             F_schlick +=
                 (1.0f - metallic) * spec_tint *
                 calc_schlick<UnpolarizedSpectrum>(F0_spec_tint, cos_theta_i);
         }
 
         // Front side fresnel.
-        auto F_front =
+        UnpolarizedSpectrum F_front =
             (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric + F_schlick;
         /* For back side there is no tint or metallic, just true dielectric
            fresnel.*/
@@ -672,7 +614,7 @@ public:
                         clearcoat =
                                 m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f,
                                 sheen = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
-        auto base_color = m_base_color->eval(si, active);
+        UnpolarizedSpectrum base_color = m_base_color->eval(si, active);
         // Weights for BRDF and BSDF major lobes.
         Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
         bsdf = (1.0f - metallic) * spec_trans;
@@ -752,7 +694,7 @@ public:
                     m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
 
             // Fresnel term
-            auto F_principled = principled_fresnel(
+            UnpolarizedSpectrum F_principled = principled_fresnel(
                     F_spec_dielectric, metallic, spec_tint, base_color, lum,
                     ek::dot(si.wi, wh), front_side, bsdf);
 
@@ -848,9 +790,9 @@ public:
                     Float lum = mitsuba::luminance(base_color, si.wavelengths);
 
                     // Normalize color with luminance and tint the result.
-                    auto c_tint =
+                    UnpolarizedSpectrum c_tint =
                             ek::select(lum > 0.0f, base_color / lum, 1.0f);
-                    auto c_sheen = ek::lerp(1.0f, c_tint, sheen_tint);
+                    UnpolarizedSpectrum c_sheen = ek::lerp(1.0f, c_tint, sheen_tint);
 
                     // Adding sheen evaluation with tint.
                     ek::masked(value, sheen_active) +=

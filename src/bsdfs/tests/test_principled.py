@@ -26,7 +26,6 @@ def test01_chi2_principled_normal(variants_vec_backends_once_rgb):
 def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     # spec_trans outside (wi.z()>0)
-
     xml = """<float name="roughness" value="0.6"/>
              <float name="metallic" value="0.2"/>
              <float name="anisotropic" value="0.4"/>
@@ -91,6 +90,8 @@ def test07_eval_pdf(variant_scalar_rgb):
     from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
 
+    # The true values are defined by the first implementation in order to
+    # prevent unwanted changes.
     pdf_true = [
         0.17007458209991455,
         0.15398569405078888,

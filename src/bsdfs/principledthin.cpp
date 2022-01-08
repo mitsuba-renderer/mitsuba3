@@ -68,10 +68,6 @@ The Thin Principled BSDF (:monosp:`principledthin`)
    - |float|
    - The rate of the cosine hemisphere transmission in sampling. (Default:1.0)
 
-All of the parameters, except sampling rates, `diff_trans` and
-`eta`, should take values between 0.0 and 1.0 . The range of
-`diff_trans` is 0.0 to 2.0 .
-
 The thin principled BSDF is a complex BSDF which is designed by approximating
 some features of thin, translucent materials. The implementation is based on
 the papers *Physically Based Shading at Disney* :cite:`Disney2012` and
@@ -111,6 +107,10 @@ The following XML snippet describes a material definition for
         <float name="eta" value="1.33" />
         <float name="spec_tint" value="0.4" />
     </bsdf>
+
+All of the parameters, except sampling rates, `diff_trans` and
+`eta`, should take values between 0.0 and 1.0 . The range of
+`diff_trans` is 0.0 to 2.0 .
  */
 template <typename Float, typename Spectrum>
 class PrincipledThin final : public BSDF<Float, Spectrum> {

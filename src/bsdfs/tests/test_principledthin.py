@@ -47,6 +47,8 @@ def test08_eval_pdf_thin(variant_scalar_rgb):
     from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
 
+    # The true values are defined by the first implementation in order to
+    # prevent unwanted changes.
     pdf_true = [
         0.18230389058589935,
         0.17071931064128876,
