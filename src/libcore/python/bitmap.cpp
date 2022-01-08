@@ -222,9 +222,9 @@ MTS_PY_EXPORT(Bitmap) {
                 component_format = Struct::Type::Float32;
             else if (typestr == "<f8")
                 component_format = Struct::Type::Float64;
-            else if (typestr == "<i1")
+            else if (typestr.length() == 3 && typestr.substr(1) == "i1")
                 component_format = Struct::Type::Int8;
-            else if (typestr == "<u1")
+            else if (typestr.length() == 3 && typestr.substr(1) == "u1")
                 component_format = Struct::Type::UInt8;
             else if (typestr == "<i2")
                 component_format = Struct::Type::Int16;
