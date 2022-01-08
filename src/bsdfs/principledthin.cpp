@@ -11,7 +11,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
 /**!
 .. _bsdf-principledthin:
 
@@ -21,52 +20,52 @@ The Thin Principled BSDF (:monosp:`principledthin`)
 
  * - base_color
    - |spectrum| or |texture|
-   - The color of the material. (Default:0.5)
+   - The color of the material. (Default: 0.5)
  * - roughness
    - |float| or |texture|
-   - Controls the roughness parameter of the main specular lobes. (Default:0.5)
+   - Controls the roughness parameter of the main specular lobes. (Default: 0.5)
  * - anisotropic
    - |float| or |texture|
-   - Controls the degree of anisotropy. (0.0 : isotropic material) (Default:0.0)
+   - Controls the degree of anisotropy. (0.0: isotropic material) (Default: 0.0)
  * - spec_trans
    - |texture| or |float|
    - Blends diffuse and specular responses. (1.0: only
      specular response, 0.0 : only diffuse response.)(Default: 0.0)
  * - eta
    - |float| or |texture|
-   - Interior IOR/Exterior IOR (Default:1.5)
+   - Interior IOR/Exterior IOR (Default: 1.5)
  * - spec_tint
    - |texture| or |float|
    - The fraction of `base_color` tint applied onto the dielectric reflection
-     lobe. (Default:0.0)
+     lobe. (Default: 0.0)
  * - sheen
    - |float| or |texture|
-   - The rate of the sheen lobe. (Default:0.0)
+   - The rate of the sheen lobe. (Default: 0.0)
  * - sheen_tint
    - |float| or |texture|
-   - The fraction of `base_color` tint applied onto the sheen lobe. (Default:0.0)
+   - The fraction of `base_color` tint applied onto the sheen lobe. (Default: 0.0)
  * - flatness
    - |float| or |texture|
    - Blends between the diffuse response and fake subsurface approximation based
      on Hanrahan-Krueger approximation. (0.0:only diffuse response, 1.0:only
-     fake subsurface scattering.) (Default:0.0)
+     fake subsurface scattering.) (Default: 0.0)
  * - diff_trans
    - |texture| or |float|
    - The fraction that the energy of diffuse reflection is given to the
-     transmission. (0.0: only diffuse reflection, 2.0 : only diffuse
+     transmission. (0.0: only diffuse reflection, 2.0: only diffuse
      transmission) (Default:0.0)
  * - diffuse_reflectance_sampling_rate
    - |float|
-   - The rate of the cosine hemisphere reflection in sampling. (Default:1.0)
+   - The rate of the cosine hemisphere reflection in sampling. (Default: 1.0)
  * - specular_reflectance_sampling_rate
    - |float|
-   - The rate of the main specular reflection in sampling. (Default:1.0)
+   - The rate of the main specular reflection in sampling. (Default: 1.0)
  * - specular_transmittance_sampling_rate
    - |float|
-   - The rate of the main specular transmission in sampling. (Default:1.0)
+   - The rate of the main specular transmission in sampling. (Default: 1.0)
  * - diffuse_transmittance_sampling_rate
    - |float|
-   - The rate of the cosine hemisphere transmission in sampling. (Default:1.0)
+   - The rate of the cosine hemisphere transmission in sampling. (Default: 1.0)
 
 The thin principled BSDF is a complex BSDF which is designed by approximating
 some features of thin, translucent materials. The implementation is based on
@@ -109,8 +108,8 @@ The following XML snippet describes a material definition for
     </bsdf>
 
 All of the parameters, except sampling rates, `diff_trans` and
-`eta`, should take values between 0.0 and 1.0 . The range of
-`diff_trans` is 0.0 to 2.0 .
+`eta`, should take values between 0.0 and 1.0. The range of
+`diff_trans` is 0.0 to 2.0.
  */
 template <typename Float, typename Spectrum>
 class PrincipledThin final : public BSDF<Float, Spectrum> {
