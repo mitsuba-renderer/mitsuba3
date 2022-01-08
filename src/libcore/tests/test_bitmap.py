@@ -330,6 +330,21 @@ def test_construct_from_array(variants_all_rgb):
     assert ek.allclose(b_np, np.array(b2))
 
 
+def test_construct_from_int8_array(variants_all_rgb):
+    from mitsuba.core import Bitmap
+    import numpy as np
+
+    # test uint8
+    b_np = np.reshape(np.arange(16), (4, 4)).astype(np.uint8)
+    b1 = Bitmap(b_np)
+    assert ek.allclose(b_np, np.array(b1))
+
+    # test int8
+    b_np = b_np.astype(np.int8) - 5
+    b2 = Bitmap(b_np)
+    assert ek.allclose(b_np, np.array(b2))
+
+
 def check_resample():
     """Resampling a Bitmap should work even in non-scalar and non-RGB variants."""
     from mitsuba.core import Bitmap, FilterBoundaryCondition
