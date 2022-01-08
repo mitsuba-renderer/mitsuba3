@@ -75,14 +75,27 @@ The Principled BSDF (:monosp:`principled`)
    - |float|
    - The rate of the secondary specular reflection in sampling. (Default:0.0)
 
+<<<<<<< HEAD
 The principled BSDF is a complex BSDF with numerous reflective and transmittive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
+=======
+All of the parameters except sampling rates and `eta` should take values
+between 0.0 and 1.0 .
+
+The principled BSDF is a complex BSDF with numerous reflective and transmittive
+lobes. It is able to produce great number of material types ranging from metals
+to rough dielectrics. Moreover, The set of input parameters are designed to be
+>>>>>>> 582ed20d8218fe745bd6238b19df72dc0e546a34
 artist-friendly and do not directly correspond to physical units.
 
 The implementation is based on the papers *Physically Based Shading at Disney*
 :cite:`Disney2012` and *Extending the Disney BRDF to a BSDF with Integrated
+<<<<<<< HEAD
 Subsurface Scattering* :cite:`Disney2015` by Brent Burley.
+=======
+ Subsurface Scattering* :cite:`Disney2015` by Brent Burley.
+>>>>>>> 582ed20d8218fe745bd6238b19df72dc0e546a34
 
  .. note::
 
@@ -126,9 +139,12 @@ material:
         <float name="clearcoat_gloss" value="0.3" />
         <float name="spec_trans" value="0.4" />
     </bsdf>
+<<<<<<< HEAD
 
 All of the parameters except sampling rates and `eta` should take values
 between 0.0 and 1.0.
+=======
+>>>>>>> 582ed20d8218fe745bd6238b19df72dc0e546a34
  */
 template <typename Float, typename Spectrum>
 class Principled final : public BSDF<Float, Spectrum> {
