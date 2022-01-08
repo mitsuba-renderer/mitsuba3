@@ -346,10 +346,12 @@ template<typename Spectrum>
 ek::value_t<Spectrum> luminance(const Spectrum &value,
                                 const wavelength_t<Spectrum> &wavelengths,
                                 ek::mask_t<Spectrum> active = true) {
-    if constexpr (is_rgb_v<Spectrum>)
+    if constexpr (is_rgb_v<Spectrum>) {
+        ENOKI_MARK_USED(active);
         return luminance(value);
-    else
+    } else {
         return ek::hmean(cie1931_y(wavelengths, active) * value);
+    }
 }
 
 template <typename Float> Float luminance(const Color<Float, 3> &c) {
