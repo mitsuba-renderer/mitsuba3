@@ -8,26 +8,80 @@ from typing import Tuple
 def _sample_warp_field(scene: mitsuba.render.Scene,
                        sample: mitsuba.core.Point2f,
                        ray: mitsuba.core.Ray3f,
+                       ray_frame: mitsuba.core.Frame3f,
                        kappa: float,
                        exponent: float):
     """
-    Sample the warp field of moving geometries by tracing an auxiliary ray and
-    computing the appropriate convolution weight using the shape's boundary-test.
+    Helper function for re-parameterizing rays based on the paper
+
+      "Unbiased Warped-Area Sampling for Differentiable Rendering"
+      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
+      Tzu-Mao Li, and Frédo Durand.
+
+    The function is an implementation of the _ReparameterizeOp class below
+    (which is in turn an implementation detail of the reparameterize_rays()
+    function). It traces a single auxiliary ray and returns an attached 3D
+    direction and sample weight. A number of calls to this function are
+    generally necessary to reduce the bias of the parameterization to an
+    acceptable level.
+
+    The function assumes that all inputs are *detached* from the AD graph, with
+    one exception: the ray origin (``ray.o``) may have derivative tracking
+    enabled, which influences the returned directions.
+
+    It has the following inputs:
+
+    Parameter ``scene`` (``mitsuba.render.Scene``):
+        The scene being rendered differentially.
+
+    Parameter ``rng`` (``mitsuba.core.Point2f``):
+        A uniformly distributed random variate on the domain [0, 1]^2.
+
+    Parameter ``ray`` (``mitsuba.core.Ray3f``):
+        The input ray that should be reparameterized.
+
+    Parameter ``ray_frame`` (``mitsuba.core.Frame3f``):
+        A precomputed orthonormal basis with `ray_frame.n = ray.d`.
+
+    Parameter ``kappa`` (``float``):
+        Kappa parameter of the von Mises Fisher distribution used to
+        sample auxiliary rays.
+
+    Parameter ``exponent`` (``float``):
+        Exponent used in the computation of the harmonic weights.
+
+    The function returns a tuple ``(Z, dZ, V, div)`` containig
+
+    Return value ``Z`` (``mitsuba.core.Float``)
+        The harmonic weight of the generated sample (detached).
+
+    Return value ``dZ`` (``mitsuba.core.Vector3f``)
+        The gradient of ``Z`` with respect to tangential changes
+        in ``ray.d`` (detached).
+
+    Return value ``V`` (``mitsuba.core.Vector3f``)
+        The weighted warp field value (attached).
+
+    Return value ``div`` (``mitsuba.core.Vector3f``)
+        Dot product between dZ and the unweighted warp field, which
+        is used to compute the divergence of the warp field/jacobian
+        determinant of the parameterization.
     """
-    from mitsuba.core import Ray3f, Frame3f
-    from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
+
+    from mitsuba.core import Ray3f, Vector3f, warp
     from mitsuba.render import RayFlags
 
-    # Sample an auxiliary ray from a von Mises Fisher distribution (+ antithetic sampling)
-    omega_local = square_to_von_mises_fisher(sample, kappa)
-    omega = Frame3f(ray.d).to_world(omega_local)
-    pdf_omega = square_to_von_mises_fisher_pdf(omega_local, kappa)
-    aux_ray = Ray3f(ray)
-    aux_ray.d = omega
+    # Sample an auxiliary ray from a von Mises Fisher distribution
+    omega_local = warp.square_to_von_mises_fisher(sample, kappa)
+    aux_ray = Ray3f(
+        o = ray.o,
+        d = ray_frame.to_world(omega_local),
+        time = ray.time)
 
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
-    si = scene.ray_intersect(aux_ray, ray_flags=RayFlags.FollowShape,
+    si = scene.ray_intersect(aux_ray,
+                             ray_flags=RayFlags.FollowShape,
                              coherent=False)
 
     # Convert into a direction at 'ray.o'. When no surface was intersected,
@@ -36,20 +90,25 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     V_direct = ek.select(hit, ek.normalize(si.p - ray.o), ray.d)
 
     with ek.suspend_grad():
-        # Compute harmonic weight while being careful of division by almost zero
+        # Boundary term provided by the underlying shape (polymorphic)
         B = ek.select(hit, si.boundary_test(aux_ray), 1.0)
-        D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
-        w_denom = D + B
-        w_denom_p = ek.pow(w_denom, exponent)
-        w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
-        w /= pdf_omega
 
-        # Analytic weight gradients w.r.t. `ray.d`
-        tmp0 = ek.pow(w_denom, exponent + 1.0)
-        tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * exponent
-        tmp2 = omega - ray.d * ek.dot(ray.d, omega)
-        d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
-        d_w_omega /= pdf_omega
+        # Inverse of vMF density without normalization constant
+        # inv_vmf_density = ek.exp(ek.fnmadd(omega_local.z, kappa, kappa))
+
+        # Better version (here, ek.exp() is constant). However, assumes a
+        # specific implementation in warp.square_to_von_mises_fisher() (TODO)
+        inv_vmf_density = ek.rcp(ek.fmadd(sample.y, ek.exp(-2 * kappa), 1 - sample.y))
+
+        # Compute harmonic weight, being wary of division by near-zero values
+        w_denom = inv_vmf_density + B - 1
+        w_denom_rcp = ek.select(w_denom > 1e-4, ek.rcp(w_denom), 0.0)
+        w = ek.pow(w_denom_rcp, exponent) * inv_vmf_density
+
+        # Analytic weight gradient w.r.t. `ray.d`
+        tmp1 = inv_vmf_density * w * w_denom_rcp * kappa * exponent
+        tmp2 = ray_frame.to_world(Vector3f(omega_local.x, omega_local.y, 0))
+        d_w_omega = ek.clamp(tmp1, -1e10, 1e10) * tmp2
 
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
@@ -81,7 +140,7 @@ class _ReparameterizeOp(ek.CustomOp):
 
     def forward(self):
         from mitsuba.core import (Bool, Float, UInt32, Loop, Point2f,
-                                  Vector3f, Ray3f)
+                                  Vector3f, Ray3f, Frame3f)
 
         # Initialize some accumulators
         Z = Float(0.0)
@@ -91,6 +150,7 @@ class _ReparameterizeOp(ek.CustomOp):
         it = UInt32(0)
         rng = self.rng
         ray_grad = self.grad_in('ray')
+        ray_frame = Frame3f(self.ray.d)
 
         loop = Loop(name="reparameterize_ray(): forward propagation",
                     state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
@@ -108,8 +168,10 @@ class _ReparameterizeOp(ek.CustomOp):
             sample = Point2f(rng.next_float32(),
                              rng.next_float32())
 
-            Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(
-                self.scene, sample, ray, self.kappa, self.exponent)
+            Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sample,
+                                                           ray, ray_frame,
+                                                           self.kappa,
+                                                           self.exponent)
 
             ek.forward_to(V_i, div_lhs_i,
                           flags=ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
@@ -139,6 +201,7 @@ class _ReparameterizeOp(ek.CustomOp):
         # Ignore inactive lanes
         grad_direction  = ek.select(self.active, grad_direction, 0.0)
         grad_divergence = ek.select(self.active, grad_divergence, 0.0)
+        ray_frame = Frame3f(self.ray.d)
         rng = self.rng
         rng_clone = PCG32(rng)
 
@@ -161,7 +224,8 @@ class _ReparameterizeOp(ek.CustomOp):
                 sample = Point2f(rng_clone.next_float32(),
                                  rng_clone.next_float32())
 
-                Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sample, self.ray,
+                Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sample,
+                                                     self.ray, ray_frame,
                                                      self.kappa, self.exponent)
                 Z += Z_i
                 dZ += dZ_i
@@ -200,7 +264,8 @@ class _ReparameterizeOp(ek.CustomOp):
                              rng.next_float32())
 
             _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sample,
-                                                      self.ray, self.kappa,
+                                                      self.ray, ray_frame,
+                                                      self.kappa,
                                                       self.exponent)
 
             ek.set_grad(V_i, grad_V)
