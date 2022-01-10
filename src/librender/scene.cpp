@@ -196,18 +196,23 @@ MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
 Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
 
-    if (unlikely(m_emitters.empty()))
-        return { UInt32(-1), 0.f, index_sample };
+    if (unlikely(m_emitters.size() < 2)) {
+        if (m_emitters.size() == 1)
+            return { UInt32(0), 1.f, index_sample };
+        else
+            return { UInt32(-1), 0.f, index_sample };
+    }
 
-    size_t emitter_count = m_emitters.size();
-    UInt32 index = ek::min(UInt32(index_sample * (ScalarFloat) emitter_count),
-                           (uint32_t) emitter_count - 1u);
+    uint32_t emitter_count = (uint32_t) m_emitters.size();
+    ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
+
+    UInt32 index =
+        ek::min(UInt32(index_sample * emitter_count_f), emitter_count - 1u);
 
     // Rescale sample to lie in [0,1) again
-    index_sample = (index_sample - index / (ScalarFloat) emitter_count) * emitter_count;
+    index_sample = ek::fmsub(index_sample, emitter_count_f, Float(index));
 
-    // pdf = 1 / emitter_count  =>  sampling_weight = emitter_count
-    return { index, ScalarFloat(emitter_count), index_sample };
+    return { index, emitter_count_f, index_sample };
 }
 
 MTS_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
@@ -223,15 +228,20 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
-    size_t emitter_count = m_emitters.size();
 
     Ray3f ray;
     Spectrum weight;
     EmitterPtr emitter;
 
-    if (emitter_count > 1) {
+    // Potentially disable inlining of emitter sampling (if there is just a single emitter)
+    bool vcall_inline = true;
+    if constexpr (ek::is_jit_array_v<Float>)
+         vcall_inline = jit_flag(JitFlag::VCallInline);
+
+    size_t emitter_count = m_emitters.size();
+    if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
-        emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
+        EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
 
         std::tie(ray, weight) =
             emitter->sample_ray(time, sample_1_re, sample2, sample3, active);
@@ -258,8 +268,13 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     DirectionSample3f ds;
     Spectrum spec;
 
+    // Potentially disable inlining of emitter sampling (if there is just a single emitter)
+    bool vcall_inline = true;
+    if constexpr (ek::is_jit_array_v<Float>)
+         vcall_inline = jit_flag(JitFlag::VCallInline);
+
     size_t emitter_count = m_emitters.size();
-    if (emitter_count > 1) {
+    if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
         // Randomly pick an emitter
         auto [index, emitter_weight, sample_x_re] = sample_emitter(sample.x(), active);
         sample.x() = sample_x_re;
