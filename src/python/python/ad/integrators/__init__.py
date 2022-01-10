@@ -9,11 +9,15 @@ import mitsuba.python.util
 
 do_reload = 'common' in globals()
 
+# Make sure `common.py` is reloaded before the integrators
+if do_reload:
+    importlib.reload(globals()['common'])
+
 for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
     if not os.path.isfile(f) or f.endswith('__init__.py'):
         continue
     name = os.path.basename(f)[:-3]
-    if do_reload:
+    if do_reload and not name == 'common':
         importlib.reload(globals()[name])
     else:
         importlib.import_module('mitsuba.python.ad.integrators.' + name)
