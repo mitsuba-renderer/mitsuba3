@@ -185,7 +185,7 @@ class PRBIntegrator(ADIntegrator):
                     if mode == ek.ADMode.Backward:
                         ek.backward_from(δL * contrib, ek.ADFlag.ClearInterior)
                     else:
-                        ek.forward_to(contrib, ek.ADFlag.ClearNone)
+                        ek.forward_to(contrib, flags=ek.ADFlag.ClearNone)
                         δL += ek.grad(contrib)
 
             # -------------------- Stopping criterion ---------------------
