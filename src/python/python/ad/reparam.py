@@ -9,6 +9,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
                        sample: mitsuba.core.Point2f,
                        ray: mitsuba.core.Ray3f,
                        ray_frame: mitsuba.core.Frame3f,
+                       flip: mitsuba.core.Bool,
                        kappa: float,
                        exponent: float):
     """
@@ -73,6 +74,11 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     # Sample an auxiliary ray from a von Mises Fisher distribution
     omega_local = warp.square_to_von_mises_fisher(sample, kappa)
+
+    # Antithetic sampling (optional)
+    omega_local.x = ek.select(flip, -omega_local.x, omega_local.x)
+    omega_local.y = ek.select(flip, -omega_local.y, omega_local.y)
+
     aux_ray = Ray3f(
         o = ray.o,
         d = ray_frame.to_world(omega_local),
@@ -123,7 +129,8 @@ class _ReparameterizeOp(ek.CustomOp):
     This is needed to to avoid bias caused by the discontinuous visibility
     function in gradient-based geometric optimization.
     """
-    def eval(self, scene, rng, params, ray, num_rays, kappa, exponent, active):
+    def eval(self, scene, rng, params, ray, num_rays, kappa, exponent, 
+             antithetic, active):
         # Stash all of this information for the forward/backward passes
         self.scene = scene
         self.rng = rng
@@ -133,6 +140,7 @@ class _ReparameterizeOp(ek.CustomOp):
         self.kappa = kappa
         self.exponent = exponent
         self.active = active
+        self.antithetic = antithetic
 
         # The reparameterization is simply the identity in primal mode
         return self.ray.d, ek.full(mitsuba.core.Float, 1, ek.width(ray))
@@ -165,12 +173,19 @@ class _ReparameterizeOp(ek.CustomOp):
             ek.enable_grad(ray.o)
             ek.set_grad(ray.o, ray_grad.o)
 
+            rng_state_backup = rng.state
             sample = Point2f(rng.next_float32(),
                              rng.next_float32())
 
+            if self.antithetic:
+                repeat = ek.eq(it & 1, 0)
+                rng.state[repeat] = rng_state_backup
+            else:
+                repeat = Bool(False)
+
             Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sample,
                                                            ray, ray_frame,
-                                                           self.kappa,
+                                                           repeat, self.kappa,
                                                            self.exponent)
 
             ek.forward_to(V_i, div_lhs_i,
@@ -182,9 +197,9 @@ class _ReparameterizeOp(ek.CustomOp):
             grad_div_lhs += ek.grad(div_lhs_i)
             it += 1
 
-        Z = ek.max(Z, 1e-8)
-        V_theta  = grad_V / Z
-        div_V_theta = (grad_div_lhs - ek.dot(V_theta, dZ)) / Z
+        inv_Z = ek.rcp(ek.max(Z, 1e-8))
+        V_theta  = grad_V * inv_Z
+        div_V_theta = (grad_div_lhs - ek.dot(V_theta, dZ)) * inv_Z
 
         # Ignore inactive lanes
         V_theta = ek.select(self.active, V_theta, 0.0)
@@ -194,7 +209,8 @@ class _ReparameterizeOp(ek.CustomOp):
 
 
     def backward(self):
-        from mitsuba.core import Float, UInt32, Point2f, Vector3f, Loop, PCG32
+        from mitsuba.core import Bool, Float, UInt32, \
+            Point2f, Vector3f, Loop, PCG32 
 
         grad_direction, grad_divergence = self.grad_out()
 
@@ -221,12 +237,21 @@ class _ReparameterizeOp(ek.CustomOp):
             loop.set_eval_stride(self.num_rays)
 
             while loop(self.active & (it < self.num_rays)):
+                rng_state_backup = rng_clone.backup
+
                 sample = Point2f(rng_clone.next_float32(),
                                  rng_clone.next_float32())
 
+                if self.antithetic:
+                    repeat = ek.eq(it & 1, 0)
+                    rng_clone.state[repeat] = rng_state_backup
+                else:
+                    repeat = Bool(False)
+
                 Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sample,
                                                      self.ray, ray_frame,
-                                                     self.kappa, self.exponent)
+                                                     repeat, self.kappa,
+                                                     self.exponent)
                 Z += Z_i
                 dZ += dZ_i
                 it += 1
@@ -260,12 +285,20 @@ class _ReparameterizeOp(ek.CustomOp):
         loop.set_eval_stride(self.num_rays)
 
         while loop(self.active & (it < self.num_rays)):
+            rng_state_backup = rng.state
+
             sample = Point2f(rng.next_float32(),
                              rng.next_float32())
 
+            if self.antithetic:
+                repeat = ek.eq(it & 1, 0)
+                rng.state[repeat] = rng_state_backup
+            else:
+                repeat = Bool(False)
+
             _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sample,
                                                       self.ray, ray_frame,
-                                                      self.kappa,
+                                                      repeat, self.kappa,
                                                       self.exponent)
 
             ek.set_grad(V_i, grad_V)
@@ -285,6 +318,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                        num_rays: int=4,
                        kappa: float=1e5,
                        exponent: float=3.0,
+                       antithetic: bool=True,
                        active: Any[bool, mitsuba.core.Bool] = True
 ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
     """
@@ -313,6 +347,9 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     Parameter ``exponent`` (``float``):
         Exponent used in the computation of the harmonic weights
 
+    Parameter ``antithetic`` (``bool``):
+        Should antithetic sampling be enabled to improve convergence?
+
     Parameter ``active`` (``mitsuba.core.Bool``):
         Boolean array specifying the active lanes
 
@@ -322,4 +359,4 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     """
 
     return ek.custom(_ReparameterizeOp, scene, rng, params, ray, 
-                     num_rays, kappa, exponent, active)
+                     num_rays, kappa, exponent, antithetic, active)

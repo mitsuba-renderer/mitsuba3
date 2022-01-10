@@ -72,6 +72,9 @@ class PRBReparamIntegrator(ADIntegrator):
         # Harmonic weight exponent in Bangaru et al.'s [2000] parameterization
         self.reparam_exp = props.get('reparam_exp', 3.0)
 
+        # Enable antithetic sampling in the reparameterization?
+        self.reparam_antithetic = props.get('reparam_antithetic', True)
+
     def reparam(self,
               scene: mitsuba.render.Scene,
               rng: mitsuba.core.PCG32,
@@ -87,6 +90,7 @@ class PRBReparamIntegrator(ADIntegrator):
                                 num_rays=self.reparam_rays,
                                 kappa=self.reparam_kappa,
                                 exponent=self.reparam_exp,
+                                antithetic=self.reparam_antithetic,
                                 active=active)
 
     def sample(self,
