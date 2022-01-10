@@ -94,6 +94,12 @@ class _ReparameterizeOp(ek.CustomOp):
 
         loop = Loop(name="reparameterize_ray(): forward propagation",
                     state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
+
+        # Unroll the entire loop in wavefront mode
+        loop.set_uniform(True)
+        loop.set_max_iterations(self.num_rays)
+        loop.set_eval_stride(self.num_rays)
+
         while loop(self.active & (it < self.num_rays)):
             ray = Ray3f(self.ray)
             ek.enable_grad(ray.o)
@@ -143,8 +149,13 @@ class _ReparameterizeOp(ek.CustomOp):
             dZ = Vector3f(0.0)
 
             it = UInt32(0)
-            loop = Loop(name="reparameterize_ray(): normalization",
+            loop = Loop(name="reparameterize_ray(): weight normalization",
                         state=lambda: (it, Z, dZ, rng_clone.state))
+
+            # Unroll the entire loop in wavefront mode
+            loop.set_uniform(True)
+            loop.set_max_iterations(self.num_rays)
+            loop.set_eval_stride(self.num_rays)
 
             while loop(self.active & (it < self.num_rays)):
                 sample = Point2f(rng_clone.next_float32(),
@@ -178,6 +189,11 @@ class _ReparameterizeOp(ek.CustomOp):
         it = UInt32(0)
         loop = Loop(name="reparameterize_ray(): backpropagation",
                     state=lambda: (it, rng.state))
+
+        # Unroll the entire loop in wavefront mode
+        loop.set_uniform(True)
+        loop.set_max_iterations(self.num_rays)
+        loop.set_eval_stride(self.num_rays)
 
         while loop(self.active & (it < self.num_rays)):
             sample = Point2f(rng.next_float32(),
