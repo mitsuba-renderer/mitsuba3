@@ -205,14 +205,11 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
 
     uint32_t emitter_count = (uint32_t) m_emitters.size();
     ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
+    Float index_sample_scaled = index_sample * emitter_count_f;
 
-    UInt32 index =
-        ek::min(UInt32(index_sample * emitter_count_f), emitter_count - 1u);
+    UInt32 index = ek::min(UInt32(index_sample_scaled), emitter_count - 1u);
 
-    // Rescale sample to lie in [0,1) again
-    index_sample = ek::fmsub(index_sample, emitter_count_f, Float(index));
-
-    return { index, emitter_count_f, index_sample };
+    return { index, emitter_count_f, index_sample_scaled - Float(index) };
 }
 
 MTS_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
