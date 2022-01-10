@@ -126,7 +126,7 @@ class PRBIntegrator(ADIntegrator):
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
                     em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
 
-                # Evalute BRDF * cos(theta) differentiably
+                # Evaluate BRDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
                 bsdf_weight, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf))
@@ -159,7 +159,7 @@ class PRBIntegrator(ADIntegrator):
                     # Recompute 'wo' with AD to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evalute BRDF * cos(theta) differentiably
+                    # Re-evaluate BRDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
                     # Recompute the reflected indirect radiance (terminology not 100%

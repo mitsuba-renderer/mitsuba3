@@ -332,7 +332,7 @@ public:
      * specified. It is obtained from the field <tt>si.wi</tt>.
      *
      * \param ctx
-     *     A context data structure describing which lobes to evalute,
+     *     A context data structure describing which lobes to evaluate,
      *     and whether radiance or importance are being transported.
      *
      * \param si
@@ -363,7 +363,7 @@ public:
      * specified. It is obtained from the field <tt>si.wi</tt>.
      *
      * \param ctx
-     *     A context data structure describing which lobes to evalute,
+     *     A context data structure describing which lobes to evaluate,
      *     and whether radiance or importance are being transported.
      *
      * \param si
@@ -401,7 +401,7 @@ public:
      * specified. It is obtained from the field <tt>si.wi</tt>.
      *
      * \param ctx
-     *     A context data structure describing which lobes to evalute,
+     *     A context data structure describing which lobes to evaluate,
      *     and whether radiance or importance are being transported.
      *
      * \param si

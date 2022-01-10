@@ -86,7 +86,7 @@ class BasicPRBIntegrator(ADIntegrator):
                     # Recompute 'wo' with AD to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evalute BRDF * cos(theta) differentiably
+                    # Re-evaluate BRDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
 
                     # Recompute the reflected radiance

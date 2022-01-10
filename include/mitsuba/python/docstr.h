@@ -715,7 +715,7 @@ Note that the incident direction does not need to be explicitly
 specified. It is obtained from the field ``si.wi``.
 
 Parameter ``ctx``:
-    A context data structure describing which lobes to evalute, and
+    A context data structure describing which lobes to evaluate, and
     whether radiance or importance are being transported.
 
 Parameter ``si``:
@@ -760,7 +760,7 @@ Note that the incident direction does not need to be explicitly
 specified. It is obtained from the field ``si.wi``.
 
 Parameter ``ctx``:
-    A context data structure describing which lobes to evalute, and
+    A context data structure describing which lobes to evaluate, and
     whether radiance or importance are being transported.
 
 Parameter ``si``:
@@ -808,7 +808,7 @@ Note that the incident direction does not need to be explicitly
 specified. It is obtained from the field ``si.wi``.
 
 Parameter ``ctx``:
-    A context data structure describing which lobes to evalute, and
+    A context data structure describing which lobes to evaluate, and
     whether radiance or importance are being transported.
 
 Parameter ``si``:

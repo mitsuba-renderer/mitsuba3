@@ -196,7 +196,7 @@ public:
                     si, sampler->next_2d(), true, active_em);
                 active_em &= ek::neq(ds.pdf, 0.f);
 
-                // Evalute BRDF * cos(theta)
+                // Evaluate BRDF * cos(theta)
                 Vector3f wo = si.to_local(ds.d);
                 auto [bsdf_val, bsdf_pdf] =
                     bsdf->eval_pdf(bsdf_ctx, si, wo, active_em);
