@@ -427,16 +427,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
          the *russian roulette* path termination criterion. For example, if set to
          |1|, then path generation many randomly cease after encountering directly
          visible surfaces. (Default: |5|)
-     * - split_differential
-       - |bool|
-       - The differential phase of path replay-style integrators is split into
-         two sub-phases that must communicate with each other. When
-         |split_differential| is set to |true|, those two phases are executed
-         using separate kernel launches that exchange information through
-         global memory. If set to |false|, they are merged into a single kernel
-         that keeps this information within registers. There are various
-         pros/cons to either approach, so it's best to try both and use
-         whichever is faster.
     """
 
     def __init__(self, props = mitsuba.core.Properties()):
@@ -452,8 +442,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         self.rr_depth = props.get('rr_depth', 5)
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
-
-        self.split_differential = props.get('split_differential', False)
 
         # Warn about potential biase due to shapes entering/leaving the frame
         self.sample_border_warning = True
@@ -595,7 +583,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             scene specification takes precedence if ``spp=0``.
         """
 
-        from mitsuba.core import Bool, UInt32, Float, PCG32
+        from mitsuba.core import Bool, UInt32, Float
         from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
@@ -603,9 +591,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         film = sensor.film()
         aovs = self.aovs()
-
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
 
         # Disable derivatives in all of the following
         with ek.suspend_grad():
@@ -669,6 +654,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     # would also need to be applied to the weight channel of
                     # the ImageBlock, which would then cancel out in
                     # film.develop() where the weight division is performed.
+
                     sample_pos_deriv.put(
                         pos=pos,
                         wavelengths=ray.wavelengths,
@@ -681,27 +667,19 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     ek.forward_to(tensor,
                                   flags=ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
 
-                    # If self.split_differential is enabled, the computation of
-                    # 'sample_pos_deriv' will be merged into the first of two
-                    # large differential kernels.
                     ek.schedule(tensor, ek.grad(tensor))
-                    del tensor
 
                     # Done with this part, let's detach the image-space position
                     ek.disable_grad(pos)
+                    del tensor
 
-            # Split the two differential phases into two kernels or merge? The
-            # advantage of merging is that the two phases then don't need to
-            # exchange per-sample information through global memory. The
-            # advantage of splitting is that a merged kernel might become very
-            # large and tricky to compile (register allocation, etc.)
+            # Probably a little overkill, but why not.. If there are any
+            # Enoki arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in ek.eval().
+            gc.collect()
 
-            if self.split_differential:
-                # Probably a little overkill, but why not.. If there are any
-                # Enoki arrays to be collected by Python's cyclic GC, then
-                # freeing them may enable loop simplifications in ek.eval().
-                gc.collect()
-                ek.eval(state_out)
+            # Launch a kernel with everything so far
+            ek.eval(state_out)
 
             # Garbage collect unused values to simplify kernel about to be run
             del L, valid, params
@@ -726,15 +704,19 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            alpha = ek.select(valid_2, Float(1), Float(0))
-            block.put(pos, ray.wavelengths, δL * weight, alpha)
+            block.put(
+                pos=pos,
+                wavelengths=ray.wavelengths,
+                value=δL * weight,
+                alpha=ek.select(valid_2, Float(1), Float(0))
+            )
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, δL, valid_2, \
-                state_out, state_out_2, alpha, block
+                state_out, state_out_2, block
 
             # Probably a little overkill, but why not.. If there are any
             # Enoki arrays to be collected by Python's cyclic GC, then
@@ -813,28 +795,38 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             scene specification takes precedence if ``spp=0``.
         """
 
-        from mitsuba.core import Bool, UInt32
+        from mitsuba.core import Bool, UInt32, Float
         from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        reparam = None
+        aovs = self.aovs()
 
-        # self.sample() will re-enable gradients as needed, disable them here
+        # Disable derivatives in all of the following
         with ek.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = prepare(
-                sensor=sensor,
-                seed=seed,
-                spp=spp,
-                aovs=self.aovs()
-            )
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
 
-            # Generate a set of rays starting at the sensor
-            ray, weight, pos = self.sample_rays(scene, sensor, sampler,
-                                                reparam)
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
+
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, pos = self.sample_rays(scene, sensor,
+                                                sampler, reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
@@ -849,25 +841,41 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 active=Bool(True)
             )
 
-            # Garbage collect unused values to simplify kernel about to be run
-            del L, valid
+            # Prepare an ImageBlock as specified by the film
+            block = film.create_block()
 
-            if self.split_differential:
+            # Only use the coalescing feature when rendering enough samples
+            block.set_coalesce(block.coalesce() and spp >= 4)
+
+            with ek.resume_grad():
+                ek.enable_grad(L)
+
+                # Accumulate into the image block
+                block.put(
+                    pos=pos,
+                    wavelengths=ray.wavelengths,
+                    value=L * weight,
+                    alpha=ek.select(valid, Float(1), Float(0))
+                )
+
+                sensor.film().put_block(block)
+
                 # Probably a little overkill, but why not.. If there are any
                 # Enoki arrays to be collected by Python's cyclic GC, then
                 # freeing them may enable loop simplifications in ek.eval().
+                del valid
                 gc.collect()
-                ek.eval(state_out)
 
-            # Wrap the input gradient image into an ImageBlock
-            block = ImageBlock(tensor=grad_in,
-                               offset=film.crop_offset(),
-                               rfilter=film.rfilter(),
-                               normalize=True,
-                               border=False)
+                # This step launches a kernel
+                ek.schedule(state_out, block.tensor())
+                image = sensor.film().develop()
 
-            # Use the reconstruction filter to interpolate the values at 'pos'
-            δL = block.read(pos) * (weight * ek.rcp(spp))
+                # Differentiate sample splatting and weight division steps to
+                # retrieve the adjoint radiance
+                ek.set_grad(image, grad_in)
+                ek.enqueue(ek.ADMode.Backward, image)
+                ek.traverse(Float, ek.ADMode.Backward)
+                δL = ek.grad(L)
 
             # Launch Monte Carlo sampling in backward AD mode (2)
             L_2, valid_2, state_out_2 = self.sample(
@@ -878,7 +886,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 depth=UInt32(0),
                 δL=δL,
                 state_in=state_out,
-                reparam=None,
+                reparam=reparam,
                 active=Bool(True)
             )
 

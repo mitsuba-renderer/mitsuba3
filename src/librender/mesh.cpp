@@ -303,6 +303,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         for (size_t i = 0; i < 3; ++i)
             ek::scatter(m_vertex_normals,
                         ek::float32_array_t<Float>(normals[i]), ni + i);
+
+        ek::eval(m_vertex_normals);
     }
 }
 
