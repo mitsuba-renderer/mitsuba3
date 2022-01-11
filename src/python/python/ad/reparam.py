@@ -118,6 +118,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
+
 class _ReparameterizeOp(ek.CustomOp):
     """
     Enoki custom operation that reparameterizes rays based on the paper
@@ -209,8 +210,8 @@ class _ReparameterizeOp(ek.CustomOp):
 
 
     def backward(self):
-        from mitsuba.core import Bool, Float, UInt32, \
-            Point2f, Vector3f, Loop, PCG32 
+        from mitsuba.core import Bool, Float, UInt32, Point2f, \
+            Point3f, Vector3f, Ray3f, Frame3f, Loop, PCG32 
 
         grad_direction, grad_divergence = self.grad_out()
 
@@ -226,8 +227,8 @@ class _ReparameterizeOp(ek.CustomOp):
             # constants Z and dZ in order to properly weight the incoming gradients
             Z = Float(0.0)
             dZ = Vector3f(0.0)
-
             it = UInt32(0)
+
             loop = Loop(name="reparameterize_ray(): weight normalization",
                         state=lambda: (it, Z, dZ, rng_clone.state))
 
@@ -237,7 +238,7 @@ class _ReparameterizeOp(ek.CustomOp):
             loop.set_eval_stride(self.num_rays)
 
             while loop(self.active & (it < self.num_rays)):
-                rng_state_backup = rng_clone.backup
+                rng_state_backup = rng_clone.state
 
                 sample = Point2f(rng_clone.next_float32(),
                                  rng_clone.next_float32())
@@ -276,8 +277,10 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_div_V_1 = ek.grad(div_V_1)
 
         it = UInt32(0)
+        ray_grad_o = Point3f(0)
+
         loop = Loop(name="reparameterize_ray(): backpropagation",
-                    state=lambda: (it, rng.state))
+                    state=lambda: (it, rng.state, ray_grad_o))
 
         # Unroll the entire loop in wavefront mode
         loop.set_uniform(True)
@@ -285,6 +288,9 @@ class _ReparameterizeOp(ek.CustomOp):
         loop.set_eval_stride(self.num_rays)
 
         while loop(self.active & (it < self.num_rays)):
+            ray = Ray3f(self.ray)
+            ek.enable_grad(ray.o)
+
             rng_state_backup = rng.state
 
             sample = Point2f(rng.next_float32(),
@@ -305,7 +311,12 @@ class _ReparameterizeOp(ek.CustomOp):
             ek.set_grad(div_V_1_i, grad_div_V_1)
             ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
             ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+            ray_grad_o += ek.grad(ray.o)
             it += 1
+
+        ray_grad = ek.zero(type(self.ray))
+        ray_grad.o = ray_grad_o
+        self.set_grad_in('ray', ray_grad)
 
     def name(self):
         return "reparameterize_ray()"

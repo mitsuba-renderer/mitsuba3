@@ -63,7 +63,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
         # Specifies the number of auxiliary rays used to evaluate the
         # reparameterization
-        self.reparam_rays = props.get('reparam_rays', 16)
+        self.reparam_rays = props.get('reparam_rays', 4)
 
         # Specifies the von Mises Fisher distribution parameter for sampling
         # auxiliary rays in Bangaru et al.'s [2000] parameterization
@@ -116,6 +116,12 @@ class PRBReparamIntegrator(ADIntegrator):
             BSDFContext, BSDFFlags, RayFlags, has_flag
 
         primal = mode == ek.ADMode.Primal
+
+        if True:
+            # Capture π-dependence of intersection for a detached input ray
+            si = scene.ray_intersect(ray)
+            valid = ek.select(si.is_valid() & primal, Float(1), Float(0))
+            return (valid, si.is_valid(), None)
 
         # --------------------- Configure loop state ----------------------
 
