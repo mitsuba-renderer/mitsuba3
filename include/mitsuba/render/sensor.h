@@ -147,6 +147,7 @@ public:
         m_resolution = ScalarVector2f(m_film->crop_size());
     }
 
+    ENOKI_VCALL_REGISTER(Float, mitsuba::Sensor)
     MTS_DECLARE_CLASS()
 protected:
     Sensor(const Properties &props);
@@ -163,6 +164,8 @@ protected:
     bool m_alpha;
 };
 
+//! @}
+// -----------------------------------------------------------------------
 
 /**
  * \brief Projective camera interface
@@ -266,3 +269,19 @@ perspective_projection(const Vector<int, 2> &film_size,
 MTS_EXTERN_CLASS_RENDER(Sensor)
 MTS_EXTERN_CLASS_RENDER(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enoki support for vectorized function calls
+// -----------------------------------------------------------------------
+
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
+    ENOKI_VCALL_METHOD(sample_ray)
+    ENOKI_VCALL_METHOD(sample_direction)
+    ENOKI_VCALL_METHOD(pdf_direction)
+    ENOKI_VCALL_METHOD(eval_direction)
+    ENOKI_VCALL_METHOD(sample_position)
+    ENOKI_VCALL_METHOD(sample_wavelengths)
+    ENOKI_VCALL_GETTER(flags, uint32_t)
+    ENOKI_VCALL_GETTER(shape, const typename Class::Shape *)
+    ENOKI_VCALL_GETTER(medium, const typename Class::Medium *)
+ENOKI_VCALL_TEMPLATE_END(mitsuba::Sensor)

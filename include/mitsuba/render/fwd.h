@@ -101,6 +101,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumPtr              = ek::replace_scalar_t<Float, const Medium *>;
     using PhaseFunctionPtr       = ek::replace_scalar_t<Float, const PhaseFunction *>;
     using ShapePtr               = ek::replace_scalar_t<Float, const Shape *>;
+    using SensorPtr              = ek::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
 };
 
@@ -181,6 +182,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
-    using EmitterPtr             = typename RenderAliases::EmitterPtr;
+    using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
+    using SensorPtr              = typename RenderAliases::SensorPtr;
 
 NAMESPACE_END(mitsuba)
