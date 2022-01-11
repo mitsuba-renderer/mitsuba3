@@ -673,6 +673,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     Float t = pi.t;
     Point2f prim_uv = pi.prim_uv;
+
     if constexpr (IsDiff) {
         if (has_flag(ray_flags, RayFlags::DetachShape) &&
             has_flag(ray_flags, RayFlags::FollowShape))
@@ -684,22 +685,28 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             p2 = ek::detach<true>(p2);
         }
 
-        auto [t_d, prim_uv_d, hit] = moeller_trumbore(ray, p0, p1, p2, active);
+        /* When either the input ray or the vertex positions (p0, p1, p2) have
+           gradient tracking enabled, we need to perform a differentiable
+           ray-triangle intersection (done here via the method by Moeller and
+           Trumbore). The result ismapped through `ek::replace_grad` so that we
+           don't actually recompute the primal intersection but only use the
+           intersection computation graph for derivative tracking (this assumes
+           that the function is eventually differentiated). When the
+           'FollowShape' ray flag is specified, we skip this part since the
+           intersection position should be rigidly attached to the mesh. */
+        if (ek::grad_enabled(p0, p1, p2, ray.o, ray.d /* <- any enabled? */) &&
+            !has_flag(ray_flags, RayFlags::FollowShape)) {
+            auto [t_d, prim_uv_d, hit] =
+                moeller_trumbore(ray, p0, p1, p2);
 
-        /* Don't recompute the primal intersection, only use the
-           Moeller-Trumbore code to track its derivatives, if eventually
-           differentiated */
-        prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
-        t = ek::replace_grad(t, t_d);
+            prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
+            t = ek::replace_grad(t, t_d);
+        }
     }
 
-    Float b1 = prim_uv.x(), b2 = prim_uv.y();
-    if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape)) {
-        b1 = ek::detach(b1);
-        b2 = ek::detach(b2);
-    }
-
-    Float b0 = 1.f - b1 - b2;
+    Float b1 = prim_uv.x(),
+          b2 = prim_uv.y(),
+          b0 = 1.f - b1 - b2;
 
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
@@ -710,20 +717,19 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.p = ek::fmadd(p0, b0, ek::fmadd(p1, b1, p2 * b2));
 
     // Potentially recompute the distance traveled to the surface interaction hit point
-    if (!IsDiff || !has_flag(ray_flags, RayFlags::FollowShape))
-        si.t = ek::select(active, t, ek::Infinity<Float>);
-    else
-        si.t = ek::select(
-            active,
-            ek::sqrt(ek::squared_norm(si.p - ray.o) / ek::squared_norm(ray.d)),
-            ek::Infinity<Float>);
+    if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape))
+        t = ek::sqrt(ek::squared_norm(si.p - ray.o) / ek::squared_norm(ray.d));
+
+    si.t = ek::select(active, t, ek::Infinity<Float>);
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
+
     std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
+
     if (has_vertex_texcoords() &&
         likely(has_flag(ray_flags, RayFlags::UV) ||
                has_flag(ray_flags, RayFlags::dPdUV))) {
