@@ -297,7 +297,7 @@ public:
      *    should be queried to check if an intersection was actually found.
      */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask coherent,
+                                                        Mask coherent = false,
                                                         Mask active = true) const;
 
     /**

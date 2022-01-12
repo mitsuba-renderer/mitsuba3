@@ -217,7 +217,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ek.detach(ray, True),
+                ray=ray,
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
@@ -429,7 +429,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 mode=ek.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
-                ray=ek.detach(ray, True),
+                ray=ray,
                 depth=UInt32(0),
                 δL=None,
                 state_in=None,
@@ -613,18 +613,16 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 # ImageBlock weight channel (the determinant would affect both
                 # sample value and weight and then cancel out during the
                 # division).
-                ray.d, _ = reparam(ray)
+                reparam_d, _ = reparam(ray=ray, depth=UInt32(0))
 
                 # Create a fake interaction along the sampled ray and use it to the
                 # position with derivative tracking
                 it = ek.zero(Interaction3f)
-                it.p = ray(1)
+                it.p = ray.o + reparam_d
                 ds, _ = sensor.sample_direction(it, aperture_sample)
 
                 # Return a reparameterized image position
                 pos_f = ds.uv
-
-            ek.disable_grad(weight)
 
         return ray, weight, pos_f
 
@@ -1171,14 +1169,17 @@ class _ReparamWrapper:
 
     def __call__(self,
                  ray: mitsuba.core.Ray3f,
+                 depth: mitsuba.core.UInt32,
                  active: Union[mitsuba.core.Bool, bool] = True
     ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
         """
-        This function takes a ray and a boolean active mask as input and
-        returns the reparameterized ray direction and the Jacobian determinant
-        of the change of variables.
+        This function takes a ray, a path depth value (to potentially disable
+        parameterizations after a certain number of buonces) and a boolean
+        active mask as input and returns the reparameterized ray direction and
+        the Jacobian determinant of the change of variables.
         """
-        return self.reparam(self.scene, self.rng, self.params, ray, active)
+        return self.reparam(self.scene, self.rng, self.params, ray,
+                            depth, active)
 
 
 # ---------------------------------------------------------------------------

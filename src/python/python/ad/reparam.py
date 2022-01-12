@@ -76,8 +76,8 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     omega_local = warp.square_to_von_mises_fisher(sample, kappa)
 
     # Antithetic sampling (optional)
-    omega_local.x = ek.select(flip, -omega_local.x, omega_local.x)
-    omega_local.y = ek.select(flip, -omega_local.y, omega_local.y)
+    omega_local.x[flip] = -omega_local.x
+    omega_local.y[flip] = -omega_local.y
 
     aux_ray = Ray3f(
         o = ray.o,
@@ -87,7 +87,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
     si = scene.ray_intersect(aux_ray,
-                             ray_flags=RayFlags.FollowShape,
+                             ray_flags=RayFlags.All | RayFlags.FollowShape,
                              coherent=False)
 
     # Convert into a direction at 'ray.o'. When no surface was intersected,
@@ -97,7 +97,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     with ek.suspend_grad():
         # Boundary term provided by the underlying shape (polymorphic)
-        B = ek.select(hit, si.boundary_test(aux_ray), 1.0)
+        B = ek.select(hit, si.boundary_test(aux_ray, hit), 1.0)
 
         # Inverse of vMF density without normalization constant
         # inv_vmf_density = ek.exp(ek.fnmadd(omega_local.z, kappa, kappa))
@@ -117,6 +117,60 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
         d_w_omega = ek.clamp(tmp1, -1e10, 1e10) * tmp2
 
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
+
+#def _sample_warp_field(scene: mitsuba.render.Scene,
+#                       sample: mitsuba.core.Point2f,
+#                       ray: mitsuba.core.Ray3f,
+#                       ray_frame: mitsuba.core.Frame3f,
+#                       flip: mitsuba.core.Bool,
+#                       kappa: float,
+#                       exponent: float):
+#    """
+#    Sample the warp field of moving geometries by tracing an auxiliary ray and
+#    computing the appropriate convolution weight using the shape's boundary-test.
+#    """
+#    from mitsuba.core import Frame3f, Ray3f
+#    from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
+#    from mitsuba.render import RayFlags
+#
+#    # Sample auxiliary direction from vMF
+#    offset = square_to_von_mises_fisher(sample, kappa)
+#    omega = Frame3f(ek.detach(ray.d)).to_world(offset)
+#    pdf_omega = square_to_von_mises_fisher_pdf(offset, kappa)
+#
+#    aux_ray = Ray3f(ray)
+#    aux_ray.d = omega
+#
+#    si = scene.ray_intersect(aux_ray, RayFlags.FollowShape, False)
+#    # shading_normal = ek.normalize(si.p) # TODO
+#    # hit = active & ek.detach(si.is_valid()) & (ek.dot(omega, shading_normal) > 1e-3)
+#    hit = ek.detach(si.is_valid())
+#
+#    # Compute warp field direction such that it follows the intersected shape
+#    # and moves along with the ray origin.
+#    V_direct = ek.normalize(si.p - aux_ray.o)
+#
+#    # Background doesn't move w.r.t. scene parameters
+#    V_direct = ek.select(hit, V_direct, ek.detach(aux_ray.d))
+#
+#    # Compute harmonic weight while being careful of division by almost zero
+#    B = ek.detach(ek.select(hit, si.boundary_test(aux_ray), 1.0))
+#    D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
+#    w_denom = D + B
+#    w_denom_p = ek.pow(w_denom, exponent)
+#    w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
+#    w /= pdf_omega
+#    w = ek.detach(w)
+#
+#    # Analytic weight gradients w.r.t. `ray.d`
+#    tmp0 = ek.pow(w_denom, exponent + 1.0)
+#    tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * exponent
+#    tmp2 = omega - ray.d * ek.dot(ray.d, omega)
+#    d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
+#    d_w_omega /= pdf_omega
+#    d_w_omega = ek.detach(d_w_omega)
+#
+#    return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
 
 class _ReparameterizeOp(ek.CustomOp):
@@ -158,7 +212,7 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_div_lhs = Float(0.0)
         it = UInt32(0)
         rng = self.rng
-        ray_grad = self.grad_in('ray')
+        ray_grad_o = self.grad_in('ray').o
         ray_frame = Frame3f(self.ray.d)
 
         loop = Loop(name="reparameterize_ray(): forward propagation",
@@ -172,7 +226,7 @@ class _ReparameterizeOp(ek.CustomOp):
         while loop(self.active & (it < self.num_rays)):
             ray = Ray3f(self.ray)
             ek.enable_grad(ray.o)
-            ek.set_grad(ray.o, ray_grad.o)
+            ek.set_grad(ray.o, ray_grad_o)
 
             rng_state_backup = rng.state
             sample = Point2f(rng.next_float32(),
@@ -314,7 +368,7 @@ class _ReparameterizeOp(ek.CustomOp):
             ray_grad_o += ek.grad(ray.o)
             it += 1
 
-        ray_grad = ek.zero(type(self.ray))
+        ray_grad = ek.detach(ek.zero(type(self.ray)))
         ray_grad.o = ray_grad_o
         self.set_grad_in('ray', ray_grad)
 
