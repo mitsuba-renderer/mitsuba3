@@ -17,10 +17,15 @@ MTS_PY_EXPORT(Interaction) {
         .def_field(Interaction3f, n,           D(Interaction, n))
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
+        .def(py::init<const Interaction3f &>(), "Copy constructor")
+        .def(py::init<Float, Float, Wavelength, Point3f, Normal3f>(),
+             "t"_a, "time"_a, "wavelengths"_a, "p"_a, "n"_a = 0,
+             D(Interaction, Interaction, 2))
         .def("zero_",        &Interaction3f::zero_, "size"_a = 1)
         .def("spawn_ray",    &Interaction3f::spawn_ray, "d"_a,    D(Interaction, spawn_ray))
         .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
+        .def("zero_",        &Interaction3f::zero_, D(Interaction, zero))
         .def_repr(Interaction3f);
 
     MTS_PY_ENOKI_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
@@ -47,6 +52,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
 
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+        .def(py::init<const SurfaceInteraction3f &>(), "Copy constructor")
         .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
         .def("initialize_sh_frame", &SurfaceInteraction3f::initialize_sh_frame,
@@ -106,6 +112,7 @@ MTS_PY_EXPORT(MediumInteraction) {
 
         // Methods
         .def(py::init<>(), D(MediumInteraction, MediumInteraction))
+        .def(py::init<const MediumInteraction3f &>(), "Copy constructor")
         .def("to_world", &MediumInteraction3f::to_world, "v"_a, D(MediumInteraction, to_world))
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
@@ -133,11 +140,13 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
 
         // Methods
         .def(py::init<>(), D(PreliminaryIntersection, PreliminaryIntersection))
+        .def(py::init<const PreliminaryIntersection3f &>(), "Copy constructor")
         .def("is_valid", &PreliminaryIntersection3f::is_valid, D(PreliminaryIntersection, is_valid))
         .def("compute_surface_interaction",
            &PreliminaryIntersection3f::compute_surface_interaction,
            D(PreliminaryIntersection, compute_surface_interaction),
            "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true)
+        .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
         .def_repr(PreliminaryIntersection3f);
 
     MTS_PY_ENOKI_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
