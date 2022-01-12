@@ -53,7 +53,7 @@ MTS_PY_EXPORT(Scene) {
             D(Scene, render), "sensor_index"_a = 0, "seed"_a = 0,  "spp"_a = 0)
         .def("ray_intersect_preliminary",
              py::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, py::const_),
-             "ray"_a, "coherent"_a, "active"_a = true, D(Scene, ray_intersect_preliminary))
+             "ray"_a, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
              py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))

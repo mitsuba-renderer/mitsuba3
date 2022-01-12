@@ -44,12 +44,12 @@ class PRBIntegrator(ADIntegrator):
                scene: mitsuba.render.Scene,
                sampler: mitsuba.render.Sampler,
                ray: mitsuba.core.Ray3f,
-               depth: mitsuba.core.UInt32,
                δL: Optional[mitsuba.core.Spectrum],
-               state_in: Any,
-               reparam: Any, # unused
-               active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
-                                                   mitsuba.core.Bool, Any]:
+               state_in: Optional[mitsuba.core.Spectrum],
+               active: mitsuba.core.Bool,
+               **kwargs # Absorbs unused arguments
+    ) -> Tuple[mitsuba.core.Spectrum,
+               mitsuba.core.Bool, mitsuba.core.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -59,42 +59,49 @@ class PRBIntegrator(ADIntegrator):
         from mitsuba.render import SurfaceInteraction3f, DirectionSample3f, \
             BSDFContext, BSDFFlags, RayFlags, has_flag
 
+        # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == ek.ADMode.Primal
+
+        # Standard BSDF evaluation context for path tracing
+        bsdf_ctx = BSDFContext()
 
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
         ray = Ray3f(ray)
-        depth, depth_initial = UInt32(depth), UInt32(depth)
-        L = Spectrum(0 if primal else state_in)
-        δL = Spectrum(δL if δL is not None else 0)
-        active = Bool(active)
-        β = Spectrum(1)
-        η = Float(1)
+        depth = UInt32(0)                          # Depth of current vertex
+        L = Spectrum(0 if primal else state_in)    # Radiance accumulator
+        δL = Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
+        β = Spectrum(1)                            # Path throughput weight
+        η = Float(1)                               # Index of refraction
+        active = Bool(active)                      # Active SIMD lanes
 
         # Variables caching information from the previous bounce
         prev_si         = ek.zero(SurfaceInteraction3f)
         prev_bsdf_pdf   = Float(1.0)
         prev_bsdf_delta = Bool(True)
 
-        bsdf_ctx = BSDFContext()
-
         # Record the following loop in its entirety
         loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
                     state=lambda: (sampler, ray, depth, L, δL, β, η, active,
                                    prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
-        # Inform the loop about the maximum number of loop iterations (helpful
-        # in case wavefront-style loops are generated).
+        # Specify the max. number of loop iterations (this can help avoid
+        # costly synchronization when when wavefront-style loops are generated)
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
-            with ek.resume_grad(condition=not primal):
-                # Capture π-dependence of intersection for a detached input ray
+            # Compute a surface interaction that tracks derivatives arising
+            # from differentiable shape parameters (position, normals, etc.)
+            # In primal mode, this is just an ordinary ray tracing operation.
+
+            with ek.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray,
                                          ray_flags=RayFlags.All,
                                          coherent=ek.eq(depth, 0))
-                bsdf = si.bsdf(ray)
+
+            # Get the BSDF, potentially computes texture-space differentials
+            bsdf = si.bsdf(ray)
 
             # ---------------------- Direct emission ----------------------
 
@@ -106,20 +113,23 @@ class PRBIntegrator(ADIntegrator):
                 scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
             )
 
-            with ek.resume_grad(condition=not primal):
-                Le = β * mis * ds.emitter.eval(si, prev_bsdf_pdf > 0)
+            with ek.resume_grad(when=not primal):
+                Le = β * mis * ds.emitter.eval(si)
 
             # ---------------------- Emitter sampling ----------------------
 
-            # Perform emitter sampling?
+            # Should we continue tracing to reach one more vertex?
             active_next = (depth + 1 < self.max_depth) & si.is_valid()
+
+            # Is emitter sampling even possible on the current vertex?
             active_em = active_next & has_flag(bsdf.flags(), BSDFFlags.Smooth)
 
+            # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
                 si, sampler.next_2d(), True, active_em)
             active_em &= ek.neq(ds.pdf, 0.0)
 
-            with ek.resume_grad(condition=not primal):
+            with ek.resume_grad(when=not primal):
                 if not primal:
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
@@ -127,15 +137,14 @@ class PRBIntegrator(ADIntegrator):
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
                     em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
 
-                # Evaluate BRDF * cos(theta) differentiably
+                # Evaluate BSDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
-                bsdf_weight, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-                mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf))
-                Lr_dir = β * ek.detach(mis_em) * bsdf_weight * em_weight
+                bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+                Lr_dir = β * ek.detach(mis_em) * bsdf_value_em * em_weight
 
-            # ---------------------- BSDF sampling ----------------------
+            # ------------------ Detached BSDF sampling -------------------
 
-            # Perform detached BSDF sampling?
             bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
                                                    sampler.next_1d(),
                                                    sampler.next_2d(),
@@ -149,29 +158,60 @@ class PRBIntegrator(ADIntegrator):
             β *= bsdf_weight
 
             # Information about the current vertex needed by the next iteration
+
             prev_si = si
             prev_bsdf_pdf = bsdf_sample.pdf
             prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags.Delta)
+
+            # -------------------- Stopping criterion ---------------------
+
+            # Don't run another iteration if the throughput has reached zero
+            β_max = ek.hmax(β)
+            active_next &= ek.neq(β_max, 0)
+
+            # Russian roulette stopping probability (must cancel out ior^2
+            # to obtain unitless throughput, enforces a minimum probability)
+            rr_prob = ek.min(β_max * η**2, .95)
+
+            # Apply only further along the path since, this introduces variance
+            rr_active = depth >= self.rr_depth
+            β[rr_active] *= ek.rcp(rr_prob)
+            rr_continue = sampler.next_1d() < rr_prob
+            active_next &= ~rr_active | rr_continue
 
             # ------------------ Differential phase only ------------------
 
             if not primal:
                 with ek.resume_grad():
-                    # Recompute 'wo' with AD to propagate derivatives to cosine term
+                    # 'L' stores the indirectly reflected radiance at the
+                    # current vertex but does not track parameter derivatives.
+                    # The following addresses this by canceling the detached
+                    # BSDF value and replacing it with an equivalent term that
+                    # has derivative tracking enabled. (nit picking: the
+                    # direct/indirect terminology isn't 100% accurate here,
+                    # since there may be a direct component that is weighted
+                    # via multiple importance sampling)
+
+                    # Recompute 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(ray.d)
 
-                    # Re-evaluate BRDF * cos(theta) differentiably
-                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active)
+                    # Re-evaluate BSDF * cos(theta) differentiably
+                    bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
 
-                    # Recompute the reflected indirect radiance (terminology not 100%
-                    # correct, there may be a direct component due to MIS)
-                    recip = bsdf_weight * bsdf_sample.pdf
-                    Lr_ind = L * bsdf_val * ek.select(ek.neq(recip, 0), ek.rcp(recip), 0)
+                    # Detached version of the above term and inverse
+                    bsdf_val_det = bsdf_weight * bsdf_sample.pdf
+                    inv_bsdf_val_det = ek.select(ek.neq(bsdf_val_det, 0),
+                                                 ek.rcp(bsdf_val_det), 0)
 
-                    # Estimated contribution of the current vertex
-                    contrib = Le + Lr_dir + Lr_ind
+                    # Differentiable version of the reflected indirect
+                    # radiance. Minor optional tweak: indicate that the primal
+                    # value of the second term is always 1.
+                    Lr_ind = L * ek.replace_grad(1, inv_bsdf_val_det * bsdf_val)
 
-                    if not ek.grad_enabled(contrib):
+                    # Differentiable Monte Carlo estimate of all contributions
+                    Lo = Le + Lr_dir + Lr_ind
+
+                    if not ek.grad_enabled(Lo):
                         raise Exception(
                             "The contribution computed by the differential "
                             "rendering phase is not attached to the AD graph! "
@@ -182,30 +222,19 @@ class PRBIntegrator(ADIntegrator):
                             "optimize a parameter that does not generate "
                             "derivatives in detached PRB.)")
 
-                    # Propagate derivatives from/to 'contrib' based on 'mode'
+                    # Propagate derivatives from/to 'Lo' based on 'mode'
                     if mode == ek.ADMode.Backward:
-                        ek.backward_from(δL * contrib, flags=ek.ADFlag.ClearInterior)
+                        ek.backward_from(δL * Lo)
                     else:
-                        ek.forward_to(contrib, flags=ek.ADFlag.ClearNone)
-                        δL += ek.grad(contrib)
-
-            # -------------------- Stopping criterion ---------------------
-
-            β_max = ek.hmax(β)
-            rr_active = depth >= self.rr_depth
-            rr_prob = ek.min(β_max * η**2, .95)
-            rr_continue = sampler.next_1d() < rr_prob
-            β[rr_active] *= ek.rcp(rr_prob)
-
-            active = active_next & ek.neq(β_max, 0) & \
-                     (~rr_active | rr_continue)
+                        δL += ek.forward_to(Lo)
 
             depth[si.is_valid()] += 1
+            active = active_next
 
         return (
-            L if primal else δL,          # Radiance/differential radiance
-            ek.neq(depth, depth_initial), # Ray valid flag
-            L                             # State for differential phase
+            L if primal else δL, # Radiance/differential radiance
+            ek.neq(depth, 0),    # Ray validity flag for alpha blending
+            L                    # State for the differential phase
         )
 
 mitsuba.render.register_integrator("prb", lambda props:

@@ -51,9 +51,9 @@ struct Interaction {
     // =============================================================
 
     /// Constructor
-    Interaction(Float t, Float time, const Wavelength &w, const Point3f &p,
-                const Normal3f &n = 0.f)
-        : t(t), time(time), wavelengths(w), p(p), n(n) {}
+    Interaction(Float t, Float time, const Wavelength &wavelengths,
+                const Point3f &p, const Normal3f &n = 0.f)
+        : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
 
     /**
      * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
@@ -610,8 +610,8 @@ struct PreliminaryIntersection {
      *      A data structure containing the detailed information
      */
     auto compute_surface_interaction(const Ray3f &ray,
-                                     uint32_t ray_flags,
-                                     Mask active) {
+                                     uint32_t ray_flags = +RayFlags::All,
+                                     Mask active = true) {
         if constexpr (!std::is_same_v<Shape_, Shape<Float, Spectrum>>) {
             Throw("PreliminaryIntersection::compute_surface_interaction(): not implemented!");
         } else {

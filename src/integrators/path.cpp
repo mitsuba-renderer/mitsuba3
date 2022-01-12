@@ -138,8 +138,9 @@ public:
            debugging. The subsequent list registers all variables that encode
            the loop state variables. This is crucial: omitting a variable may
            lead to undefined behavior. */
-        ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result, eta,
-                            depth, valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active);
+        ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result,
+                            eta, depth, valid_ray, prev_si, prev_bsdf_pdf,
+                            prev_bsdf_delta, active);
 
         /* Inform the loop about the maximum number of loop iterations.
            This accelerates wavefront-style rendering by avoiding costly
@@ -207,7 +208,8 @@ public:
                     ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
                 // Accumulate, being careful with polarization (see spec_fma)
-                result[active_em] = spec_fma(throughput, bsdf_val * emitter_val * mis_em, result);
+                result[active_em] = spec_fma(
+                    throughput, bsdf_val * emitter_val * mis_em, result);
             }
 
             // ---------------------- BSDF sampling ----------------------
