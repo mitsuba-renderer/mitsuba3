@@ -491,7 +491,7 @@ public:
                 UnpolarizedSpectrum ratio = p / f.entry(i);
                 ratio = ek::select(ek::isfinite(ratio), ratio, 0.f);
                 ratio *= p_over_f[i];
-                ek::masked(p_over_f[i], active) = ek::select(ek::neq(ratio, ratio), 0.f, ratio);
+                ek::masked(p_over_f[i], active) = ek::select(ek::isnan(ratio), 0.f, ratio);
             }
         } else {
             // If we don't do spectral MIS: We need to use a specific channel of the spectrum "p" as the PDF
