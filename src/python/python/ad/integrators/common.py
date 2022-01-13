@@ -39,7 +39,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
 
-        # Warn about potential biase due to shapes entering/leaving the frame
+        # Warn about potential bias due to shapes entering/leaving the frame
         self.sample_border_warning = True
 
     def aovs(self):
@@ -517,7 +517,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
           perfectly)
         - the continuous 2D image-space positions associated with each ray
 
-        When a remareterization function is provided via the 'reparam'
+        When a reparameterization function is provided via the 'reparam'
         argument, it will be applied to the returned image-space position (i.e.
         the sample positions will be moving). The other two return values
         remain detached.
@@ -1174,7 +1174,7 @@ class _ReparamWrapper:
     ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
         """
         This function takes a ray, a path depth value (to potentially disable
-        parameterizations after a certain number of buonces) and a boolean
+        reparameterizations after a certain number of bounces) and a boolean
         active mask as input and returns the reparameterized ray direction and
         the Jacobian determinant of the change of variables.
         """

@@ -7,14 +7,14 @@ from .common import ADIntegrator, mis_weight
 
 class PRBReparamIntegrator(ADIntegrator):
     """
-    This class implements a re-parameterized Path Replay Backpropagation (PRB)
+    This class implements a reparameterized Path Replay Backpropagation (PRB)
     integrator with the following properties:
 
     - Emitter sampling (a.k.a. next event estimation).
 
     - Russian Roulette stopping criterion.
 
-    - The integrator re-parameterizes the incident hemisphere to handle
+    - The integrator reparameterizes the incident hemisphere to handle
       visibility-induced discontinuities. This makes it possible to optimize
       geometric parameters like vertex positions. Discontinuities observed
       through ideal specular reflection/refraction are not supported and
@@ -38,7 +38,7 @@ class PRBReparamIntegrator(ADIntegrator):
       (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
       Iliyan Georgiev, and Wenzel Jakob.
 
-    for details on PRB and attached/detached sampling. Re-parameterizations
+    for details on PRB and attached/detached sampling. Reparameterizations
     for differentiable rendering were proposed in
 
       "Reparameterizing discontinuous integrands for differentiable rendering"
@@ -89,7 +89,7 @@ class PRBReparamIntegrator(ADIntegrator):
     which will evaluate the chain/product rule automatically.
 
     However, a nontrivial technical challenge here is that path tracing-style
-    integerators perform a loop over path vertices, while Enoki's loop
+    integrators perform a loop over path vertices, while Enoki's loop
     recording facilities do not permit the use of AD across loop iterations.
     The loop must thus be designed so that use of AD is self-contained in each
     iteration of the loop, while generating all the terms of ∂T iteratively
@@ -157,7 +157,7 @@ class PRBReparamIntegrator(ADIntegrator):
     To get the quantities for the next vertex, the path tracer must "run
     ahead" by one bounce.
 
-    The loop begins each iteration being alreaded provided with the previous
+    The loop begins each iteration being already provided with the previous
     and current intersection in the form of a ``PreliminaryIntersection3f``.
     It must still be turned into a full ``SurfaceInteraction3f`` which,
     however, only involves a virtual function call and no ray tracing. It
@@ -317,7 +317,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Evaluate the emitter (with deriative tracking if requested)
+            # Evaluate the emitter (with derivative tracking if requested)
             with ek.resume_grad(when=not primal):
                 emitter = si_cur.emitter(scene)
                 Le = β * mis_em * emitter.eval(si_cur)

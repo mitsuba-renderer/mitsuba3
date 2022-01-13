@@ -13,7 +13,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
                        kappa: float,
                        exponent: float):
     """
-    Helper function for re-parameterizing rays based on the paper
+    Helper function for reparameterizing rays based on the paper
 
       "Unbiased Warped-Area Sampling for Differentiable Rendering"
       (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
@@ -51,7 +51,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     Parameter ``exponent`` (``float``):
         Exponent used in the computation of the harmonic weights.
 
-    The function returns a tuple ``(Z, dZ, V, div)`` containig
+    The function returns a tuple ``(Z, dZ, V, div)`` containing
 
     Return value ``Z`` (``mitsuba.core.Float``)
         The harmonic weight of the generated sample (detached).
@@ -124,13 +124,13 @@ class _ReparameterizeOp(ek.CustomOp):
     Enoki custom operation that reparameterizes rays based on the paper
 
       "Unbiased Warped-Area Sampling for Differentiable Rendering"
-      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
+      (Proceedings of SIGGRAPH'20) by Sai Praveen Bangaru,
       Tzu-Mao Li, and Frédo Durand.
 
     This is needed to to avoid bias caused by the discontinuous visibility
     function in gradient-based geometric optimization.
     """
-    def eval(self, scene, rng, params, ray, num_rays, kappa, exponent, 
+    def eval(self, scene, rng, params, ray, num_rays, kappa, exponent,
              antithetic, active):
         # Stash all of this information for the forward/backward passes
         self.scene = scene
@@ -211,7 +211,7 @@ class _ReparameterizeOp(ek.CustomOp):
 
     def backward(self):
         from mitsuba.core import Bool, Float, UInt32, Point2f, \
-            Point3f, Vector3f, Ray3f, Frame3f, Loop, PCG32 
+            Point3f, Vector3f, Ray3f, Frame3f, Loop, PCG32
 
         grad_direction, grad_divergence = self.grad_out()
 
@@ -365,9 +365,9 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         Boolean array specifying the active lanes
 
     Returns → (mitsuba.core.Vector3f, mitsuba.core.Float):
-        Returns the reparameterized ray direction and the Jacobian 
+        Returns the reparameterized ray direction and the Jacobian
         determinant of the change of variables.
     """
 
-    return ek.custom(_ReparameterizeOp, scene, rng, params, ray, 
+    return ek.custom(_ReparameterizeOp, scene, rng, params, ray,
                      num_rays, kappa, exponent, antithetic, active)
