@@ -171,12 +171,12 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      *     Reference position
      */
     DirectionSample(const Scene<Float, Spectrum> *scene,
-                    const SurfaceInteraction3f &it,
-                    const Interaction3f &ref) : Base(it) {
-        Vector3f rel = it.p - ref.p;
+                    const SurfaceInteraction3f &si,
+                    const Interaction3f &ref) : Base(si) {
+        Vector3f rel = si.p - ref.p;
         dist = ek::norm(rel);
-        d    = select(it.is_valid(), rel / dist, -it.wi);
-        emitter = it.emitter(scene);
+        d = select(si.is_valid(), rel / dist, -si.wi);
+        emitter = si.emitter(scene);
     }
 
     /// Element-by-element constructor
