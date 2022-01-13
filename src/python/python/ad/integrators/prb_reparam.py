@@ -178,7 +178,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
         # Specifies the number of auxiliary rays used to evaluate the
         # reparameterization
-        self.reparam_rays = props.get('reparam_rays', 8)
+        self.reparam_rays = props.get('reparam_rays', 16)
 
         # Specifies the von Mises Fisher distribution parameter for sampling
         # auxiliary rays in Bangaru et al.'s [2000] parameterization
@@ -291,21 +291,21 @@ class PRBReparamIntegrator(ADIntegrator):
                 with ek.resume_grad():
                     # Compute a surface interaction of the previous vertex with
                     # derivative tracking (no-op if there is no prev. vertex)
-                    #  si_prev = pi_prev.compute_surface_interaction(
-                    #      ray_prev, RayFlags.All | RayFlags.FollowShape)
+                    si_prev = pi_prev.compute_surface_interaction(
+                        ray_prev, RayFlags.All | RayFlags.FollowShape)
 
-                    # Adjust the ray origin of 'ray_reparam' so that it follows the
-                    # previous shape. The reparameterization depends on this.
-                    #  ray_reparam.o[~first_vertex] = si_prev.spawn_ray(ray_reparam.d).o
-
-                    # Reparameterize the ray
-                    ray_reparam.d, ray_reparam_det = reparam(ray_reparam, depth)
+                    # Adjust the ray origin of 'ray_cur' so that it follows the
+                    # previous shape, then pass this information to 'reparam'
+                    ray_reparam.d, ray_reparam_det = reparam(
+                        ek.select(first_vertex, ray_cur,
+                                  si_prev.spawn_ray(ray_cur.d)), depth)
                     ray_reparam_det[first_vertex] = 1
 
-                    # Now disable all derivatives in 'si_prev'. We are only
-                    # interested in tracking derivatives related to the current
-                    # interaction in the remainder of this function
-                    #  ek.disable_grad(si_prev)
+                    # Finally, disable all derivatives in 'si_prev', as we are
+                    # only interested in tracking derivatives related to the
+                    # current interaction in the remainder of this function
+                    ek.disable_grad(si_prev)
+
 
             # ------ Compute detailed record of the current interaction ------
 
@@ -322,24 +322,13 @@ class PRBReparamIntegrator(ADIntegrator):
                 emitter = si_cur.emitter(scene)
                 Le = β * mis_em * emitter.eval(si_cur)
 
-            # ------------------ Detached BSDF sampling -------------------
+            # ----------------------- Emitter sampling -----------------------
 
             # Should we continue tracing to reach one more vertex?
             active_next = (depth + 1 < self.max_depth) & si_cur.is_valid()
 
             # Get the BSDF, potentially computes texture-space differentials.
             bsdf_cur = si_cur.bsdf(ray_cur)
-
-            # Perform detached BSDF sampling.
-            bsdf_sample, bsdf_weight = bsdf_cur.sample(bsdf_ctx, si_cur,
-                                                       sampler.next_1d(),
-                                                       sampler.next_2d(),
-                                                       active_next)
-
-            bsdf_sample_delta = has_flag(bsdf_sample.sampled_type,
-                                         BSDFFlags.Delta)
-
-            # ----------------------- Emitter sampling -----------------------
 
             # Is emitter sampling even possible on the current vertex?
             active_em = active_next & has_flag(bsdf_cur.flags(), BSDFFlags.Smooth)
@@ -353,6 +342,7 @@ class PRBReparamIntegrator(ADIntegrator):
                 em_ray_det = 1
 
                 if not primal:
+                    # Reparameterize the ray towards the emitter
                     em_ray = si_cur.spawn_ray_to(ds.p)
                     em_ray.d, em_ray_det = reparam(em_ray, depth + 1, active_em)
                     ds.d = em_ray.d
@@ -366,8 +356,19 @@ class PRBReparamIntegrator(ADIntegrator):
                 wo = si_cur.to_local(ds.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf_cur.eval_pdf(bsdf_ctx, si_cur,
                                                                wo, active_em)
-                mis_lr = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-                Lr_dir = β * ek.detach(mis_lr) * bsdf_value_em * em_weight * em_ray_det
+                mis_direct = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+                Lr_dir = β * ek.detach(mis_direct) * bsdf_value_em * em_weight * em_ray_det
+
+            # ------------------ Detached BSDF sampling -------------------
+
+            # Perform detached BSDF sampling.
+            bsdf_sample, bsdf_weight = bsdf_cur.sample(bsdf_ctx, si_cur,
+                                                       sampler.next_1d(),
+                                                       sampler.next_2d(),
+                                                       active_next)
+
+            bsdf_sample_delta = has_flag(bsdf_sample.sampled_type,
+                                         BSDFFlags.Delta)
 
             # ---- Update loop variables based on current interaction -----
 
@@ -398,12 +399,12 @@ class PRBReparamIntegrator(ADIntegrator):
             pi_next = scene.ray_intersect_preliminary(ray_next,
                                                       active=active_next)
 
+            # Compute a detached intersection record for the next vertex
             si_next = pi_next.compute_surface_interaction(ray_next)
 
             # ---------- Compute MIS weight for the next vertex -----------
 
-            # Compute a detached intersection record for the next vertex
-            ds = DirectionSample3f(scene, si_next, si_cur)
+            ds = DirectionSample3f(scene, si=si_next, ref=si_cur)
 
             # Probability of sampling 'si_next' using emitter sampling
             # (set to zero if the BSDF doesn't have any smooth components)
@@ -416,19 +417,39 @@ class PRBReparamIntegrator(ADIntegrator):
             # ------------------ Differential phase only ------------------
 
             if not primal:
-                # Compute a detached intersection record for the next vertex
-                si_prev = pi_prev.compute_surface_interaction(ray_prev)
-                si_next = pi_next.compute_surface_interaction(ray_next)
+                # Clone the sampler to run ahead in the random number sequence
+                # without affecting the PRB random walk
+                sampler_clone = sampler.clone()
 
-                # BSDFs of the two adjacent vertices
-                bsdf_prev = si_prev.bsdf(ray_prev)
+                # 'active_next' value at the next vertex
+                active_next_next = active_next & si_next.is_valid() & \
+                    (depth + 2 < self.max_depth)
+
+                # Retrieve the BSDFs of the two adjacent vertices
                 bsdf_next = si_next.bsdf(ray_next)
+                bsdf_prev = si_prev.bsdf(ray_prev)
+
+                # Check if emitter sampling is possible at the next vertex
+                active_em_next = active_next_next & has_flag(bsdf_next.flags(),
+                                                             BSDFFlags.Smooth)
+
+                # If so, randomly sample an emitter without derivative tracking.
+                ds_next, em_weight_next = scene.sample_emitter_direction(
+                    si_next, sampler_clone.next_2d(), True, active_em_next)
+                active_em_next &= ek.neq(ds_next.pdf, 0.0)
+
+                # Compute the emission sampling contribution at the next vertex
+                bsdf_value_em_next, bsdf_pdf_em_next = bsdf_next.eval_pdf(
+                    bsdf_ctx, si_next, si_next.to_local(ds_next.d), active_em_next)
+
+                mis_direct_next = ek.select(ds_next.delta, 1,
+                                            mis_weight(ds_next.pdf, bsdf_pdf_em_next))
+                Lr_dir_next = β * mis_direct_next * bsdf_value_em_next * em_weight_next
 
                 # Generate a detached BSDF sample at the next vertex
-                sampler_clone = sampler.clone()
                 bsdf_sample_next, bsdf_weight_next = bsdf_next.sample(
                     bsdf_ctx, si_next, sampler_clone.next_1d(),
-                    sampler_clone.next_2d(), active_next
+                    sampler_clone.next_2d(), active_next_next
                 )
 
                 # Account for adjacent vertices, but only consider derivatives
@@ -439,21 +460,25 @@ class PRBReparamIntegrator(ADIntegrator):
                     wo_prev = ek.normalize(si_cur.p - si_prev.p)
                     wi_next = ek.normalize(si_cur.p - si_next.p)
 
-                    # Account for emission at the next vertex
+                    # Compute the emission at the next vertex
                     si_next.wi = si_next.to_local(wi_next)
-                    extra = β * mis_em * si_next.emitter(scene).eval(si_next)
+                    Le_next = β * mis_em * \
+                        si_next.emitter(scene).eval(si_next, active_next)
 
-                    # Account for the BSDF of the previous vertex
+                    # Value of 'L' at the next vertex
+                    L_next = L - ek.detach(Le_next) - ek.detach(Lr_dir_next)
+
+                    # Account for the BSDF of the previous and next vertices
                     bsdf_val_prev = bsdf_prev.eval(bsdf_ctx, si_prev,
                                                    si_prev.to_local(wo_prev))
+                    bsdf_val_next = bsdf_next.eval(bsdf_ctx, si_next,
+                                                   bsdf_sample_next.wo)
 
+                    extra = Spectrum(Le_next)
                     extra[~first_vertex] += L_prev * \
                         ek.replace_grad(1, bsdf_val_prev / ek.detach(bsdf_val_prev))
-
-                    # Account for the BSDF of the next vertex
-                    #bsdf_val_next = bsdf_next.eval(bsdf_ctx, si_next, bsdf_sample_next.wo)
-                    #extra[si_next.is_valid()] += L_next * \ # <---- Ugh, we need L_next
-                    #    ek.replace_grad(1, bsdf_val_next / ek.detach(bsdf_val_next))
+                    extra[si_next.is_valid()] += L_next * \
+                        ek.replace_grad(1, bsdf_val_next / ek.detach(bsdf_val_next))
 
                 with ek.resume_grad():
                     # 'L' stores the indirectly reflected radiance at the
@@ -466,7 +491,7 @@ class PRBReparamIntegrator(ADIntegrator):
                     # via multiple importance sampling)
 
                     # Recompute 'wo' to propagate derivatives to cosine term
-                    wo = si_cur.to_local(-wi_next)
+                    wo = si_cur.to_local(ray_next.d)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf_cur.eval(bsdf_ctx, si_cur, wo, active_next)
@@ -503,14 +528,14 @@ class PRBReparamIntegrator(ADIntegrator):
                     else:
                         δL += ek.forward_to(Lo)
 
-            # Provide ray/interaction to the next iteration
-            pi_cur   = PreliminaryIntersection3f(pi_next)
-            ray_cur  = Ray3f(ray_next)
-
             # Differential phases need access to the previous interaction, too
             if not primal:
-                pi_prev  = PreliminaryIntersection3f(pi_cur)
-                ray_prev = Ray3f(ray_cur)
+                pi_prev  = pi_cur
+                ray_prev = ray_cur
+
+            # Provide ray/interaction to the next iteration
+            pi_cur   = pi_next
+            ray_cur  = ray_next
 
             depth[si_cur.is_valid()] += 1
             active = active_next

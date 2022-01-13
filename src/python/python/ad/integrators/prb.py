@@ -106,7 +106,7 @@ class PRBIntegrator(ADIntegrator):
             # ---------------------- Direct emission ----------------------
 
             # Compute MIS weight for emitter sample from previous bounce
-            ds = DirectionSample3f(scene, si, prev_si)
+            ds = DirectionSample3f(scene, si=si, ref=prev_si)
 
             mis = mis_weight(
                 prev_bsdf_pdf,

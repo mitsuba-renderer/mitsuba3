@@ -118,60 +118,6 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
-#def _sample_warp_field(scene: mitsuba.render.Scene,
-#                       sample: mitsuba.core.Point2f,
-#                       ray: mitsuba.core.Ray3f,
-#                       ray_frame: mitsuba.core.Frame3f,
-#                       flip: mitsuba.core.Bool,
-#                       kappa: float,
-#                       exponent: float):
-#    """
-#    Sample the warp field of moving geometries by tracing an auxiliary ray and
-#    computing the appropriate convolution weight using the shape's boundary-test.
-#    """
-#    from mitsuba.core import Frame3f, Ray3f
-#    from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
-#    from mitsuba.render import RayFlags
-#
-#    # Sample auxiliary direction from vMF
-#    offset = square_to_von_mises_fisher(sample, kappa)
-#    omega = Frame3f(ek.detach(ray.d)).to_world(offset)
-#    pdf_omega = square_to_von_mises_fisher_pdf(offset, kappa)
-#
-#    aux_ray = Ray3f(ray)
-#    aux_ray.d = omega
-#
-#    si = scene.ray_intersect(aux_ray, RayFlags.FollowShape, False)
-#    # shading_normal = ek.normalize(si.p) # TODO
-#    # hit = active & ek.detach(si.is_valid()) & (ek.dot(omega, shading_normal) > 1e-3)
-#    hit = ek.detach(si.is_valid())
-#
-#    # Compute warp field direction such that it follows the intersected shape
-#    # and moves along with the ray origin.
-#    V_direct = ek.normalize(si.p - aux_ray.o)
-#
-#    # Background doesn't move w.r.t. scene parameters
-#    V_direct = ek.select(hit, V_direct, ek.detach(aux_ray.d))
-#
-#    # Compute harmonic weight while being careful of division by almost zero
-#    B = ek.detach(ek.select(hit, si.boundary_test(aux_ray), 1.0))
-#    D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
-#    w_denom = D + B
-#    w_denom_p = ek.pow(w_denom, exponent)
-#    w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
-#    w /= pdf_omega
-#    w = ek.detach(w)
-#
-#    # Analytic weight gradients w.r.t. `ray.d`
-#    tmp0 = ek.pow(w_denom, exponent + 1.0)
-#    tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * exponent
-#    tmp2 = omega - ray.d * ek.dot(ray.d, omega)
-#    d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
-#    d_w_omega /= pdf_omega
-#    d_w_omega = ek.detach(d_w_omega)
-#
-#    return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
-
 
 class _ReparameterizeOp(ek.CustomOp):
     """
