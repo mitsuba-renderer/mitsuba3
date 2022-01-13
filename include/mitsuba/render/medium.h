@@ -167,6 +167,11 @@ public:
             return ek::zero<Vector3f>();
     }
 
+    /// Warning, this value may be overriden automatically when updating the medium density
+    MTS_INLINE void set_control_density(ScalarFloat control) {
+        m_control_density = control;
+    }
+
     /// Returns whether this specific medium instance uses emitter sampling
     MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
@@ -206,6 +211,9 @@ protected:
      * a majorant that is exactly equal to the max density, which can be
      * problematic for Path Replay. */
     ScalarFloat m_majorant_factor;
+
+    /// Used by differential residual ratio tracking (DRRT)
+    ScalarFloat m_control_density;
 
     /// Identifier (if available)
     std::string m_id;

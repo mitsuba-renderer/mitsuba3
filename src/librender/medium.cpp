@@ -27,6 +27,7 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props)
 
     m_majorant_factor = props.get<ScalarFloat>("majorant_factor", 1.01);
     m_majorant_resolution_factor = props.get<size_t>("majorant_resolution_factor", 0);
+    m_control_density = ek::NaN<ScalarFloat>;
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
     ek::set_attr(this, "use_emitter_sampling", m_sample_emitters);
@@ -359,8 +360,9 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
     // TODO: update to support DDA-based sampling (majorant supergrid).
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m = extract_channel(combined_extinction, channel);
-    // TODO: need to tweak this?
-    Float control           = 0.5f * m;
+    if (!ek::isfinite(m_control_density))
+        Throw("Invalid medium control density: %s", m_control_density);
+    Float control           = ek::opaque<Float>(m_control_density);
     const Mask did_traverse = active;
 
     // Sample proportional to transmittance only using reservoir sampling
