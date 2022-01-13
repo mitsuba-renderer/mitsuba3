@@ -55,7 +55,7 @@ public:
      *
      * This function evaluates the transmittance and PDF of sampling a certain
      * free-flight distance The returned PDF takes into account if a medium
-     * interaction occured (mi.t <= si.t) or the ray left the medium (mi.t >
+     * interaction occurred (mi.t <= si.t) or the ray left the medium (mi.t >
      * si.t)
      *
      * The evaluated PDF is spectrally varying. This allows to account for the

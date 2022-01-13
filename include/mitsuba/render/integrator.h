@@ -96,7 +96,7 @@ public:
     virtual void cancel();
 
     /**
-     * Indicates whether \ref cancel() or a timeout have occured. Should be
+     * Indicates whether \ref cancel() or a timeout have occurred. Should be
      * checked regularly in the integrator's main loop so that timeouts are
      * enforced accurately.
      *

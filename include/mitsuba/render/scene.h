@@ -103,7 +103,7 @@ public:
      * \c ray_flags equal to \ref RayFlags::All.
      *
      * \param ray
-     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    A 3D ray including maximum extent (\ref Ray::maxt) and time (\ref
      *    Ray::time) information, which matters when the shapes are in motion
      *
      * \return
@@ -163,7 +163,7 @@ public:
      * <tt>llvm_*</tt> variants and the Embree ray tracing backend.
      *
      * \param ray
-     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    A 3D ray including maximum extent (\ref Ray::maxt) and time (\ref
      *    Ray::time) information, which matters when the shapes are in motion
      *
      * \param ray_flags
@@ -204,7 +204,7 @@ public:
      * with <tt>coherent=false</tt>.
      *
      * \param ray
-     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    A 3D ray including maximum extent (\ref Ray::maxt) and time (\ref
      *    Ray::time) information, which matters when the shapes are in motion
      *
      * \return \c true if an intersection was found
@@ -234,7 +234,7 @@ public:
      * backend.
      *
      * \param ray
-     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    A 3D ray including maximum extent (\ref Ray::maxt) and time (\ref
      *    Ray::time) information, which matters when the shapes are in motion
      *
      * \param coherent
@@ -283,7 +283,7 @@ public:
      * intersector.
      *
      * \param ray
-     *    A 3D ray inluding maximum extent (\ref Ray::maxt) and time (\ref
+     *    A 3D ray including maximum extent (\ref Ray::maxt) and time (\ref
      *    Ray::time) information, which matters when the shapes are in motion
      *
      * \param coherent
@@ -540,7 +540,7 @@ public:
      * intersections (e.g. provided by OptiX or Embree) must then be
      * re-computed differentiably within Enoki to correctly track gradient
      * information. Furthermore, differentiable geometry introduces bias
-     * through visibility-induced discontinuities, and re-parameterizations
+     * through visibility-induced discontinuities, and reparameterizations
      * (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.
      */
     bool shapes_grad_enabled() const { return m_shapes_grad_enabled; };

@@ -3422,7 +3422,7 @@ overload. It accepts a sensor *index* instead and renders the scene
 using sensor 0 by default.)doc";
 
 static const char *__doc_mitsuba_Integrator_should_stop =
-R"doc(Indicates whether cancel() or a timeout have occured. Should be
+R"doc(Indicates whether cancel() or a timeout have occurred. Should be
 checked regularly in the integrator's main loop so that timeouts are
 enforced accurately.
 
@@ -3908,7 +3908,7 @@ R"doc(Compute the transmittance and PDF
 
 This function evaluates the transmittance and PDF of sampling a
 certain free-flight distance The returned PDF takes into account if a
-medium interaction occured (mi.t <= si.t) or the ray left the medium
+medium interaction occurred (mi.t <= si.t) or the ray left the medium
 (mi.t > si.t)
 
 The evaluated PDF is spectrally varying. This allows to account for
@@ -6515,7 +6515,7 @@ Knowing this is important in the context of differentiable rendering:
 intersections (e.g. provided by OptiX or Embree) must then be re-
 computed differentiably within Enoki to correctly track gradient
 information. Furthermore, differentiable geometry introduces bias
-through visibility-induced discontinuities, and re-parameterizations
+through visibility-induced discontinuities, and reparameterizations
 (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.)doc";
 
 static const char *__doc_mitsuba_Scene_static_accel_initialization = R"doc(Static initialization of ray-intersection acceleration data structure)doc";

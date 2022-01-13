@@ -11529,7 +11529,7 @@
 
     .. py:method:: mitsuba.render.Integrator.should_stop(self)
 
-        Indicates whether cancel() or a timeout have occured. Should be
+        Indicates whether cancel() or a timeout have occurred. Should be
         checked regularly in the integrator's main loop so that timeouts are
         enforced accurately.
 
@@ -11626,7 +11626,7 @@
 
         This function evaluates the transmittance and PDF of sampling a
         certain free-flight distance The returned PDF takes into account if a
-        medium interaction occured (mi.t <= si.t) or the ray left the medium
+        medium interaction occurred (mi.t <= si.t) or the ray left the medium
         (mi.t > si.t)
 
         The evaluated PDF is spectrally varying. This allows to account for
