@@ -621,7 +621,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 ds, _ = sensor.sample_direction(it, aperture_sample)
 
                 # Return a reparameterized image position
-                pos_f = ds.uv
+                pos_f = ds.uv + film.crop_offset()
 
         return ray, weight, pos_f
 
@@ -1192,5 +1192,3 @@ def mis_weight(pdf_a, pdf_b):
     """
     a2 = ek.sqr(pdf_a)
     return ek.detach(ek.select(pdf_a > 0, a2 / ek.fmadd(pdf_b, pdf_b, a2), 0), True)
-
-
