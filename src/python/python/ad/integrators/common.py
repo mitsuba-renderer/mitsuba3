@@ -180,7 +180,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         """
 
         from mitsuba.core import Bool, UInt32, Float
-        from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]

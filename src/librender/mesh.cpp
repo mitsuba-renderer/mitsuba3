@@ -688,7 +688,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         /* When either the input ray or the vertex positions (p0, p1, p2) have
            gradient tracking enabled, we need to perform a differentiable
            ray-triangle intersection (done here via the method by Moeller and
-           Trumbore). The result ismapped through `ek::replace_grad` so that we
+           Trumbore). The result is mapped through `ek::replace_grad` so that we
            don't actually recompute the primal intersection but only use the
            intersection computation graph for derivative tracking (this assumes
            that the function is eventually differentiated). When the

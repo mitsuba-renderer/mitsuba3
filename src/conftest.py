@@ -51,6 +51,12 @@ def clean_up():
     '''
     gc.collect()
     gc.collect()
+
+    ek.kernel_history_clear()
+    ek.flush_malloc_cache()
+    ek.malloc_clear_statistics()
+    ek.flush_kernel_cache()
+
     if hasattr(ek, 'sync_thread'):
         ek.sync_thread()
         ek.registry_trim()
