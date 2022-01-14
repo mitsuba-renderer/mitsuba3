@@ -87,9 +87,9 @@ public:
                  depolarizer<Spectrum>(weight) };
     }
 
-    std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample,
-                     Mask active) const override {
+    std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
+                                                            const Point2f &sample,
+                                                            Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         Vector3f d = warp::square_to_uniform_sphere(sample);
@@ -127,7 +127,6 @@ public:
 
     Spectrum eval_direction(const Interaction3f &it, const DirectionSample3f &,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
         return depolarizer<Spectrum>(m_radiance->eval(si, active));

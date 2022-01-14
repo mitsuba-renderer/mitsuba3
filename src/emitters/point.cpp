@@ -160,9 +160,11 @@ public:
         callback->put_object("intensity", m_intensity.get());
     }
 
-    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        m_position = m_position.value(); // update scalar part as well
-        ek::make_opaque(m_position);
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "position")) {
+            m_position = m_position.value(); // update scalar part as well
+            ek::make_opaque(m_position);
+        }
     }
 
     std::string to_string() const override {
