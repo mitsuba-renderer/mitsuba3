@@ -539,7 +539,9 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = f"test_{integrator_name}_{config.name}_image_primal.exr"
+        print(f'-> reference image: {filename}')
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
+        print(f'-> write current image: {filename}')
         write_bitmap(filename, image)
         assert False
 
@@ -587,9 +589,12 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = f"test_{integrator_name}_{config.name}_image_fwd.exr"
+        print(f'-> reference image: {filename}')
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+        print(f'-> write current image: {filename}')
         write_bitmap(filename, image_fwd)
-        filename = f"test_{integrator_name}_{config.name}_image_error.exr"
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
+        print(f'-> write error image: {filename}')
         write_bitmap(filename, error)
 
         # print(f"ek.hmean(image_fwd_ref): {ek.hmean(image_fwd_ref)}")
@@ -674,7 +679,9 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = f"test_{integrator_name}_{config.name}_image_primal.exr"
+        print(f'-> reference image: {filename}')
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
+        print(f'-> write current image: {filename}')
         write_bitmap(filename, image_primal)
         assert False
 
@@ -714,9 +721,9 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = f"test_{integrator_name}_{config.name}_image_fwd.exr"
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
         write_bitmap(filename, image_fwd)
-        filename = f"test_{integrator_name}_{config.name}_image_error.exr"
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         write_bitmap(filename, error)
         assert False
 
