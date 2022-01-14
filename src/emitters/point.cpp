@@ -93,10 +93,12 @@ public:
         ds.delta   = true;
         ds.emitter = this;
         ds.d       = ds.p - it.p;
-        ds.dist    = ek::norm(ds.d);
 
-        Float inv_dist = ek::rcp(ds.dist);
+        Float dist2    = ek::squared_norm(ds.d),
+              inv_dist = ek::rsqrt(dist2);
 
+        // Redundant sqrt (removed by the JIT when the 'dist' field is not used)
+        ds.dist = ek::sqrt(dist2);
         ds.d *= inv_dist;
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
