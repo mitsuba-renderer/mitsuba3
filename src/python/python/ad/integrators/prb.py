@@ -159,7 +159,7 @@ class PRBIntegrator(ADIntegrator):
 
             # Information about the current vertex needed by the next iteration
 
-            prev_si = si
+            prev_si = ek.detach(si, True)
             prev_bsdf_pdf = bsdf_sample.pdf
             prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags.Delta)
 
