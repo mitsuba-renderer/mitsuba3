@@ -198,20 +198,20 @@ class PRBReparamIntegrator(ADIntegrator):
                 ray: mitsuba.core.Ray3f,
                 depth: mitsuba.core.UInt32,
                 active: mitsuba.core.Bool):
-      """
-      Helper function to reparameterize rays internally and within ADIntegrator
-      """
+        """
+        Helper function to reparameterize rays internally and within ADIntegrator
+        """
 
-      from mitsuba.python.ad import reparameterize_ray
-      from mitsuba.core import Float
+        from mitsuba.python.ad import reparameterize_ray
+        from mitsuba.core import Float
 
-      # Potentially disable the reparameterization completely
-      if self.reparam_max_depth == 0:
-          return ek.detach(ray.d, True), Float(1)
+        # Potentially disable the reparameterization completely
+        if self.reparam_max_depth == 0:
+            return ek.detach(ray.d, True), Float(1)
 
-      active = active & (depth < self.reparam_max_depth)
+        active = active & (depth < self.reparam_max_depth)
 
-      return reparameterize_ray(scene, rng, params, ray,
+        return reparameterize_ray(scene, rng, params, ray,
                                 num_rays=self.reparam_rays,
                                 kappa=self.reparam_kappa,
                                 exponent=self.reparam_exp,
