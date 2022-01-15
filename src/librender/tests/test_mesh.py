@@ -331,14 +331,11 @@ else:
     jit_flags_options = []
 
 @fresolver_append_path
-@pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
+def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
     from mitsuba.core import load_string, Ray3f, Vector3f
     from mitsuba.render import RayFlags
 
-    # Set enoki JIT flags
-    for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+    ek.set_flag(ek.JitFlag.VCallRecord, False)
 
     scene = load_string('''
         <scene version="2.0.0">

@@ -184,7 +184,7 @@ def traverse(node: mitsuba.core.Object) -> SceneParameters:
             self.depth = depth
             self.hierarchy[node] = (parent, depth)
 
-        def put_parameter(self, name, ptr, cpptype, shape_parameter):
+        def put_parameter(self, name, ptr, cpptype=None, shape_parameter=False):
             name = name if self.name is None else self.name + '.' + name
             self.properties[name] = (ptr, cpptype, self.node,
                                      shape_parameter)

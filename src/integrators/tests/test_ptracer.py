@@ -211,7 +211,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     opt.update()
 
     with ek.suspend_grad():
-        image = integrator.render(scene, seed=0, spp=4)
+        image = integrator.render(scene, seed=0, spp=64)
 
     ek.enable_grad(image)
     loss = ek.hmean_async(image)
@@ -220,7 +220,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     ek.set_grad(image, 0.0)
 
     integrator.render_backward(scene, grad_in=adjoint, seed=3,
-                               spp=4, params=params)
+                               spp=64, params=params)
     g = ek.grad(params[key])
     assert ek.shape(g) == ek.shape(params[key])
-    assert ek.allclose(g, 0.35821, atol=1e-5)
+    assert ek.allclose(g, 0.33647, atol=1e-5) # TODO improve this test (don't use hardcoded value)
