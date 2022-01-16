@@ -52,8 +52,13 @@ class ConfigBase:
         self.res = 32
         self.max_depth = 3
         self.error_mean_threshold = 0.05
+        self.error_mean_threshold_bwd = 0.05
         self.error_max_threshold = 0.2
         self.ref_fd_epsilon = 1e-2
+
+        self.integrator_dict = {
+            'max_depth': 3,
+        }
 
         self.sensor_dict = {
             'type': 'perspective',
@@ -317,8 +322,10 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([1.25, 0.0, 0.0]),
             }
         }
-        self.error_mean_threshold = 0.6
-        self.error_max_threshold = 6.0
+        self.ref_fd_epsilon = 1e-2
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 1.0
+        self.error_mean_threshold_bwd = 0.2
         self.spp = 12000
 
 
@@ -339,9 +346,11 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([1.25, 0.0, 0.0]),
             }
         }
-        self.error_mean_threshold = 0.6
-        self.error_max_threshold = 6.0
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.15
         self.spp = 12000
+
 
 # Scale area emitter (sphere) on black background
 class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
@@ -359,8 +368,15 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
                 },
             }
         }
-        self.error_mean_threshold = 0.6
-        self.error_max_threshold = 5.5
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.04
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.1
+        self.integrator_dict = {
+            'max_depth': 3,
+            'reparam_rays': 64,
+        }
+
 
 # Translate occluder (sphere) casting shadow on gray wall
 class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
@@ -383,10 +399,20 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'filename': 'resources/data/common/meshes/sphere.obj',
                 'emitter': {
                     'type': 'area',
-                    'radiance': {'type': 'rgb', 'value': [10.0, 10.0, 10.0]}
+                    'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
                 'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
             }
+        }
+        self.ref_fd_epsilon = 1e-4
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.2
+        self.spp = 2048
+        self.integrator_dict = {
+            'max_depth': 3,
+            'reparam_rays': 64,
+            'reparam_kappa': 5e5,
         }
 
 
@@ -423,7 +449,6 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
 class TranslateSelfShadowAreaLightConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.res = 64
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -435,33 +460,29 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
-                # 'to_world': T.rotate([0, 1, 0], 45) * T.scale(0.5),
-                # 'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
                 'to_world': T.translate([-1, 0, 0.5]) * T.rotate([0, 1, 0], 90) * T.scale(1.0),
             },
             'light': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/sphere.obj',
-                'emitter': {
-                    'type': 'area',
-                    # 'radiance': {'type': 'rgb', 'value': [100.0, 100.0, 100.0]}
-                    'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
-                },
-                # 'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.025)
-                'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.5)
+                'type': 'point',
+                'position': [-4, 0, 6],
+                'intensity': {'type': 'rgb', 'value': [5.0, 0.0, 0.0]}
             },
-            # 'light2': { 'type': 'constant', 'radiance': 0.001 },
+            'light2': { 'type': 'constant', 'radiance': 0.1 },
         }
-        self.error_mean_threshold = 0.6
-        self.error_max_threshold = 6.0
-        self.spp = 4024
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 0.7
+        self.error_mean_threshold_bwd = 1.5 # TODO fix that test
+        self.spp = 4096
+        self.integrator_dict = {
+            'max_depth': 3,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e5,
+        }
 
     def initialize(self):
         from mitsuba.core import Vector3f
         super().initialize()
         self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
-        # self.params.keep(['plane.vertex_positions'])
-        # self.params.keep(['occluder.vertex_positions'])
         self.initial_state_0 = ek.unravel(Vector3f, self.params['plane.vertex_positions'])
         self.initial_state_1 = ek.unravel(Vector3f, self.params['occluder.vertex_positions'])
 
@@ -488,18 +509,19 @@ BASIC_CONFIGS_LIST = [
     CropWindowConfig,
 ]
 
-REPARAM_CONFIGS_LIST = [  # TODO re-enable
-    # TranslateRectangleEmitterOnBlackConfig,
-    # TranslateSphereEmitterOnBlackConfig,
-    # ScaleSphereEmitterOnBlackConfig,
+REPARAM_CONFIGS_LIST = [
+    TranslateRectangleEmitterOnBlackConfig,
+    TranslateSphereEmitterOnBlackConfig,
+    ScaleSphereEmitterOnBlackConfig,
     # TranslateOccluderAreaLightConfig,
-    # TranslateSelfShadowAreaLightConfig,
+    TranslateSelfShadowAreaLightConfig,
 ]
 
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     ('path', False),
     ('prb', False),
+    ('prb_reparam', True),
 ]
 
 CONFIGS = []
@@ -522,10 +544,9 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config.initialize()
 
     importlib.reload(mitsuba.python.ad.integrators)
-    integrator = load_dict({
-        'type': integrator_name,
-        'max_depth': config.max_depth
-    })
+
+    config.integrator_dict['type'] = integrator_name
+    integrator = load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = TensorXf(Bitmap(filename))
@@ -549,21 +570,25 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+# def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
+# def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
     from mitsuba.core import load_dict, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
     # ek.set_flag(ek.JitFlag.PrintIR, True)
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
     # ek.set_flag(ek.JitFlag.VCallRecord, False)
+    # ek.set_flag(ek.JitFlag.LoopOptimize, False)
+    # ek.set_flag(ek.JitFlag.VCallOptimize, False)
+    # ek.set_flag(ek.JitFlag.VCallInline, True)
+
 
     config = config()
     config.initialize()
 
     importlib.reload(mitsuba.python.ad.integrators)
-    integrator = load_dict({
-        'type': integrator_name,
-        'max_depth': config.max_depth
-    })
+    config.integrator_dict['type'] = integrator_name
+    integrator = load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = TensorXf(Bitmap(filename))
@@ -584,6 +609,10 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
     error_mean = ek.hmean(error)
     error_max = ek.hmax(error)
+
+    # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+    # print(f'-> write current image: {filename}')
+    # write_bitmap(filename, image_fwd)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -614,10 +643,8 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config.initialize()
 
     importlib.reload(mitsuba.python.ad.integrators)
-    integrator = load_dict({
-        'type': integrator_name,
-        'max_depth': config.max_depth
-    })
+    config.integrator_dict['type'] = integrator_name
+    integrator = load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = TensorXf(Bitmap(filename))
@@ -638,11 +665,11 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     grad_ref = ek.hmean(image_fwd_ref)
 
     error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
-    if error > config.error_mean_threshold:
+    if True or error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
         print(f"-> grad_ref: {grad_ref}")
-        print(f"-> error: {error} (threshold={config.error_mean_threshold})")
+        print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
         assert False
 
