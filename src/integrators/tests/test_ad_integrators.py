@@ -665,7 +665,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     grad_ref = ek.hmean(image_fwd_ref)
 
     error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
-    if True or error > config.error_mean_threshold_bwd:
+    if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
         print(f"-> grad_ref: {grad_ref}")
