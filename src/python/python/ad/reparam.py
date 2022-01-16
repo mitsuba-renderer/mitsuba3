@@ -165,7 +165,7 @@ class _ReparameterizeOp(ek.CustomOp):
                     state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
 
         # Unroll the entire loop in wavefront mode
-        loop.set_uniform(True)
+        # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
         loop.set_max_iterations(self.num_rays)
         loop.set_eval_stride(self.num_rays)
 
@@ -233,7 +233,7 @@ class _ReparameterizeOp(ek.CustomOp):
                         state=lambda: (it, Z, dZ, rng_clone.state))
 
             # Unroll the entire loop in wavefront mode
-            loop.set_uniform(True)
+            # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
             loop.set_max_iterations(self.num_rays)
             loop.set_eval_stride(self.num_rays)
 
@@ -283,7 +283,7 @@ class _ReparameterizeOp(ek.CustomOp):
                     state=lambda: (it, rng.state, ray_grad_o))
 
         # Unroll the entire loop in wavefront mode
-        loop.set_uniform(True)
+        # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
         loop.set_max_iterations(self.num_rays)
         loop.set_eval_stride(self.num_rays)
 
