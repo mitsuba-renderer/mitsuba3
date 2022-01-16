@@ -577,7 +577,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if mitsuba.core.is_spectral:
             wavelength_sample = sampler.next_1d()
 
-        ray, weight = sensor.sample_ray(
+        ray, weight = sensor.sample_ray_differential(
             time=wavelength_sample,
             sample1=sampler.next_1d(),
             sample2=pos_adjusted,

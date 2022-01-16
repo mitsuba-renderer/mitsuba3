@@ -203,7 +203,7 @@ class PRBReparamIntegrator(ADIntegrator):
         """
 
         from mitsuba.python.ad import reparameterize_ray
-        from mitsuba.core import Float
+        from mitsuba.core import Float, RayDifferential3f
 
         # Potentially disable the reparameterization completely
         if self.reparam_max_depth == 0:
@@ -211,12 +211,28 @@ class PRBReparamIntegrator(ADIntegrator):
 
         active = active & (depth < self.reparam_max_depth)
 
+        # TODO handle many sensors
+        rfilter = scene.sensors()[0].film().rfilter()
+
+        kappa = Float(self.reparam_kappa)
+        if isinstance(ray, RayDifferential3f):
+            # Estimate kappa for the convolution of pixel integrals, based on ray
+            # differentials.
+            mean_cos = ek.max(ek.dot(ek.normalize((ray.d_x - ray.d) * rfilter.radius() + ray.d), ray.d),
+                              ek.dot(ek.normalize((ray.d_y - ray.d) * rfilter.radius() + ray.d), ray.d))
+            # The vMF distribution has an analytic expression for the mean cosine:
+            #                  mean = 1 + 2/(exp(2*κ)-1) - 1/κ.
+            # For large values of kappa, 1-1/κ is a precise approximation of this
+            # function. It can be inverted to find κ from the mean cosine.
+            kappa_pixel_filter = ek.rcp(1.0 - ek.min(mean_cos, ek.OneMinusEpsilon(Float)))
+            kappa[ek.eq(depth, 0)] = kappa_pixel_filter
+
         return reparameterize_ray(scene, rng, params, ray,
-                                num_rays=self.reparam_rays,
-                                kappa=self.reparam_kappa,
-                                exponent=self.reparam_exp,
-                                antithetic=self.reparam_antithetic,
-                                active=active)
+                                  num_rays=self.reparam_rays,
+                                  kappa=kappa,
+                                  exponent=self.reparam_exp,
+                                  antithetic=self.reparam_antithetic,
+                                  active=active)
 
     def sample(self,
                mode: enoki.ADMode,
