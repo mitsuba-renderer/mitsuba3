@@ -416,7 +416,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         self.ref_fd_epsilon = 1e-4
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.5
-        self.error_mean_threshold_bwd = 0.2
+        self.error_mean_threshold_bwd = 0.25
         self.spp = 2048
         self.integrator_dict = {
             'max_depth': 3,
@@ -480,7 +480,7 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         }
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 0.7
-        self.error_mean_threshold_bwd = 1.5 # TODO fix that test
+        self.error_mean_threshold_bwd = 0.25
         self.spp = 4096
         self.integrator_dict = {
             'max_depth': 3,
