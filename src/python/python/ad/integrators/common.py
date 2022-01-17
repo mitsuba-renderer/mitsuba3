@@ -331,7 +331,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         return result_grad
 
-
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: Any,
@@ -391,7 +390,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         """
 
         from mitsuba.core import Bool, UInt32, Float
-        from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -496,7 +494,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Run kernel representing side effects of the above
             ek.eval()
-
 
     def sample_rays(
         self,
@@ -624,7 +621,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 pos_f = ds.uv + film.crop_offset()
 
         return ray, weight, pos_f
-
 
     def prepare(self,
                 sensor: mitsuba.render.Sensor,
@@ -880,7 +876,6 @@ def render_forward(self: mitsuba.render.Integrator,
 
         return ek.grad(image)
 
-
 def render_backward(self: mitsuba.render.Integrator,
                     scene: mitsuba.render.Scene,
                     params: Any,
@@ -1011,7 +1006,6 @@ class _RenderOp(ek.CustomOp):
 
     def name(self):
         return "RenderOp"
-
 
 def render(scene: mitsuba.render.Scene,
            params: Any = None,

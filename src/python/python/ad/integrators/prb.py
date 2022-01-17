@@ -211,7 +211,7 @@ class PRBIntegrator(ADIntegrator):
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
 
-                    if not ek.grad_enabled(Lo):
+                    if ek.flag(ek.JitFlag.VCallRecord) and not ek.grad_enabled(Lo):
                         raise Exception(
                             "The contribution computed by the differential "
                             "rendering phase is not attached to the AD graph! "

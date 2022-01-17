@@ -190,7 +190,6 @@ class PRBReparamIntegrator(ADIntegrator):
         # Enable antithetic sampling in the reparameterization?
         self.reparam_antithetic = props.get('reparam_antithetic', False)
 
-
     def reparam(self,
                 scene: mitsuba.render.Scene,
                 rng: mitsuba.core.PCG32,
@@ -246,8 +245,7 @@ class PRBReparamIntegrator(ADIntegrator):
                             Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]]],
                active: mitsuba.core.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mitsuba.core.Spectrum,
-               mitsuba.core.Bool, mitsuba.core.Spectrum]:
+    ) -> Tuple[mitsuba.core.Spectrum, mitsuba.core.Bool, mitsuba.core.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -255,7 +253,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
         from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
         from mitsuba.render import PreliminaryIntersection3f, DirectionSample3f, \
-            Interaction3f, BSDFContext, BSDFFlags, BSDFPtr, RayFlags, has_flag
+             BSDFContext, BSDFFlags, RayFlags, has_flag
 
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == ek.ADMode.Primal
@@ -321,7 +319,6 @@ class PRBReparamIntegrator(ADIntegrator):
                     # only interested in tracking derivatives related to the
                     # current interaction in the remainder of this function
                     ek.disable_grad(si_prev)
-
 
             # ------ Compute detailed record of the current interaction ------
 
@@ -520,12 +517,11 @@ class PRBReparamIntegrator(ADIntegrator):
                     # value of the second term is always 1.
                     Lr_ind = L * ek.replace_grad(1, inv_bsdf_val_det * bsdf_val)
 
-
                 with ek.resume_grad():
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = (Le + Lr_dir + Lr_ind) * ray_reparam_det + extra
 
-                    if not ek.grad_enabled(Lo):
+                    if ek.flag(ek.JitFlag.VCallRecord) and not ek.grad_enabled(Lo):
                         raise Exception(
                             "The contribution computed by the differential "
                             "rendering phase is not attached to the AD graph! "
