@@ -494,6 +494,45 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         ek.eval()
 
 
+# Translate sphere reflecting on glossy floor
+class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'sphere.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'floor': {
+                'type': 'rectangle',
+                'bsdf': {
+                    'type': 'roughconductor',
+                    'alpha': 0.025,
+                },
+                'to_world': T.translate([0, 1.5, 0]) *  T.rotate([1, 0, 0], -45) * T.scale(4),
+            },
+            'sphere': {
+                'type': 'obj',
+                'bsdf': {
+                    'type': 'diffuse',
+                    'reflectance': {'type': 'rgb', 'value': [1.0, 0.5, 0.0]}
+                },
+                'filename': 'resources/data/common/meshes/sphere.obj',
+                'to_world': T.translate([0.5, 2.0, 1.5]) * T.scale(1.0),
+            },
+            'light': { 'type': 'constant', 'radiance': 1.0 },
+        }
+        self.res = 32
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.25
+        self.error_max_threshold = 5.0
+        self.error_mean_threshold_bwd = 0.2
+        self.spp = 2048
+        self.integrator_dict = {
+            'max_depth': 3,
+            'reparam_rays': 64,
+            'reparam_kappa': 2e5,
+        }
+
+
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
@@ -513,8 +552,9 @@ REPARAM_CONFIGS_LIST = [
     TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
-    # TranslateOccluderAreaLightConfig,
+    TranslateOccluderAreaLightConfig,
     TranslateSelfShadowAreaLightConfig,
+    TranslateSphereOnGlossyFloorConfig
 ]
 
 # List of integrators to test (also indicates whether it handles discontinuities)
@@ -556,6 +596,10 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     error_mean = ek.hmean(error)
     error_max = ek.hmax(error)
 
+    # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
+    # print(f'-> write current image: {filename}')
+    # write_bitmap(filename, image)
+
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
@@ -570,8 +614,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-# def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
-# def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
     from mitsuba.core import load_dict, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
@@ -581,7 +623,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     # ek.set_flag(ek.JitFlag.LoopOptimize, False)
     # ek.set_flag(ek.JitFlag.VCallOptimize, False)
     # ek.set_flag(ek.JitFlag.VCallInline, True)
-
 
     config = config()
     config.initialize()
@@ -684,7 +725,10 @@ def test04_render_custom_op(variants_all_ad_rgb):
     config.initialize()
 
     importlib.reload(mitsuba.python.ad.integrators)
-    integrator = load_dict({ 'type': 'prb' })
+    integrator = load_dict({
+        'type': 'prb',
+        'max_depth': config.integrator_dict['max_depth']
+    })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = TensorXf(Bitmap(filename))
@@ -783,7 +827,7 @@ if __name__ == "__main__":
 
         integrator = load_dict({
             'type': 'path',
-            'max_depth': config.max_depth
+            'max_depth': config.integrator_dict['max_depth']
         })
 
         image_ref = integrator.render(config.scene, seed=0, spp=args.spp)

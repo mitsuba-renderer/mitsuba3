@@ -491,10 +491,8 @@ class PRBReparamIntegrator(ADIntegrator):
                                                    bsdf_sample_next.wo)
 
                     extra = Spectrum(Le_next)
-                    extra[~first_vertex] += L_prev * \
-                        ek.replace_grad(1, bsdf_val_prev / ek.detach(bsdf_val_prev))
-                    extra[si_next.is_valid()] += L_next * \
-                        ek.replace_grad(1, bsdf_val_next / ek.detach(bsdf_val_next))
+                    extra[~first_vertex]      += L_prev * bsdf_val_prev / ek.detach(bsdf_val_prev)
+                    extra[si_next.is_valid()] += L_next * bsdf_val_next / ek.detach(bsdf_val_next)
 
                 with ek.resume_grad():
                     # 'L' stores the indirectly reflected radiance at the
@@ -525,7 +523,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
                 with ek.resume_grad():
                     # Differentiable Monte Carlo estimate of all contributions
-                    Lo = (Le + Lr_dir + Lr_ind + extra) * ray_reparam_det
+                    Lo = (Le + Lr_dir + Lr_ind) * ray_reparam_det + extra
 
                     if not ek.grad_enabled(Lo):
                         raise Exception(
