@@ -52,12 +52,12 @@ class ConfigBase:
         self.res = 32
         self.max_depth = 3
         self.error_mean_threshold = 0.05
+        self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.05
-        self.error_max_threshold = 0.2
-        self.ref_fd_epsilon = 1e-2
+        self.ref_fd_epsilon = 1e-3
 
         self.integrator_dict = {
-            'max_depth': 3,
+            'max_depth': 2,
         }
 
         self.sensor_dict = {
@@ -148,7 +148,10 @@ class DiffuseAlbedoGIConfig(ConfigBase):
                 },
                 'to_world': T.translate([1.25, 0.0, 1.0]) * T.rotate([0, 1, 0], -90),
             },
-            'light': { 'type': 'constant' }
+            'light': { 'type': 'constant', 'radiance': 3.0 }
+        }
+        self.integrator_dict = {
+            'max_depth': 3,
         }
 
 # Off camera area light illuminating a gray plane
@@ -160,7 +163,10 @@ class AreaLightRadianceConfig(ConfigBase):
             'type': 'scene',
             'plane': {
                 'type': 'rectangle',
-                'bsdf': { 'type': 'diffuse' }
+                'bsdf': {
+                    'type': 'diffuse',
+                    'reflectance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
+                }
             },
             'sphere': {
                 'type': 'sphere',
@@ -171,7 +177,7 @@ class AreaLightRadianceConfig(ConfigBase):
                 'to_world': T.translate([1.25, 0.0, 1.0]) * T.rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
-                    'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
+                    'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
                 }
             }
         }
@@ -201,7 +207,10 @@ class PointLightIntensityConfig(ConfigBase):
             'type': 'scene',
             'plane': {
                 'type': 'rectangle',
-                'bsdf': { 'type': 'diffuse' }
+                'bsdf': {
+                    'type': 'diffuse',
+                    'reflectance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
+                }
             },
             'sphere': {
                 'type': 'sphere',
@@ -210,7 +219,7 @@ class PointLightIntensityConfig(ConfigBase):
             'light': {
                 'type': 'point',
                 'position': [1.25, 0.0, 1.0],
-                'intensity': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
+                'intensity': {'type': 'rgb', 'value': [5.0, 5.0, 5.0]}
             },
         }
 
@@ -583,8 +592,10 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    importlib.reload(mitsuba.python.ad.integrators)
+    # ek.set_flag(ek.JitFlag.VCallRecord, False)
+    # ek.set_flag(ek.JitFlag.LoopRecord, False)
 
+    importlib.reload(mitsuba.python.ad.integrators)
     config.integrator_dict['type'] = integrator_name
     integrator = load_dict(config.integrator_dict)
 
@@ -618,11 +629,15 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.python.util import write_bitmap
 
     # ek.set_flag(ek.JitFlag.PrintIR, True)
+
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
     # ek.set_flag(ek.JitFlag.VCallRecord, False)
+
     # ek.set_flag(ek.JitFlag.LoopOptimize, False)
     # ek.set_flag(ek.JitFlag.VCallOptimize, False)
     # ek.set_flag(ek.JitFlag.VCallInline, True)
+    # ek.set_flag(ek.JitFlag.ValueNumbering, False)
+    # ek.set_flag(ek.JitFlag.ConstProp, False)
 
     config = config()
     config.initialize()
@@ -639,8 +654,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     ek.set_label(theta, 'theta')
     config.update(theta)
     ek.forward(theta, ek.ADFlag.ClearEdges)
-
-    # ek.set_log_level(3)
 
     ek.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
