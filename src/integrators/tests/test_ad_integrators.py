@@ -574,7 +574,7 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         }
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 0.7
-        self.error_mean_threshold_bwd = 0.25
+        self.error_mean_threshold_bwd = 0.35
         self.spp = 4096
         self.integrator_dict = {
             'max_depth': 3,
