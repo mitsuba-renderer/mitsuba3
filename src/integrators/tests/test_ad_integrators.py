@@ -312,6 +312,54 @@ class ScaleShapeConfigBase(ConfigBase):
         self.params.update()
         ek.eval()
 
+# Translate diffuse sphere under constant illumination
+class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'sphere.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'sphere': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj',
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.25
+        self.spp = 1024
+        self.integrator_dict = {
+            'max_depth': 2,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e5,
+        }
+
+# Translate diffuse rectangle under constant illumination
+class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'rectangle.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'rectangle': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.ref_fd_epsilon = 8e-4
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.25
+        self.spp = 1024
+        self.integrator_dict = {
+            'max_depth': 2,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e5,
+        }
 
 # Translate area emitter (rectangle) on black background
 class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
@@ -331,11 +379,16 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([1.25, 0.0, 0.0]),
             }
         }
-        self.ref_fd_epsilon = 1e-2
+        self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 1.0
         self.error_mean_threshold_bwd = 0.2
         self.spp = 12000
+        self.integrator_dict = {
+            'max_depth': 2,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e5,
+        }
 
 
 # Translate area emitter (sphere) on black background
@@ -419,9 +472,49 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.25
         self.spp = 2048
         self.integrator_dict = {
-            'max_depth': 3,
+            'max_depth': 2,
             'reparam_rays': 64,
             'reparam_kappa': 5e5,
+        }
+
+# Translate shadow receiver
+class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'bsdf': { 'type': 'diffuse' }
+            },
+            'occluder': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj',
+                'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
+            },
+            # 'light': {
+            #     'type': 'obj',
+            #     'filename': 'resources/data/common/meshes/sphere.obj',
+            #     'emitter': {
+            #         'type': 'area',
+            #         'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
+            #     },
+            #     'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
+            # }
+            'light': { 'type': 'constant' }
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.5
+        self.error_mean_threshold_bwd = 0.25
+        self.spp = 4096
+        self.integrator_dict = {
+            'max_depth': 2,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e5,
         }
 
 
@@ -435,6 +528,7 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
             'plane': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
                 'bsdf': {
                     'type': 'diffuse',
                     'reflectance' : {
@@ -558,11 +652,14 @@ BASIC_CONFIGS_LIST = [
 ]
 
 REPARAM_CONFIGS_LIST = [
+    # TranslateDiffuseSphereConstantConfig,
+    # TranslateDiffuseRectangleConstantConfig,
     TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
     TranslateSelfShadowAreaLightConfig,
+    # TranslateShadowReceiverAreaLightConfig,
     TranslateSphereOnGlossyFloorConfig
 ]
 
@@ -832,7 +929,7 @@ if __name__ == "__main__":
     if not exists(output_dir):
         os.makedirs(output_dir)
 
-    from mitsuba.core import load_dict, Float
+    from mitsuba.core import load_dict, Float, Bitmap
     from mitsuba.python.util import write_bitmap
 
     for config in BASIC_CONFIGS_LIST + REPARAM_CONFIGS_LIST:
@@ -840,6 +937,17 @@ if __name__ == "__main__":
         print(f"name: {config.name}")
 
         config.initialize()
+
+        if False:
+            boundary_test_integrator = load_dict({
+                'type': 'aov',
+                'aovs': 'X:boundary_test',
+            })
+            image_boundary_test = boundary_test_integrator.render(config.scene, seed=0, spp=args.spp)
+            print(f"image_boundary_test: {image_boundary_test}")
+
+            filename = join(output_dir, f"test_{config.name}_image_boundary_test.exr")
+            Bitmap(image_boundary_test[:, :, 3]).write(filename)
 
         integrator = load_dict({
             'type': 'path',

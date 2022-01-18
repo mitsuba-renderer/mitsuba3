@@ -77,7 +77,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
+            ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, state = self.sample(
@@ -208,8 +208,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos = self.sample_rays(scene, sensor, sampler,
-                                                reparam)
+            ray, weight, pos, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
@@ -244,20 +244,16 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     # Only use the coalescing feature when rendering enough samples
                     sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
 
-                    # Deposit samples with gradient tracking for 'pos'. Why is
-                    # the Jacobian determinant ignored here? That's because it
-                    # would also need to be applied to the weight channel of
-                    # the ImageBlock, which would then cancel out in
-                    # film.develop() where the weight division is performed.
-
+                    # Deposit samples with gradient tracking for 'pos'.
                     sample_pos_deriv.put(
                         pos=pos,
                         wavelengths=ray.wavelengths,
-                        value=L * weight,
+                        value=L * weight * det,
+                        weight=det,
                         alpha=ek.select(valid, Float(1), Float(0))
                     )
 
-                    # # Compute the derivative of the reparameterized image ..
+                    # Compute the derivative of the reparameterized image ..
                     tensor = sample_pos_deriv.tensor()
                     ek.forward_to(tensor,
                                   flags=ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
@@ -418,8 +414,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos = self.sample_rays(scene, sensor,
-                                                sampler, reparam)
+            ray, weight, pos, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
@@ -447,7 +443,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 block.put(
                     pos=pos,
                     wavelengths=ray.wavelengths,
-                    value=L * weight,
+                    value=L * weight * det,
+                    weight=det,
                     alpha=ek.select(valid, Float(1), Float(0))
                 )
 
@@ -581,6 +578,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             sample3=aperture_sample
         )
 
+        reparam_det = 1.0
+
         if reparam is not None:
             if rfilter.is_box_filter():
                 raise Exception(
@@ -604,12 +603,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     "the film's 'sample_border' parameter to True.")
 
             with ek.resume_grad():
-                # Reparameterize the camera ray. We don't need the Jacobian
-                # determinant here due to the subsequent division by the
-                # ImageBlock weight channel (the determinant would affect both
-                # sample value and weight and then cancel out during the
-                # division).
-                reparam_d, _ = reparam(ray=ray, depth=UInt32(0))
+                # Reparameterize the camera ray
+                reparam_d, reparam_det = reparam(ray=ray, depth=UInt32(0))
 
                 # Create a fake interaction along the sampled ray and use it to the
                 # position with derivative tracking
@@ -620,7 +615,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 # Return a reparameterized image position
                 pos_f = ds.uv + film.crop_offset()
 
-        return ray, weight, pos_f
+        return ray, weight, pos_f, reparam_det
 
     def prepare(self,
                 sensor: mitsuba.render.Sensor,

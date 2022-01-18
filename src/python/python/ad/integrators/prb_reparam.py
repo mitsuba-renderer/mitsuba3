@@ -210,25 +210,9 @@ class PRBReparamIntegrator(ADIntegrator):
 
         active = active & (depth < self.reparam_max_depth)
 
-        # TODO handle many sensors
-        rfilter = scene.sensors()[0].film().rfilter()
-
-        kappa = Float(self.reparam_kappa)
-        if isinstance(ray, RayDifferential3f):
-            # Estimate kappa for the convolution of pixel integrals, based on ray
-            # differentials.
-            mean_cos = ek.max(ek.dot(ek.normalize((ray.d_x - ray.d) * rfilter.radius() + ray.d), ray.d),
-                              ek.dot(ek.normalize((ray.d_y - ray.d) * rfilter.radius() + ray.d), ray.d))
-            # The vMF distribution has an analytic expression for the mean cosine:
-            #                  mean = 1 + 2/(exp(2*κ)-1) - 1/κ.
-            # For large values of kappa, 1-1/κ is a precise approximation of this
-            # function. It can be inverted to find κ from the mean cosine.
-            kappa_pixel_filter = ek.rcp(1.0 - ek.min(mean_cos, ek.OneMinusEpsilon(Float)))
-            kappa[ek.eq(depth, 0)] = kappa_pixel_filter
-
         return reparameterize_ray(scene, rng, params, ray,
                                   num_rays=self.reparam_rays,
-                                  kappa=kappa,
+                                  kappa=self.reparam_kappa,
                                   exponent=self.reparam_exp,
                                   antithetic=self.reparam_antithetic,
                                   active=active)
@@ -283,7 +267,7 @@ class PRBReparamIntegrator(ADIntegrator):
         # Record the following loop in its entirety
         loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
                     state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
-                                   ray_prev, ray_cur, pi_prev, pi_cur))
+                                   ray_prev, ray_cur, pi_prev, pi_cur, reparam))
 
         # Specify the max. number of loop iterations (this can help avoid
         # costly synchronization when when wavefront-style loops are generated)
@@ -355,8 +339,15 @@ class PRBReparamIntegrator(ADIntegrator):
                 em_ray_det = 1
 
                 if not primal:
+                    # Create a surface interaction that follows the shape's
+                    # motion while ignoring any reparameterization from the
+                    # previous ray. This ensures the subsequent reparameterization
+                    # accounts for occluder's motion relatively to the current shape.
+                    si_cur_follow = pi_cur.compute_surface_interaction(
+                        ray_cur, RayFlags.All | RayFlags.FollowShape)
+
                     # Reparameterize the ray towards the emitter
-                    em_ray = si_cur.spawn_ray_to(ds.p)
+                    em_ray = si_cur_follow.spawn_ray_to(ds.p)
                     em_ray.d, em_ray_det = reparam(em_ray, depth + 1, active_em)
                     ds.d = em_ray.d
 
@@ -467,11 +458,16 @@ class PRBReparamIntegrator(ADIntegrator):
 
                 # Account for adjacent vertices, but only consider derivatives
                 # that arise from the reparameterization at 'si_cur.p'
-                with ek.resume_grad(si_cur.p):
+                with ek.resume_grad(ray_reparam):
+                    # Compute a surface interaction that only tracks derivatives
+                    # that arise from the reparameterization.
+                    si_cur_reparam_only = pi_cur.compute_surface_interaction(
+                        ray_reparam, RayFlags.All | RayFlags.DetachShape)
+
                     # Differentiably recompute the outgoing direction at 'prev'
                     # and the incident direction at 'next'
-                    wo_prev = ek.normalize(si_cur.p - si_prev.p)
-                    wi_next = ek.normalize(si_cur.p - si_next.p)
+                    wo_prev = ek.normalize(si_cur_reparam_only.p - si_prev.p)
+                    wi_next = ek.normalize(si_cur_reparam_only.p - si_next.p)
 
                     # Compute the emission at the next vertex
                     si_next.wi = si_next.to_local(wi_next)
@@ -488,8 +484,8 @@ class PRBReparamIntegrator(ADIntegrator):
                                                    bsdf_sample_next.wo)
 
                     extra = Spectrum(Le_next)
-                    extra[~first_vertex]      += L_prev * bsdf_val_prev / ek.detach(bsdf_val_prev)
-                    extra[si_next.is_valid()] += L_next * bsdf_val_next / ek.detach(bsdf_val_next)
+                    extra[~first_vertex]      += L_prev * bsdf_val_prev / ek.max(1e-8, ek.detach(bsdf_val_prev))
+                    extra[si_next.is_valid()] += L_next * bsdf_val_next / ek.max(1e-8, ek.detach(bsdf_val_next))
 
                 with ek.resume_grad():
                     # 'L' stores the indirectly reflected radiance at the
