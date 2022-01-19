@@ -355,13 +355,14 @@ class PRBReparamIntegrator(ADIntegrator):
                     # contribution with AD to enable light source optimization
                     em_val = scene.eval_emitter_direction(si_cur, ds, active_em)
                     em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
+                    ek.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
                 wo = si_cur.to_local(ds.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf_cur.eval_pdf(bsdf_ctx, si_cur,
                                                                wo, active_em)
                 mis_direct = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-                Lr_dir = β * ek.detach(mis_direct) * bsdf_value_em * em_weight * em_ray_det
+                Lr_dir = β * mis_direct * bsdf_value_em * em_weight * em_ray_det
 
             # ------------------ Detached BSDF sampling -------------------
 

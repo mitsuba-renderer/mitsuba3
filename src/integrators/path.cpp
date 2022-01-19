@@ -193,11 +193,19 @@ public:
 
             if (ek::any_or<true>(active_em)) {
                 // Sample the emitter
-                auto [ds, emitter_val] = scene->sample_emitter_direction(
+                auto [ds, em_weight] = scene->sample_emitter_direction(
                     si, sampler->next_2d(), true, active_em);
                 active_em &= ek::neq(ds.pdf, 0.f);
 
-                // Evaluate BRDF * cos(theta)
+                /* Given the detached emitter sample, recompute its contribution
+                   with AD to enable light source optimization. */
+                if (ek::grad_enabled(si.p)) {
+                    ds.d = ek::normalize(ds.p - si.p);
+                    Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
+                    em_weight = ek::select(ek::neq(ds.pdf, 0), em_val / ds.pdf, 0);
+                }
+
+                // Evaluate BSDF * cos(theta)
                 Vector3f wo = si.to_local(ds.d);
                 auto [bsdf_val, bsdf_pdf] =
                     bsdf->eval_pdf(bsdf_ctx, si, wo, active_em);
@@ -209,7 +217,7 @@ public:
 
                 // Accumulate, being careful with polarization (see spec_fma)
                 result[active_em] = spec_fma(
-                    throughput, bsdf_val * emitter_val * mis_em, result);
+                    throughput, bsdf_val * em_weight * mis_em, result);
             }
 
             // ---------------------- BSDF sampling ----------------------
@@ -221,10 +229,26 @@ public:
                 bsdf->sample(bsdf_ctx, si, sample_1, sample_2, active_next);
             bsdf_weight = si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, si.wi);
 
-            // ---- Update loop variables based on current interaction -----
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
+
+            /* When the path tracer is differentiated, we must be careful that
+               the generated Monte Carlo samples are detached (i.e. don't track
+               derivatives) to avoid bias resulting from the combination of moving
+               samples and discontinuous visibility. We need to re-evaluate the
+               BSDF differentiably with the detached sample in that case. */
+            if (ek::grad_enabled(ray)) {
+                ray = ek::detach<true>(ray);
+
+                // Recompute 'wo' to propagate derivatives to cosine term
+                Vector3f wo = si.to_local(ray.d);
+                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(bsdf_ctx, si, wo, active);
+                bsdf_weight[bsdf_pdf > 0.f] = bsdf_val / ek::detach(bsdf_pdf);
+            }
+
+            // ------ Update loop variables based on current interaction ------
+
+            throughput *= bsdf_weight;
             eta *= bsdf_sample.eta;
-            throughput = throughput * bsdf_weight;
             valid_ray |= active && si.is_valid() &&
                          !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
@@ -273,7 +297,7 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
-        return ek::select(ek::isfinite(w), w, 0.f);
+        return ek::detach<true>(ek::select(ek::isfinite(w), w, 0.f));
     }
 
     /**

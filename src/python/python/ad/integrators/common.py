@@ -572,8 +572,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             wavelength_sample = sampler.next_1d()
 
         ray, weight = sensor.sample_ray_differential(
-            time=wavelength_sample,
-            sample1=sampler.next_1d(),
+            time=time,
+            sample1=wavelength_sample,
             sample2=pos_adjusted,
             sample3=aperture_sample
         )

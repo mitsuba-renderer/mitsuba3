@@ -136,12 +136,13 @@ class PRBIntegrator(ADIntegrator):
                     ds.d = ek.normalize(ds.p - si.p)
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
                     em_weight = ek.select(ek.neq(ds.pdf, 0), em_val / ds.pdf, 0)
+                    ek.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = ek.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-                Lr_dir = β * ek.detach(mis_em) * bsdf_value_em * em_weight
+                Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # ------------------ Detached BSDF sampling -------------------
 
