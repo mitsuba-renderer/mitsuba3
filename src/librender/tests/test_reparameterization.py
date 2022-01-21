@@ -110,8 +110,9 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     # Hit side of the triangle, only those vertices should move
     ([1, 0, -1], [0, 0, 1], [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0]], 1e-2),
 ])
-def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, ray_o, ray_d, ref, atol):
-    from mitsuba.core import load_dict, Float, Ray3f, Vector3f
+@pytest.mark.parametrize("unroll", [False, True])
+def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, ray_o, ray_d, ref, atol, unroll):
+    from mitsuba.core import Float, Ray3f, Vector3f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
@@ -120,7 +121,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
     grad_direction = Vector3f(1, 0, 0)
     grad_detergence = 0.0
     n_passes = 4
-    num_rays = 128
+    num_rays = 16
     kappa = 1e6
     exponent = 3.0
 
@@ -152,7 +153,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
             active=True,
             num_rays=num_rays,
             kappa=kappa,
-            exponent=exponent
+            exponent=exponent,
+            unroll=unroll,
         )
 
         ek.set_label(d, 'd')

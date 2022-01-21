@@ -190,6 +190,9 @@ class PRBReparamIntegrator(ADIntegrator):
         # Enable antithetic sampling in the reparameterization?
         self.reparam_antithetic = props.get('reparam_antithetic', False)
 
+        # Unroll the loop tracing auxiliary rays in the reparameterization?
+        self.reparam_unroll = props.get('reparam_unroll', False)
+
     def reparam(self,
                 scene: mitsuba.render.Scene,
                 rng: mitsuba.core.PCG32,
@@ -215,6 +218,7 @@ class PRBReparamIntegrator(ADIntegrator):
                                   kappa=self.reparam_kappa,
                                   exponent=self.reparam_exp,
                                   antithetic=self.reparam_antithetic,
+                                  unroll=self.reparam_unroll,
                                   active=active)
 
     def sample(self,

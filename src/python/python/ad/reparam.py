@@ -131,7 +131,7 @@ class _ReparameterizeOp(ek.CustomOp):
     function in gradient-based geometric optimization.
     """
     def eval(self, scene, rng, params, ray, num_rays, kappa, exponent,
-             antithetic, active):
+             antithetic, unroll, active):
         # Stash all of this information for the forward/backward passes
         self.scene = scene
         self.rng = rng
@@ -142,6 +142,7 @@ class _ReparameterizeOp(ek.CustomOp):
         self.exponent = exponent
         self.active = active
         self.antithetic = antithetic
+        self.unroll = unroll
 
         # The reparameterization is simply the identity in primal mode
         return self.ray.d, ek.full(mitsuba.core.Float, 1, ek.width(ray))
@@ -209,7 +210,7 @@ class _ReparameterizeOp(ek.CustomOp):
         self.set_grad_out((V_theta, div_V_theta))
 
 
-    def backward(self):
+    def backward_symbolic(self):
         from mitsuba.core import Bool, Float, UInt32, Point2f, \
             Point3f, Vector3f, Ray3f, Frame3f, Loop, PCG32
 
@@ -303,7 +304,7 @@ class _ReparameterizeOp(ek.CustomOp):
                 repeat = Bool(False)
 
             _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sample,
-                                                      self.ray, ray_frame,
+                                                      ray, ray_frame,
                                                       repeat, self.kappa,
                                                       self.exponent)
 
@@ -318,6 +319,78 @@ class _ReparameterizeOp(ek.CustomOp):
         ray_grad.o = ray_grad_o
         self.set_grad_in('ray', ray_grad)
 
+
+    def backward_unroll(self):
+        from mitsuba.core import Bool, Float, Point2f, Vector3f, Ray3f, \
+                                 Frame3f, PCG32
+
+        assert not self.antithetic
+
+        grad_direction, grad_divergence = self.grad_out()
+
+        # Ignore inactive lanes
+        grad_direction  = ek.select(self.active, grad_direction, 0.0)
+        grad_divergence = ek.select(self.active, grad_divergence, 0.0)
+        ray_frame = Frame3f(self.ray.d)
+        rng = self.rng
+        rng_clone = PCG32(rng)
+
+        ray = Ray3f(self.ray)
+        ek.enable_grad(ray.o)
+
+        warp_fields = []
+        for i in range(self.num_rays):
+            sample = Point2f(rng_clone.next_float32(),
+                             rng_clone.next_float32())
+            warp_fields.append(_sample_warp_field(self.scene, sample,
+                                                  ray, ray_frame,
+                                                  Bool(False), self.kappa,
+                                                  self.exponent))
+
+        Z = Float(0.0)
+        dZ = Vector3f(0.0)
+        for Z_i, dZ_i, _, _ in warp_fields:
+            Z += Z_i
+            dZ += dZ_i
+
+        # Un-normalized values
+        V = ek.zero(Vector3f, ek.width(Z))
+        div_V_1 = ek.zero(Float, ek.width(Z))
+        ek.enable_grad(V, div_V_1)
+
+        # Compute normalized values
+        Z = ek.max(Z, 1e-8)
+        V_theta = V / Z
+        divergence = (div_V_1 - ek.dot(V_theta, dZ)) / Z
+        direction = ek.normalize(self.ray.d + V_theta)
+
+        ek.set_grad(direction, grad_direction)
+        ek.set_grad(divergence, grad_divergence)
+        ek.enqueue(ek.ADMode.Backward, direction, divergence)
+        ek.traverse(Float, ek.ADMode.Backward)
+
+        grad_V = ek.grad(V)
+        grad_div_V_1 = ek.grad(div_V_1)
+
+        for _, _, V_i, div_V_1_i in warp_fields:
+            ek.set_grad(V_i, grad_V)
+            ek.set_grad(div_V_1_i, grad_div_V_1)
+            ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
+
+        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+
+        ray_grad = ek.detach(ek.zero(type(self.ray)))
+        ray_grad.o = ek.grad(ray.o)
+        self.set_grad_in('ray', ray_grad)
+
+
+    def backward(self):
+        if self.unroll:
+            self.backward_unroll()
+        else:
+            self.backward_symbolic()
+
+
     def name(self):
         return "reparameterize_ray()"
 
@@ -329,7 +402,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                        num_rays: int=4,
                        kappa: float=1e5,
                        exponent: float=3.0,
-                       antithetic: bool=True,
+                       antithetic: bool=False,
+                       unroll: bool=False,
                        active: Any[bool, mitsuba.core.Bool] = True
 ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
     """
@@ -360,6 +434,10 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
 
     Parameter ``antithetic`` (``bool``):
         Should antithetic sampling be enabled to improve convergence?
+        (Default: False)
+
+    Parameter ``unroll`` (``bool``):
+        Should the loop tracing auxiliary rays be unrolled? (Default: False)
 
     Parameter ``active`` (``mitsuba.core.Bool``):
         Boolean array specifying the active lanes
@@ -369,5 +447,5 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         determinant of the change of variables.
     """
 
-    return ek.custom(_ReparameterizeOp, scene, rng, params, ray,
-                     num_rays, kappa, exponent, antithetic, active)
+    return ek.custom(_ReparameterizeOp, scene, rng, params, ray, num_rays,
+                     kappa, exponent, antithetic, unroll, active)
