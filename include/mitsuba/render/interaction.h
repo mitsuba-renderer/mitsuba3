@@ -158,6 +158,15 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Stores a pointer to the parent instance (if applicable)
     ShapePtr instance = nullptr;
 
+    /**
+     * Boundary-test value used in reparameterized integrators, a soft indicator
+     * function which returns a zero value at the silhouette of the shape from
+     * the perspective of a given ray. Everywhere else this function will return
+     * non-negative values reflecting the distance of the surface interaction to
+     * this closest point on the silhouette.
+     */
+    Float boundary_test;
+
     //! @}
     // =============================================================
 
@@ -176,7 +185,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                 const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
-          duv_dx(0), duv_dy(0), wi(0), prim_index(0) {}
+          duv_dx(0), duv_dy(0), wi(0), prim_index(0), boundary_test(0) {}
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
@@ -387,17 +396,12 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return ek::any_nested(ek::neq(dn_du, 0.f) || ek::neq(dn_dv, 0.f));
     }
 
-    Float boundary_test(const Ray3f &ray, Mask active = true) {
-        Float B = shape->boundary_test(ray, *this, active && is_valid());
-        return ek::select(active && is_valid(), B, 1e8f);
-    }
-
     //! @}
     // =============================================================
 
     ENOKI_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
                  sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                 duv_dy, wi, prim_index, instance)
+                 duv_dy, wi, prim_index, instance, boundary_test)
 };
 
 // -----------------------------------------------------------------------------
@@ -501,15 +505,18 @@ enum class RayFlags : uint32_t {
     /// Compute the shading normal partials wrt. the UV coordinates
     dNSdUV = 0x20,
 
+    /// Compute the boundary-test used in reparameterized integrators
+    BoundaryTest = 0x40,
+
     // =============================================================
     //!              Differentiability compute flags
     // =============================================================
 
     /// Derivatives of the SurfaceInteraction fields follow shape's motion
-    FollowShape = 0x40,
+    FollowShape = 0x80,
 
     /// Derivatives of the SurfaceInteraction fields ignore shape's motion
-    DetachShape = 0x80,
+    DetachShape = 0x100,
 
     // =============================================================
     //!                 Compound compute flags
@@ -649,6 +656,10 @@ struct PreliminaryIntersection {
             si.wi = ek::select(active, si.to_local(-ray.d), -ray.d);
 
             si.duv_dx = si.duv_dy = ek::zero<Point2f>();
+
+            if (has_flag(ray_flags, RayFlags::BoundaryTest))
+                si.boundary_test =
+                    ek::select(active, ek::detach(si.boundary_test), 1e8f);
 
             return si;
         }

@@ -4166,8 +4166,6 @@ static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_boundary_test = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_build_parameterization =
 R"doc(Initialize the ``m_parameterization`` field for mapping UV coordinates
 to positions
@@ -5590,6 +5588,8 @@ static const char *__doc_mitsuba_RayFlags_dNSdUV = R"doc(Compute the shading nor
 
 static const char *__doc_mitsuba_RayFlags_dPdUV = R"doc(Compute position partials wrt. UV coordinates)doc";
 
+static const char *__doc_mitsuba_RayFlags_BoundaryTest = R"doc(Compute the boundary-test used in reparameterized integrators)doc";
+
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time 'time')doc";
 
 static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Construct a new ray (o, d) with time)doc";
@@ -6838,23 +6838,6 @@ This is extremely important to construct high-quality kd-trees. The
 default implementation just takes the bounding box returned by
 bbox(ScalarIndex index) and clips it to *clip*.)doc";
 
-static const char *__doc_mitsuba_Shape_boundary_test =
-R"doc(Boundary-test function used in reparameterized integrators.
-
-This method basically implements a soft indicator function which
-returns a zero value at the silhouette of the shape from the
-perspective of a given ray. Everywhere else this function will return
-non-negative values reflecting the distance of the surface interaction
-to this closest point on the silhouette.
-
-Parameter ``ray``:
-    The ray defining the perspecive from which the silhouette should
-    be percieved.
-
-Parameter ``si``:
-    The surface interaction data structure generated when tracing the
-    ray against this shape.)doc";
-
 static const char *__doc_mitsuba_Shape_bsdf = R"doc(Return the shape's BSDF)doc";
 
 static const char *__doc_mitsuba_Shape_bsdf_2 = R"doc(Return the shape's BSDF)doc";
@@ -7833,8 +7816,6 @@ static const char *__doc_mitsuba_SurfaceInteraction_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_apply_label = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_boundary_test = R"doc()doc";
-
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -7891,6 +7872,13 @@ static const char *__doc_mitsuba_SurfaceInteraction_prim_index = R"doc(Primitive
 static const char *__doc_mitsuba_SurfaceInteraction_sh_frame = R"doc(Shading frame)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_shape = R"doc(Pointer to the associated shape)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_boundary_test =
+R"doc(Boundary-test value used in reparameterized integrators, a soft indicator
+function which returns a zero value at the silhouette of the shape from the
+perspective of a given ray. Everywhere else this on will return non-negative
+values reflecting the distance of the surface interaction to this closest point
+on the silhouette)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_target_medium =
 R"doc(Determine the target medium

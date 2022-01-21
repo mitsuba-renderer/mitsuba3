@@ -207,7 +207,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
-                                                     uint32_t /*ray_flags*/,
+                                                     uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
@@ -242,13 +242,10 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        return si;
-    }
+        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
+            si.boundary_test = ek::hmin(0.5f - ek::abs(si.uv - 0.5f));
 
-    Float boundary_test(const Ray3f &/*ray*/,
-                        const SurfaceInteraction3f &si,
-                        Mask /*active*/) const override {
-        return ek::hmin(0.5f - ek::abs(si.uv - 0.5f));
+        return si;
     }
 
     void traverse(TraversalCallback *callback) override {

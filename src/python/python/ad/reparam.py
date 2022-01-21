@@ -87,7 +87,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
     si = scene.ray_intersect(aux_ray,
-                             ray_flags=RayFlags.All | RayFlags.FollowShape,
+                             ray_flags=RayFlags.All | RayFlags.FollowShape | RayFlags.BoundaryTest,
                              coherent=False)
 
     # Convert into a direction at 'ray.o'. When no surface was intersected,
@@ -96,8 +96,8 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     V_direct = ek.select(hit, ek.normalize(si.p - ray.o), ray.d)
 
     with ek.suspend_grad():
-        # Boundary term provided by the underlying shape (polymorphic)
-        B = ek.select(hit, si.boundary_test(aux_ray, hit), 1.0)
+        # Boundary term provided by the underlying shape
+        B = ek.select(hit, si.boundary_test, 1.0)
 
         # Inverse of vMF density without normalization constant
         # inv_vmf_density = ek.exp(ek.fnmadd(omega_local.z, kappa, kappa))

@@ -153,26 +153,6 @@ public:
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
     /**
-     * \brief Boundary-test function used in reparameterized integrators.
-     *
-     * This method basically implements a soft indicator function which returns
-     * a zero value at the silhouette of the shape from the perspective of a
-     * given ray. Everywhere else this function will return non-negative values
-     * reflecting the distance of the surface interaction to this closest point
-     * on the silhouette.
-     *
-     * \param ray
-     *     The ray defining the perspecive from which the silhouette should be
-     *     percieved.
-     * \param si
-     *     The surface interaction data structure generated when tracing the ray
-     *     against this shape.
-     */
-    virtual Float boundary_test(const Ray3f &ray,
-                                const SurfaceInteraction3f &si,
-                                Mask active = true) const;
-
-    /**
      * \brief Compute and return detailed information related to a surface interaction
      *
      * The implementation should at most compute the fields \c p, \c uv, \c n,
@@ -652,7 +632,6 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
-    ENOKI_VCALL_METHOD(boundary_test)
     ENOKI_VCALL_METHOD(compute_surface_interaction)
     ENOKI_VCALL_METHOD(eval_attribute)
     ENOKI_VCALL_METHOD(eval_attribute_1)

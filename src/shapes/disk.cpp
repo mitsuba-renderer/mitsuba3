@@ -218,7 +218,8 @@ public:
         si.p = p + dist * m_frame.n;
 
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV))) {
+                   has_flag(ray_flags, RayFlags::dPdUV) ||
+                   has_flag(ray_flags, RayFlags::BoundaryTest))) {
             Float r = ek::norm(Point2f(prim_uv.x(), prim_uv.y())),
                   inv_r = ek::rcp(r);
 
@@ -242,13 +243,10 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        return si;
-    }
+        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
+            si.boundary_test = ek::abs(1.f - si.uv.x());
 
-    Float boundary_test(const Ray3f &/*ray*/,
-                        const SurfaceInteraction3f &si,
-                        Mask /*active*/) const override {
-        return ek::abs(1.f - si.uv.x());
+        return si;
     }
 
     void traverse(TraversalCallback *callback) override {

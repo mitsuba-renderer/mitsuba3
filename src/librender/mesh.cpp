@@ -585,76 +585,6 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
 }
 
 
-MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
-                                                       const SurfaceInteraction3f &si,
-                                                       Mask active) const {
-    Vector3u fi = face_indices(si.prim_index, active);
-
-    Point3f vp0 = vertex_position(fi[0], active),
-            vp1 = vertex_position(fi[1], active),
-            vp2 = vertex_position(fi[2], active);
-
-    Vector3f rel = si.p - vp0,
-             du  = vp1 - vp0,
-             dv  = vp2 - vp0;
-
-    /* Solve a least squares problem to determine
-       the UV coordinates within the current triangle */
-    Float b1  = ek::dot(du, rel), b2 = ek::dot(dv, rel),
-          a11 = ek::dot(du, du), a12 = ek::dot(du, dv),
-          a22 = ek::dot(dv, dv),
-          inv_det = ek::rcp(a11 * a22 - a12 * a12);
-
-    Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
-          v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
-          w = 1.f - u - v;
-
-    /* If we are using flat shading, just fall back to a signed distance field
-       of the hit triangle. */
-    if (!has_vertex_normals()) {
-        // 2D Triangle SDF from Inigo Quilez
-        // https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
-
-        // Equilateral triangle
-        Point2f p0 = Point2f(0, 0),
-                p1 = Point2f(1, 0),
-                p2 = Point2f(0.5f, 0.5f*ek::sqrt(3.f));
-
-        Point2f p = p0 * w + p1 * u + p2 * v;
-
-        Vector2f e0 = p1 - p0,
-                 e1 = p2 - p1,
-                 e2 = p0 - p2,
-                 v0 = p - p0,
-                 v1 = p - p1,
-                 v2 = p - p2;
-        Vector2f pq0 = v0 - e0 * ek::clamp(ek::dot(v0, e0) / ek::dot(e0, e0), 0, 1),
-                 pq1 = v1 - e1 * ek::clamp(ek::dot(v1, e1) / ek::dot(e1, e1), 0, 1),
-                 pq2 = v2 - e2 * ek::clamp(ek::dot(v2, e2) / ek::dot(e2, e2), 0, 1);
-        Float s = ek::sign(e0.x() * e2.y() - e0.y() * e2.x());
-        Vector2f d = ek::min(ek::min(Vector2f(ek::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
-                                     Vector2f(ek::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
-                                     Vector2f(ek::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
-        Float dist = ek::sqrt(d.x());
-        // Scale s.t. farthest point / barycenter is one
-        dist /= ek::sqrt(3.f) / 6.f;
-        return dist;
-    }
-
-    // Fetch the three boundary test normals associated with this triangle
-    Normal3f n[3] = { vertex_normal(fi[0], active),
-                      vertex_normal(fi[1], active),
-                      vertex_normal(fi[2], active) };
-
-    Normal3f normal = ek::fmadd(n[0], w, ek::fmadd(n[1], u, n[2] * v));
-
-    // Dot product between surface normal and the ray direction is 0 at silhouette points
-    Float dp = ek::dot(normal, -ray.d);
-
-    // Add non-linearity by squaring the returned value
-    return ek::sqr(dp);
-}
-
 MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
@@ -759,14 +689,20 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
     }
 
-    // Shading normal (if available)
+    // Fetch shading normal (if available)
+    Normal3f n0, n1, n2;
+    if (has_vertex_normals() &&
+        likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
+               has_flag(ray_flags, RayFlags::dNSdUV) ||
+               has_flag(ray_flags, RayFlags::BoundaryTest))) {
+        n0 = vertex_normal(fi[0], active);
+        n1 = vertex_normal(fi[1], active);
+        n2 = vertex_normal(fi[2], active);
+    }
+
     if (has_vertex_normals() &&
         likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
                has_flag(ray_flags, RayFlags::dNSdUV))) {
-        Normal3f n0 = vertex_normal(fi[0], active),
-                 n1 = vertex_normal(fi[1], active),
-                 n2 = vertex_normal(fi[2], active);
-
         if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
             n0 = ek::detach<true>(n0);
             n1 = ek::detach<true>(n1);
@@ -805,6 +741,63 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.shape    = this;
     si.instance = nullptr;
+
+    if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest))) {
+        Vector3f rel = si.p - p0;
+
+        /* Solve a least squares problem to determine
+           the UV coordinates within the current triangle */
+        Float b1  = ek::dot(dp0, rel),
+              b2  = ek::dot(dp1, rel),
+              a11 = ek::dot(dp0, dp0),
+              a12 = ek::dot(dp0, dp1),
+              a22 = ek::dot(dp1, dp1),
+              inv_det = ek::rcp(a11 * a22 - a12 * a12);
+
+        Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
+              v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
+              w = 1.f - u - v;
+
+        /* If we are using flat shading, just fall back to a signed distance
+           field of the hit triangle. */
+        if (!has_vertex_normals()) {
+            // 2D Triangle SDF from Inigo Quilez
+            // https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
+
+            // Equilateral triangle
+            Point2f tp0 = Point2f(0, 0),
+                    tp1 = Point2f(1, 0),
+                    tp2 = Point2f(0.5f, 0.5f * ek::sqrt(3.f));
+
+            Point2f p = tp0 * w + tp1 * u + tp2 * v;
+
+            Vector2f e0 = tp1 - tp0,
+                     e1 = tp2 - tp1,
+                     e2 = tp0 - tp2,
+                     v0 = p - tp0,
+                     v1 = p - tp1,
+                     v2 = p - tp2;
+            Vector2f pq0 = v0 - e0 * ek::clamp(ek::dot(v0, e0) / ek::dot(e0, e0), 0, 1),
+                     pq1 = v1 - e1 * ek::clamp(ek::dot(v1, e1) / ek::dot(e1, e1), 0, 1),
+                     pq2 = v2 - e2 * ek::clamp(ek::dot(v2, e2) / ek::dot(e2, e2), 0, 1);
+            Float s = ek::sign(e0.x() * e2.y() - e0.y() * e2.x());
+            Vector2f d = ek::min(ek::min(Vector2f(ek::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
+                                         Vector2f(ek::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
+                                         Vector2f(ek::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
+            Float dist = ek::sqrt(d.x());
+            // Scale s.t. farthest point / barycenter is one
+            dist /= ek::sqrt(3.f) / 6.f;
+            si.boundary_test = dist;
+        } else {
+            Normal3f normal = ek::fmadd(n0, w, ek::fmadd(n1, u, n2 * v));
+
+            // Dot product between surface normal and the ray direction is 0 at silhouette points
+            Float dp = ek::dot(normal, -ray.d);
+
+            // Add non-linearity by squaring the returned value
+            si.boundary_test = ek::sqr(dp);
+        }
+    }
 
     return si;
 }

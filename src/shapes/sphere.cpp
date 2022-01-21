@@ -371,12 +371,6 @@ public:
 
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    Float boundary_test(const Ray3f &ray,
-                        const SurfaceInteraction3f &si,
-                        Mask /*active*/) const override {
-        return ek::abs(ek::dot(si.sh_frame.n, -ray.d));
-    }
-
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
@@ -450,6 +444,9 @@ public:
 
         si.shape    = this;
         si.instance = nullptr;
+
+        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
+            si.boundary_test = ek::abs(ek::dot(si.sh_frame.n, -ray.d));
 
         return si;
     }

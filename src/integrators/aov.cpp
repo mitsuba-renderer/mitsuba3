@@ -181,7 +181,8 @@ public:
 
         std::pair<Spectrum, Mask> result { 0.f, false };
 
-        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        SurfaceInteraction3f si = scene->ray_intersect(
+            ray, RayFlags::All | RayFlags::BoundaryTest, true, active);
         ek::masked(si, !si.is_valid()) = ek::zero<SurfaceInteraction3f>();
         size_t ctr = 0;
 
@@ -215,7 +216,7 @@ public:
                     break;
 
                 case Type::BoundaryTest:
-                    *aovs++ = ek::select(si.is_valid(), si.boundary_test(ray), 1.f);
+                    *aovs++ = ek::select(si.is_valid(), si.boundary_test, 1.f);
                     break;
 
                 case Type::dPdU:

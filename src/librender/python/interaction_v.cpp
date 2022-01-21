@@ -37,18 +37,19 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
                                                         D(SurfaceInteraction))
         // Members
-        .def_field(SurfaceInteraction3f, shape,      D(SurfaceInteraction, shape))
-        .def_field(SurfaceInteraction3f, uv,         D(SurfaceInteraction, uv))
-        .def_field(SurfaceInteraction3f, sh_frame,   D(SurfaceInteraction, sh_frame))
-        .def_field(SurfaceInteraction3f, dp_du,      D(SurfaceInteraction, dp_du))
-        .def_field(SurfaceInteraction3f, dp_dv,      D(SurfaceInteraction, dp_dv))
-        .def_field(SurfaceInteraction3f, dn_du,      D(SurfaceInteraction, dn_du))
-        .def_field(SurfaceInteraction3f, dn_dv,      D(SurfaceInteraction, dn_dv))
-        .def_field(SurfaceInteraction3f, duv_dx,     D(SurfaceInteraction, duv_dx))
-        .def_field(SurfaceInteraction3f, duv_dy,     D(SurfaceInteraction, duv_dy))
-        .def_field(SurfaceInteraction3f, wi,         D(SurfaceInteraction, wi))
-        .def_field(SurfaceInteraction3f, prim_index, D(SurfaceInteraction, prim_index))
-        .def_field(SurfaceInteraction3f, instance,   D(SurfaceInteraction, instance))
+        .def_field(SurfaceInteraction3f, shape,         D(SurfaceInteraction, shape))
+        .def_field(SurfaceInteraction3f, uv,            D(SurfaceInteraction, uv))
+        .def_field(SurfaceInteraction3f, sh_frame,      D(SurfaceInteraction, sh_frame))
+        .def_field(SurfaceInteraction3f, dp_du,         D(SurfaceInteraction, dp_du))
+        .def_field(SurfaceInteraction3f, dp_dv,         D(SurfaceInteraction, dp_dv))
+        .def_field(SurfaceInteraction3f, dn_du,         D(SurfaceInteraction, dn_du))
+        .def_field(SurfaceInteraction3f, dn_dv,         D(SurfaceInteraction, dn_dv))
+        .def_field(SurfaceInteraction3f, duv_dx,        D(SurfaceInteraction, duv_dx))
+        .def_field(SurfaceInteraction3f, duv_dy,        D(SurfaceInteraction, duv_dy))
+        .def_field(SurfaceInteraction3f, wi,            D(SurfaceInteraction, wi))
+        .def_field(SurfaceInteraction3f, prim_index,    D(SurfaceInteraction, prim_index))
+        .def_field(SurfaceInteraction3f, instance,      D(SurfaceInteraction, instance))
+        .def_field(SurfaceInteraction3f, boundary_test, D(SurfaceInteraction, boundary_test))
 
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
@@ -87,12 +88,11 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_uv_partials))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
             D(SurfaceInteraction, has_n_partials))
-        .def("boundary_test", &SurfaceInteraction3f::boundary_test, "ray"_a, "active"_a=true)
         .def_repr(SurfaceInteraction3f);
 
-    MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths,
-                        p, n, shape, uv, sh_frame, dp_du, dp_dv, dn_du,
-                        dn_dv, duv_dx, duv_dy, wi, prim_index, instance)
+    MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
+                        shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+                        duv_dy, wi, prim_index, instance, boundary_test)
 }
 
 MTS_PY_EXPORT(MediumInteraction) {

@@ -922,6 +922,7 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 @fresolver_append_path
 def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     from mitsuba.core import load_dict, Ray3f
+    from mitsuba.render import RayFlags
 
     scene = load_dict({
         'type': 'scene',
@@ -933,7 +934,8 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
 
     # Check boundary test value at silhouette
     ray = Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray).boundary_test(ray)
+    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+
     assert ek.all(B < 1e-6)
 
     # Check that boundary test value increase as we move away from boundary
@@ -941,7 +943,7 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     prev = 0.0
     for x in range(N):
         ray = Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
-        B = scene.ray_intersect(ray).boundary_test(ray)
+        B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
         assert ek.all(prev < B)
         prev = B
 
@@ -949,6 +951,7 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
 @fresolver_append_path
 def test22_boundary_test_face_normal(variants_all_ad_rgb):
     from mitsuba.core import load_dict, Ray3f
+    from mitsuba.render import RayFlags
 
     scene = load_dict({
         'type': 'scene',
@@ -961,22 +964,22 @@ def test22_boundary_test_face_normal(variants_all_ad_rgb):
 
     # Check boundary test value when no intersection
     ray = Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
-    si = scene.ray_intersect(ray)
+    si = scene.ray_intersect(ray, RayFlags.BoundaryTest, True)
     assert ek.all(~si.is_valid())
-    B = si.boundary_test(ray)
+    B = si.boundary_test
     assert ek.all(B > 1e6)
 
     # Check boundary test value close to silhouette
     ray = Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray).boundary_test(ray)
+    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
     assert ek.all(B < 1e-3)
 
     # Check boundary test value close to silhouette
     ray = Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray).boundary_test(ray)
+    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
     assert ek.all(B < 1e-4)
 
     # Check boundary test value close far from silhouette
     ray = Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray).boundary_test(ray)
+    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
     assert ek.all(B > 1e-1)

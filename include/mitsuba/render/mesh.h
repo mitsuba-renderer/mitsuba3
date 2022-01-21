@@ -164,10 +164,6 @@ public:
     barycentric_coordinates(const SurfaceInteraction3f &si,
                             Mask active = true) const;
 
-    virtual Float boundary_test(const Ray3f &ray,
-                                const SurfaceInteraction3f &si,
-                                Mask active = true) const override;
-
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
                                                              uint32_t ray_flags,
