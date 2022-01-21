@@ -41,8 +41,11 @@ public:
             visited++;
         }
 
-        for (auto &kv : tbl)
+        for (auto &kv : tbl) {
+            if (tbl.size() == 1)
+                kv.second->set_id(props.id());
             m_objects.push_back(kv.second);
+        }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
             visited, tbl.size(), util::time_string((float) timer.value()), ignored);
