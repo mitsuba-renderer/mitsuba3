@@ -170,6 +170,15 @@ public:
             fs::path file_path = fs->resolve(props.string("filename"));
             m_volume_grid = new VolumeGrid(file_path);
 
+            const std::string ordering = props.string("ordering", "xyzc");
+            if (ordering == "zyxc") {
+                ScalarVector3u res = m_volume_grid->size();
+                m_volume_grid->set_size(ScalarVector3u(res.z(), res.y(), res.x()));
+                Log(Info, "Using custom input interpretation: %s", ordering);
+            } else if (ordering != "xyzc") {
+                Throw("Unsupported channel ordering: %s", ordering);
+            }
+
             m_raw = props.get<bool>("raw", false);
 
             ScalarVector3i res = m_volume_grid->size();

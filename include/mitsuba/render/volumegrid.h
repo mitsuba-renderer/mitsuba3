@@ -62,6 +62,13 @@ public:
     /// Return the resolution of the voxel grid
     ScalarVector3u size() const { return m_size; }
 
+    /// Reinterprets the data with the given size.
+    void set_size(ScalarVector3u sz) {
+        if (ek::hprod(sz) != ek::hprod(m_size))
+            Throw("The new size %s doesn't match the entry count of old size %s", sz, m_size);
+        m_size = sz;
+    }
+
     /// Return the number of channels
     size_t channel_count() const { return m_channel_count; }
 

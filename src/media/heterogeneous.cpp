@@ -288,6 +288,8 @@ public:
                 m_majorant_factor * m_scale.scalar() * m_sigmat->max());
             m_max_density = ek::opaque<Float>(ek::max(1e-6f, vmax));
             m_majorant_grid = nullptr;
+            Log(Debug, "Heterogeneous medium majorant updated to: %s (majorant factor: %s)",
+                m_max_density, m_majorant_factor);
         }
     }
 
