@@ -176,13 +176,15 @@ public:
                             const DirectionSample3f &ds,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        SurfaceInteraction3f si(ds, it.wavelengths);
+        Float dp = ek::dot(ds.d, ds.n);
+        active &= dp < 0.f;
 
+        SurfaceInteraction3f si(ds, it.wavelengths);
         UnpolarizedSpectrum spec = m_radiance->eval(si, active);
         if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
             spec *= m_d65->eval(si, active);
 
-        return depolarizer<Spectrum>(spec);
+        return ek::select(active, depolarizer<Spectrum>(spec), 0.f);
     }
 
     std::pair<PositionSample3f, Float>
