@@ -160,7 +160,12 @@ public:
     bool sample_visible() const { return m_sample_visible; }
 
     /// Is this an isotropic microfacet distribution?
-    bool is_isotropic() const { return m_alpha_u == m_alpha_v; }
+    bool is_isotropic() const {
+        if constexpr (ek::is_jit_array_v<Float>)
+            return m_alpha_u.index() == m_alpha_v.index();
+        else
+            return m_alpha_u == m_alpha_v;
+    }
 
     /// Is this an anisotropic microfacet distribution?
     bool is_anisotropic() const { return m_alpha_u != m_alpha_v; }
