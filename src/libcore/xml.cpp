@@ -21,7 +21,7 @@
 #include <mitsuba/core/xml.h>
 #include <mitsuba/core/timer.h>
 #include <pugixml.hpp>
-#include <enoki-thread/thread.h>
+#include <drjit-thread/thread.h>
 
 /// Linux <sys/sysmacros.h> defines these as macros .. :(
 #if defined(major)
@@ -897,12 +897,12 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     Point3f target = parse_named_vector(src, node, "target");
                     Vector3f up = parse_named_vector(src, node, "up");
 
-                    if (ek::squared_norm(up) == 0)
+                    if (dr::squared_norm(up) == 0)
                         std::tie(up, std::ignore) =
-                            coordinate_system(ek::normalize(target - origin));
+                            coordinate_system(dr::normalize(target - origin));
 
                     auto result = Transform4f::look_at(origin, target, up);
-                    if (ek::any_nested(ek::isnan(result.matrix)))
+                    if (dr::any_nested(dr::isnan(result.matrix)))
                         src.throw_error(node, "invalid lookat transformation");
                     ctx.transform = result * ctx.transform;
                 }
@@ -1030,10 +1030,10 @@ static Task *instantiate_node(XMLParseContext &ctx,
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
             #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
                 if (ctx.is_jit()) {
-                    // Ensures ek::scatter occuring in object constructors are flushed
-                    ek::eval();
+                    // Ensures dr::scatter occuring in object constructors are flushed
+                    dr::eval();
                     if (ctx.parallel)
-                        ek::sync_thread();
+                        dr::sync_thread();
                 }
             #endif
         } catch (const std::exception &e) {
@@ -1086,7 +1086,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
     } else {
         if (ctx.parallel) {
             // Instantiate object asynchronously
-            return ek::do_async(instantiate, deps.data(), deps.size());
+            return dr::do_async(instantiate, deps.data(), deps.size());
         } else {
             instantiate();
             return nullptr;

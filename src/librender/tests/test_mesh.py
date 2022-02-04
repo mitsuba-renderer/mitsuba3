@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 
 from mitsuba.python.test.util import fresolver_append_path
 from mitsuba.python.util import traverse
@@ -46,11 +46,11 @@ def test02_ply_triangle(variant_scalar_rgb):
     faces = m.faces_buffer()
 
     assert not m.has_vertex_normals()
-    assert ek.width(positions) == 9
-    assert ek.allclose(positions[0:3], [0, 0, 0])
-    assert ek.allclose(positions[3:6], [0, 0, 1])
-    assert ek.allclose(positions[6:9], [0, 1, 0])
-    assert ek.width(faces) == 3
+    assert dr.width(positions) == 9
+    assert dr.allclose(positions[0:3], [0, 0, 0])
+    assert dr.allclose(positions[3:6], [0, 0, 1])
+    assert dr.allclose(positions[6:9], [0, 1, 0])
+    assert dr.width(faces) == 3
     assert faces[0] == UInt32(0)
     assert faces[1] == UInt32(1)
     assert faces[2] == UInt32(2)
@@ -70,9 +70,9 @@ def test03_ply_computed_normals(variant_scalar_rgb):
     normals = shape.vertex_normals_buffer()
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
-    assert ek.allclose(normals[0:3], [-1, 0, 0])
-    assert ek.allclose(normals[3:6], [-1, 0, 0])
-    assert ek.allclose(normals[6:9], [-1, 0, 0])
+    assert dr.allclose(normals[0:3], [-1, 0, 0])
+    assert dr.allclose(normals[3:6], [-1, 0, 0])
+    assert dr.allclose(normals[6:9], [-1, 0, 0])
 
 
 def test04_normal_weighting_scheme(variant_scalar_rgb):
@@ -91,17 +91,17 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
     n0 = Vector3f(0.0, 0.0, -1.0)
     n1 = Vector3f(0.0, 1.0, 0.0)
-    angle_0 = ek.Pi / 2.0
-    angle_1 = ek.acos(3.0 / 5.0)
+    angle_0 = dr.Pi / 2.0
+    angle_1 = dr.acos(3.0 / 5.0)
     n2 = n0 * angle_0 + n1 * angle_1
-    n2 /= ek.norm(n2)
+    n2 /= dr.norm(n2)
     n = np.vstack([n2, n0, n0, n1, n1]).transpose()
 
     m.faces_buffer()[:] = [0, 1, 2, 0, 3, 4]
 
     m.recompute_vertex_normals()
     for i in range(5):
-        assert ek.allclose(normals[i*3:(i+1)*3], n[:, i], 5e-4)
+        assert dr.allclose(normals[i*3:(i+1)*3], n[:, i], 5e-4)
 
 
 @fresolver_append_path
@@ -120,10 +120,10 @@ def test05_load_simple_mesh(variant_scalar_rgb):
         faces = shape.faces_buffer()
 
         assert shape.has_vertex_normals()
-        assert ek.width(positions) == 72
-        assert ek.width(faces) == 36
-        assert ek.allclose(faces[6:9], [4, 5, 6])
-        assert ek.allclose(positions[:5], [130, 165, 65, 82, 165])
+        assert dr.width(positions) == 72
+        assert dr.width(faces) == 36
+        assert dr.allclose(faces[6:9], [4, 5, 6])
+        assert dr.allclose(positions[:5], [130, 165, 65, 82, 165])
 
 
 @pytest.mark.parametrize('mesh_format', ['obj', 'ply', 'serialized'])
@@ -151,26 +151,26 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
 
         (v0, v2, v3) = [positions[i*3:(i+1)*3] for i in [0, 2, 3]]
 
-        assert ek.allclose(v0, [-2.85, 0.0, -7.600000], atol=1e-3)
-        assert ek.allclose(v2, [ 2.85, 0.0,  0.599999], atol=1e-3)
-        assert ek.allclose(v3, [ 2.85, 0.0, -7.600000], atol=1e-3)
+        assert dr.allclose(v0, [-2.85, 0.0, -7.600000], atol=1e-3)
+        assert dr.allclose(v2, [ 2.85, 0.0,  0.599999], atol=1e-3)
+        assert dr.allclose(v3, [ 2.85, 0.0, -7.600000], atol=1e-3)
 
         if 'uv' in features:
             assert shape.has_vertex_texcoords()
             (uv0, uv2, uv3) = [texcoords[i*2:(i+1)*2] for i in [0, 2, 3]]
             # For OBJs (and .serialized generated from OBJ), UV.y is flipped.
             if mesh_format in ['obj', 'serialized']:
-                assert ek.allclose(uv0, [0.950589, 1-0.988416], atol=1e-3)
-                assert ek.allclose(uv2, [0.025105, 1-0.689127], atol=1e-3)
-                assert ek.allclose(uv3, [0.950589, 1-0.689127], atol=1e-3)
+                assert dr.allclose(uv0, [0.950589, 1-0.988416], atol=1e-3)
+                assert dr.allclose(uv2, [0.025105, 1-0.689127], atol=1e-3)
+                assert dr.allclose(uv3, [0.950589, 1-0.689127], atol=1e-3)
             else:
-                assert ek.allclose(uv0, [0.950589, 0.988416], atol=1e-3)
-                assert ek.allclose(uv2, [0.025105, 0.689127], atol=1e-3)
-                assert ek.allclose(uv3, [0.950589, 0.689127], atol=1e-3)
+                assert dr.allclose(uv0, [0.950589, 0.988416], atol=1e-3)
+                assert dr.allclose(uv2, [0.025105, 0.689127], atol=1e-3)
+                assert dr.allclose(uv3, [0.950589, 0.689127], atol=1e-3)
 
         if shape.has_vertex_normals():
             for n in [normals[i*3:(i+1)*3] for i in [0, 2, 3]]:
-                assert ek.allclose(n, [0.0, 1.0, 0.0])
+                assert dr.allclose(n, [0.0, 1.0, 0.0])
 
     return fresolver_append_path(test)()
 
@@ -241,16 +241,16 @@ def test09_eval_parameterization(variants_all_rgb):
     ''')
 
     si = shape.eval_parameterization([-0.01, 0.5])
-    assert not ek.any(si.is_valid())
+    assert not dr.any(si.is_valid())
     si = shape.eval_parameterization([1.0 - 1e-7, 1.0 - 1e-7])
-    assert ek.all(si.is_valid())
-    assert ek.allclose(si.p, [1, 1, 0])
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [1, 1, 0])
     si = shape.eval_parameterization([1e-7, 1e-7])
-    assert ek.all(si.is_valid())
-    assert ek.allclose(si.p, [-1, -1, 0])
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [-1, -1, 0])
     si = shape.eval_parameterization([.2, .3])
-    assert ek.all(si.is_valid())
-    assert ek.allclose(si.p, [-.6, -.4, 0])
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [-.6, -.4, 0])
 
 
 @fresolver_append_path
@@ -268,29 +268,29 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
-    assert ek.allclose(pi.t, 10)
+    assert dr.allclose(pi.t, 10)
     assert pi.prim_index == 0
-    assert ek.allclose(pi.prim_uv, [0.35, 0.3])
+    assert dr.allclose(pi.prim_uv, [0.35, 0.3])
 
     si = pi.compute_surface_interaction(ray)
-    assert ek.allclose(si.t, 10)
-    assert ek.allclose(si.p, [-0.3, -0.3, 0.0])
-    assert ek.allclose(si.uv, [0.35, 0.35])
-    assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
-    assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
+    assert dr.allclose(si.t, 10)
+    assert dr.allclose(si.p, [-0.3, -0.3, 0.0])
+    assert dr.allclose(si.uv, [0.35, 0.35])
+    assert dr.allclose(si.dp_du, [2.0, 0.0, 0.0])
+    assert dr.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
     ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
-    assert ek.allclose(pi.t, 10)
+    assert dr.allclose(pi.t, 10)
     assert pi.prim_index == 1
-    assert ek.allclose(pi.prim_uv, [0.3, 0.35])
+    assert dr.allclose(pi.prim_uv, [0.3, 0.35])
 
     si = pi.compute_surface_interaction(ray)
-    assert ek.allclose(si.t, 10)
-    assert ek.allclose(si.p, [0.3, 0.3, 0.0])
-    assert ek.allclose(si.uv, [0.65, 0.65])
-    assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
-    assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
+    assert dr.allclose(si.t, 10)
+    assert dr.allclose(si.p, [0.3, 0.3, 0.0])
+    assert dr.allclose(si.uv, [0.65, 0.65])
+    assert dr.allclose(si.dp_du, [2.0, 0.0, 0.0])
+    assert dr.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
 
 @fresolver_append_path
@@ -309,23 +309,23 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'bsdf.reflectance.value'
-    ek.enable_grad(params[bsdf_param_key])
+    dr.enable_grad(params[bsdf_param_key])
     params.set_dirty(bsdf_param_key)
     params.update()
     assert shape.parameters_grad_enabled() == False
 
     # When setting one of the shape's param to require gradient, method should return True
     shape_param_key = 'vertex_positions'
-    ek.enable_grad(params[shape_param_key])
+    dr.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
     assert shape.parameters_grad_enabled() == True
 
-if hasattr(ek, 'JitFlag'):
+if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
-        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
     ]
 else:
     jit_flags_options = []
@@ -335,7 +335,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
     from mitsuba.core import load_string, Ray3f, Vector3f
     from mitsuba.render import RayFlags
 
-    ek.set_flag(ek.JitFlag.VCallRecord, False)
+    dr.set_flag(dr.JitFlag.VCallRecord, False)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -350,34 +350,34 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 
     # si should not be attached if not necessary
     si = pi.compute_surface_interaction(ray)
-    assert not ek.grad_enabled(si.t)
-    assert not ek.grad_enabled(si.p)
+    assert not dr.grad_enabled(si.t)
+    assert not dr.grad_enabled(si.p)
 
     # si should be attached if ray is attached
-    ek.enable_grad(ray.o)
+    dr.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray)
-    assert ek.grad_enabled(si.t)
-    assert ek.grad_enabled(si.p)
-    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
+    assert dr.grad_enabled(si.t)
+    assert dr.grad_enabled(si.p)
+    assert not dr.grad_enabled(si.n) # Face normal doesn't depend on ray
 
     # si should be attached if ray is attached (even when we pass RayFlags.DetachShape)
-    ek.enable_grad(ray.o)
+    dr.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray, RayFlags.DetachShape)
-    assert ek.grad_enabled(si.p)
-    assert ek.grad_enabled(si.uv)
-    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
+    assert dr.grad_enabled(si.p)
+    assert dr.grad_enabled(si.uv)
+    assert not dr.grad_enabled(si.n) # Face normal doesn't depend on ray
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
-    ek.enable_grad(params[shape_param_key])
+    dr.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
 
-    ek.disable_grad(ray.o)
+    dr.disable_grad(ray.o)
     si = pi.compute_surface_interaction(ray)
-    assert ek.grad_enabled(si.t)
-    assert ek.grad_enabled(si.p)
+    assert dr.grad_enabled(si.t)
+    assert dr.grad_enabled(si.p)
 
 
 @fresolver_append_path
@@ -385,9 +385,9 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import load_string, Ray3f, Vector3f
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -400,30 +400,30 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
-    ek.enable_grad(ray.o)
-    ek.enable_grad(ray.d)
+    dr.enable_grad(ray.o)
+    dr.enable_grad(ray.d)
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
-    ek.forward(ray.o.x)
-    assert ek.allclose(ek.grad(p), [1, 0, 0])
+    dr.forward(ray.o.x)
+    assert dr.allclose(dr.grad(p), [1, 0, 0])
 
     # If the ray origin is shifted along the x-axis, so does si.uv
     si = pi.compute_surface_interaction(ray)
-    ek.forward(ray.o.x)
-    assert ek.allclose(ek.grad(si.uv), [0.5, 0])
+    dr.forward(ray.o.x)
+    assert dr.allclose(dr.grad(si.uv), [0.5, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
-    ek.forward(ray.o.z)
-    assert ek.allclose(ek.grad(si.t), -1)
+    dr.forward(ray.o.z)
+    assert dr.allclose(dr.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
-    ek.forward(ray.d.x)
-    assert ek.allclose(ek.grad(p), [10, 0, 0])
+    dr.forward(ray.d.x)
+    assert dr.allclose(dr.grad(p), [10, 0, 0])
 
 
 @fresolver_append_path
@@ -431,9 +431,9 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import load_string, Ray3f, Vector3f
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -446,18 +446,18 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
-    ek.enable_grad(ray.o)
+    dr.enable_grad(ray.o)
 
     # If si.p is shifted along the x-axis, so does the ray origin
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.p.x)
-    assert ek.allclose(ek.grad(ray.o), [1, 0, 0])
+    dr.backward(si.p.x)
+    assert dr.allclose(dr.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
-    ek.set_grad(ray.o, 0.0)
+    dr.set_grad(ray.o, 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.t)
-    assert ek.allclose(ek.grad(ray.o), [0, 0, -1])
+    dr.backward(si.t)
+    assert dr.allclose(dr.grad(ray.o), [0, 0, -1])
 
 
 @fresolver_append_path
@@ -465,9 +465,9 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -480,17 +480,17 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = ek.unravel(Point3f, positions_buf)
+    positions_initial = dr.unravel(Point3f, positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
-    ek.enable_grad(diff_vector)
+    dr.enable_grad(diff_vector)
 
     # Apply the transformation to mesh vertex position and update scene
     def apply_transformation(trasfo):
         trasfo = trasfo(diff_vector)
         new_positions = trasfo @ positions_initial
-        params[shape_param_key] = ek.ravel(new_positions)
+        params[shape_param_key] = dr.ravel(new_positions)
         params.set_dirty(shape_param_key)
         params.update()
 
@@ -503,27 +503,27 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # # If the vertices are shifted along z-axis, so does si.t
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    ek.forward(diff_vector.z)
-    assert ek.allclose(ek.grad(si.t), 1)
+    dr.forward(diff_vector.z)
+    assert dr.allclose(dr.grad(si.t), 1)
 
     # If the vertices are shifted along z-axis, so does si.p
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
-    ek.forward(diff_vector.z)
-    assert ek.allclose(ek.grad(p), [0.0, 0.0, 1.0])
+    dr.forward(diff_vector.z)
+    assert dr.allclose(dr.grad(p), [0.0, 0.0, 1.0])
 
     # If the vertices are shifted along x-axis, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    ek.forward(diff_vector.x)
-    assert ek.allclose(ek.grad(si.uv), [-0.5, 0.0])
+    dr.forward(diff_vector.x)
+    assert dr.allclose(dr.grad(si.uv), [-0.5, 0.0])
 
     # If the vertices are shifted along y-axis, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    ek.forward(diff_vector.y)
-    assert ek.allclose(ek.grad(si.uv), [0.0, -0.5])
+    dr.forward(diff_vector.y)
+    assert dr.allclose(dr.grad(si.uv), [0.0, -0.5])
 
     # ---------------------------------------
     # Test rotation
@@ -534,9 +534,9 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # If the vertices are rotated around the center, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.rotate([0, 0, 1], v.x))
     si = pi.compute_surface_interaction(ray)
-    ek.forward(diff_vector.x)
-    du = 0.5 * ek.sin(2 * ek.Pi / 360.0)
-    assert ek.allclose(ek.grad(si.uv), [-du, du], atol=1e-6)
+    dr.forward(diff_vector.x)
+    du = 0.5 * dr.sin(2 * dr.Pi / 360.0)
+    assert dr.allclose(dr.grad(si.uv), [-du, du], atol=1e-6)
 
 
 @fresolver_append_path
@@ -544,9 +544,9 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import load_string, Ray3f, Vector3f
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -560,9 +560,9 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     vertex_pos_key       = 'rect.vertex_positions'
     vertex_normals_key   = 'rect.vertex_normals'
     vertex_texcoords_key = 'rect.vertex_texcoords'
-    ek.enable_grad(params[vertex_pos_key])
-    ek.enable_grad(params[vertex_normals_key])
-    ek.enable_grad(params[vertex_texcoords_key])
+    dr.enable_grad(params[vertex_pos_key])
+    dr.enable_grad(params[vertex_normals_key])
+    dr.enable_grad(params[vertex_texcoords_key])
     params.set_dirty(vertex_pos_key)
     params.set_dirty(vertex_normals_key)
     params.set_dirty(vertex_texcoords_key)
@@ -577,104 +577,104 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 
     # If si.t changes, so the 4th vertex should move along the z-axis
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.t)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.t)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # If si.p moves along the z-axis, so does the 4th vertex
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.p.z)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.p.z)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # To increase si.dp_du along the x-axis, we need to stretch the upper edge of the rectangle
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_du.x)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.dp_du.x)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to transform the rectangle into a trapezoid
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_du.y)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.dp_du.y)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.dp_dv along the x-axis, we need to transform the rectangle into a trapezoid
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_dv.x)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.dp_dv.x)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_dv along the y-axis, we need to strech the right edge of the rectangle
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_dv.y)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.dp_dv.y)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.n along the x-axis, we need to rotate the right edge around the y axis
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.n.x)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.n.x)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.n along the y-axis, we need to rotate the top edge around the x axis
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.n.y)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.n.y)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the x-axis, we need to rotate the right edge around the y axis
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     params.set_dirty(vertex_pos_key); params.update()
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.sh_frame.n.x)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.sh_frame.n.x)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the y-axis, we need to rotate the top edge around the x axis
-    ek.set_grad(params[vertex_pos_key], 0.0)
+    dr.set_grad(params[vertex_pos_key], 0.0)
     params.set_dirty(vertex_pos_key); params.update()
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.sh_frame.n.y)
-    assert ek.allclose(ek.grad(params[vertex_pos_key]),
+    dr.backward(si.sh_frame.n.y)
+    assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # ---------------------------------------
     # Test vertex texcoords
 
     # To increase si.uv along the x-axis, we need to move the uv of the 4th vertex along the x-axis
-    ek.set_grad(params[vertex_texcoords_key], 0.0)
+    dr.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.uv.x)
-    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
+    dr.backward(si.uv.x)
+    assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
                        [0, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.uv along the y-axis, we need to move the uv of the 4th vertex along the y-axis
-    ek.set_grad(params[vertex_texcoords_key], 0.0)
+    dr.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.uv.y)
-    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
+    dr.backward(si.uv.y)
+    assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
                        [0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # To increase si.dp_du along the x-axis, we need to shrink the uv along the top edge of the rectangle
-    ek.set_grad(params[vertex_texcoords_key], 0.0)
+    dr.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_du.x)
-    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
+    dr.backward(si.dp_du.x)
+    assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
                        [0, 0, 2, 0, 0, 0, -2, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to shrink the uv along the right edge of the rectangle
-    ek.set_grad(params[vertex_texcoords_key], 0.0)
+    dr.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.dp_dv.y)
-    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
+    dr.backward(si.dp_dv.y)
+    assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
                        [0, 2, 0, 0, 0, 0, 0, -2], atol=1e-5)
 
 
@@ -684,9 +684,9 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
     from mitsuba.render import RayFlags
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     scene = load_string('''
         <scene version="2.0.0">
@@ -699,17 +699,17 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = ek.unravel(Point3f, positions_buf)
+    positions_initial = dr.unravel(Point3f, positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
-    ek.enable_grad(diff_vector)
+    dr.enable_grad(diff_vector)
 
     # Apply the transformation to mesh vertex position and update scene
     def apply_transformation(trasfo):
         trasfo = trasfo(diff_vector)
         new_positions = trasfo @ positions_initial
-        params[shape_param_key] = ek.ravel(new_positions)
+        params[shape_param_key] = dr.ravel(new_positions)
         params.set_dirty(shape_param_key)
         params.update()
 
@@ -723,34 +723,34 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
-    ek.forward(diff_vector.x)
-    assert ek.allclose(ek.grad(p), [0.0, 0.0, 0.0], atol=1e-5)
+    dr.forward(diff_vector.x)
+    assert dr.allclose(dr.grad(p), [0.0, 0.0, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
-    ek.forward(diff_vector.x)
-    assert ek.allclose(ek.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
+    dr.forward(diff_vector.x)
+    assert dr.allclose(dr.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, si.uv should move
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    ek.forward(diff_vector.x)
-    assert ek.allclose(ek.grad(si.uv), [-0.5, 0.0], atol=1e-5)
+    dr.forward(diff_vector.x)
+    assert dr.allclose(dr.grad(si.uv), [-0.5, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
-    ek.forward(diff_vector.x)
-    assert ek.allclose(ek.grad(si.uv), [0.0, 0.0], atol=1e-5)
+    dr.forward(diff_vector.x)
+    assert dr.allclose(dr.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
     # TODO fix this!
     # If the vertices are shifted along x-axis, sticky si.t should follow
     # apply_transformation(lambda v : Transform4f.translate(v))
     # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
-    # ek.forward(diff_vector.y)
-    # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
+    # dr.forward(diff_vector.y)
+    # assert dr.allclose(dr.grad(si.t), 10.0, atol=1e-5)
 
     # TODO add tests for normals on curved mesh (sticky normals shouldn't move)
 
@@ -764,9 +764,9 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     from mitsuba.render import RayFlags
     from mitsuba.python.util import traverse
 
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     # Create scene
     scene_dict = {
@@ -791,49 +791,49 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
 
     # Create differential parameter
     theta = Float(0.0)
-    ek.enable_grad(theta)
-    ek.set_label(theta, 'theta')
+    dr.enable_grad(theta)
+    dr.set_label(theta, 'theta')
 
     # Attach object vertices to differential parameter
-    with ek.Scope("Attach object vertices"):
-        positions_initial = ek.unravel(Point3f, params[key])
+    with dr.Scope("Attach object vertices"):
+        positions_initial = dr.unravel(Point3f, params[key])
         transform = Transform4f.translate(Vector3f(0.0, theta, 0.0))
         positions_new = transform @ positions_initial
-        positions_new = ek.ravel(positions_new)
-        ek.set_label(positions_new, 'positions_new')
+        positions_new = dr.ravel(positions_new)
+        dr.set_label(positions_new, 'positions_new')
         del transform
-        # print(ek.graphviz_str(Float(1)))
+        # print(dr.graphviz_str(Float(1)))
         params[key] = positions_new
         params.update()
-        ek.set_label(params[key], 'positions_post_update')
-        ek.set_label(params['sphere.vertex_normals'], 'vertex_normals')
-        # print(ek.graphviz_str(Float(1)))
+        dr.set_label(params[key], 'positions_post_update')
+        dr.set_label(params['sphere.vertex_normals'], 'vertex_normals')
+        # print(dr.graphviz_str(Float(1)))
 
     spp = 1
     film_size = ScalarVector2i(res)
 
     # Sample a wavefront of rays (one per pixel and spp)
-    total_sample_count = ek.hprod(film_size) * spp
-    pos = ek.arange(UInt32, total_sample_count)
+    total_sample_count = dr.hprod(film_size) * spp
+    pos = dr.arange(UInt32, total_sample_count)
     pos //= spp
-    scale = ek.rcp(Vector2f(film_size))
+    scale = dr.rcp(Vector2f(film_size))
     pos = Vector2f(Float(pos %  int(film_size[0])),
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
     ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1])
-    ek.set_label(ray, 'ray')
+    dr.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
     si = scene.ray_intersect(ray, RayFlags.FollowShape, True)
-    ek.set_label(si, 'si')
+    dr.set_label(si, 'si')
 
-    # print(ek.graphviz_str(Float(1)))
+    # print(dr.graphviz_str(Float(1)))
 
-    ek.forward(theta)
+    dr.forward(theta)
 
     hit_sphere = si.t < 6.0
-    assert ek.allclose(ek.grad(si.p), ek.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0, 0, 0)))
+    assert dr.allclose(dr.grad(si.p), dr.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0, 0, 0)))
 
 
 @fresolver_append_path
@@ -852,39 +852,39 @@ def test19_update_geometry(variants_vec_rgb):
 
     params = traverse(scene)
 
-    init_vertex_pos = ek.unravel(Point3f, params['rect.vertex_positions'])
+    init_vertex_pos = dr.unravel(Point3f, params['rect.vertex_positions'])
 
     def translate(v):
         transform = Transform4f.translate(mitsuba.core.Vector3f(v))
         positions_new = transform @ init_vertex_pos
-        params['rect.vertex_positions'] = ek.ravel(positions_new)
+        params['rect.vertex_positions'] = dr.ravel(positions_new)
         params.update()
 
     film_size = ScalarVector2i([4, 4])
-    total_sample_count = ek.hprod(film_size)
-    pos = ek.arange(UInt32, total_sample_count)
-    scale = ek.rcp(Vector2f(film_size))
+    total_sample_count = dr.hprod(film_size)
+    pos = dr.arange(UInt32, total_sample_count)
+    scale = dr.rcp(Vector2f(film_size))
     pos = Vector2f(Float(pos %  int(film_size[0])),
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
     ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
     init_t = scene.ray_intersect_preliminary(ray, coherent=True).t
-    ek.eval(init_t)
+    dr.eval(init_t)
 
     v = [0, 0, 10]
     translate(v)
     ray.o += v
     t = scene.ray_intersect_preliminary(ray, coherent=True).t
     ray.o -= v
-    assert(ek.allclose(t, init_t))
+    assert(dr.allclose(t, init_t))
 
     v = [-5, 0, 10]
     translate(v)
     ray.o += v
     t = scene.ray_intersect_preliminary(ray, coherent=True).t
     ray.o -= v
-    assert(ek.allclose(t, init_t))
+    assert(dr.allclose(t, init_t))
 
 
 @fresolver_append_path
@@ -915,8 +915,8 @@ def test20_write_xml(variants_all_rgb, tmp_path):
     })
     params_saved = traverse(mesh_saved)
 
-    assert ek.allclose(params_saved['vertex_positions'], positions + 10.0)
-    assert buf_name in params_saved and ek.allclose(params_saved[buf_name], [1, 2, 3, 4])
+    assert dr.allclose(params_saved['vertex_positions'], positions + 10.0)
+    assert buf_name in params_saved and dr.allclose(params_saved[buf_name], [1, 2, 3, 4])
 
 
 @fresolver_append_path
@@ -936,7 +936,7 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     ray = Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
     B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
 
-    assert ek.all(B < 1e-6)
+    assert dr.all(B < 1e-6)
 
     # Check that boundary test value increase as we move away from boundary
     N = 10
@@ -944,7 +944,7 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     for x in range(N):
         ray = Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
         B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
-        assert ek.all(prev < B)
+        assert dr.all(prev < B)
         prev = B
 
 
@@ -965,21 +965,21 @@ def test22_boundary_test_face_normal(variants_all_ad_rgb):
     # Check boundary test value when no intersection
     ray = Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
     si = scene.ray_intersect(ray, RayFlags.BoundaryTest, True)
-    assert ek.all(~si.is_valid())
+    assert dr.all(~si.is_valid())
     B = si.boundary_test
-    assert ek.all(B > 1e6)
+    assert dr.all(B > 1e6)
 
     # Check boundary test value close to silhouette
     ray = Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
     B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
-    assert ek.all(B < 1e-3)
+    assert dr.all(B < 1e-3)
 
     # Check boundary test value close to silhouette
     ray = Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
     B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
-    assert ek.all(B < 1e-4)
+    assert dr.all(B < 1e-4)
 
     # Check boundary test value close far from silhouette
     ray = Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
     B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
-    assert ek.all(B > 1e-1)
+    assert dr.all(B > 1e-1)

@@ -688,7 +688,7 @@ class WriteXML:
         transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
         '''
-        from enoki import transform_decompose, quat_to_euler
+        from drjit import transform_decompose, quat_to_euler
         scale, quat, trans = transform_decompose(transform.matrix)
         rot = quat_to_euler(quat)
         params = {}

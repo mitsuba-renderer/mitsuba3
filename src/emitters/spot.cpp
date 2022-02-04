@@ -82,17 +82,17 @@ public:
                 Throw("The parameter 'texture' must be spatially varying (e.g. bitmap type)!");
             m_flags |= +EmitterFlags::SpatiallyVarying;
         }
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         m_cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
         m_beam_width   = props.get<ScalarFloat>("beam_width", m_cutoff_angle * 3.0f / 4.0f);
-        m_cutoff_angle = ek::deg_to_rad(m_cutoff_angle);
-        m_beam_width   = ek::deg_to_rad(m_beam_width);
+        m_cutoff_angle = dr::deg_to_rad(m_cutoff_angle);
+        m_beam_width   = dr::deg_to_rad(m_beam_width);
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
-        m_cos_cutoff_angle = ek::cos(m_cutoff_angle);
-        m_cos_beam_width   = ek::cos(m_beam_width);
+        m_cos_cutoff_angle = dr::cos(m_cutoff_angle);
+        m_cos_beam_width   = dr::cos(m_beam_width);
         Assert(m_cutoff_angle >= m_beam_width);
-        m_uv_factor = ek::tan(m_cutoff_angle);
+        m_uv_factor = dr::tan(m_cutoff_angle);
     }
 
     /**
@@ -111,13 +111,13 @@ public:
      * Does not include the emitted radiance in that direction.
      */
     Float falloff_curve(const Vector3f &d, Mask /*active*/) const {
-        Vector3f local_dir = ek::normalize(d);
+        Vector3f local_dir = dr::normalize(d);
         Float cos_theta    = local_dir.z();
-        Float beam_res = ek::select(
+        Float beam_res = dr::select(
             cos_theta >= m_cos_beam_width, 1.f,
-            (m_cutoff_angle - ek::acos(cos_theta)) * m_inv_transition_width);
+            (m_cutoff_angle - dr::acos(cos_theta)) * m_inv_transition_width);
 
-        return ek::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
+        return dr::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -131,7 +131,7 @@ public:
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float) m_cos_cutoff_angle);
 
         // 2. Sample spectrum
-        auto si = ek::zero<SurfaceInteraction3f>();
+        auto si = dr::zero<SurfaceInteraction3f>();
         si.time = time;
         si.p    = m_to_world.value().translation();
         si.uv   = direction_to_uv(local_dir);
@@ -158,8 +158,8 @@ public:
         ds.delta    = true;
         ds.emitter  = this;
         ds.d        = ds.p - it.p;
-        ds.dist     = ek::norm(ds.d);
-        Float inv_dist = ek::rcp(ds.dist);
+        ds.dist     = dr::norm(ds.d);
+        Float inv_dist = dr::rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = m_to_world.value().inverse() * -ds.d;
 
@@ -167,7 +167,7 @@ public:
         Float falloff = falloff_curve(local_d, active);
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
-        SurfaceInteraction3f si      = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si      = dr::zero<SurfaceInteraction3f>();
         si.t                         = 0.f;
         si.time                      = it.time;
         si.wavelengths               = it.wavelengths;
@@ -178,7 +178,7 @@ public:
             radiance *= m_texture->eval(si, active);
         }
 
-        return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * ek::sqr(inv_dist)) };
+        return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist)) };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {

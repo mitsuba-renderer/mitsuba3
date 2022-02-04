@@ -72,7 +72,7 @@ public:
         if (!m_shapegroup)
             Throw("A reference to a 'shapegroup' must be specified!");
 
-        ek::make_opaque(m_to_world, m_to_object);
+        dr::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -102,12 +102,12 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
-               ek::uint32_array_t<FloatP>>
+    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+               dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ek::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
-        if constexpr (!ek::is_array_v<FloatP>) {
+        if constexpr (!dr::is_array_v<FloatP>) {
             return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.scalar().transform_affine(ray));
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
@@ -115,10 +115,10 @@ public:
     }
 
     template <typename FloatP, typename Ray3fP>
-    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, ek::mask_t<FloatP> active) const {
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, dr::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        if constexpr (!ek::is_array_v<FloatP>) {
+        if constexpr (!dr::is_array_v<FloatP>) {
             return m_shapegroup->ray_test_scalar(m_to_object.scalar().transform_affine(ray));
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
@@ -138,10 +138,10 @@ public:
             m_to_object.value().transform_affine(ray), pi, ray_flags, recursion_depth, active);
 
         si.p = m_to_world.value().transform_affine(si.p);
-        si.n = ek::normalize(m_to_world.value().transform_affine(si.n));
+        si.n = dr::normalize(m_to_world.value().transform_affine(si.n));
 
         if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
-            si.sh_frame.n = ek::normalize(m_to_world.value().transform_affine(si.sh_frame.n));
+            si.sh_frame.n = dr::normalize(m_to_world.value().transform_affine(si.sh_frame.n));
             si.initialize_sh_frame();
         }
 
@@ -155,16 +155,16 @@ public:
 
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.value().transform_affine(
-                ek::normalize(m_to_object.value().transform_affine(n)));
-            Float inv_len = ek::rcp(ek::norm(tn));
+                dr::normalize(m_to_object.value().transform_affine(n)));
+            Float inv_len = dr::rcp(dr::norm(tn));
             tn *= inv_len;
 
             // Apply transform to dn_du and dn_dv
             si.dn_du = m_to_world.value().transform_affine(Normal3f(si.dn_du)) * inv_len;
             si.dn_dv = m_to_world.value().transform_affine(Normal3f(si.dn_dv)) * inv_len;
 
-            si.dn_du -= tn * ek::dot(tn, si.dn_du);
-            si.dn_dv -= tn * ek::dot(tn, si.dn_dv);
+            si.dn_du -= tn * dr::dot(tn, si.dn_du);
+            si.dn_dv -= tn * dr::dot(tn, si.dn_dv);
         }
 
         si.instance = this;
@@ -186,11 +186,11 @@ public:
 
 #if defined(MTS_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
-        ENOKI_MARK_USED(device);
-        if constexpr (!ek::is_cuda_array_v<Float>) {
+        DRJIT_MARK_USED(device);
+        if constexpr (!dr::is_cuda_array_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
-            ek::Matrix<ScalarFloat32, 4> matrix(m_to_world.scalar().matrix);
+            dr::Matrix<ScalarFloat32, 4> matrix(m_to_world.scalar().matrix);
             rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &matrix);
             rtcCommitGeometry(instance);
             return instance;

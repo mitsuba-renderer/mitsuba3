@@ -1,7 +1,7 @@
 #include <mitsuba/core/math.h>
-#include <enoki/color.h>
-#include <enoki/dynamic.h>
-#include <enoki/morton.h>
+#include <drjit/color.h>
+#include <drjit/dynamic.h>
+#include <drjit/morton.h>
 #include <bitset>
 #include <mitsuba/python/python.h>
 
@@ -35,11 +35,11 @@ MTS_PY_EXPORT(math) {
           D(math, round_to_power_of_two));
 
     m.def("linear_to_srgb",
-          [](Float &c) { return ek::linear_to_srgb(c); },
+          [](Float &c) { return dr::linear_to_srgb(c); },
           "Applies the sRGB gamma curve to the given argument.");
 
     m.def("srgb_to_linear",
-          [](Float &c) { return ek::srgb_to_linear(c); },
+          [](Float &c) { return dr::srgb_to_linear(c); },
           "Applies the inverse sRGB gamma curve to the given argument.");
 
     m.def("chi2",
@@ -53,10 +53,10 @@ MTS_PY_EXPORT(math) {
           &math::solve_quadratic<Float>,
           "a"_a, "b"_a, "c"_a, D(math, solve_quadratic));
 
-    m.def("morton_decode2", &ek::morton_decode<ek::Array<UInt32, 2>>, "m"_a);
-    m.def("morton_decode3", &ek::morton_decode<ek::Array<UInt32, 3>>, "m"_a);
-    m.def("morton_encode2", &ek::morton_encode<ek::Array<UInt32, 2>>, "v"_a);
-    m.def("morton_encode3", &ek::morton_encode<ek::Array<UInt32, 3>>, "v"_a);
+    m.def("morton_decode2", &dr::morton_decode<dr::Array<UInt32, 2>>, "m"_a);
+    m.def("morton_decode3", &dr::morton_decode<dr::Array<UInt32, 3>>, "m"_a);
+    m.def("morton_encode2", &dr::morton_encode<dr::Array<UInt32, 2>>, "v"_a);
+    m.def("morton_encode3", &dr::morton_encode<dr::Array<UInt32, 3>>, "v"_a);
 
     m.def("find_interval",
           [](uint32_t size, const std::function<Mask(const UInt32 &)> &pred) {

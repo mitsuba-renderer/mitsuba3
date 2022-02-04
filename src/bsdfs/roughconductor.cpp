@@ -188,7 +188,7 @@ public:
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         m_components.clear();
         m_components.push_back(m_flags);
@@ -201,11 +201,11 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return { bs, 0.f };
 
         /* Construct a microfacet distribution matching the
@@ -226,20 +226,20 @@ public:
         bs.sampled_type = +BSDFFlags::GlossyReflection;
 
         // Ensure that this is a valid sample
-        active &= ek::neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
+        active &= dr::neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
 
         UnpolarizedSpectrum weight;
         if (likely(m_sample_visible))
             weight = distr.smith_g1(bs.wo, m);
         else
-            weight = distr.G(si.wi, bs.wo, m) * ek::dot(si.wi, m) /
+            weight = distr.G(si.wi, bs.wo, m) * dr::dot(si.wi, m) /
                      (cos_theta_i * Frame3f::cos_theta(m));
 
         // Jacobian of the half-direction mapping
-        bs.pdf /= 4.f * ek::dot(bs.wo, m);
+        bs.pdf /= 4.f * dr::dot(bs.wo, m);
 
         // Evaluate the Fresnel factor
-        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+        dr::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
         Spectrum F;
@@ -256,8 +256,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = ek::normalize(ek::cross(m, -wo_hat)),
-                     s_axis_out = ek::normalize(ek::cross(m, wi_hat));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(m, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(m, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */
@@ -265,7 +265,7 @@ public:
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
         } else {
-            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, m)), eta_c);
+            F = fresnel_conductor(UnpolarizedSpectrum(dr::dot(si.wi, m)), eta_c);
         }
 
         /* If requested, include the specular reflectance component */
@@ -284,11 +284,11 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return 0.f;
 
         // Calculate the half-direction vector
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
@@ -300,7 +300,7 @@ public:
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
 
-        active &= ek::neq(D, 0.f);
+        active &= dr::neq(D, 0.f);
 
         // Evaluate Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, H);
@@ -309,7 +309,7 @@ public:
         UnpolarizedSpectrum result = D * G / (4.f * Frame3f::cos_theta(si.wi));
 
         // Evaluate the Fresnel factor
-        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+        dr::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
         Spectrum F;
@@ -326,8 +326,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = ek::normalize(ek::cross(H, -wo_hat)),
-                     s_axis_out = ek::normalize(ek::cross(H, wi_hat));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(H, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(H, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */
@@ -335,7 +335,7 @@ public:
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
         } else {
-            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, H)), eta_c);
+            F = fresnel_conductor(UnpolarizedSpectrum(dr::dot(si.wi, H)), eta_c);
         }
 
         /* If requested, include the specular reflectance component */
@@ -353,16 +353,16 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Calculate the half-direction vector
-        Vector3f m = ek::normalize(wo + si.wi);
+        Vector3f m = dr::normalize(wo + si.wi);
 
         /* Filter cases where the micro/macro-surface don't agree on the side.
            This logic is evaluated in smith_g1() called as part of the eval()
            and sample() methods and needs to be replicated in the probability
            density computation as well. */
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
-                  ek::dot(si.wi, m) > 0.f && ek::dot(wo, m) > 0.f;
+                  dr::dot(si.wi, m) > 0.f && dr::dot(wo, m) > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return 0.f;
 
         /* Construct a microfacet distribution matching the
@@ -377,9 +377,9 @@ public:
             result = distr.eval(m) * distr.smith_g1(si.wi, m) /
                      (4.f * cos_theta_i);
         else
-            result = distr.pdf(si.wi, m) / (4.f * ek::dot(wo, m));
+            result = distr.pdf(si.wi, m) / (4.f * dr::dot(wo, m));
 
-        return ek::select(active, result, 0.f);
+        return dr::select(active, result, 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -392,16 +392,16 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Calculate the half-direction vector
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
 
         /* Filter cases where the micro/macro-surface don't agree on the side.
            This logic is evaluated in smith_g1() called as part of the eval()
            and sample() methods and needs to be replicated in the probability
            density computation as well. */
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
-                  ek::dot(si.wi, H) > 0.f && ek::dot(wo, H) > 0.f;
+                  dr::dot(si.wi, H) > 0.f && dr::dot(wo, H) > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         /* Construct a microfacet distribution matching the
@@ -414,7 +414,7 @@ public:
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
 
-        active &= ek::neq(D, 0.f);
+        active &= dr::neq(D, 0.f);
 
         // Evaluate Smith's shadow-masking function
         Float smith_g1_wi = distr.smith_g1(si.wi, H);
@@ -424,7 +424,7 @@ public:
         UnpolarizedSpectrum value = D * G / (4.f * Frame3f::cos_theta(si.wi));
 
         // Evaluate the Fresnel factor
-        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+        dr::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
         Spectrum F;
@@ -441,8 +441,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = ek::normalize(ek::cross(H, -wo_hat)),
-                     s_axis_out = ek::normalize(ek::cross(H, wi_hat));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(H, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(H, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */
@@ -450,7 +450,7 @@ public:
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
         } else {
-            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, H)), eta_c);
+            F = fresnel_conductor(UnpolarizedSpectrum(dr::dot(si.wi, H)), eta_c);
         }
 
         // If requested, include the specular reflectance component
@@ -461,9 +461,9 @@ public:
         if (likely(m_sample_visible))
             pdf = D * smith_g1_wi / (4.f * cos_theta_i);
         else
-            pdf = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+            pdf = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
 
-        return { F * value & active, ek::select(active, pdf, 0.f) };
+        return { F * value & active, dr::select(active, pdf, 0.f) };
     }
 
     void traverse(TraversalCallback *callback) override {

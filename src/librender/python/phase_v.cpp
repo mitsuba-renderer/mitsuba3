@@ -67,8 +67,8 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
        .def("component_count", [](Ptr ptr, Mask active) { return ptr->component_count(active); },
             "active"_a = true, D(PhaseFunction, component_count));
 
-    if constexpr (ek::is_array_v<Ptr>)
-        bind_enoki_ptr_array(cls);
+    if constexpr (dr::is_array_v<Ptr>)
+        bind_drjit_ptr_array(cls);
 }
 
 MTS_PY_EXPORT(PhaseFunction) {
@@ -96,20 +96,20 @@ MTS_PY_EXPORT(PhaseFunction) {
                 [](PyPhaseFunction &phase){ return phase.m_flags; },
                 [](PyPhaseFunction &phase, uint32_t flags){
                     phase.m_flags = flags;
-                    ek::set_attr(&phase, "flags", flags);
+                    dr::set_attr(&phase, "flags", flags);
                 }
             )
             .def("__repr__", &PhaseFunction::to_string);
 
     bind_phase_generic<PhaseFunction *>(phase);
 
-    if constexpr (ek::is_array_v<PhaseFunctionPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<PhaseFunctionPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<PhaseFunctionPtr> cls(m, "PhaseFunctionPtr", ek_array);
+        py::class_<PhaseFunctionPtr> cls(m, "PhaseFunctionPtr", dr_array);
         bind_phase_generic<PhaseFunctionPtr>(cls);
-        pybind11_type_alias<UInt32, ek::replace_scalar_t<UInt32, PhaseFunctionFlags>>();
+        pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, PhaseFunctionFlags>>();
     }
 
     MTS_PY_REGISTER_OBJECT("register_phasefunction", PhaseFunction)

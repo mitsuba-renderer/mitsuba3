@@ -66,15 +66,15 @@ public:
     void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is a square number
         m_resolution = 1;
-        while (ek::sqr(m_resolution) < spp)
+        while (dr::sqr(m_resolution) < spp)
             m_resolution++;
 
-        if (spp != ek::sqr(m_resolution))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(m_resolution));
+        if (spp != dr::sqr(m_resolution))
+            Log(Warn, "Sample count should be square and power of two, rounding to %i", dr::sqr(m_resolution));
 
-        m_sample_count = ek::sqr(m_resolution);
-        m_inv_sample_count = ek::rcp(ScalarFloat(m_sample_count));
-        m_inv_resolution   = ek::rcp(ScalarFloat(m_resolution));
+        m_sample_count = dr::sqr(m_resolution);
+        m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
+        m_inv_resolution   = dr::rcp(ScalarFloat(m_resolution));
         m_resolution_div = m_resolution;
     }
 
@@ -141,7 +141,7 @@ public:
 
     void schedule_state() override {
         Base::schedule_state();
-        ek::schedule(m_permutation_seed);
+        dr::schedule(m_permutation_seed);
     }
 
     std::string to_string() const override {
@@ -171,7 +171,7 @@ private:
     ScalarUInt32 m_resolution;
     ScalarFloat m_inv_resolution;
     ScalarFloat m_inv_sample_count;
-    ek::divisor<ScalarUInt32> m_resolution_div;
+    dr::divisor<ScalarUInt32> m_resolution_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

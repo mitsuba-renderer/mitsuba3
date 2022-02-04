@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -492,7 +492,7 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
     w = [s[0] for s in spectrum]
     v = [s[1] * CIE_Y_NORMALIZATION for s in spectrum]
     rgb = spectrum_list_to_srgb(w, v)
-    assert ek.allclose(rgb, [0.442717, 0.278474, 0.118373])
+    assert dr.allclose(rgb, [0.442717, 0.278474, 0.118373])
 
     s1 = mitsuba.core.load_dict({
         "type" : "spectrum",

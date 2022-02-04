@@ -10,13 +10,13 @@ template <typename Warp> auto bind_warp(py::module &m,
         const char *doc_invert,
         const char *doc_eval) {
     using Float                = typename Warp::Float;
-    using ScalarFloat          = ek::scalar_t<Float>;
-    using Vector2f             = ek::Array<Float, 2>;
-    using ScalarVector2u       = ek::Array<uint32_t, 2>;
-    using Mask                 = ek::mask_t<Float>;
+    using ScalarFloat          = dr::scalar_t<Float>;
+    using Vector2f             = dr::Array<Float, 2>;
+    using ScalarVector2u       = dr::Array<uint32_t, 2>;
+    using Mask                 = dr::mask_t<Float>;
     using NumPyArray           = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
 
-    py::object zero = py::cast(ek::zero<ek::Array<ScalarFloat, Warp::Dimension>>());
+    py::object zero = py::cast(dr::zero<dr::Array<ScalarFloat, Warp::Dimension>>());
 
     auto constructor =
         py::init([](const NumPyArray &data,
@@ -56,21 +56,21 @@ template <typename Warp> auto bind_warp(py::module &m,
 
     warp.def("sample",
              [](const Warp *w, const Vector2f &sample,
-                          const ek::Array<Float, Warp::Dimension> &param,
+                          const dr::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->sample(sample, param.data(), active);
              },
              "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
         .def("invert",
              [](const Warp *w, const Vector2f &sample,
-                          const ek::Array<Float, Warp::Dimension> &param,
+                          const dr::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->invert(sample, param.data(), active);
              },
              "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
         .def("eval",
              [](const Warp *w, const Vector2f &pos,
-                          const ek::Array<Float, Warp::Dimension> &param,
+                          const dr::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->eval(pos, param.data(), active);
              },

@@ -6,7 +6,7 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/random.h>
-#include <enoki/loop.h>
+#include <drjit/loop.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -125,11 +125,11 @@ public:
     /// Set the number of samples per pixel per pass in wavefront modes (default is 1)
     void set_samples_per_wavefront(uint32_t samples_per_wavefront);
 
-    /// ek::schedule() variables that represent the internal sampler state
+    /// dr::schedule() variables that represent the internal sampler state
     virtual void schedule_state();
 
     /// Register internal state of this sampler with a symbolic loop
-    virtual void loop_put(ek::Loop<Mask> &loop);
+    virtual void loop_put(dr::Loop<Mask> &loop);
 
     MTS_DECLARE_CLASS()
 protected:
@@ -169,7 +169,7 @@ public:
     virtual void seed(uint32_t seed,
                       uint32_t wavefront_size = (uint32_t) -1) override;
     virtual void schedule_state() override;
-    virtual void loop_put(ek::Loop<Mask> &loop) override;
+    virtual void loop_put(dr::Loop<Mask> &loop) override;
 
     MTS_DECLARE_CLASS()
 protected:

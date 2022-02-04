@@ -3,7 +3,7 @@
 #include <cstring>
 #include <cstdio>
 
-#include <enoki-jit/optix.h>
+#include <drjit-core/optix.h>
 
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/shapes.h>
@@ -144,7 +144,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         ));
 
         // =====================================================
-        // Create program groups (raygen provided by Enoki..)
+        // Create program groups (raygen provided by Dr.Jit..)
         // =====================================================
 
         OptixProgramGroupOptions program_group_options = {};
@@ -186,7 +186,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_array_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
         Timer timer;
@@ -260,8 +260,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        ek::sync_thread();
+    if constexpr (dr::is_cuda_array_v<Float>) {
+        dr::sync_thread();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
@@ -339,7 +339,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         // Prevents the pipeline to be released when updating the scene parameters
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
-        m_accel_handle = ek::opaque<UInt64>(s.ias_handle);
+        m_accel_handle = dr::opaque<UInt64>(s.ias_handle);
 
         jit_var_set_callback(
             m_accel_handle.index(),
@@ -361,9 +361,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_array_v<Float>) {
         // Ensure all raytracing kernels are terminated before releasing the scene
-        ek::sync_thread();
+        dr::sync_thread();
 
         /* Decrease the reference count of the handle variable. This will
            trigger the release of the Embree acceleration data structure if no
@@ -392,11 +392,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_array_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        // Override optix configuration in enoki-jit.
+        // Override optix configuration in drjit-core.
         // TODO This could be problematic when raytracing calls on other scenes are still pending.
         jit_optix_configure(
             &config.pipeline_compile_options,
@@ -416,13 +416,13 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         // Instance index is initialized to 0 when there is no instancing in the scene
         UInt32 payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
 
-        using Single = ek::float32_array_t<Float>;
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        using Single = dr::float32_array_t<Float>;
+        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
         // Be careful with 'ray.maxt' in double precision variants
         if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
+            ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
@@ -444,18 +444,18 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                             trace_args, active.index());
 
         PreliminaryIntersection3f pi;
-        pi.t          = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
-        pi.prim_uv[0] = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
-        pi.prim_uv[1] = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
+        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
+        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
+        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
         pi.prim_index = UInt32::steal(trace_args[18]);
         pi.shape      = ShapePtr::steal(trace_args[19]);
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialize it for vcalls
-        pi.shape_index = ek::zero<UInt32>();
+        pi.shape_index = dr::zero<UInt32>();
 
         // jit_optix_ray_trace leaves payload data uninitialized for inactive lanes
-        pi.t[!active] = ek::Infinity<Float>;
+        pi.t[!active] = dr::Infinity<Float>;
 
         // Ensure pointers are initialized to nullptr for inactive lanes
         active &= pi.is_valid();
@@ -464,8 +464,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
         return pi;
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
 }
@@ -473,24 +473,24 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(ray_flags);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(ray_flags);
+        DRJIT_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_array_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        // Override optix configuration in enoki-jit.
+        // Override optix configuration in drjit-core.
         // TODO This could be problematic when raytracing calls on other scenes are still pending.
         jit_optix_configure(
             &config.pipeline_compile_options,
@@ -505,13 +505,13 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
 
         UInt32 payload_hit(1);
 
-        using Single = ek::float32_array_t<Float>;
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        using Single = dr::float32_array_t<Float>;
+        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
         // Be careful with 'ray.maxt' in double precision variants
         if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
+            ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
@@ -526,10 +526,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
                             trace_args, active.index());
 
-        return active && ek::eq(UInt32::steal(trace_args[15]), 1);
+        return active && dr::eq(UInt32::steal(trace_args[15]), 1);
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(active);
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }
 }

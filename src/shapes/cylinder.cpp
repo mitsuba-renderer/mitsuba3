@@ -8,7 +8,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
-#include <enoki/packet.h>
+#include <drjit/packet.h>
 
 #if defined(MTS_ENABLE_CUDA)
     #include "optix/cylinder.cuh"
@@ -92,7 +92,7 @@ public:
                       p1 = props.get<ScalarPoint3f>("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
         ScalarVector3f d = p1 - p0;
-        ScalarFloat length = ek::norm(d);
+        ScalarFloat length = dr::norm(d);
 
         m_to_world =
             m_to_world.scalar() * ScalarTransform4f::translate(p0) *
@@ -107,47 +107,47 @@ public:
          // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = transform_decompose(m_to_world.scalar().matrix, 25);
 
-        if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
-            ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
+        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
+            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't contain any shearing!");
 
-        if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f))
+        if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
         m_radius = S[0][0];
         m_length = S[2][2];
 
         if (m_radius.scalar() <= 0.f) {
-            m_radius = ek::abs(m_radius.scalar());
+            m_radius = dr::abs(m_radius.scalar());
             m_flip_normals = !m_flip_normals;
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
+        m_to_world = dr::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
         m_to_object = m_to_world.scalar().inverse();
 
-        m_inv_surface_area = ek::rcp(surface_area());
+        m_inv_surface_area = dr::rcp(surface_area());
 
-        ek::make_opaque(m_radius, m_length, m_inv_surface_area);
+        dr::make_opaque(m_radius, m_length, m_inv_surface_area);
         mark_dirty();
     }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(m_radius.scalar(), 0.f, 0.f),
                        x2 = m_to_world.scalar() * ScalarVector3f(0.f, m_radius.scalar(), 0.f),
-                       x  = ek::sqrt(ek::sqr(x1) + ek::sqr(x2));
+                       x  = dr::sqrt(dr::sqr(x1) + dr::sqr(x2));
 
         ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
                       p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, m_length.scalar());
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
-        return ScalarBoundingBox3f(ek::min(p0 - x, p1 - x), ek::max(p0 + x, p1 + x));
+        return ScalarBoundingBox3f(dr::min(p0 - x, p1 - x), dr::max(p0 + x, p1 + x));
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
-        using FloatP8         = ek::Packet<ScalarFloat, 8>;
-        using MaskP8          = ek::mask_t<FloatP8>;
+        using FloatP8         = dr::Packet<ScalarFloat, 8>;
+        using MaskP8          = dr::mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
@@ -163,8 +163,8 @@ public:
         /* Now forget about the cylinder ends and intersect an infinite
            cylinder with each bounding box face, then compute a bounding
            box of the resulting ellipses. */
-        Point3fP8  face_p = ek::zero<Point3fP8>();
-        Vector3fP8 face_n = ek::zero<Vector3fP8>();
+        Point3fP8  face_p = dr::zero<Point3fP8>();
+        Vector3fP8 face_n = dr::zero<Vector3fP8>();
 
         for (size_t i = 0; i < 3; ++i) {
             face_p.entry(i,  i * 2 + 0) = bbox.min.entry(i);
@@ -174,40 +174,40 @@ public:
         }
 
         // Project the cylinder direction onto the plane
-        FloatP8 dp   = ek::dot(cyl_d, face_n);
-        MaskP8 valid = ek::neq(dp, 0.f);
+        FloatP8 dp   = dr::dot(cyl_d, face_n);
+        MaskP8 valid = dr::neq(dp, 0.f);
 
         // Compute semimajor/minor axes of ellipse
-        Vector3fP8 v1 = ek::fnmadd(face_n, dp, cyl_d);
-        FloatP8 v1_n2 = ek::squared_norm(v1);
-        v1 = ek::select(ek::neq(v1_n2, 0.f), v1 * ek::rsqrt(v1_n2),
+        Vector3fP8 v1 = dr::fnmadd(face_n, dp, cyl_d);
+        FloatP8 v1_n2 = dr::squared_norm(v1);
+        v1 = dr::select(dr::neq(v1_n2, 0.f), v1 * dr::rsqrt(v1_n2),
                     coordinate_system(face_n).first);
-        Vector3fP8 v2 = ek::cross(face_n, v1);
+        Vector3fP8 v2 = dr::cross(face_n, v1);
 
         // Compute length of axes
-        v1 *= m_radius.scalar() / ek::abs(dp);
+        v1 *= m_radius.scalar() / dr::abs(dp);
         v2 *= m_radius.scalar();
 
         // Compute center of ellipse
-        FloatP8 t = ek::dot(face_n, face_p - cyl_p) / dp;
-        Point3fP8 center = ek::fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
+        FloatP8 t = dr::dot(face_n, face_p - cyl_p) / dp;
+        Point3fP8 center = dr::fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
         center[neq(face_n, 0.f)] = face_p;
 
         // Compute ellipse minima and maxima
-        Vector3fP8 x = ek::sqrt(ek::sqr(v1) + ek::sqr(v2));
+        Vector3fP8 x = dr::sqrt(dr::sqr(v1) + dr::sqr(v2));
         BoundingBox3fP8 ellipse_bounds(center - x, center + x);
         MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
         ellipse_bounds.clip(bbox);
 
         return ScalarBoundingBox3f(
             hmin_inner(select(ellipse_overlap, ellipse_bounds.min,
-                              Point3fP8(ek::Infinity<ScalarFloat>))),
+                              Point3fP8(dr::Infinity<ScalarFloat>))),
             hmax_inner(select(ellipse_overlap, ellipse_bounds.max,
-                              Point3fP8(-ek::Infinity<ScalarFloat>))));
+                              Point3fP8(-dr::Infinity<ScalarFloat>))));
     }
 
     Float surface_area() const override {
-        return 2.f * ek::Pi<ScalarFloat> * m_radius.value() * m_length.value();
+        return 2.f * dr::Pi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
     // =============================================================
@@ -218,7 +218,7 @@ public:
                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        auto [sin_theta, cos_theta] = ek::sincos(2.f * ek::Pi<Float> * sample.y());
+        auto [sin_theta, cos_theta] = dr::sincos(2.f * dr::Pi<Float> * sample.y());
 
         Point3f p(cos_theta * m_radius.value(),
                   sin_theta * m_radius.value(),
@@ -231,7 +231,7 @@ public:
 
         PositionSample3f ps;
         ps.p     = m_to_world.value().transform_affine(p);
-        ps.n     = ek::normalize(n);
+        ps.n     = dr::normalize(n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
@@ -251,22 +251,22 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
-               ek::uint32_array_t<FloatP>>
+    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+               dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ek::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
-                                              ek::is_diff_array_v<Float>,
-                                          ek::float32_array_t<FloatP>,
-                                          ek::float64_array_t<FloatP>>;
-        using ScalarValue = ek::scalar_t<Value>;
+        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
+                                              dr::is_diff_array_v<Float>,
+                                          dr::float32_array_t<FloatP>,
+                                          dr::float64_array_t<FloatP>>;
+        using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
         Value radius;
         Value length;
-        if constexpr (!ek::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_array_v<Value>) {
             ray = m_to_object.scalar().transform_affine(ray_);
             radius = (ScalarValue) m_radius.scalar();
             length = (ScalarValue) m_length.scalar();
@@ -285,51 +285,51 @@ public:
               dy = Value(ray.d.y()),
               dz = Value(ray.d.z());
 
-        Value A = ek::sqr(dx) + ek::sqr(dy),
+        Value A = dr::sqr(dx) + dr::sqr(dy),
               B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = ek::sqr(ox) + ek::sqr(oy) - ek::sqr(radius);
+              C = dr::sqr(ox) + dr::sqr(oy) - dr::sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
-        ek::mask_t<FloatP> out_bounds =
+        dr::mask_t<FloatP> out_bounds =
             !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         Value z_pos_near = oz + dz*near_t,
               z_pos_far  = oz + dz*far_t;
 
         // Cylinder fully contains the segment of the ray
-        ek::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
+        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds &&
                   ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= Value(0.0)) ||
                    (z_pos_far  >= Value(0.0) && z_pos_far <= length  && far_t <= maxt));
 
         FloatP t =
-            ek::select(active,
-                       ek::select(z_pos_near >= Value(0.0) && z_pos_near <= length &&
+            dr::select(active,
+                       dr::select(z_pos_near >= Value(0.0) && z_pos_near <= length &&
                                       near_t >= Value(0.0),
                                   FloatP(near_t), FloatP(far_t)),
-                       ek::Infinity<FloatP>);
+                       dr::Infinity<FloatP>);
 
-        return { t, ek::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { t, dr::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
-    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     ek::mask_t<FloatP> active) const {
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     dr::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
-                                              ek::is_diff_array_v<Float>,
-                                          ek::float32_array_t<FloatP>,
-                                          ek::float64_array_t<FloatP>>;
-        using ScalarValue = ek::scalar_t<Value>;
+        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
+                                              dr::is_diff_array_v<Float>,
+                                          dr::float32_array_t<FloatP>,
+                                          dr::float64_array_t<FloatP>>;
+        using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
         Value radius;
         Value length;
-        if constexpr (!ek::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_array_v<Value>) {
             ray = m_to_object.scalar().transform_affine(ray_);
             radius = (ScalarValue) m_radius.scalar();
             length = (ScalarValue) m_length.scalar();
@@ -348,22 +348,22 @@ public:
               dy = Value(ray.d.y()),
               dz = Value(ray.d.z());
 
-        Value A = ek::sqr(dx) + ek::sqr(dy),
+        Value A = dr::sqr(dx) + dr::sqr(dy),
               B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = ek::sqr(ox) + ek::sqr(oy) - ek::sqr(radius);
+              C = dr::sqr(ox) + dr::sqr(oy) - dr::sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
-        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
+        dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         Value z_pos_near = oz + dz * near_t,
               z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
-        ek::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
+        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
-        ek::mask_t<FloatP> valid_intersection =
+        dr::mask_t<FloatP> valid_intersection =
             active && solution_found && !out_bounds && !in_bounds &&
             ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= Value(0.0)) ||
              (z_pos_far  >= Value(0.0) && z_pos_far  <= length && far_t  <= maxt));
@@ -382,31 +382,31 @@ public:
 
         // Recompute ray intersection to get differentiable prim_uv and t
         Float t = pi.t;
-        if constexpr (ek::is_diff_array_v<Float>)
-            t = ek::replace_grad(t, ray_intersect_preliminary(ray, active).t);
+        if constexpr (dr::is_diff_array_v<Float>)
+            t = dr::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, t, ek::Infinity<Float>);
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        si.t = dr::select(active, t, dr::Infinity<Float>);
         si.p = ray(t);
 
         Vector3f local = m_to_object.value().transform_affine(si.p);
 
-        Float phi = ek::atan2(local.y(), local.x());
-        ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
+        Float phi = dr::atan2(local.y(), local.x());
+        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
 
-        si.uv = Point2f(phi * ek::InvTwoPi<Float>, local.z() / m_length.value());
+        si.uv = Point2f(phi * dr::InvTwoPi<Float>, local.z() / m_length.value());
 
-        Vector3f dp_du = 2.f * ek::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
+        Vector3f dp_du = 2.f * dr::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length.value());
         si.dp_du = m_to_world.value().transform_affine(dp_du);
         si.dp_dv = m_to_world.value().transform_affine(dp_dv);
-        si.n = Normal3f(ek::normalize(ek::cross(si.dp_du, si.dp_dv)));
+        si.n = Normal3f(dr::normalize(dr::cross(si.dp_du, si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
-        si.p += si.n * (m_radius.value() - ek::norm(ek::head<2>(local)));
+        si.p += si.n * (m_radius.value() - dr::norm(dr::head<2>(local)));
 
         if (m_flip_normals)
             si.n *= -1.f;
@@ -424,13 +424,13 @@ public:
 
         if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest))) {
             // Distance to cylinder edges
-            Float dist_edge = ek::dot(si.sh_frame.n, -ray.d);
+            Float dist_edge = dr::dot(si.sh_frame.n, -ray.d);
 
             // Distance to cap edges
-            Float dist_caps = 0.5f - ek::abs(si.uv.y() - 0.5f);
+            Float dist_caps = 0.5f - dr::abs(si.uv.y() - 0.5f);
 
             // Take the minimum of both distances to ensure 0.0 at silhouette.
-            si.boundary_test = ek::min(dist_caps, dist_edge);
+            si.boundary_test = dr::min(dist_caps, dist_edge);
         }
 
         return si;
@@ -457,7 +457,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (ek::is_cuda_array_v<Float>) {
+        if constexpr (dr::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 

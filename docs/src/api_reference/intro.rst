@@ -25,4 +25,4 @@ The documentation is split into three-submodules:
     attribute signatures. Such changes should mostly be "obvious" from the
     context. For example, ``scalar_spectral`` will replace all RGB types by
     color spectra, and ``cuda_rgb`` will replace scalar floating point values
-    with Enoki CUDA arrays, etc.
+    with Dr.Jit CUDA arrays, etc.

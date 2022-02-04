@@ -63,10 +63,10 @@ public:
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
-        if constexpr (!ek::is_jit_array_v<Float>) {
-            UInt32 index = ek::min(UInt32(ek::abs(x * m_scale_factor)),
+        if constexpr (!dr::is_jit_array_v<Float>) {
+            UInt32 index = dr::min(UInt32(dr::abs(x * m_scale_factor)),
                                    MTS_FILTER_RESOLUTION);
-            return ek::gather<Float>(m_values.data(), index, active);
+            return dr::gather<Float>(m_values.data(), index, active);
         } else {
             Throw("ReconstructionFilter::eval_discretized(): not supported in "
                   "JIT modes, use the regular eval() function!");
@@ -126,11 +126,11 @@ template <typename Scalar_> struct Resampler {
         /* Low-pass filter: scale reconstruction filters when downsampling */
         if (target_res < source_res) {
             scale = (Float) source_res / (Float) target_res;
-            inv_scale = ek::rcp(scale);
+            inv_scale = dr::rcp(scale);
             filter_radius *= scale;
         }
 
-        m_taps = ek::ceil2int<uint32_t>(filter_radius * 2);
+        m_taps = dr::ceil2int<uint32_t>(filter_radius * 2);
         if (source_res == target_res && (m_taps % 2) != 1)
             --m_taps;
 
@@ -150,7 +150,7 @@ template <typename Scalar_> struct Resampler {
 
                 /* Determine the index of the first original sample
                    that might contribute */
-                m_start[i] = ek::floor2int<int32_t>(center - filter_radius + Float(0.5));
+                m_start[i] = dr::floor2int<int32_t>(center - filter_radius + Float(0.5));
 
                 /* Determine the size of center region, on which to run
                    the fast non condition-aware code */
@@ -203,7 +203,7 @@ template <typename Scalar_> struct Resampler {
             }
             m_fast_start = std::min(half_taps, m_target_res - 1);
             m_fast_end   = (uint32_t) std::max(
-                (ek::ssize_t) m_target_res - (ek::ssize_t) half_taps - 1, (ek::ssize_t) 0);
+                (dr::ssize_t) m_target_res - (dr::ssize_t) half_taps - 1, (dr::ssize_t) 0);
         }
 
         /* Avoid overlapping fast start/end intervals when the
@@ -317,7 +317,7 @@ private:
                     result += lookup(source, offset + (int32_t) j,
                                      source_stride, ch) * weights[j];
 
-                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? dr::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -338,7 +338,7 @@ private:
                         source[source_stride * (offset + (int32_t) j) + ch] *
                         weights[j];
 
-                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? dr::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -358,7 +358,7 @@ private:
                     result += lookup(source, offset + (int32_t) j,
                                      source_stride, ch) * weights[j];
 
-                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? dr::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -372,7 +372,7 @@ private:
         if (unlikely(pos < 0 || pos >= (int32_t) m_source_res)) {
             switch (m_bc) {
                 case FilterBoundaryCondition::Clamp:
-                    pos = ek::clamp(pos, 0, (int32_t) m_source_res - 1);
+                    pos = dr::clamp(pos, 0, (int32_t) m_source_res - 1);
                     break;
 
                 case FilterBoundaryCondition::Repeat:

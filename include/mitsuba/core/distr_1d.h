@@ -3,7 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -18,14 +18,14 @@ NAMESPACE_BEGIN(mitsuba)
  * function \ref normalization().
  */
 template <typename Value> struct DiscreteDistribution {
-    using Float = std::conditional_t<ek::is_static_array_v<Value>,
-                                     ek::value_t<Value>, Value>;
+    using Float = std::conditional_t<dr::is_static_array_v<Value>,
+                                     dr::value_t<Value>, Value>;
     using FloatStorage   = DynamicBuffer<Float>;
-    using Index          = ek::uint32_array_t<Value>;
-    using Mask           = ek::mask_t<Value>;
+    using Index          = dr::uint32_array_t<Value>;
+    using Mask           = dr::mask_t<Value>;
 
-    using ScalarFloat    = ek::scalar_t<Float>;
-    using ScalarVector2u = ek::Array<uint32_t, 2>;
+    using ScalarFloat    = dr::scalar_t<Float>;
+    using ScalarVector2u = dr::Array<uint32_t, 2>;
 
 public:
     /// Create an unitialized DiscreteDistribution instance
@@ -45,15 +45,15 @@ public:
 
     /// Initialize from a given floating point array
     DiscreteDistribution(const ScalarFloat *values, size_t size)
-        : m_pmf(ek::load<FloatStorage>(values, size)) {
+        : m_pmf(dr::load<FloatStorage>(values, size)) {
         compute_cdf(values, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
-        if constexpr (ek::is_jit_array_v<Float>) {
-            FloatStorage temp = ek::migrate(m_pmf, AllocType::Host);
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>) {
+            FloatStorage temp = dr::migrate(m_pmf, AllocType::Host);
+            dr::sync_thread();
             compute_cdf(temp.data(), temp.size());
         } else {
             compute_cdf(m_pmf.data(), m_pmf.size());
@@ -86,22 +86,22 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
     Value eval_pmf(Index index, Mask active = true) const {
-        return ek::gather<Value>(m_pmf, index, active);
+        return dr::gather<Value>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
     Value eval_pmf_normalized(Index index, Mask active = true) const {
-        return ek::gather<Value>(m_pmf, index, active) * m_normalization;
+        return dr::gather<Value>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
     Value eval_cdf(Index index, Mask active = true) const {
-        return ek::gather<Value>(m_cdf, index, active);
+        return dr::gather<Value>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
     Value eval_cdf_normalized(Index index, Mask active = true) const {
-        return ek::gather<Value>(m_cdf, index, active) * m_normalization;
+        return dr::gather<Value>(m_cdf, index, active) * m_normalization;
     }
 
     /**
@@ -119,10 +119,10 @@ public:
 
         value *= m_sum;
 
-        return ek::binary_search<Index>(
+        return dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_cdf, index, active) < value;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_cdf, index, active) < value;
             }
         );
     }
@@ -232,12 +232,12 @@ private:
             }
         }
 
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
 
-        m_sum = ek::opaque<Float>(sum);
-        m_normalization = ek::opaque<Float>(1.0 / sum);
-        m_cdf = ek::load<FloatStorage>(cdf.data(), size);
+        m_sum = dr::opaque<Float>(sum);
+        m_normalization = dr::opaque<Float>(1.0 / sum);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size);
     }
 
 private:
@@ -261,13 +261,13 @@ private:
  * function \ref normalization().
  */
 template <typename Value> struct ContinuousDistribution {
-    using Float = std::conditional_t<ek::is_static_array_v<Value>,
-                                     ek::value_t<Value>, Value>;
+    using Float = std::conditional_t<dr::is_static_array_v<Value>,
+                                     dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = ek::uint32_array_t<Value>;
-    using Mask = ek::mask_t<Value>;
+    using Index = dr::uint32_array_t<Value>;
+    using Mask = dr::mask_t<Value>;
 
-    using ScalarFloat = ek::scalar_t<Float>;
+    using ScalarFloat = dr::scalar_t<Float>;
     using ScalarVector2f = Vector<ScalarFloat, 2>;
     using ScalarVector2u = Vector<uint32_t, 2>;
 
@@ -292,16 +292,16 @@ public:
     /// Initialize from a given floating point array
     ContinuousDistribution(const ScalarVector2f &range,
                            const ScalarFloat *values, size_t size)
-        : m_pdf(ek::load<FloatStorage>(values, size)),
+        : m_pdf(dr::load<FloatStorage>(values, size)),
           m_range(range) {
         compute_cdf(values, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pdf.
     void update() {
-        if constexpr (ek::is_jit_array_v<Float>) {
-            FloatStorage temp = ek::migrate(m_pdf, AllocType::Host);
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>) {
+            FloatStorage temp = dr::migrate(m_pdf, AllocType::Host);
+            dr::sync_thread();
             compute_cdf(temp.data(), temp.size());
         } else {
             compute_cdf(m_pdf.data(), m_pdf.size());
@@ -345,15 +345,15 @@ public:
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
 
-        Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = dr::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Value y0 = ek::gather<Value>(m_pdf, index,      active),
-              y1 = ek::gather<Value>(m_pdf, index + 1u, active);
+        Value y0 = dr::gather<Value>(m_pdf, index,      active),
+              y1 = dr::gather<Value>(m_pdf, index + 1u, active);
 
         Value w1 = x - Value(index),
               w0 = 1.f - w1;
 
-        return ek::fmadd(w0, y0, w1 * y1);
+        return dr::fmadd(w0, y0, w1 * y1);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
@@ -369,14 +369,14 @@ public:
 
         Value x = (x_ - m_range.x()) * m_inv_interval_size;
 
-        Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = dr::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Value y0 = ek::gather<Value>(m_pdf, index,      active),
-              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0u);
+        Value y0 = dr::gather<Value>(m_pdf, index,      active),
+              y1 = dr::gather<Value>(m_pdf, index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0u);
 
-        Value t   = ek::clamp(x - Value(index), 0.f, 1.f),
-              cdf = ek::fmadd(t, ek::fmadd(.5f * t, y1 - y0, y0) * m_interval_size, c0);
+        Value t   = dr::clamp(x - Value(index), 0.f, 1.f),
+              cdf = dr::fmadd(t, dr::fmadd(.5f * t, y1 - y0, y0) * m_interval_size, c0);
 
         return cdf;
     }
@@ -403,24 +403,24 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_cdf, index, active) < value;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Value y0 = ek::gather<Value>(m_pdf, index,      active),
-              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0);
+        Value y0 = dr::gather<Value>(m_pdf, index,      active),
+              y1 = dr::gather<Value>(m_pdf, index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * ek::rcp(y0 - y1),
-              t_const  = value * ek::rcp(y0),
-              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
+        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * dr::rcp(y0 - y1),
+              t_const  = value * dr::rcp(y0),
+              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
-        return ek::fmadd(Value(index) + t, m_interval_size, m_range.x());
+        return dr::fmadd(Value(index) + t, m_interval_size, m_range.x());
     }
 
     /**
@@ -441,25 +441,25 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_cdf, index, active) < value;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Value y0 = ek::gather<Value>(m_pdf, index,      active),
-              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0);
+        Value y0 = dr::gather<Value>(m_pdf, index,      active),
+              y1 = dr::gather<Value>(m_pdf, index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * ek::rcp(y0 - y1),
-              t_const  = value * ek::rcp(y0),
-              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
+        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * dr::rcp(y0 - y1),
+              t_const  = value * dr::rcp(y0),
+              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
-        return { ek::fmadd(Value(index) + t, m_interval_size, m_range.x()),
-                 ek::fmadd(t, y1 - y0, y0) * m_normalization };
+        return { dr::fmadd(Value(index) + t, m_interval_size, m_range.x()),
+                 dr::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
     /// Return the minimum resolution of the discretization
@@ -502,15 +502,15 @@ private:
             }
         }
 
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
             Throw("ContinuousDistribution: no probability mass found!");
 
-        m_integral = ek::opaque<Float>(integral);
-        m_normalization = ek::opaque<Float>(1. / integral);
-        m_interval_size = ek::opaque<Float>(interval_size);
+        m_integral = dr::opaque<Float>(integral);
+        m_normalization = dr::opaque<Float>(1. / integral);
+        m_interval_size = dr::opaque<Float>(interval_size);
         m_interval_size_scalar = (ScalarFloat) interval_size;
-        m_inv_interval_size = ek::opaque<Float>(1. / interval_size);
-        m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
+        m_inv_interval_size = dr::opaque<Float>(1. / interval_size);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
     }
 
 private:
@@ -538,15 +538,15 @@ private:
  * function \ref normalization().
  */
 template <typename Value> struct IrregularContinuousDistribution {
-    using Float = std::conditional_t<ek::is_static_array_v<Value>,
-                                     ek::value_t<Value>, Value>;
+    using Float = std::conditional_t<dr::is_static_array_v<Value>,
+                                     dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = ek::uint32_array_t<Value>;
-    using Mask = ek::mask_t<Value>;
+    using Index = dr::uint32_array_t<Value>;
+    using Mask = dr::mask_t<Value>;
 
-    using ScalarFloat = ek::scalar_t<Float>;
-    using ScalarVector2f = ek::Array<ScalarFloat, 2>;
-    using ScalarVector2u = ek::Array<uint32_t, 2>;
+    using ScalarFloat = dr::scalar_t<Float>;
+    using ScalarVector2f = dr::Array<ScalarFloat, 2>;
+    using ScalarVector2u = dr::Array<uint32_t, 2>;
 
 public:
     /// Create an unitialized IrregularContinuousDistribution instance
@@ -570,7 +570,7 @@ public:
     IrregularContinuousDistribution(const ScalarFloat *nodes,
                                     const ScalarFloat *pdf,
                                     size_t size)
-        : m_nodes(ek::load<FloatStorage>(nodes, size)), m_pdf(ek::load<FloatStorage>(pdf, size)) {
+        : m_nodes(dr::load<FloatStorage>(nodes, size)), m_pdf(dr::load<FloatStorage>(pdf, size)) {
         compute_cdf(nodes, pdf, size);
     }
 
@@ -579,10 +579,10 @@ public:
         if (m_pdf.size() != m_nodes.size())
             Throw("IrregularContinuousDistribution: 'pdf' and 'nodes' size mismatch!");
 
-        if constexpr (ek::is_jit_array_v<Float>) {
-            FloatStorage temp_nodes = ek::migrate(m_nodes, AllocType::Host);
-            FloatStorage temp_pdf = ek::migrate(m_pdf, AllocType::Host);
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>) {
+            FloatStorage temp_nodes = dr::migrate(m_nodes, AllocType::Host);
+            FloatStorage temp_pdf = dr::migrate(m_pdf, AllocType::Host);
+            dr::sync_thread();
             compute_cdf(temp_nodes.data(), temp_pdf.data(), temp_nodes.size());
         } else {
             compute_cdf(m_nodes.data(), m_pdf.data(), m_nodes.size());
@@ -631,23 +631,23 @@ public:
 
         active &= x >= m_range.x() && x <= m_range.y();
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_nodes, index, active) < x;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_nodes, index, active) < x;
             }
         );
 
-        index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = dr::max(dr::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Value x0 = ek::gather<Value>(m_nodes, index,      active),
-              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Value>(m_pdf,   index,      active),
-              y1 = ek::gather<Value>(m_pdf,   index + 1u, active);
+        Value x0 = dr::gather<Value>(m_nodes, index,      active),
+              x1 = dr::gather<Value>(m_nodes, index + 1u, active),
+              y0 = dr::gather<Value>(m_pdf,   index,      active),
+              y1 = dr::gather<Value>(m_pdf,   index + 1u, active);
 
         x = (x - x0) / (x1 - x0);
 
-        return ek::select(active, ek::fmadd(x, y1 - y0, y0), 0.f);
+        return dr::select(active, dr::fmadd(x, y1 - y0, y0), 0.f);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
@@ -661,23 +661,23 @@ public:
     Value eval_cdf(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_nodes, index, active) < x;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_nodes, index, active) < x;
             }
         );
 
-        index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = dr::max(dr::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Value x0 = ek::gather<Value>(m_nodes, index,      active),
-              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Value>(m_pdf,   index,      active),
-              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0u);
+        Value x0 = dr::gather<Value>(m_nodes, index,      active),
+              x1 = dr::gather<Value>(m_nodes, index + 1u, active),
+              y0 = dr::gather<Value>(m_pdf,   index,      active),
+              y1 = dr::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0u);
 
         Value w   = x1 - x0,
-              t   = ek::clamp((x - x0) / w, 0.f, 1.f),
+              t   = dr::clamp((x - x0) / w, 0.f, 1.f),
               cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
 
         return cdf;
@@ -705,27 +705,27 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_cdf, index, active) < value;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Value x0 = ek::gather<Value>(m_nodes, index,      active),
-              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Value>(m_pdf,   index,      active),
-              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0),
+        Value x0 = dr::gather<Value>(m_nodes, index,      active),
+              x1 = dr::gather<Value>(m_nodes, index + 1u, active),
+              y0 = dr::gather<Value>(m_pdf,   index,      active),
+              y1 = dr::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
-        return ek::fmadd(t, w, x0);
+        return dr::fmadd(t, w, x0);
     }
 
     /**
@@ -746,28 +746,28 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search<Index>(
+        Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
-            [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Value>(m_cdf, index, active) < value;
+            [&](Index index) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Value x0 = ek::gather<Value>(m_nodes, index,      active),
-              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Value>(m_pdf,   index,      active),
-              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0),
+        Value x0 = dr::gather<Value>(m_nodes, index,      active),
+              x1 = dr::gather<Value>(m_nodes, index + 1u, active),
+              y0 = dr::gather<Value>(m_pdf,   index,      active),
+              y1 = dr::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
-        return { ek::fmadd(t, w, x0),
-                 ek::fmadd(t, y1 - y0, y0) * m_normalization };
+        return { dr::fmadd(t, w, x0),
+                 dr::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
     /**
@@ -782,11 +782,11 @@ private:
         if (size < 2)
             Throw("IrregularContinuousDistribution: needs at least two entries!");
 
-        m_interval_size = ek::Infinity<Float>;
+        m_interval_size = dr::Infinity<Float>;
         m_valid = (uint32_t) -1;
         m_range = ScalarVector2f(
-             ek::Infinity<ScalarFloat>,
-            -ek::Infinity<ScalarFloat>
+             dr::Infinity<ScalarFloat>,
+            -dr::Infinity<ScalarFloat>
         );
 
         double integral = 0.;
@@ -800,10 +800,10 @@ private:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_range.x() = ek::min(m_range.x(), (ScalarFloat) x0);
-            m_range.y() = ek::max(m_range.y(), (ScalarFloat) x1);
+            m_range.x() = dr::min(m_range.x(), (ScalarFloat) x0);
+            m_range.y() = dr::max(m_range.y(), (ScalarFloat) x1);
 
-            m_interval_size = ek::min(m_interval_size, (ScalarFloat) x1 - (ScalarFloat) x0);
+            m_interval_size = dr::min(m_interval_size, (ScalarFloat) x1 - (ScalarFloat) x0);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;
@@ -821,12 +821,12 @@ private:
             }
         }
 
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
-        m_integral = ek::opaque<Float>(integral);
-        m_normalization = ek::opaque<Float>(1. / integral);
-        m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
+        m_integral = dr::opaque<Float>(integral);
+        m_normalization = dr::opaque<Float>(1. / integral);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
     }
 
 private:

@@ -52,25 +52,25 @@ public:
                 Throw("Only one of the parameters 'direction' and 'to_world' "
                       "can be specified at the same time!'");
 
-            ScalarVector3f direction(ek::normalize(props.get<ScalarVector3f>("direction")));
+            ScalarVector3f direction(dr::normalize(props.get<ScalarVector3f>("direction")));
             auto [up, unused] = coordinate_system(direction);
 
             m_to_world = ScalarTransform4f::look_at(0.0f, ScalarPoint3f(direction), up);
-            ek::make_opaque(m_to_world);
+            dr::make_opaque(m_to_world);
         }
 
         m_irradiance = props.texture<Texture>("irradiance", Texture::D65(1.f));
         m_needs_sample_3 = false;
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                ek::max(math::RayEpsilon<Float>,
+                dr::max(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
         } else {
             m_bsphere.center = 0.f;
@@ -101,7 +101,7 @@ public:
         Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.t    = 0.f;
         si.time = time;
         si.p    = origin;
@@ -110,7 +110,7 @@ public:
             sample_wavelengths(si, wavelength_sample, active);
 
         Spectrum weight =
-            wav_weight * ek::Pi<Float> * ek::sqr(m_bsphere.radius);
+            wav_weight * dr::Pi<Float> * dr::sqr(m_bsphere.radius);
 
         return { Ray3f(origin, d_global, time, wavelengths),
                  depolarizer<Spectrum>(weight) };
@@ -123,7 +123,7 @@ public:
 
         Vector3f d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
         // Needed when the reference point is on the sensor, which is not part of the bbox
-        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
+        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
 
         DirectionSample3f ds;
@@ -137,7 +137,7 @@ public:
         ds.d      = -d;
         ds.dist   = dist;
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths          = it.wavelengths;
 
         // No need to divide by the PDF here (always equal to 1.f)
@@ -162,11 +162,11 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             // When vcalls are recorded in symbolic mode, we can't throw an exception,
             // even though this result will be unused.
-            return { ek::zero<PositionSample3f>(),
-                     ek::full<Float>(ek::NaN<ScalarFloat>) };
+            return { dr::zero<PositionSample3f>(),
+                     dr::full<Float>(dr::NaN<ScalarFloat>) };
         } else {
             NotImplementedError("sample_position");
         }

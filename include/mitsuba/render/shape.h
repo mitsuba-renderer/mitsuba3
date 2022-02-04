@@ -1,12 +1,12 @@
 #pragma once
 
-#include <enoki/vcall.h>
+#include <drjit/vcall.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
-#include <enoki/packet.h>
+#include <drjit/packet.h>
 
 #if defined(MTS_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -223,9 +223,9 @@ public:
 
     /// Macro to declare packet versions of the scalar routine above
     #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                            \
-        using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;            \
-        using UInt32P##N  = ek::uint32_array_t<FloatP##N>;                 \
-        using MaskP##N    = ek::mask_t<FloatP##N>;                         \
+        using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;            \
+        using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                 \
+        using MaskP##N    = dr::mask_t<FloatP##N>;                         \
         using Point2fP##N = Point<FloatP##N, 2>;                           \
         using Point3fP##N = Point<FloatP##N, 3>;                           \
         using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                    \
@@ -541,7 +541,7 @@ public:
     //! @}
     // =============================================================
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::Shape)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::Shape)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -586,7 +586,7 @@ NAMESPACE_END(mitsuba)
     ray_intersect_preliminary_packet(                                          \
         const Ray3fP##N &ray, MaskP##N active) const override {                \
         (void) ray; (void) active;                                             \
-        if constexpr (!ek::is_cuda_array_v<Float>)                             \
+        if constexpr (!dr::is_cuda_array_v<Float>)                             \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, active);     \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
@@ -594,7 +594,7 @@ NAMESPACE_END(mitsuba)
     MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
         const override {                                                       \
         (void) ray; (void) active;                                             \
-        if constexpr (!ek::is_cuda_array_v<Float>)                             \
+        if constexpr (!dr::is_cuda_array_v<Float>)                             \
             return ray_test_impl<FloatP##N>(ray, active);                      \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
@@ -605,7 +605,7 @@ NAMESPACE_END(mitsuba)
     PreliminaryIntersection3f ray_intersect_preliminary(                       \
         const Ray3f &ray, Mask active) const override {                        \
         MTS_MASK_ARGUMENT(active);                                             \
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();  \
+        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();  \
         std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
             ray_intersect_preliminary_impl<Float>(ray, active);                \
         pi.shape = this;                                                       \
@@ -628,28 +628,28 @@ NAMESPACE_END(mitsuba)
     MTS_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for vectorized function calls
+//! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
-    ENOKI_VCALL_METHOD(compute_surface_interaction)
-    ENOKI_VCALL_METHOD(eval_attribute)
-    ENOKI_VCALL_METHOD(eval_attribute_1)
-    ENOKI_VCALL_METHOD(eval_attribute_3)
-    ENOKI_VCALL_METHOD(ray_intersect_preliminary)
-    ENOKI_VCALL_METHOD(ray_intersect)
-    ENOKI_VCALL_METHOD(ray_test)
-    ENOKI_VCALL_METHOD(sample_position)
-    ENOKI_VCALL_GETTER(emitter, const typename Class::Emitter *)
-    ENOKI_VCALL_GETTER(sensor, const typename Class::Sensor *)
-    ENOKI_VCALL_GETTER(bsdf, const typename Class::BSDF *)
-    ENOKI_VCALL_GETTER(interior_medium, const typename Class::Medium *)
-    ENOKI_VCALL_GETTER(exterior_medium, const typename Class::Medium *)
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
+    DRJIT_VCALL_METHOD(compute_surface_interaction)
+    DRJIT_VCALL_METHOD(eval_attribute)
+    DRJIT_VCALL_METHOD(eval_attribute_1)
+    DRJIT_VCALL_METHOD(eval_attribute_3)
+    DRJIT_VCALL_METHOD(ray_intersect_preliminary)
+    DRJIT_VCALL_METHOD(ray_intersect)
+    DRJIT_VCALL_METHOD(ray_test)
+    DRJIT_VCALL_METHOD(sample_position)
+    DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
+    DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)
+    DRJIT_VCALL_GETTER(bsdf, const typename Class::BSDF *)
+    DRJIT_VCALL_GETTER(interior_medium, const typename Class::Medium *)
+    DRJIT_VCALL_GETTER(exterior_medium, const typename Class::Medium *)
     auto is_emitter() const { return neq(emitter(), nullptr); }
     auto is_sensor() const { return neq(sensor(), nullptr); }
     auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
                                                neq(exterior_medium(), nullptr); }
-ENOKI_VCALL_TEMPLATE_END(mitsuba::Shape)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::Shape)
 
 //! @}
 // -----------------------------------------------------------------------

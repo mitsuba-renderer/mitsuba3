@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 import mitsuba
 from mitsuba.python.test.util import fresolver_append_path
@@ -64,13 +64,13 @@ def test02_eval(variants_vec_spectral, spectrum_key):
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
-    it = ek.zero(SurfaceInteraction3f, 3)
-    assert ek.allclose(emitter.eval(it), spectrum.eval(it))
+    it = dr.zero(SurfaceInteraction3f, 3)
+    assert dr.allclose(emitter.eval(it), spectrum.eval(it))
 
     # Check that eval returns 0.0 when the direction points into the shape
 
-    it.wi = ek.normalize(ScalarVector3f(0.2, 0.2, -0.5))
-    assert ek.allclose(emitter.eval(it), 0.0)
+    it.wi = dr.normalize(ScalarVector3f(0.2, 0.2, -0.5))
+    assert dr.allclose(emitter.eval(it), 0.0)
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
@@ -93,17 +93,17 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
         time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     # Sample a position on the shape
     ps = shape.sample_position(time, pos_sample)
 
-    assert ek.allclose(res, spec * shape.surface_area() * ek.Pi)
-    assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(ray.o, ps.p, atol=1e-3)
-    assert ek.allclose(
+    assert dr.allclose(res, spec * shape.surface_area() * dr.Pi)
+    assert dr.allclose(ray.time, time)
+    assert dr.allclose(ray.wavelengths, wav)
+    assert dr.allclose(ray.o, ps.p, atol=1e-3)
+    assert dr.allclose(
         ray.d, Frame3f(ps.n).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
 
 
@@ -117,7 +117,7 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     emitter = shape.emitter()
 
     # Direction sampling is conditioned on a sampled position
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     it.p = [[0.2, 0.1, 0.2], [0.6, -0.9, 0.2],
             [0.4, 0.9, -0.2]]  # Some positions
     it.time = 1.0
@@ -129,13 +129,13 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     # Sample direction on the shape
     shape_ds = shape.sample_direction(it, samples)
 
-    assert ek.allclose(ds.pdf, shape_ds.pdf)
-    assert ek.allclose(ds.pdf, emitter.pdf_direction(it, ds))
-    assert ek.allclose(ds.d, shape_ds.d)
-    assert ek.allclose(ds.time, it.time)
+    assert dr.allclose(ds.pdf, shape_ds.pdf)
+    assert dr.allclose(ds.pdf, emitter.pdf_direction(it, ds))
+    assert dr.allclose(ds.d, shape_ds.d)
+    assert dr.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)
     spec = spectrum.eval(it) / ds.pdf
-    assert ek.allclose(res, spec)
+    assert dr.allclose(res, spec)
 
-    assert ek.allclose(emitter.eval_direction(it, ds), spec)
+    assert dr.allclose(emitter.eval_direction(it, ds), spec)

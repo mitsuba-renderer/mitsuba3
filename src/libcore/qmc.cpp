@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(detail)
 template <typename T> std::vector<T> sieve(T n) {
     std::vector<bool> sieve(n + 1, true);
 
-    for (T i = 2, bound = ek::sqrt(n); i <= bound; i++) {
+    for (T i = 2, bound = dr::sqrt(n); i <= bound; i++) {
         if (!sieve[i])
             continue;
 
@@ -48,7 +48,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         uint64_t value = primes[i];
         d.value = (uint16_t) value;
         d.recip = 1.f / (float) value;
-        d.divisor = ek::divisor<uint64_t>(value);
+        d.divisor = dr::divisor<uint64_t>(value);
     }
 
     /* Compute the size of the final permutation table (corresponding to primes) */

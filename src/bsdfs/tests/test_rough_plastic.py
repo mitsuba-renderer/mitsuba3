@@ -1,6 +1,6 @@
 import pytest
 import mitsuba
-import enoki as ek
+import drjit as dr
 
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
@@ -55,11 +55,11 @@ def test03_eval_pdf(variant_scalar_rgb):
     ctx = BSDFContext()
 
     for i in range(20):
-        theta = i / 19.0 * (ek.Pi / 2)
-        wo = [ek.sin(theta), 0, ek.cos(theta)]
+        theta = i / 19.0 * (dr.Pi / 2)
+        wo = [dr.sin(theta), 0, dr.cos(theta)]
 
         v_pdf  = bsdf.pdf(ctx, si, wo=wo)
         v_eval = bsdf.eval(ctx, si, wo=wo)[0]
         v_eval_pdf = bsdf.eval_pdf(ctx, si, wo=wo)
-        assert ek.allclose(v_eval, v_eval_pdf[0])
-        assert ek.allclose(v_pdf, v_eval_pdf[1])
+        assert dr.allclose(v_eval, v_eval_pdf[0])
+        assert dr.allclose(v_pdf, v_eval_pdf[1])

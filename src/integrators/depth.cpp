@@ -28,7 +28,7 @@ public:
             ray, /* coherent = */ true, active);
 
         return {
-            ek::select(pi.is_valid(), pi.t, 0.f),
+            dr::select(pi.is_valid(), pi.t, 0.f),
             pi.is_valid()
         };
     }

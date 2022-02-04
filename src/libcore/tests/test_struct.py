@@ -6,7 +6,7 @@ import sys
 
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 mitsuba.set_variant('scalar_rgb')
 

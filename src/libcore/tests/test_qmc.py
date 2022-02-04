@@ -1,4 +1,4 @@
-# import enoki as ek
+# import drjit as dr
 # import pytest
 # import mitsuba
 
@@ -45,7 +45,7 @@
 #         if index >= 1024:
 #             break
 #         for i in range(10):
-#             assert ek.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
+#             assert dr.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
 # @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 # def test02_radical_inverse_vectorized(variant_scalar_rgb):
@@ -55,9 +55,9 @@
 #     for index, prime in enumerate(gen_primes()):
 #         if index >= 1024:
 #             break
-#         result = v.eval(index, ek.arange(10, dtype=ek.uint64))
+#         result = v.eval(index, dr.arange(10, dtype=dr.uint64))
 #         for i in range(len(result)):
-#             assert ek.abs(r_inv(prime, i) - result[i]) < 1e-7
+#             assert dr.abs(r_inv(prime, i) - result[i]) < 1e-7
 
 
 # def test03_faure_permutations(variant_scalar_rgb):
@@ -109,6 +109,6 @@
 #     v   = RadicalInverse()
 #     v_p = RadicalInverseP()
 #     for index in range(1024):
-#         result = v_p.eval_scrambled(index, ek.arange(10, dtype=ek.uint64))
+#         result = v_p.eval_scrambled(index, dr.arange(10, dtype=dr.uint64))
 #         for i in range(len(result)):
-#             assert ek.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7
+#             assert dr.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7

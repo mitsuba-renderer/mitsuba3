@@ -69,7 +69,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         bs.wo = -si.wi;
         bs.pdf = 1.f;
         bs.eta = 1.f;
@@ -84,8 +84,8 @@ public:
 
             // Combine linear polarizer and quarter wave plate
             Spectrum LP  = mueller::linear_polarizer(1.f);
-            Spectrum QWP = mueller::linear_retarder(0.5f*ek::Pi<Float>);
-            UnpolarizedSpectrum rot = m_left_handed ? 3.f*ek::Pi<Float>/4.f : ek::Pi<Float>/4.f;
+            Spectrum QWP = mueller::linear_retarder(0.5f*dr::Pi<Float>);
+            UnpolarizedSpectrum rot = m_left_handed ? 3.f*dr::Pi<Float>/4.f : dr::Pi<Float>/4.f;
             QWP = mueller::rotated_element(rot, QWP);
             Spectrum M = QWP * LP;
 
@@ -131,8 +131,8 @@ public:
 
             // Combine linear polarizer and quarter wave plate
             Spectrum LP  = mueller::linear_polarizer(1.f);
-            Spectrum QWP = mueller::linear_retarder(0.5f*ek::Pi<Float>);
-            UnpolarizedSpectrum rot = m_left_handed ? 3.f*ek::Pi<Float>/4.f : ek::Pi<Float>/4.f;
+            Spectrum QWP = mueller::linear_retarder(0.5f*dr::Pi<Float>);
+            UnpolarizedSpectrum rot = m_left_handed ? 3.f*dr::Pi<Float>/4.f : dr::Pi<Float>/4.f;
             QWP = mueller::rotated_element(rot, QWP);
             Spectrum M = QWP * LP;
 

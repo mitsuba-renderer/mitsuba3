@@ -75,12 +75,12 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
     color *= ((Scalar) MTS_CIE_MAX - (Scalar) MTS_CIE_MIN) / (Scalar) steps;
     color = xyz_to_srgb(color);
 
-    if (bounded && ek::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
+    if (bounded && dr::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
         color = clamp(color, (Scalar) 0.f, (Scalar) 1.f);
-    } else if (!bounded && ek::any(color < (Scalar) 0.f)) {
+    } else if (!bounded && dr::any(color < (Scalar) 0.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = ek::max(color, (Scalar) 0.f);
+        color = dr::max(color, (Scalar) 0.f);
     }
 
     return color;
@@ -186,10 +186,10 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
 NAMESPACE_BEGIN(detail)
 CIE1932Tables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-CIE1932Tables<ek::LLVMArray<float>> color_space_tables_llvm;
+CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-CIE1932Tables<ek::CUDAArray<float>> color_space_tables_cuda;
+CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
 #endif
 NAMESPACE_END(detail)
 

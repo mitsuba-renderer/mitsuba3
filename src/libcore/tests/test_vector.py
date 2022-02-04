@@ -1,5 +1,5 @@
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 import pytest
 import mitsuba
 
@@ -13,7 +13,7 @@ def test01_coordinate_system(variant_scalar_rgb):
         Tom Duff, James Burgess, Per Christensen, Christophe Hery,
         Andrew Kensler, Max Liani, and Ryusuke Villemin
         """
-        sign = ek.copysign(1.0, n[2])
+        sign = dr.copysign(1.0, n[2])
         a = -1.0 / (sign + n[2])
         b = n[0] * n[1] * a
         return (
@@ -23,18 +23,18 @@ def test01_coordinate_system(variant_scalar_rgb):
 
     a = [0.70710678, -0. , -0.70710678]
     b = [-0.,  1.,  0.]
-    assert ek.allclose(
-        branchless_onb([ek.sqrt(0.5), 0, ek.sqrt(0.5)]), (a, b), atol=1e-6)
-    assert ek.allclose(
-        coordinate_system([ek.sqrt(0.5), 0, ek.sqrt(0.5)]), (a, b), atol=1e-6)
+    assert dr.allclose(
+        branchless_onb([dr.sqrt(0.5), 0, dr.sqrt(0.5)]), (a, b), atol=1e-6)
+    assert dr.allclose(
+        coordinate_system([dr.sqrt(0.5), 0, dr.sqrt(0.5)]), (a, b), atol=1e-6)
 
-    for u in ek.linspace(Float, 0, 1, 10):
-        for v in ek.linspace(Float, 0, 1, 10):
+    for u in dr.linspace(Float, 0, 1, 10):
+        for v in dr.linspace(Float, 0, 1, 10):
             n = warp.square_to_uniform_sphere([u, v])
             s1, t1 = branchless_onb(n)
             s2, t2 = coordinate_system(n)
-            assert ek.allclose(s1, s2, atol=1e-6)
-            assert ek.allclose(t1, t2, atol=1e-6)
+            assert dr.allclose(s1, s2, atol=1e-6)
+            assert dr.allclose(t1, t2, atol=1e-6)
 
 
 def test02_coordinate_system_vec(variant_scalar_rgb):

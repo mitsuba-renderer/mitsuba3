@@ -84,7 +84,7 @@ T get_impl(const Iterator &it) {
 
 template <typename T>
 T get_routing(const Iterator &it) {
-    if constexpr (ek::is_static_array_v<T>) {
+    if constexpr (dr::is_static_array_v<T>) {
         Assert(T::Size == 3);
         if constexpr (std::is_same_v<T, Color<float, 3>> ||
                       std::is_same_v<T, Color<double, 3>>)
@@ -521,8 +521,8 @@ EXPORT_PROPERTY_ACCESSOR(T(uint32_t))
 EXPORT_PROPERTY_ACCESSOR(T(int32_t))
 EXPORT_PROPERTY_ACCESSOR(T(uint64_t))
 EXPORT_PROPERTY_ACCESSOR(T(int64_t))
-EXPORT_PROPERTY_ACCESSOR(T(ek::Array<float, 3>))
-EXPORT_PROPERTY_ACCESSOR(T(ek::Array<double, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(dr::Array<float, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(dr::Array<double, 3>))
 EXPORT_PROPERTY_ACCESSOR(T(Point<float, 3>))
 EXPORT_PROPERTY_ACCESSOR(T(Point<double, 3>))
 EXPORT_PROPERTY_ACCESSOR(T(Vector<float, 3>))

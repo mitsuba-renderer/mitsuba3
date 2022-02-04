@@ -145,18 +145,18 @@ public:
     static void set_thread_count(size_t);
 
     /**
-     * \brief Register a new thread (e.g. Enoki, Python) with Mituba thread system.
+     * \brief Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
      * Returns true upon success.
      */
     static bool register_external_thread(const std::string &prefix);
 
-    /// Unregister a thread (e.g. Enoki, Python) from Mitsuba's thread system.
+    /// Unregister a thread (e.g. Dr.Jit, Python) from Mitsuba's thread system.
     static bool unregister_external_thread();
 
-    /// Register enoki-thread Task to prevent internal resources leakage
+    /// Register drjit-thread Task to prevent internal resources leakage
     static void register_task(Task *task);
 
-    /// Wait for previously registered enoki-thread tasks to complete
+    /// Wait for previously registered drjit-thread tasks to complete
     static void wait_for_tasks();
 
     MTS_DECLARE_CLASS()

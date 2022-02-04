@@ -1,6 +1,6 @@
 #include <mitsuba/render/mueller.h>
 #include <mitsuba/python/python.h>
-#include <enoki/sphere.h>
+#include <drjit/sphere.h>
 
 MTS_PY_EXPORT(mueller) {
     MTS_PY_IMPORT_TYPES()
@@ -40,9 +40,9 @@ MTS_PY_EXPORT(mueller) {
     m.def("rotated_element", &mueller::rotated_element<UnpolarizedSpectrum>,
           "theta"_a, "M"_a, D(mueller, rotated_element));
 
-    m.def("specular_reflection", &mueller::specular_reflection<Float, ek::Complex<Float>>,
+    m.def("specular_reflection", &mueller::specular_reflection<Float, dr::Complex<Float>>,
           "cos_theta_i"_a, "eta"_a, D(mueller, specular_reflection));
-    m.def("specular_reflection", &mueller::specular_reflection<UnpolarizedSpectrum, ek::Complex<UnpolarizedSpectrum>>,
+    m.def("specular_reflection", &mueller::specular_reflection<UnpolarizedSpectrum, dr::Complex<UnpolarizedSpectrum>>,
           "cos_theta_i"_a, "eta"_a, D(mueller, specular_reflection));
 
     m.def("specular_transmission", &mueller::specular_transmission<Float>,
@@ -76,6 +76,6 @@ MTS_PY_EXPORT(mueller) {
           "M"_a, "forward"_a, "basis_current"_a, "basis_target"_a,
           D(mueller, rotate_mueller_basis_collinear));
 
-    m.def("unit_angle", [](const Vector3f &a, const Vector3f &b) { return ek::unit_angle(a, b); },
+    m.def("unit_angle", [](const Vector3f &a, const Vector3f &b) { return dr::unit_angle(a, b); },
           "a"_a, "b"_a);
 }

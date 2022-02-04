@@ -74,7 +74,7 @@ public:
         m_polarizing = props.get<bool>("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 
@@ -83,7 +83,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         bs.wo = -si.wi;
         bs.pdf = 1.f;
         bs.eta = 1.f;
@@ -98,7 +98,7 @@ public:
             }
 
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
@@ -115,8 +115,8 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
+            Vector3f eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
+            Vector3f eff_t_axis = dr::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,
@@ -152,7 +152,7 @@ public:
             }
 
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
@@ -169,8 +169,8 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
+            Vector3f eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
+            Vector3f eff_t_axis = dr::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,

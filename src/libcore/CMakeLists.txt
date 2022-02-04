@@ -83,7 +83,7 @@ target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
   ${ZLIB_LIBRARY}
-  enoki-thread
+  drjit-thread
   # Link pugixml parser
   pugixml 
   # Image libraries: link to libjpeg, libpng, OpenEXR
@@ -103,15 +103,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
   target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
 endif()
 
-target_link_libraries(mitsuba-core PUBLIC enoki)
+target_link_libraries(mitsuba-core PUBLIC drjit)
 target_link_libraries(mitsuba-core PRIVATE fast_float)
 
 if (MTS_ENABLE_JIT)
-  target_link_libraries(mitsuba-core PUBLIC enoki-jit)
+  target_link_libraries(mitsuba-core PUBLIC drjit-core)
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
-  target_link_libraries(mitsuba-core PUBLIC enoki-autodiff)
+  target_link_libraries(mitsuba-core PUBLIC drjit-autodiff)
 endif()
 
 # Python bindings

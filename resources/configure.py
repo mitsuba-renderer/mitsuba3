@@ -37,9 +37,9 @@ def write_core_config_cpp(f, enabled, default_variant):
         enable_jit |= ('cuda' in name) or ('llvm' in name)
         enable_ad  |= ('ad' in name)
     if enable_jit:
-        f.write('#include <enoki/jit.h>\n')
+        f.write('#include <drjit/jit.h>\n')
     if enable_ad:
-        f.write('#include <enoki/autodiff.h>\n')
+        f.write('#include <drjit/autodiff.h>\n')
     f.write('\n')
 
     f.write('/// List of enabled Mitsuba variants\n')

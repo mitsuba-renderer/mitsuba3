@@ -63,7 +63,7 @@ public:
                 m_components.push_back(m_nested_phase[i]->flags(j));
 
         m_flags = m_nested_phase[0]->flags() | m_nested_phase[1]->flags();
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
@@ -94,18 +94,18 @@ public:
         Mask m0 = active && sample1 > weight,
              m1 = active && sample1 <= weight;
 
-        if (ek::any_or<true>(m0)) {
+        if (dr::any_or<true>(m0)) {
             auto [wo0, pdf0] = m_nested_phase[0]->sample(
                 ctx, mi, (sample1 - weight) / (1 - weight), sample2, m0);
-            ek::masked(wo, m0)  = wo0;
-            ek::masked(pdf, m0) = pdf0;
+            dr::masked(wo, m0)  = wo0;
+            dr::masked(pdf, m0) = pdf0;
         }
 
-        if (ek::any_or<true>(m1)) {
+        if (dr::any_or<true>(m1)) {
             auto [wo1, pdf1] = m_nested_phase[1]->sample(
                 ctx, mi, sample1 / weight, sample2, m1);
-            ek::masked(wo, m1)  = wo1;
-            ek::masked(pdf, m1) = pdf1;
+            dr::masked(wo, m1)  = wo1;
+            dr::masked(pdf, m1) = pdf1;
         }
 
         return { wo, pdf };
@@ -113,7 +113,7 @@ public:
 
     MTS_INLINE Float eval_weight(const MediumInteraction3f &mi,
                                  const Mask &active) const {
-        return ek::clamp(m_weight->eval_1(mi, active), 0.f, 1.f);
+        return dr::clamp(m_weight->eval_1(mi, active), 0.f, 1.f);
     }
 
     Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,

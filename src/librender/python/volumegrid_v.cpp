@@ -24,8 +24,8 @@ MTS_PY_EXPORT(VolumeGrid) {
 
             ScalarFloat max = 0.f;
             if (compute_max) {
-                for (size_t i = 0; i < ek::hprod(size) * channel_count; ++i)
-                    max = ek::max(max, volumegrid->data()[i]);
+                for (size_t i = 0; i < dr::hprod(size) * channel_count; ++i)
+                    max = dr::max(max, volumegrid->data()[i]);
             }
 
             volumegrid->set_max(max);

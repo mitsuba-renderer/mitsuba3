@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
@@ -6,7 +6,7 @@ from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 def test01_chi2_smooth(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.05"/>"""
-    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
+    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -27,7 +27,7 @@ def test02_chi2_aniso_beckmann_all(variants_vec_backends_once_rgb):
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
+    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -47,7 +47,7 @@ def test03_chi2_aniso_beckmann_visible(variants_vec_backends_once_rgb):
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
+    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -68,7 +68,7 @@ def test04_chi2_aniso_ggx_all(variants_vec_backends_once_rgb):
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
+    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -88,7 +88,7 @@ def test05_chi2_aniso_ggx_visible(variants_vec_backends_once_rgb):
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
+    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -117,11 +117,11 @@ def test06_eval_pdf(variant_scalar_rgb):
     ctx = BSDFContext()
 
     for i in range(20):
-        theta = i / 19.0 * (ek.Pi / 2)
-        wo = [ek.sin(theta), 0, ek.cos(theta)]
+        theta = i / 19.0 * (dr.Pi / 2)
+        wo = [dr.sin(theta), 0, dr.cos(theta)]
 
         v_pdf  = bsdf.pdf(ctx, si, wo=wo)
         v_eval = bsdf.eval(ctx, si, wo=wo)[0]
         v_eval_pdf = bsdf.eval_pdf(ctx, si, wo=wo)
-        assert ek.allclose(v_eval, v_eval_pdf[0])
-        assert ek.allclose(v_pdf, v_eval_pdf[1])
+        assert dr.allclose(v_eval, v_eval_pdf[0])
+        assert dr.allclose(v_pdf, v_eval_pdf[1])

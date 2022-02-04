@@ -4,7 +4,7 @@
 #include <mitsuba/render/optix/ray.cuh>
 
 #ifndef __CUDACC__
-# include <enoki/matrix.h>
+# include <drjit/matrix.h>
 # include <mitsuba/core/transform.h>
 #endif
 
@@ -16,7 +16,7 @@ template <typename Value_, size_t Size_> struct Matrix {
 
 #ifndef __CUDACC__
     Matrix() = default;
-    Matrix(const enoki::Matrix<Value, Size> &a) { enoki::store(m, a); }
+    Matrix(const drjit::Matrix<Value, Size> &a) { drjit::store(m, a); }
 #else
     DEVICE Matrix() { }
 
@@ -109,7 +109,7 @@ template <typename Value_, size_t Size_> struct Matrix {
     Column m[Size];
 };
 
-// Import some common Enoki types
+// Import some common Dr.Jit types
 using Matrix3f = Matrix<float, 3>;
 using Matrix4f = Matrix<float, 4>;
 

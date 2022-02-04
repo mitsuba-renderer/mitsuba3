@@ -89,7 +89,7 @@ public:
             m_components.push_back((m_nested_bsdf->flags(i)));
             m_flags |= m_components.back();
         }
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -103,8 +103,8 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= ek::any(ek::neq(unpolarized_spectrum(weight), 0.f));
-        if (ek::none_or<false>(active))
+        active &= dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
+        if (dr::none_or<false>(active))
             return { bs, 0.f };
 
         // Transform sampled 'wo' back to original frame and check orientation
@@ -143,7 +143,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return ek::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        return dr::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -162,16 +162,16 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
-        return { value & active, ek::select(active, pdf, 0.f) };
+        return { value & active, dr::select(active, pdf, 0.f) };
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
-        Normal3f n = ek::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
+        Normal3f n = dr::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
 
         Frame3f result;
-        result.n = ek::normalize(n);
-        result.s = ek::normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
-        result.t = ek::cross(result.n, result.s);
+        result.n = dr::normalize(n);
+        result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
+        result.t = dr::cross(result.n, result.s);
         return result;
     }
 

@@ -1,6 +1,6 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/python/python.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 
 MTS_PY_EXPORT(quad) {
     MTS_PY_IMPORT_TYPES()

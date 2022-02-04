@@ -28,24 +28,24 @@ Differentiable rendering in Mitsuba is based on variants that use the
 currently not supported for performance reasons, but we have some ideas on
 making this faster and plan to incorporate them in the future.
 
-Differentiable calculations using Enoki
+Differentiable calculations using Dr.Jit
 ---------------------------------------
 
 Mitsuba's ability to automatically differentiate entire rendering algorithms
-builds on differentiable CUDA array types provided by the Enoki library. Both
-are explained in the Enoki documentation: the section on `GPU arrays
+builds on differentiable CUDA array types provided by the Dr.Jit library. Both
+are explained in the Dr.Jit documentation: the section on `GPU arrays
 <https://enoki.readthedocs.io/en/master/gpu.html>`_ describes the underlying
 *just-in-time* (JIT) compiler, which fuses simple operations like additions and
 multiplications into larger computational kernels that can be executed on
 CUDA-capable GPUs. The linked document also discusses key differences compared
 to superficially similar frameworks like PyTorch and TensorFlow. The section on
 `Automatic differentiation
-<https://enoki.readthedocs.io/en/master/autodiff.html>`_ describes how Enoki
+<https://enoki.readthedocs.io/en/master/autodiff.html>`_ describes how Dr.Jit
 records and simplifies computation graphs and uses them to propagate
 derivatives in forward or reverse mode. We recommend that you familiarize
 yourself with both of these documents.
 
-Enoki's differentiable types are automatically imported when variant starting
+Dr.Jit's differentiable types are automatically imported when variant starting
 with ``cuda_autodiff_*`` is specified. They are used in both C++ and Python,
 hence it is possible to differentiate larger computations that are partly
 implemented in each language. The following program shows a simple example
@@ -64,7 +64,7 @@ calculation conducted in Python, which differentiates the function
     # Initialize a dynamic CUDA floating point array with some values
     x = Float([1, 2, 3])
 
-    # Tell Enoki that we'll later be interested in gradients of
+    # Tell Dr.Jit that we'll later be interested in gradients of
     # an as-of-yet unspecified objective function with respect to 'x'
     ek.enable_grad(x)
 

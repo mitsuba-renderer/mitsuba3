@@ -156,7 +156,7 @@ public:
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0] | m_components[1];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }
@@ -191,9 +191,9 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         UnpolarizedSpectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, result };
 
         // Determine which component should be sampled
@@ -214,11 +214,11 @@ public:
         bs.eta = 1.f;
         bs.pdf = 0.f;
 
-        if (ek::any_or<true>(sample_specular)) {
-            ek::masked(bs.wo, sample_specular) = reflect(si.wi);
-            ek::masked(bs.pdf, sample_specular) = prob_specular;
-            ek::masked(bs.sampled_component, sample_specular) = 0;
-            ek::masked(bs.sampled_type, sample_specular) = +BSDFFlags::DeltaReflection;
+        if (dr::any_or<true>(sample_specular)) {
+            dr::masked(bs.wo, sample_specular) = reflect(si.wi);
+            dr::masked(bs.pdf, sample_specular) = prob_specular;
+            dr::masked(bs.sampled_component, sample_specular) = 0;
+            dr::masked(bs.sampled_type, sample_specular) = +BSDFFlags::DeltaReflection;
 
             UnpolarizedSpectrum value = f_i / bs.pdf;
             if (m_specular_reflectance)
@@ -226,11 +226,11 @@ public:
             result[sample_specular] = value;
         }
 
-        if (ek::any_or<true>(sample_diffuse)) {
-            ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
-            ek::masked(bs.pdf, sample_diffuse) = prob_diffuse * warp::square_to_cosine_hemisphere_pdf(bs.wo);
-            ek::masked(bs.sampled_component, sample_diffuse) = 1;
-            ek::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
+        if (dr::any_or<true>(sample_diffuse)) {
+            dr::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
+            dr::masked(bs.pdf, sample_diffuse) = prob_diffuse * warp::square_to_cosine_hemisphere_pdf(bs.wo);
+            dr::masked(bs.sampled_component, sample_diffuse) = 1;
+            dr::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
 
             Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), Float(m_eta)));
             UnpolarizedSpectrum value = m_diffuse_reflectance->eval(si, sample_diffuse);
@@ -253,7 +253,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!has_diffuse || ek::none_or<false>(active)))
+        if (unlikely(!has_diffuse || dr::none_or<false>(active)))
             return 0.f;
 
         Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
@@ -277,7 +277,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || ek::none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || dr::none_or<false>(active)))
             return 0.f;
 
         Float prob_diffuse = 1.f;
@@ -291,7 +291,7 @@ public:
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo) * prob_diffuse;
 
-        return ek::select(active, pdf, 0.f);
+        return dr::select(active, pdf, 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -307,7 +307,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!has_diffuse || ek::none_or<false>(active)))
+        if (unlikely(!has_diffuse || dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
@@ -327,8 +327,8 @@ public:
             prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
         }
 
-        return { ek::select(active, depolarizer<Spectrum>(diff), 0.f),
-                 ek::select(active, hemi_pdf * prob_diffuse, 0.f) };
+        return { dr::select(active, depolarizer<Spectrum>(diff), 0.f),
+                 dr::select(active, hemi_pdf * prob_diffuse, 0.f) };
     }
 
     void traverse(TraversalCallback *callback) override {

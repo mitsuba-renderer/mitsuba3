@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import BSDFFlags
@@ -36,8 +36,8 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
                               <spectrum name="k" value="{}"/>
                           </bsdf>""".format(eta.real, eta.imag))
 
-    theta_i = 45 * ek.Pi/180
-    wi = Vector3f([-ek.sin(theta_i), 0, ek.cos(theta_i)])
+    theta_i = 45 * dr.Pi/180
+    wi = Vector3f([-dr.sin(theta_i), 0, dr.cos(theta_i)])
 
     ctx = BSDFContext()
     ctx.mode = TransportMode.Importance
@@ -51,10 +51,10 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
     wo = bs.wo
 
     # Rotate into standard coordinates for specular reflection
-    bi_s = ek.normalize(ek.cross(n, -wi))
-    bi_p = ek.normalize(ek.cross(-wi, bi_s))
-    bo_s = ek.normalize(ek.cross(n, wo))
-    bo_p = ek.normalize(ek.cross(wo, bi_s))
+    bi_s = dr.normalize(dr.cross(n, -wi))
+    bi_p = dr.normalize(dr.cross(-wi, bi_s))
+    bo_s = dr.normalize(dr.cross(n, wo))
+    bo_p = dr.normalize(dr.cross(wo, bi_s))
 
     M_local = rotate_mueller_basis(M_local,
                                    -wi, stokes_basis(-wi), bi_s,
@@ -62,53 +62,53 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
 
     # Apply to unpolarized light and verify that it is equivalent to normal Fresnel
     a0 = M_local @ spectrum_from_stokes([1, 0, 0, 0])
-    F = fresnel_conductor(ek.cos(theta_i), ek.scalar.Complex2f(eta.real, eta.imag))
+    F = fresnel_conductor(dr.cos(theta_i), dr.scalar.Complex2f(eta.real, eta.imag))
     a0 = a0[0, 0]
-    assert ek.allclose(a0[0], F, atol=1e-3)
+    assert dr.allclose(a0[0], F, atol=1e-3)
 
     # Apply to horizontally polarized light (linear at 0˚)
     # Test that it is..
     # 1) still fully polarized (though with reduced intensity)
     # 2) still horizontally polarized
     a1 = M_local @ spectrum_from_stokes([1, +1, 0, 0])
-    assert ek.allclose(a1[0, 0], ek.abs(a1[1, 0]), atol=1e-3)              # 1)
-    a1 = a1 * ek.rcp(a1[0, 0][0])
-    assert ek.allclose(a1, spectrum_from_stokes([1, 1, 0, 0]), atol=1e-3)  # 2)
+    assert dr.allclose(a1[0, 0], dr.abs(a1[1, 0]), atol=1e-3)              # 1)
+    a1 = a1 * dr.rcp(a1[0, 0][0])
+    assert dr.allclose(a1, spectrum_from_stokes([1, 1, 0, 0]), atol=1e-3)  # 2)
 
     # Apply to vertically polarized light (linear at 90˚)
     # Test that it is..
     # 1) still fully polarized (though with reduced intensity)
     # 2) still vertically polarized
     a2 = M_local @ spectrum_from_stokes([1, -1, 0, 0])
-    assert ek.allclose(a2[0, 0], ek.abs(a2[1, 0]), atol=1e-3)              # 1)
-    a2 = a2 * ek.rcp(a2[0, 0][0])
-    assert ek.allclose(a2, spectrum_from_stokes([1, -1, 0, 0]), atol=1e-3) # 2)
+    assert dr.allclose(a2[0, 0], dr.abs(a2[1, 0]), atol=1e-3)              # 1)
+    a2 = a2 * dr.rcp(a2[0, 0][0])
+    assert dr.allclose(a2, spectrum_from_stokes([1, -1, 0, 0]), atol=1e-3) # 2)
 
     # Apply to (positive) diagonally polarized light (linear at +45˚)
     # Test that..
     # 1) The polarization is flipped to -45˚
     # 2) There is now also some (right) circular polarization
     a3 = M_local @ spectrum_from_stokes([1, 0, +1, 0])
-    assert ek.all(a3[2, 0] < UnpolarizedSpectrum(0.0))
-    assert ek.all(a3[3, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a3[2, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a3[3, 0] > UnpolarizedSpectrum(0.0))
 
     # Apply to (negative) diagonally polarized light (linear at -45˚)
     # Test that..
     # 1) The polarization is flipped to +45˚
     # 2) There is now also some (left) circular polarization
     a4 = M_local @ spectrum_from_stokes([1, 0, -1, 0])
-    assert ek.all(a4[2, 0] > UnpolarizedSpectrum(0.0))
-    assert ek.all(a4[3, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a4[2, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a4[3, 0] < UnpolarizedSpectrum(0.0))
 
     # Apply to right circularly polarized light
     # Test that the polarization is flipped to left circular
     a5 = M_local @ spectrum_from_stokes([1, 0, 0, +1])
-    assert ek.all(a5[3, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a5[3, 0] < UnpolarizedSpectrum(0.0))
 
     # Apply to left circularly polarized light
     # Test that the polarization is flipped to right circular
     a6 = M_local @ spectrum_from_stokes([1, 0, 0, -1])
-    assert ek.all(a6[3, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a6[3, 0] > UnpolarizedSpectrum(0.0))
 
 
 def test02_sample_pol_world(variant_scalar_mono_polarized):
@@ -144,7 +144,7 @@ def test02_sample_pol_world(variant_scalar_mono_polarized):
     ctx.mode = TransportMode.Importance
     si = SurfaceInteraction3f()
     si.p = Point3f(0, 0, 0)
-    si.n = ek.normalize(Normal3f(1.0, 1.0, 0.0))
+    si.n = dr.normalize(Normal3f(1.0, 1.0, 0.0))
     si.sh_frame = Frame3f(si.n)
 
     # Incident / outgoing directions and their Stokes bases
@@ -157,7 +157,7 @@ def test02_sample_pol_world(variant_scalar_mono_polarized):
     M_world = si.to_world_mueller(M_tmp, -si.wi, bs.wo)
 
     # Test that outgoing direction is as predicted
-    assert ek.allclose(si.to_world(bs.wo), w2, atol=1e-5)
+    assert dr.allclose(si.to_world(bs.wo), w2, atol=1e-5)
 
     # Align reference frames s.t. polarization is expressed w.r.t. b1 & b2
     M_world = rotate_mueller_basis(M_world,
@@ -166,50 +166,50 @@ def test02_sample_pol_world(variant_scalar_mono_polarized):
 
     # Apply to unpolarized light and verify that it is equivalent to normal Fresnel
     a0 = M_world @ spectrum_from_stokes([1, 0, 0, 0])
-    F = fresnel_conductor(si.wi[2], ek.scalar.Complex2f(eta.real, eta.imag))
+    F = fresnel_conductor(si.wi[2], dr.scalar.Complex2f(eta.real, eta.imag))
     a0 = a0[0, 0]
-    assert ek.allclose(a0[0], F, atol=1e-3)
+    assert dr.allclose(a0[0], F, atol=1e-3)
 
     # Apply to horizontally polarized light (linear at 0˚)
     # Test that it is..
     # 1) still fully polarized (though with reduced intensity)
     # 2) still horizontally polarized
     a1 = M_world @ spectrum_from_stokes([1, +1, 0, 0])
-    assert ek.allclose(a1[0, 0], ek.abs(a1[1, 0]), atol=1e-3)              # 1)
-    a1 = a1 * ek.rcp(a1[0, 0][0])
-    assert ek.allclose(a1, spectrum_from_stokes([1, 1, 0, 0]), atol=1e-3)  # 2)
+    assert dr.allclose(a1[0, 0], dr.abs(a1[1, 0]), atol=1e-3)              # 1)
+    a1 = a1 * dr.rcp(a1[0, 0][0])
+    assert dr.allclose(a1, spectrum_from_stokes([1, 1, 0, 0]), atol=1e-3)  # 2)
 
     # Apply to vertically polarized light (linear at 90˚)
     # Test that it is..
     # 1) still fully polarized (though with reduced intensity)
     # 2) still vertically polarized
     a2 = M_world @ spectrum_from_stokes([1, -1, 0, 0])
-    assert ek.allclose(a2[0, 0], ek.abs(a2[1, 0]), atol=1e-3)              # 1)
-    a2 = a2 * ek.rcp(a2[0, 0][0])
-    assert ek.allclose(a2, spectrum_from_stokes([1, -1, 0, 0]), atol=1e-3) # 2)
+    assert dr.allclose(a2[0, 0], dr.abs(a2[1, 0]), atol=1e-3)              # 1)
+    a2 = a2 * dr.rcp(a2[0, 0][0])
+    assert dr.allclose(a2, spectrum_from_stokes([1, -1, 0, 0]), atol=1e-3) # 2)
 
     # Apply to (positive) diagonally polarized light (linear at +45˚)
     # Test that..
     # 1) The polarization is flipped to -45˚
     # 2) There is now also some (left) circular polarization
     a3 = M_world @ spectrum_from_stokes([1, 0, +1, 0])
-    assert ek.all(a3[2, 0] < UnpolarizedSpectrum(0.0))
-    assert ek.all(a3[3, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a3[2, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a3[3, 0] < UnpolarizedSpectrum(0.0))
 
     # Apply to (negative) diagonally polarized light (linear at -45˚)
     # Test that..
     # 1) The polarization is flipped to +45˚
     # 2) There is now also some (right) circular polarization
     a4 = M_world @ spectrum_from_stokes([1, 0, -1, 0])
-    assert ek.all(a4[2, 0] > UnpolarizedSpectrum(0.0))
-    assert ek.all(a4[3, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a4[2, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a4[3, 0] > UnpolarizedSpectrum(0.0))
 
     # Apply to right circularly polarized light
     # Test that the polarization is flipped to left circular
     a5 = M_world @ spectrum_from_stokes([1, 0, 0, +1])
-    assert ek.all(a5[3, 0] < UnpolarizedSpectrum(0.0))
+    assert dr.all(a5[3, 0] < UnpolarizedSpectrum(0.0))
 
     # Apply to left circularly polarized light
     # Test that the polarization is flipped to right circular
     a6 = M_world @ spectrum_from_stokes([1, 0, 0, -1])
-    assert ek.all(a6[3, 0] > UnpolarizedSpectrum(0.0))
+    assert dr.all(a6[3, 0] > UnpolarizedSpectrum(0.0))

@@ -72,13 +72,13 @@ public:
     void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is power of two and square (e.g. 4, 16, 64, 256, 1024, ...)
         ScalarUInt32 res = 2;
-        while (ek::sqr(res) < spp)
+        while (dr::sqr(res) < spp)
             res = math::round_to_power_of_two(++res);
 
-        if (spp != ek::sqr(res))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(res));
+        if (spp != dr::sqr(res))
+            Log(Warn, "Sample count should be square and power of two, rounding to %i", dr::sqr(res));
 
-        m_sample_count = ek::sqr(res);
+        m_sample_count = dr::sqr(res);
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
@@ -134,7 +134,7 @@ public:
 
     void schedule_state() override {
         Base::schedule_state();
-        ek::schedule(m_scramble_seed);
+        dr::schedule(m_scramble_seed);
     }
 
     std::string to_string() const override {

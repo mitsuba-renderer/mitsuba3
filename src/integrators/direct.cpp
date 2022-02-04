@@ -119,12 +119,12 @@ public:
 
         if (!m_hide_emitters) {
             EmitterPtr emitter_vis = si.emitter(scene, active);
-            if (ek::any_or<true>(ek::neq(emitter_vis, nullptr)))
+            if (dr::any_or<true>(dr::neq(emitter_vis, nullptr)))
                 result += emitter_vis->eval(si, active);
         }
 
         active &= si.is_valid();
-        if (ek::none_or<false>(active))
+        if (dr::none_or<false>(active))
             return { result, valid_ray };
 
         // ----------------------- Emitter sampling -----------------------
@@ -134,15 +134,15 @@ public:
         auto flags = bsdf->flags();
         Mask sample_emitter = active && has_flag(flags, BSDFFlags::Smooth);
 
-        if (ek::any_or<true>(sample_emitter)) {
+        if (dr::any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
                 Mask active_e = sample_emitter;
                 DirectionSample3f ds;
                 Spectrum emitter_val;
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
-                active_e &= ek::neq(ds.pdf, 0.f);
-                if (ek::none_or<false>(active_e))
+                active_e &= dr::neq(ds.pdf, 0.f);
+                if (dr::none_or<false>(active_e))
                     continue;
 
                 // Query the BSDF for that emitter-sampled direction
@@ -153,7 +153,7 @@ public:
                 auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                Float mis = ek::select(ds.delta, Float(1.f), mis_weight(
+                Float mis = dr::select(ds.delta, Float(1.f), mis_weight(
                     ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
                 result[active_e] += mis * bsdf_val * emitter_val;
             }
@@ -166,7 +166,7 @@ public:
                                                sampler->next_2d(active), active);
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
-            Mask active_b = active && ek::any(ek::neq(unpolarized_spectrum(bsdf_val), 0.f));
+            Mask active_b = active && dr::any(dr::neq(unpolarized_spectrum(bsdf_val), 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
             SurfaceInteraction si_bsdf =
@@ -174,9 +174,9 @@ public:
 
             // Retain only rays that hit an emitter
             EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
-            active_b &= ek::neq(emitter, nullptr);
+            active_b &= dr::neq(emitter, nullptr);
 
-            if (ek::any_or<true>(active_b)) {
+            if (dr::any_or<true>(active_b)) {
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
@@ -185,7 +185,7 @@ public:
                 DirectionSample3f ds(scene, si_bsdf, si);
 
                 Float emitter_pdf =
-                    ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
+                    dr::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
 
                 result[active_b] +=
                     bsdf_val * emitter_val *
@@ -210,7 +210,7 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
-        return ek::select(ek::isfinite(w), w, 0.f);
+        return dr::select(dr::isfinite(w), w, 0.f);
     }
 
     MTS_DECLARE_CLASS()

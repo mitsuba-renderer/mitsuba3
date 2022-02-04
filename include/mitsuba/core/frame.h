@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
-#include <enoki/struct.h>
+#include <drjit/struct.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -32,12 +32,12 @@ template <typename Float_> struct Frame {
 
     /// Convert from world coordinates to local coordinates
     Vector3f to_local(const Vector3f &v) const {
-        return Vector3f(ek::dot(v, s), ek::dot(v, t), ek::dot(v, n));
+        return Vector3f(dr::dot(v, s), dr::dot(v, t), dr::dot(v, n));
     }
 
     /// Convert from local coordinates to world coordinates
     Vector3f to_world(const Vector3f &v) const {
-        return ek::fmadd(n, v.z(), ek::fmadd(t, v.y(), s * v.x()));
+        return dr::fmadd(n, v.z(), dr::fmadd(t, v.y(), s * v.x()));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the
@@ -50,27 +50,27 @@ template <typename Float_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float cos_theta_2(const Vector3f &v) { return ek::sqr(v.z()); }
+    static Float cos_theta_2(const Vector3f &v) { return dr::sqr(v.z()); }
 
     /** \brief Give a unit direction, this function returns the sine
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float sin_theta(const Vector3f &v) { return ek::safe_sqrt(sin_theta_2(v)); }
+    static Float sin_theta(const Vector3f &v) { return dr::safe_sqrt(sin_theta_2(v)); }
 
     /** \brief Give a unit direction, this function returns the square sine
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float sin_theta_2(const Vector3f &v) { return ek::fmadd(v.x(), v.x(), ek::sqr(v.y())); }
+    static Float sin_theta_2(const Vector3f &v) { return dr::fmadd(v.x(), v.x(), dr::sqr(v.y())); }
 
     /** \brief Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
     static Float tan_theta(const Vector3f &v) {
-        Float temp = ek::fnmadd(v.z(), v.z(), 1.f);
-        return ek::safe_sqrt(temp) / v.z();
+        Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
+        return dr::safe_sqrt(temp) / v.z();
     }
 
     /** \brief Give a unit direction, this function returns the square tangent
@@ -78,8 +78,8 @@ template <typename Float_> struct Frame {
      * the \ref Frame description)
      */
     static Float tan_theta_2(const Vector3f &v) {
-        Float temp = ek::fnmadd(v.z(), v.z(), 1.f);
-        return ek::max(temp, 0.f) / ek::sqr(v.z());
+        Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
+        return dr::max(temp, 0.f) / dr::sqr(v.z());
     }
 
     /** \brief Give a unit direction, this function returns the sine of the
@@ -88,9 +88,9 @@ template <typename Float_> struct Frame {
      */
     static Float sin_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
-              inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
-        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
-                          ek::clamp(v.y() * inv_sin_theta, -1.f, 1.f));
+              inv_sin_theta = dr::rsqrt(Frame::sin_theta_2(v));
+        return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 0.f,
+                          dr::clamp(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the
@@ -99,9 +99,9 @@ template <typename Float_> struct Frame {
      */
     static Float cos_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
-              inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
-        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
-                          ek::clamp(v.x() * inv_sin_theta, -1.f, 1.f));
+              inv_sin_theta = dr::rsqrt(Frame::sin_theta_2(v));
+        return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 1.f,
+                          dr::clamp(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the sine and cosine
@@ -110,13 +110,13 @@ template <typename Float_> struct Frame {
      */
     static std::pair<Float, Float> sincos_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
-              inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
+              inv_sin_theta = dr::rsqrt(Frame::sin_theta_2(v));
 
-        Vector2f result = ek::head<2>(v) * inv_sin_theta;
+        Vector2f result = dr::head<2>(v) * inv_sin_theta;
 
-        result = ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
+        result = dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>,
                             Vector2f(1.f, 0.f),
-                            ek::clamp(result, -1.f, 1.f));
+                            dr::clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
@@ -127,8 +127,8 @@ template <typename Float_> struct Frame {
      */
     static Float sin_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
-                          ek::clamp(ek::sqr(v.y()) / sin_theta_2, -1.f, 1.f));
+        return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 0.f,
+                          dr::clamp(dr::sqr(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared cosine of
@@ -137,8 +137,8 @@ template <typename Float_> struct Frame {
      */
     static Float cos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
-                          ek::clamp(ek::sqr(v.x()) / sin_theta_2, -1.f, 1.f));
+        return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 1.f,
+                          dr::clamp(dr::sqr(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared sine
@@ -147,27 +147,27 @@ template <typename Float_> struct Frame {
      */
     static std::pair<Float, Float> sincos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
-              inv_sin_theta_2 = ek::rcp(sin_theta_2);
+              inv_sin_theta_2 = dr::rcp(sin_theta_2);
 
-        Vector2f result = ek::sqr(ek::head<2>(v)) * inv_sin_theta_2;
+        Vector2f result = dr::sqr(dr::head<2>(v)) * inv_sin_theta_2;
 
-        result = ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
-                            Vector2f(1.f, 0.f), ek::clamp(result, -1.f, 1.f));
+        result = dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>,
+                            Vector2f(1.f, 0.f), dr::clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
 
     /// Equality test
     Mask operator==(const Frame &frame) const {
-        return ek::all(ek::eq(frame.s, s) && ek::eq(frame.t, t) && ek::eq(frame.n, n));
+        return dr::all(dr::eq(frame.s, s) && dr::eq(frame.t, t) && dr::eq(frame.n, n));
     }
 
     /// Inequality test
     Mask operator!=(const Frame &frame) const {
-        return ek::any(ek::neq(frame.s, s) || ek::neq(frame.t, t) || ek::neq(frame.n, n));
+        return dr::any(dr::neq(frame.s, s) || dr::neq(frame.t, t) || dr::neq(frame.n, n));
     }
 
-    ENOKI_STRUCT(Frame, s, t, n)
+    DRJIT_STRUCT(Frame, s, t, n)
 };
 
 /// Return a string representation of a frame
@@ -196,11 +196,11 @@ std::ostream &operator<<(std::ostream &os, const Frame<Float> &f) {
  *    Used to return the computed frame
  */
 template <typename Normal3f, typename Vector3f,
-          typename Float = ek::value_t<Normal3f>,
+          typename Float = dr::value_t<Normal3f>,
           typename Frame = mitsuba::Frame<Float>>
 Frame compute_shading_frame(const Normal3f &n, const Vector3f &dp_du) {
-    Vector3f s = ek::normalize(ek::fnmadd(n, ek::dot(n, dp_du), dp_du));
-    return Frame(s, ek::cross(n, s), n);
+    Vector3f s = dr::normalize(dr::fnmadd(n, dr::dot(n, dp_du), dp_du));
+    return Frame(s, dr::cross(n, s), n);
 }
 
 NAMESPACE_END(mitsuba)

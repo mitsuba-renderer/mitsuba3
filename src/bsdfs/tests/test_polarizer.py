@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import load_string, BSDFFlags
@@ -66,7 +66,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
         stokes_out = M @ stokes_in
-        assert ek.allclose(expected, stokes_out, atol=1e-3)
+        assert dr.allclose(expected, stokes_out, atol=1e-3)
 
         def rotate_vector(v, axis, angle):
             return Transform4f.rotate(axis, angle) @ v
@@ -76,14 +76,14 @@ def test02_sample_local(variant_scalar_mono_polarized):
         si.wi = rotate_vector(wi, [1, 0, 0], angle=30.0)
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
         stokes_out = M @ stokes_in
-        assert ek.allclose(expected, stokes_out, atol=1e-3)
+        assert dr.allclose(expected, stokes_out, atol=1e-3)
 
         # Case 3: Tilt polarizer around "y". Should not change anything.
         # (Note: to stay with local coordinates, we rotate the incident direction instead.)
         si.wi = rotate_vector(wi, [0, 1, 0], angle=30.0)
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
         stokes_out = M @ stokes_in
-        assert ek.allclose(expected, stokes_out, atol=1e-3)
+        assert dr.allclose(expected, stokes_out, atol=1e-3)
 
 
 def test03_sample_world(variant_scalar_mono_polarized):
@@ -150,7 +150,7 @@ def test03_sample_world(variant_scalar_mono_polarized):
                                            stokes_basis(forward), [-1, 0, 0])
 
         stokes_out = M @ stokes_in
-        assert ek.allclose(stokes_out, expected, atol=1e-3)
+        assert dr.allclose(stokes_out, expected, atol=1e-3)
 
 
 def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
@@ -239,7 +239,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         value, _, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
-        value = value * ek.rcp(value[0, 0][0])
+        value = value * dr.rcp(value[0, 0][0])
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
@@ -248,7 +248,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
         value = R @ value
 
-        assert ek.allclose(value, expected[k], atol=1e-3)
+        assert dr.allclose(value, expected[k], atol=1e-3)
 
 
 def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
@@ -344,14 +344,14 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         v = value[0,0]
 
         # Avoid occasional rounding problems
-        v = ek.max(0.0, v)
+        v = dr.max(0.0, v)
 
         # Keep track of observed radiance
         radiance.append(v)
 
     # Check that Malus' law holds
     for i in range(len(angles)):
-        theta = angles[i] * ek.Pi/180
-        malus = ek.cos(theta)**2
+        theta = angles[i] * dr.Pi/180
+        malus = dr.cos(theta)**2
         malus *= radiance[0]
-        assert ek.allclose(malus, radiance[i], atol=1e-2)
+        assert dr.allclose(malus, radiance[i], atol=1e-2)

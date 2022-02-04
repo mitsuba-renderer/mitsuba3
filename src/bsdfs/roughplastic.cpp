@@ -8,7 +8,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/texture.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 
 #define MTS_ROUGH_TRANSMITTANCE_RES 64
 
@@ -179,7 +179,7 @@ public:
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
         m_flags =  m_components[0] | m_components[1];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }
@@ -197,9 +197,9 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, result };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -220,19 +220,19 @@ public:
 
         bs.eta = 1.f;
 
-        if (ek::any_or<true>(sample_specular)) {
+        if (dr::any_or<true>(sample_specular)) {
             MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
-            ek::masked(bs.wo, sample_specular) = reflect(si.wi, m);
-            ek::masked(bs.sampled_component, sample_specular) = 0;
-            ek::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
+            dr::masked(bs.wo, sample_specular) = reflect(si.wi, m);
+            dr::masked(bs.sampled_component, sample_specular) = 0;
+            dr::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
         }
 
-        if (ek::any_or<true>(sample_diffuse)) {
-            ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
-            ek::masked(bs.sampled_component, sample_diffuse) = 1;
-            ek::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
+        if (dr::any_or<true>(sample_diffuse)) {
+            dr::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
+            dr::masked(bs.sampled_component, sample_diffuse) = 1;
+            dr::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
         }
 
         bs.pdf = pdf(ctx, si, bs.wo, active);
@@ -254,7 +254,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return 0.f;
 
         UnpolarizedSpectrum value(0.f);
@@ -262,13 +262,13 @@ public:
             MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
             // Calculate the reflection half-vector
-            Vector3f H = ek::normalize(wo + si.wi);
+            Vector3f H = dr::normalize(wo + si.wi);
 
             // Evaluate the microfacet normal distribution
             Float D = distr.eval(H);
 
             // Fresnel term
-            Float F = std::get<0>(fresnel(ek::dot(si.wi, H), Float(m_eta)));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), Float(m_eta)));
 
             // Smith's shadow-masking function
             Float G = distr.G(si.wi, wo, H);
@@ -290,7 +290,7 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
         return depolarizer<Spectrum>(value) & active;
@@ -298,14 +298,14 @@ public:
 
     Float lerp_gather(const DynamicBuffer<Float> &data, Float x, size_t size,
                       Mask active = true) const {
-        using UInt32 = ek::uint32_array_t<Float>;
+        using UInt32 = dr::uint32_array_t<Float>;
         x *= Float(size - 1);
-        UInt32 index = ek::min(UInt32(x), uint32_t(size - 2));
+        UInt32 index = dr::min(UInt32(x), uint32_t(size - 2));
 
-        Float v0 = ek::gather<Float>(data, index, active),
-              v1 = ek::gather<Float>(data, index + 1, active);
+        Float v0 = dr::gather<Float>(data, index, active),
+              v1 = dr::gather<Float>(data, index + 1, active);
 
-        return ek::lerp(v0, v1, x - Float(index));
+        return dr::lerp(v0, v1, x - Float(index));
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -320,7 +320,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return 0.f;
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -336,7 +336,7 @@ public:
             prob_specular = prob_specular / (prob_specular + prob_diffuse);
         prob_diffuse = 1.f - prob_specular;
 
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
 
         MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
         Float result = 0.f;
@@ -344,7 +344,7 @@ public:
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
                      (4.f * cos_theta_i);
         else
-            result = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+            result = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
         result *= prob_specular;
 
         result += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
@@ -366,7 +366,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -383,7 +383,7 @@ public:
         prob_diffuse = 1.f - prob_specular;
 
         // Calculate the reflection half-vector
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
 
         MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
@@ -397,7 +397,7 @@ public:
         if (m_sample_visible)
             pdf = D * smith_g1_wi / (4.f * cos_theta_i);
         else
-            pdf = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+            pdf = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
         pdf *= prob_specular;
 
         pdf += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
@@ -405,7 +405,7 @@ public:
         UnpolarizedSpectrum value(0.f);
         if (has_specular) {
             // Fresnel term
-            Float F = std::get<0>(fresnel(ek::dot(si.wi, H), Float(m_eta)));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), Float(m_eta)));
 
             // Smith's shadow-masking function
             Float G = distr.smith_g1(wo, H) * smith_g1_wi;
@@ -425,7 +425,7 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
         return { depolarizer<Spectrum>(value) & active, pdf };
@@ -457,25 +457,25 @@ public:
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
             using FloatX = DynamicBuffer<ScalarFloat>;
             using Vector3fX = Vector<FloatX, 3>;
-            ScalarFloat eta = ek::slice(m_eta), alpha = ek::slice(m_alpha);
+            ScalarFloat eta = dr::slice(m_eta), alpha = dr::slice(m_alpha);
 
-            using FloatP = ek::Packet<ek::scalar_t<Float>>;
+            using FloatP = dr::Packet<dr::scalar_t<Float>>;
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
-            FloatX mu = ek::max(1e-6f, ek::linspace<FloatX>(0, 1, MTS_ROUGH_TRANSMITTANCE_RES));
-            FloatX zero = ek::zero<FloatX>(MTS_ROUGH_TRANSMITTANCE_RES);
+            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MTS_ROUGH_TRANSMITTANCE_RES));
+            FloatX zero = dr::zero<FloatX>(MTS_ROUGH_TRANSMITTANCE_RES);
 
-            Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), zero, mu);
+            Vector3fX wi = Vector3fX(dr::sqrt(1 - mu * mu), zero, mu);
 
             auto external_transmittance = eval_transmittance(distr, wi, eta);
 
-            m_external_transmittance = ek::load<DynamicBuffer<Float>>(
+            m_external_transmittance = dr::load<DynamicBuffer<Float>>(
                 external_transmittance.data(),
-                ek::width(external_transmittance));
+                dr::width(external_transmittance));
 
             m_internal_reflectance =
-                ek::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
+                dr::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
-        ek::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+        dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
                         m_internal_reflectance);
     }
 

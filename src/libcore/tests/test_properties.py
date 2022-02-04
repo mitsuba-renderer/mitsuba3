@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -6,7 +6,7 @@ import mitsuba
 def fill_properties(p):
     """Sets up some properties with various types"""
     from mitsuba.core import ScalarColor3f
-    from enoki.scalar import Array3f
+    from drjit.scalar import Array3f
 
     p['prop_1'] = 1
     p['prop_2'] = '1'
@@ -31,7 +31,7 @@ def test01_name_and_id(variant_scalar_rgb):
 
 def test02_type_is_preserved(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop, ScalarColor3f, ScalarColor3d
-    from enoki.scalar import Array3f, Array3f64
+    from drjit.scalar import Array3f, Array3f64
 
     p = Prop()
     fill_properties(p)

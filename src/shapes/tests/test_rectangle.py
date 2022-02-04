@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
@@ -10,7 +10,7 @@ def test01_create(variant_scalar_rgb):
     s = load_dict({"type" : "rectangle"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert ek.allclose(s.surface_area(), 4.0)
+    assert dr.allclose(s.surface_area(), 4.0)
 
 
 def test02_bbox(variant_scalar_rgb):
@@ -26,12 +26,12 @@ def test02_bbox(variant_scalar_rgb):
             })
             b = s.bbox()
 
-            assert ek.allclose(s.surface_area(), sx * sy * 4)
+            assert dr.allclose(s.surface_area(), sx * sy * 4)
 
             assert b.valid()
-            assert ek.allclose(b.center(), translate)
-            assert ek.allclose(b.min, translate - [sx, sy, 0.0])
-            assert ek.allclose(b.max, translate + [sx, sy, 0.0])
+            assert dr.allclose(b.center(), translate)
+            assert dr.allclose(b.min, translate - [sx, sy, 0.0])
+            assert dr.allclose(b.max, translate + [sx, sy, 0.0])
 
 
 def test03_ray_intersect(variant_scalar_rgb):
@@ -47,7 +47,7 @@ def test03_ray_intersect(variant_scalar_rgb):
     })
 
     n = 15
-    coords = ek.linspace(Float, -1, 1, n)
+    coords = dr.linspace(Float, -1, 1, n)
     rays = [Ray3f(o=[a, a, 5], d=[0, 0, -1], time=0.0,
                   wavelengths=[]) for a in coords]
     si_scalar = []
@@ -82,7 +82,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o.z = 5.0
 
         t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
-        ek.eval(t)
+        dr.eval(t)
         return t
 
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
@@ -99,7 +99,7 @@ def test05_surface_area(variant_scalar_rgb):
                                   [0, 0, 1, 0],
                                   [0, 0, 0, 1]])
     })
-    assert ek.allclose(rect.surface_area(), 2.0 * 2.0 * 2.0 * 2.0)
+    assert dr.allclose(rect.surface_area(), 2.0 * 2.0 * 2.0 * 2.0)
 
     # Rectangle sheared along the Z-axis
     rect = load_dict({
@@ -109,7 +109,7 @@ def test05_surface_area(variant_scalar_rgb):
                                   [1, 0, 1, 0],
                                   [0, 0, 0, 1]])
     })
-    assert ek.allclose(rect.surface_area(), 2.0 * 2.0 * ek.sqrt(2.0))
+    assert dr.allclose(rect.surface_area(), 2.0 * 2.0 * dr.sqrt(2.0))
 
     # Rectangle sheared along the X-axis (shouldn't affect surface_area)
     rect = load_dict({
@@ -119,7 +119,7 @@ def test05_surface_area(variant_scalar_rgb):
                                   [0, 0, 1, 0],
                                   [0, 0, 0, 1]])
     })
-    assert ek.allclose(rect.surface_area(), 2.0 * 2.0)
+    assert dr.allclose(rect.surface_area(), 2.0 * 2.0)
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
@@ -130,38 +130,38 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
-    ek.enable_grad(ray.o)
-    ek.enable_grad(ray.d)
+    dr.enable_grad(ray.o)
+    dr.enable_grad(ray.d)
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     si.p *= 1.0
-    ek.forward(ray.o.x)
-    assert ek.allclose(ek.grad(si.p), [1, 0, 0])
+    dr.forward(ray.o.x)
+    assert dr.allclose(dr.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the y-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     si.p *= 1.0
-    ek.forward(ray.o.y)
-    assert ek.allclose(ek.grad(si.p), [0, 1, 0])
+    dr.forward(ray.o.y)
+    assert dr.allclose(dr.grad(si.p), [0, 1, 0])
 
     # If the ray origin is shifted along the x-axis, so does si.uv
     si = pi.compute_surface_interaction(ray)
     si.uv *= 1.0
-    ek.forward(ray.o.x)
-    assert ek.allclose(ek.grad(si.uv), [0.5, 0])
+    dr.forward(ray.o.x)
+    assert dr.allclose(dr.grad(si.uv), [0.5, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
     si.t *= 1.0
-    ek.forward(ray.o.z)
-    assert ek.allclose(ek.grad(si.t), -1)
+    dr.forward(ray.o.z)
+    assert dr.allclose(dr.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     si.p *= 1.0
-    ek.forward(ray.d.x)
-    assert ek.allclose(ek.grad(si.p), [10, 0, 0])
+    dr.forward(ray.d.x)
+    assert dr.allclose(dr.grad(si.p), [10, 0, 0])
 
 
 def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
@@ -172,15 +172,15 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
-    ek.enable_grad(ray.o)
+    dr.enable_grad(ray.o)
 
     # If si.p is shifted along the x-axis, so does the ray origin
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.p.x)
-    assert ek.allclose(ek.grad(ray.o), [1, 0, 0])
+    dr.backward(si.p.x)
+    assert dr.allclose(dr.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
-    ek.set_grad(ray.o, 0.0)
+    dr.set_grad(ray.o, 0.0)
     si = pi.compute_surface_interaction(ray)
-    ek.backward(si.t)
-    assert ek.allclose(ek.grad(ray.o), [0, 0, -1])
+    dr.backward(si.t)
+    assert dr.allclose(dr.grad(ray.o), [0, 0, -1])

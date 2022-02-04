@@ -304,25 +304,25 @@ public:
         InputFloat* normal_ptr   = vertex_normals.get();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
             InputPoint3f p = m_to_world.scalar().transform_affine(
-                ek::load<InputPoint3f>(position_ptr));
-            ek::store(position_ptr, p);
+                dr::load<InputPoint3f>(position_ptr));
+            dr::store(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_normals) {
-                InputNormal3f n = ek::load<InputNormal3f>(normal_ptr);
-                n = ek::normalize(m_to_world.scalar().transform_affine(n));
-                ek::store(normal_ptr, n);
+                InputNormal3f n = dr::load<InputNormal3f>(normal_ptr);
+                n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                dr::store(normal_ptr, n);
                 normal_ptr += 3;
             }
         }
 
-        m_faces = ek::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
-        m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+        m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
+        m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
         if (!m_face_normals)
-            m_vertex_normals = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+            m_vertex_normals = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (has_texcoords)
-            m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+            m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (!m_face_normals)

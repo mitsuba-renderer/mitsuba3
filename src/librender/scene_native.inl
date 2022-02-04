@@ -15,7 +15,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
     ScopedPhase phase(ProfilerPhase::InitAccel);
     kdtree->build();
 
-    if constexpr (ek::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_array_v<Float>) {
         m_accel = new NativeState<Float, Spectrum>();
         NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
         s.accel = kdtree;
@@ -26,9 +26,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
             for (size_t i = 0; i < m_shapes.size(); i++)
                 data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
             s.shapes_registry_ids
-                = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+                = dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
         } else {
-            s.shapes_registry_ids = ek::zero<DynamicBuffer<UInt32>>();
+            s.shapes_registry_ids = dr::zero<DynamicBuffer<UInt32>>();
         }
     } else {
         m_accel = kdtree;
@@ -36,7 +36,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    if constexpr (ek::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_array_v<Float>) {
         NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) m_accel;
         s->accel->dec_ref();
         delete s;
@@ -48,7 +48,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     ShapeKDTree *kdtree;
-    if constexpr (ek::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_array_v<Float>)
         kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
     else
         kdtree = (ShapeKDTree *) m_accel;
@@ -70,7 +70,7 @@ template <typename ScalarFloat> struct RayHitT {
     uint32_t mask, id, flags;
     ScalarFloat ng_x, ng_y, ng_z, u, v;
     uint32_t prim_id, geom_id, inst_id;
-} ENOKI_PACK;
+} DRJIT_PACK;
 
 #if defined(_MSC_VER)
 #  pragma pack(pop)
@@ -136,8 +136,8 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       Mask coherent,
                                                       Mask active) const {
-    if constexpr (!ek::is_jit_array_v<Float>) {
-        ENOKI_MARK_USED(coherent);
+    if constexpr (!dr::is_jit_array_v<Float>) {
+        DRJIT_MARK_USED(coherent);
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<false>(ray, active);
     } else {
@@ -152,7 +152,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 8>; break;
             case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 16>; break;
             default:
-                Throw("ray_intersect_preliminary_cpu(): Enoki-JIT is "
+                Throw("ray_intersect_preliminary_cpu(): Dr.Jit is "
                       "configured for vectors of width %u, which is not "
                       "supported by the kd-tree ray tracing backend!", jit_width);
         }
@@ -162,8 +162,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = ek::zero<UInt32>();
-        Float ray_mint = ek::zero<Float>();
+        UInt32 zero = dr::zero<UInt32>();
+        Float ray_mint = dr::zero<Float>();
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray.o.x().index(), ray.o.y().index(),
@@ -188,15 +188,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && ek::neq(t, ray.maxt);
+        Mask hit = active && dr::neq(t, ray.maxt);
 
-        pi.t = ek::select(hit, t, ek::Infinity<Float>);
+        pi.t = dr::select(hit, t, dr::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = hit && ek::neq(inst_index, ((uint32_t)-1));
-        UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
+        Mask hit_inst = hit && dr::neq(inst_index, ((uint32_t)-1));
+        UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
 
-        ShapePtr shape = ek::gather<UInt32>(s->shapes_registry_ids, index, hit);
+        ShapePtr shape = dr::gather<UInt32>(s->shapes_registry_ids, index, hit);
 
         pi.instance = shape & hit_inst;
         pi.shape    = shape & !hit_inst;
@@ -208,15 +208,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask coherent, Mask active) const {
-    if constexpr (!ek::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi =
             ray_intersect_preliminary_cpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(ray_flags);
-        ENOKI_MARK_USED(coherent);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(ray_flags);
+        DRJIT_MARK_USED(coherent);
+        DRJIT_MARK_USED(active);
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
     }
 }
@@ -224,8 +224,8 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
                                      Mask coherent, Mask active) const {
-    if constexpr (!ek::is_jit_array_v<Float>) {
-        ENOKI_MARK_USED(coherent);
+    if constexpr (!dr::is_jit_array_v<Float>) {
+        DRJIT_MARK_USED(coherent);
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
     } else {
@@ -238,7 +238,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
             case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 8>; break;
             case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 16>; break;
             default:
-                Throw("ray_test_cpu(): Enoki-JIT is configured for vectors of "
+                Throw("ray_test_cpu(): Dr.Jit is configured for vectors of "
                       "width %u, which is not supported by the kd-tree ray "
                       "tracing backend!", jit_width);
         }
@@ -248,8 +248,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = ek::zero<UInt32>();
-        Float ray_mint = ek::zero<Float>();
+        UInt32 zero = dr::zero<UInt32>();
+        Float ray_mint = dr::zero<Float>();
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray.o.x().index(), ray.o.y().index(),
@@ -262,14 +262,14 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
 
         jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
 
-        return active && ek::neq(Float::steal(out[0]), ray.maxt);
+        return active && dr::neq(Float::steal(out[0]), ray.maxt);
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
     const ShapeKDTree *kdtree;
-    if constexpr (ek::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_array_v<Float>)
         kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
     else
         kdtree = (const ShapeKDTree *) m_accel;

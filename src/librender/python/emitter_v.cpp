@@ -61,15 +61,15 @@ MTS_PY_EXPORT(Emitter) {
             [](PyEmitter &emitter){ return emitter.m_flags; },
             [](PyEmitter &emitter, uint32_t flags){
                 emitter.m_flags = flags;
-                ek::set_attr(&emitter, "flags", flags);
+                dr::set_attr(&emitter, "flags", flags);
             }
         );
 
-    if constexpr (ek::is_array_v<EmitterPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<EmitterPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<EmitterPtr> cls(m, "EmitterPtr", ek_array);
+        py::class_<EmitterPtr> cls(m, "EmitterPtr", dr_array);
 
         cls.def("sample_ray",
                 [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
@@ -113,9 +113,9 @@ MTS_PY_EXPORT(Emitter) {
              [](EmitterPtr ptr) { return ptr->is_environment(); },
              D(Emitter, is_environment));
 
-        bind_enoki_ptr_array(cls);
+        bind_drjit_ptr_array(cls);
 
-        pybind11_type_alias<UInt32, ek::replace_scalar_t<UInt32, EmitterFlags>>();
+        pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, EmitterFlags>>();
     }
 
     MTS_PY_REGISTER_OBJECT("register_emitter", Emitter)

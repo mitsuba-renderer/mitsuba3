@@ -4,7 +4,7 @@
 MTS_PY_EXPORT(sample_tea) {
     MTS_PY_IMPORT_TYPES()
 
-    if constexpr (ek::is_jit_array_v<UInt32>) {
+    if constexpr (dr::is_jit_array_v<UInt32>) {
         m.def("sample_tea_32", sample_tea_32<uint32_t>,
                "v0"_a, "v1"_a, "rounds"_a = 4, D(sample_tea_32));
 

@@ -32,7 +32,7 @@ public:
      * Evaluate this volume as a six-channel quantity with no color processing
      * This interface is specifically intended to encode the parameters of an SGGX phase function.
      */
-    virtual ek::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
+    virtual dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
      * Evaluate the volume at the given surface interaction,

@@ -10,7 +10,7 @@ MTS_PY_EXPORT(fresnel) {
         &fresnel_conductor<Float>,
         "cos_theta_i"_a, "eta"_a, D(fresnel_conductor))
     .def("fresnel_polarized",
-        py::overload_cast<Float, ek::Complex<Float>>(&fresnel_polarized<Float>),
+        py::overload_cast<Float, dr::Complex<Float>>(&fresnel_polarized<Float>),
         "cos_theta_i"_a, "eta"_a, D(fresnel_polarized, 2))
     .def("reflect",
         py::overload_cast<const Vector3f &>(&reflect<Float>),

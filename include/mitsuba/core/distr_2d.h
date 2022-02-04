@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/util.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 #include <array>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -66,11 +66,11 @@ template <typename Float_, size_t Dimension_ = 0>
 class DiscreteDistribution2D {
 public:
     using Float                       = Float_;
-    using UInt32                      = ek::uint32_array_t<Float>;
-    using Mask                        = ek::mask_t<Float>;
+    using UInt32                      = dr::uint32_array_t<Float>;
+    using Mask                        = dr::mask_t<Float>;
     using Point2f                     = Point<Float, 2>;
     using Point2u                     = Point<UInt32, 2>;
-    using ScalarFloat                 = ek::scalar_t<Float>;
+    using ScalarFloat                 = dr::scalar_t<Float>;
     using ScalarVector2u              = Vector<uint32_t, 2>;
     using FloatStorage                = DynamicBuffer<Float>;
 
@@ -84,7 +84,7 @@ public:
                            const ScalarVector2u &size)
         : m_size(size) {
 
-        std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[ek::hprod(m_size)]);
+        std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[dr::hprod(m_size)]);
         std::unique_ptr<ScalarFloat[]> marg_cdf(new ScalarFloat[m_size.y()]);
 
         // Construct conditional and marginal CDFs
@@ -100,8 +100,8 @@ public:
             marg_cdf[y] = (ScalarFloat) accum_marg;
         }
 
-        m_cond_cdf = ek::load<FloatStorage>(cond_cdf.get(), ek::hprod(m_size));
-        m_marg_cdf = ek::load<FloatStorage>(marg_cdf.get(), m_size.y());
+        m_cond_cdf = dr::load<FloatStorage>(cond_cdf.get(), dr::hprod(m_size));
+        m_marg_cdf = dr::load<FloatStorage>(marg_cdf.get(), m_size.y());
 
         m_inv_normalization = (ScalarFloat) accum_marg;
         m_normalization = (ScalarFloat) (1.0 / accum_marg);
@@ -111,8 +111,8 @@ public:
     Float eval(const Point2u &pos, Mask active = true) const {
         UInt32 index = pos.x() + pos.y() * m_size.x();
 
-        return ek::gather<Float>(m_cond_cdf, index, active) -
-               ek::gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0.f);
+        return dr::gather<Float>(m_cond_cdf, index, active) -
+               dr::gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0.f);
     }
 
     /// Evaluate the normalized function value at the given integer position
@@ -134,38 +134,38 @@ public:
         Point2f sample(sample_);
 
         // Avoid degeneracies on the domain boundary
-        sample = ek::clamp(sample, ek::Smallest<Float>, ek::OneMinusEpsilon<Float>);
+        sample = dr::clamp(sample, dr::Smallest<Float>, dr::OneMinusEpsilon<Float>);
 
         // Scale sample Y range
         sample.y() *= m_inv_normalization;
 
         // Sample the row from the marginal distribution
-        UInt32 row = ek::binary_search<UInt32>(
-            0u, m_size.y() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_marg_cdf, idx, active) < sample.y();
+        UInt32 row = dr::binary_search<UInt32>(
+            0u, m_size.y() - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Float>(m_marg_cdf, idx, active) < sample.y();
             });
 
         UInt32 offset = row * m_size.x();
 
         // Scale sample X range
-        sample.x() *= ek::gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
+        sample.x() *= dr::gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = ek::binary_search<UInt32>(
-            0u, m_size.x() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
+        UInt32 col = dr::binary_search<UInt32>(
+            0u, m_size.x() - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                return dr::gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
             });
 
         // Re-scale uniform variate
-        Float col_cdf_0 = ek::gather<Float>(m_cond_cdf, offset + col - 1, active && col > 0),
-              col_cdf_1 = ek::gather<Float>(m_cond_cdf, offset + col, active),
-              row_cdf_0 = ek::gather<Float>(m_marg_cdf, row - 1, active && row > 0),
-              row_cdf_1 = ek::gather<Float>(m_marg_cdf, row, active);
+        Float col_cdf_0 = dr::gather<Float>(m_cond_cdf, offset + col - 1, active && col > 0),
+              col_cdf_1 = dr::gather<Float>(m_cond_cdf, offset + col, active),
+              row_cdf_0 = dr::gather<Float>(m_marg_cdf, row - 1, active && row > 0),
+              row_cdf_1 = dr::gather<Float>(m_marg_cdf, row, active);
 
         sample.x() -= col_cdf_0;
         sample.y() -= row_cdf_0;
-        ek::masked(sample.x(), ek::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
-        ek::masked(sample.y(), ek::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        dr::masked(sample.x(), dr::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        dr::masked(sample.y(), dr::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         return { Point2u(col, row), (col_cdf_1 - col_cdf_0) * m_normalization, sample };
     }
@@ -199,13 +199,13 @@ template <typename Float_, size_t Dimension_ = 0> class Distribution2D {
 public:
     static constexpr size_t Dimension = Dimension_;
     using Float                       = Float_;
-    using UInt32                      = ek::uint32_array_t<Float>;
-    using Int32                       = ek::int32_array_t<Float>;
-    using Mask                        = ek::mask_t<Float>;
+    using UInt32                      = dr::uint32_array_t<Float>;
+    using Int32                       = dr::int32_array_t<Float>;
+    using Mask                        = dr::mask_t<Float>;
     using Point2f                     = Point<Float, 2>;
     using Point2i                     = Point<Int32, 2>;
     using Point2u                     = Point<UInt32, 2>;
-    using ScalarFloat                 = ek::scalar_t<Float>;
+    using ScalarFloat                 = dr::scalar_t<Float>;
     using ScalarVector2f              = Vector<ScalarFloat, 2>;
     using ScalarVector2u              = Vector<uint32_t, 2>;
     using FloatStorage                = DynamicBuffer<Float>;
@@ -216,7 +216,7 @@ protected:
     Distribution2D(const ScalarVector2u &size,
                    const std::array<uint32_t, Dimension> &param_res,
                    const std::array<const ScalarFloat *, Dimension> &param_values) {
-        if (ek::any(size < 2))
+        if (dr::any(size < 2))
             Throw("Distribution2D(): input array resolution must be >= 2!");
 
         // The linear interpolant has 'size-1' patches
@@ -231,7 +231,7 @@ protected:
             if (param_res[i] < 1)
                 Throw("Distribution2D(): parameter resolution must be >= 1!");
 
-            m_param_values[i] = ek::load<FloatStorage>(param_values[i], param_res[i]);
+            m_param_values[i] = dr::load<FloatStorage>(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? m_slices : 0;
             m_slices *= param_res[i];
         }
@@ -240,12 +240,12 @@ protected:
     // Look up parameter-related indices and weights (if Dimension != 0)
     UInt32 interpolate_weights(const Float *param, Float *param_weight,
                                Mask active) const {
-        ENOKI_MARK_USED(param);
+        DRJIT_MARK_USED(param);
 
         if constexpr (Dimension > 0) {
             MTS_MASK_ARGUMENT(active);
 
-            UInt32 slice_offset = ek::zero<UInt32>();
+            UInt32 slice_offset = dr::zero<UInt32>();
             for (size_t dim = 0; dim < Dimension; ++dim) {
                 if (unlikely(m_param_values[dim].size() == 1)) {
                     param_weight[2 * dim] = 1.f;
@@ -255,25 +255,25 @@ protected:
 
                 UInt32 param_index = math::find_interval<UInt32>(
                     (uint32_t) m_param_values[dim].size(),
-                    [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                        return ek::gather<Float>(m_param_values[dim], idx, active) <
+                    [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                        return dr::gather<Float>(m_param_values[dim], idx, active) <
                                param[dim];
                     });
 
-                Float p0 = ek::gather<Float>(m_param_values[dim], param_index, active),
-                      p1 = ek::gather<Float>(m_param_values[dim], param_index + 1, active);
+                Float p0 = dr::gather<Float>(m_param_values[dim], param_index, active),
+                      p1 = dr::gather<Float>(m_param_values[dim], param_index + 1, active);
 
                 param_weight[2 * dim + 1] =
-                    ek::clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+                    dr::clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
                 param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
                 slice_offset += m_param_strides[dim] * param_index;
             }
 
             return slice_offset;
         } else {
-            ENOKI_MARK_USED(param);
-            ENOKI_MARK_USED(param_weight);
-            ENOKI_MARK_USED(active);
+            DRJIT_MARK_USED(param);
+            DRJIT_MARK_USED(param_weight);
+            DRJIT_MARK_USED(active);
             return 0u;
         }
     }
@@ -376,7 +376,7 @@ public:
         ScalarVector2u n_patches = size - 1;
 
         // Keep track of the dependence on additional parameters (optional)
-        uint32_t max_level = math::log2i_ceil(ek::hmax(n_patches));
+        uint32_t max_level = math::log2i_ceil(dr::hmax(n_patches));
 
         m_max_patch_index = n_patches - 1;
 
@@ -393,7 +393,7 @@ public:
                     double sum = 0.0;
                     for (uint32_t i = 0; i < m_levels[0].size; ++i)
                         sum += (double) data[offset + i];
-                    scale = ek::hprod(n_patches) / (ScalarFloat) sum;
+                    scale = dr::hprod(n_patches) / (ScalarFloat) sum;
                 }
 
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
@@ -413,7 +413,7 @@ public:
         for (int level = max_level; level >= 0; --level) {
             level_size += level_size & 1u; // zero-pad
             m_levels.emplace_back(level_size, m_slices);
-            level_size = ek::sr<1>(level_size);
+            level_size = dr::sr<1>(level_size);
         }
 
         ScalarFloat *l0p = m_levels[0].data.data(),
@@ -439,7 +439,7 @@ public:
             }
 
             // Copy and normalize fine resolution interpolant
-            ScalarFloat scale = normalize ? (ScalarFloat) (ek::hprod(n_patches) / sum) : 1.f;
+            ScalarFloat scale = normalize ? (ScalarFloat) (dr::hprod(n_patches) / sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 l0p[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
@@ -452,7 +452,7 @@ public:
                 Level &l1 = m_levels[level];
                 offset0 = l0.size * slice;
                 offset1 = l1.size * slice;
-                level_size = ek::sr<1>(level_size + 1u);
+                level_size = dr::sr<1>(level_size + 1u);
 
                 const ScalarFloat *l0p_ = l0.data.data();
                 ScalarFloat *l1p_ = l1.data.data();
@@ -488,14 +488,14 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = ek::clamp(sample, 0.f, 1.f);
+        sample = dr::clamp(sample, 0.f, 1.f);
 
         // Hierarchical sample warping
-        Point2u offset = ek::zero<Point2u>();
+        Point2u offset = dr::zero<Point2u>();
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
-            offset = ek::sl<1>(offset);
+            offset = dr::sl<1>(offset);
 
             // Fetch values from next MIP level
             UInt32 offset_i = level.index(offset) + slice_offset * level.size;
@@ -516,25 +516,25 @@ public:
                                      param_weight, active);
 
             // Avoid issues with roundoff error
-            sample = ek::clamp(sample, 0.f, 1.f);
+            sample = dr::clamp(sample, 0.f, 1.f);
 
             // Select the row
             Float r0 = v00 + v10,
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
             Mask mask = sample.y() > r0;
-            ek::masked(offset.y(), mask) += 1u;
-            ek::masked(sample.y(), mask) -= r0;
-            sample.y() /= ek::select(mask, r1, r0);
+            dr::masked(offset.y(), mask) += 1u;
+            dr::masked(sample.y(), mask) -= r0;
+            sample.y() /= dr::select(mask, r1, r0);
 
             // Select the column
-            Float c0 = ek::select(mask, v01, v00),
-                  c1 = ek::select(mask, v11, v10);
+            Float c0 = dr::select(mask, v01, v00),
+                  c1 = dr::select(mask, v11, v10);
             sample.x() *= c0 + c1;
             mask = sample.x() > c0;
-            ek::masked(sample.x(), mask) -= c0;
-            sample.x() /= ek::select(mask, c1, c0);
-            ek::masked(offset.x(), mask) += 1u;
+            dr::masked(sample.x(), mask) -= c0;
+            sample.x() /= dr::select(mask, c1, c0);
+            dr::masked(offset.x(), mask) += 1u;
         }
 
         const Level &level0 = m_levels[0];
@@ -577,14 +577,14 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = ek::clamp(sample, 0.f, 1.f);
+        sample = dr::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         const Level &level0 = m_levels[0];
         sample *= m_inv_patch_size;
 
         /// Point2f() -> Point2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
-        Point2u offset = ek::min(Point2u(Point2i(sample)), m_max_patch_index);
+        Point2u offset = dr::min(Point2u(Point2i(sample)), m_max_patch_index);
         UInt32 offset_i =
             offset.x() + offset.y() * level0.width + slice_offset * level0.size;
 
@@ -627,26 +627,26 @@ public:
             v11 = level.lookup(offset_i, m_param_strides,
                                param_weight, active);
 
-            Mask x_mask = ek::neq(offset.x() & 1u, 0u),
-                 y_mask = ek::neq(offset.y() & 1u, 0u);
+            Mask x_mask = dr::neq(offset.x() & 1u, 0u),
+                 y_mask = dr::neq(offset.y() & 1u, 0u);
 
             Float r0 = v00 + v10,
                   r1 = v01 + v11,
-                  c0 = ek::select(y_mask, v01, v00),
-                  c1 = ek::select(y_mask, v11, v10);
+                  c0 = dr::select(y_mask, v01, v00),
+                  c1 = dr::select(y_mask, v11, v10);
 
-            sample.y() *= ek::select(y_mask, r1, r0);
-            ek::masked(sample.y(), y_mask) += r0;
+            sample.y() *= dr::select(y_mask, r1, r0);
+            dr::masked(sample.y(), y_mask) += r0;
             sample.y() /= r0 + r1;
 
-            sample.x() *= ek::select(x_mask, c1, c0);
-            ek::masked(sample.x(), x_mask) += c0;
+            sample.x() *= dr::select(x_mask, c1, c0);
+            dr::masked(sample.x(), x_mask) += c0;
             sample.x() /= c0 + c1;
 
             // Avoid issues with roundoff error
-            sample = ek::clamp(sample, 0.f, 1.f);
+            sample = dr::clamp(sample, 0.f, 1.f);
 
-            offset = ek::sr<1>(offset);
+            offset = dr::sr<1>(offset);
         }
 
         return { sample, pdf };
@@ -663,11 +663,11 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = ek::clamp(pos, 0.f, 1.f);
+        pos = dr::clamp(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = ek::min(Point2u(Point2i(pos)), m_max_patch_index);
+        Point2u offset = dr::min(Point2u(Point2i(pos)), m_max_patch_index);
         pos -= Point2f(Point2i(offset));
 
         const Level &level0 = m_levels[0];
@@ -729,22 +729,22 @@ protected:
 
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
-            : size(ek::hprod(res)), width(res.x()) {
+            : size(dr::hprod(res)), width(res.x()) {
 
             uint32_t n = size * slices;
-            if constexpr (ek::is_cuda_array_v<Float>) {
-                data = ek::map<FloatStorage>(
+            if constexpr (dr::is_cuda_array_v<Float>) {
+                data = dr::map<FloatStorage>(
                     jit_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
                     n, true);
             } else {
-                data = ek::empty<FloatStorage>(n);
+                data = dr::empty<FloatStorage>(n);
             }
             memset(data.data(), 0, n * sizeof(ScalarFloat));
         }
 
         void ready() {
-            if constexpr (ek::is_cuda_array_v<Float>)
-                data = ek::migrate(data, AllocType::Device);
+            if constexpr (dr::is_cuda_array_v<Float>)
+                data = dr::migrate(data, AllocType::Device);
         }
 
         /**
@@ -755,8 +755,8 @@ protected:
          * improve cache locality during hierarchical traversals
          */
         template <typename Point2u>
-        MTS_INLINE ek::value_t<Point2u> index(const Point2u &p) const {
-            return ((p.x() & 1u) | ek::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
+        MTS_INLINE dr::value_t<Point2u> index(const Point2u &p) const {
+            return ((p.x() & 1u) | dr::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
 
@@ -772,11 +772,11 @@ protected:
                       v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
                       v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
 
-                return ek::fmadd(v0, w0, v1 * w1);
+                return dr::fmadd(v0, w0, v1 * w1);
             } else {
-                ENOKI_MARK_USED(param_strides);
-                ENOKI_MARK_USED(param_weight);
-                return ek::gather<Float>(data, i0, active);
+                DRJIT_MARK_USED(param_strides);
+                DRJIT_MARK_USED(param_weight);
+                return dr::gather<Float>(data, i0, active);
             }
         }
     };
@@ -950,8 +950,8 @@ public:
                     *data_out_ptr++ = *data++ * norm;
             }
 
-            m_marg_cdf = ek::load<FloatStorage>(marg_cdf.get(), m_slices * n_marg);
-            m_cond_cdf = ek::load<FloatStorage>(cond_cdf.get(), m_slices * n_cond);
+            m_marg_cdf = dr::load<FloatStorage>(marg_cdf.get(), m_slices * n_marg);
+            m_cond_cdf = dr::load<FloatStorage>(cond_cdf.get(), m_slices * n_cond);
         } else {
             ScalarFloat *data_out_ptr = data_out.get();
 
@@ -977,7 +977,7 @@ public:
             }
         }
 
-        m_data = ek::load<FloatStorage>(data_out.get(), m_slices * n_data);
+        m_data = dr::load<FloatStorage>(data_out.get(), m_slices * n_data);
     }
 
     /**
@@ -1021,16 +1021,16 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = ek::clamp(pos, 0.f, 1.f);
+        pos = dr::clamp(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = ek::min(Point2u(Point2i(pos)), m_size - 2u);
+        Point2u offset = dr::min(Point2u(Point2i(pos)), m_size - 2u);
         pos -= Point2f(Point2i(offset));
 
         UInt32 index = offset.x() + offset.y() * m_size.x();
 
-        uint32_t size = ek::hprod(m_size);
+        uint32_t size = dr::hprod(m_size);
         if (Dimension != 0)
             index += slice_offset * size;
 
@@ -1068,7 +1068,7 @@ public:
         }
         oss << "  storage = { " << m_slices << " slice" << (m_slices > 1 ? "s" : "")
             << ", ";
-        size_t size = m_slices * (ek::hprod(m_size) * 2 + m_size.y());
+        size_t size = m_slices * (dr::hprod(m_size) * 2 + m_size.y());
         oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
@@ -1090,11 +1090,11 @@ protected:
                   v0 = lookup<Dim - 1>(data, offset, i0, size, param_weight, active),
                   v1 = lookup<Dim - 1>(data, offset, i1, size, param_weight, active);
 
-            return ek::fmadd(v0, w0, v1 * w1);
+            return dr::fmadd(v0, w0, v1 * w1);
         } else {
-            ENOKI_MARK_USED(param_weight);
-            ENOKI_MARK_USED(size);
-            return ek::gather<Float>(data, i0 + offset, active);
+            DRJIT_MARK_USED(param_weight);
+            DRJIT_MARK_USED(size);
+            return dr::gather<Float>(data, i0 + offset, active);
         }
     }
 
@@ -1105,22 +1105,22 @@ protected:
         MTS_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = ek::hprod(m_size - 1),
+        uint32_t n_cond = dr::hprod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = ek::hprod(m_size);
+                 n_data = dr::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid degeneracies on the domain boundary
-        sample = ek::clamp(sample, ek::Epsilon<Float>, ek::OneMinusEpsilon<Float>);
+        sample = dr::clamp(sample, dr::Epsilon<Float>, dr::OneMinusEpsilon<Float>);
 
         /// Multiply by last entry of marginal CDF if the data is not normalized
         UInt32 offset_marg = slice_offset * n_marg;
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
-                                  ENOKI_INLINE_LAMBDA {
+                                  DRJIT_INLINE_LAMBDA {
             return lookup(m_marg_cdf, 0, offset_marg + idx,
                           n_marg, param_weight, mask);
         };
@@ -1129,8 +1129,8 @@ protected:
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
         // Sample the row from the marginal distribution
-        UInt32 row = ek::binary_search<UInt32>(
-            0u, n_marg - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+        UInt32 row = dr::binary_search<UInt32>(
+            0u, n_marg - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
             });
 
@@ -1139,7 +1139,7 @@ protected:
               row_cdf_1 = fetch_marginal(row, active);
 
         sample.y() -= row_cdf_0;
-        ek::masked(sample.y(), ek::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        dr::masked(sample.y(), dr::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         /// Multiply by last entry of conditional CDF
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
@@ -1148,8 +1148,8 @@ protected:
                              n_cond, param_weight, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = ek::binary_search<UInt32>(
-            0u, m_size.x() - 2, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+        UInt32 col = dr::binary_search<UInt32>(
+            0u, m_size.x() - 2, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                 return lookup(m_cond_cdf, 0,
                               offset_cond + idx, n_cond,
                               param_weight, active) < sample.x();
@@ -1162,7 +1162,7 @@ protected:
                                  n_cond, param_weight, active);
 
         sample.x() -= col_cdf_0;
-        ek::masked(sample.x(), ek::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        dr::masked(sample.x(), dr::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
 
         // Sample a position on the bilinear patch
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
@@ -1189,20 +1189,20 @@ protected:
         MTS_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = ek::hprod(m_size - 1),
+        uint32_t n_cond = dr::hprod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = ek::hprod(m_size);
+                 n_data = dr::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = ek::clamp(sample, 0.f, 1.f);
+        sample = dr::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u offset = ek::min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u offset = dr::min(Point2u(Point2i(sample)), m_size - 2u);
         UInt32 index = offset.x() + offset.y() * m_size.x() + slice_offset * n_data;
         sample -= Point2f(Point2i(offset));
 
@@ -1230,8 +1230,8 @@ protected:
               col_cdf_1 = lookup(m_cond_cdf, 0, offset_cond + offset.x(),
                                  n_cond, param_weight, active);
 
-        sample.x() = ek::lerp(col_cdf_0, col_cdf_1, sample.x());
-        sample.y() = ek::lerp(row_cdf_0, row_cdf_1, sample.y());
+        sample.x() = dr::lerp(col_cdf_0, col_cdf_1, sample.x());
+        sample.y() = dr::lerp(row_cdf_0, row_cdf_1, sample.y());
 
         sample.x() /= lookup(m_cond_cdf, 0,
                              offset_cond + m_size.x() - 2,
@@ -1253,22 +1253,22 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = ek::hprod(m_size);
+                 n_data = dr::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
-        ENOKI_MARK_USED(slice_offset);
+        DRJIT_MARK_USED(slice_offset);
 
         // Avoid degeneracies on the domain boundary
-        sample = ek::clamp(sample, ek::Epsilon<Float>,
-                       ek::OneMinusEpsilon<Float>);
+        sample = dr::clamp(sample, dr::Epsilon<Float>,
+                       dr::OneMinusEpsilon<Float>);
 
         // Sample the row first
         UInt32 offset_marg = slice_offset * n_marg;
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
-                                  ENOKI_INLINE_LAMBDA {
+                                  DRJIT_INLINE_LAMBDA {
             return lookup(m_marg_cdf, 0, offset_marg + idx,
                           n_marg, param_weight, mask);
         };
@@ -1276,9 +1276,9 @@ protected:
         if (!m_normalized)
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
-        UInt32 row = ek::binary_search<UInt32>(
+        UInt32 row = dr::binary_search<UInt32>(
             0u, n_marg - 1,
-            [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+            [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
             });
 
@@ -1296,22 +1296,22 @@ protected:
         sample.y() = sample_segment(sample.y(), m_inv_patch_size.y(), r0, r1);
 
         // Multiply sample.x() by the integrated density along the 'x' axis
-        sample.x() *= ek::lerp(r0, r1, sample.y());
+        sample.x() *= dr::lerp(r0, r1, sample.y());
 
         // Sample the column next
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
-                                     ENOKI_INLINE_LAMBDA {
+                                     DRJIT_INLINE_LAMBDA {
             idx += offset_cond;
             Float v0 = lookup(m_cond_cdf, 0,
                               idx, n_cond, param_weight, mask),
                   v1 = lookup(m_cond_cdf, m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
-            return ek::lerp(v0, v1, sample.y());
+            return dr::lerp(v0, v1, sample.y());
         };
 
-        UInt32 col = ek::binary_search<UInt32>(
+        UInt32 col = dr::binary_search<UInt32>(
             0, m_size.x() - 1,
-            [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+            [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                 return fetch_conditional(idx, active) < sample.x();
             });
 
@@ -1328,14 +1328,14 @@ protected:
                            n_data, param_weight, active),
               v11 = lookup(m_data, m_size.x() + 1, offset_data,
                            n_data, param_weight, active),
-              c0  = ek::lerp(v00, v01, sample.y()),
-              c1  = ek::lerp(v10, v11, sample.y());
+              c0  = dr::lerp(v00, v01, sample.y()),
+              c1  = dr::lerp(v10, v11, sample.y());
 
         sample.x() = sample_segment(sample.x(), m_inv_patch_size.x(), c0, c1);
 
         return {
             (Point2i(Point2u(col, row)) + sample) * m_patch_size,
-            ek::lerp(c0, c1, sample.x())
+            dr::lerp(c0, c1, sample.x())
         };
     }
 
@@ -1348,18 +1348,18 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = ek::hprod(m_size);
+                 n_data = dr::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = ek::clamp(sample, 0.f, 1.f);
+        sample = dr::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u pos = ek::min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u pos = dr::min(Point2u(Point2i(sample)), m_size - 2u);
         sample -= Point2f(Point2i(pos));
 
         UInt32 offset_data =
@@ -1375,9 +1375,9 @@ protected:
               v11 = lookup(m_data, m_size.x() + 1, offset_data,
                            n_data, param_weight, active);
 
-        Float c0  = ek::lerp(v00, v01, sample.y()),
-              c1  = ek::lerp(v10, v11, sample.y()),
-              pdf = ek::lerp(c0, c1, sample.x());
+        Float c0  = dr::lerp(v00, v01, sample.y()),
+              c1  = dr::lerp(v10, v11, sample.y()),
+              pdf = dr::lerp(c0, c1, sample.x());
 
         sample.x() = invert_segment(sample.x(), m_patch_size.x(), c0, c1);
 
@@ -1385,13 +1385,13 @@ protected:
             slice_offset * n_cond + pos.y() * (m_size.x() - 1);
 
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
-                                     ENOKI_INLINE_LAMBDA {
+                                     DRJIT_INLINE_LAMBDA {
             idx += offset_cond;
             Float v0 = lookup(m_cond_cdf, 0,
                               idx, n_cond, param_weight, mask),
                   v1 = lookup(m_cond_cdf, m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
-            return ek::lerp(v0, v1, sample.y());
+            return dr::lerp(v0, v1, sample.y());
         };
 
         sample.x() += fetch_conditional(pos.x() - 1, active && pos.x() > 0);
@@ -1401,7 +1401,7 @@ protected:
               r1 = lookup(m_cond_cdf, 2 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active);
 
-        sample.x() /= ek::lerp(r0, r1, sample.y());
+        sample.x() /= dr::lerp(r0, r1, sample.y());
 
         // Invert the Y component
         sample.y() = invert_segment(sample.y(), m_patch_size.y(), r0, r1);
@@ -1419,18 +1419,18 @@ protected:
 
     MTS_INLINE Float sample_segment(Float sample, ScalarFloat inv_width,
                                     Float v0, Float v1) const {
-        Mask non_const = ek::abs(v0 - v1) > 1e-4f * (v0 + v1);
-        Float divisor = ek::select(non_const, v0 - v1, v0 + v1);
+        Mask non_const = dr::abs(v0 - v1) > 1e-4f * (v0 + v1);
+        Float divisor = dr::select(non_const, v0 - v1, v0 + v1);
         sample *= 2.f * inv_width;
-        ek::masked(sample, non_const) =
-            v0 - ek::safe_sqrt(ek::sqr(v0) + sample * (v1 - v0));
-        ek::masked(sample, ek::neq(divisor, 0.f)) /= divisor;
+        dr::masked(sample, non_const) =
+            v0 - dr::safe_sqrt(dr::sqr(v0) + sample * (v1 - v0));
+        dr::masked(sample, dr::neq(divisor, 0.f)) /= divisor;
         return sample;
     }
 
     MTS_INLINE Float invert_segment(Float sample, ScalarFloat width,
                                     Float v0, Float v1) const {
-        return sample * ek::lerp(v0, v1, .5f * sample) * width;
+        return sample * dr::lerp(v0, v1, .5f * sample) * width;
     }
 protected:
     /// Resolution of the discretized density function

@@ -77,10 +77,10 @@ target_compile_definitions(mitsuba-render
 set_target_properties(mitsuba-render PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON)
 
-# Link to enoki-thread
+# Link to drjit-thread
 target_link_libraries(mitsuba-render
   PUBLIC mitsuba-core
-  PRIVATE enoki-thread rgb2spec
+  PRIVATE drjit-thread rgb2spec
 )
 
 # Link to Embree

@@ -1,8 +1,8 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
-#include <enoki/dynamic.h>
-#include <enoki/tensor.h>
+#include <drjit/dynamic.h>
+#include <drjit/tensor.h>
 
 /// Defines a list of types that plugins can expose as tweakable/differentiable parameters
 #define APPLY_FOR_EACH(T) \
@@ -62,10 +62,10 @@ MTS_PY_EXPORT(Object) {
         },
         "ptr"_a, "type"_a, "value"_a);
 
-    if constexpr (ek::is_array_v<ObjectPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
-        py::class_<ObjectPtr> cls(m, "ObjectPtr", ek_array, py::module_local());
-        bind_enoki_ptr_array(cls);
+    if constexpr (dr::is_array_v<ObjectPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
+        py::class_<ObjectPtr> cls(m, "ObjectPtr", dr_array, py::module_local());
+        bind_drjit_ptr_array(cls);
     }
 }

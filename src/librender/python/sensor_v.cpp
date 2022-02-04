@@ -77,11 +77,11 @@ MTS_PY_EXPORT(Sensor) {
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
 
-    if constexpr (ek::is_array_v<SensorPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<SensorPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<SensorPtr> cls(m, "SensorPtr", ek_array);
+        py::class_<SensorPtr> cls(m, "SensorPtr", dr_array);
 
         cls.def("sample_ray",
                 [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
@@ -116,7 +116,7 @@ MTS_PY_EXPORT(Sensor) {
                 D(Endpoint, pdf_direction))
         .def("shape", [](SensorPtr ptr) { return ptr->shape(); }, D(Endpoint, shape));
 
-        bind_enoki_ptr_array(cls);
+        bind_drjit_ptr_array(cls);
     }
 
     MTS_PY_REGISTER_OBJECT("register_sensor", Sensor)

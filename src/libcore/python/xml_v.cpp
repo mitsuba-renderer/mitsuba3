@@ -35,7 +35,7 @@ MTS_PY_EXPORT(xml) {
             py::gil_scoped_release release;
             return cast_object(xml::load_file(name, GET_VARIANT(), param, update_scene, parallel));
         },
-        "path"_a, "update_scene"_a = false, "parallel"_a = !ek::is_jit_array_v<Float>,
+        "path"_a, "update_scene"_a = false, "parallel"_a = !dr::is_jit_array_v<Float>,
         D(xml, load_file));
 
     m.def(
@@ -54,7 +54,7 @@ MTS_PY_EXPORT(xml) {
             py::gil_scoped_release release;
             return cast_object(xml::load_string(name, GET_VARIANT(), param, parallel));
         },
-        "string"_a, "parallel"_a = !ek::is_jit_array_v<Float>,
+        "string"_a, "parallel"_a = !dr::is_jit_array_v<Float>,
         D(xml, load_string));
 
     m.def(
@@ -62,9 +62,9 @@ MTS_PY_EXPORT(xml) {
         [](const py::dict dict) {
             std::map<std::string, ref<Object>> instances;
             auto obj = cast_object(load_dict<Float, Spectrum>("", dict, instances));
-            if constexpr (ek::is_jit_array_v<Float>) {
-                ek::eval();
-                ek::sync_thread();
+            if constexpr (dr::is_jit_array_v<Float>) {
+                dr::eval();
+                dr::sync_thread();
             }
             return obj;
         },
@@ -175,7 +175,7 @@ template <typename Float, typename Spectrum>
 ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
                       std::map<std::string, ref<Object>> &instances) {
     MTS_IMPORT_CORE_TYPES()
-    using ScalarArray3f = ek::Array<ScalarFloat, 3>;
+    using ScalarArray3f = dr::Array<ScalarFloat, 3>;
 
     std::string type = get_type(dict);
 

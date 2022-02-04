@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler,

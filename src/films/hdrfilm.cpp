@@ -221,7 +221,7 @@ public:
 
     ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
                                  bool border) override {
-        bool warn = !ek::is_jit_array_v<Float> && !is_spectral_v<Spectrum> &&
+        bool warn = !dr::is_jit_array_v<Float> && !is_spectral_v<Spectrum> &&
                     m_channels.size() <= 5;
 
         bool default_config = size == ScalarVector2u(0);
@@ -231,7 +231,7 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              ek::is_llvm_array_v<Float> /* coalesce */,
+                              dr::is_llvm_array_v<Float> /* coalesce */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */);
     }
@@ -251,7 +251,7 @@ public:
             return m_storage->tensor();
         }
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             Float data;
             uint32_t source_ch;
             uint32_t pixel_count;
@@ -262,7 +262,7 @@ public:
                 data        = m_storage->tensor().array();
                 size        = m_storage->size();
                 source_ch   = (uint32_t) m_storage->channel_count();
-                pixel_count = ek::hprod(m_storage->size());
+                pixel_count = dr::hprod(m_storage->size());
             }
 
             /* The following code develops weighted image block data into
@@ -287,15 +287,15 @@ public:
             uint32_t target_ch = color_ch + aovs + (uint32_t) alpha;
 
             // Index vectors referencing pixels & channels of the output image
-            UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
+            UInt32 idx         = dr::arange<UInt32>(pixel_count * target_ch),
                    pixel_idx   = idx / target_ch,
-                   channel_idx = ek::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
+                   channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
 
             /* Index vectors referencing source pixels/weights as follows:
                  values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
                  weight_idx = W1, W1, W1, W2, W2, W2 */
-            UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
-                   weight_idx = ek::fmadd(pixel_idx, source_ch, base_ch - 1);
+            UInt32 values_idx = dr::fmadd(pixel_idx, source_ch, channel_idx),
+                   weight_idx = dr::fmadd(pixel_idx, source_ch, base_ch - 1);
 
             // If AOVs are desired, their indices in 'values_idx' must be shifted
             if (aovs) {
@@ -306,7 +306,7 @@ public:
 
             // If luminance + alpha, shift alpha channel to skip the GB channels
             if (alpha && to_y)
-                values_idx[ek::eq(channel_idx, color_ch /* alpha */)] += 2;
+                values_idx[dr::eq(channel_idx, color_ch /* alpha */)] += 2;
 
             Mask value_mask = true;
 
@@ -315,30 +315,30 @@ public:
                 value_mask = values_idx >= color_ch;
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::gather<Float>(data, weight_idx),
-                  values = ek::gather<Float>(data, values_idx, value_mask);
+            Float weight = dr::gather<Float>(data, weight_idx),
+                  values = dr::gather<Float>(data, values_idx, value_mask);
 
             // Fill color channels with XYZ/Y data if requested
             if (to_xyz || to_y) {
-                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * source_ch,
-                       out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
+                UInt32 in_idx  = dr::arange<UInt32>(pixel_count) * source_ch,
+                       out_idx = dr::arange<UInt32>(pixel_count) * target_ch;
 
-                Color3f rgb = Color3f(ek::gather<Float>(data, in_idx),
-                                      ek::gather<Float>(data, in_idx + 1),
-                                      ek::gather<Float>(data, in_idx + 2));
+                Color3f rgb = Color3f(dr::gather<Float>(data, in_idx),
+                                      dr::gather<Float>(data, in_idx + 1),
+                                      dr::gather<Float>(data, in_idx + 2));
 
                 if (to_y) {
-                    ek::scatter(values, luminance(rgb), out_idx);
+                    dr::scatter(values, luminance(rgb), out_idx);
                 } else {
                     Color3f xyz = srgb_to_xyz(rgb);
-                    ek::scatter(values, xyz[0], out_idx);
-                    ek::scatter(values, xyz[1], out_idx + 1);
-                    ek::scatter(values, xyz[2], out_idx + 2);
+                    dr::scatter(values, xyz[0], out_idx);
+                    dr::scatter(values, xyz[1], out_idx + 1);
+                    dr::scatter(values, xyz[2], out_idx + 2);
                 }
             }
 
             // Perform the weight division unless the weight is zero
-            values /= ek::select(ek::eq(weight, 0.f), 1.f, weight);
+            values /= dr::select(dr::eq(weight, 0.f), 1.f, weight);
 
             size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
                                 target_ch };
@@ -347,8 +347,8 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * ek::hprod(size);
-            auto data = ek::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
+            size_t width = source->channel_count() * dr::hprod(size);
+            auto data = dr::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
 
             size_t shape[3] = { (size_t) source->height(),
                                 (size_t) source->width(),
@@ -363,10 +363,10 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = ek::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
 
-        if constexpr (ek::is_jit_array_v<Float>)
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>)
+            dr::sync_thread();
 
         bool alpha = has_flag(m_flags, FilmFlags::Alpha);
         uint32_t base_ch = alpha ? 5 : 4;
@@ -526,7 +526,7 @@ public:
     }
 
     void schedule_storage() override {
-        ek::schedule(m_storage->tensor());
+        dr::schedule(m_storage->tensor());
     };
 
     std::string to_string() const override {

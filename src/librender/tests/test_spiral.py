@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 import numpy as np
 
 
@@ -13,7 +13,7 @@ def make_film(width = 156, height = 232):
             <integer name="height" value="{}"/>
         </film>""".format(width, height))
     assert f is not None
-    assert ek.all(f.size() == [width, height])
+    assert dr.all(f.size() == [width, height])
     return f
 
 
@@ -34,8 +34,8 @@ def check_first_blocks(blocks, expected, n_total = None):
     n_total = n_total or len(expected)
     assert len(blocks) == n_total
     for i in range(len(expected)):
-        assert ek.all(blocks[i][0] == expected[i][0])
-        assert ek.all(blocks[i][1] == expected[i][1])
+        assert dr.all(blocks[i][0] == expected[i][0])
+        assert dr.all(blocks[i][1] == expected[i][1])
 
 
 def test01_construct(variant_scalar_rgb):
@@ -53,11 +53,11 @@ def test02_small_film(variant_scalar_rgb):
     s = Spiral(f.size(), f.crop_offset())
 
     (bo, bs, bi) = s.next_block()
-    assert ek.all(bo == [0, 0])
-    assert ek.all(bs == [15, 12])
-    assert ek.all(bi == 0)
+    assert dr.all(bo == [0, 0])
+    assert dr.all(bs == [15, 12])
+    assert dr.all(bi == 0)
     # The whole image is covered by a single block
-    assert ek.all(s.next_block()[1] == 0)
+    assert dr.all(s.next_block()[1] == 0)
 
 
 def test03_normal_film(variant_scalar_rgb):

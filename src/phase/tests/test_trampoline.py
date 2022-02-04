@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import numpy as np
 import pytest
 
@@ -82,7 +82,7 @@ def test01_create_and_eval(create_phasefunction):
         for ph in np.linspace(0, np.pi, 4):
             wo = [np.sin(theta), 0, np.cos(theta)]
             v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * ek.Pi))
+            assert np.allclose(v_eval, 1.0 / (4 * dr.Pi))
 
 
 def test02_render_scene(create_phasefunction):

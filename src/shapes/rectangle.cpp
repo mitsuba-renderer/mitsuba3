@@ -87,11 +87,11 @@ public:
 
         Vector3f dp_du = m_to_world.scalar() * Vector3f(2.f, 0.f, 0.f);
         Vector3f dp_dv = m_to_world.scalar() * Vector3f(0.f, 2.f, 0.f);
-        Normal3f normal = ek::normalize(m_to_world.scalar() * Normal3f(0.f, 0.f, 1.f));
+        Normal3f normal = dr::normalize(m_to_world.scalar() * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du, dp_dv, normal);
-        m_inv_surface_area = ek::rcp(surface_area());
+        m_inv_surface_area = dr::rcp(surface_area());
 
-        ek::make_opaque(m_frame, m_inv_surface_area);
+        dr::make_opaque(m_frame, m_inv_surface_area);
         mark_dirty();
     }
 
@@ -105,7 +105,7 @@ public:
     }
 
     Float surface_area() const override {
-        return ek::norm(ek::cross(m_frame.s, m_frame.t));
+        return dr::norm(dr::cross(m_frame.s, m_frame.t));
     }
 
     // =============================================================
@@ -136,7 +136,7 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t /*ray_flags*/,
                                                Mask /*active*/) const override {
-        auto si = ek::zero<SurfaceInteraction3f>();
+        auto si = dr::zero<SurfaceInteraction3f>();
         si.t    = 0.f;  // Mark interaction as valid
         si.p    = m_to_world.value().transform_affine(
             Point3f(uv.x() * 2.f - 1.f, uv.y() * 2.f - 1.f, 0.f));
@@ -157,12 +157,12 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
-               ek::uint32_array_t<FloatP>>
+    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+               dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ek::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active) const {
         Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!ek::is_jit_array_v<FloatP>)
+        if constexpr (!dr::is_jit_array_v<FloatP>)
             to_object = m_to_object.scalar();
         else
             to_object = m_to_object.value();
@@ -174,20 +174,20 @@ public:
         // Is intersection within ray segment and rectangle?
         active = active && t >= 0.f
                         && t <= ray.maxt
-                        && ek::abs(local.x()) <= 1.f
-                        && ek::abs(local.y()) <= 1.f;
+                        && dr::abs(local.x()) <= 1.f
+                        && dr::abs(local.y()) <= 1.f;
 
-        return { ek::select(active, t, ek::Infinity<FloatP>),
+        return { dr::select(active, t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
-    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     ek::mask_t<FloatP> active) const {
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     dr::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
         Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!ek::is_jit_array_v<FloatP>)
+        if constexpr (!dr::is_jit_array_v<FloatP>)
             to_object = m_to_object.scalar();
         else
             to_object = m_to_object.value();
@@ -199,8 +199,8 @@ public:
         // Is intersection within ray segment and rectangle?
         return active && t >= 0.f
                       && t <= ray.maxt
-                      && ek::abs(local.x()) <= 1.f
-                      && ek::abs(local.y()) <= 1.f;
+                      && dr::abs(local.x()) <= 1.f
+                      && dr::abs(local.y()) <= 1.f;
     }
 
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
@@ -215,35 +215,35 @@ public:
         // Recompute ray intersection to get differentiable prim_uv and t
         Float t = pi.t;
         Point2f prim_uv = pi.prim_uv;
-        if constexpr (ek::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_array_v<Float>) {
             PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
-            prim_uv = ek::replace_grad(prim_uv, pi_d.prim_uv);
-            t = ek::replace_grad(t, pi_d.t);
+            prim_uv = dr::replace_grad(prim_uv, pi_d.prim_uv);
+            t = dr::replace_grad(t, pi_d.t);
         }
 
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, t, ek::Infinity<Float>);
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        si.t = dr::select(active, t, dr::Infinity<Float>);
 
         // Re-project onto the rectangle to improve accuracy
         Point3f p = ray(t);
-        Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
+        Float dist = dr::dot(m_to_world.value().translation() - p, m_frame.n);
         si.p = p + dist * m_frame.n;
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_frame.s;
         si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(ek::fmadd(prim_uv.x(), 0.5f, 0.5f),
-                                ek::fmadd(prim_uv.y(), 0.5f, 0.5f));
+        si.uv         = Point2f(dr::fmadd(prim_uv.x(), 0.5f, 0.5f),
+                                dr::fmadd(prim_uv.y(), 0.5f, 0.5f));
 
-        si.dn_du = si.dn_dv = ek::zero<Vector3f>();
+        si.dn_du = si.dn_dv = dr::zero<Vector3f>();
         si.shape    = this;
         si.instance = nullptr;
 
         if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
-            si.boundary_test = ek::hmin(0.5f - ek::abs(si.uv - 0.5f));
+            si.boundary_test = dr::hmin(0.5f - dr::abs(si.uv - 0.5f));
 
         return si;
     }
@@ -266,7 +266,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (ek::is_cuda_array_v<Float>) {
+        if constexpr (dr::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
 

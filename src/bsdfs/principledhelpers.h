@@ -31,27 +31,27 @@ public:
 
     Float eval(const Vector3f &m) const {
         Float cos_theta  = Frame3f::cos_theta(m),
-        cos_theta2 = ek::sqr(cos_theta), alpha2 = ek ::sqr(m_alpha);
+        cos_theta2 = dr::sqr(cos_theta), alpha2 = dr::sqr(m_alpha);
 
-        Float result = (alpha2 - 1.f) / (ek::Pi<Float> * ek::log(alpha2) *
+        Float result = (alpha2 - 1.f) / (dr::Pi<Float> * dr::log(alpha2) *
                 (1.f + (alpha2 - 1.f) * cos_theta2));
 
-        return ek::select(result * cos_theta > 1e-20f, result, 0.f);
+        return dr::select(result * cos_theta > 1e-20f, result, 0.f);
     }
 
     Float pdf(const Vector3f &m) const {
-        return ek::select(m.z() < 0.f, 0.f, Frame3f::cos_theta(m) * eval(m));
+        return dr::select(m.z() < 0.f, 0.f, Frame3f::cos_theta(m) * eval(m));
     }
 
     Normal3f sample(const Point2f &sample) const {
-        auto [sin_phi, cos_phi] = ek::sincos((2.f * ek::Pi<Float>) *sample.x());
-        Float alpha2            = ek::sqr(m_alpha);
+        auto [sin_phi, cos_phi] = dr::sincos((2.f * dr::Pi<Float>) *sample.x());
+        Float alpha2            = dr::sqr(m_alpha);
 
         Float cos_theta2 =
-                (1.f - ek::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
+                (1.f - dr::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
 
-        Float sin_theta = ek::sqrt(ek::max(0.f, 1.f - cos_theta2)),
-        cos_theta = ek::sqrt(ek::max(0.f, cos_theta2));
+        Float sin_theta = dr::sqrt(dr::max(0.f, 1.f - cos_theta2)),
+        cos_theta = dr::sqrt(dr::max(0.f, cos_theta2));
 
         return Normal3f(cos_phi * sin_theta, sin_phi * sin_theta, cos_theta);
     }
@@ -94,19 +94,19 @@ template<typename Float>
 Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
                  const Float &alpha) {
     using Frame3f     = Frame<Float>;
-    Float alpha_2     = ek::sqr(alpha),
-    cos_theta   = ek::abs(Frame3f::cos_theta(v)),
-    cos_theta_2 = ek::sqr(cos_theta),
+    Float alpha_2     = dr::sqr(alpha),
+    cos_theta   = dr::abs(Frame3f::cos_theta(v)),
+    cos_theta_2 = dr::sqr(cos_theta),
     tan_theta_2 = (1.0f - cos_theta_2) / cos_theta_2;
 
     Float result =
-            2.0f * ek::rcp(1.0f + ek::sqrt(1.0f + alpha_2 * tan_theta_2));
+            2.0f * dr::rcp(1.0f + dr::sqrt(1.0f + alpha_2 * tan_theta_2));
 
     // Perpendicular incidence -- no shadowing/masking
-    ek::masked(result, ek::eq(v.z(), 1.f)) = 1.f;
+    dr::masked(result, dr::eq(v.z(), 1.f)) = 1.f;
     /* Ensure consistent orientation (can't see the back
        of the microfacet from the front and vice versa) */
-    ek::masked(result, ek::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
+    dr::masked(result, dr::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
     return result;
 }
 
@@ -139,8 +139,8 @@ bool get_flag(const std::string &name, const Properties &props) {
  */
 template <typename Float>
 Float schlick_weight(Float cos_i) {
-    Float m = ek::clamp(1.0f - cos_i, 0.0f, 1.0f);
-    return ek::sqr(ek::sqr(m)) * m;
+    Float m = dr::clamp(1.0f - cos_i, 0.0f, 1.0f);
+    return dr::sqr(dr::sqr(m)) * m;
 }
 
 /**
@@ -155,18 +155,18 @@ Float schlick_weight(Float cos_i) {
  */
 template <typename T,typename Float>
 T calc_schlick(T R0, Float cos_theta_i,Float eta){
-    ek::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
-    Float rcp_eta     = ek::rcp(eta),
-    eta_it      = ek::select(outside_mask, eta, rcp_eta),
-    eta_ti      = ek::select(outside_mask, rcp_eta, eta);
+    dr::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
+    Float rcp_eta     = dr::rcp(eta),
+    eta_it      = dr::select(outside_mask, eta, rcp_eta),
+    eta_ti      = dr::select(outside_mask, rcp_eta, eta);
 
-    Float cos_theta_t_sqr = ek::fnmadd(
-            ek::fnmadd(cos_theta_i, cos_theta_i, 1.0f), ek::sqr(eta_ti), 1.0f);
-    Float cos_theta_t = ek::safe_sqrt(cos_theta_t_sqr);
-    return ek::select(
+    Float cos_theta_t_sqr = dr::fnmadd(
+            dr::fnmadd(cos_theta_i, cos_theta_i, 1.0f), dr::sqr(eta_ti), 1.0f);
+    Float cos_theta_t = dr::safe_sqrt(cos_theta_t_sqr);
+    return dr::select(
             eta_it > 1.0f,
-            ek::lerp(schlick_weight(ek::abs(cos_theta_i)), 1.0f, R0),
-            ek::lerp(schlick_weight(cos_theta_t), 1.0f, R0));
+            dr::lerp(schlick_weight(dr::abs(cos_theta_i)), 1.0f, R0),
+            dr::lerp(schlick_weight(cos_theta_t), 1.0f, R0));
 }
 
 /**
@@ -178,7 +178,7 @@ T calc_schlick(T R0, Float cos_theta_i,Float eta){
  */
 template <typename Float>
 Float schlick_R0_eta(Float eta){
-    return ek::sqr((eta - 1.0f) / (eta + 1.0f));
+    return dr::sqr((eta - 1.0f) / (eta + 1.0f));
 }
 
 /**
@@ -196,17 +196,17 @@ Float schlick_R0_eta(Float eta){
  * \return  Macro-micro surface compatibility mask.
  */
 template <typename Float>
-ek::mask_t<Float> mac_mic_compatibility(const Vector<Float,3> &m,
+dr::mask_t<Float> mac_mic_compatibility(const Vector<Float,3> &m,
                                         const Vector<Float,3> &wi,
                                         const Vector<Float,3> &wo,
                                         const Float &cos_theta_i,
                                         bool reflection) {
     if (reflection) {
-        return (ek::dot(wi, ek::mulsign(m, cos_theta_i)) > 0.0f) &&
-        (ek::dot(wo, ek::mulsign(m, cos_theta_i)) > 0.0f);
+        return (dr::dot(wi, dr::mulsign(m, cos_theta_i)) > 0.0f) &&
+        (dr::dot(wo, dr::mulsign(m, cos_theta_i)) > 0.0f);
     } else {
-        return (ek::dot(wi, ek::mulsign(m, cos_theta_i)) > 0.0f) &&
-        (ek::dot(wo, ek::mulsign_neg(m, cos_theta_i)) > 0.0f);
+        return (dr::dot(wi, dr::mulsign(m, cos_theta_i)) > 0.0f) &&
+        (dr::dot(wo, dr::mulsign_neg(m, cos_theta_i)) > 0.0f);
     }
 }
 
@@ -240,13 +240,13 @@ T principled_fresnel(const Float &F_dielectric, const Float &metallic,
                      const Float &spec_tint,
                      const T &base_color,
                      const Float &lum, const Float &cos_theta_i,
-                     const ek::mask_t<Float> &front_side,
+                     const dr::mask_t<Float> &front_side,
                      const Float &bsdf, const Float &eta,
                      bool has_metallic, bool has_spec_tint) {
     // Outside mask based on micro surface
-    ek::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
-    Float rcp_eta = ek::rcp(eta);
-    Float eta_it  = ek::select(outside_mask, eta, rcp_eta);
+    dr::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
+    Float rcp_eta = dr::rcp(eta);
+    Float eta_it  = dr::select(outside_mask, eta, rcp_eta);
     T F_schlick(0.0f);
 
     // Metallic component based on Schlick.
@@ -258,7 +258,7 @@ T principled_fresnel(const Float &F_dielectric, const Float &metallic,
     // Tinted dielectric component based on Schlick.
     if (has_spec_tint) {
         T c_tint       =
-                ek::select(lum > 0.0f, base_color / lum, 1.0f);
+                dr::select(lum > 0.0f, base_color / lum, 1.0f);
         T F0_spec_tint =
                 c_tint * schlick_R0_eta(eta_it);
         F_schlick +=
@@ -271,7 +271,7 @@ T principled_fresnel(const Float &F_dielectric, const Float &metallic,
             (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric + F_schlick;
     /* For back side there is no tint or metallic, just true dielectric
        fresnel.*/
-    return ek::select(front_side, F_front, bsdf * F_dielectric);
+    return dr::select(front_side, F_front, bsdf * F_dielectric);
 }
 
 /**
@@ -300,11 +300,11 @@ T thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
     T F_schlick(0.0f);
     // Tinted dielectric component based on Schlick.
     if (has_spec_tint) {
-        T c_tint       = ek::select(lum > 0.0f, base_color / lum, 1.0f);
+        T c_tint       = dr::select(lum > 0.0f, base_color / lum, 1.0f);
         T F0_spec_tint = c_tint * schlick_R0_eta(eta_t);
         F_schlick = calc_schlick<T>(F0_spec_tint, cos_theta_i,eta_t);
     }
-    return ek::lerp(F_dielectric,F_schlick,spec_tint);
+    return dr::lerp(F_dielectric,F_schlick,spec_tint);
 }
 
 /**
@@ -320,13 +320,13 @@ template<typename Float>
 std::pair<Float, Float> calc_dist_params(Float anisotropic,
                                          Float roughness,
                                          bool has_anisotropic){
-    Float roughness_2 = ek::sqr(roughness);
+    Float roughness_2 = dr::sqr(roughness);
     if (!has_anisotropic) {
-        Float a = ek::max(0.001f, roughness_2);
+        Float a = dr::max(0.001f, roughness_2);
         return { a, a };
     }
-    Float aspect = ek::sqrt(1.0f - 0.9f * anisotropic);
-    return { ek::max(0.001f, roughness_2 / aspect),
-             ek::max(0.001f, roughness_2 * aspect) };
+    Float aspect = dr::sqrt(1.0f - 0.9f * anisotropic);
+    return { dr::max(0.001f, roughness_2 / aspect),
+             dr::max(0.001f, roughness_2 * aspect) };
 }
 NAMESPACE_END(mitsuba)

@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 
@@ -10,7 +10,7 @@ def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
     # Spot checks of Hierarchial2D0/MarginalDiscrete2D0 vs Mathematica
 
     def allclose(a, b):
-        return ek.allclose(a, b, atol=1e-6)
+        return dr.allclose(a, b, atol=1e-6)
 
     # Mismatched X/Y resolution, odd number of columns
     ref = np.array([[1, 2, 5],
@@ -62,13 +62,13 @@ def test02_sample_inverse_continuous(variants_all_backends_once, normalize):
 
     distr = MarginalContinuous2D0(ref, normalize=normalize)
     s = 1 if normalize else 4.125
-    assert ek.allclose(distr.eval([0, 0]), s / 4.125)
+    assert dr.allclose(distr.eval([0, 0]), s / 4.125)
     ref = [[.162433, .330829], s * 1.44807]
-    assert ek.allclose(distr.sample([0.2, 0.3]), ref)
-    assert ek.allclose(distr.invert(ref[0]), [[0.2, 0.3], ref[1]])
+    assert dr.allclose(distr.sample([0.2, 0.3]), ref)
+    assert dr.allclose(distr.invert(ref[0]), [[0.2, 0.3], ref[1]])
     ref = [[.8277673, .8235800], s * 0.8326217]
-    assert ek.allclose(distr.sample([0.8, 0.9]), ref, atol=1e-5)
-    assert ek.allclose(distr.invert(ref[0]), [[0.8, 0.9], ref[1]])
+    assert dr.allclose(distr.sample([0.8, 0.9]), ref, atol=1e-5)
+    assert dr.allclose(distr.invert(ref[0]), [[0.8, 0.9], ref[1]])
 
     # Uniform case
     ref = np.array([[1, 1, 1],
@@ -76,14 +76,14 @@ def test02_sample_inverse_continuous(variants_all_backends_once, normalize):
                     [1, 1, 1]])
 
     distr = MarginalContinuous2D0(ref)
-    assert ek.allclose(distr.eval([0, 0]), 1.0)
-    assert ek.allclose(distr.sample([0.2, 0.3]),
+    assert dr.allclose(distr.eval([0, 0]), 1.0)
+    assert dr.allclose(distr.sample([0.2, 0.3]),
                        [[.2, .3], 1.0])
-    assert ek.allclose(distr.invert([0.2, 0.3]),
+    assert dr.allclose(distr.invert([0.2, 0.3]),
                        [[.2, .3], 1.0])
-    assert ek.allclose(distr.sample([0.8, 0.9]),
+    assert dr.allclose(distr.sample([0.8, 0.9]),
                        [[.8, .9], 1.0])
-    assert ek.allclose(distr.invert([0.8, 0.9]),
+    assert dr.allclose(distr.invert([0.8, 0.9]),
                        [[.8, .9], 1.0])
 
 
@@ -116,10 +116,10 @@ def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
         for j in range(10):
             p_i = Vector2f(rng.random(2))
             p_o, pdf = instance.sample(p_i)
-            assert ek.allclose(pdf, instance.eval(p_o), atol=1e-4)
+            assert dr.allclose(pdf, instance.eval(p_o), atol=1e-4)
             p_i_2, pdf2 = instance.invert(p_o)
-            assert ek.allclose(pdf, pdf2, atol=1e-4)
-            assert ek.allclose(p_i_2, p_i, atol=1e-4)
+            assert dr.allclose(pdf, pdf2, atol=1e-4)
+            assert dr.allclose(p_i_2, p_i, atol=1e-4)
 
 
 @pytest.mark.parametrize("attempt", list(range(2)))
@@ -150,7 +150,7 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
 
     for j in range(10 if ndim > 2 else 1):
         param = [
-            ek.lerp(
+            dr.lerp(
                 param_res[i][0],
                 param_res[i][-1],
                 rng.random()
@@ -179,7 +179,7 @@ def test05_discrete_distribution_2d(variants_all_backends_once):
                                         dtype=np.float32))
 
     def allclose(a, b):
-        return ek.allclose(a, b, atol=1e-6)
+        return dr.allclose(a, b, atol=1e-6)
 
     assert allclose(d.sample([0, 0]), ([0, 0], .1, [0, 0]))
     assert allclose(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], .1, [1, 0]))

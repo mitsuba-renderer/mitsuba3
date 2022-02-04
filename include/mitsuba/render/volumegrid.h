@@ -22,7 +22,7 @@ public:
 
     /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
     ScalarTransform4f bbox_transform() const {
-        auto scale_transf = ScalarTransform4f::scale(ek::rcp(m_bbox.extents()));
+        auto scale_transf = ScalarTransform4f::scale(dr::rcp(m_bbox.extents()));
         auto translation  = ScalarTransform4f::translate(-m_bbox.min);
         return scale_transf * translation;
     }
@@ -67,7 +67,7 @@ public:
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
 
     /// Return the volume grid size in bytes (excluding metadata)
-    size_t buffer_size() const { return ek::hprod(m_size) * bytes_per_voxel(); }
+    size_t buffer_size() const { return dr::hprod(m_size) * bytes_per_voxel(); }
 
     /**
      * Write an encoded form of the bitmap to a binary volume file

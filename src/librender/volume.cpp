@@ -29,7 +29,7 @@ Volume<Float, Spectrum>::eval_3(const Interaction3f &, Mask) const {
     NotImplementedError("eval_3");
 }
 
-MTS_VARIANT ek::Array<Float, 6>
+MTS_VARIANT dr::Array<Float, 6>
 Volume<Float, Spectrum>::eval_6(const Interaction3f &, Mask) const {
     NotImplementedError("eval_6");
 }

@@ -101,7 +101,7 @@ are available:
   algorithms and is intended to be used by developers, whose software can
   exploit this type of parallelism.
 
-- The ``gpu`` backend offloads computation to the GPU using `Enoki's
+- The ``gpu`` backend offloads computation to the GPU using `Dr.Jit's
   <https://github.com/mitsuba-renderer/enoki>`_ just-in-time (JIT) compiler
   that transforms computation into CUDA kernels. Using this backend, each
   operation typically operates on millions of inputs at the same time. Mitsuba

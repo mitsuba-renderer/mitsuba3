@@ -1,4 +1,4 @@
-#include <enoki/math.h>
+#include <drjit/math.h>
 #include <mitsuba/core/progress.h>
 #include <mitsuba/core/logger.h>
 
@@ -9,8 +9,8 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
       m_bar_start(label.length() + 3), m_bar_size(0), m_payload(payload) {
     m_line[0] = '\r'; // Carriage return
 
-    ek::ssize_t bar_size = (ek::ssize_t) m_line.length()
-        - (ek::ssize_t) m_bar_start /* CR, Label, space, leading bracket */
+    dr::ssize_t bar_size = (dr::ssize_t) m_line.length()
+        - (dr::ssize_t) m_bar_start /* CR, Label, space, leading bracket */
         - 2 /* Trailing bracket and space */
         - 22 /* Max length for ETA string */;
 
@@ -28,14 +28,14 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
 ProgressReporter::~ProgressReporter() { }
 
 void ProgressReporter::update(float progress) {
-    progress = ek::min(ek::max(progress, 0.f), 1.f);
+    progress = dr::min(dr::max(progress, 0.f), 1.f);
 
     if (progress == m_last_progress)
         return;
 
     size_t elapsed = m_timer.value();
     if (progress != 1.f && (elapsed - m_last_update < 500 ||
-                            ek::abs(progress - m_last_progress) < 0.01f))
+                            dr::abs(progress - m_last_progress) < 0.01f))
         return; // Don't refresh too often
 
     float remaining = elapsed / progress * (1 - progress);
@@ -45,7 +45,7 @@ void ProgressReporter::update(float progress) {
         eta.resize(22);
 
     if (m_bar_size > 0) {
-        size_t filled = ek::min(m_bar_size, (size_t) ek::round(m_bar_size * progress)),
+        size_t filled = dr::min(m_bar_size, (size_t) dr::round(m_bar_size * progress)),
                eta_pos = m_bar_start + m_bar_size + 2;
         memset((char *) m_line.data() + m_bar_start, '=', filled);
         memset((char *) m_line.data() + eta_pos, ' ', m_line.size() - eta_pos - 1);

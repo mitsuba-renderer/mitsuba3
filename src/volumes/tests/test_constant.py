@@ -1,7 +1,7 @@
 import numpy as np
 
 import mitsuba
-import enoki as ek
+import drjit as dr
 
 
 def test01_constant_construct(variant_scalar_rgb):
@@ -29,6 +29,6 @@ def test02_constant_eval(variant_scalar_rgb):
              <rgb name="value" value="0.5, 1.0, 0.3" version="2.0.0" />
         </volume>""")
 
-    it = ek.zero(Interaction3f, 1)
+    it = dr.zero(Interaction3f, 1)
     assert np.allclose(vol.eval(it), Color3f(0.5, 1.0, 0.3))
     assert vol.bbox() == BoundingBox3f([0, 0, 0], [1, 1, 1])

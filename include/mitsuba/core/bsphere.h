@@ -8,9 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Point_> struct BoundingSphere {
     static constexpr size_t Size = Point_::Size;
     using Point                  = Point_;
-    using Float                  = ek::value_t<Point>;
+    using Float                  = dr::value_t<Point>;
     using Vector                 = mitsuba::Vector<Float, Size>;
-    using Mask                   = ek::mask_t<Float>;
+    using Mask                   = dr::mask_t<Float>;
 
     Point center;
     Float radius;
@@ -24,14 +24,14 @@ template <typename Point_> struct BoundingSphere {
 
     /// Equality test against another bounding sphere
     bool operator==(const BoundingSphere &bsphere) const {
-        return ek::all_nested(ek::eq(center, bsphere.center) &&
-                              ek::eq(radius, bsphere.radius));
+        return dr::all_nested(dr::eq(center, bsphere.center) &&
+                              dr::eq(radius, bsphere.radius));
     }
 
     /// Inequality test against another bounding sphere
     bool operator!=(const BoundingSphere &bsphere) const {
-        return ek::any_nested(ek::neq(center, bsphere.center) ||
-                              ek::neq(radius, bsphere.radius));
+        return dr::any_nested(dr::neq(center, bsphere.center) ||
+                              dr::neq(radius, bsphere.radius));
     }
 
     /// Return whether this bounding sphere has a radius of zero or less.
@@ -41,7 +41,7 @@ template <typename Point_> struct BoundingSphere {
 
     /// Expand the bounding sphere radius to contain another point.
     void expand(const Point &p) {
-        radius = ek::max(radius, ek::norm(p - center));
+        radius = dr::max(radius, dr::norm(p - center));
     }
 
     /**
@@ -58,9 +58,9 @@ template <typename Point_> struct BoundingSphere {
     template <bool Strict = false>
     Mask contains(const Point &p) const {
         if constexpr (Strict)
-            return ek::squared_norm(p - center) < ek::sqr(radius);
+            return dr::squared_norm(p - center) < dr::sqr(radius);
         else
-            return ek::squared_norm(p - center) <= ek::sqr(radius);
+            return dr::squared_norm(p - center) <= dr::sqr(radius);
     }
 
     /// Check if a ray intersects a bounding box
@@ -69,9 +69,9 @@ template <typename Point_> struct BoundingSphere {
         typename Ray::Vector o = ray.o - center;
 
         return math::solve_quadratic(
-            ek::squared_norm(ray.d),
-            2.f * ek::dot(o, ray.d),
-            ek::squared_norm(o) - ek::sqr(radius)
+            dr::squared_norm(ray.d),
+            2.f * dr::dot(o, ray.d),
+            dr::squared_norm(o) - dr::sqr(radius)
         );
     }
 };
@@ -80,7 +80,7 @@ template <typename Point_> struct BoundingSphere {
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const BoundingSphere<Point> &bsphere) {
     os << "BoundingSphere" << type_suffix<Point>();
-    if (ek::all(bsphere.empty()))
+    if (dr::all(bsphere.empty()))
         os << "[empty]";
     else
         os << "[" << std::endl

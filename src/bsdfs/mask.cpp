@@ -88,7 +88,7 @@ public:
         // The "transmission" BSDF component is at the last index.
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_nested_bsdf->flags() | m_components.back();
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -103,7 +103,7 @@ public:
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely(!sample_transmission && !sample_nested))
             return { bs, result };
@@ -120,11 +120,11 @@ public:
         result               = 1.f;
 
         Mask nested_mask = active && sample1 < opacity;
-        if (ek::any_or<true>(nested_mask)) {
+        if (dr::any_or<true>(nested_mask)) {
             sample1 /= opacity;
             auto tmp                = m_nested_bsdf->sample(ctx, si, sample1, sample2, nested_mask);
-            ek::masked(bs, nested_mask) = tmp.first;
-            ek::masked(result, nested_mask) = tmp.second;
+            dr::masked(bs, nested_mask) = tmp.first;
+            dr::masked(result, nested_mask) = tmp.second;
         }
 
         return { bs, result };
@@ -187,7 +187,7 @@ public:
     }
 
     MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
-        return ek::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
+        return dr::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
     void traverse(TraversalCallback *callback) override {

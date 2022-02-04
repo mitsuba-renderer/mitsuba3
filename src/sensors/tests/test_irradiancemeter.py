@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 
@@ -38,7 +38,7 @@ def test_construct(variant_scalar_rgb):
     sensor = sphere.sensor()
 
     assert sensor.shape() == sphere
-    assert ek.allclose(sensor.film().size(), [1, 1])
+    assert dr.allclose(sensor.film().size(), [1, 1])
 
 
 @pytest.mark.parametrize(
@@ -65,9 +65,9 @@ def test_sampling(variant_scalar_rgb, center, radius, np_rng):
             0.0, wav_samples[i], pos_samples[i], dir_samples[i])[0]
 
         # assert that the ray starts at the sphere surface
-        assert ek.allclose(ek.norm(center_v - ray.o), radius, atol=1e-4)
+        assert dr.allclose(dr.norm(center_v - ray.o), radius, atol=1e-4)
         # assert that all rays point away from the sphere center
-        assert ek.dot(ek.normalize(ray.o - center_v), ray.d) > 0.0
+        assert dr.dot(dr.normalize(ray.o - center_v), ray.d) > 0.0
 
 
 def constant_emitter_dict(radiance):
@@ -115,7 +115,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
             intersection.emitter(scene).eval(intersection)
     power_density_avg = power_density_cum / float(num_samples)
 
-    assert ek.allclose(power_density_avg, Spectrum(ek.Pi * radiance))
+    assert dr.allclose(power_density_avg, Spectrum(dr.Pi * radiance))
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
@@ -147,4 +147,4 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
                                         Struct.Type.Float32, srgb_gamma=False)
     image_np = np.array(img)
 
-    assert ek.allclose(image_np, (radiance * ek.Pi))
+    assert dr.allclose(image_np, (radiance * dr.Pi))

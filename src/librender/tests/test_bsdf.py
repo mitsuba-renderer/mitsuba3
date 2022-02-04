@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 
@@ -24,7 +24,7 @@ def test02_bs_construct(variant_scalar_rgb):
     from mitsuba.render import BSDFSample3f
     wo = [1, 0, 0]
     bs = BSDFSample3f(wo)
-    assert ek.allclose(bs.wo, wo)
-    assert ek.allclose(bs.pdf, 0.0)
-    assert ek.allclose(bs.eta, 1.0)
+    assert dr.allclose(bs.wo, wo)
+    assert dr.allclose(bs.pdf, 0.0)
+    assert dr.allclose(bs.eta, 1.0)
     assert bs.sampled_type == 0

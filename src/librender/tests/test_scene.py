@@ -1,6 +1,6 @@
 import pytest
 
-import enoki as ek
+import drjit as dr
 import mitsuba
 from mitsuba.python.test.util import fresolver_append_path
 
@@ -92,14 +92,14 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'box.bsdf.reflectance.value'
-    ek.enable_grad(params[bsdf_param_key])
+    dr.enable_grad(params[bsdf_param_key])
     params.set_dirty(bsdf_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == False
 
     # When setting one of the shape's param to require gradient, method should return True
     shape_param_key = 'box.vertex_positions'
-    ek.enable_grad(params[shape_param_key])
+    dr.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == True
@@ -155,5 +155,5 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
     gc.collect()
     gc.collect()
 
-    import enoki as ek
-    ek.eval(pi)
+    import drjit as dr
+    dr.eval(pi)

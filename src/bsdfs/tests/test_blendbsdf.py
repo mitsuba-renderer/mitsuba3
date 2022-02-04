@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def test01_create(variant_scalar_rgb):
@@ -57,9 +57,9 @@ def test02_eval_all(variant_scalar_rgb):
     ctx = BSDFContext()
 
     # Evaluate the blend of both components
-    expected = (1 - weight) * 0.0 * ek.InvPi + weight * 1.0 * ek.InvPi
+    expected = (1 - weight) * 0.0 * dr.InvPi + weight * 1.0 * dr.InvPi
     value    = bsdf.eval(ctx, si, wo)
-    assert ek.allclose(value, expected)
+    assert dr.allclose(value, expected)
 
 
 def test03_eval_components(variant_scalar_rgb):
@@ -92,13 +92,13 @@ def test03_eval_components(variant_scalar_rgb):
 
     ctx.component = 0
     value0 = bsdf.eval(ctx, si, wo)
-    expected0 = (1-weight) * 0.0*ek.InvPi
-    assert ek.allclose(value0, expected0)
+    expected0 = (1-weight) * 0.0*dr.InvPi
+    assert dr.allclose(value0, expected0)
 
     ctx.component = 1
     value1 = bsdf.eval(ctx, si, wo)
-    expected1 = weight * 1.0*ek.InvPi
-    assert ek.allclose(value1, expected1)
+    expected1 = weight * 1.0*dr.InvPi
+    assert dr.allclose(value1, expected1)
 
 
 def test04_sample_all(variant_scalar_rgb):
@@ -131,11 +131,11 @@ def test04_sample_all(variant_scalar_rgb):
 
     expected_a = 1.0    # InvPi & weight will cancel out with sampling pdf
     bs_a, weight_a = bsdf.sample(ctx, si, 0.1, [0.5, 0.5])
-    assert ek.allclose(weight_a, expected_a)
+    assert dr.allclose(weight_a, expected_a)
 
     expected_b = 0.0    # InvPi & weight will cancel out with sampling pdf
     bs_b, weight_b = bsdf.sample(ctx, si, 0.3, [0.5, 0.5])
-    assert ek.allclose(weight_b, expected_b)
+    assert dr.allclose(weight_b, expected_b)
 
 
 def test05_sample_components(variant_scalar_rgb):
@@ -170,18 +170,18 @@ def test05_sample_components(variant_scalar_rgb):
 
     expected_a = (1-weight)*0.0    # InvPi will cancel out with sampling pdf, but still need to apply weight
     bs_a, weight_a = bsdf.sample(ctx, si, 0.1, [0.5, 0.5])
-    assert ek.allclose(weight_a, expected_a)
+    assert dr.allclose(weight_a, expected_a)
 
     expected_b = (1-weight)*0.0    # InvPi will cancel out with sampling pdf, but still need to apply weight
     bs_b, weight_b = bsdf.sample(ctx, si, 0.3, [0.5, 0.5])
-    assert ek.allclose(weight_b, expected_b)
+    assert dr.allclose(weight_b, expected_b)
 
     ctx.component = 1
 
     expected_a = weight*1.0    # InvPi will cancel out with sampling pdf, but still need to apply weight
     bs_a, weight_a = bsdf.sample(ctx, si, 0.1, [0.5, 0.5])
-    assert ek.allclose(weight_a, expected_a)
+    assert dr.allclose(weight_a, expected_a)
 
     expected_b = weight*1.0    # InvPi will cancel out with sampling pdf, but still need to apply weight
     bs_b, weight_b = bsdf.sample(ctx, si, 0.3, [0.5, 0.5])
-    assert ek.allclose(weight_b, expected_b)
+    assert dr.allclose(weight_b, expected_b)

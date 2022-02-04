@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #ifndef __CUDACC__
-# include <enoki/array.h>
+# include <drjit/array.h>
 #endif
 
 namespace optix {
@@ -18,10 +18,10 @@ template <typename Value_, size_t Size_> struct Array {
 
 #ifndef __CUDACC__
     Array() = default;
-    Array(const enoki::Array<Value, Size> &a) { enoki::store(v, a); }
-    Array(const mitsuba::Vector<Value, Size> &a) { enoki::store(v, a); }
-    Array(const mitsuba::Point<Value, Size> &a) { enoki::store(v, a); }
-    Array(const mitsuba::Normal<Value, Size> &a) { enoki::store(v, a); }
+    Array(const drjit::Array<Value, Size> &a) { drjit::store(v, a); }
+    Array(const mitsuba::Vector<Value, Size> &a) { drjit::store(v, a); }
+    Array(const mitsuba::Point<Value, Size> &a) { drjit::store(v, a); }
+    Array(const mitsuba::Normal<Value, Size> &a) { drjit::store(v, a); }
 #else
     DEVICE Array() { }
 
@@ -241,7 +241,7 @@ DEVICE Array<Value, Size> frcp(const Array<Value, Size> &a) {
 }
 #endif
 
-// Import some common Enoki types
+// Import some common Dr.Jit types
 using Vector2f = Array<float, 2>;
 using Vector3f = Array<float, 3>;
 using Vector4f = Array<float, 4>;

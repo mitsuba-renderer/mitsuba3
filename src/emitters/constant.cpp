@@ -39,23 +39,23 @@ public:
         /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
-        m_surface_area = 4.f * ek::Pi<ScalarFloat>;
+        m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
         m_flags = +EmitterFlags::Infinite;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                ek::max(math::RayEpsilon<Float>,
+                dr::max(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
         } else {
             m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         }
-        m_surface_area = 4.f * ek::Pi<ScalarFloat> * ek::sqr(m_bsphere.radius);
+        m_surface_area = 4.f * dr::Pi<ScalarFloat> * dr::sqr(m_bsphere.radius);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -71,7 +71,7 @@ public:
 
         // 1. Sample spatial component
         Vector3f v0 = warp::square_to_uniform_sphere(sample2);
-        Point3f orig = ek::fmadd(v0, m_bsphere.radius, m_bsphere.center);
+        Point3f orig = dr::fmadd(v0, m_bsphere.radius, m_bsphere.center);
 
         // 2. Sample diral component
         Vector3f v1 = warp::square_to_cosine_hemisphere(sample3),
@@ -79,9 +79,9 @@ public:
 
         // 3. Sample spectrum
         auto [wavelengths, weight] = sample_wavelengths(
-            ek::zero<SurfaceInteraction3f>(), wavelength_sample, active);
+            dr::zero<SurfaceInteraction3f>(), wavelength_sample, active);
 
-        weight *= m_surface_area * ek::Pi<ScalarFloat>;
+        weight *= m_surface_area * dr::Pi<ScalarFloat>;
 
         return { Ray3f(orig, dir, time, wavelengths),
                  depolarizer<Spectrum>(weight) };
@@ -95,11 +95,11 @@ public:
         Vector3f d = warp::square_to_uniform_sphere(sample);
 
         // Automatically enlarge the bounding sphere when it does not contain the reference point
-        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center)),
+        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
               dist   = 2.f * radius;
 
         DirectionSample3f ds;
-        ds.p       = ek::fmadd(d, dist, it.p);
+        ds.p       = dr::fmadd(d, dist, it.p);
         ds.n       = -d;
         ds.uv      = sample;
         ds.time    = it.time;
@@ -109,7 +109,7 @@ public:
         ds.d       = d;
         ds.dist    = dist;
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         return {
@@ -127,7 +127,7 @@ public:
 
     Spectrum eval_direction(const Interaction3f &it, const DirectionSample3f &,
                             Mask active) const override {
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
         return depolarizer<Spectrum>(m_radiance->eval(si, active));
     }
@@ -142,11 +142,11 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             /* When virtual function calls are recorded in symbolic mode,
                we can't throw an exception here. */
-            return { ek::zero<PositionSample3f>(),
-                     ek::full<Float>(ek::NaN<ScalarFloat>) };
+            return { dr::zero<PositionSample3f>(),
+                     dr::full<Float>(dr::NaN<ScalarFloat>) };
         } else {
             NotImplementedError("sample_position");
         }

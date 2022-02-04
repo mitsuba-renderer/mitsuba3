@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 def check_uniform_scalar_sampler(sampler, res=16, atol=0.5):
@@ -20,8 +20,8 @@ def check_uniform_scalar_sampler(sampler, res=16, atol=0.5):
     # print(hist_1d)
     # print(hist_2d)
 
-    assert ek.allclose(hist_1d, float(sample_count) / res, atol=atol)
-    assert ek.allclose(hist_2d, float(sample_count) / (res * res), atol=atol)
+    assert dr.allclose(hist_1d, float(sample_count) / res, atol=atol)
+    assert dr.allclose(hist_2d, float(sample_count) / (res * res), atol=atol)
 
 
 def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
@@ -32,27 +32,27 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
 
     sampler.seed(0, sample_count)
 
-    hist_1d = ek.zero(UInt32, res)
-    hist_2d = ek.zero(UInt32, res * res)
+    hist_1d = dr.zero(UInt32, res)
+    hist_2d = dr.zero(UInt32, res * res)
 
-    v_1d = ek.clamp(sampler.next_1d() * res, 0, res)
-    ek.scatter_reduce(
-        ek.ReduceOp.Add,
+    v_1d = dr.clamp(sampler.next_1d() * res, 0, res)
+    dr.scatter_reduce(
+        dr.ReduceOp.Add,
         hist_1d,
         UInt32(1),
         UInt32(v_1d)
     )
 
-    v_2d = Vector2u(ek.clamp(sampler.next_2d() * res, 0, res))
-    ek.scatter_reduce(
-        ek.ReduceOp.Add,
+    v_2d = Vector2u(dr.clamp(sampler.next_2d() * res, 0, res))
+    dr.scatter_reduce(
+        dr.ReduceOp.Add,
         hist_2d,
         UInt32(1),
         UInt32(v_2d.x * res + v_2d.y)
     )
 
-    assert ek.allclose(Float(hist_1d), float(sample_count) / res, atol=atol)
-    assert ek.allclose(Float(hist_2d), float(sample_count) / (res * res), atol=atol)
+    assert dr.allclose(Float(hist_1d), float(sample_count) / res, atol=atol)
+    assert dr.allclose(Float(hist_2d), float(sample_count) / (res * res), atol=atol)
 
 
 def check_deep_copy_sampler_scalar(sampler1): 
@@ -67,8 +67,8 @@ def check_deep_copy_sampler_scalar(sampler1):
     sampler2 = sampler1.clone()
 
     for i in range(10):
-        assert ek.all(sampler1.next_1d() == sampler2.next_1d())
-        assert ek.all(sampler1.next_2d() == sampler2.next_2d())
+        assert dr.all(sampler1.next_1d() == sampler2.next_1d())
+        assert dr.all(sampler1.next_2d() == sampler2.next_2d())
 
 
 def check_deep_copy_sampler_wavefront(sampler1, factor=16): 
@@ -87,5 +87,5 @@ def check_deep_copy_sampler_wavefront(sampler1, factor=16):
     sampler2 = sampler1.clone()
 
     for i in range(10):
-        assert ek.all(sampler1.next_1d() == sampler2.next_1d())
-        assert ek.all(sampler1.next_2d() == sampler2.next_2d())
+        assert dr.all(sampler1.next_1d() == sampler2.next_1d())
+        assert dr.all(sampler1.next_2d() == sampler2.next_2d())

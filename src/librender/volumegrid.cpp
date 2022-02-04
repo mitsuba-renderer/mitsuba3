@@ -21,7 +21,7 @@ VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
     : m_size(size), m_channel_count(channel_count),
       m_bbox(ScalarBoundingBox3f(ScalarPoint3f(0.f), ScalarPoint3f(1.f))) {
     m_data = std::unique_ptr<ScalarFloat[]>(
-        new ScalarFloat[ek::hprod(m_size) * m_channel_count]);
+        new ScalarFloat[dr::hprod(m_size) * m_channel_count]);
 }
 
 MTS_VARIANT
@@ -51,7 +51,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     m_size.y() = uint32_t(size_y);
     m_size.z() = uint32_t(size_z);
 
-    size_t size = ek::hprod(m_size);
+    size_t size = dr::hprod(m_size);
     int32_t channel_count;
     stream->read(channel_count);
     m_channel_count = channel_count;
@@ -62,7 +62,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     m_bbox = ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
                                  ScalarPoint3f(dims[3], dims[4], dims[5]));
 
-    m_max = -ek::Infinity<ScalarFloat>;
+    m_max = -dr::Infinity<ScalarFloat>;
 
     m_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * m_channel_count]);
     size_t k = 0;
@@ -71,7 +71,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
             float val;
             stream->read(val);
             m_data[k] = val;
-            m_max     = ek::max(m_max, val);
+            m_max     = dr::max(m_max, val);
             ++k;
         }
     }
@@ -103,13 +103,13 @@ void VolumeGrid<Float, Spectrum>::write(Stream *stream) const {
     stream->write(float(m_bbox.max.z()));
 
     if constexpr (std::is_same<ScalarFloat, float>::value)
-        stream->write_array(m_data.get(), ek::hprod(m_size) * m_channel_count);
+        stream->write_array(m_data.get(), dr::hprod(m_size) * m_channel_count);
     else {
         // Need to convert data to single precision before writing to disk
-        std::vector<float> output(ek::hprod(m_size) * m_channel_count);
-        for (size_t i = 0; i < ek::hprod(m_size) * m_channel_count; ++i)
+        std::vector<float> output(dr::hprod(m_size) * m_channel_count);
+        for (size_t i = 0; i < dr::hprod(m_size) * m_channel_count; ++i)
             output[i] = m_data[i];
-        stream->write_array(output.data(), ek::hprod(m_size) * m_channel_count);
+        stream->write_array(output.data(), dr::hprod(m_size) * m_channel_count);
     }
 }
 

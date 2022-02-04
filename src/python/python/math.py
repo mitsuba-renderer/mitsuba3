@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 
 def rlgamma(a, x):
     'Regularized lower incomplete gamma function based on CEPHES'
@@ -13,7 +13,7 @@ def rlgamma(a, x):
     if x == 0:
         return 0
 
-    ax = (a * ek.log(x)) - x - ek.lgamma(a)
+    ax = (a * dr.log(x)) - x - dr.lgamma(a)
 
     if ax < -709.78271289338399:
         return 1.0 if a < x else 0.0
@@ -31,7 +31,7 @@ def rlgamma(a, x):
             if not (c2 / ans2 > eps):
                 break
 
-        return ek.exp(ax) * ans2 / a
+        return dr.exp(ax) * ans2 / a
 
     c = 0
     y = 1 - a
@@ -52,7 +52,7 @@ def rlgamma(a, x):
 
         if q != 0:
             nextans = p / q
-            error = ek.abs((ans - nextans) / nextans)
+            error = dr.abs((ans - nextans) / nextans)
             ans = nextans
         else:
             error = 1
@@ -63,7 +63,7 @@ def rlgamma(a, x):
         q2 = q
 
         # normalize fraction when the numerator becomes large
-        if ek.abs(p) > big:
+        if dr.abs(p) > big:
             p3 *= biginv
             p2 *= biginv
             q3 *= biginv
@@ -72,4 +72,4 @@ def rlgamma(a, x):
         if not (error > eps):
             break;
 
-    return 1 - ek.exp(ax) * ans
+    return 1 - dr.exp(ax) * ans

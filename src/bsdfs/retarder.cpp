@@ -65,7 +65,7 @@ public:
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 
@@ -74,7 +74,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         bs.wo = -si.wi;
         bs.pdf = 1.f;
         bs.eta = 1.f;
@@ -85,13 +85,13 @@ public:
 
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
 
             // Query phase difference
-            UnpolarizedSpectrum delta = ek::deg_to_rad(m_delta->eval(si, active));
+            UnpolarizedSpectrum delta = dr::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= ek::abs(Frame3f::cos_theta(si.wi));
+            delta *= dr::abs(Frame3f::cos_theta(si.wi));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);
@@ -135,13 +135,13 @@ public:
 
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
 
             // Query phase difference
-            UnpolarizedSpectrum delta = ek::deg_to_rad(m_delta->eval(si, active));
+            UnpolarizedSpectrum delta = dr::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= ek::abs(Frame3f::cos_theta(si.wi));
+            delta *= dr::abs(Frame3f::cos_theta(si.wi));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);

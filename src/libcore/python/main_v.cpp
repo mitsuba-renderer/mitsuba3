@@ -2,7 +2,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_DECLARE(Enoki);
+MTS_PY_DECLARE(DrJit);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(BoundingBox);
 MTS_PY_DECLARE(BoundingSphere);
@@ -51,7 +51,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                    "domains, such as spheres, hemispheres, etc.";
     quad.doc()   = "Functions for numerical quadrature";
 
-    MTS_PY_IMPORT(Enoki);
+    MTS_PY_IMPORT(DrJit);
 
     m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
@@ -59,8 +59,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    color_management_static_initialization(ek::is_cuda_array_v<Float>,
-                                           ek::is_llvm_array_v<Float>);
+    color_management_static_initialization(dr::is_cuda_array_v<Float>,
+                                           dr::is_llvm_array_v<Float>);
 
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Ray);
@@ -91,7 +91,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     cast_object = (Caster) (void *)((py::capsule) core_ext.attr("cast_object"));
 
     // Change module name back to correct value
-    m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
 }
 
 #undef CHANGE_SUBMODULE_NAME

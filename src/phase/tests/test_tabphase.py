@@ -1,6 +1,6 @@
 from itertools import product
 
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 
@@ -103,11 +103,11 @@ def test_traverse(variant_scalar_rgb):
 
     # Distribution parameters are updated
     params = traverse(phase)
-    assert ek.allclose(params["values"], [0.5, 1.0, 1.5])
+    assert dr.allclose(params["values"], [0.5, 1.0, 1.5])
 
     # The plugin itself evaluates consistently
     ctx = PhaseFunctionContext(None)
     mi = MediumInteraction3f()
     mi.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
-    assert ek.allclose(phase.eval(ctx, mi, wo), ek.InvTwoPi * 1.5 / ref_integral)
+    assert dr.allclose(phase.eval(ctx, mi, wo), dr.InvTwoPi * 1.5 / ref_integral)

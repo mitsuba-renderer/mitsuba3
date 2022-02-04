@@ -7,7 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
-#include <enoki/tensor.h>
+#include <drjit/tensor.h>
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -172,12 +172,12 @@ public:
         // Convert the image into the working floating point representation
         m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
-        if (ek::any(m_bitmap->size() < 2)) {
+        if (dr::any(m_bitmap->size() < 2)) {
             Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
             using ReconstructionFilter = Bitmap::ReconstructionFilter;
             ref<ReconstructionFilter> rfilter =
                 PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
-            m_bitmap = m_bitmap->resample(ek::max(m_bitmap->size(), 2), rfilter);
+            m_bitmap = m_bitmap->resample(dr::max(m_bitmap->size(), 2), rfilter);
         }
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
@@ -188,17 +188,17 @@ public:
         if (m_bitmap->channel_count() == 3) {
             if (is_spectral_v<Spectrum> && !m_raw) {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
+                    ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         exceed_unit_range = true;
                     value = srgb_model_fetch(value);
                     mean += (double) srgb_model_mean(value);
-                    ek::store(ptr, value);
+                    dr::store(ptr, value);
                     ptr += 3;
                 }
             } else {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
+                    ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         exceed_unit_range = true;
                     mean += (double) luminance(value);
@@ -282,14 +282,14 @@ public:
         ScalarVector2i res = ScalarVector2i(bitmap->size());
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), Channels };
         m_data = TensorXf(bitmap->data(), 3, shape);
-        ek::make_opaque(m_transform, m_mean);
+        dr::make_opaque(m_transform, m_mean);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
-            ENOKI_MARK_USED(si);
+            DRJIT_MARK_USED(si);
             Throw("The bitmap texture %s was queried for a spectrum, but texture conversion "
                   "into spectra was explicitly disabled! (raw=true)",
                   to_string());
@@ -307,7 +307,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
-            ENOKI_MARK_USED(si);
+            DRJIT_MARK_USED(si);
             Throw("eval_1(): The bitmap texture %s was queried for a "
                   "monochromatic value, but texture conversion to color "
                   "spectra had previously been requested! (raw=false)",
@@ -326,7 +326,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
-            ENOKI_MARK_USED(si);
+            DRJIT_MARK_USED(si);
             Throw("eval_1_grad(): The bitmap texture %s was queried for a "
                   "monochromatic gradient value, but texture conversion to color "
                   "spectra had previously been requested! (raw=false)",
@@ -337,19 +337,19 @@ public:
             if (m_filter_type == FilterType::Bilinear) {
                 // Storage representation underlying this texture
                 using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
-                using Int4 = ek::Array<Int32, 4>;
-                using Int24 = ek::Array<Int4, 2>;
+                using Int4 = dr::Array<Int32, 4>;
+                using Int24 = dr::Array<Int4, 2>;
 
-                if constexpr (!ek::is_array_v<Mask>)
+                if constexpr (!dr::is_array_v<Mask>)
                     active = true;
 
                 Point2f uv = m_transform.transform_affine(si.uv);
 
                 // Scale to bitmap resolution and apply shift
-                uv = ek::fmadd(uv, res, -0.5f);
+                uv = dr::fmadd(uv, res, -0.5f);
 
                 // Integer pixel positions for bilinear interpolation
-                Vector2i uv_i = ek::floor2int<Vector2i>(uv);
+                Vector2i uv_i = dr::floor2int<Vector2i>(uv);
 
                 // Interpolation weights
                 Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
@@ -367,14 +367,14 @@ public:
                         return a;
                 };
 
-                Float f00 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.x(), active));
-                Float f10 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.y(), active));
-                Float f01 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.z(), active));
-                Float f11 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.w(), active));
+                Float f00 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.x(), active));
+                Float f10 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.y(), active));
+                Float f01 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.z(), active));
+                Float f11 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.w(), active));
 
                 // Partials w.r.t. pixel coordinate x and y
-                Vector2f df_xy{ ek::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
-                                ek::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
+                Vector2f df_xy{ dr::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
+                                dr::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
 
                 // Partials w.r.t. u and v (include uv transform by transpose multiply)
                 Matrix3f uv_tm = m_transform.matrix;
@@ -391,11 +391,11 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels != 3) {
-            ENOKI_MARK_USED(si);
+            DRJIT_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB "
                   "value, but it is monochromatic!", to_string());
         } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
-            ENOKI_MARK_USED(si);
+            DRJIT_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB "
                   "value, but texture conversion to color spectra had "
                   "previously been requested! (raw=false)",
@@ -413,16 +413,16 @@ public:
             // In a N-wide texture, pixel positions from -N to -1 should have
             // div == 0, however at pixel -N we have -1. This also appears at
             // -2N,-3N,.. all negative positions are therefore shifted by 1.
-            T value_shift_neg = ek::select(value < 0, value + 1, value);
+            T value_shift_neg = dr::select(value < 0, value + 1, value);
             T div = T(m_inv_resolution_x(value_shift_neg.x()),
                       m_inv_resolution_y(value_shift_neg.y()));
 
             T mod = value - div * res;
 
-            ek::masked(mod, mod < 0) += T(res);
+            dr::masked(mod, mod < 0) += T(res);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
+                mod = dr::select(dr::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
 
             return mod;
         }
@@ -432,21 +432,21 @@ public:
         // Storage representation underlying this texture
         using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
 
-        if constexpr (!ek::is_array_v<Mask>)
+        if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
         ScalarVector2i res = resolution();
         if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = ek::Array<Int32, 4>;
-            using Int24 = ek::Array<Int4, 2>;
+            using Int4  = dr::Array<Int32, 4>;
+            using Int24 = dr::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            uv = ek::fmadd(uv, res, -.5f);
+            uv = dr::fmadd(uv, res, -.5f);
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = ek::floor2int<Vector2i>(uv);
+            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
 
             // Interpolation weights
             Point2f w1 = uv - Point2f(uv_i),
@@ -458,10 +458,10 @@ public:
 
             Int4 index = uv_i_w.x() + uv_i_w.y() * res.x();
 
-            StorageType v00 = ek::gather<StorageType>(m_data.array(), index.x(), active),
-                        v10 = ek::gather<StorageType>(m_data.array(), index.y(), active),
-                        v01 = ek::gather<StorageType>(m_data.array(), index.z(), active),
-                        v11 = ek::gather<StorageType>(m_data.array(), index.w(), active);
+            StorageType v00 = dr::gather<StorageType>(m_data.array(), index.x(), active),
+                        v10 = dr::gather<StorageType>(m_data.array(), index.y(), active),
+                        v01 = dr::gather<StorageType>(m_data.array(), index.z(), active),
+                        v11 = dr::gather<StorageType>(m_data.array(), index.w(), active);
 
             // Bilinear interpolation
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
@@ -473,27 +473,27 @@ public:
                 c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
                 c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
 
-                c0 = ek::fmadd(w0.x(), c00, w1.x() * c10);
-                c1 = ek::fmadd(w0.x(), c01, w1.x() * c11);
+                c0 = dr::fmadd(w0.x(), c00, w1.x() * c10);
+                c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
 
-                return ek::fmadd(w0.y(), c0, w1.y() * c1);
+                return dr::fmadd(w0.y(), c0, w1.y() * c1);
             } else {
-                StorageType v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
-                            v1 = ek::fmadd(w0.x(), v01, w1.x() * v11);
+                StorageType v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
+                            v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
 
-                return ek::fmadd(w0.y(), v0, w1.y() * v1);
+                return dr::fmadd(w0.y(), v0, w1.y() * v1);
             }
         } else {
             // Scale to bitmap resolution, no shift
             uv *= res;
 
             // Integer pixel positions for nearest-neighbor interpolation
-            Vector2i uv_i   = ek::floor2int<Vector2i>(uv),
+            Vector2i uv_i   = dr::floor2int<Vector2i>(uv),
                      uv_i_w = wrap(uv_i);
 
             Int32 index = uv_i_w.x() + uv_i_w.y() * res.x();
 
-            StorageType v = ek::gather<StorageType>(m_data.array(), index, active);
+            StorageType v = dr::gather<StorageType>(m_data.array(), index, active);
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3)
                 return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
             else
@@ -515,7 +515,7 @@ public:
         auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
 
         ScalarVector2i res = resolution();
-        ScalarVector2f inv_resolution = ek::rcp(ScalarVector2f(res));
+        ScalarVector2f inv_resolution = dr::rcp(ScalarVector2f(res));
 
         if (m_filter_type == FilterType::Nearest) {
             sample2 = (Point2f(pos) + sample2) * inv_resolution;
@@ -541,7 +541,7 @@ public:
             }
         }
 
-        return { sample2, pdf * ek::hprod(res) };
+        return { sample2, pdf * dr::hprod(res) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
@@ -556,14 +556,14 @@ public:
 
         ScalarVector2i res = resolution();
         if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = ek::Array<Int32, 4>;
-            using Int24 = ek::Array<Int4, 2>;
+            using Int4  = dr::Array<Int32, 4>;
+            using Int24 = dr::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            Point2f uv = ek::fmadd(pos_, res, -.5f);
+            Point2f uv = dr::fmadd(pos_, res, -.5f);
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = ek::floor2int<Vector2i>(uv);
+            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
 
             // Interpolation weights
             Point2f w1 = uv - Point2f(uv_i),
@@ -574,18 +574,18 @@ public:
                   v01 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 1)), active),
                   v11 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 1)), active);
 
-            Float v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
-                  v1 = ek::fmadd(w0.x(), v01, w1.x() * v11);
+            Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
+                  v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
 
-            return ek::fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(res);
+            return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::hprod(res);
         } else {
             // Scale to bitmap resolution, no shift
             Point2f uv = pos_ * res;
 
             // Integer pixel positions for nearest-neighbor interpolation
-            Vector2i uv_i = wrap(ek::floor2int<Vector2i>(uv));
+            Vector2i uv_i = wrap(dr::floor2int<Vector2i>(uv));
 
-            return m_distr2d->pdf(uv_i, active) * ek::hprod(res);
+            return m_distr2d->pdf(uv_i, active) * dr::hprod(res);
         }
     }
 
@@ -600,9 +600,9 @@ public:
             return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
                                                          MTS_CIE_MIN) };
         } else {
-            ENOKI_MARK_USED(sample);
+            DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
-            return { ek::empty<Wavelength>(), value };
+            return { dr::empty<Wavelength>(), value };
         }
     }
 
@@ -612,8 +612,8 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        m_inv_resolution_x = ek::divisor<int32_t>(resolution().x());
-        m_inv_resolution_y = ek::divisor<int32_t>(resolution().y());
+        m_inv_resolution_x = dr::divisor<int32_t>(resolution().x());
+        m_inv_resolution_y = dr::divisor<int32_t>(resolution().y());
 
         if (keys.empty() || string::contains(keys, "data")) {
             /// Convert m_data into a managed array (available in CPU/GPU address space)
@@ -651,17 +651,17 @@ protected:
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        auto&& data = ek::migrate(m_data.array(), AllocType::Host);
+        auto&& data = dr::migrate(m_data.array(), AllocType::Host);
 
-        if constexpr (ek::is_jit_array_v<Float>)
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>)
+            dr::sync_thread();
 
-        ek::make_opaque(m_transform);
+        dr::make_opaque(m_transform);
 
         const ScalarFloat *ptr = data.data();
 
         double mean = 0.0;
-        size_t pixel_count = (size_t) ek::hprod(resolution());
+        size_t pixel_count = (size_t) dr::hprod(resolution());
         bool exceed_unit_range = false;
 
         if (Channels == 3) {
@@ -669,7 +669,7 @@ protected:
                 init_distr ? new ScalarFloat[pixel_count] : nullptr);
 
             for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
+                ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
                 ScalarFloat tmp;
                 if constexpr (is_spectral_v<Spectrum> && !Raw) {
                     tmp = srgb_model_mean(value);
@@ -701,7 +701,7 @@ protected:
         }
 
         if (init_mean)
-            m_mean = ek::opaque<Float>(ScalarFloat(mean / pixel_count));
+            m_mean = dr::opaque<Float>(ScalarFloat(mean / pixel_count));
 
         if (exceed_unit_range && !Raw)
             Log(Warn,
@@ -711,8 +711,8 @@ protected:
 
 protected:
     TensorXf m_data;
-    ek::divisor<int32_t> m_inv_resolution_x;
-    ek::divisor<int32_t> m_inv_resolution_y;
+    dr::divisor<int32_t> m_inv_resolution_x;
+    dr::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;
     Transform3f m_transform;
     Float m_mean;

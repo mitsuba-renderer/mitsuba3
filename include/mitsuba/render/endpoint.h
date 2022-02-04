@@ -384,7 +384,7 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::Endpoint)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::Endpoint)
     MTS_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);

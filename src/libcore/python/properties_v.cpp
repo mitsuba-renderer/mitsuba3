@@ -38,7 +38,7 @@ py::object properties_get(const Properties& p, const std::string &key) {
     else if (type == Properties::Type::Color)
         return py::cast(p.get<Color<PFloat, 3>>(key));
     else if (type == Properties::Type::Array3f)
-        return py::cast(p.get<ek::Array<PFloat, 3>>(key));
+        return py::cast(p.get<dr::Array<PFloat, 3>>(key));
     else if (type == Properties::Type::Transform)
         return py::cast(p.get<Transform<Point<PFloat, 4>>>(key));
     else if (type == Properties::Type::AnimatedTransform)

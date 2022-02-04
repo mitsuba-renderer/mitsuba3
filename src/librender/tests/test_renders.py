@@ -4,9 +4,9 @@ import argparse
 import glob
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
-from enoki.scalar import ArrayXf as Float
+from drjit.scalar import ArrayXf as Float
 
 
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
@@ -34,13 +34,13 @@ POLARIZED_EXCLUDE_FOLDERS = [
     'participating_media',
 ]
 
-if hasattr(ek, 'JitFlag'):
+if hasattr(dr, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
-        'jit_flag_option_0' : {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        'jit_flag_option_1' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        'jit_flag_option_2' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
-        'jit_flag_option_3' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1},
+        'jit_flag_option_0' : {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        'jit_flag_option_1' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        'jit_flag_option_2' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
+        'jit_flag_option_3' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 1},
     }
 
 def list_all_render_test_configs():
@@ -65,7 +65,7 @@ def list_all_render_test_configs():
                 for k, v in JIT_FLAG_OPTIONS.items():
                     if k == 'scalar':
                         continue
-                    is_symbolic = v[ek.JitFlag.VCallRecord] == 1
+                    is_symbolic = v[dr.JitFlag.VCallRecord] == 1
                     if is_symbolic and any(ex in scene for ex in SYMBOLIC_EXCLUDE_FOLDERS):
                         continue
                     configs.append((variant, scene, k))
@@ -128,7 +128,7 @@ def z_test(mean, sample_count, reference, reference_var):
     # Cumulative distribution function of the standard normal distribution
     def stdnormal_cdf(x):
         shape = x.shape
-        cdf = (1.0 - ek.erf(-Float(x.flatten()) / ek.sqrt(2.0))) * 0.5
+        cdf = (1.0 - dr.erf(-Float(x.flatten()) / dr.sqrt(2.0))) * 0.5
         return np.array(cdf).reshape(shape)
 
     # Compute p-value
@@ -144,9 +144,9 @@ def test_render(variant, scene_fname, jit_flags_key):
     from mitsuba.core import load_file, Bitmap
 
     if 'cuda' in variant or 'llvm' in variant:
-        ek.flush_malloc_cache()
+        dr.flush_malloc_cache()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
-            ek.set_flag(k, v)
+            dr.set_flag(k, v)
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
@@ -166,7 +166,7 @@ def test_render(variant, scene_fname, jit_flags_key):
 
     # Compute spp budget
     sample_budget = int(2e6)
-    pixel_count = ek.hprod(ref_bmp.size())
+    pixel_count = dr.hprod(ref_bmp.size())
     spp = sample_budget // pixel_count
 
     # Load and render

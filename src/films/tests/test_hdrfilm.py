@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import mitsuba
 import pytest
 
@@ -45,9 +45,9 @@ def test02_crops(variant_scalar_rgb):
             <string name="pixel_format" value="rgba"/>
         </film>""")
     assert film is not None
-    assert ek.all(film.size() == [32, 21])
-    assert ek.all(film.crop_size() == [11, 5])
-    assert ek.all(film.crop_offset() == [2, 3])
+    assert dr.all(film.size() == [32, 21])
+    assert dr.all(film.crop_size() == [11, 5])
+    assert dr.all(film.crop_offset() == [2, 3])
     assert film.sample_border()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
@@ -64,9 +64,9 @@ def test02_crops(variant_scalar_rgb):
             <integer name="crop_height" value="1"/>
         </film>""")
     assert film is not None
-    assert ek.all(film.size() == [32, 21])
-    assert ek.all(film.crop_size() == [2, 1])
-    assert ek.all(film.crop_offset() == [30, 20])
+    assert dr.all(film.size() == [32, 21])
+    assert dr.all(film.crop_size() == [2, 1])
+    assert dr.all(film.crop_offset() == [30, 20])
 
 
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
@@ -119,20 +119,20 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
         plt.subplot(1, 3, 2)
         plt.imshow(img[:, :, :3])
         plt.subplot(1, 3, 3)
-        plt.imshow(ek.sum(ek.abs(img[:, :, :3] - contents[:, :, :3]), axis=2), cmap='coolwarm')
+        plt.imshow(dr.sum(dr.abs(img[:, :, :3] - contents[:, :, :3]), axis=2), cmap='coolwarm')
         plt.colorbar()
         plt.show()
 
     if file_format == "exr":
-        assert ek.allclose(img, contents, atol=1e-5)
+        assert dr.allclose(img, contents, atol=1e-5)
     else:
         if file_format == "rgbe":
-            assert ek.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-2), \
+            assert dr.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-2), \
                    '\n{}\nvs\n{}\n'.format(img[:4, :4, :3], contents[:4, :4, :3])
         else:
-            assert ek.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
+            assert dr.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
         # Alpha channel was ignored, alpha and weights should default to 1.0.
-        assert ek.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
+        assert dr.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
 
 
 @pytest.mark.parametrize('pixel_format', ['RGB', 'RGBA', 'XYZ', 'XYZA', 'luminance', 'luminance_alpha'])
@@ -164,8 +164,8 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     res = film.size()
     block = ImageBlock(res, [0, 0], (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
 
-    if ek.is_jit_array_v(Float):
-        pixel_idx = ek.arange(UInt32, ek.hprod(res))
+    if dr.is_jit_array_v(Float):
+        pixel_idx = dr.arange(UInt32, dr.hprod(res))
         x = pixel_idx % res[0]
         y = pixel_idx // res[0]
 
@@ -191,7 +191,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
 
     image = film.develop()
 
-    assert ek.hprod(image.shape) == ek.hprod(res) * (len(output_channels))
+    assert dr.hprod(image.shape) == dr.hprod(res) * (len(output_channels))
 
     data_bitmap = Bitmap(image, Bitmap.PixelFormat.MultiChannel, output_channels)
     bitmap = film.bitmap()
@@ -224,8 +224,8 @@ def test06_empty_film(variants_all_rgb, develop):
 
     # TODO: do not allow NaNs from film
     if develop:
-        image = ek.ravel(film.develop())
-        assert ek.all((image == 0) | ek.isnan(image))
+        image = dr.ravel(film.develop())
+        assert dr.all((image == 0) | dr.isnan(image))
     else:
         import numpy as np
         image = np.array(film.bitmap())

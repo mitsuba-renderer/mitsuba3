@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 from mitsuba.python.test.util import fresolver_append_path
@@ -21,11 +21,11 @@ def test01_evaluation(variant_scalar_spectral_polarized):
     bsdf = load_dict({'type': 'measured_polarized',
                       'filename': 'resources/data/tests/pbsdf/spectralon_lowres.pbsdf'})
 
-    phi_i   = 30 * ek.Pi/180
-    theta_i = 10 * ek.Pi/180
-    wi = Vector3f([ek.sin(theta_i)*ek.cos(phi_i),
-                   ek.sin(theta_i)*ek.sin(phi_i),
-                   ek.cos(theta_i)])
+    phi_i   = 30 * dr.Pi/180
+    theta_i = 10 * dr.Pi/180
+    wi = Vector3f([dr.sin(theta_i)*dr.cos(phi_i),
+                   dr.sin(theta_i)*dr.sin(phi_i),
+                   dr.cos(theta_i)])
 
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
@@ -34,11 +34,11 @@ def test01_evaluation(variant_scalar_spectral_polarized):
     si.sh_frame = Frame3f([0, 0, 1])
     si.wavelengths = [500, 500, 500, 500]
 
-    phi_o   = 200 * ek.Pi/180
-    theta_o =  3 * ek.Pi/180
-    wi = Vector3f([ek.sin(theta_o)*ek.cos(phi_o),
-                   ek.sin(theta_o)*ek.sin(phi_o),
-                   ek.cos(theta_o)])
+    phi_o   = 200 * dr.Pi/180
+    theta_o =  3 * dr.Pi/180
+    wi = Vector3f([dr.sin(theta_o)*dr.cos(phi_o),
+                   dr.sin(theta_o)*dr.sin(phi_o),
+                   dr.cos(theta_o)])
 
     value = bsdf.eval(ctx, si, wi)
     value = np.array(value)[0,:,:]  # Extract Mueller matrix for one wavelength
@@ -47,4 +47,4 @@ def test01_evaluation(variant_scalar_spectral_polarized):
            [-0.00393003,  0.00427623, -0.00117126, -0.00310079],
            [-0.00424358,  0.00312945, -0.01219576,  0.00086167],
            [ 0.00099006, -0.00345963, -0.00285343, -0.00205485]]
-    assert ek.allclose(ref, value, rtol=1e-4)
+    assert dr.allclose(ref, value, rtol=1e-4)

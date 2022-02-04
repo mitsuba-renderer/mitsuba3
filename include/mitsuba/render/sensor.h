@@ -147,7 +147,7 @@ public:
         m_resolution = ScalarVector2f(m_film->crop_size());
     }
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::Sensor)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::Sensor)
     MTS_DECLARE_CLASS()
 protected:
     Sensor(const Properties &props);
@@ -271,17 +271,17 @@ MTS_EXTERN_CLASS_RENDER(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for vectorized function calls
+//! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
-    ENOKI_VCALL_METHOD(sample_ray)
-    ENOKI_VCALL_METHOD(sample_direction)
-    ENOKI_VCALL_METHOD(pdf_direction)
-    ENOKI_VCALL_METHOD(eval_direction)
-    ENOKI_VCALL_METHOD(sample_position)
-    ENOKI_VCALL_METHOD(sample_wavelengths)
-    ENOKI_VCALL_GETTER(flags, uint32_t)
-    ENOKI_VCALL_GETTER(shape, const typename Class::Shape *)
-    ENOKI_VCALL_GETTER(medium, const typename Class::Medium *)
-ENOKI_VCALL_TEMPLATE_END(mitsuba::Sensor)
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
+    DRJIT_VCALL_METHOD(sample_ray)
+    DRJIT_VCALL_METHOD(sample_direction)
+    DRJIT_VCALL_METHOD(pdf_direction)
+    DRJIT_VCALL_METHOD(eval_direction)
+    DRJIT_VCALL_METHOD(sample_position)
+    DRJIT_VCALL_METHOD(sample_wavelengths)
+    DRJIT_VCALL_GETTER(flags, uint32_t)
+    DRJIT_VCALL_GETTER(shape, const typename Class::Shape *)
+    DRJIT_VCALL_GETTER(medium, const typename Class::Medium *)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::Sensor)

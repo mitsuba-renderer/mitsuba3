@@ -1,4 +1,4 @@
-#include <enoki/packet.h>
+#include <drjit/packet.h>
 
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/logger.h>
@@ -171,9 +171,9 @@ std::string time_string(float value, bool precise) {
         { 52.1429f, "y"}
     };
 
-    if (ek::isnan(value))
+    if (dr::isnan(value))
         return "nan";
-    else if (ek::isinf(value))
+    else if (dr::isinf(value))
         return "inf";
     else if (value < 0)
         return "-" + time_string(-value, precise);
@@ -272,7 +272,7 @@ int terminal_width() {
 }
 
 std::string info_build(int thread_count) {
-    constexpr size_t PacketSize = ek::Packet<float>::Size;
+    constexpr size_t PacketSize = dr::Packet<float>::Size;
 
     std::ostringstream oss;
     oss << "Mitsuba version " << MTS_VERSION << " (";

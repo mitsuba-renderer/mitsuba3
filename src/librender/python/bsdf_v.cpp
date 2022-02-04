@@ -19,7 +19,7 @@ MTS_PY_EXPORT(BSDFSample) {
         .def_readwrite("sampled_component", &BSDFSample3f::sampled_component, D(BSDFSample3, sampled_component))
         .def_repr(BSDFSample3f);
 
-    MTS_PY_ENOKI_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
+    MTS_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
 }
 
 /// Trampoline for derived types implemented in Python
@@ -100,8 +100,8 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
              [](Ptr bsdf) { return bsdf->needs_differentials(); },
              D(BSDF, needs_differentials));
 
-    if constexpr (ek::is_array_v<Ptr>)
-        bind_enoki_ptr_array(cls);
+    if constexpr (dr::is_array_v<Ptr>)
+        bind_drjit_ptr_array(cls);
 }
 
 MTS_PY_EXPORT(BSDF) {
@@ -118,7 +118,7 @@ MTS_PY_EXPORT(BSDF) {
             [](PyBSDF &bsdf){ return bsdf.m_flags; },
             [](PyBSDF &bsdf, uint32_t flags){
                 bsdf.m_flags = flags;
-                ek::set_attr(&bsdf, "flags", flags);
+                dr::set_attr(&bsdf, "flags", flags);
             }
         )
         .def_readwrite("m_components", &PyBSDF::m_components)
@@ -126,13 +126,13 @@ MTS_PY_EXPORT(BSDF) {
 
     bind_bsdf_generic<BSDF *>(bsdf);
 
-    if constexpr (ek::is_array_v<BSDFPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<BSDFPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<BSDFPtr> cls(m, "BSDFPtr", ek_array);
+        py::class_<BSDFPtr> cls(m, "BSDFPtr", dr_array);
         bind_bsdf_generic<BSDFPtr>(cls);
-        pybind11_type_alias<UInt32, ek::replace_scalar_t<UInt32, BSDFFlags>>();
+        pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, BSDFFlags>>();
     }
 
     MTS_PY_REGISTER_OBJECT("register_bsdf", BSDF)

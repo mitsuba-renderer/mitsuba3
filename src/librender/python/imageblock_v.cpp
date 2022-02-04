@@ -10,7 +10,7 @@ MTS_PY_EXPORT(ImageBlock) {
                       bool>(),
              "size"_a, "offset"_a, "channel_count"_a, "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
-             "coalesce"_a      = ek::is_llvm_array_v<Float>,
+             "coalesce"_a      = dr::is_llvm_array_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>)
         .def(py::init<const TensorXf &, const ScalarPoint2i &,
@@ -18,14 +18,14 @@ MTS_PY_EXPORT(ImageBlock) {
                       bool>(),
              "tensor"_a, "offset"_a = ScalarPoint2i(0), "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
-             "coalesce"_a      = ek::is_llvm_array_v<Float>,
+             "coalesce"_a      = dr::is_llvm_array_v<Float>,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>)
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put), "block"_a)
         .def("put",
              py::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
                                const Spectrum &, Float, Float,
-                               ek::mask_t<Float>>(&ImageBlock::put),
+                               dr::mask_t<Float>>(&ImageBlock::put),
              "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a = 1.f,
              "weight"_a = 1, "active"_a = true, D(ImageBlock, put, 2))
         .def("put",

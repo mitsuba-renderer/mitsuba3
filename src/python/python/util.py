@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 
 import mitsuba
-import enoki as ek
+import drjit as dr
 
 
 class SceneParameters(Mapping):
@@ -62,10 +62,10 @@ class SceneParameters(Mapping):
         param_list = '\n'
         for k, v in self.items():
             def is_diff(x):
-                return ek.is_diff_array_v(x) and ek.is_floating_point_v(x)
+                return dr.is_diff_array_v(x) and dr.is_floating_point_v(x)
             diff = is_diff(v)
-            if ek.is_enoki_struct_v(v):
-                for k2 in type(v).ENOKI_STRUCT.keys():
+            if dr.is_drjit_struct_v(v):
+                for k2 in type(v).DRJIT_STRUCT.keys():
                     diff |= is_diff(getattr(v, k2))
             param_list += '  %s %s,\n' % (('*' if is_diff else ' '), k)
         return 'SceneParameters[%s\n]' % param_list[:-2]
@@ -93,7 +93,7 @@ class SceneParameters(Mapping):
 
     def torch(self) -> dict:
         """
-        Converts all Enoki arrays into PyTorch arrays and return them as a
+        Converts all DrJit arrays into PyTorch arrays and return them as a
         dictionary. This is mainly useful when using PyTorch to optimize a
         Mitsuba scene.
         """
@@ -135,7 +135,7 @@ class SceneParameters(Mapping):
         for depth, node, keys in work_list:
             node.parameters_changed(keys)
         self.update_list.clear()
-        ek.eval()
+        dr.eval()
 
     def keep(self, keys: list) -> None:
         """

@@ -24,7 +24,7 @@ reference data (e.g. for a new configurations). Please see the following command
 """
 
 import mitsuba
-import enoki as ek
+import drjit as dr
 import importlib
 
 import pytest, sys, inspect, os, argparse
@@ -103,9 +103,9 @@ class ConfigBase:
         This method update the scene parameter associated to this config
         """
         self.params[self.key] = self.initial_state + theta
-        ek.set_label(self.params, 'params')
+        dr.set_label(self.params, 'params')
         self.params.update()
-        ek.eval()
+        dr.eval()
 
 # BSDF albedo of a directly visible gray plane illuminated by a constant emitter
 class DiffuseAlbedoConfig(ConfigBase):
@@ -285,13 +285,13 @@ class TranslateShapeConfigBase(ConfigBase):
     def initialize(self):
         from mitsuba.core import Vector3f
         super().initialize()
-        self.initial_state = ek.unravel(Vector3f, self.params[self.key])
+        self.initial_state = dr.unravel(Vector3f, self.params[self.key])
 
     def update(self, theta):
         from mitsuba.core import Vector3f
-        self.params[self.key] = ek.ravel(self.initial_state + Vector3f(theta, 0.0, 0.0))
+        self.params[self.key] = dr.ravel(self.initial_state + Vector3f(theta, 0.0, 0.0))
         self.params.update()
-        ek.eval()
+        dr.eval()
 
 
 # Scale shape base configuration
@@ -304,13 +304,13 @@ class ScaleShapeConfigBase(ConfigBase):
     def initialize(self):
         from mitsuba.core import Vector3f
         super().initialize()
-        self.initial_state = ek.unravel(Vector3f, self.params[self.key])
+        self.initial_state = dr.unravel(Vector3f, self.params[self.key])
 
     def update(self, theta):
         from mitsuba.core import Vector3f
-        self.params[self.key] = ek.ravel(self.initial_state * (1.0 + theta))
+        self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
         self.params.update()
-        ek.eval()
+        dr.eval()
 
 # Translate diffuse sphere under constant illumination
 class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
@@ -586,15 +586,15 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         from mitsuba.core import Vector3f
         super().initialize()
         self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
-        self.initial_state_0 = ek.unravel(Vector3f, self.params['plane.vertex_positions'])
-        self.initial_state_1 = ek.unravel(Vector3f, self.params['occluder.vertex_positions'])
+        self.initial_state_0 = dr.unravel(Vector3f, self.params['plane.vertex_positions'])
+        self.initial_state_1 = dr.unravel(Vector3f, self.params['occluder.vertex_positions'])
 
     def update(self, theta):
         from mitsuba.core import Vector3f
-        self.params['plane.vertex_positions']    = ek.ravel(self.initial_state_0 + Vector3f(theta, 0.0, 0.0))
-        self.params['occluder.vertex_positions'] = ek.ravel(self.initial_state_1 + Vector3f(theta, 0.0, 0.0))
+        self.params['plane.vertex_positions']    = dr.ravel(self.initial_state_0 + Vector3f(theta, 0.0, 0.0))
+        self.params['occluder.vertex_positions'] = dr.ravel(self.initial_state_1 + Vector3f(theta, 0.0, 0.0))
         self.params.update()
-        ek.eval()
+        dr.eval()
 
 
 # Translate sphere reflecting on glossy floor
@@ -689,8 +689,8 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    # ek.set_flag(ek.JitFlag.VCallRecord, False)
-    # ek.set_flag(ek.JitFlag.LoopRecord, False)
+    # dr.set_flag(dr.JitFlag.VCallRecord, False)
+    # dr.set_flag(dr.JitFlag.LoopRecord, False)
 
     importlib.reload(mitsuba.python.ad.integrators)
     config.integrator_dict['type'] = integrator_name
@@ -700,9 +700,9 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     image_primal_ref = TensorXf(Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    error = ek.abs(image - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
-    error_mean = ek.hmean(error)
-    error_max = ek.hmax(error)
+    error = dr.abs(image - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
+    error_mean = dr.hmean(error)
+    error_max = dr.hmax(error)
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
     # print(f'-> write current image: {filename}')
@@ -726,16 +726,16 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.core import load_dict, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
-    # ek.set_flag(ek.JitFlag.PrintIR, True)
+    # dr.set_flag(dr.JitFlag.PrintIR, True)
 
-    # ek.set_flag(ek.JitFlag.LoopRecord, False)
-    # ek.set_flag(ek.JitFlag.VCallRecord, False)
+    # dr.set_flag(dr.JitFlag.LoopRecord, False)
+    # dr.set_flag(dr.JitFlag.VCallRecord, False)
 
-    # ek.set_flag(ek.JitFlag.LoopOptimize, False)
-    # ek.set_flag(ek.JitFlag.VCallOptimize, False)
-    # ek.set_flag(ek.JitFlag.VCallInline, True)
-    # ek.set_flag(ek.JitFlag.ValueNumbering, False)
-    # ek.set_flag(ek.JitFlag.ConstProp, False)
+    # dr.set_flag(dr.JitFlag.LoopOptimize, False)
+    # dr.set_flag(dr.JitFlag.VCallOptimize, False)
+    # dr.set_flag(dr.JitFlag.VCallInline, True)
+    # dr.set_flag(dr.JitFlag.ValueNumbering, False)
+    # dr.set_flag(dr.JitFlag.ConstProp, False)
 
     config = config()
     config.initialize()
@@ -748,19 +748,19 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     image_fwd_ref = TensorXf(Bitmap(filename))
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
-    ek.set_label(theta, 'theta')
+    dr.enable_grad(theta)
+    dr.set_label(theta, 'theta')
     config.update(theta)
-    ek.forward(theta, ek.ADFlag.ClearEdges)
+    dr.forward(theta, dr.ADFlag.ClearEdges)
 
-    ek.set_label(config.params, 'params')
+    dr.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
         config.scene, seed=0, spp=config.spp, params=theta)
-    image_fwd = ek.detach(image_fwd)
+    image_fwd = dr.detach(image_fwd)
 
-    error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
-    error_mean = ek.hmean(error)
-    error_max = ek.hmax(error)
+    error = dr.abs(image_fwd - image_fwd_ref) / dr.max(dr.abs(image_fwd_ref), 2e-1)
+    error_mean = dr.hmean(error)
+    error_max = dr.hmax(error)
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
     # print(f'-> write current image: {filename}')
@@ -778,8 +778,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         print(f'-> write error image: {filename}')
         write_bitmap(filename, error)
 
-        # print(f"ek.hmean(image_fwd_ref): {ek.hmean(image_fwd_ref)}")
-        # print(f"ek.hmean(image_fwd):     {ek.hmean(image_fwd)}")
+        # print(f"dr.hmean(image_fwd_ref): {dr.hmean(image_fwd_ref)}")
+        # print(f"dr.hmean(image_fwd):     {dr.hmean(image_fwd)}")
         assert False
 
 
@@ -789,8 +789,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.core import load_dict, Float, TensorXf, Bitmap
 
-    # ek.set_flag(ek.JitFlag.LoopRecord, False)
-    # ek.set_flag(ek.JitFlag.VCallRecord, False)
+    # dr.set_flag(dr.JitFlag.LoopRecord, False)
+    # dr.set_flag(dr.JitFlag.VCallRecord, False)
 
     config = config()
     config.initialize()
@@ -805,19 +805,19 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     image_adj = TensorXf(1.0, image_fwd_ref.shape)
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
+    dr.enable_grad(theta)
     config.update(theta)
 
-    # ek.set_flag(ek.JitFlag.KernelHistory, True)
-    # ek.set_log_level(3)
+    # dr.set_flag(dr.JitFlag.KernelHistory, True)
+    # dr.set_log_level(3)
 
     integrator.render_backward(
         config.scene, grad_in=image_adj, seed=0, spp=config.spp, params=theta)
 
-    grad = ek.grad(theta)[0] / ek.width(image_fwd_ref)
-    grad_ref = ek.hmean(image_fwd_ref)
+    grad = dr.grad(theta)[0] / dr.width(image_fwd_ref)
+    grad_ref = dr.hmean(image_fwd_ref)
 
-    error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
+    error = dr.abs(grad - grad_ref) / dr.max(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
@@ -850,14 +850,14 @@ def test04_render_custom_op(variants_all_ad_rgb):
     image_fwd_ref = TensorXf(Bitmap(filename))
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
+    dr.enable_grad(theta)
     config.update(theta)
 
     image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
-    error = ek.abs(ek.detach(image_primal) - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
-    error_mean = ek.hmean(error)
-    error_max = ek.hmax(error)
+    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
+    error_mean = dr.hmean(error)
+    error_max = dr.hmax(error)
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -872,13 +872,13 @@ def test04_render_custom_op(variants_all_ad_rgb):
     filename = f"test_render_custom_op_image_primal.exr"
     write_bitmap(filename, image_primal)
 
-    obj = ek.hmean_async(image_primal)
-    ek.backward(obj)
+    obj = dr.hmean_async(image_primal)
+    dr.backward(obj)
 
-    grad = ek.grad(theta)[0]
-    grad_ref = ek.hmean(image_fwd_ref)
+    grad = dr.grad(theta)[0]
+    grad_ref = dr.hmean(image_fwd_ref)
 
-    error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
+    error = dr.abs(grad - grad_ref) / dr.max(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
@@ -888,18 +888,18 @@ def test04_render_custom_op(variants_all_ad_rgb):
         assert False
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
+    dr.enable_grad(theta)
     config.update(theta)
 
     image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
-    ek.forward(theta)
+    dr.forward(theta)
 
-    image_fwd = ek.grad(image_primal)
+    image_fwd = dr.grad(image_primal)
 
-    error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
-    error_mean = ek.hmean(error)
-    error_max = ek.hmax(error)
+    error = dr.abs(image_fwd - image_fwd_ref) / dr.max(dr.abs(image_fwd_ref), 2e-1)
+    error_mean = dr.hmean(error)
+    error_max = dr.hmax(error)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")

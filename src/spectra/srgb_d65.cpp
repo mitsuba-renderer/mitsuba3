@@ -32,7 +32,7 @@ public:
                reflectance value (colors in [0, 1]) which is accomplished here by
                scaling. We use a color where the highest component is 50%,
                which generally yields a fairly smooth spectrum. */
-            ScalarFloat scale = ek::hmax(color) * 2.f;
+            ScalarFloat scale = dr::hmax(color) * 2.f;
             if (scale != 0.f)
                 color /= scale;
 
@@ -49,7 +49,7 @@ public:
             m_value = luminance(color);
         }
 
-        ek::make_opaque(m_value);
+        dr::make_opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -75,9 +75,9 @@ public:
             return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
                                                          MTS_CIE_MIN) };
         } else {
-            ENOKI_MARK_USED(sample);
+            DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
-            return { ek::empty<Wavelength>(), value };
+            return { dr::empty<Wavelength>(), value };
         }
     }
 
@@ -86,7 +86,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ek::make_opaque(m_value);
+        dr::make_opaque(m_value);
     }
 
     std::string to_string() const override {

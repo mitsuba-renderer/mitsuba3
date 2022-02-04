@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 static RGB2Spec *model = nullptr;
 static std::mutex model_mutex;
 
-ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
-    using Array3f = ek::Array<float, 3>;
+dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
+    using Array3f = dr::Array<float, 3>;
 
     if (unlikely(model == nullptr)) {
         std::lock_guard<std::mutex> lock(model_mutex);
@@ -35,8 +35,8 @@ ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
 }
 
 #if 0
-Color<float, 3> srgb_model_eval_rgb(const ek::Array<float, 3> &coeff) {
-    using Array3f = ek::Array<float, 3>;
+Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &coeff) {
+    using Array3f = dr::Array<float, 3>;
     using Spectrum = Spectrum<float, 4>;
     using Matrix3f = Matrix<float, 3>;
     using Texture = Texture<float, Spectrum>;
@@ -52,7 +52,7 @@ Color<float, 3> srgb_model_eval_rgb(const ek::Array<float, 3> &coeff) {
 
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
 
-    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+    SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
     Array3f accum = 0.f;
     float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {
@@ -72,7 +72,7 @@ Color<float, 3> srgb_model_eval_rgb(const ek::Array<float, 3> &coeff) {
         float model_eval =
             srgb_model_eval<Spectrum>(coeff, Wavelength(lambda)).x();
 
-        accum = ek::fmadd(weight_v, model_eval, accum);
+        accum = dr::fmadd(weight_v, model_eval, accum);
     }
 
     Matrix3f xyz_to_srgb(

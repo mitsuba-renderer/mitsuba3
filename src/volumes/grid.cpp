@@ -7,8 +7,8 @@
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
-#include <enoki/dynamic.h>
-#include <enoki/tensor.h>
+#include <drjit/dynamic.h>
+#include <drjit/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -153,7 +153,7 @@ public:
         m_raw = props.get<bool>("raw", false);
 
         ScalarVector3i res = m_volume_grid->size();
-        ScalarUInt32 size = ek::hprod(res);
+        ScalarUInt32 size = dr::hprod(res);
 
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 && !m_raw) {
@@ -163,15 +163,15 @@ public:
             ScalarFloat *scaled_data_ptr = scaled_data.get();
             ScalarFloat max = 0.0;
             for (ScalarUInt32 i = 0; i < size; ++i) {
-                ScalarColor3f rgb = ek::load<ScalarColor3f>(ptr);
+                ScalarColor3f rgb = dr::load<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are between 0 and 1
-                ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
+                ScalarFloat scale = dr::hmax(rgb) * 2.f;
+                ScalarColor3f rgb_norm = rgb / dr::max((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
-                max = ek::max(max, scale);
-                ek::store(
+                max = dr::max(max, scale);
+                dr::store(
                     scaled_data_ptr,
-                    ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));
+                    dr::concat(coeff, dr::Array<ScalarFloat, 1>(scale)));
                 ptr += 3;
                 scaled_data_ptr += 4;
             }
@@ -249,9 +249,9 @@ public:
           m_wrap_mode(wrap_mode) {
 
         ScalarVector3i res = resolution();
-        m_inv_resolution_x = ek::divisor<int32_t>(res.x());
-        m_inv_resolution_y = ek::divisor<int32_t>(res.y());
-        m_inv_resolution_z = ek::divisor<int32_t>(res.z());
+        m_inv_resolution_x = dr::divisor<int32_t>(res.x());
+        m_inv_resolution_y = dr::divisor<int32_t>(res.y());
+        m_inv_resolution_z = dr::divisor<int32_t>(res.z());
 
         if (props.get<bool>("use_grid_bbox", false)) {
             m_to_local = bbox_transform * m_to_local;
@@ -265,8 +265,8 @@ public:
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
-        ENOKI_MARK_USED(it);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(it);
+        DRJIT_MARK_USED(active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
             Throw("The GridVolume texture %s was queried for a spectrum, but texture conversion "
@@ -289,8 +289,8 @@ public:
     }
 
     Float eval_1(const Interaction3f &it, Mask active = true) const override {
-        ENOKI_MARK_USED(it);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(it);
+        DRJIT_MARK_USED(active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             Throw("eval_1(): The GridVolume texture %s was queried for a scalar value, but texture "
@@ -301,13 +301,13 @@ public:
             if constexpr (Channels == 3)
                 return mitsuba::luminance(Color3f(result));
             else
-                return ek::hmean(result);
+                return dr::hmean(result);
         }
     }
 
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {
-        ENOKI_MARK_USED(it);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(it);
+        DRJIT_MARK_USED(active);
 
         if constexpr (Channels != 3) {
             Throw("eval_3(): The GridVolume texture %s was queried for a 3D vector, but it has "
@@ -321,9 +321,9 @@ public:
         }
     }
 
-    ek::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override {
-        ENOKI_MARK_USED(it);
-        ENOKI_MARK_USED(active);
+    dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override {
+        DRJIT_MARK_USED(it);
+        DRJIT_MARK_USED(active);
 
         if constexpr (Channels != 6) {
             Throw("eval_6(): The GridVolume texture %s was queried for a 6D vector,"
@@ -336,13 +336,13 @@ public:
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        using StorageType = ek::Array<Float, Channels>;
+        using StorageType = dr::Array<Float, Channels>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         auto p = m_to_local * it.p;
-        if (ek::none_or<false>(active))
-            return ek::zero<ResultType>();
+        if (dr::none_or<false>(active))
+            return dr::zero<ResultType>();
         ResultType result = interpolate(p, it.wavelengths, active);
         return result & active;
     }
@@ -357,10 +357,10 @@ public:
                       m_inv_resolution_z(value.z())),
               mod = value - div * res;
 
-            ek::masked(mod, mod < 0) += T(res);
+            dr::masked(mod, mod < 0) += T(res);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
+                mod = dr::select(dr::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
 
             return mod;
         }
@@ -376,10 +376,10 @@ public:
     MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
                                 Mask active) const {
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
-        using StorageType = std::conditional_t<uses_srgb_model, ek::Array<Float, 4>, ek::Array<Float, Channels>>;
+        using StorageType = std::conditional_t<uses_srgb_model, dr::Array<Float, 4>, dr::Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
-        if constexpr (!ek::is_array_v<Mask>)
+        if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
         ScalarVector3i res = resolution();
@@ -387,14 +387,14 @@ public:
         const uint32_t ny = res.y();
 
         if (m_filter_type == FilterType::Trilinear) {
-            using Int8  = ek::Array<Int32, 8>;
-            using Int38 = ek::Array<Int8, 3>;
+            using Int8  = dr::Array<Int32, 8>;
+            using Int38 = dr::Array<Int8, 3>;
 
             // Scale to bitmap resolution and apply shift
-            p = ek::fmadd(p, res, -.5f);
+            p = dr::fmadd(p, res, -.5f);
 
             // Integer pixel positions for trilinear interpolation
-            Vector3i p_i  = ek::floor2int<Vector3i>(p);
+            Vector3i p_i  = dr::floor2int<Vector3i>(p);
 
             // Interpolation weights
             Point3f w1 = p - Point3f(p_i),
@@ -407,49 +407,49 @@ public:
             Int8 index = (pi_i_w.z() * ny + pi_i_w.y()) * nx + pi_i_w.x();
 
             // Load 8 grid positions to perform trilinear interpolation
-            auto d000 = ek::gather<StorageType>(m_data.array(), index[0], active),
-                 d100 = ek::gather<StorageType>(m_data.array(), index[1], active),
-                 d010 = ek::gather<StorageType>(m_data.array(), index[2], active),
-                 d110 = ek::gather<StorageType>(m_data.array(), index[3], active),
-                 d001 = ek::gather<StorageType>(m_data.array(), index[4], active),
-                 d101 = ek::gather<StorageType>(m_data.array(), index[5], active),
-                 d011 = ek::gather<StorageType>(m_data.array(), index[6], active),
-                 d111 = ek::gather<StorageType>(m_data.array(), index[7], active);
+            auto d000 = dr::gather<StorageType>(m_data.array(), index[0], active),
+                 d100 = dr::gather<StorageType>(m_data.array(), index[1], active),
+                 d010 = dr::gather<StorageType>(m_data.array(), index[2], active),
+                 d110 = dr::gather<StorageType>(m_data.array(), index[3], active),
+                 d001 = dr::gather<StorageType>(m_data.array(), index[4], active),
+                 d101 = dr::gather<StorageType>(m_data.array(), index[5], active),
+                 d011 = dr::gather<StorageType>(m_data.array(), index[6], active),
+                 d111 = dr::gather<StorageType>(m_data.array(), index[7], active);
 
             ResultType v000, v001, v010, v011, v100, v101, v110, v111;
             Float scale = 1.f;
             if constexpr (uses_srgb_model) {
-                v000 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d000), wavelengths);
-                v100 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d100), wavelengths);
-                v010 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d010), wavelengths);
-                v110 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d110), wavelengths);
-                v001 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d001), wavelengths);
-                v101 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d101), wavelengths);
-                v011 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d011), wavelengths);
-                v111 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d111), wavelengths);
+                v000 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d000), wavelengths);
+                v100 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d100), wavelengths);
+                v010 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d010), wavelengths);
+                v110 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d110), wavelengths);
+                v001 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d001), wavelengths);
+                v101 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d101), wavelengths);
+                v011 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d011), wavelengths);
+                v111 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d111), wavelengths);
                 // Interpolate scaling factor
-                Float f00 = ek::fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
-                      f01 = ek::fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
-                      f10 = ek::fmadd(w0.x(), d010.w(), w1.x() * d110.w()),
-                      f11 = ek::fmadd(w0.x(), d011.w(), w1.x() * d111.w());
-                Float f0  = ek::fmadd(w0.y(), f00, w1.y() * f10),
-                      f1  = ek::fmadd(w0.y(), f01, w1.y() * f11);
-                    scale = ek::fmadd(w0.z(), f0, w1.z() * f1);
+                Float f00 = dr::fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
+                      f01 = dr::fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
+                      f10 = dr::fmadd(w0.x(), d010.w(), w1.x() * d110.w()),
+                      f11 = dr::fmadd(w0.x(), d011.w(), w1.x() * d111.w());
+                Float f0  = dr::fmadd(w0.y(), f00, w1.y() * f10),
+                      f1  = dr::fmadd(w0.y(), f01, w1.y() * f11);
+                    scale = dr::fmadd(w0.z(), f0, w1.z() * f1);
             } else {
                 v000 = d000; v001 = d001; v010 = d010; v011 = d011;
                 v100 = d100; v101 = d101; v110 = d110; v111 = d111;
-                ENOKI_MARK_USED(scale);
-                ENOKI_MARK_USED(wavelengths);
+                DRJIT_MARK_USED(scale);
+                DRJIT_MARK_USED(wavelengths);
             }
 
             // Trilinear interpolation
-            ResultType v00 = ek::fmadd(w0.x(), v000, w1.x() * v100),
-                       v01 = ek::fmadd(w0.x(), v001, w1.x() * v101),
-                       v10 = ek::fmadd(w0.x(), v010, w1.x() * v110),
-                       v11 = ek::fmadd(w0.x(), v011, w1.x() * v111);
-            ResultType v0  = ek::fmadd(w0.y(), v00, w1.y() * v10),
-                       v1  = ek::fmadd(w0.y(), v01, w1.y() * v11);
-            ResultType result = ek::fmadd(w0.z(), v0, w1.z() * v1);
+            ResultType v00 = dr::fmadd(w0.x(), v000, w1.x() * v100),
+                       v01 = dr::fmadd(w0.x(), v001, w1.x() * v101),
+                       v10 = dr::fmadd(w0.x(), v010, w1.x() * v110),
+                       v11 = dr::fmadd(w0.x(), v011, w1.x() * v111);
+            ResultType v0  = dr::fmadd(w0.y(), v00, w1.y() * v10),
+                       v1  = dr::fmadd(w0.y(), v01, w1.y() * v11);
+            ResultType result = dr::fmadd(w0.z(), v0, w1.z() * v1);
 
             if constexpr (uses_srgb_model)
                 result *= scale;
@@ -460,14 +460,14 @@ public:
             p *= res;
 
             // Integer voxel positions for lookup
-            Vector3i p_i   = ek::floor2int<Vector3i>(p),
+            Vector3i p_i   = dr::floor2int<Vector3i>(p),
                      p_i_w = wrap(p_i);
 
             Int32 index = (p_i_w.z() * ny + p_i_w.y()) * nx + p_i_w.x();
-            StorageType v = ek::gather<StorageType>(m_data.array(), index, active);
+            StorageType v = dr::gather<StorageType>(m_data.array(), index, active);
 
             if constexpr (uses_srgb_model)
-                return v.w() * srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v), wavelengths);
+                return v.w() * srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v), wavelengths);
             else
                 return v;
 
@@ -488,13 +488,13 @@ public:
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         ScalarVector3i res = resolution();
-        m_inv_resolution_x = ek::divisor<int32_t>(res.x());
-        m_inv_resolution_y = ek::divisor<int32_t>(res.y());
-        m_inv_resolution_z = ek::divisor<int32_t>(res.z());
+        m_inv_resolution_x = dr::divisor<int32_t>(res.x());
+        m_inv_resolution_y = dr::divisor<int32_t>(res.y());
+        m_inv_resolution_z = dr::divisor<int32_t>(res.z());
 
         // Recompute maximum if necessary
         if (!m_fixed_max)
-            m_max = (float) ek::hmax_nested(ek::detach(m_data.array()));
+            m_max = (float) dr::hmax_nested(dr::detach(m_data.array()));
     }
 
     std::string to_string() const override {
@@ -513,7 +513,7 @@ public:
 protected:
     TensorXf m_data;
     bool m_fixed_max = false;
-    ek::divisor<int32_t> m_inv_resolution_x,
+    dr::divisor<int32_t> m_inv_resolution_x,
                          m_inv_resolution_y,
                          m_inv_resolution_z;
     ScalarFloat m_max;

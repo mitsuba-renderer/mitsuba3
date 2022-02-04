@@ -52,7 +52,7 @@ public:
 
     // Scene parsing in double precision
     using Float = double;
-    using Array3f = ek::Array<Float, 3>;
+    using Array3f = dr::Array<Float, 3>;
     MTS_IMPORT_CORE_TYPES()
 
     /// Construct an empty property container
@@ -339,8 +339,8 @@ EXTERN_EXPORT_PROPERTY_ACCESSOR(T(uint32_t))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(int32_t))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(uint64_t))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(int64_t))
-EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ek::Array<float, 3>))
-EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ek::Array<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(dr::Array<float, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(dr::Array<double, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Point<float, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Point<double, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Vector<float, 3>))

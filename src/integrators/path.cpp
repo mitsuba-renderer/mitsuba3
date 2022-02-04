@@ -119,26 +119,26 @@ public:
         UInt32 depth                  = 0;
 
         // If m_hide_emitters == false, the environment emitter will be visible
-        Mask valid_ray                = !m_hide_emitters && ek::neq(scene->environment(), nullptr);
+        Mask valid_ray                = !m_hide_emitters && dr::neq(scene->environment(), nullptr);
 
 
         // Variables caching information from the previous bounce
-        Interaction3f prev_si         = ek::zero<Interaction3f>();
+        Interaction3f prev_si         = dr::zero<Interaction3f>();
         Float         prev_bsdf_pdf   = 1.f;
         Bool          prev_bsdf_delta = true;
         BSDFContext   bsdf_ctx;
 
-        /* Set up an Enoki loop. This optimizes away to a normal loop in scalar
+        /* Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
            mode, and it generates either a a megakernel (default) or
            wavefront-style renderer in JIT variants. This can be controlled by
            passing the '-W' command line flag to the mitsuba binary or
-           enabling/disabling the JitFlag.LoopRecord bit in Enoki-JIT.
+           enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
 
            The first argument identifies the loop by name, which is helpful for
            debugging. The subsequent list registers all variables that encode
            the loop state variables. This is crucial: omitting a variable may
            lead to undefined behavior. */
-        ek::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result,
+        dr::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result,
                             eta, depth, valid_ray, prev_si, prev_bsdf_pdf,
                             prev_bsdf_delta, active);
 
@@ -148,26 +148,26 @@ public:
         loop.set_max_iterations(m_max_depth);
 
         while (loop(active)) {
-            /* ek::Loop implicitly masks all code in the loop using the 'active'
+            /* dr::Loop implicitly masks all code in the loop using the 'active'
                flag, so there is no need to pass it to every function */
 
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
                                      /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ek::eq(depth, 0u));
+                                     /* coherent = */ dr::eq(depth, 0u));
 
             // ---------------------- Direct emission ----------------------
 
-            /* ek::any_or() checks for active entries in the provided boolean
+            /* dr::any_or() checks for active entries in the provided boolean
                array. JIT/Megakernel modes can't do this test efficiently as
                each Monte Carlo sample runs independently. In this case,
-               ek::any_or<..>() returns the template argument (true) which means
+               dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
-            if (ek::any_or<true>(ek::neq(si.emitter(scene), nullptr))) {
+            if (dr::any_or<true>(dr::neq(si.emitter(scene), nullptr))) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0.f;
 
-                if (ek::any_or<true>(!prev_bsdf_delta))
+                if (dr::any_or<true>(!prev_bsdf_delta))
                     em_pdf = scene->pdf_emitter_direction(prev_si, ds,
                                                           !prev_bsdf_delta);
 
@@ -184,25 +184,25 @@ public:
             // Continue tracing the path at this point?
             Bool active_next = (depth + 1 < m_max_depth) && si.is_valid();
 
-            if (ek::none_or<false>(active_next))
+            if (dr::none_or<false>(active_next))
                 break; // early exit for scalar mode
 
             // Perform emitter sampling?
             BSDFPtr bsdf = si.bsdf(ray);
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
-            if (ek::any_or<true>(active_em)) {
+            if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
                 auto [ds, em_weight] = scene->sample_emitter_direction(
                     si, sampler->next_2d(), true, active_em);
-                active_em &= ek::neq(ds.pdf, 0.f);
+                active_em &= dr::neq(ds.pdf, 0.f);
 
                 /* Given the detached emitter sample, recompute its contribution
                    with AD to enable light source optimization. */
-                if (ek::grad_enabled(si.p)) {
-                    ds.d = ek::normalize(ds.p - si.p);
+                if (dr::grad_enabled(si.p)) {
+                    ds.d = dr::normalize(ds.p - si.p);
                     Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
-                    em_weight = ek::select(ek::neq(ds.pdf, 0), em_val / ds.pdf, 0);
+                    em_weight = dr::select(dr::neq(ds.pdf, 0), em_val / ds.pdf, 0);
                 }
 
                 // Evaluate BSDF * cos(theta)
@@ -213,7 +213,7 @@ public:
 
                 // Compute the MIS weight
                 Float mis_em =
-                    ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+                    dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
                 // Accumulate, being careful with polarization (see spec_fma)
                 result[active_em] = spec_fma(
@@ -236,13 +236,13 @@ public:
                derivatives) to avoid bias resulting from the combination of moving
                samples and discontinuous visibility. We need to re-evaluate the
                BSDF differentiably with the detached sample in that case. */
-            if (ek::grad_enabled(ray)) {
-                ray = ek::detach<true>(ray);
+            if (dr::grad_enabled(ray)) {
+                ray = dr::detach<true>(ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
                 Vector3f wo = si.to_local(ray.d);
                 auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(bsdf_ctx, si, wo, active);
-                bsdf_weight[bsdf_pdf > 0.f] = bsdf_val / ek::detach(bsdf_pdf);
+                bsdf_weight[bsdf_pdf > 0.f] = bsdf_val / dr::detach(bsdf_pdf);
             }
 
             // ------ Update loop variables based on current interaction ------
@@ -259,25 +259,25 @@ public:
 
             // -------------------- Stopping criterion ---------------------
 
-            ek::masked(depth, si.is_valid()) += 1;
+            dr::masked(depth, si.is_valid()) += 1;
 
-            Float throughput_max = ek::hmax(unpolarized_spectrum(throughput));
+            Float throughput_max = dr::hmax(unpolarized_spectrum(throughput));
 
-            Float rr_prob = ek::min(throughput_max * ek::sqr(eta), .95f);
+            Float rr_prob = dr::min(throughput_max * dr::sqr(eta), .95f);
             Mask rr_active = depth >= m_rr_depth,
                  rr_continue = sampler->next_1d() < rr_prob;
 
             /* Differentiable variants of the renderer require the the russian
                roulette sampling weight to be detached to avoid bias. This is a
                no-op in non-differentiable variants. */
-            throughput[rr_active] *= ek::rcp(ek::detach(rr_prob));
+            throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
             active = active_next && (!rr_active || rr_continue) &&
-                     ek::neq(throughput_max, 0.f);
+                     dr::neq(throughput_max, 0.f);
         }
 
         return {
-            /* spec  = */ ek::select(valid_ray, result, 0.f),
+            /* spec  = */ dr::select(valid_ray, result, 0.f),
             /* valid = */ valid_ray
         };
     }
@@ -297,7 +297,7 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
-        return ek::detach<true>(ek::select(ek::isfinite(w), w, 0.f));
+        return dr::detach<true>(dr::select(dr::isfinite(w), w, 0.f));
     }
 
     /**
@@ -309,7 +309,7 @@ public:
         if constexpr (is_polarized_v<Spectrum>)
             return a * b + c;
         else
-            return ek::fmadd(a, b, c);
+            return dr::fmadd(a, b, c);
     }
 
     MTS_DECLARE_CLASS()

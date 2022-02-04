@@ -27,7 +27,7 @@ public:
     SRGBReflectanceSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.get<ScalarColor3f>("color");
 
-        if (ek::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
+        if (dr::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
         if constexpr (is_spectral_v<Spectrum>)
@@ -37,7 +37,7 @@ public:
         else
             m_value = luminance(color);
 
-        ek::make_opaque(m_value);
+        dr::make_opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -62,21 +62,21 @@ public:
             return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
                                                          MTS_CIE_MIN) };
         } else {
-            ENOKI_MARK_USED(sample);
+            DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
-            return { ek::empty<Wavelength>(), value };
+            return { dr::empty<Wavelength>(), value };
         }
     }
 
     Float mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return ek::hmean(srgb_model_mean(m_value));
+            return dr::hmean(srgb_model_mean(m_value));
         else
-            return ek::hmean(hmean(m_value));
+            return dr::hmean(hmean(m_value));
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ek::make_opaque(m_value);
+        dr::make_opaque(m_value);
     }
 
     void traverse(TraversalCallback *callback) override {

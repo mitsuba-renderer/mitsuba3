@@ -16,7 +16,7 @@ project(mitsuba
 
 # A number of Mitsuba 2 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
-option(MTS_ENABLE_PYTHON "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+option(MTS_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
 
 # Mitsuba 2 ships with its own ray tracing acceleration data structure. If
 # desired, Embree (which tends to be quite a bit faster) can be used instead.
@@ -49,7 +49,7 @@ option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------
 
-if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/enoki/ext/enoki-jit/ext/enoki-thread/ext/cmake-defaults")
+if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/drjit/ext/drjit-core/ext/drjit-thread/ext/cmake-defaults")
   message(FATAL_ERROR "The Mitsuba 2 dependencies are missing! "
     "You probably did not clone the project with --recursive. It is possible to recover "
     "by invoking\n$ git submodule update --init --recursive")
@@ -64,8 +64,8 @@ if (PROJECT_SOURCE_DIR STREQUAL "${PROJECT_BINARY_DIR}")
           "'CMakeCache.txt', the 'CMakeFiles' directory and inform CMake about "
           "the source (-S) and build (-B) paths. For example to compile to a "
           "directory labeled 'build' using the Ninja generator, enter\n"
-          "  $ rm -Rf CMakeCache CMakeFiles\n"
-          "  $ cmake -S . -B build -G Ninja"
+          "  $ rm -Rf CMakeCache.txt CMakeFiles\n"
+          "  $ cmake -S . -B build -G Ninja\n"
           "  $ cmake --build build")
 endif()
 
@@ -75,7 +75,7 @@ endif()
 
 set(P "MTS") # <-- prefix for CMake variables, used by the following script
 set(MTS_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/mitsuba.h")
-include(ext/enoki/ext/enoki-jit/ext/enoki-thread/ext/cmake-defaults/CMakeLists.txt)
+include(ext/drjit/ext/drjit-core/ext/drjit-thread/ext/cmake-defaults/CMakeLists.txt)
 
 # ----------------------------------------------------------
 #  scikit-build: find installed version of dependencies
@@ -85,11 +85,11 @@ if (SKBUILD)
   execute_process(
     COMMAND
     "${PYTHON_EXECUTABLE}" -c
-    "import enoki; print(enoki.get_cmake_dir())"
+    "import drjit; print(drjit.get_cmake_dir())"
     OUTPUT_VARIABLE _tmp_dir
     OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
   list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
-  find_package(enoki CONFIG REQUIRED)
+  find_package(drjit CONFIG REQUIRED)
 endif()
 
 # ----------------------------------------------------------
@@ -273,12 +273,12 @@ elseif(UNIX)
   set(MTS_ORIGIN "$ORIGIN")
 endif()
 
-set(CMAKE_INSTALL_RPATH "${MTS_ORIGIN};${MTS_ORIGIN}/../enoki")
+set(CMAKE_INSTALL_RPATH "${MTS_ORIGIN};${MTS_ORIGIN}/../drjit")
 
 # Build the dependencies
 add_subdirectory(ext)
 
-# Always add the include directories for tinyformat, Enoki and Eigen
+# Always add the include directories for tinyformat, Dr.Jit and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/include
@@ -471,14 +471,14 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 if (NOT SKBUILD)
-  list(APPEND MTS_DEPEND enoki-thread)
+  list(APPEND MTS_DEPEND drjit-thread)
 
   if (MTS_ENABLE_JIT)
-    list(APPEND MTS_DEPEND enoki-jit)
+    list(APPEND MTS_DEPEND drjit-core)
   endif()
 
   if (MTS_ENABLE_AUTODIFF)
-    list(APPEND MTS_DEPEND enoki-autodiff)
+    list(APPEND MTS_DEPEND drjit-autodiff)
   endif()
 endif()
 

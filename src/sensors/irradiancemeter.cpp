@@ -75,7 +75,7 @@ public:
 
         // 3. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
 
@@ -84,13 +84,13 @@ public:
 
         return {
             RayDifferential3f(o, d, time, wavelengths),
-            depolarizer<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
+            depolarizer<Spectrum>(wav_weight) * dr::Pi<ScalarFloat>
         };
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        return { m_shape->sample_direction(it, sample, active), ek::Pi<ScalarFloat> };
+        return { m_shape->sample_direction(it, sample, active), dr::Pi<ScalarFloat> };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
@@ -99,7 +99,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &/*si*/, Mask /*active*/) const override {
-        return ek::Pi<ScalarFloat> / m_shape->surface_area();
+        return dr::Pi<ScalarFloat> / m_shape->surface_area();
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }

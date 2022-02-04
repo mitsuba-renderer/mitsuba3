@@ -31,8 +31,8 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        return ek::max(0.f, 1.f - ek::abs(x * m_inv_radius));
+    Float eval(Float x, dr::mask_t<Float> /* active */) const override {
+        return dr::max(0.f, 1.f - dr::abs(x * m_inv_radius));
     }
 
     std::string to_string() const override {

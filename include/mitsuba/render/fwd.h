@@ -96,13 +96,13 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
     using MeshAttribute          = mitsuba::MeshAttribute<FloatU, SpectrumU>;
 
-    using ObjectPtr              = ek::replace_scalar_t<Float, const Object *>;
-    using BSDFPtr                = ek::replace_scalar_t<Float, const BSDF *>;
-    using MediumPtr              = ek::replace_scalar_t<Float, const Medium *>;
-    using PhaseFunctionPtr       = ek::replace_scalar_t<Float, const PhaseFunction *>;
-    using ShapePtr               = ek::replace_scalar_t<Float, const Shape *>;
-    using SensorPtr              = ek::replace_scalar_t<Float, const Sensor *>;
-    using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
+    using ObjectPtr              = dr::replace_scalar_t<Float, const Object *>;
+    using BSDFPtr                = dr::replace_scalar_t<Float, const BSDF *>;
+    using MediumPtr              = dr::replace_scalar_t<Float, const Medium *>;
+    using PhaseFunctionPtr       = dr::replace_scalar_t<Float, const PhaseFunction *>;
+    using ShapePtr               = dr::replace_scalar_t<Float, const Shape *>;
+    using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
+    using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
 };
 
 #define MMTS_USING_MEMBERS_MACRO2(x) \
@@ -153,7 +153,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
     using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
-    ENOKI_MAP(MTS_IMPORT_TYPES_MACRO, __VA_ARGS__)
+    DRJIT_MAP(MTS_IMPORT_TYPES_MACRO, __VA_ARGS__)
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \
     using Scene                  = typename RenderAliases::Scene;                                  \

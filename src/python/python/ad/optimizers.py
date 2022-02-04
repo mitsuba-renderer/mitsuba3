@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from collections import defaultdict
-import enoki as ek
+import drjit as dr
 
 class Optimizer:
     """
@@ -40,12 +40,12 @@ class Optimizer:
         different optimization run), the previous momentum value is meaningless
         and calling `reset()` is advisable.
         """
-        if not (ek.is_diff_array_v(value) and ek.is_floating_point_v(value)):
+        if not (dr.is_diff_array_v(value) and dr.is_floating_point_v(value)):
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
-        needs_reset = (key not in self.variables) or ek.shape(self.variables[key]) != ek.shape(value)
+        needs_reset = (key not in self.variables) or dr.shape(self.variables[key]) != dr.shape(value)
 
-        self.variables[key] = ek.detach(value, True)
-        ek.enable_grad(self.variables[key])
+        self.variables[key] = dr.detach(value, True)
+        dr.enable_grad(self.variables[key])
         if needs_reset:
             self.reset(key)
 
@@ -104,7 +104,7 @@ class Optimizer:
 
         for k in Optimizer.__match(keys, self.params):
             value = self.params[k]
-            if ek.is_diff_array_v(value) and ek.is_floating_point_v(value):
+            if dr.is_diff_array_v(value) and dr.is_floating_point_v(value):
                 self[k] = value
 
     def update(self, keys=None):
@@ -128,7 +128,7 @@ class Optimizer:
             if k in self.params:
                 self.params[k] = self.variables[k]
 
-        ek.schedule(self.params)
+        dr.schedule(self.params)
         self.params.update()
 
     def set_learning_rate(self, lr, key=None):
@@ -143,15 +143,15 @@ class Optimizer:
         """
 
         from mitsuba.core import Float
-        # We use `ek.opaque` so the that the JIT compiler does not include
+        # We use `dr.opaque` so the that the JIT compiler does not include
         # the learning rate as a scalar literal into genereated code, which
         # would defeat kernel caching when updating learning rates.
         if key is None:
             self.lr_default = lr
-            self.lr_default_v = ek.opaque(ek.detached_t(Float), lr, shape=1)
+            self.lr_default_v = dr.opaque(dr.detached_t(Float), lr, shape=1)
         else:
             self.lr[key] = lr
-            self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, shape=1)
+            self.lr_v[key] = dr.opaque(dr.detached_t(Float), lr, shape=1)
 
     def reset(self, key):
         """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
@@ -200,43 +200,43 @@ class SGD(Optimizer):
     def step(self):
         """Take a gradient step"""
         for k, p in self.variables.items():
-            g_p = ek.grad(p)
-            shape = ek.shape(g_p)
+            g_p = dr.grad(p)
+            shape = dr.shape(g_p)
             if shape == 0:
                 continue
 
             if self.momentum != 0:
-                if shape != ek.shape(self.state[k]):
+                if shape != dr.shape(self.state[k]):
                     # Reset state if data size has changed
                     self.reset(k)
 
                 next_state = self.momentum * self.state[k] + g_p
                 step = self.lr_v[k] * self.state[k]
                 if self.mask_updates:
-                    nonzero = ek.neq(g_p, 0.)
-                    next_state = ek.select(nonzero, next_state, self.state[k])
-                    step = ek.select(nonzero, step, 0)
+                    nonzero = dr.neq(g_p, 0.)
+                    next_state = dr.select(nonzero, next_state, self.state[k])
+                    step = dr.select(nonzero, step, 0)
                 self.state[k] = next_state
-                value = ek.detach(p) - step
-                ek.schedule(self.state[k])
+                value = dr.detach(p) - step
+                dr.schedule(self.state[k])
             else:
-                value = ek.detach(p) - self.lr_v[k] * g_p
+                value = dr.detach(p) - self.lr_v[k] * g_p
 
 
             value = type(p)(value)
-            ek.enable_grad(value)
+            dr.enable_grad(value)
             self.variables[k] = value
-            ek.schedule(self.variables[k])
+            dr.schedule(self.variables[k])
 
-        ek.eval()
+        dr.eval()
 
     def reset(self, key):
         """Zero-initializes the internal state associated with a parameter"""
         if self.momentum == 0:
             return
         p = self.variables[key]
-        shape = ek.shape(p) if p.IsTensor else ek.width(p)
-        self.state[key] = ek.zero(ek.detached_t(p), shape)
+        shape = dr.shape(p) if p.IsTensor else dr.width(p)
+        self.state[key] = dr.zero(dr.detached_t(p), shape)
 
     def __repr__(self):
         return ('SGD[\n  params = %s,\n  lr = %s,\n  momentum = %.2g\n]') % \
@@ -301,46 +301,46 @@ class Adam(Optimizer):
 
         for k, p in self.variables.items():
             self.t[k] += 1
-            lr_scale = ek.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
-            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, shape=1)
+            lr_scale = dr.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
+            lr_scale = dr.opaque(dr.detached_t(Float), lr_scale, shape=1)
 
             lr_t = self.lr_v[k] * lr_scale
-            g_p = ek.grad(p)
-            shape = ek.shape(g_p)
+            g_p = dr.grad(p)
+            shape = dr.shape(g_p)
 
             if shape == 0:
                 continue
-            elif shape != ek.shape(self.state[k][0]):
+            elif shape != dr.shape(self.state[k][0]):
                 # Reset state if data size has changed
                 self.reset(k)
 
             m_tp, v_tp = self.state[k]
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
-            v_t = self.beta_2 * v_tp + (1 - self.beta_2) * ek.sqr(g_p)
+            v_t = self.beta_2 * v_tp + (1 - self.beta_2) * dr.sqr(g_p)
             if self.mask_updates:
-                nonzero = ek.neq(g_p, 0.)
-                m_t = ek.select(nonzero, m_t, m_tp)
-                v_t = ek.select(nonzero, v_t, v_tp)
+                nonzero = dr.neq(g_p, 0.)
+                m_t = dr.select(nonzero, m_t, m_tp)
+                v_t = dr.select(nonzero, v_t, v_tp)
             self.state[k] = (m_t, v_t)
-            ek.schedule(self.state[k])
+            dr.schedule(self.state[k])
 
-            step = lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
+            step = lr_t * m_t / (dr.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
-                step = ek.select(nonzero, step, 0.)
-            u = ek.detach(p) - step
+                step = dr.select(nonzero, step, 0.)
+            u = dr.detach(p) - step
             u = type(p)(u)
-            ek.enable_grad(u)
+            dr.enable_grad(u)
             self.variables[k] = u
-            ek.schedule(self.variables[k])
+            dr.schedule(self.variables[k])
 
-        ek.eval()
+        dr.eval()
 
     def reset(self, key):
         """Zero-initializes the internal state associated with a parameter"""
         p = self.variables[key]
-        shape = ek.shape(p) if p.IsTensor else ek.width(p)
-        self.state[key] = (ek.zero(ek.detached_t(p), shape),
-                           ek.zero(ek.detached_t(p), shape))
+        shape = dr.shape(p) if p.IsTensor else dr.width(p)
+        self.state[key] = (dr.zero(dr.detached_t(p), shape),
+                           dr.zero(dr.detached_t(p), shape))
         self.t[key] = 0
 
     def __repr__(self):

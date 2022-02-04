@@ -29,7 +29,7 @@ public:
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        return ek::select(x >= -.5f && x < .5f, Float(1.f), Float(0.f));
+        return dr::select(x >= -.5f && x < .5f, Float(1.f), Float(0.f));
     }
 
     std::string to_string() const override { return "BoxFilter[]"; }

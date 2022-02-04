@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/interaction.h>
-#include <enoki/vcall.h>
+#include <drjit/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -182,7 +182,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
 
     using Vector3f = Vector<Float, 3>;
-    using UInt32   = ek::uint32_array_t<Float>;
+    using UInt32   = dr::uint32_array_t<Float>;
 
     //! @}
     // =============================================================
@@ -234,7 +234,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
+    DRJIT_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
 };
 
 
@@ -468,7 +468,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::BSDF)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::BSDF)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -515,11 +515,11 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 
     /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
     /// differentials
-    if constexpr (!ek::is_diff_array_v<Float>) {
-        if (!has_uv_partials() && ek::any(bsdf->needs_differentials()))
+    if constexpr (!dr::is_diff_array_v<Float>) {
+        if (!has_uv_partials() && dr::any(bsdf->needs_differentials()))
             compute_uv_partials(ray);
     } else {
-        ENOKI_MARK_USED(ray);
+        DRJIT_MARK_USED(ray);
     }
 
     return bsdf;
@@ -532,20 +532,20 @@ MTS_EXTERN_CLASS_RENDER(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for vectorized function calls
+//! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
-    ENOKI_VCALL_METHOD(sample)
-    ENOKI_VCALL_METHOD(eval)
-    ENOKI_VCALL_METHOD(eval_null_transmission)
-    ENOKI_VCALL_METHOD(pdf)
-    ENOKI_VCALL_METHOD(eval_pdf)
-    ENOKI_VCALL_GETTER(flags, uint32_t)
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
+    DRJIT_VCALL_METHOD(sample)
+    DRJIT_VCALL_METHOD(eval)
+    DRJIT_VCALL_METHOD(eval_null_transmission)
+    DRJIT_VCALL_METHOD(pdf)
+    DRJIT_VCALL_METHOD(eval_pdf)
+    DRJIT_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
     }
-ENOKI_VCALL_TEMPLATE_END(mitsuba::BSDF)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::BSDF)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -53,12 +53,12 @@ public:
             m_position = ScalarPoint3f(m_to_world.scalar().translation());
         }
 
-        ek::make_opaque(m_position);
+        dr::make_opaque(m_position);
 
         m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
         m_needs_sample_3 = false;
         m_flags = +EmitterFlags::DeltaPosition;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -68,9 +68,9 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, weight] = sample_wavelengths(
-            ek::zero<SurfaceInteraction3f>(), wavelength_sample, active);
+            dr::zero<SurfaceInteraction3f>(), wavelength_sample, active);
 
-        weight *= 4.f * ek::Pi<Float>;
+        weight *= 4.f * dr::Pi<Float>;
 
         Ray3f ray(m_position.value(),
                   warp::square_to_uniform_sphere(dir_sample), time,
@@ -94,18 +94,18 @@ public:
         ds.emitter = this;
         ds.d       = ds.p - it.p;
 
-        Float dist2    = ek::squared_norm(ds.d),
-              inv_dist = ek::rsqrt(dist2);
+        Float dist2    = dr::squared_norm(ds.d),
+              inv_dist = dr::rsqrt(dist2);
 
         // Redundant sqrt (removed by the JIT when the 'dist' field is not used)
-        ds.dist = ek::sqrt(dist2);
+        ds.dist = dr::sqrt(dist2);
         ds.d *= inv_dist;
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec =
-            m_intensity->eval(si, active) * ek::sqr(inv_dist);
+            m_intensity->eval(si, active) * dr::sqr(inv_dist);
 
         return { ds, depolarizer<Spectrum>(spec) };
     }
@@ -118,11 +118,11 @@ public:
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec = m_intensity->eval(si, active) *
-                                   ek::rcp(ek::squared_norm(ds.p - it.p));
+                                   dr::rcp(dr::squared_norm(ds.p - it.p));
 
         return depolarizer<Spectrum>(spec);
     }
@@ -132,7 +132,7 @@ public:
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        PositionSample3f ps = ek::zero<PositionSample3f>();
+        PositionSample3f ps = dr::zero<PositionSample3f>();
         ps.p = m_position.value();
         ps.time = time;
         ps.delta = true;
@@ -163,7 +163,7 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "position")) {
             m_position = m_position.value(); // update scalar part as well
-            ek::make_opaque(m_position);
+            dr::make_opaque(m_position);
         }
     }
 

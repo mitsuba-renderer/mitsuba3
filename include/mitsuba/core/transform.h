@@ -9,8 +9,8 @@
 #endif
 
 #include <mitsuba/core/ray.h>
-#include <enoki/transform.h>
-#include <enoki/sphere.h>
+#include <drjit/transform.h>
+#include <drjit/sphere.h>
 
 NAMESPACE_BEGIN(mitsuba)
 /**
@@ -30,10 +30,10 @@ template <typename Point_> struct Transform {
 
     static constexpr size_t Size = Point_::Size;
 
-    using Float   = ek::value_t<Point_>;
-    using Matrix  = ek::Matrix<Float, Size>;
-    using Mask    = ek::mask_t<Float>;
-    using Scalar  = ek::scalar_t<Float>;
+    using Float   = dr::value_t<Point_>;
+    using Matrix  = dr::Matrix<Float, Size>;
+    using Mask    = dr::mask_t<Float>;
+    using Scalar  = dr::scalar_t<Float>;
 
     //! @}
     // =============================================================
@@ -42,8 +42,8 @@ template <typename Point_> struct Transform {
     //! @{ \name Fields
     // =============================================================
 
-    Matrix matrix            = ek::identity<Matrix>();
-    Matrix inverse_transpose = ek::identity<Matrix>();
+    Matrix matrix            = dr::identity<Matrix>();
+    Matrix inverse_transpose = dr::identity<Matrix>();
 
     //! @}
     // =============================================================
@@ -55,7 +55,7 @@ template <typename Point_> struct Transform {
     /// Initialize the transformation from the given matrix (and compute its inverse transpose)
     Transform(const Matrix &value)
         : matrix(value),
-          inverse_transpose(ek::inverse_transpose(value)) { }
+          inverse_transpose(dr::inverse_transpose(value)) { }
 
     /// Initialize the transformation from the given matrix and its inverse
     Transform(const Matrix &value, const Matrix &inv)
@@ -75,7 +75,7 @@ template <typename Point_> struct Transform {
 
     /// Get the translation part of a matrix
     Vector<Float, Size - 1> translation() const {
-        return ek::head<Size - 1>(matrix.entry(Size - 1));
+        return dr::head<Size - 1>(matrix.entry(Size - 1));
     }
 
     /// Equality comparison operator
@@ -100,62 +100,62 @@ template <typename Point_> struct Transform {
     }
 
     /// Transform a point (handles affine/non-perspective transformations only)
-    template <typename T, typename Expr = ek::expr_t<Float, T>>
+    template <typename T, typename Expr = dr::expr_t<Float, T>>
     MTS_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
-        ek::Array<Expr, Size> result = matrix.entry(Size - 1);
+        dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
-        ENOKI_UNROLL for (size_t i = 0; i < Size - 1; ++i)
-            result = ek::fmadd(matrix.entry(i), arg.entry(i), result);
+        DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+            result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
-        return ek::head<Size - 1>(result); // no-op
+        return dr::head<Size - 1>(result); // no-op
     }
 
     /**
      * \brief Transform a 3D point
      * \remark In the Python API, one should use the \c @ operator
      */
-    template <typename T, typename Expr = ek::expr_t<Float, T>>
+    template <typename T, typename Expr = dr::expr_t<Float, T>>
     MTS_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
-        ek::Array<Expr, Size> result = matrix.entry(Size - 1);
+        dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
-        ENOKI_UNROLL for (size_t i = 0; i < Size - 1; ++i)
-            result = ek::fmadd(matrix.entry(i), arg.entry(i), result);
+        DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+            result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
-        return ek::head<Size - 1>(result) / result.entry(Size - 1);
+        return dr::head<Size - 1>(result) / result.entry(Size - 1);
     }
 
     /**
      * \brief Transform a 3D vector
      * \remark In the Python API, one should use the \c @ operator
      */
-    template <typename T, typename Expr = ek::expr_t<Float, T>>
+    template <typename T, typename Expr = dr::expr_t<Float, T>>
     MTS_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
-        ek::Array<Expr, Size> result = matrix.entry(0);
+        dr::Array<Expr, Size> result = matrix.entry(0);
         result *= arg.x();
 
-        ENOKI_UNROLL for (size_t i = 1; i < Size - 1; ++i)
-            result = ek::fmadd(matrix.entry(i), arg.entry(i), result);
+        DRJIT_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+            result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
-        return ek::head<Size - 1>(result); // no-op
+        return dr::head<Size - 1>(result); // no-op
     }
 
     /**
      * \brief Transform a 3D normal vector
      * \remark In the Python API, one should use the \c @ operator
      */
-    template <typename T, typename Expr = ek::expr_t<Float, T>>
+    template <typename T, typename Expr = dr::expr_t<Float, T>>
     MTS_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
-        ek::Array<Expr, Size> result = inverse_transpose.entry(0);
+        dr::Array<Expr, Size> result = inverse_transpose.entry(0);
         result *= arg.x();
 
-        ENOKI_UNROLL for (size_t i = 1; i < Size - 1; ++i)
-            result = ek::fmadd(inverse_transpose.entry(i), arg.entry(i), result);
+        DRJIT_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+            result = dr::fmadd(inverse_transpose.entry(i), arg.entry(i), result);
 
-        return ek::head<Size - 1>(result); // no-op
+        return dr::head<Size - 1>(result); // no-op
     }
 
     /// Transform a ray (for perspective transformations)
-    template <typename T, typename Spectrum, typename Expr = ek::expr_t<Float, T>,
+    template <typename T, typename Spectrum, typename Expr = dr::expr_t<Float, T>,
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
     MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(operator*(ray.o), operator*(ray.d), ray.maxt, ray.time,
@@ -163,7 +163,7 @@ template <typename Point_> struct Transform {
     }
 
     /// Transform a ray (for affine/non-perspective transformations)
-    template <typename T, typename Spectrum, typename Expr = ek::expr_t<Float, T>,
+    template <typename T, typename Spectrum, typename Expr = dr::expr_t<Float, T>,
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
     MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(transform_affine(ray.o), transform_affine(ray.d),
@@ -172,28 +172,28 @@ template <typename Point_> struct Transform {
 
     /// Create a translation transformation
     static Transform translate(const Vector<Float, Size - 1> &v) {
-        return Transform(ek::translate<Matrix>(v),
-                         transpose(ek::translate<Matrix>(-v)));
+        return Transform(dr::translate<Matrix>(v),
+                         transpose(dr::translate<Matrix>(-v)));
     }
 
     /// Create a scale transformation
     static Transform scale(const Vector<Float, Size - 1> &v) {
-        return Transform(ek::scale<Matrix>(v),
+        return Transform(dr::scale<Matrix>(v),
                          // No need to transpose a diagonal matrix.
-                         ek::scale<Matrix>(ek::rcp(v)));
+                         dr::scale<Matrix>(dr::rcp(v)));
     }
 
     /// Create a rotation transformation around an arbitrary axis in 3D. The angle is specified in degrees
-    template <size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform rotate(const Vector<Float, Size - 1> &axis, const Float &angle) {
-        Matrix matrix = ek::rotate<Matrix>(axis, ek::deg_to_rad(angle));
+        Matrix matrix = dr::rotate<Matrix>(axis, dr::deg_to_rad(angle));
         return Transform(matrix, matrix);
     }
 
     /// Create a rotation transformation in 2D. The angle is specified in degrees
-    template <size_t N = Size, ek::enable_if_t<N == 3> = 0>
+    template <size_t N = Size, dr::enable_if_t<N == 3> = 0>
     static Transform rotate(const Float &angle) {
-        Matrix matrix = ek::rotate<Matrix>(ek::deg_to_rad(angle));
+        Matrix matrix = dr::rotate<Matrix>(dr::deg_to_rad(angle));
         return Transform(matrix, matrix);
     }
 
@@ -212,20 +212,20 @@ template <typename Point_> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    template <size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform perspective(Float fov, Float near_, Float far_) {
         Float recip = 1.f / (far_ - near_);
 
         /* Perform a scale so that the field of view is mapped
            to the interval [-1, 1] */
-        Float tan = ek::tan(ek::deg_to_rad(fov * .5f)),
+        Float tan = dr::tan(dr::deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
-        Matrix trafo = ek::diag(Vector<Float, Size>(cot, cot, far_ * recip, 0.f));
+        Matrix trafo = dr::diag(Vector<Float, Size>(cot, cot, far_ * recip, 0.f));
         trafo(2, 3) = -near_ * far_ * recip;
         trafo(3, 2) = 1.f;
 
-        Matrix inv_trafo = ek::diag(Vector<Float, Size>(tan, tan, 0.f, ek::rcp(near_)));
+        Matrix inv_trafo = dr::diag(Vector<Float, Size>(tan, tan, 0.f, dr::rcp(near_)));
         inv_trafo(2, 3) = 1.f;
         inv_trafo(3, 2) = (near_ - far_) / (far_ * near_);
 
@@ -238,7 +238,7 @@ template <typename Point_> struct Transform {
      * \param near Near clipping plane
      * \param far  Far clipping plane
      */
-    template <size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform orthographic(Float near_, Float far_) {
         return scale({1.f, 1.f, 1.f / (far_ - near_)}) *
                translate({ 0.f, 0.f, -near_ });
@@ -250,45 +250,45 @@ template <typename Point_> struct Transform {
      * \param target Target vector
      * \param up     Up vector
      */
-    template <size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform look_at(const Point<Float, 3> &origin,
                              const Point<Float, 3> &target,
                              const Vector<Float, 3> &up) {
-        using Vector1 = ek::Array<Scalar, 1>;
+        using Vector1 = dr::Array<Scalar, 1>;
         using Vector3 = Vector<Float, 3>;
 
-        Vector3 dir    = ek::normalize(target - origin);
-        Vector3 left   = ek::normalize(ek::cross(up, dir));
-        Vector3 new_up = ek::cross(dir, left);
+        Vector3 dir    = dr::normalize(target - origin);
+        Vector3 left   = dr::normalize(dr::cross(up, dir));
+        Vector3 new_up = dr::cross(dir, left);
 
         Vector1 z(0);
         Matrix result = Matrix(
-            ek::concat(left, z),
-            ek::concat(new_up, z),
-            ek::concat(dir, z),
-            ek::concat(origin, Vector1(1))
+            dr::concat(left, z),
+            dr::concat(new_up, z),
+            dr::concat(dir, z),
+            dr::concat(origin, Vector1(1))
         );
 
-        Matrix inverse = ek::transpose(Matrix(
-            ek::concat(left, z),
-            ek::concat(new_up, z),
-            ek::concat(dir, z),
+        Matrix inverse = dr::transpose(Matrix(
+            dr::concat(left, z),
+            dr::concat(new_up, z),
+            dr::concat(dir, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         ));
 
-        inverse[3] = inverse * ek::concat(-origin, Vector1(1));
+        inverse[3] = inverse * dr::concat(-origin, Vector1(1));
 
-        return Transform(result, ek::transpose(inverse));
+        return Transform(result, dr::transpose(inverse));
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'
-    template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Value> &frame) {
-        ek::Array<Scalar, 1> z(0);
+        dr::Array<Scalar, 1> z(0);
         Matrix result = Matrix(
-            ek::concat(frame.s, z),
-            ek::concat(frame.t, z),
-            ek::concat(frame.n, z),
+            dr::concat(frame.s, z),
+            dr::concat(frame.t, z),
+            dr::concat(frame.n, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
@@ -296,13 +296,13 @@ template <typename Point_> struct Transform {
     }
 
     /// Creates a transformation that converts from 'frame' to the standard basis
-    template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
+    template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Value> &frame) {
-        ek::Array<Scalar, 1> z(0);
-        Matrix result = ek::transpose(Matrix(
-            ek::concat(frame.s, z),
-            ek::concat(frame.t, z),
-            ek::concat(frame.n, z),
+        dr::Array<Scalar, 1> z(0);
+        Matrix result = dr::transpose(Matrix(
+            dr::concat(frame.s, z),
+            dr::concat(frame.t, z),
+            dr::concat(frame.n, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         ));
 
@@ -330,7 +330,7 @@ template <typename Point_> struct Transform {
                 for (size_t k = 0; k < Size - 1; ++k)
                     sum += matrix[i][k] * matrix[j][k];
 
-                mask |= ek::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
+                mask |= dr::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
             }
         }
         return mask;
@@ -365,7 +365,7 @@ template <typename Point_> struct Transform {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(Transform, matrix, inverse_transpose)
+    DRJIT_STRUCT(Transform, matrix, inverse_transpose)
 };
 
 /**
@@ -431,20 +431,20 @@ public:
     // TODO move this method definition to transform.cpp
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     template <typename T>
-    Transform<Point<T, 4>> eval(T time, ek::mask_t<T> active = true) const {
-        using Index        = ek::uint32_array_t<T>;
-        using Value        = ek::replace_scalar_t<T, Float>; // ensure we are working with Float32
-        using Matrix3f     = ek::Matrix<Value, 3>;
-        using Matrix4f     = ek::Matrix<Value, 4>;
-        using Quaternion4f = ek::Quaternion<Value>;
+    Transform<Point<T, 4>> eval(T time, dr::mask_t<T> active = true) const {
+        using Index        = dr::uint32_array_t<T>;
+        using Value        = dr::replace_scalar_t<T, Float>; // ensure we are working with Float32
+        using Matrix3f     = dr::Matrix<Value, 3>;
+        using Matrix4f     = dr::Matrix<Value, 4>;
+        using Quaternion4f = dr::Quaternion<Value>;
         using Vector3f     = Vector<Value, 3>;
 
         static_assert(!std::is_integral_v<T>,
                       "AnimatedTransform::eval() should be called with a "
                       "floating point-typed `time` parameter");
 
-        ENOKI_MARK_USED(time);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(time);
+        DRJIT_MARK_USED(active);
         return Transform<Point<T, 4>>(m_transform.matrix);
 
         // TODO
@@ -457,7 +457,7 @@ public:
         //     (uint32_t) size(),
         //     [&](Index idx) {
         //         constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
-        //         return ek::gather<Value, Stride_>(m_keyframes.data(), idx, active) < time;
+        //         return dr::gather<Value, Stride_>(m_keyframes.data(), idx, active) < time;
         //     });
 
         // Index idx1 = idx0 + 1;
@@ -469,28 +469,28 @@ public:
         // constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
 
         // // Compute the relative time value in [0, 1]
-        // Value t0 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
-        //       t1 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
-        //       t  = ek::min(ek::max((time - t0) / (t1 - t0), 0.f), 1.f);
+        // Value t0 = dr::gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
+        //       t1 = dr::gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
+        //       t  = dr::min(dr::max((time - t0) / (t1 - t0), 0.f), 1.f);
 
         // // Interpolate the scale matrix
-        // Matrix3f scale0 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
-        //          scale1 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
+        // Matrix3f scale0 = dr::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
+        //          scale1 = dr::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
         //          scale  = scale0 * (1 - t) + scale1 * t;
 
         // // Interpolate the rotation quaternion
-        // Quaternion4f quat0 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
-        //              quat1 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
-        //              quat = ek::slerp(quat0, quat1, t);
+        // Quaternion4f quat0 = dr::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
+        //              quat1 = dr::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
+        //              quat = dr::slerp(quat0, quat1, t);
 
         // // Interpolate the translation component
-        // Vector3f trans0 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
-        //          trans1 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
+        // Vector3f trans0 = dr::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
+        //          trans1 = dr::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
         //          trans = trans0 * (1 - t) + trans1 * t;
 
         // return Transform<Point<T, 4>>(
-        //     ek::transform_compose<Matrix4f>(scale, quat, trans),
-        //     ek::transform_compose_inverse<Matrix4f>(scale, quat, trans)
+        //     dr::transform_compose<Matrix4f>(scale, quat, trans),
+        //     dr::transform_compose_inverse<Matrix4f>(scale, quat, trans)
         // );
     }
 

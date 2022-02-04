@@ -9,8 +9,8 @@
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
 
-#include <enoki-thread/thread.h>
-#include <enoki/half.h>
+#include <drjit-thread/thread.h>
+#include <drjit/half.h>
 
 /* libpng */
 #include <png.h>
@@ -290,9 +290,9 @@ resample(Bitmap *target, const Bitmap *source,
             }
         }
 
-        ek::parallel_for(
-            ek::blocked_range<size_t>(0, source->height(), 100),
-            [&](const ek::blocked_range<size_t> &range) {
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, source->height(), 100),
+            [&](const dr::blocked_range<size_t> &range) {
                 for (auto y = range.begin(); y != range.end(); ++y) {
                     const Scalar *s = (const Scalar *) source->uint8_data() +
                                       y * (size_t) source->width() * channels;
@@ -313,9 +313,9 @@ resample(Bitmap *target, const Bitmap *source,
         r.set_boundary_condition(bc.second);
         r.set_clamp(clamp);
 
-        ek::parallel_for(
-            ek::blocked_range<size_t>(0, source->width(), 100),
-            [&](const ek::blocked_range<size_t> &range) {
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, source->width(), 100),
+            [&](const dr::blocked_range<size_t> &range) {
                 for (auto x = range.begin(); x != range.end(); ++x) {
                     const Scalar *s = (const Scalar *) source->uint8_data() +
                                       x * channels;
@@ -345,7 +345,7 @@ void Bitmap::resample(
 
     switch (m_component_format) {
         case Struct::Type::Float16:
-            mitsuba::resample<ek::half, false>(target, this, rfilter, bc,
+            mitsuba::resample<dr::half, false>(target, this, rfilter, bc,
                                                clamp, temp);
             break;
 
@@ -549,7 +549,7 @@ void Bitmap::accumulate(const Bitmap *source,
             break;
 
         case Struct::Type::Float16:
-            accumulate_2d((const ek::half *) source->data(), source->size(), (ek::half *) data(),
+            accumulate_2d((const dr::half *) source->data(), source->size(), (dr::half *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
@@ -803,7 +803,7 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
 
 void Bitmap::write_async(const fs::path &path, FileFormat format, int quality) const {
     this->inc_ref();
-    Task *task = ek::do_async([path, format, quality, this](){
+    Task *task = dr::do_async([path, format, quality, this](){
         write(path, format, quality);
         this->dec_ref();
     });
@@ -898,7 +898,7 @@ private:
     ref<Stream> m_stream;
 };
 
-/// Dispatch parallel OpenEXR work via enoki-thread
+/// Dispatch parallel OpenEXR work via drjit-thread
 class EXRThreadPool : public IlmThread::ThreadPoolProvider {
 public:
     int numThreads() const override {
@@ -910,7 +910,7 @@ public:
     }
 
     void addTask(IlmThread::Task* task) override {
-        Task *t = ek::do_async([task]() {
+        Task *t = dr::do_async([task]() {
             task->execute();
             IlmThread::TaskGroup *group = task->group();
             delete task;
@@ -1207,7 +1207,7 @@ void Bitmap::read_exr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((ek::half *) m_data.get()); break;
+            case Struct::Type::Float16: convert((dr::half *) m_data.get()); break;
             case Struct::Type::Float32: convert((float *)       m_data.get()); break;
             case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
@@ -1278,7 +1278,7 @@ void Bitmap::read_exr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((ek::half *) m_data.get()); break;
+            case Struct::Type::Float16: convert((dr::half *) m_data.get()); break;
             case Struct::Type::Float32: convert((float *)       m_data.get()); break;
             case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
@@ -2207,7 +2207,7 @@ void Bitmap::read_pfm(Stream *stream) {
     }
     stream->set_byte_order(byte_order);
 
-    float scale = ek::abs(scale_and_order);
+    float scale = dr::abs(scale_and_order);
     if (scale != 1) {
         for (size_t i = 0; i < size; ++i)
             data[i] *= scale;
@@ -2302,7 +2302,7 @@ void Bitmap::read_bmp(Stream *stream) {
         if (compression_type != 0)
             Throw("read_bmp(): Compressed files are currently not supported!");
 
-        m_size = Vector2u(width, ek::abs(height));
+        m_size = Vector2u(width, dr::abs(height));
         m_component_format = Struct::Type::UInt8;
         m_srgb_gamma = true;
         m_premultiplied_alpha = true;
@@ -2327,7 +2327,7 @@ void Bitmap::read_bmp(Stream *stream) {
             fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
             m_pixel_format, m_component_format);
         size_t row_size = size / m_size.y();
-        size_t padding = (size_t) (-(ek::ssize_t) row_size & 3);
+        size_t padding = (size_t) (-(dr::ssize_t) row_size & 3);
         bool do_vflip = height > 0;
         uint8_t *ptr = uint8_data();
 

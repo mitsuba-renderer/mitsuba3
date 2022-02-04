@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 from mitsuba.python.test.util import fresolver_append_path
 
@@ -53,19 +53,19 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    init_vertex_pos = ek.unravel(Point3f, params[key])
+    init_vertex_pos = dr.unravel(Point3f, params[key])
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
+    dr.enable_grad(theta)
     trans = Vector3f([1.0, 0.0, 0.0])
     transform = Transform4f.translate(theta * trans)
     positions_new = transform @ init_vertex_pos
-    params[key] = ek.ravel(positions_new)
+    params[key] = dr.ravel(positions_new)
     params.update()
-    ek.forward(theta, ek.ADFlag.ClearEdges)
+    dr.forward(theta, dr.ADFlag.ClearEdges)
 
-    ek.set_label(theta, 'theta')
-    ek.set_label(params, 'params')
+    dr.set_label(theta, 'theta')
+    dr.set_label(params, 'params')
 
     d, det = reparameterize_ray(
         scene=scene,
@@ -81,25 +81,25 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     assert d == ray.d
     assert det == 1.0
 
-    ek.set_label(d, 'd')
-    ek.set_label(det, 'det')
+    dr.set_label(d, 'd')
+    dr.set_label(det, 'det')
 
-    # print(ek.graphviz_str(Float(1)))
+    # print(dr.graphviz_str(Float(1)))
 
-    ek.enqueue(ek.ADMode.Forward, params)
-    ek.traverse(mitsuba.core.Float, ek.ADMode.Forward)
+    dr.enqueue(dr.ADMode.Forward, params)
+    dr.traverse(mitsuba.core.Float, dr.ADMode.Forward)
 
-    grad_d = ek.grad(d)
+    grad_d = dr.grad(d)
 
     # Compute attached ray direction if the shape moves along the translation axis
     si_p = scene.ray_intersect(ray).p
-    new_d = ek.normalize((si_p + trans - ray.o))
+    new_d = dr.normalize((si_p + trans - ray.o))
 
     # Gradient should match direction difference along the translation axis
-    assert ek.allclose(ek.dot(new_d - ray.d, trans), ek.dot(grad_d, trans), atol=1e-2)
+    assert dr.allclose(dr.dot(new_d - ray.d, trans), dr.dot(grad_d, trans), atol=1e-2)
 
     # Other dimensions should be insignificant
-    assert ek.all(ek.dot(grad_d, 1-trans) < 1e-4)
+    assert dr.all(dr.dot(grad_d, 1-trans) < 1e-4)
 
 
 @pytest.mark.parametrize("ray_o, ray_d, ref, atol", [
@@ -116,7 +116,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
-    # ek.set_flag(ek.JitFlag.LoopRecord, False)
+    # dr.set_flag(dr.JitFlag.LoopRecord, False)
 
     grad_direction = Vector3f(1, 0, 0)
     grad_detergence = 0.0
@@ -134,16 +134,16 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
     params.keep([key])
 
     ray = Ray3f(ray_o, ray_d, 0.0, [])
-    ek.set_label(ray, 'ray')
+    dr.set_label(ray, 'ray')
 
     res_grad = 0.0
     for i in range(n_passes):
-        ek.enable_grad(params[key])
-        ek.set_grad(params[key], 0.0)
-        ek.set_label(params[key], key)
+        dr.enable_grad(params[key])
+        dr.set_grad(params[key], 0.0)
+        dr.set_label(params[key], key)
         params.set_dirty(key)
         params.update()
-        ek.eval()
+        dr.eval()
 
         d, det = reparameterize_ray(
             scene=scene,
@@ -157,19 +157,19 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
             unroll=unroll,
         )
 
-        ek.set_label(d, 'd')
-        ek.set_label(det, 'det')
+        dr.set_label(d, 'd')
+        dr.set_label(det, 'det')
 
-        # print(ek.graphviz_str(Float(1)))
+        # print(dr.graphviz_str(Float(1)))
 
-        ek.set_grad(d, grad_direction)
-        ek.set_grad(det, grad_detergence)
-        ek.enqueue(ek.ADMode.Backward, d, det)
-        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+        dr.set_grad(d, grad_direction)
+        dr.set_grad(det, grad_detergence)
+        dr.enqueue(dr.ADMode.Backward, d, det)
+        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
-        res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
+        res_grad += dr.unravel(Vector3f, dr.grad(params[key]))
 
-    assert ek.allclose(res_grad / float(n_passes), ref, atol=atol)
+    assert dr.allclose(res_grad / float(n_passes), ref, atol=atol)
 
 
 if __name__ == '__main__':
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     from mitsuba.python.ad import reparameterize_ray
     from mitsuba.python.ad.integrators.integrator import sample_sensor_rays
 
-    ek.set_flag(ek.JitFlag.LoopRecord, False)
+    dr.set_flag(dr.JitFlag.LoopRecord, False)
 
     res = 128
     spp = 2048
@@ -214,19 +214,19 @@ if __name__ == '__main__':
     params.keep([key])
 
     trans = Vector3f([1.0, 0.0, 0.0])
-    init_vertex_pos = ek.unravel(Point3f, params[key])
+    init_vertex_pos = dr.unravel(Point3f, params[key])
 
     theta = Float(0.0)
-    ek.enable_grad(theta)
-    ek.set_label(theta, 'theta')
+    dr.enable_grad(theta)
+    dr.set_label(theta, 'theta')
 
     transform = Transform4f.translate(theta * trans)
     positions_new = transform @ init_vertex_pos
-    params[key] = ek.ravel(positions_new)
+    params[key] = dr.ravel(positions_new)
     params.update()
-    ek.eval()
+    dr.eval()
 
-    ek.forward(theta, ek.ADFlag.ClearEdges)
+    dr.forward(theta, dr.ADFlag.ClearEdges)
 
     num_rays = 64
     exponent = 3.0
@@ -243,16 +243,16 @@ if __name__ == '__main__':
         exponent=exponent
     )
 
-    ek.set_label(d, 'd')
-    ek.set_label(det, 'det')
+    dr.set_label(d, 'd')
+    dr.set_label(det, 'det')
 
-    # print(ek.graphviz_str(Float(1)))
+    # print(dr.graphviz_str(Float(1)))
 
-    ek.enqueue(ek.ADMode.Forward, params)
-    ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+    dr.enqueue(dr.ADMode.Forward, params)
+    dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
 
-    grad_d = ek.grad(d)
-    grad_det = ek.grad(det)
+    grad_d = dr.grad(d)
+    grad_det = dr.grad(det)
 
     block = mitsuba.render.ImageBlock(
         [res, res],

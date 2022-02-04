@@ -39,7 +39,7 @@ public:
         /* Precompute a cheap approximation to the filter kernel.
            Unnecessary on NVIDIA GPUs that provide a fast exponential
            instruction via the MUFU (multi-function genrator). */
-        if constexpr (!ek::is_cuda_array_v<Float>) {
+        if constexpr (!dr::is_cuda_array_v<Float>) {
             /*
               Remez fit to exp(-x/2), obtained using:
 
@@ -62,11 +62,11 @@ public:
             double scale = 1;
             for (int i = 0; i < 10; ++i) {
                 coeff_s[i] = ScalarFloat(coeff[i] * scale);
-                scale /= ek::sqr((double) m_stddev);
+                scale /= dr::sqr((double) m_stddev);
             }
 
             // Ensure that we really reach zero at the boundary
-            coeff_s[0] -= ek::detail::estrin_impl(ek::sqr(m_radius), coeff_s);
+            coeff_s[0] -= dr::detail::estrin_impl(dr::sqr(m_radius), coeff_s);
 
             for (int i = 0; i < 10; ++i)
                 m_coeff[i] = coeff_s[i];
@@ -76,13 +76,13 @@ public:
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        if constexpr (!ek::is_cuda_array_v<Float>) {
-            return ek::max(ek::detail::estrin_impl(ek::sqr(x), m_coeff), 0.f);
+        if constexpr (!dr::is_cuda_array_v<Float>) {
+            return dr::max(dr::detail::estrin_impl(dr::sqr(x), m_coeff), 0.f);
         } else {
             // Use the base-2 exponential functions on NVIDIA hardware
-            ScalarFloat alpha = -1.f / (2.f * ek::sqr(m_stddev));
-            ScalarFloat bias = ek::exp(alpha * ek::sqr(m_radius));
-            return ek::max(0.f, ek::exp2((ek::InvLogTwo<Float> * alpha) * ek::sqr(x)) - bias);
+            ScalarFloat alpha = -1.f / (2.f * dr::sqr(m_stddev));
+            ScalarFloat bias = dr::exp(alpha * dr::sqr(m_radius));
+            return dr::max(0.f, dr::exp2((dr::InvLogTwo<Float> * alpha) * dr::sqr(x)) - bias);
         }
     }
 

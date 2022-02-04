@@ -4,7 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/render/fwd.h>
-#include <enoki/vcall.h>
+#include <drjit/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -94,7 +94,7 @@ public:
     /// Return a human-readable representation of the Medium
     std::string to_string() const override = 0;
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::Medium)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::Medium)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -114,20 +114,20 @@ MTS_EXTERN_CLASS_RENDER(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for packets of Medium pointers
+//! @{ \name Dr.Jit support for packets of Medium pointers
 // -----------------------------------------------------------------------
 
-ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
-    ENOKI_VCALL_GETTER(phase_function, const typename Class::PhaseFunction*)
-    ENOKI_VCALL_GETTER(use_emitter_sampling, bool)
-    ENOKI_VCALL_GETTER(is_homogeneous, bool)
-    ENOKI_VCALL_GETTER(has_spectral_extinction, bool)
-    ENOKI_VCALL_METHOD(get_combined_extinction)
-    ENOKI_VCALL_METHOD(intersect_aabb)
-    ENOKI_VCALL_METHOD(sample_interaction)
-    ENOKI_VCALL_METHOD(eval_tr_and_pdf)
-    ENOKI_VCALL_METHOD(get_scattering_coefficients)
-ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
+    DRJIT_VCALL_GETTER(phase_function, const typename Class::PhaseFunction*)
+    DRJIT_VCALL_GETTER(use_emitter_sampling, bool)
+    DRJIT_VCALL_GETTER(is_homogeneous, bool)
+    DRJIT_VCALL_GETTER(has_spectral_extinction, bool)
+    DRJIT_VCALL_METHOD(get_combined_extinction)
+    DRJIT_VCALL_METHOD(intersect_aabb)
+    DRJIT_VCALL_METHOD(sample_interaction)
+    DRJIT_VCALL_METHOD(eval_tr_and_pdf)
+    DRJIT_VCALL_METHOD(get_scattering_coefficients)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}
 // -----------------------------------------------------------------------

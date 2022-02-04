@@ -11,8 +11,8 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
-#include <enoki/packet.h>
-#include <enoki-jit/jit.h>
+#include <drjit/packet.h>
+#include <drjit-core/jit.h>
 
 #include "docstr.h"
 
@@ -90,21 +90,21 @@ py::handle type_of() {
         return py::type::of<T>();
 }
 
-#define MTS_PY_ENOKI_STRUCT_BIND_FIELD(x) \
+#define MTS_PY_DRJIT_STRUCT_BIND_FIELD(x) \
     fields[#x] = type_of<decltype(struct_type_().x)>();
 
-#define MTS_PY_ENOKI_STRUCT(cls, Type, ...)                                    \
+#define MTS_PY_DRJIT_STRUCT(cls, Type, ...)                                    \
     py::dict fields;                                                           \
     using struct_type_ = Type;                                                 \
-    ENOKI_MAP(MTS_PY_ENOKI_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
-    cls.attr("ENOKI_STRUCT") = fields;                                         \
+    DRJIT_MAP(MTS_PY_DRJIT_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
+    cls.attr("DRJIT_STRUCT") = fields;                                         \
     cls.def("assign", [](Type &a, const Type &b) {                             \
         if (&a != &b)                                                          \
             a = b;                                                             \
     });                                                                        \
     cls.def("__setitem__",                                                     \
             [](Type &type, const Mask &mask, const Type &value) {              \
-                type = ek::select(mask, value, type);                          \
+                type = dr::select(mask, value, type);                          \
             });
 
 template <typename Source, typename Target> void pybind11_type_alias() {
@@ -140,10 +140,10 @@ inline py::module_ create_submodule(py::module_ &m, const char *name) {
     return module;
 }
 
-template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
-    using Type = std::decay_t<std::remove_pointer_t<ek::value_t<Array>>>;
-    using UInt32 = ek::uint32_array_t<Array>;
-    using Mask = ek::mask_t<UInt32>;
+template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
+    using Type = std::decay_t<std::remove_pointer_t<dr::value_t<Array>>>;
+    using UInt32 = dr::uint32_array_t<Array>;
+    using Mask = dr::mask_t<UInt32>;
 
     cls.attr("eq_") = py::none();
     cls.attr("neq_") = py::none();
@@ -163,7 +163,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
        .def("entry_", [](const Array &a, size_t i) { return a.entry(i); })
        .def("eq_", &Array::eq_)
        .def("neq_", &Array::neq_)
-       .def("__setitem__", [](Array &a, const ek::mask_t<Array> &m, const Array &b) {
+       .def("__setitem__", [](Array &a, const dr::mask_t<Array> &m, const Array &b) {
            a[m] = b;
        })
        .def("__len__", [](Array a) { return a.size(); });
@@ -173,58 +173,58 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("Value") = py::type::of<Type>();
     cls.attr("MaskType") = py::type::of<Mask>();
     cls.attr("IsScalar") = false;
-    cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
-    cls.attr("IsLLVM") = ek::is_llvm_array_v<Array>;
-    cls.attr("IsCUDA") = ek::is_cuda_array_v<Array>;
-    cls.attr("Depth") = ek::array_depth_v<Array>;
-    cls.attr("Size")  = ek::array_size_v<Array>;
+    cls.attr("IsJIT") = dr::is_jit_array_v<Array>;
+    cls.attr("IsLLVM") = dr::is_llvm_array_v<Array>;
+    cls.attr("IsCUDA") = dr::is_cuda_array_v<Array>;
+    cls.attr("Depth") = dr::array_depth_v<Array>;
+    cls.attr("Size")  = dr::array_size_v<Array>;
     cls.attr("IsDiff") = false;
     cls.attr("IsQuaternion") = false;
     cls.attr("IsComplex") = false;
     cls.attr("IsMatrix") = false;
     cls.attr("IsTensor") = false;
-    cls.attr("IsEnoki") = true;
+    cls.attr("IsDrJit") = true;
     cls.attr("Prefix") = "Array";
-    cls.attr("Shape") = py::make_tuple(ek::Dynamic);
+    cls.attr("Shape") = py::make_tuple(dr::Dynamic);
 
-    if constexpr (ek::is_jit_array_v<Array>) {
+    if constexpr (dr::is_jit_array_v<Array>) {
         cls.def("index", [](const Array &a) { return a.index(); });
         cls.def("label_", [](const Array &a) { return a.label_(); });
         cls.def("set_label_", [](Array &a, const char *label) { a.set_label_(label); });
-        cls.def("set_index_", [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
+        cls.def("set_index_", [](Array &a, uint32_t index) { *dr::detach(a).index_ptr() = index; });
     }
 
     cls.def_static("gather_", [](const Array &source, const UInt32 &index,
                                  const Mask &mask, bool permute) {
         if (permute)
-            return ek::gather<Array, true>(source, index, mask);
+            return dr::gather<Array, true>(source, index, mask);
         else
-            return ek::gather<Array, false>(source, index, mask);
+            return dr::gather<Array, false>(source, index, mask);
     });
 
     cls.def_static("select_",
                    [](const Mask &m, const Array &t, const Array &f) {
-                       return ek::select(m, t, f);
+                       return dr::select(m, t, f);
                    });
 
     cls.def_static("reinterpret_array_",
-                   [](const ek::uint32_array_t<Array> &a) {
-                       return ek::reinterpret_array<Array>(a);
+                   [](const dr::uint32_array_t<Array> &a) {
+                       return dr::reinterpret_array<Array>(a);
                    });
 
-    if constexpr (ek::is_jit_array_v<Array>) {
-        py::module module = py::module::import("enoki");
-        if constexpr (ek::is_cuda_array_v<Array>)
+    if constexpr (dr::is_jit_array_v<Array>) {
+        py::module module = py::module::import("drjit");
+        if constexpr (dr::is_cuda_array_v<Array>)
             module = module.attr("cuda");
         else
             module = module.attr("llvm");
-        if constexpr (ek::is_diff_array_v<Array>)
+        if constexpr (dr::is_diff_array_v<Array>)
             module = module.attr("ad");
-        using UInt32 = ek::uint32_array_t<Array>;
+        using UInt32 = dr::uint32_array_t<Array>;
         py::class_<UInt32> uint32_obj = py::class_<UInt32>(module.attr("UInt32"));
         uint32_obj.def_static("reinterpret_array_",
                 [](const Array &a) {
-                    return ek::reinterpret_array<UInt32>(a);
+                    return dr::reinterpret_array<UInt32>(a);
                 });
     }
 }

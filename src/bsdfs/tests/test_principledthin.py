@@ -1,5 +1,5 @@
 import pytest
-import enoki as ek
+import drjit as dr
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 def test01_chi2_thin_front_side(variants_vec_backends_once_rgb):
@@ -11,7 +11,7 @@ def test01_chi2_thin_front_side(variants_vec_backends_once_rgb):
              <float name="eta" value="1.3296"/>
              <float name="diff_trans" value="0.6"/>
           """
-    wi = ek.normalize(ScalarVector3f([1, 0, 1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("principledthin", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -31,7 +31,7 @@ def test02_chi2_thin_back_side(variants_vec_backends_once_rgb):
              <float name="eta" value="1.3296"/>
              <float name="diff_trans" value="0.9"/>
         """
-    wi = ek.normalize(ScalarVector3f([1, 0, -1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, -1]))
     sample_func, pdf_func = BSDFAdapter("principledthin", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -112,8 +112,8 @@ def test03_eval_pdf_thin(variant_scalar_rgb):
     pdf = []
     evaluate = []
     for i in range(20):
-        theta = i / 19.0 * (ek.Pi / 2)
-        wo = [ek.sin(theta), 0, ek.cos(theta)]
-        assert ek.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
-        assert ek.allclose(bsdf.eval(ctx, si, wo=wo)[0], evaluate_true[i])
+        theta = i / 19.0 * (dr.Pi / 2)
+        wo = [dr.sin(theta), 0, dr.cos(theta)]
+        assert dr.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
+        assert dr.allclose(bsdf.eval(ctx, si, wo=wo)[0], evaluate_true[i])
         

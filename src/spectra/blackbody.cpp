@@ -70,10 +70,10 @@ public:
             /* The scale factors of 1e-9f are needed to perform a conversion between
                densities per unit nanometer and per unit meter. */
             Wavelength lambda  = wavelengths * 1e-9f,
-                       lambda2 = ek::sqr(lambda),
-                       lambda5 = ek::sqr(lambda2) * lambda;
+                       lambda2 = dr::sqr(lambda),
+                       lambda5 = dr::sqr(lambda2) * lambda;
 
-            ek::mask_t<Wavelength> active = active_;
+            dr::mask_t<Wavelength> active = active_;
             active &= wavelengths >= m_wavelength_range.x()
                    && wavelengths <= m_wavelength_range.y();
 
@@ -81,12 +81,12 @@ public:
                      per unit wavelength (nm^-1)
                      per unit steradian (sr^-1) */
             UnpolarizedSpectrum P = 1e-9f * c0 / (lambda5 *
-                    (ek::exp(c1 / (lambda * m_temperature)) - 1.f));
+                    (dr::exp(c1 / (lambda * m_temperature)) - 1.f));
 
             return P & active;
         } else {
-            ENOKI_MARK_USED(wavelengths);
-            ENOKI_MARK_USED(active_);
+            DRJIT_MARK_USED(wavelengths);
+            DRJIT_MARK_USED(active_);
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
         }
@@ -100,20 +100,20 @@ public:
     Wavelength pdf_spectrum(const SurfaceInteraction3f &si, Mask active_) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             Wavelength lambda  = si.wavelengths * 1e-9f,
-                       lambda2 = ek::sqr(lambda),
-                       lambda5 = ek::sqr(lambda2) * lambda;
+                       lambda2 = dr::sqr(lambda),
+                       lambda5 = dr::sqr(lambda2) * lambda;
 
-            ek::mask_t<Wavelength> active = active_;
+            dr::mask_t<Wavelength> active = active_;
             active &= si.wavelengths >= m_wavelength_range.x()
                    && si.wavelengths <= m_wavelength_range.y();
 
             // Wien's approximation to Planck's law
-            Wavelength pdf = 1e-9f * c0 * ek::exp(-c1 / (lambda * m_temperature))
+            Wavelength pdf = 1e-9f * c0 * dr::exp(-c1 / (lambda * m_temperature))
                 / (lambda5 * m_integral);
 
             return pdf & active;
         } else {
-            ENOKI_MARK_USED(active_);
+            DRJIT_MARK_USED(active_);
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
         }
@@ -121,21 +121,21 @@ public:
 
     template <typename Value>
     std::pair<Value, Value> cdf_and_pdf(Value lambda) const {
-        Value c1_2 = ek::sqr(c1),
+        Value c1_2 = dr::sqr(c1),
               c1_3 = c1_2 * c1,
-              c1_4 = ek::sqr(c1_2);
+              c1_4 = dr::sqr(c1_2);
 
         const Value K  = m_temperature,
-                    K2 = ek::sqr(K),
+                    K2 = dr::sqr(K),
                     K3 = K2*K;
 
         lambda *= 1e-9f;
 
-        Value lambda2 = ek::sqr(lambda),
+        Value lambda2 = dr::sqr(lambda),
               lambda3 = lambda2 * lambda,
               lambda5 = lambda2 * lambda3;
 
-        Value expval = ek::exp(-c1 / (K * lambda));
+        Value expval = dr::exp(-c1 / (K * lambda));
 
         Value cdf = c0 * K * expval *
                 (c1_3 + 3 * c1_2 * K * lambda + 6 * c1 * K2 * lambda2 +
@@ -151,12 +151,12 @@ public:
                     const Wavelength &sample_, Mask active_) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active_);
 
-        using WavelengthMask = ek::mask_t<Wavelength>;
+        using WavelengthMask = dr::mask_t<Wavelength>;
 
         if constexpr (is_spectral_v<Spectrum>) {
             WavelengthMask active = active_;
 
-            Wavelength sample = ek::fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));
+            Wavelength sample = dr::fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));
 
             const ScalarFloat eps        = 1e-5f,
                               eps_domain = eps * (m_wavelength_range.y() - m_wavelength_range.x()),
@@ -170,33 +170,33 @@ public:
             do {
                 // Fall back to a bisection step when t is out of bounds
                 WavelengthMask bisect_mask = !((t > a) && (t < b));
-                ek::masked(t, bisect_mask && active) = .5f * (a + b);
+                dr::masked(t, bisect_mask && active) = .5f * (a + b);
 
                 // Evaluate the definite integral and its derivative (i.e. the spline)
                 std::tie(value, deriv) = cdf_and_pdf(t);
                 value -= sample;
 
                 // Update which lanes are still active
-                active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
+                active = active && (dr::abs(value) > eps_value) && (b - a > eps_domain);
 
                 // Stop the iteration if converged
-                if (ek::none_nested(active))
+                if (dr::none_nested(active))
                     break;
 
                 // Update the bisection bounds
                 WavelengthMask update_mask = value <= 0.f;
-                ek::masked(a,  update_mask) = t;
-                ek::masked(b, !update_mask) = t;
+                dr::masked(a,  update_mask) = t;
+                dr::masked(b, !update_mask) = t;
 
                 // Perform a Newton step
-                ek::masked(t, active) = t - value / deriv;
+                dr::masked(t, active) = t - value / deriv;
             } while (true);
 
             Wavelength pdf = deriv / m_integral;
 
             return { t, eval_impl(t, active_) / pdf };
         } else {
-            ENOKI_MARK_USED(sample_);
+            DRJIT_MARK_USED(sample_);
             Throw("Not implemented for non-spectral modes");
         }
     }

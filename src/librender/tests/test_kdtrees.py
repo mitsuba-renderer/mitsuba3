@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 from .mesh_generation import create_stairs
 
@@ -17,9 +17,9 @@ def make_synthetic_scene(n_steps):
 
 
 def compare_results(res_a, res_b, atol=0.0):
-    assert ek.all(res_a.is_valid() == res_b.is_valid())
-    if ek.any(res_a.is_valid()):
-        assert ek.allclose(res_a.t, res_b.t, atol=atol), "\n%s\n\n%s" % (res_a.t, res_b.t)
+    assert dr.all(res_a.is_valid() == res_b.is_valid())
+    if dr.any(res_a.is_valid()):
+        assert dr.allclose(res_a.t, res_b.t, atol=atol), "\n%s\n\n%s" % (res_a.t, res_b.t)
 
 # ------------------------------------------------------------------------------
 
@@ -48,10 +48,10 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
             res         = scene.ray_intersect(r)
             res_shadow  = scene.ray_test(r)
 
-            step_idx = ek.floor((y * inv_n) * n_steps)
+            step_idx = dr.floor((y * inv_n) * n_steps)
 
-            assert ek.all(res_shadow)
-            assert ek.all(res_shadow == res_naive.is_valid())
+            assert dr.all(res_shadow)
+            assert dr.all(res_shadow == res_naive.is_valid())
             expected = SurfaceInteraction3f()
             expected.t = 2.0 - (step_idx / n_steps)
             compare_results(res_naive, expected, atol=1e-9)
@@ -90,5 +90,5 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
             res_naive  = scene.ray_intersect_naive(r)
             res        = scene.ray_intersect(r)
             res_shadow = scene.ray_test(r)
-            assert ek.all(res_shadow == res_naive.is_valid())
+            assert dr.all(res_shadow == res_naive.is_valid())
             compare_results(res_naive, res)

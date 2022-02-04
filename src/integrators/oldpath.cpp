@@ -124,15 +124,15 @@ public:
 
         // Account for directly visible emitter
         EmitterPtr emitter = si.emitter(scene);
-        if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+        if (dr::any_or<true>(dr::neq(emitter, nullptr)))
             result = emitter->eval(si, active);
 
         active &= si.is_valid() && depth < m_max_depth;
 
-        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
+        /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<Bool> loop("PathIntegrator",
+        dr::Loop<Bool> loop("PathIntegrator",
                             /* loop state: */ active, depth, ray,
                             throughput, result, si, eta, sampler);
 
@@ -142,10 +142,10 @@ public:
             BSDFPtr bsdf = si.bsdf(ray);
             Bool active_e = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
-            if (likely(ek::any_or<true>(active_e))) {
+            if (likely(dr::any_or<true>(active_e))) {
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
-                active_e &= ek::neq(ds.pdf, 0.f);
+                active_e &= dr::neq(ds.pdf, 0.f);
 
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
@@ -154,24 +154,24 @@ public:
                 auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                Float mis = ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+                Float mis = dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
                 if constexpr (is_polarized_v<Spectrum>)
                     result[active_e] += mis * throughput * bsdf_val * emitter_val;
                 else
-                    result[active_e] = ek::fmadd(mis * bsdf_val * emitter_val, throughput, result);
+                    result[active_e] = dr::fmadd(mis * bsdf_val * emitter_val, throughput, result);
             }
 
             // ----------------------- BSDF sampling ----------------------
 
-            // Sample BSDF * ek::cos(theta)
+            // Sample BSDF * dr::cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
             throughput = throughput * bsdf_val;
-            active &= ek::any(ek::neq(unpolarized_spectrum(throughput), 0.f));
-            if (ek::none_or<false>(active))
+            active &= dr::any(dr::neq(unpolarized_spectrum(throughput), 0.f));
+            if (dr::none_or<false>(active))
                 break;
 
             eta *= bs.eta;
@@ -183,23 +183,23 @@ public:
             DirectionSample3f ds(scene, si_bsdf, si);
 
             // Did we happen to hit an emitter?
-            if (ek::any_or<true>(ek::neq(ds.emitter, nullptr))) {
+            if (dr::any_or<true>(dr::neq(ds.emitter, nullptr))) {
                 Bool delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
                 /* If so, determine probability of having sampled that same
                    direction using the emitter sampling. */
                 Float emitter_pdf =
-                    ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
+                    dr::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
 
                 Float mis = mis_weight(bs.pdf, emitter_pdf);
                 EmitterPtr emitter_b = si_bsdf.emitter(scene, active);
-                if (ek::any_or<true>(ek::neq(emitter_b, nullptr))) {
+                if (dr::any_or<true>(dr::neq(emitter_b, nullptr))) {
                     Spectrum emitter_val = emitter_b->eval(si_bsdf, active);
 
                     if constexpr (is_polarized_v<Spectrum>)
                         result[active] += mis * throughput * emitter_val;
                     else
-                        result[active] = ek::fmadd(mis * emitter_val, throughput, result);
+                        result[active] = dr::fmadd(mis * emitter_val, throughput, result);
                 }
             }
 
@@ -213,10 +213,10 @@ public:
                index boundaries. Stop with at least some probability to avoid
                getting stuck (e.g. due to total internal reflection) */
             Bool use_rr = depth > m_rr_depth;
-            if (ek::any_or<true>(use_rr)) {
-                Float q = ek::min(ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
-                ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
-                ek::masked(throughput, use_rr) *= ek::detach(ek::rcp(q));
+            if (dr::any_or<true>(use_rr)) {
+                Float q = dr::min(dr::hmax(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
+                dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
+                dr::masked(throughput, use_rr) *= dr::detach(dr::rcp(q));
             }
         }
 
@@ -237,7 +237,7 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
-        return ek::select(ek::isfinite(w), w, 0.f);
+        return dr::select(dr::isfinite(w), w, 0.f);
     }
 
     Spectrum spec_fma(const Spectrum &a, const Spectrum &b,
@@ -245,7 +245,7 @@ public:
         if constexpr (is_polarized_v<Spectrum>)
             return a * b + c; // Mueller matrix multiplication
         else
-            return ek::fmadd(a, b, c);
+            return dr::fmadd(a, b, c);
     }
 
     MTS_DECLARE_CLASS()

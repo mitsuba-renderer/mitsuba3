@@ -110,7 +110,7 @@ public:
         m_sensor_area = image_rect.volume();
 
         m_flags = +EmitterFlags::DeltaPosition;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -124,7 +124,7 @@ public:
         auto [uv, pdf] = m_irradiance->sample_position(direction_sample, active);
 
         // 2. Sample spectrum (weight includes irradiance eval)
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.t                    = 0.f;
         si.time                 = time;
         si.p                    = m_to_world.value().translation();
@@ -134,7 +134,7 @@ public:
 
         // 4. Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera * Point3f(uv.x(), uv.y(), 0.f);
-        Vector3f near_dir = ek::normalize(near_p);
+        Vector3f near_dir = dr::normalize(near_p);
 
         // 5. Generate transformed ray
         Ray3f ray;
@@ -144,7 +144,7 @@ public:
         ray.d = m_to_world.value() * near_dir;
 
         // Scaling factor to match \ref sample_direction.
-        weight *= ek::Pi<ScalarFloat> * m_sensor_area;
+        weight *= dr::Pi<ScalarFloat> * m_sensor_area;
 
         return { ray, depolarizer<Spectrum>(weight / pdf) & active };
     }
@@ -158,11 +158,11 @@ public:
         Point it_local = m_to_world.value().inverse().transform_affine(it.p);
 
         // 2. Map to UV coordinates
-        Point2f uv = ek::head<2>(m_camera_to_sample * it_local);
-        active &= ek::all(uv >= 0 && uv <= 1) && it_local.z() > 0;
+        Point2f uv = dr::head<2>(m_camera_to_sample * it_local);
+        active &= dr::all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
-        SurfaceInteraction3f it_query = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f it_query = dr::zero<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
         it_query.uv = uv;
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
@@ -177,9 +177,9 @@ public:
         ds.delta   = true;
         ds.emitter = this;
         ds.d       = ds.p - it.p;
-        Float dist_squared = ek::squared_norm(ds.d);
-        ds.dist = ek::sqrt(dist_squared);
-        ds.d *= ek::rcp(ds.dist);
+        Float dist_squared = dr::squared_norm(ds.d);
+        ds.dist = dr::sqrt(dist_squared);
+        ds.d *= dr::rcp(ds.dist);
 
         /* Scale so that irradiance at z=1 is correct.
          * See the weight returned by \ref PerspectiveCamera::sample_direction
@@ -187,8 +187,8 @@ public:
          * Note that:
          *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
          */
-        spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) /
-                (ek::sqr(it_local.z()) * -ek::dot(ds.n, ds.d));
+        spec *= dr::Pi<Float> * m_intensity->eval(it_query, active) /
+                (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
 
         return { ds, depolarizer<Spectrum>(spec & active) };
     }

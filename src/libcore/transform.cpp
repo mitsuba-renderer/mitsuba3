@@ -11,7 +11,7 @@ void AnimatedTransform::append(const Keyframe &keyframe) {
               "strictly monotonically increasing!");
 
     if (m_keyframes.empty())
-        m_transform = Transform4f(ek::transform_compose<Matrix4f>(
+        m_transform = Transform4f(dr::transform_compose<Matrix4f>(
             keyframe.scale, keyframe.quat, keyframe.trans));
 
     m_keyframes.push_back(keyframe);
@@ -25,7 +25,7 @@ void AnimatedTransform::append(Float time, const Transform4f &trafo) {
     /* Perform a polar decomposition into a 3x3 scale/shear matrix,
        a rotation quaternion, and a translation vector. These will
        all be interpolated independently. */
-    auto [M, Q, T] = ek::transform_decompose(trafo.matrix);
+    auto [M, Q, T] = dr::transform_decompose(trafo.matrix);
 
     if (m_keyframes.empty())
         m_transform = trafo;
@@ -37,10 +37,10 @@ bool AnimatedTransform::has_scale() const {
     if (m_keyframes.empty())
         return false;
 
-    Matrix3f delta = ek::zero<Matrix3f>();
+    Matrix3f delta = dr::zero<Matrix3f>();
     for (auto const &k: m_keyframes)
-        delta += ek::abs(k.scale - ek::identity<Matrix3f>());
-    return ek::hsum_nested(delta) / m_keyframes.size() > 1e-3f;
+        delta += dr::abs(k.scale - dr::identity<Matrix3f>());
+    return dr::hsum_nested(delta) / m_keyframes.size() > 1e-3f;
 }
 
 typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds() const {

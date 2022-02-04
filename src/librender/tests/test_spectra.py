@@ -1,16 +1,16 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def test01_cie1931(variant_scalar_rgb):
     from mitsuba.core import cie1931_xyz, cie1931_y
     """CIE 1931 observer"""
     XYZw = cie1931_xyz(600)
-    assert ek.allclose(XYZw, [1.0622, 0.631, 0.000], atol=1e-3)
+    assert dr.allclose(XYZw, [1.0622, 0.631, 0.000], atol=1e-3)
 
     Y = cie1931_y(600)
-    assert ek.allclose(Y, 0.631)
+    assert dr.allclose(Y, 0.631)
 
 
 def test02_d65(variant_scalar_spectral):
@@ -23,8 +23,8 @@ def test02_d65(variant_scalar_spectral):
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
     ps = PositionSample3f()
 
-    assert ek.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
-                       ek.scalar.Array4f([0, 117.49, 71.6091, 0]) / 10568.0)
+    assert dr.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
+                       dr.scalar.Array4f([0, 117.49, 71.6091, 0]) / 10568.0)
 
 
 def test03_blackbody(variant_scalar_spectral):
@@ -38,7 +38,7 @@ def test03_blackbody(variant_scalar_spectral):
         <float name='temperature' value='5000'/>
     </spectrum>""")
     ps = PositionSample3f()
-    assert ek.allclose(bb.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
+    assert dr.allclose(bb.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
                        [0, 10997.9, 11812, 0])
 
 
@@ -76,7 +76,7 @@ def test04_srgb_d65(variant_scalar_spectral, np_rng):
         """.format(', '.join(map(str, normalized))))
 
 
-        assert ek.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
+        assert dr.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
                            d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)), atol=1e-5)
 
 
@@ -90,9 +90,9 @@ def test05_sample_rgb_spectrum(variant_scalar_spectral):
     def spot_check(sample, expected_wav, expected_weight):
         wav, weight = sample_rgb_spectrum(sample)
         pdf         = pdf_rgb_spectrum(wav)
-        assert ek.allclose(wav, expected_wav)
-        assert ek.allclose(weight, expected_weight)
-        assert ek.allclose(pdf, 1.0 / weight)
+        assert dr.allclose(wav, expected_wav)
+        assert dr.allclose(weight, expected_weight)
+        assert dr.allclose(pdf, 1.0 / weight)
 
     if (MTS_CIE_MIN == 360 and MTS_CIE_MAX == 830):
         spot_check(0.1, 424.343, 465.291)
@@ -136,9 +136,9 @@ def test06_rgb2spec_fetch_eval_mean(variant_scalar_spectral):
         mean  = srgb_model_mean(coeff)
         value = srgb_model_eval(coeff, wavelengths)
 
-        assert not ek.any(ek.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
-        assert not ek.any(ek.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
-        assert not ek.any(ek.isnan(value)), "{} => value = {}".format(rgb, value)
+        assert not dr.any(dr.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
+        assert not dr.any(dr.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
+        assert not dr.any(dr.isnan(value)), "{} => value = {}".format(rgb, value)
 
 
 def test07_cie1931_srgb_roundtrip(variants_vec_spectral):
@@ -147,14 +147,14 @@ def test07_cie1931_srgb_roundtrip(variants_vec_spectral):
 
     n = 50
     wavelengths = Spectrum(
-        ek.linspace(Float, 100, 1000, n),
-        ek.linspace(Float, 400, 500, n),
-        ek.linspace(Float, 100, 500, n),
-        ek.linspace(Float, 500, 1000, n)
+        dr.linspace(Float, 100, 1000, n),
+        dr.linspace(Float, 400, 500, n),
+        dr.linspace(Float, 100, 500, n),
+        dr.linspace(Float, 500, 1000, n)
     )
 
     srgb = spectrum_to_srgb(Spectrum(1.0), wavelengths)
     xyz = spectrum_to_xyz(Spectrum(1.0), wavelengths)
 
-    assert ek.allclose(xyz_to_srgb(xyz), srgb)
-    assert ek.allclose(srgb_to_xyz(srgb), xyz, atol=1e-6)
+    assert dr.allclose(xyz_to_srgb(xyz), srgb)
+    assert dr.allclose(srgb_to_xyz(srgb), xyz, atol=1e-6)

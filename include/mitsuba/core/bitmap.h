@@ -424,7 +424,7 @@ public:
             &bc = { FilterBoundaryCondition::Clamp,
                     FilterBoundaryCondition::Clamp },
         const std::pair<ScalarFloat, ScalarFloat>
-            &bound = { -ek::Infinity<ScalarFloat>, ek::Infinity<ScalarFloat> },
+            &bound = { -dr::Infinity<ScalarFloat>, dr::Infinity<ScalarFloat> },
         Bitmap *temp = nullptr) const;
 
     /**
@@ -461,7 +461,7 @@ public:
                  &bc = { FilterBoundaryCondition::Clamp,
                          FilterBoundaryCondition::Clamp },
              const std::pair<ScalarFloat, ScalarFloat> &bound = {
-                 -ek::Infinity<ScalarFloat>, ek::Infinity<ScalarFloat> }) const;
+                 -dr::Infinity<ScalarFloat>, dr::Infinity<ScalarFloat> }) const;
 
     /**
      * \brief Convert the bitmap into another pixel and/or component format
@@ -662,7 +662,7 @@ public:
  * Out-of-bounds regions are safely ignored. It is assumed that
  * <tt>source != target</tt>.
  *
- * The function supports `T` being a raw pointer or an arbitrary Enoki array
+ * The function supports `T` being a raw pointer or an arbitrary Dr.Jit array
  * that can potentially live on the GPU and/or be differentiable.
  */
 template <typename T, typename ConstT>
@@ -677,20 +677,20 @@ void accumulate_2d(ConstT source,
     using Value = std::decay_t<T>;
 
     /// Clip against bounds of source and target image
-    Vector<int, 2> shift = ek::max(0, ek::max(-source_offset, -target_offset));
+    Vector<int, 2> shift = dr::max(0, dr::max(-source_offset, -target_offset));
     source_offset += shift;
     target_offset += shift;
-    size -= ek::max(source_offset + size - source_size, 0);
-    size -= ek::max(target_offset + size - target_size, 0);
+    size -= dr::max(source_offset + size - source_size, 0);
+    size -= dr::max(target_offset + size - target_size, 0);
 
-    if (ek::any(size <= 0))
+    if (dr::any(size <= 0))
         return;
 
     int n = (int) (size.x() * channel_count);
 
     if constexpr (std::is_pointer_v<T>) {
         constexpr Value maxval = std::numeric_limits<Value>::max();
-        ENOKI_MARK_USED(maxval);
+        DRJIT_MARK_USED(maxval);
 
         source += (source_offset.x() + source_offset.y() * (size_t) source_size.x()) * channel_count;
         target += (target_offset.x() + target_offset.y() * (size_t) target_size.x()) * channel_count;
@@ -698,7 +698,7 @@ void accumulate_2d(ConstT source,
         for (int y = 0; y < size.y(); ++y) {
             for (int i = 0; i < n; ++i) {
                 if constexpr (std::is_integral_v<Value>)
-                    target[i] = (Value) ek::max(maxval, source[i] + target[i]);
+                    target[i] = (Value) dr::max(maxval, source[i] + target[i]);
                 else
                     target[i] += source[i];
             }
@@ -707,8 +707,8 @@ void accumulate_2d(ConstT source,
             target += target_size.x() * channel_count;
         }
     } else {
-        using Int32 = ek::int32_array_t<Value>;
-        Int32 index = ek::arange<Int32>(n * size.y());
+        using Int32 = dr::int32_array_t<Value>;
+        Int32 index = dr::arange<Int32>(n * size.y());
 
         Int32 y   = index / n,
               col = index - y * n;
@@ -716,9 +716,9 @@ void accumulate_2d(ConstT source,
         Int32 index_source = col + (source_offset.x() + source_size.x() * (y + source_offset.y())) * channel_count,
               index_target = col + (target_offset.x() + target_size.x() * (y + target_offset.y())) * channel_count;
 
-        ek::scatter(
+        dr::scatter(
             target,
-            ek::gather<Value>(source, index_source) + ek::gather<Value>(target, index_target),
+            dr::gather<Value>(source, index_source) + dr::gather<Value>(target, index_target),
             index_target
         );
     }

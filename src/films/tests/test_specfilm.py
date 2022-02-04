@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import mitsuba
 import pytest
 
@@ -56,9 +56,9 @@ def test03_crops(variant_scalar_spectral):
             <spectrum name="srf_test" value="500:1.0 700:2.0 750:3.0"/>
         </film>""")
     assert film is not None
-    assert ek.all(film.size() == [32, 21])
-    assert ek.all(film.crop_size() == [11, 5])
-    assert ek.all(film.crop_offset() == [2, 3])
+    assert dr.all(film.size() == [32, 21])
+    assert dr.all(film.crop_size() == [11, 5])
+    assert dr.all(film.crop_offset() == [2, 3])
     assert film.sample_border()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
@@ -76,9 +76,9 @@ def test03_crops(variant_scalar_spectral):
             <integer name="crop_height" value="1"/>
         </film>""")
     assert film is not None
-    assert ek.all(film.size() == [32, 21])
-    assert ek.all(film.crop_size() == [2, 1])
-    assert ek.all(film.crop_offset() == [30, 20])
+    assert dr.all(film.size() == [32, 21])
+    assert dr.all(film.crop_size() == [2, 1])
+    assert dr.all(film.crop_offset() == [30, 20])
 
 def test04_without_prepare(variant_scalar_spectral):
     film = mitsuba.core.load_dict({
@@ -108,12 +108,12 @@ def test05_empty_film(variants_all_spectral, develop):
     film.prepare([])
 
     if develop:
-        image = ek.ravel(film.develop())
-        assert ek.all((image == 0) | ek.isnan(image))
+        image = dr.ravel(film.develop())
+        assert dr.all((image == 0) | dr.isnan(image))
     else:
         from mitsuba.core import TensorXf
         image = TensorXf(film.bitmap())
-        assert ek.all((image == 0) | ek.isnan(image))
+        assert dr.all((image == 0) | dr.isnan(image))
 
 
 def test05_multiple_channels(variants_all_spectral):

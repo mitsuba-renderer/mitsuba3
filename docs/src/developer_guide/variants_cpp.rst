@@ -99,7 +99,7 @@ logic can no longer be carried out using ordinary ``if`` statements.
 
 The alternative operation ``enoki::select(mask, arg1, arg2)`` takes a *mask*
 argument (typically the result of a comparison) and evaluates ``(mask ? arg1 :
-arg2)`` in parallel for each lane. We refer to `Enoki's documentation
+arg2)`` in parallel for each lane. We refer to `Dr.Jit's documentation
 <https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_ for
 further information on working with masks. The following shows an example
 contrasting these two cases:
@@ -147,7 +147,7 @@ then reads:
 CUDA backend synchronization point
 ----------------------------------
 
-As described in Enoki's documentation on `GPU arrays
+As described in Dr.Jit's documentation on `GPU arrays
 <https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_,
 the ``cuda_*`` computational backends rely on a JIT compiler that dynamically
 generates kernels using NVIDIA's PTX intermediate language. This JIT compiler
@@ -204,10 +204,10 @@ pointer aliases are used as follows:
     // Array of pointers if Float is an array
     BSDFPtr bsdf = si.bsdf();
 
-    // Enoki is able to dispatch method calls involving arrays of pointers
+    // Dr.Jit is able to dispatch method calls involving arrays of pointers
     bsdf->eval(..., active);
 
-More information on vectorized method calls is provided in the `Enoki
+More information on vectorized method calls is provided in the `Dr.Jit
 documentation <https://enoki.readthedocs.io/en/master/calls.html>`_.
 
 Variant-specific code

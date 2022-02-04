@@ -10,7 +10,7 @@
 #include "sphere.cuh"
 #else
 
-#include <enoki-jit/optix.h>
+#include <drjit-core/optix.h>
 
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix_api.h>
@@ -111,7 +111,7 @@ void build_gas(const OptixDeviceContext &context,
             shape_subset[i]->optix_build_input(build_inputs[i]);
 
         // Ensure shape data pointers are fully evaluated before building the BVH
-        ek::sync_thread();
+        dr::sync_thread();
 
         OptixAccelBufferSizes buffer_sizes;
         jit_optix_check(optixAccelComputeMemoryUsage(

@@ -174,7 +174,7 @@ public:
                     parse_error |= cur == orig;
                 }
                 p = m_to_world.scalar().transform_affine(p);
-                if (unlikely(!all(ek::isfinite(p))))
+                if (unlikely(!all(dr::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
                 vertices.push_back(p);
@@ -187,8 +187,8 @@ public:
                     n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                n = ek::normalize(m_to_world.scalar().transform_affine(n));
-                if (unlikely(!all(ek::isfinite(n))))
+                n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                if (unlikely(!all(dr::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
                 normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
@@ -295,32 +295,32 @@ public:
                 InputFloat* texcoord_ptr = vertex_texcoords.get() + v->value * 2;
                 auto key = v->key;
 
-                ek::store(position_ptr, vertices[key[0] - 1]);
+                dr::store(position_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index >= texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    ek::store(texcoord_ptr, texcoords[map_index]);
+                    dr::store(texcoord_ptr, texcoords[map_index]);
                 }
 
                 if (!m_face_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index >= normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    ek::store(normal_ptr, normals[key[2] - 1]);
+                    dr::store(normal_ptr, normals[key[2] - 1]);
                 }
 
                 v = v->next;
             }
         }
 
-        m_faces = ek::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+        m_faces = dr::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
+        m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
         if (!m_face_normals)
-            m_vertex_normals   = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+            m_vertex_normals   = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (!texcoords.empty())
-            m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+            m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (!m_face_normals)

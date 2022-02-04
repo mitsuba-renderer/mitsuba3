@@ -117,7 +117,7 @@ static const char *__doc_OptixHitGroupData = R"doc(Stores information about a Sh
 
 static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory region of Shape data (e.g. ``OptixSphereData`` ))doc";
 
-static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Enoki's pointer registry)doc";
+static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Dr.Jit's pointer registry)doc";
 
 static const char *__doc_OptixInstance = R"doc()doc";
 
@@ -233,7 +233,7 @@ static const char *__doc_SbtRecord_data = R"doc()doc";
 
 static const char *__doc_SbtRecord_header = R"doc()doc";
 
-static const char *__doc_enoki_operator_lshift = R"doc(Prints the canonical representation of a PCG32 object.)doc";
+static const char *__doc_drjit_operator_lshift = R"doc(Prints the canonical representation of a PCG32 object.)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator =
 R"doc(Abstract adjoint integrator that performs Monte Carlo sampling
@@ -2798,7 +2798,7 @@ R"doc(Should regions slightly outside the image plane be sampled to improve
 the quality of the reconstruction at the edges? This only makes sense
 when reconstruction filters other than the box filter are used.)doc";
 
-static const char *__doc_mitsuba_Film_schedule_storage = R"doc(ek::schedule() variables that represent the internal film storage)doc";
+static const char *__doc_mitsuba_Film_schedule_storage = R"doc(dr::schedule() variables that represent the internal film storage)doc";
 
 static const char *__doc_mitsuba_Film_sensor_response_function = R"doc(Returns the specific Sensor Response Function (SRF) used by the film)doc";
 
@@ -3484,7 +3484,7 @@ static const char *__doc_mitsuba_Interaction_time = R"doc(Time value associated 
 static const char *__doc_mitsuba_Interaction_wavelengths = R"doc(Wavelengths associated with the ray that produced this interaction)doc";
 
 static const char *__doc_mitsuba_Interaction_zero =
-R"doc(This callback method is invoked by ek::zero<>, and takes care of
+R"doc(This callback method is invoked by dr::zero<>, and takes care of
 fields that deviate from the standard zero-initialization convention.
 In this particular class, the ``t`` field should be set to an infinite
 value to mark invalid intersection records.)doc";
@@ -5053,7 +5053,7 @@ static const char *__doc_mitsuba_PreliminaryIntersection_shape_index = R"doc(Sha
 static const char *__doc_mitsuba_PreliminaryIntersection_t = R"doc(Distance traveled along the ray)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_zero =
-R"doc(This callback method is invoked by ek::zero<>, and takes care of
+R"doc(This callback method is invoked by dr::zero<>, and takes care of
 fields that deviate from the standard zero-initialization convention.
 In this particular class, the ``t`` field should be set to an infinite
 value to mark invalid intersection records.)doc";
@@ -5899,7 +5899,7 @@ static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two c
 
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
-static const char *__doc_mitsuba_Sampler_schedule_state = R"doc(ek::schedule() variables that represent the internal sampler state)doc";
+static const char *__doc_mitsuba_Sampler_schedule_state = R"doc(dr::schedule() variables that represent the internal sampler state)doc";
 
 static const char *__doc_mitsuba_Sampler_seed =
 R"doc(Deterministically seed the underlying RNG, if applicable.
@@ -6058,7 +6058,7 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
 
-static const char *__doc_mitsuba_Scene_emitters_ek = R"doc(Return the list of emitters as an Enoki array)doc";
+static const char *__doc_mitsuba_Scene_emitters_dr = R"doc(Return the list of emitters as an Dr.Jit array)doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
@@ -6113,7 +6113,7 @@ static const char *__doc_mitsuba_Scene_m_emitter_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_emitters_ek = R"doc()doc";
+static const char *__doc_mitsuba_Scene_m_emitters_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
@@ -6125,7 +6125,7 @@ static const char *__doc_mitsuba_Scene_m_shapegroups = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_shapes_ek = R"doc()doc";
+static const char *__doc_mitsuba_Scene_m_shapes_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes_grad_enabled = R"doc()doc";
 
@@ -6198,7 +6198,7 @@ function that is also available directly below (and preferable if a
 full SurfaceInteraction is not needed.).
 
 * Expanding the PreliminaryInteraction into a full SurfaceInteraction
-(this part happens within Mitsuba/Enoki and tracks derivative
+(this part happens within Mitsuba/Dr.Jit and tracks derivative
 information in AD variants of the system).
 
 </ol>
@@ -6277,7 +6277,7 @@ various other information (geometric and shading frame, texture
 coordinates, curvature, etc.) that is generally needed by shading
 models. In variants of Mitsuba that perform automatic differentiation,
 it is important to know that computation done by the ray tracing
-backend is not reflected in Enoki's computation graph. The
+backend is not reflected in Dr.Jit's computation graph. The
 ray_intersect() method will re-evaluate certain parts of the
 computation with derivative tracking to rectify this.
 
@@ -6382,7 +6382,7 @@ different aspects of the rendering process.
 
 This method should not be used for differentiable rendering, since the
 rendered image will be returned in the form of a Bitmap instance that
-isn't associated with Enoki's AD graph. We recommended that you use
+isn't associated with Dr.Jit's AD graph. We recommended that you use
 the Python interface for this, specifically the function
 ``mitsuba.python.ad.render()``.
 
@@ -6505,7 +6505,7 @@ static const char *__doc_mitsuba_Scene_shapes = R"doc(Return the list of shapes)
 
 static const char *__doc_mitsuba_Scene_shapes_2 = R"doc(Return the list of shapes)doc";
 
-static const char *__doc_mitsuba_Scene_shapes_ek = R"doc(Return the list of shapes as an Enoki array)doc";
+static const char *__doc_mitsuba_Scene_shapes_dr = R"doc(Return the list of shapes as an Dr.Jit array)doc";
 
 static const char *__doc_mitsuba_Scene_shapes_grad_enabled =
 R"doc(Specifies whether any of the scene's shape parameters have tracking
@@ -6513,7 +6513,7 @@ enabled
 
 Knowing this is important in the context of differentiable rendering:
 intersections (e.g. provided by OptiX or Embree) must then be re-
-computed differentiably within Enoki to correctly track gradient
+computed differentiably within Dr.Jit to correctly track gradient
 information. Furthermore, differentiable geometry introduces bias
 through visibility-induced discontinuities, and reparameterizations
 (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.)doc";
@@ -8652,10 +8652,10 @@ static const char *__doc_mitsuba_Thread_parent_2 = R"doc(Return the parent threa
 static const char *__doc_mitsuba_Thread_priority = R"doc(Return the thread priority)doc";
 
 static const char *__doc_mitsuba_Thread_register_external_thread =
-R"doc(Register a new thread (e.g. Enoki, Python) with Mituba thread system.
+R"doc(Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
 Returns true upon success.)doc";
 
-static const char *__doc_mitsuba_Thread_register_task = R"doc(Register enoki-thread Task to prevent internal resources leakage)doc";
+static const char *__doc_mitsuba_Thread_register_task = R"doc(Register drjit-thread Task to prevent internal resources leakage)doc";
 
 static const char *__doc_mitsuba_Thread_run = R"doc(The thread's run method)doc";
 
@@ -8708,9 +8708,9 @@ static const char *__doc_mitsuba_Thread_thread_id = R"doc(Return a unique ID tha
 
 static const char *__doc_mitsuba_Thread_to_string = R"doc(Return a string representation)doc";
 
-static const char *__doc_mitsuba_Thread_unregister_external_thread = R"doc(Unregister a thread (e.g. Enoki, Python) from Mitsuba's thread system.)doc";
+static const char *__doc_mitsuba_Thread_unregister_external_thread = R"doc(Unregister a thread (e.g. Dr.Jit, Python) from Mitsuba's thread system.)doc";
 
-static const char *__doc_mitsuba_Thread_wait_for_tasks = R"doc(Wait for previously registered enoki-thread tasks to complete)doc";
+static const char *__doc_mitsuba_Thread_wait_for_tasks = R"doc(Wait for previously registered drjit-thread tasks to complete)doc";
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 
@@ -9131,7 +9131,7 @@ specified offsets for both.
 Out-of-bounds regions are safely ignored. It is assumed that ``source
 != target``.
 
-The function supports `T` being a raw pointer or an arbitrary Enoki
+The function supports `T` being a raw pointer or an arbitrary Dr.Jit
 array that can potentially live on the GPU and/or be differentiable.)doc";
 
 static const char *__doc_mitsuba_bsdf =
@@ -9412,12 +9412,12 @@ version of a type
 
 This class implements a simple wrapper that replicates instance
 attributes on the host and device. This is only relevant when T is a
-JIT-compiled Enoki array (when compiling the renderer in CUDA/LLVM
+JIT-compiled Dr.Jit array (when compiling the renderer in CUDA/LLVM
 mode).
 
 Why is this needed? Mitsuba plugins represent their internal state
 using attributes like position, intensity, etc., which are typically
-represented using Enoki arrays. For technical reasons, it is helpful
+represented using Dr.Jit arrays. For technical reasons, it is helpful
 if those fields are both accessible on the host (in which case the
 lowest-level representation builds on standard C++ types like float or
 int, for example Point<float, 3>) or the device, whose types invoke
@@ -9811,8 +9811,8 @@ float my_list[] = { 1, 1.5f, 4.f, ... };
 
 UInt32 index = find_interval(
     sizeof(my_list) / sizeof(float),
-    [](UInt32 index, ek::mask_t<UInt32> active) {
-        return ek::gather<Float>(my_list, index, active) < x;
+    [](UInt32 index, dr::mask_t<UInt32> active) {
+        return dr::gather<Float>(my_list, index, active) < x;
     }
 );
 ```)doc";

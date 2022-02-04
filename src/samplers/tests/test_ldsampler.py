@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler,
@@ -47,13 +47,13 @@ def test03_ldsampler_deterministic_values(variant_scalar_rgb):
     res = []
     for v in range(len(values_1d_dim0)):
         res.append(sampler.next_1d())
-    assert ek.allclose(res, values_1d_dim0)
+    assert dr.allclose(res, values_1d_dim0)
     # print(res)
 
     res = []
     for v in range(len(values_1d_dim0)):
         res.append(sampler.next_2d())
-    assert ek.allclose(res, values_2d_dim0)
+    assert dr.allclose(res, values_2d_dim0)
     # print(res)
 
     sampler.advance()
@@ -61,13 +61,13 @@ def test03_ldsampler_deterministic_values(variant_scalar_rgb):
     res = []
     for v in range(len(values_1d_dim0)):
         res.append(sampler.next_1d())
-    assert ek.allclose(res, values_1d_dim1)
+    assert dr.allclose(res, values_1d_dim1)
     # print(res)
 
     res = []
     for v in range(len(values_1d_dim0)):
         res.append(sampler.next_2d())
-    assert ek.allclose(res, values_2d_dim1)
+    assert dr.allclose(res, values_2d_dim1)
     # print(res)
 
 

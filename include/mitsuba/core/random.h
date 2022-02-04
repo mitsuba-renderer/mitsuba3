@@ -1,7 +1,7 @@
 /*
  * Tiny self-contained version of the PCG Random Number Generation for C++ put
  * together from pieces of the much larger C/C++ codebase with vectorization
- * using Enoki.
+ * using Dr.Jit.
  *
  * Wenzel Jakob, February 2017
  *
@@ -33,10 +33,10 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/fwd.h>
-#include <enoki/random.h>
-#include <enoki/loop.h>
+#include <drjit/random.h>
+#include <drjit/loop.h>
 
-NAMESPACE_BEGIN(enoki)
+NAMESPACE_BEGIN(drjit)
 /// Prints the canonical representation of a PCG32 object.
 template <typename Value>
 std::ostream& operator<<(std::ostream &os, const PCG32<Value> &p) {
@@ -46,11 +46,11 @@ std::ostream& operator<<(std::ostream &os, const PCG32<Value> &p) {
        << "]";
     return os;
 }
-NAMESPACE_END(enoki)
+NAMESPACE_END(drjit)
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename UInt32> using PCG32 = ek::PCG32<UInt32>;
+template <typename UInt32> using PCG32 = dr::PCG32<UInt32>;
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
@@ -76,14 +76,14 @@ template <typename UInt32> using PCG32 = ek::PCG32<UInt32>;
 template <typename UInt32>
 std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
     static_assert(
-        std::is_same_v<ek::scalar_t<UInt32>, uint32_t>,
+        std::is_same_v<dr::scalar_t<UInt32>, uint32_t>,
         "sample_tea_32(): template type should be a 32 bit unsigned integer!");
 
     UInt32 sum = 0;
-    ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
+    DRJIT_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
-        v0 += (ek::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (ek::sr<5>(v1) + 0xc8013ea4);
-        v1 += (ek::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (ek::sr<5>(v0) + 0x7e95761e);
+        v0 += (dr::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (dr::sr<5>(v1) + 0xc8013ea4);
+        v1 += (dr::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (dr::sr<5>(v0) + 0x7e95761e);
     }
 
     return { v0, v1 };
@@ -108,11 +108,11 @@ std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
  */
 
 template <typename UInt32>
-ek::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
+dr::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
     std::tie(v0, v1) = sample_tea_32(v0, v1, rounds);
 
-    return ek::uint64_array_t<UInt32>(v0) +
-           ek::sl<32>(ek::uint64_array_t<UInt32>(v1));
+    return dr::uint64_array_t<UInt32>(v0) +
+           dr::sl<32>(dr::uint64_array_t<UInt32>(v1));
 }
 
 
@@ -134,9 +134,9 @@ ek::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
  *     A uniformly distributed floating point number on the interval <tt>[0, 1)</tt>
  */
 template <typename UInt32>
-ek::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
-    return ek::reinterpret_array<ek::float32_array_t<UInt32>>(
-        ek::sr<9>(sample_tea_32(v0, v1, rounds).second) | 0x3f800000u) - 1.f;
+dr::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
+    return dr::reinterpret_array<dr::float32_array_t<UInt32>>(
+        dr::sr<9>(sample_tea_32(v0, v1, rounds).second) | 0x3f800000u) - 1.f;
 }
 
 /**
@@ -158,16 +158,16 @@ ek::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds 
  */
 
 template <typename UInt32>
-ek::float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4) {
-    return ek::reinterpret_array<ek::float64_array_t<UInt32>>(
-        ek::sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
+dr::float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4) {
+    return dr::reinterpret_array<dr::float64_array_t<UInt32>>(
+        dr::sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
 }
 
 
 /// Alias to \ref sample_tea_float32 or \ref sample_tea_float64 based given type size
 template <typename UInt>
 auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
-    if constexpr(std::is_same_v<ek::scalar_t<UInt>, uint32_t>)
+    if constexpr(std::is_same_v<dr::scalar_t<UInt>, uint32_t>)
         return sample_tea_float32(v0, v1, rounds);
     else
         return sample_tea_float64(v0, v1, rounds);
@@ -195,7 +195,7 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
 
 template <typename UInt32>
 UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
-    uint32_t n = ek::log2i(size);
+    uint32_t n = dr::log2i(size);
 
     Assert(uint32_t(1 << n) == size, "permute(): size must be a power of 2!");
 
@@ -206,7 +206,7 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
         UInt32 rand = sample_tea_32(index | bit, seed, rounds).first;
 
         // Perform the flip if 'bit' is set
-        ek::masked(index, ek::eq(rand & bit, bit)) = index ^ bit;
+        dr::masked(index, dr::eq(rand & bit, bit)) = index ^ bit;
     }
 
     return index;
@@ -233,9 +233,9 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
 
 template <typename UInt32>
 UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
-                       ek::mask_t<UInt32> active = true) {
+                       dr::mask_t<UInt32> active = true) {
     if (sample_count == 1)
-        return ek::zero<UInt32>(ek::width(index));
+        return dr::zero<UInt32>(dr::width(index));
 
     UInt32 w = sample_count - 1;
     w |= w >> 1;
@@ -267,11 +267,11 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
         return tmp;
     };
 
-    if constexpr (ek::is_jit_array_v<UInt32>) {
+    if constexpr (dr::is_jit_array_v<UInt32>) {
         if (jit_flag(JitFlag::LoopRecord)) {
-            ek::Loop<ek::mask_t<UInt32>> loop("perm", active, index);
-            while (loop(ek::detach(active))) {
-                ek::masked(index, active) = body(index);
+            dr::Loop<dr::mask_t<UInt32>> loop("perm", active, index);
+            while (loop(dr::detach(active))) {
+                dr::masked(index, active) = body(index);
                 active &= (index >= sample_count);
             }
             return (index + seed) % sample_count;
@@ -281,12 +281,12 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
     // Worst case is when the index is sequentially mapped to every invalid numbers (out
     // of range) before being mapped into the correct range. E.g. decreasing sequence
     uint32_t iter = 0, max_iter = 0;
-    if constexpr (ek::is_jit_array_v<UInt32>)
+    if constexpr (dr::is_jit_array_v<UInt32>)
         max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
     do {
-        ek::masked(index, active) = body(index);
+        dr::masked(index, active) = body(index);
         active &= (index >= sample_count);
-    } while (ek::any_or<false>(active) || (max_iter > ++iter));
+    } while (dr::any_or<false>(active) || (max_iter > ++iter));
 
     return (index + seed) % sample_count;
 }

@@ -3,7 +3,7 @@ import os
 
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def find_resource(fname):
@@ -321,13 +321,13 @@ def test_construct_from_array(variants_all_rgb):
     b_np = np.array(b)
     b_t = TensorXf(b_np)
 
-    assert ek.allclose(b_np, b_t)
+    assert dr.allclose(b_np, b_t)
 
     b1 = Bitmap(b_np)
     b2 = Bitmap(b_t)
 
-    assert ek.allclose(b_np, np.array(b1))
-    assert ek.allclose(b_np, np.array(b2))
+    assert dr.allclose(b_np, np.array(b1))
+    assert dr.allclose(b_np, np.array(b2))
 
 
 def test_construct_from_int8_array(variants_all_rgb):
@@ -337,12 +337,12 @@ def test_construct_from_int8_array(variants_all_rgb):
     # test uint8
     b_np = np.reshape(np.arange(16), (4, 4)).astype(np.uint8)
     b1 = Bitmap(b_np)
-    assert ek.allclose(b_np, np.array(b1))
+    assert dr.allclose(b_np, np.array(b1))
 
     # test int8
     b_np = b_np.astype(np.int8) - 5
     b2 = Bitmap(b_np)
-    assert ek.allclose(b_np, np.array(b2))
+    assert dr.allclose(b_np, np.array(b2))
 
 
 def check_resample():

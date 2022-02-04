@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 spectrum_strings = {
@@ -37,8 +37,8 @@ def test01_eval(variants_vec_spectral, spectrum_key):
 
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
 
-    it = ek.zero(SurfaceInteraction3f)
-    assert ek.allclose(emitter.eval(it), spectrum.eval(it))
+    it = dr.zero(SurfaceInteraction3f)
+    assert dr.allclose(emitter.eval(it), spectrum.eval(it))
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
@@ -59,14 +59,14 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
-    assert ek.allclose(res, spec * 4 * ek.Pi * ek.Pi)
-    assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample))
-    assert ek.allclose(
+    assert dr.allclose(res, spec * 4 * dr.Pi * dr.Pi)
+    assert dr.allclose(ray.time, time)
+    assert dr.allclose(ray.wavelengths, wav)
+    assert dr.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample))
+    assert dr.allclose(
         ray.d, Frame3f(-ray.o).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
 
 
@@ -78,7 +78,7 @@ def test03_sample_direction(variants_vec_spectral):
 
     emitter, spectrum = create_emitter_and_spectrum()
 
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     # Some positions inside the unit sphere
     it.p = [[-0.5, 0.3, -0.1], [0.8, -0.3, -0.2], [-0.2, 0.6, -0.6]]
     it.time = 1.0
@@ -87,11 +87,11 @@ def test03_sample_direction(variants_vec_spectral):
     samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
     ds, res = emitter.sample_direction(it, samples)
 
-    assert ek.allclose(ds.pdf, ek.InvFourPi)
-    assert ek.allclose(ds.d, warp.square_to_uniform_sphere(samples))
-    assert ek.allclose(emitter.pdf_direction(it, ds), ek.InvFourPi)
-    assert ek.allclose(ds.time, it.time)
+    assert dr.allclose(ds.pdf, dr.InvFourPi)
+    assert dr.allclose(ds.d, warp.square_to_uniform_sphere(samples))
+    assert dr.allclose(emitter.pdf_direction(it, ds), dr.InvFourPi)
+    assert dr.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)
     spec = spectrum.eval(it) / warp.square_to_uniform_sphere_pdf(ds.d)
-    assert ek.allclose(res, spec)
+    assert dr.allclose(res, spec)

@@ -118,8 +118,8 @@ public:
         m_aperture_radius = props.get<ScalarFloat>("aperture_radius");
 
         if (m_aperture_radius == 0.f) {
-            Log(Warn, "Can't have a zero aperture radius -- setting to %f", ek::Epsilon<Float>);
-            m_aperture_radius = ek::Epsilon<Float>;
+            Log(Warn, "Can't have a zero aperture radius -- setting to %f", dr::Epsilon<Float>);
+            m_aperture_radius = dr::Epsilon<Float>;
         }
 
         if (m_to_world.scalar().has_scale())
@@ -163,7 +163,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         Ray3f ray;
@@ -182,12 +182,12 @@ public:
         Point3f focus_p = near_p * (m_focus_distance / near_p.z());
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
+        Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
         ray.o = m_to_world.value().transform_affine(aperture_p);
         ray.d = m_to_world.value() * d;
 
-        Float inv_z = ek::rcp(d.z());
+        Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
@@ -203,7 +203,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         RayDifferential3f ray;
@@ -225,12 +225,12 @@ public:
                 focus_p_y = (near_p + m_dy) * f_dist;
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
+        Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
         ray.o = m_to_world.value().transform_affine(aperture_p);
         ray.d = m_to_world.value() * d;
 
-        Float inv_z = ek::rcp(d.z());
+        Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
@@ -238,8 +238,8 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = m_to_world.value() * ek::normalize(Vector3f(focus_p_x - aperture_p));
-        ray.d_y = m_to_world.value() * ek::normalize(Vector3f(focus_p_y - aperture_p));
+        ray.d_x = m_to_world.value() * dr::normalize(Vector3f(focus_p_x - aperture_p));
+        ray.d_y = m_to_world.value() * dr::normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
         return { ray, wav_weight };

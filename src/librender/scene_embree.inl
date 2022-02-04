@@ -1,9 +1,9 @@
 #include <embree3/rtcore.h>
-#include <enoki-thread/thread.h>
+#include <drjit-thread/thread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-static_assert(sizeof(RTCIntersectContext) == 24 /* Enoki-JIT assumes this */);
+static_assert(sizeof(RTCIntersectContext) == 24 /* Dr.Jit assumes this */);
 
 static uint32_t embree_threads = 0;
 static RTCDevice embree_device = nullptr;
@@ -20,7 +20,7 @@ static void embree_error_callback(void * /*user_ptr */, RTCError code, const cha
     Log(Warn, "Embree device error %i: %s.", (int) code, str);
 }
 
-/// Wraps rtcOccluded16 when Enoki-JIT operates on vectors of length 32
+/// Wraps rtcOccluded16 when Dr.Jit operates on vectors of length 32
 void rtcOccluded32(const int *valid, RTCScene scene,
                    RTCIntersectContext *context, uint32_t *in) {
     constexpr size_t N = 16, M = 2;
@@ -44,7 +44,7 @@ void rtcOccluded32(const int *valid, RTCScene scene,
     }
 }
 
-/// Wraps rtcIntersect16 when Enoki-JIT operates on vectors of length 32
+/// Wraps rtcIntersect16 when Dr.Jit operates on vectors of length 32
 void rtcIntersect32(const int *valid, RTCScene scene,
                     RTCIntersectContext *context, uint32_t *in) {
     constexpr size_t N = 16, M = 2;
@@ -104,23 +104,23 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     Log(Info, "Embree ready. (took %s)",
         util::time_string((float) timer.value()));
 
-    if constexpr (ek::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_array_v<Float>) {
         // Get shapes registry ids
         if (!m_shapes.empty()) {
             std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
             for (size_t i = 0; i < m_shapes.size(); i++)
                 data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
             s.shapes_registry_ids
-                = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+                = dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
         } else {
-            s.shapes_registry_ids = ek::zero<DynamicBuffer<UInt32>>();
+            s.shapes_registry_ids = dr::zero<DynamicBuffer<UInt32>>();
         }
     }
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
-    if constexpr (ek::is_llvm_array_v<Float>)
-        ek::sync_thread();
+    if constexpr (dr::is_llvm_array_v<Float>)
+        dr::sync_thread();
 
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     for (int geo : s.geometries)
@@ -134,12 +134,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     }
 
     // Ensure shape data pointers are fully evaluated before building the BVH
-    if constexpr (ek::is_llvm_array_v<Float>)
-        ek::sync_thread();
+    if constexpr (dr::is_llvm_array_v<Float>)
+        dr::sync_thread();
 
-    ek::parallel_for(
-        ek::blocked_range<size_t>(0, embree_threads, 1),
-        [&](const ek::blocked_range<size_t> &) {
+    dr::parallel_for(
+        dr::blocked_range<size_t>(0, embree_threads, 1),
+        [&](const dr::blocked_range<size_t> &) {
             rtcJoinCommitScene(s.accel);
         }
     );
@@ -149,11 +149,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
        ensures that the lifetime of the IAS goes beyond the one of the Scene
        instance if there are still some pending ray tracing calls (e.g. non
        evaluated variables depending on a ray tracing call). */
-    if constexpr (ek::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_array_v<Float>) {
         // Prevents the IAS to be released when updating the scene parameters
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
-        m_accel_handle = ek::opaque<UInt64>(s.accel);
+        m_accel_handle = dr::opaque<UInt64>(s.accel);
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
@@ -169,9 +169,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    if constexpr (ek::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_array_v<Float>) {
         // Ensure all ray tracing kernels are terminated before releasing the scene
-        ek::sync_thread();
+        dr::sync_thread();
 
         uint32_t handle_index = m_accel_handle.index();
 
@@ -198,27 +198,27 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       Mask coherent,
                                                       Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    using Single = ek::float32_array_t<Float>;
+    using Single = dr::float32_array_t<Float>;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
     if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
+        ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
 
-    if constexpr (!ek::is_jit_array_v<Float>) {
-        ENOKI_MARK_USED(active);
-        ENOKI_MARK_USED(coherent);
+    if constexpr (!dr::is_jit_array_v<Float>) {
+        DRJIT_MARK_USED(active);
+        DRJIT_MARK_USED(coherent);
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
 
         using Vector3s = Vector<Single, 3>;
 
         RTCRayHit rh;
-        ek::store(&rh.ray.org_x, ek::concat(Vector3s(ray.o), float(0.f)));
-        ek::store(&rh.ray.dir_x, ek::concat(Vector3s(ray.d), float(ray.time)));
+        dr::store(&rh.ray.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
+        dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         rh.ray.tfar = ray_maxt;
         rh.ray.mask = 0;
         rh.ray.id = 0;
@@ -252,7 +252,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         }
 
         return pi;
-    } else if constexpr (ek::is_llvm_array_v<Float>) {
+    } else if constexpr (dr::is_llvm_array_v<Float>) {
         uint32_t jit_width = jit_llvm_vector_width();
 
         void *scene_ptr = (void *) s.accel,
@@ -265,7 +265,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             case 16: func_ptr = (void *) rtcIntersect16; break;
             case 32: func_ptr = (void *) rtcIntersect32; break;
             default:
-                Throw("ray_intersect_preliminary_cpu(): Enoki-JIT is "
+                Throw("ray_intersect_preliminary_cpu(): Dr.Jit is "
                       "configured for vectors of width %u, which is not "
                       "supported by Embree!", jit_width);
         }
@@ -275,9 +275,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = ek::zero<UInt32>();
+        UInt32 zero = dr::zero<UInt32>();
 
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_time(ray.time);
 
         uint32_t in[14] = { coherent.index(),  active.index(),
@@ -304,38 +304,38 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && ek::neq(t, ray_maxt);
+        Mask hit = active && dr::neq(t, ray_maxt);
 
-        pi.t = ek::select(hit, t, ek::Infinity<Float>);
+        pi.t = dr::select(hit, t, dr::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
-        UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
+        Mask hit_inst = hit && dr::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+        UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
 
-        ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
+        ShapePtr shape = dr::gather<UInt32>(s.shapes_registry_ids, index, hit);
 
         pi.instance = shape & hit_inst;
         pi.shape    = shape & !hit_inst;
 
         return pi;
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(coherent);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(coherent);
+        DRJIT_MARK_USED(active);
         Throw("ray_intersect_preliminary_cpu() should only be called in CPU mode.");
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
-    if constexpr (!ek::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_cpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(ray_flags);
-        ENOKI_MARK_USED(coherent);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(ray_flags);
+        DRJIT_MARK_USED(coherent);
+        DRJIT_MARK_USED(active);
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
     }
 }
@@ -343,16 +343,16 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    using Single = ek::float32_array_t<Float>;
+    using Single = dr::float32_array_t<Float>;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
     if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = ek::min(ray_maxt, ek::Largest<Single>);
+        ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
 
-    if constexpr (!ek::is_jit_array_v<Float>) {
-        ENOKI_MARK_USED(active);
-        ENOKI_MARK_USED(coherent);
+    if constexpr (!dr::is_jit_array_v<Float>) {
+        DRJIT_MARK_USED(active);
+        DRJIT_MARK_USED(coherent);
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -360,8 +360,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         using Vector3s = Vector<Single, 3>;
 
         RTCRay ray2;
-        ek::store(&ray2.org_x, ek::concat(Vector3s(ray.o), float(0.f)));
-        ek::store(&ray2.dir_x, ek::concat(Vector3s(ray.d), float(ray.time)));
+        dr::store(&ray2.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
+        dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         ray2.tfar = (float) ray_maxt;
         ray2.mask = 0;
         ray2.id = 0;
@@ -370,7 +370,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         rtcOccluded1(s.accel, &context, &ray2);
 
         return ray2.tfar != ray_maxt;
-    } else if constexpr (ek::is_llvm_array_v<Float>) {
+    } else if constexpr (dr::is_llvm_array_v<Float>) {
         uint32_t jit_width = jit_llvm_vector_width();
 
         void *scene_ptr = (void *) s.accel,
@@ -383,7 +383,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
             case 16: func_ptr = (void *) rtcOccluded16; break;
             case 32: func_ptr = (void *) rtcOccluded32; break;
             default:
-                Throw("ray_test_cpu(): Enoki-JIT is configured for vectors of "
+                Throw("ray_test_cpu(): Dr.Jit is configured for vectors of "
                       "width %u, which is not supported by Embree!", jit_width);
         }
 
@@ -392,10 +392,10 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = ek::zero<UInt32>();
+        UInt32 zero = dr::zero<UInt32>();
 
         // Conversion, in case this is a double precision build
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_time(ray.time);
 
         uint32_t in[14] = { coherent.index(),  active.index(),
@@ -410,11 +410,11 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
 
         jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
 
-        return active && ek::neq(Single::steal(out[0]), ray_maxt);
+        return active && dr::neq(Single::steal(out[0]), ray_maxt);
     } else {
-        ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(coherent);
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(coherent);
+        DRJIT_MARK_USED(active);
         Throw("ray_test_cpu() should only be called in CPU mode.");
     }
 }

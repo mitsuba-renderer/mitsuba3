@@ -26,31 +26,31 @@ if (MSVC)
 endif()
 
 # ----------------------------------------------------------
-#   Copy & installation targets for Enoki python bindings
+#   Copy & installation targets for DrJit python bindings
 # ----------------------------------------------------------
 
 if (NOT SKBUILD)
   if (MSVC)
-    set_target_properties(enoki-python
+    set_target_properties(drjit-python
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/enoki
-      LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/enoki
-      LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/enoki
-      LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/enoki)
+      LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/drjit)
   else ()
-    set_target_properties(enoki-python
+    set_target_properties(drjit-python
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki)
+      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/drjit)
   endif()
 
-  set(ENOKI_PYTHON_FILES
+  set(DRJIT_PYTHON_FILES
      __init__.py const.py detail.py generic.py
      matrix.py router.py traits.py
   )
 
-  foreach(file ${ENOKI_PYTHON_FILES})
-    set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/enoki/${file})
-    ro_copy(${IN_FILE} python/enoki/${file})
+  foreach(file ${DRJIT_PYTHON_FILES})
+    set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/drjit/${file})
+    ro_copy(${IN_FILE} python/drjit/${file})
   endforeach(file)
 endif()
 
@@ -85,9 +85,9 @@ if (UNIX)
   include_directories(
     ${ASMJIT_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/ext/enoki-jit/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/ext/enoki-jit/ext/enoki-thread/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/ext/drjit-thread/include
   )
 
   get_filename_component(MKDOC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../include/mitsuba ABSOLUTE)

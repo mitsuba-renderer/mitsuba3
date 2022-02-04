@@ -55,7 +55,7 @@ public:
     MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
-        if constexpr (!ek::is_jit_array_v<Float>) {
+        if constexpr (!dr::is_jit_array_v<Float>) {
             Log(Warn, "SamplingIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
                       "recommended to switch to a cuda_* or llvm_* mode");

@@ -5,8 +5,8 @@ mechanics for data structures that support dynamically-sized vectorization.
 
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 import numpy as np
 
 
@@ -35,7 +35,7 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
     si.uv = [0.1, 0.8]
     record = PositionSample3f(si)
     assert record.time == si.time \
-           and ek.all(record.uv == si.uv) \
+           and dr.all(record.uv == si.uv) \
            and record.pdf == 0.0
 
 
@@ -44,7 +44,7 @@ def test02_position_sample_construction_vec(variants_vec_backends_once):
 
     n_records = 5
 
-    records = ek.zero(PositionSample3f, n_records)
+    records = dr.zero(PositionSample3f, n_records)
     records.p = np.array([[1.0, 1.0, 1.0], [0.9, 0.9, 0.9], [0.7, 0.7, 0.7],
                  [1.2, 1.5, 1.1], [1.5, 1.5, 1.5]])
     records.time = [0.0, 0.5, 0.7, 1.0, 1.5]
@@ -71,10 +71,10 @@ def test02_position_sample_construction_vec(variants_vec_backends_once):
 ]""" in str(records)
 
     # SurfaceInteraction constructor
-    si = ek.zero(SurfaceInteraction3f, n_records)
+    si = dr.zero(SurfaceInteraction3f, n_records)
     si.time = [0.0, 0.5, 0.7, 1.0, 1.5]
     records = PositionSample3f(si)
-    assert ek.all(records.time == si.time)
+    assert dr.all(records.time == si.time)
 
 
 def test04_direction_sample_construction_single(variant_scalar_rgb):
@@ -89,7 +89,7 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
     record.pdf = 0.002
     record.dist = 0.13
 
-    assert ek.allclose(record.d, [0, 42, -1])
+    assert dr.allclose(record.d, [0, 42, -1])
     assert str(record) == """DirectionSample3f[
   p = [1, 2, 3],
   n = [4, 5, 6],
@@ -107,15 +107,15 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
         'type': 'sphere',
         'emitter': { 'type' : 'area' }
     })
-    its = ek.zero(SurfaceInteraction3f)
+    its = dr.zero(SurfaceInteraction3f)
     its.p = [20, 3, 40.02]
     its.t = 1
     its.shape = shape
-    ref = ek.zero(Interaction3f)
+    ref = dr.zero(Interaction3f)
     ref.p = [1.6, -2, 35]
     record = DirectionSample3f(None, its, ref)
-    d = (its.p - ref.p) / ek.norm(its.p - ref.p)
-    assert ek.allclose(record.d, d)
+    d = (its.p - ref.p) / dr.norm(its.p - ref.p)
+    assert dr.allclose(record.d, d)
 
 
 def test05_direction_sample_construction_vec(variants_vec_backends_once, np_rng):
@@ -131,7 +131,7 @@ def test05_direction_sample_construction_vec(variants_vec_backends_once, np_rng)
 
     pdfs = [0.99, 1.0, 0.05]
 
-    records_batch = ek.zero(DirectionSample3f, len(pdfs))
+    records_batch = dr.zero(DirectionSample3f, len(pdfs))
     records_batch.p = its
     records_batch.d = directions
     records_batch.pdf = pdfs
@@ -146,10 +146,10 @@ def test05_direction_sample_construction_vec(variants_vec_backends_once, np_rng)
         # Needs to be a "valid" (surface) interaction, otherwise interaction
         # will be assumed to have happened on an environment emitter.
         it.t = 0.1
-        ref = ek.zero(Interaction3f)
+        ref = dr.zero(Interaction3f)
         ref.p = refs[i, :]
 
-    assert ek.allclose(records_batch.p, its)
-    assert ek.allclose(records_batch.d, directions)
-    assert ek.allclose(records_batch.pdf, pdfs)
+    assert dr.allclose(records_batch.p, its)
+    assert dr.allclose(records_batch.d, directions)
+    assert dr.allclose(records_batch.pdf, pdfs)
 

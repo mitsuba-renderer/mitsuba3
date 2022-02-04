@@ -7,7 +7,7 @@ import pytest
 import re
 import mitsuba
 import gc
-import enoki as ek
+import drjit as dr
 
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
@@ -52,15 +52,15 @@ def clean_up():
     gc.collect()
     gc.collect()
 
-    ek.kernel_history_clear()
-    ek.flush_malloc_cache()
-    ek.malloc_clear_statistics()
-    ek.flush_kernel_cache()
+    dr.kernel_history_clear()
+    dr.flush_malloc_cache()
+    dr.malloc_clear_statistics()
+    dr.flush_kernel_cache()
 
-    if hasattr(ek, 'sync_thread'):
-        ek.sync_thread()
-        ek.registry_trim()
-        ek.set_flags(ek.JitFlag.Default)
+    if hasattr(dr, 'sync_thread'):
+        dr.sync_thread()
+        dr.registry_trim()
+        dr.set_flags(dr.JitFlag.Default)
 
 
 def generate_fixture(variant):

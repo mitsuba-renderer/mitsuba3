@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -72,7 +72,7 @@ def test05_permute_uniform(variant_scalar_rgb):
         histogram /= N
 
         mean = np.mean(histogram)
-        assert ek.allclose(1.0 / sample_count, mean)
+        assert dr.allclose(1.0 / sample_count, mean)
 
 
 def test06_permute_kensler_bijection(variants_all_backends_once):
@@ -104,4 +104,4 @@ def test07_permute_kensler_uniform(variant_scalar_rgb):
         histogram /= N
 
         mean = np.mean(histogram)
-        assert ek.allclose(1.0 / sample_count, mean)
+        assert dr.allclose(1.0 / sample_count, mean)

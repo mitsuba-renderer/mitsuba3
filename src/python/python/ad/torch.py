@@ -1,6 +1,6 @@
 """ Mitsuba <--> PyTorch interoperability support """
 
-# TODO update using new enoki / enoki-jit
+# TODO update using new drjit / drjit-core
 def render_torch(scene, params=None, **kwargs):
     from mitsuba.core import Float
     # Delayed import of PyTorch dependency
@@ -60,7 +60,7 @@ def render_torch(scene, params=None, **kwargs):
 
                     for v in ctx.inputs:
                         if v is not None:
-                            ek.enable_grad(v)
+                            dr.enable_grad(v)
 
                     ctx.output = render(scene, seed=0, spp=spp[1],
                                         sensor_index=sensor_index)
@@ -69,7 +69,7 @@ def render_torch(scene, params=None, **kwargs):
                         result = ctx.output.torch()
 
                     if ctx.malloc_trim:
-                        ek.cuda_malloc_trim()
+                        dr.cuda_malloc_trim()
                     return result
                 except Exception as e:
                     print("render_torch(): critical exception during "
@@ -79,15 +79,15 @@ def render_torch(scene, params=None, **kwargs):
             @staticmethod
             def backward(ctx, grad_output):
                 try:
-                    ek.set_grad(ctx.output, ek.detach(Float(grad_output)))
-                    ek.backward(ctx.output)
-                    result = tuple(ek.grad(i).torch() if i is not None
+                    dr.set_grad(ctx.output, dr.detach(Float(grad_output)))
+                    dr.backward(ctx.output)
+                    result = tuple(dr.grad(i).torch() if i is not None
                                    else None
                                    for i in ctx.inputs)
                     del ctx.output
                     del ctx.inputs
                     if ctx.malloc_trim:
-                        ek.cuda_malloc_trim()
+                        dr.cuda_malloc_trim()
                     return result
                 except Exception as e:
                     print("render_torch(): critical exception during "

@@ -1,7 +1,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/profiler.h>
-#include <enoki/loop.h>
+#include <drjit/loop.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -53,12 +53,12 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
     m_channel_count = (uint32_t) tensor.shape(2);
 
     // Account for the boundary region, if present
-    if (border && ek::any(m_size < 2 * m_border_size))
+    if (border && dr::any(m_size < 2 * m_border_size))
 		Throw("ImageBlock(const TensorXf&): image is too small to have a boundary!");
 	m_size -= 2 * m_border_size;
 
     // Copy the image tensor
-    if constexpr (ek::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_array_v<Float>)
         m_tensor = TensorXf(tensor.array().copy(), 3, tensor.shape().data());
     else
         m_tensor = TensorXf(tensor.array(), 3, tensor.shape().data());
@@ -71,10 +71,10 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
 
     ScalarVector2u size_ext = m_size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * ek::hprod(size_ext),
+    size_t size_flat = m_channel_count * dr::hprod(size_ext),
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
-    m_tensor = TensorXf(ek::zero<Array>(size_flat), 3, shape);
+    m_tensor = TensorXf(dr::zero<Array>(size_flat), 3, shape);
 }
 
 MTS_VARIANT void
@@ -86,10 +86,10 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
 
     ScalarVector2u size_ext = size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * ek::hprod(size_ext),
+    size_t size_flat = m_channel_count * dr::hprod(size_ext),
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
-    m_tensor = TensorXf(ek::zero<Array>(size_flat), 3, shape);
+    m_tensor = TensorXf(dr::zero<Array>(size_flat), 3, shape);
     m_size = size;
 }
 
@@ -106,7 +106,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
     ScalarPoint2i  source_offset = block->offset() - block->border_size(),
                    target_offset =        offset() -        border_size();
 
-    if constexpr (ek::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_array_v<Float>) {
         // If target block is cleared and match size, directly copy data
         if (m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size()) {
@@ -136,7 +136,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                                                   const Float *values,
                                                   Mask active) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
-    constexpr bool JIT = ek::is_jit_array_v<Float>;
+    constexpr bool JIT = dr::is_jit_array_v<Float>;
 
     // Check if all sample values are valid
     if (m_warn_negative || m_warn_invalid) {
@@ -149,10 +149,10 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
         if (m_warn_invalid) {
             for (uint32_t k = 0; k < m_channel_count; ++k)
-                is_valid &= ek::isfinite(values[k]);
+                is_valid &= dr::isfinite(values[k]);
         }
 
-        if (unlikely(ek::any(active && !is_valid))) {
+        if (unlikely(dr::any(active && !is_valid))) {
             std::ostringstream oss;
             oss << "Invalid sample value: [";
             for (uint32_t i = 0; i < m_channel_count; ++i) {
@@ -169,13 +169,13 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // ===================================================================
 
     if (!m_rfilter) {
-        Point2u p = Point2u(ek::floor2int<Point2i>(pos) - m_offset);
+        Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset);
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = ek::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
 
         // The sample could be out of bounds
-        active = active && ek::all(p < m_size);
+        active = active && dr::all(p < m_size);
 
         // Accumulate!
         if constexpr (!JIT) {
@@ -188,7 +188,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         } else {
             for (uint32_t k = 0; k < m_channel_count; ++k) {
                 if (!values[k].is_literal() || values[k][0] != 0)
-                    ek::scatter_reduce(ReduceOp::Add, m_tensor.array(), values[k],
+                    dr::scatter_reduce(ReduceOp::Add, m_tensor.array(), values[k],
                                        index, active);
                 index++;
             }
@@ -212,13 +212,13 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     if constexpr (JIT) {
         record_loop = jit_flag(JitFlag::LoopRecord) && !m_normalize;
 
-        if constexpr (ek::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_array_v<Float>) {
             record_loop = record_loop &&
-                          !ek::grad_enabled(pos) &&
-                          !ek::grad_enabled(m_tensor);
+                          !dr::grad_enabled(pos) &&
+                          !dr::grad_enabled(m_tensor);
 
             for (uint32_t k = 0; k < m_channel_count; ++k)
-                record_loop = record_loop && !ek::grad_enabled(values[k]);
+                record_loop = record_loop && !dr::grad_enabled(values[k]);
         }
     }
 
@@ -232,24 +232,24 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 pos_1_f = pos_f + radius;
 
         // Interval specifying the pixels covered by the filter
-        Point2u pos_0_u = Point2u(ek::max(ek::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-                pos_1_u = Point2u(ek::min(ek::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+        Point2u pos_0_u = Point2u(dr::max(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
+                pos_1_u = Point2u(dr::min(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
                 count_u = pos_1_u - pos_0_u + 1u;
 
         // Base index of the top left corner
         UInt32 index =
-            ek::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
+            dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
         // Compute the number of filter evaluations needed along each axis
         ScalarVector2u count;
         if constexpr (!JIT) {
-            if (ek::any(pos_0_u > pos_1_u))
+            if (dr::any(pos_0_u > pos_1_u))
                 return;
             count = count_u;
         } else {
             // Conservative bounds must be used in the vectorized case
-            count = ek::ceil2int<uint32_t>(2.f * radius);
-            active &= ek::all(pos_0_u <= pos_1_u);
+            count = dr::ceil2int<uint32_t>(2.f * radius);
+            active &= dr::all(pos_0_u <= pos_1_u);
         }
 
         Point2f rel_f = Point2f(pos_0_u) - pos_f;
@@ -289,14 +289,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 for (uint32_t i = 0; i < count.y(); ++i)
                     wy += weights_y[i];
 
-                Float factor = ek::detach(wx * wy);
+                Float factor = dr::detach(wx * wy);
 
                 if constexpr (JIT) {
-                    factor = ek::select(ek::neq(factor, 0.f), ek::rcp(factor), 0.f);
+                    factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
                 } else {
                     if (unlikely(factor == 0))
                         return;
-                    factor = ek::rcp(factor);
+                    factor = dr::rcp(factor);
                 }
 
                 for (uint32_t i = 0; i < count.x(); ++i)
@@ -320,11 +320,11 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                         Float weight = weights_x[x] * weights_y[y];
 
                         if constexpr (!JIT) {
-                            ENOKI_MARK_USED(active_2);
-                            ptr[index] = ek::fmadd(values[k], weight, ptr[index]);
+                            DRJIT_MARK_USED(active_2);
+                            ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
                         } else {
                             if (!values[k].is_literal() || values[k][0] != 0)
-                                ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                                dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
                                                    values[k] * weight, index, active_2);
                         }
 
@@ -347,16 +347,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             // ===========================================================
 
             UInt32 ys = 0;
-            ek::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
-            loop_1.set_uniform();
+            dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
 
             while (loop_1(ys < count.y())) {
                 Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                 Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
                 UInt32 xs = 0;
-                ek::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
-                loop_2.set_uniform();
+                dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
 
                 while (loop_2(xs < count.x())) {
                     Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
@@ -364,7 +362,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
                     Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                        dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
                                            values[k] * weight, index, active_2);
                         index++;
                     }
@@ -389,13 +387,13 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             return;
 
         // Number of pixels that may need to be visited on either side (-n..n)
-        uint32_t n = ek::ceil2int<uint32_t>(radius - .5f);
+        uint32_t n = dr::ceil2int<uint32_t>(radius - .5f);
 
         // Number of pixels to be visited along each dimension
         uint32_t count = 2 * n + 1;
 
         // Determine integer position of top left pixel within the filter footprint
-        Point2i pos_i = ek::floor2int<Point2i>(pos) - int(n);
+        Point2i pos_i = dr::floor2int<Point2i>(pos) - int(n);
 
         // Account for pixel offset of the image block instance
         Point2i pos_i_local = pos_i + ((int) m_border_size - m_offset);
@@ -403,7 +401,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),
                y = UInt32(pos_i_local.y()),
-               index = ek::fmadd(y, size.x(), x) * m_channel_count;
+               index = dr::fmadd(y, size.x(), x) * m_channel_count;
 
         // Evaluate filters weights along the X and Y axes
         Point2f rel_f = Point2f(pos_i) + .5f - pos;
@@ -422,8 +420,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                       weight_y = m_rfilter->eval(rel_f.y());
 
                 if (unlikely(m_normalize)) {
-                    ek::masked(weight_x, x + i >= size.x()) = 0.f;
-                    ek::masked(weight_y, y + i >= size.y()) = 0.f;
+                    dr::masked(weight_x, x + i >= size.x()) = 0.f;
+                    dr::masked(weight_y, y + i >= size.y()) = 0.f;
                 }
 
                 new (weights_x + i) Float(weight_x);
@@ -441,8 +439,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     wy += weights_y[i];
                 }
 
-                Float factor = ek::detach(wx * wy);
-                factor = ek::select(ek::neq(factor, 0.f), ek::rcp(factor), 0.f);
+                Float factor = dr::detach(wx * wy);
+                factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
 
                 for (uint32_t i = 0; i < count; ++i)
                     weights_x[i] *= factor;
@@ -458,7 +456,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
                         if (!values[k].is_literal() || values[k][0] != 0)
-                            ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                            dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
                                                values[k] * weight, index, active_2);
                         index++;
                     }
@@ -483,16 +481,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
             UInt32 ys = 0;
 
-            ek::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
-            loop_1.set_uniform();
+            dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
 
             while (loop_1(ys < count)) {
                 Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                 Mask active_1 = active && (y + ys < size.y());
 
                 UInt32 xs = 0;
-                ek::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
-                loop_2.set_uniform();
+                dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
 
                 while (loop_2(xs < count)) {
                     Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
@@ -500,7 +496,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
                     Mask active_2 = active_1 && (x + xs < size.x());
                     for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        ek::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                        dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
                                            values[k] * weight, index, active_2);
                         index++;
                     }
@@ -518,7 +514,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                                                    Float *values,
                                                    Mask active) const {
-    constexpr bool JIT = ek::is_jit_array_v<Float>;
+    constexpr bool JIT = dr::is_jit_array_v<Float>;
 
     // Account for image block offset
     Point2f pos = pos_ - ScalarVector2f(m_offset);
@@ -528,17 +524,17 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     // ===================================================================
 
     if (!m_rfilter) {
-        Point2u p = Point2u(ek::floor2int<Point2i>(pos));
+        Point2u p = Point2u(dr::floor2int<Point2i>(pos));
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = ek::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
 
         // The sample could be out of bounds
-        active = active && ek::all(p < m_size);
+        active = active && dr::all(p < m_size);
 
         // Gather!
         for (uint32_t k = 0; k < m_channel_count; ++k) {
-            values[k] = ek::gather<Float>(m_tensor.array(), index, active);
+            values[k] = dr::gather<Float>(m_tensor.array(), index, active);
             index++;
         }
 
@@ -560,46 +556,46 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     if constexpr (JIT) {
         record_loop = jit_flag(JitFlag::LoopRecord);
 
-        if constexpr (ek::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_array_v<Float>) {
             record_loop = record_loop &&
-                          !ek::grad_enabled(pos) &&
-                          !ek::grad_enabled(m_tensor);
+                          !dr::grad_enabled(pos) &&
+                          !dr::grad_enabled(m_tensor);
 
             for (uint32_t k = 0; k < m_channel_count; ++k)
-                record_loop = record_loop && !ek::grad_enabled(values[k]);
+                record_loop = record_loop && !dr::grad_enabled(values[k]);
         }
     }
 
     // Exclude areas that are outside of the block
-    active &= ek::all(pos >= 0.f) && ek::all(pos < m_size);
+    active &= dr::all(pos >= 0.f) && dr::all(pos < m_size);
 
     // Zero-initialize output array
     for (uint32_t i = 0; i < m_channel_count; ++i)
-        values[i] = ek::zero<Float>(ek::width(pos));
+        values[i] = dr::zero<Float>(dr::width(pos));
 
     Point2f pos_f   = pos + ((int) m_border_size - .5f),
             pos_0_f = pos_f - radius,
             pos_1_f = pos_f + radius;
 
     // Interval specifying the pixels covered by the filter
-    Point2u pos_0_u = Point2u(ek::max(ek::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-            pos_1_u = Point2u(ek::min(ek::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+    Point2u pos_0_u = Point2u(dr::max(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
+            pos_1_u = Point2u(dr::min(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
             count_u = pos_1_u - pos_0_u + 1u;
 
     // Base index of the top left corner
     UInt32 index =
-        ek::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
+        dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
     // Compute the number of filter evaluations needed along each axis
     ScalarVector2u count;
     if constexpr (!JIT) {
-        if (ek::any(pos_0_u > pos_1_u))
+        if (dr::any(pos_0_u > pos_1_u))
             return;
         count = count_u;
     } else {
         // Conservative bounds must be used in the vectorized case
-        count = ek::ceil2int<uint32_t>(2.f * radius);
-        active &= ek::all(pos_0_u <= pos_1_u);
+        count = dr::ceil2int<uint32_t>(2.f * radius);
+        active &= dr::all(pos_0_u <= pos_1_u);
     }
 
     Point2f rel_f = Point2f(pos_0_u) - pos_f;
@@ -639,14 +635,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             for (uint32_t i = 0; i < count.y(); ++i)
                 wy += weights_y[i];
 
-            Float factor = ek::detach(wx * wy);
+            Float factor = dr::detach(wx * wy);
 
             if constexpr (JIT) {
-                factor = ek::select(ek::neq(factor, 0.f), ek::rcp(factor), 0.f);
+                factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
             } else {
                 if (unlikely(factor == 0))
                     return;
-                factor = ek::rcp(factor);
+                factor = dr::rcp(factor);
             }
 
             for (uint32_t i = 0; i < count.x(); ++i)
@@ -663,8 +659,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                 Float weight = weights_x[x] * weights_y[y];
 
                 for (uint32_t k = 0; k < m_channel_count; ++k) {
-                    values[k] = ek::fmadd(
-                        ek::gather<Float>(m_tensor.array(), index, active_2),
+                    values[k] = dr::fmadd(
+                        dr::gather<Float>(m_tensor.array(), index, active_2),
                         weight, values[k]);
 
                     index++;
@@ -688,8 +684,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
         UInt32 ys = 0;
         Float weight_sum = 0.f;
 
-        ek::Loop<Mask> loop_1("ImageBlock::read() [1]");
-        loop_1.set_uniform();
+        dr::Loop<Mask> loop_1("ImageBlock::read() [1]");
         loop_1.put(ys, index, weight_sum);
         for (uint32_t k = 0; k < m_channel_count; ++k)
             loop_1.put(values[k]);
@@ -700,9 +695,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
             UInt32 xs = 0;
-            ek::Loop<Mask> loop_2("ImageBlock::read() [2]");
+            dr::Loop<Mask> loop_2("ImageBlock::read() [2]");
 
-            loop_2.set_uniform();
             loop_2.put(xs, index, weight_sum);
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 loop_2.put(values[k]);
@@ -714,14 +708,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
                 Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
                 for (uint32_t k = 0; k < m_channel_count; ++k) {
-                    values[k] = ek::fmadd(
-                        ek::gather<Float>(m_tensor.array(), index, active_2),
+                    values[k] = dr::fmadd(
+                        dr::gather<Float>(m_tensor.array(), index, active_2),
                         weight, values[k]);
 
                     index++;
                 }
 
-                weight_sum += ek::select(active_2, weight, 0.f);
+                weight_sum += dr::select(active_2, weight, 0.f);
                 xs++;
             }
 
@@ -731,7 +725,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
         if (m_normalize) {
             Float norm =
-                ek::select(ek::neq(weight_sum, 0.f), ek::rcp(weight_sum), 0.f);
+                dr::select(dr::neq(weight_sum, 0.f), dr::rcp(weight_sum), 0.f);
 
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 values[k] *= norm;

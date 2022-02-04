@@ -56,11 +56,11 @@ public:
         // m_diffuse    = props.get<bool>("diffuse", false);
         m_ndf_params = props.volume<Volume>("S");
         m_flags = PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     MTS_INLINE
-    ek::Array<Float, 6> eval_ndf_params(const MediumInteraction3f &mi, Mask active) const {
+    dr::Array<Float, 6> eval_ndf_params(const MediumInteraction3f &mi, Mask active) const {
         return m_ndf_params->eval_6(mi, active);
     }
 
@@ -83,7 +83,7 @@ public:
             return {wo, pdf};
         } else { */
         Float pdf = 0.25f * sggx_ndf_pdf(Vector3f(sampled_n), s) / sggx_projected_area(mi.wi, s);
-        Vector3f wo = ek::normalize(reflect(mi.wi, sampled_n));
+        Vector3f wo = dr::normalize(reflect(mi.wi, sampled_n));
         return {wo, pdf};
         // }
     }
@@ -95,9 +95,9 @@ public:
         auto s = eval_ndf_params(mi, active);
         /* if (m_diffuse) {
             auto sampled_n = sggx_sample_vndf(mi.sh_frame, ctx.sampler->next_2d(active), s);
-            return ek::InvPi<Float> * ek::max(ek::dot(wo, sampled_n), 0.f);
+            return dr::InvPi<Float> * dr::max(dr::dot(wo, sampled_n), 0.f);
         } else { */
-        return 0.25f * sggx_ndf_pdf(ek::normalize(wo + mi.wi), s) / sggx_projected_area(mi.wi, s);
+        return 0.25f * sggx_ndf_pdf(dr::normalize(wo + mi.wi), s) / sggx_projected_area(mi.wi, s);
         // }
     }
 

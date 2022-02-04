@@ -32,9 +32,6 @@
 [submodule "ext/embree"]
     path = ext/embree
     url = https://github.com/mitsuba-renderer/embree
-[submodule "ext/enoki"]
-	path = ext/enoki
-	url = https://github.com/wjakob/enoki
 [submodule "ext/ittnotify"]
 	path = ext/ittnotify
 	url = https://github.com/intel/IntelSEAPI
@@ -45,3 +42,6 @@
 	path = tutorials
 	url = https://github.com/mitsuba-renderer/mitsuba-tutorials
 	shallow = true
+[submodule "ext/drjit"]
+	path = ext/drjit
+	url = https://github.com/mitsuba-renderer/drjit

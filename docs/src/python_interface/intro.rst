@@ -105,9 +105,9 @@ obtain information on classes, function via the ``help()`` function:
 Basic arithmetic types
 ----------------------
 
-Mitsuba heavily relies on the `Enoki
+Mitsuba heavily relies on the `Dr.Jit
 <https://enoki.readthedocs.io/en/master/intro.html>`_ library for elementary
-arithmetic types, mathematical operations, vectors, matrices, and so on. Enoki
+arithmetic types, mathematical operations, vectors, matrices, and so on. Dr.Jit
 is used both on the C++ and Python side, and we recommend that you read its
 documentation before developing any Mitsuba code.
 
@@ -224,7 +224,7 @@ variant.
 NumPy and PyTorch integration
 -----------------------------
 
-Enoki arrays interoperate with standard Python array libraries like NumPy
+Dr.Jit arrays interoperate with standard Python array libraries like NumPy
 PyTorch. For instance, in the previous example, we could have replaced the
 assignment to the ``samples`` variable by
 
@@ -234,7 +234,7 @@ assignment to the ``samples`` variable by
     samples = np.random.random((sample_count, 2))
 
 and the subsequent ``square_to_uniform_sphere`` call would have performed an
-implicit conversion. Similarly, Enoki arrays can be cast into PyTorch or NumPy
+implicit conversion. Similarly, Dr.Jit arrays can be cast into PyTorch or NumPy
 arrays and plotted using libraries like Matplotlib.
 
 Submodules

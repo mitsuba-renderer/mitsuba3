@@ -73,10 +73,10 @@ public:
                 ScalarPoint3f origin     = props.get<ScalarPoint3f>("origin");
                 ScalarVector3f direction = props.get<ScalarVector3f>("direction");
                 ScalarPoint3f target     = origin + direction;
-                auto [up, unused]        = coordinate_system(ek::normalize(direction));
+                auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
                 m_to_world = ScalarTransform4f::look_at(origin, target, up);
-                ek::make_opaque(m_to_world);
+                dr::make_opaque(m_to_world);
             }
         }
 
@@ -102,7 +102,7 @@ public:
 
         // 1. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         ray.wavelengths = wavelengths;
@@ -126,7 +126,7 @@ public:
 
         // 1. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         ray.wavelengths = wavelengths;

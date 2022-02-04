@@ -9,7 +9,7 @@ from inspect import getframeinfo, stack, signature, _empty
 
 import pytest
 import mitsuba
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 def fresolver_append_path(func):
@@ -91,7 +91,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
 
     Parameter ``kernel`` (function):
         Function to be evaluated. It's arguments should be annotated if
-        ``arg_dims`` is not specified. A kernel can return any enoki supported array
+        ``arg_dims`` is not specified. A kernel can return any drjit supported array
         types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
 
     Parameter ``arg_dims`` (list(int)):
@@ -163,4 +163,4 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
 
         # Compare results
         for i in range(len(results_scalar)):
-            assert ek.allclose(results_vec[i], results_scalar[i], atol=atol)
+            assert dr.allclose(results_vec[i], results_scalar[i], atol=atol)

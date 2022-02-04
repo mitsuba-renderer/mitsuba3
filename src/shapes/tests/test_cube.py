@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.core import load_dict
@@ -9,7 +9,7 @@ def test01_create(variant_scalar_rgb):
     s = load_dict({"type" : "cube"})
     assert s is not None
     assert s.primitive_count() == 12
-    assert ek.allclose(s.surface_area(), 24.0)
+    assert dr.allclose(s.surface_area(), 24.0)
 
 
 def test02_bbox(variant_scalar_rgb):
@@ -23,9 +23,9 @@ def test02_bbox(variant_scalar_rgb):
 
         b = s.bbox()
         assert b.valid()
-        assert ek.allclose(b.center(), [0, 0, 0])
-        assert ek.allclose(b.min, [-r, -r, -r])
-        assert ek.allclose(b.max, [r, r, r])
+        assert dr.allclose(b.center(), [0, 0, 0])
+        assert dr.allclose(b.min, [-r, -r, -r])
+        assert dr.allclose(b.max, [r, r, r])
 
 def test03_ray_intersect(variant_scalar_rgb):
     from mitsuba.core import load_dict, Ray3f, Transform4f, Vector3f, Vector2f
@@ -60,10 +60,10 @@ def test03_ray_intersect(variant_scalar_rgb):
                     si_v = s.ray_intersect(ray_v)
                     if si_u.is_valid():
                         du = (si_u.uv - si.uv) / eps
-                        assert ek.allclose(du, [1, 0], atol=2e-2)
+                        assert dr.allclose(du, [1, 0], atol=2e-2)
                     if si_v.is_valid():
                         dv = (si_v.uv - si.uv) / eps
-                        assert ek.allclose(dv, [0, 1], atol=2e-2)
+                        assert dr.allclose(dv, [0, 1], atol=2e-2)
 
                     # Check normal
                     assert si.n == Vector3f([0,0,-1])
@@ -71,7 +71,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                     # Check UV
                     oo  = (coordsY - (-scale.y)) / ((scale.y) - (-scale.y))
                     tt = (coordsX - (-scale.x)) / (scale.x - (-scale.x ))
-                    assert ek.allclose(si.uv, Vector2f([1.0-oo, tt]), atol=1e-5, rtol=1e-5)
+                    assert dr.allclose(si.uv, Vector2f([1.0-oo, tt]), atol=1e-5, rtol=1e-5)
 
 def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
@@ -91,7 +91,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o.z = -8.0
 
         t = scene.ray_intersect(Ray3f(o, [0, 0, 1])).t
-        ek.eval(t)
+        dr.eval(t)
         return t
 
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)

@@ -6,7 +6,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/profiler.h>
-#include <enoki/half.h>
+#include <drjit/half.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <fstream>
@@ -81,7 +81,7 @@ public:
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using ScalarIndex3 = ek::Array<ScalarIndex, 3>;
+    using ScalarIndex3 = dr::Array<ScalarIndex, 3>;
     using typename Base::InputFloat;
     using typename Base::InputPoint3f ;
     using typename Base::InputVector2f;
@@ -230,28 +230,28 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
-                        InputPoint3f p = ek::load<InputPoint3f>(target);
+                        InputPoint3f p = dr::load<InputPoint3f>(target);
                         p = m_to_world.scalar().transform_affine(p);
-                        if (unlikely(!all(ek::isfinite(p))))
+                        if (unlikely(!all(dr::isfinite(p))))
                             fail("mesh contains invalid vertex positions/normal data");
                         m_bbox.expand(p);
-                        ek::store(position_ptr, p);
+                        dr::store(position_ptr, p);
                         position_ptr += 3;
 
                         if (has_vertex_normals) {
-                            InputNormal3f n = ek::load<InputNormal3f>(
+                            InputNormal3f n = dr::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
-                            n = ek::normalize(m_to_world.scalar().transform_affine(n));
-                            ek::store(normal_ptr, n);
+                            n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                            dr::store(normal_ptr, n);
                             normal_ptr += 3;
                         }
 
                         if (has_vertex_texcoords) {
-                            InputVector2f uv = ek::load<InputVector2f>(
+                            InputVector2f uv = dr::load<InputVector2f>(
                                 target + (m_face_normals
                                               ? sizeof(InputFloat) * 3
                                               : sizeof(InputFloat) * 6));
-                            ek::store(texcoord_ptr, uv);
+                            dr::store(texcoord_ptr, uv);
                             texcoord_ptr += 2;
                         }
 
@@ -276,11 +276,11 @@ public:
                 for (auto& descr: vertex_attributes_descriptors)
                     add_attribute(descr.name, descr.dim, descr.buf);
 
-                m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+                m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
                 if (!m_face_normals)
-                    m_vertex_normals = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+                    m_vertex_normals = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
                 if (has_vertex_texcoords)
-                    m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+                    m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
             } else if (el.name == "face") {
                 std::string field_name;
@@ -341,8 +341,8 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
-                        ScalarIndex3 fi = ek::load<ScalarIndex3>(target);
-                        ek::store(face_ptr, fi);
+                        ScalarIndex3 fi = dr::load<ScalarIndex3>(target);
+                        dr::store(face_ptr, fi);
                         face_ptr += 3;
 
                         size_t target_offset = sizeof(InputFloat) * 3;
@@ -361,7 +361,7 @@ public:
                 for (auto& descr: face_attributes_descriptors)
                     add_attribute(descr.name, descr.dim, descr.buf);
 
-                m_faces = ek::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
+                m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
             } else {
                 Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + el.struct_->size() * el.count);
@@ -596,7 +596,7 @@ private:
                         case Struct::Type::Float16: {
                                 float value;
                                 if (!(is >> value)) Throw("Could not parse \"half\" value for field %s", field.name);
-                                out->write(ek::half::float32_to_float16(value));
+                                out->write(dr::half::float32_to_float16(value));
                             }
                             break;
 

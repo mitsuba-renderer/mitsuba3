@@ -122,10 +122,10 @@ public:
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
-        m_max_density = ek::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
 
-        ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
-        ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
+        dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
+        dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     UnpolarizedSpectrum
@@ -155,7 +155,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = ek::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
     }
 
     void traverse(TraversalCallback *callback) override {

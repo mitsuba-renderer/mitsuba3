@@ -54,7 +54,7 @@ public:
      *
      * This method should not be used for differentiable rendering, since the
      * rendered image will be returned in the form of a \ref Bitmap instance
-     * that isn't associated with Enoki's AD graph. We recommended that you
+     * that isn't associated with Dr.Jit's AD graph. We recommended that you
      * use the Python interface for this, specifically the function
      * <tt>mitsuba.python.ad.render()</tt>.
      *
@@ -137,7 +137,7 @@ public:
      *   </li>
      *
      *   <li> Expanding the \ref PreliminaryInteraction into a full
-     *        \ref SurfaceInteraction (this part happens within Mitsuba/Enoki
+     *        \ref SurfaceInteraction (this part happens within Mitsuba/Dr.Jit
      *        and tracks derivative information in AD variants of the system).
      *   </li>
      * </ol>
@@ -267,7 +267,7 @@ public:
      * coordinates, curvature, etc.) that is generally needed by shading
      * models. In variants of Mitsuba that perform automatic differentiation,
      * it is important to know that computation done by the ray tracing
-     * backend is not reflected in Enoki's computation graph. The \ref
+     * backend is not reflected in Dr.Jit's computation graph. The \ref
      * ray_intersect() method will re-evaluate certain parts of the computation
      * with derivative tracking to rectify this.
      *
@@ -517,11 +517,11 @@ public:
     /// Return the scene's integrator
     const Integrator* integrator() const { return m_integrator; }
 
-    /// Return the list of emitters as an Enoki array
-    const DynamicBuffer<EmitterPtr> &emitters_ek() const { return m_emitters_ek; }
+    /// Return the list of emitters as an Dr.Jit array
+    const DynamicBuffer<EmitterPtr> &emitters_dr() const { return m_emitters_dr; }
 
-    /// Return the list of shapes as an Enoki array
-    const DynamicBuffer<ShapePtr> &shapes_ek() const { return m_shapes_ek; }
+    /// Return the list of shapes as an Dr.Jit array
+    const DynamicBuffer<ShapePtr> &shapes_dr() const { return m_shapes_dr; }
 
     //! @}
     // =============================================================
@@ -538,7 +538,7 @@ public:
      *
      * Knowing this is important in the context of differentiable rendering:
      * intersections (e.g. provided by OptiX or Embree) must then be
-     * re-computed differentiably within Enoki to correctly track gradient
+     * re-computed differentiably within Dr.Jit to correctly track gradient
      * information. Furthermore, differentiable geometry introduces bias
      * through visibility-induced discontinuities, and reparameterizations
      * (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.
@@ -602,9 +602,9 @@ protected:
     ScalarBoundingBox3f m_bbox;
 
     std::vector<ref<Emitter>> m_emitters;
-    DynamicBuffer<EmitterPtr> m_emitters_ek;
+    DynamicBuffer<EmitterPtr> m_emitters_dr;
     std::vector<ref<Shape>> m_shapes;
-    DynamicBuffer<ShapePtr> m_shapes_ek;
+    DynamicBuffer<ShapePtr> m_shapes_dr;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
@@ -622,13 +622,13 @@ extern MTS_EXPORT_RENDER void librender_nop();
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
 SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
-    if constexpr (!ek::is_jit_array_v<Float>) {
-        ENOKI_MARK_USED(active);
+    if constexpr (!dr::is_jit_array_v<Float>) {
+        DRJIT_MARK_USED(active);
         return is_valid() ? shape->emitter() : scene->environment();
     } else {
         EmitterPtr emitter = shape->emitter(active);
         if (scene->environment())
-            emitter = ek::select(is_valid(), emitter, scene->environment() & active);
+            emitter = dr::select(is_valid(), emitter, scene->environment() & active);
         return emitter;
     }
 }

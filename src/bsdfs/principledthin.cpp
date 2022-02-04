@@ -162,7 +162,7 @@ public:
 
         m_flags = m_components[0] | m_components[1] | m_components[2] |
                   m_components[3];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }
@@ -173,12 +173,12 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        BSDFSample3f bs   = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs   = dr::zero<BSDFSample3f>();
 
         // Ignoring perfectly grazing incoming rays
-        active &= ek::neq(cos_theta_i, 0.0f);
+        active &= dr::neq(cos_theta_i, 0.0f);
 
-        if (unlikely(ek::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, 0.0f };
 
         // Store the weights.
@@ -195,7 +195,7 @@ public:
         // There is no negative incoming angle for a thin surface, so we
         // change the direction for back_side case. The direction change is
         // taken into account after sampling the outgoing direction.
-        Vector3f wi = ek::mulsign(si.wi, cos_theta_i);
+        Vector3f wi = dr::mulsign(si.wi, cos_theta_i);
 
         // Probability for each minor lobe
         Float prob_spec_reflect =
@@ -211,7 +211,7 @@ public:
 
         // Normalizing the probabilities for the specular minor lobes
         Float rcp_total_prob =
-                ek::rcp(prob_spec_reflect + prob_spec_trans + prob_coshemi_reflect +
+                dr::rcp(prob_spec_reflect + prob_spec_trans + prob_coshemi_reflect +
                 prob_coshemi_trans);
 
         prob_spec_reflect *= rcp_total_prob;
@@ -239,7 +239,7 @@ public:
         bs.eta = 1.0f;
 
         // Microfacet reflection lobe
-        if (m_has_spec_trans && ek::any_or<true>(sample_spec_reflect)) {
+        if (m_has_spec_trans && dr::any_or<true>(sample_spec_reflect)) {
             // Defining the Microfacet Distribution.
             auto [ax, ay] = calc_dist_params(anisotropic, roughness,m_has_anisotropic);
             MicrofacetDistribution spec_reflect_distr(MicrofacetType::GGX, ax,
@@ -249,9 +249,9 @@ public:
 
             // Sampling
             Vector3f wo = reflect(wi, m_spec_reflect);
-            ek::masked(bs.wo, sample_spec_reflect)                = wo;
-            ek::masked(bs.sampled_component, sample_spec_reflect) = 3;
-            ek::masked(bs.sampled_type, sample_spec_reflect) =
+            dr::masked(bs.wo, sample_spec_reflect)                = wo;
+            dr::masked(bs.sampled_component, sample_spec_reflect) = 3;
+            dr::masked(bs.sampled_type, sample_spec_reflect) =
                     +BSDFFlags::GlossyReflection;
 
             // Filter the cases where macro and micro SURFACES do not agree
@@ -264,7 +264,7 @@ public:
                     reflect));
         }
         // Specular transmission lobe
-        if (m_has_spec_trans && ek::any_or<true>(sample_spec_trans)) {
+        if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
             // Relative index of refraction.
             Float eta_t = m_eta_thin->eval_1(si, active);
 
@@ -283,9 +283,9 @@ public:
             // since there is no bending on thin surfaces.
             Vector3f wo                          = reflect(wi, m_spec_trans);
             wo.z()                               = -wo.z();
-            ek::masked(bs.wo, sample_spec_trans) = wo;
-            ek::masked(bs.sampled_component, sample_spec_trans) = 2;
-            ek::masked(bs.sampled_type, sample_spec_trans) =
+            dr::masked(bs.wo, sample_spec_trans) = wo;
+            dr::masked(bs.sampled_component, sample_spec_trans) = 2;
+            dr::masked(bs.sampled_type, sample_spec_trans) =
                     +BSDFFlags::GlossyTransmission;
 
             // Filter the cases where macro and micro SURFACES do not agree
@@ -298,25 +298,25 @@ public:
         }
         // Cosine hemisphere reflection for  reflection lobes (diffuse,
         //  retro reflection)
-        if (ek::any_or<true>(sample_coshemi_reflect)) {
-            ek::masked(bs.wo, sample_coshemi_reflect) =
+        if (dr::any_or<true>(sample_coshemi_reflect)) {
+            dr::masked(bs.wo, sample_coshemi_reflect) =
                     warp::square_to_cosine_hemisphere(sample2);
-            ek::masked(bs.sampled_component, sample_coshemi_reflect) = 0;
-            ek::masked(bs.sampled_type, sample_coshemi_reflect) =
+            dr::masked(bs.sampled_component, sample_coshemi_reflect) = 0;
+            dr::masked(bs.sampled_type, sample_coshemi_reflect) =
                     +BSDFFlags::DiffuseReflection;
         }
         // Diffuse transmission lobe
-        if (m_has_diff_trans && ek::any_or<true>(sample_coshemi_trans)) {
-            ek::masked(bs.wo, sample_coshemi_trans) =
+        if (m_has_diff_trans && dr::any_or<true>(sample_coshemi_trans)) {
+            dr::masked(bs.wo, sample_coshemi_trans) =
                     -1.0f * warp::square_to_cosine_hemisphere(sample2);
-            ek::masked(bs.sampled_component, sample_coshemi_trans) = 1;
-            ek::masked(bs.sampled_type, sample_coshemi_trans) =
+            dr::masked(bs.sampled_component, sample_coshemi_trans) = 1;
+            dr::masked(bs.sampled_type, sample_coshemi_trans) =
                     +BSDFFlags::DiffuseTransmission;
         }
 
         /* The direction is changed once more. (Because it was changed in
            the beginning.) */
-        bs.wo = ek::mulsign(bs.wo, cos_theta_i);
+        bs.wo = dr::mulsign(bs.wo, cos_theta_i);
 
         bs.pdf = pdf(ctx, si, bs.wo, active);
         active &= bs.pdf > 0.0f;
@@ -330,9 +330,9 @@ public:
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations
-        active &= ek::neq(cos_theta_i, 0.0f);
+        active &= dr::neq(cos_theta_i, 0.0f);
 
-        if (unlikely(ek::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.0f;
 
         // Store the weights.
@@ -350,9 +350,9 @@ public:
 
         // Changing the signs in a way that we are always at the front side.
         // Thin BSDF is symmetric!
-        Vector3f wi       = ek::mulsign(si.wi, cos_theta_i);
-        Vector3f wo_t     = ek::mulsign(wo, cos_theta_i);
-        cos_theta_i       = ek::abs(cos_theta_i);
+        Vector3f wi       = dr::mulsign(si.wi, cos_theta_i);
+        Vector3f wo_t     = dr::mulsign(wo, cos_theta_i);
+        cos_theta_i       = dr::abs(cos_theta_i);
         Float cos_theta_o = Frame3f::cos_theta(wo_t);
 
         Mask reflect = cos_theta_o > 0.0f;
@@ -360,8 +360,8 @@ public:
 
         // Halfway vector calculation
         Vector3f wo_r = wo_t;
-        wo_r.z()      = ek::abs(wo_r.z());
-        Vector3f wh   = ek::normalize(wi + wo_r);
+        wo_r.z()      = dr::abs(wo_r.z());
+        Vector3f wh   = dr::normalize(wi + wo_r);
 
         /* Masks for controlling the micro-macro surface incompatibilities
            and correct sides. */
@@ -382,10 +382,10 @@ public:
         // Specular lobes (transmission and reflection)
         if (m_has_spec_trans) {
             // Dielectric Fresnel
-            Float F_dielectric = std::get<0>(fresnel(ek::dot(wi, wh), eta_t));
+            Float F_dielectric = std::get<0>(fresnel(dr::dot(wi, wh), eta_t));
 
             // Specular reflection lobe
-            if (ek::any_or<true>(spec_reflect_active)) {
+            if (dr::any_or<true>(spec_reflect_active)) {
                 // Specular reflection distribution
                 auto [ax, ay] = calc_dist_params(anisotropic, roughness,m_has_anisotropic);
                 MicrofacetDistribution spec_reflect_distr(MicrofacetType::GGX,
@@ -399,7 +399,7 @@ public:
                         m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
 
                 UnpolarizedSpectrum F_thin = thin_fresnel(F_dielectric,spec_tint,base_color,
-                                           lum,ek::dot(wi,wh),eta_t,m_has_spec_tint);
+                                           lum,dr::dot(wi,wh),eta_t,m_has_spec_tint);
 
                 // Evaluate the microfacet normal distribution
                 Float D = spec_reflect_distr.eval(wh);
@@ -408,11 +408,11 @@ public:
                 Float G = spec_reflect_distr.G(wi, wo_t, wh);
 
                 // Calculate the specular reflection component.
-                ek::masked(value, spec_reflect_active) +=
+                dr::masked(value, spec_reflect_active) +=
                         spec_trans * F_thin * D * G / (4.0f * cos_theta_i);
             }
             // Specular Transmission lobe
-            if (ek::any_or<true>(spec_trans_active)) {
+            if (dr::any_or<true>(spec_trans_active)) {
                 // Defining the scaled distribution for thin specular
                 // reflection Scale roughness based on IOR. (Burley 2015,
                 // Figure 15).
@@ -430,22 +430,22 @@ public:
                 Float G = spec_trans_distr.G(wi, wo_t, wh);
 
                 // Calculate the specular transmission component.
-                ek::masked(value, spec_trans_active) +=
+                dr::masked(value, spec_trans_active) +=
                         spec_trans * base_color * (1.0f - F_dielectric) * D * G /
                         (4.0f * cos_theta_i);
             }
         }
         // Diffuse, retro reflection, sheen and fake-subsurface evaluation
-        if (ek::any_or<true>(diffuse_reflect_active)) {
-            Float Fo = schlick_weight(ek::abs(cos_theta_o)),
+        if (dr::any_or<true>(diffuse_reflect_active)) {
+            Float Fo = schlick_weight(dr::abs(cos_theta_o)),
             Fi = schlick_weight(cos_theta_i);
 
             // Diffuse response
             Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
 
             // Retro response
-            Float cos_theta_d = ek::dot(wh, wo_t);
-            Float Rr          = 2.0f * roughness * ek::sqr(cos_theta_d);
+            Float cos_theta_d = dr::dot(wh, wo_t);
+            Float Rr          = 2.0f * roughness * dr::sqr(cos_theta_d);
             Float f_retro     = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
 
             /* Fake subsurface implementation based on Hanrahan-Krueger
@@ -453,29 +453,29 @@ public:
                roughness. */
             if (m_has_flatness) {
                 Float Fss90 = Rr / 2.0f;
-                Float Fss = ek::lerp(1.0, Fss90, Fo) * ek::lerp(1.0, Fss90, Fi);
-                Float f_ss = 1.25f * (Fss * (1.0f / (ek::abs(cos_theta_o) +
-                        ek::abs(cos_theta_i)) -
+                Float Fss = dr::lerp(1.0, Fss90, Fo) * dr::lerp(1.0, Fss90, Fi);
+                Float f_ss = 1.25f * (Fss * (1.0f / (dr::abs(cos_theta_o) +
+                        dr::abs(cos_theta_i)) -
                                 0.5f) +
                                         0.5f);
 
                 // Adding diffuse, retro and fake subsurface components.
-                ek::masked(value, diffuse_reflect_active) +=
+                dr::masked(value, diffuse_reflect_active) +=
                         (1.0f - spec_trans) * cos_theta_o * base_color *
-                        ek::InvPi<Float> * (1.0f - diff_trans) *
-                        ek::lerp(f_diff + f_retro, f_ss, flatness);
+                        dr::InvPi<Float> * (1.0f - diff_trans) *
+                        dr::lerp(f_diff + f_retro, f_ss, flatness);
             } else
                 // Adding diffuse and retro components. (no fake subsurface)
-                ek::masked(value, diffuse_reflect_active) +=
+                dr::masked(value, diffuse_reflect_active) +=
                         (1.0f - spec_trans) * cos_theta_o * base_color *
-                        ek::InvPi<Float> * (1.0f - diff_trans) * (f_diff + f_retro);
+                        dr::InvPi<Float> * (1.0f - diff_trans) * (f_diff + f_retro);
 
             // Sheen evaluation
             Float sheen =
                     m_has_sheen ? m_sheen->eval_1(si, active) : Float(0.0f);
-            if (m_has_sheen && ek::any_or<true>(sheen > 0.0f)) {
+            if (m_has_sheen && dr::any_or<true>(sheen > 0.0f)) {
 
-                Float Fd = schlick_weight(ek::abs(cos_theta_d));
+                Float Fd = schlick_weight(dr::abs(cos_theta_d));
 
                 if (m_has_sheen_tint) { // Tints the sheen evaluation to the
                     // base_color.
@@ -486,25 +486,25 @@ public:
 
                     // Normalize color with luminance and apply tint.
                     UnpolarizedSpectrum c_tint =
-                            ek::select(lum > 0.0f, base_color / lum, 1.0f);
-                    UnpolarizedSpectrum c_sheen = ek::lerp(1.0f, c_tint, sheen_tint);
+                            dr::select(lum > 0.0f, base_color / lum, 1.0f);
+                    UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
 
                     // Adding the sheen component with tint.
-                    ek::masked(value, diffuse_reflect_active) +=
+                    dr::masked(value, diffuse_reflect_active) +=
                             sheen * (1.0f - spec_trans) * Fd * c_sheen *
-                            (1.0f - diff_trans) * ek::abs(cos_theta_o);
+                            (1.0f - diff_trans) * dr::abs(cos_theta_o);
                 } else
                     // Adding the sheen component without tint.
-                    ek::masked(value, diffuse_reflect_active) +=
+                    dr::masked(value, diffuse_reflect_active) +=
                             sheen * (1.0f - spec_trans) * Fd * (1.0f - diff_trans) *
-                            ek::abs(cos_theta_o);
+                            dr::abs(cos_theta_o);
             }
         }
         // Adding diffuse Lambertian transmission component.
-        if (m_has_diff_trans && ek::any_or<true>(diffuse_trans_active)) {
-            ek::masked(value, diffuse_trans_active) +=
+        if (m_has_diff_trans && dr::any_or<true>(diffuse_trans_active)) {
+            dr::masked(value, diffuse_trans_active) +=
                     (1.0f - spec_trans) * diff_trans * base_color *
-                    ek::InvPi<Float> * ek::abs(cos_theta_o);
+                    dr::InvPi<Float> * dr::abs(cos_theta_o);
         }
         return depolarizer<Spectrum>(value) & active;
     }
@@ -515,9 +515,9 @@ public:
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations.
-        active &= ek::neq(cos_theta_i, 0.0f);
+        active &= dr::neq(cos_theta_i, 0.0f);
 
-        if (unlikely(ek::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.0f;
 
         // Store the weights.
@@ -533,9 +533,9 @@ public:
 
         // Changing the signs in a way that we are always at the front side.
         // Thin BSDF is symmetric !!
-        Vector3f wi = ek::mulsign(si.wi, cos_theta_i);
+        Vector3f wi = dr::mulsign(si.wi, cos_theta_i);
         // wo_t stands for thin wo.
-        Vector3f wo_t     = ek::mulsign(wo, cos_theta_i);
+        Vector3f wo_t     = dr::mulsign(wo, cos_theta_i);
         Float cos_theta_o = Frame3f::cos_theta(wo_t);
 
         Mask reflect = cos_theta_o > 0.0f;
@@ -555,7 +555,7 @@ public:
 
         // Normalizing the probabilities
         Float rcp_total_prob =
-                ek::rcp(prob_spec_reflect + prob_spec_trans + prob_coshemi_reflect +
+                dr::rcp(prob_spec_reflect + prob_spec_trans + prob_coshemi_reflect +
                 prob_coshemi_trans);
         prob_spec_reflect *= rcp_total_prob;
         prob_spec_trans *= rcp_total_prob;
@@ -571,8 +571,8 @@ public:
              * specular transmission, we first apply microfacet reflection
              * and invert to the other side. */
             Vector3f wo_r = wo_t;
-            wo_r.z()      = ek::abs(wo_r.z());
-            Vector3f wh   = ek::normalize(wi + wo_r);
+            wo_r.z()      = dr::abs(wo_r.z());
+            Vector3f wh   = dr::normalize(wi + wo_r);
 
             // Macro-micro surface compatibility masks
             Mask mfacet_reflect_macmic =
@@ -581,8 +581,8 @@ public:
                     mac_mic_compatibility(wh, wi, wo_t, wi.z(), false) && refract;
 
             // d(wh) / d(wo) calculation. Inverted wo is used (wo_r) !
-            Float dot_wor_wh  = ek::dot(wo_r, wh);
-            Float dwh_dwo_abs = ek::abs(ek::rcp(4.0f * dot_wor_wh));
+            Float dot_wor_wh  = dr::dot(wo_r, wh);
+            Float dwh_dwo_abs = dr::abs(dr::rcp(4.0f * dot_wor_wh));
 
             // Specular reflection distribution.
             auto [ax, ay] = calc_dist_params(anisotropic, roughness,
@@ -597,19 +597,19 @@ public:
             MicrofacetDistribution spec_trans_distr(MicrofacetType::GGX,
                                                     ax_scaled, ay_scaled);
             // Adding specular lobes' pdfs
-            ek::masked(pdf, mfacet_reflect_macmic) +=
+            dr::masked(pdf, mfacet_reflect_macmic) +=
                     prob_spec_reflect * spec_reflect_distr.pdf(wi, wh) *
                     dwh_dwo_abs;
-            ek::masked(pdf, mfacet_trans_macmic) +=
+            dr::masked(pdf, mfacet_trans_macmic) +=
                     prob_spec_trans * spec_trans_distr.pdf(wi, wh) * dwh_dwo_abs;
         }
         // Adding cosine hemisphere reflection pdf
-        ek::masked(pdf, reflect) +=
+        dr::masked(pdf, reflect) +=
                 prob_coshemi_reflect * warp::square_to_cosine_hemisphere_pdf(wo_t);
 
         // Adding cosine hemisphere transmission pdf
         if (m_has_diff_trans) {
-            ek::masked(pdf, refract) +=
+            dr::masked(pdf, refract) +=
                     prob_coshemi_trans *
                     warp::square_to_cosine_hemisphere_pdf(-wo_t);
         }
@@ -654,7 +654,7 @@ public:
             m_has_flatness = true;
         if (string::contains(keys, "spec_tint"))
             m_has_spec_tint = true;
-        ek::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
                         m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                         m_diff_trans, m_eta_thin, m_diff_refl_srate,
                         m_spec_refl_srate, m_spec_trans_srate,

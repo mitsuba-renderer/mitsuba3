@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/logger.h>
 
-#include <enoki-jit/optix.h>
+#include <drjit-core/optix.h>
 #define OPTIX_API_IMPL
 #include <mitsuba/render/optix_api.h>
 #include <mitsuba/render/optix/shapes.h>

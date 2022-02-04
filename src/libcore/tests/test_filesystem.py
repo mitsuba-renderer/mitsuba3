@@ -1,6 +1,6 @@
 import platform
 import re
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 

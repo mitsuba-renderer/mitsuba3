@@ -1,4 +1,4 @@
-#include <enoki/transform.h>
+#include <drjit/transform.h>
 #define __TBB_show_deprecation_message_task_scheduler_init_H 1
 #include <tbb/task_scheduler_init.h>
 

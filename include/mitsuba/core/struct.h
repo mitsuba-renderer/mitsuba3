@@ -1,11 +1,11 @@
 #pragma once
 
-#include <enoki/array_router.h>
+#include <drjit/array_router.h>
 #include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
- #if defined(ENOKI_X86_64)
+ #if defined(DRJIT_X86_64)
  #  define MTS_STRUCTCONVERTER_USE_JIT 1
  #else
  #  define MTS_STRUCTCONVERTER_USE_JIT 0
@@ -288,7 +288,7 @@ protected:
 
 NAMESPACE_BEGIN(detail)
 template <typename T> struct struct_type {
-    static constexpr Struct::Type value = struct_type<ek::scalar_t<T>>::value;
+    static constexpr Struct::Type value = struct_type<dr::scalar_t<T>>::value;
 };
 
 #define MTS_STRUCT_TYPE(type, entry)                               \
@@ -304,7 +304,7 @@ MTS_STRUCT_TYPE(int32_t,     Int32);
 MTS_STRUCT_TYPE(uint32_t,    UInt32);
 MTS_STRUCT_TYPE(int64_t,     Int64);
 MTS_STRUCT_TYPE(uint64_t,    UInt64);
-MTS_STRUCT_TYPE(ek::half,    Float16);
+MTS_STRUCT_TYPE(dr::half,    Float16);
 MTS_STRUCT_TYPE(float,       Float32);
 MTS_STRUCT_TYPE(double,      Float64);
 #undef MTS_STRUCT_TYPE

@@ -20,55 +20,55 @@ if (MTS_PROFILER_ITTNOTIFY)
 endif()
 
 # ---------------------------------------------------------------------------
-#  Build Enoki (+ Python bindings, JIT compiler, etc.)
+#  Build Dr.Jit (+ Python bindings, JIT compiler, etc.)
 # ---------------------------------------------------------------------------
 
 set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS}")
-set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
-set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
-set(ENOKI_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
+set(DRJIT_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
+set(DRJIT_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
+set(DRJIT_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
 if (MTS_PROFILER_NVTX)
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-    set(ENOKI_JIT_ENABLE_NVTX ON)
+    set(DRJIT_JIT_ENABLE_NVTX ON)
 endif()
 
 if (NOT SKBUILD)
-  add_subdirectory(enoki)
+  add_subdirectory(drjit)
 
   if (NOT MTS_ENABLE_JIT)
-    add_subdirectory(enoki/ext/enoki-jit/ext/enoki-thread)
-    set_target_properties(enoki-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/enoki")
+    add_subdirectory(drjit/ext/drjit-core/ext/drjit-thread)
+    set_target_properties(drjit-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drjit")
   endif()
 
-  set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
+  set_target_properties(drjit-thread PROPERTIES FOLDER "drjit")
 
   if (MTS_ENABLE_JIT)
-    set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
+    set_target_properties(drjit-core PROPERTIES FOLDER "drjit")
   endif()
 
   if (MTS_ENABLE_AUTODIFF)
-    set_target_properties(enoki-autodiff PROPERTIES FOLDER "enoki")
-    if (TARGET enoki-autodiff-scalar-f32)
-      set_target_properties(enoki-autodiff-scalar-f32 enoki-autodiff-scalar-f64 PROPERTIES FOLDER "enoki")
+    set_target_properties(drjit-autodiff PROPERTIES FOLDER "drjit")
+    if (TARGET drjit-autodiff-scalar-f32)
+      set_target_properties(drjit-autodiff-scalar-f32 drjit-autodiff-scalar-f64 PROPERTIES FOLDER "drjit")
     endif()
-    if (TARGET enoki-autodiff-cuda-f32)
-      set_target_properties(enoki-autodiff-cuda-f32 enoki-autodiff-cuda-f64 PROPERTIES FOLDER "enoki")
+    if (TARGET drjit-autodiff-cuda-f32)
+      set_target_properties(drjit-autodiff-cuda-f32 drjit-autodiff-cuda-f64 PROPERTIES FOLDER "drjit")
     endif()
-    if (TARGET enoki-autodiff-llvm-f32)
-      set_target_properties(enoki-autodiff-llvm-f32 enoki-autodiff-llvm-f64 PROPERTIES FOLDER "enoki")
+    if (TARGET drjit-autodiff-llvm-f32)
+      set_target_properties(drjit-autodiff-llvm-f32 drjit-autodiff-llvm-f64 PROPERTIES FOLDER "drjit")
     endif()
   endif()
 
   if (MTS_ENABLE_PYTHON)
-    set_target_properties(enoki-python PROPERTIES FOLDER "enoki")
+    set_target_properties(drjit-python PROPERTIES FOLDER "drjit")
   endif()
 endif()
 
 mark_as_advanced(
-  ENOKI_ENABLE_AUTODIFF ENOKI_ENABLE_JIT
-  ENOKI_ENABLE_PYTHON ENOKI_ENABLE_PYTHON_PACKET ENOKI_ENABLE_TESTS
-  ENOKI_JIT_DYNAMIC_CUDA ENOKI_JIT_DYNAMIC_LLVM ENOKI_JIT_ENABLE_OPTIX
-  ENOKI_THREAD_ENABLE_TESTS
+  DRJIT_ENABLE_AUTODIFF DRJIT_ENABLE_JIT
+  DRJIT_ENABLE_PYTHON DRJIT_ENABLE_PYTHON_PACKET DRJIT_ENABLE_TESTS
+  DRJIT_JIT_DYNAMIC_CUDA DRJIT_JIT_DYNAMIC_LLVM DRJIT_JIT_ENABLE_OPTIX
+  DRJIT_THREAD_ENABLE_TESTS
 )
 
 # ----------------------------------------------------------

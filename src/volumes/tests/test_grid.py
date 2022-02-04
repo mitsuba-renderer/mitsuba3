@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 import mitsuba
-import enoki as ek
+import drjit as dr
 
 
 def test01_grid_construct(variant_scalar_rgb, tmpdir):
@@ -18,7 +18,7 @@ def test01_grid_construct(variant_scalar_rgb, tmpdir):
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
                           </volume>""").expand()[0]
-    it = ek.zero(Interaction3f, 1)
+    it = dr.zero(Interaction3f, 1)
 
     assert vol is not None
     assert np.allclose(vol.eval(it), Vector3f(1.5, 0.5, 0.0))
@@ -38,7 +38,7 @@ def test02_nearest_interpolation(variants_all, tmpdir):
                               <string name="filter_type" value="nearest"/>
                           </volume>""").expand()[0]
     assert vol is not None
-    it = ek.zero(Interaction3f, 1)
+    it = dr.zero(Interaction3f, 1)
     assert np.allclose(vol.eval(it), 0.0)
     it.p = Point3f(1.0) * 1/6
     assert np.allclose(vol.eval(it), 0.0)
@@ -56,7 +56,7 @@ def test03_trilinear_interpolation(variants_all, tmpdir):
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
                           </volume>""").expand()[0]
-    it = ek.zero(Interaction3f, 1)
+    it = dr.zero(Interaction3f, 1)
     assert vol is not None
     assert np.allclose(vol.eval(it), 0.0)
     it.p = Point3f(1.0) / 3
@@ -78,7 +78,7 @@ def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
                           </volume>""").expand()[0]
-    it = ek.zero(Interaction3f, 1)
+    it = dr.zero(Interaction3f, 1)
     assert vol is not None
     it.p = Point3f(0.2, 1.0, 0.7)
     assert np.allclose(vol.eval(it), 0.55)

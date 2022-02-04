@@ -34,7 +34,7 @@ public:
         m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     void set_shape(Shape *shape) override {
@@ -53,7 +53,7 @@ public:
         const Vector3f d = ps.n;
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
+        SurfaceInteraction3f si(ps, dr::zero<Wavelength>());
         auto [wavelength, wav_weight] = sample_wavelengths(si, wavelength_sample, active);
 
         // Note: ray.mint will ensure we don't immediately self-intersect
@@ -74,7 +74,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f & /*it*/, const Point2f & /*sample*/,
                      Mask /*active*/) const override {
-        return { ek::zero<DirectionSample3f>(), ek::zero<Spectrum>() };
+        return { dr::zero<DirectionSample3f>(), dr::zero<Spectrum>() };
     }
 
     Float pdf_direction(const Interaction3f & /*it*/,
@@ -88,7 +88,7 @@ public:
                     Mask active) const override {
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         PositionSample3f ps = m_shape->sample_position(time, sample, active);
-        Float weight        = ek::select(ps.pdf > 0.f, ek::rcp(ps.pdf), 0.f);
+        Float weight        = dr::select(ps.pdf > 0.f, dr::rcp(ps.pdf), 0.f);
         return { ps, weight };
     }
 

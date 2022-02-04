@@ -1,6 +1,6 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 from typing import Tuple
@@ -93,35 +93,35 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     # Convert into a direction at 'ray.o'. When no surface was intersected,
     # copy the original (static) direction
     hit = si.is_valid()
-    V_direct = ek.select(hit, ek.normalize(si.p - ray.o), ray.d)
+    V_direct = dr.select(hit, dr.normalize(si.p - ray.o), ray.d)
 
-    with ek.suspend_grad():
+    with dr.suspend_grad():
         # Boundary term provided by the underlying shape
-        B = ek.select(hit, si.boundary_test, 1.0)
+        B = dr.select(hit, si.boundary_test, 1.0)
 
         # Inverse of vMF density without normalization constant
-        # inv_vmf_density = ek.exp(ek.fnmadd(omega_local.z, kappa, kappa))
+        # inv_vmf_density = dr.exp(dr.fnmadd(omega_local.z, kappa, kappa))
 
-        # Better version (here, ek.exp() is constant). However, assumes a
+        # Better version (here, dr.exp() is constant). However, assumes a
         # specific implementation in warp.square_to_von_mises_fisher() (TODO)
-        inv_vmf_density = ek.rcp(ek.fmadd(sample.y, ek.exp(-2 * kappa), 1 - sample.y))
+        inv_vmf_density = dr.rcp(dr.fmadd(sample.y, dr.exp(-2 * kappa), 1 - sample.y))
 
         # Compute harmonic weight, being wary of division by near-zero values
         w_denom = inv_vmf_density + B - 1
-        w_denom_rcp = ek.select(w_denom > 1e-4, ek.rcp(w_denom), 0.0)
-        w = ek.pow(w_denom_rcp, exponent) * inv_vmf_density
+        w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)
+        w = dr.pow(w_denom_rcp, exponent) * inv_vmf_density
 
         # Analytic weight gradient w.r.t. `ray.d`
         tmp1 = inv_vmf_density * w * w_denom_rcp * kappa * exponent
         tmp2 = ray_frame.to_world(Vector3f(omega_local.x, omega_local.y, 0))
-        d_w_omega = ek.clamp(tmp1, -1e10, 1e10) * tmp2
+        d_w_omega = dr.clamp(tmp1, -1e10, 1e10) * tmp2
 
-    return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
+    return w, d_w_omega, w * V_direct, dr.dot(d_w_omega, V_direct)
 
 
-class _ReparameterizeOp(ek.CustomOp):
+class _ReparameterizeOp(dr.CustomOp):
     """
-    Enoki custom operation that reparameterizes rays based on the paper
+    Dr.Jit custom operation that reparameterizes rays based on the paper
 
       "Unbiased Warped-Area Sampling for Differentiable Rendering"
       (Proceedings of SIGGRAPH'20) by Sai Praveen Bangaru,
@@ -136,7 +136,7 @@ class _ReparameterizeOp(ek.CustomOp):
         self.scene = scene
         self.rng = rng
         self.params = params
-        self.ray = ek.detach(ray)
+        self.ray = dr.detach(ray)
         self.num_rays = num_rays
         self.kappa = kappa
         self.exponent = exponent
@@ -145,7 +145,7 @@ class _ReparameterizeOp(ek.CustomOp):
         self.unroll = unroll
 
         # The reparameterization is simply the identity in primal mode
-        return self.ray.d, ek.full(mitsuba.core.Float, 1, ek.width(ray))
+        return self.ray.d, dr.full(mitsuba.core.Float, 1, dr.width(ray))
 
 
     def forward(self):
@@ -172,15 +172,15 @@ class _ReparameterizeOp(ek.CustomOp):
 
         while loop(self.active & (it < self.num_rays)):
             ray = Ray3f(self.ray)
-            ek.enable_grad(ray.o)
-            ek.set_grad(ray.o, ray_grad_o)
+            dr.enable_grad(ray.o)
+            dr.set_grad(ray.o, ray_grad_o)
 
             rng_state_backup = rng.state
             sample = Point2f(rng.next_float32(),
                              rng.next_float32())
 
             if self.antithetic:
-                repeat = ek.eq(it & 1, 0)
+                repeat = dr.eq(it & 1, 0)
                 rng.state[repeat] = rng_state_backup
             else:
                 repeat = Bool(False)
@@ -190,22 +190,22 @@ class _ReparameterizeOp(ek.CustomOp):
                                                            repeat, self.kappa,
                                                            self.exponent)
 
-            ek.forward_to(V_i, div_lhs_i,
-                          flags=ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+            dr.forward_to(V_i, div_lhs_i,
+                          flags=dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
 
             Z += Z_i
             dZ += dZ_i
-            grad_V += ek.grad(V_i)
-            grad_div_lhs += ek.grad(div_lhs_i)
+            grad_V += dr.grad(V_i)
+            grad_div_lhs += dr.grad(div_lhs_i)
             it += 1
 
-        inv_Z = ek.rcp(ek.max(Z, 1e-8))
+        inv_Z = dr.rcp(dr.max(Z, 1e-8))
         V_theta  = grad_V * inv_Z
-        div_V_theta = (grad_div_lhs - ek.dot(V_theta, dZ)) * inv_Z
+        div_V_theta = (grad_div_lhs - dr.dot(V_theta, dZ)) * inv_Z
 
         # Ignore inactive lanes
-        V_theta = ek.select(self.active, V_theta, 0.0)
-        div_V_theta = ek.select(self.active, div_V_theta, 0.0)
+        V_theta = dr.select(self.active, V_theta, 0.0)
+        div_V_theta = dr.select(self.active, div_V_theta, 0.0)
 
         self.set_grad_out((V_theta, div_V_theta))
 
@@ -217,13 +217,13 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_direction, grad_divergence = self.grad_out()
 
         # Ignore inactive lanes
-        grad_direction  = ek.select(self.active, grad_direction, 0.0)
-        grad_divergence = ek.select(self.active, grad_divergence, 0.0)
+        grad_direction  = dr.select(self.active, grad_direction, 0.0)
+        grad_divergence = dr.select(self.active, grad_divergence, 0.0)
         ray_frame = Frame3f(self.ray.d)
         rng = self.rng
         rng_clone = PCG32(rng)
 
-        with ek.suspend_grad():
+        with dr.suspend_grad():
             # We need to trace the auxiliary rays a first time to compute the
             # constants Z and dZ in order to properly weight the incoming gradients
             Z = Float(0.0)
@@ -245,7 +245,7 @@ class _ReparameterizeOp(ek.CustomOp):
                                  rng_clone.next_float32())
 
                 if self.antithetic:
-                    repeat = ek.eq(it & 1, 0)
+                    repeat = dr.eq(it & 1, 0)
                     rng_clone.state[repeat] = rng_state_backup
                 else:
                     repeat = Bool(False)
@@ -259,23 +259,23 @@ class _ReparameterizeOp(ek.CustomOp):
                 it += 1
 
         # Un-normalized values
-        V = ek.zero(Vector3f, ek.width(Z))
-        div_V_1 = ek.zero(Float, ek.width(Z))
-        ek.enable_grad(V, div_V_1)
+        V = dr.zero(Vector3f, dr.width(Z))
+        div_V_1 = dr.zero(Float, dr.width(Z))
+        dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
-        Z = ek.max(Z, 1e-8)
+        Z = dr.max(Z, 1e-8)
         V_theta = V / Z
-        divergence = (div_V_1 - ek.dot(V_theta, dZ)) / Z
-        direction = ek.normalize(self.ray.d + V_theta)
+        divergence = (div_V_1 - dr.dot(V_theta, dZ)) / Z
+        direction = dr.normalize(self.ray.d + V_theta)
 
-        ek.set_grad(direction, grad_direction)
-        ek.set_grad(divergence, grad_divergence)
-        ek.enqueue(ek.ADMode.Backward, direction, divergence)
-        ek.traverse(Float, ek.ADMode.Backward)
+        dr.set_grad(direction, grad_direction)
+        dr.set_grad(divergence, grad_divergence)
+        dr.enqueue(dr.ADMode.Backward, direction, divergence)
+        dr.traverse(Float, dr.ADMode.Backward)
 
-        grad_V = ek.grad(V)
-        grad_div_V_1 = ek.grad(div_V_1)
+        grad_V = dr.grad(V)
+        grad_div_V_1 = dr.grad(div_V_1)
 
         it = UInt32(0)
         ray_grad_o = Point3f(0)
@@ -290,7 +290,7 @@ class _ReparameterizeOp(ek.CustomOp):
 
         while loop(self.active & (it < self.num_rays)):
             ray = Ray3f(self.ray)
-            ek.enable_grad(ray.o)
+            dr.enable_grad(ray.o)
 
             rng_state_backup = rng.state
 
@@ -298,7 +298,7 @@ class _ReparameterizeOp(ek.CustomOp):
                              rng.next_float32())
 
             if self.antithetic:
-                repeat = ek.eq(it & 1, 0)
+                repeat = dr.eq(it & 1, 0)
                 rng.state[repeat] = rng_state_backup
             else:
                 repeat = Bool(False)
@@ -308,14 +308,14 @@ class _ReparameterizeOp(ek.CustomOp):
                                                       repeat, self.kappa,
                                                       self.exponent)
 
-            ek.set_grad(V_i, grad_V)
-            ek.set_grad(div_V_1_i, grad_div_V_1)
-            ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
-            ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
-            ray_grad_o += ek.grad(ray.o)
+            dr.set_grad(V_i, grad_V)
+            dr.set_grad(div_V_1_i, grad_div_V_1)
+            dr.enqueue(dr.ADMode.Backward, V_i, div_V_1_i)
+            dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+            ray_grad_o += dr.grad(ray.o)
             it += 1
 
-        ray_grad = ek.detach(ek.zero(type(self.ray)))
+        ray_grad = dr.detach(dr.zero(type(self.ray)))
         ray_grad.o = ray_grad_o
         self.set_grad_in('ray', ray_grad)
 
@@ -329,14 +329,14 @@ class _ReparameterizeOp(ek.CustomOp):
         grad_direction, grad_divergence = self.grad_out()
 
         # Ignore inactive lanes
-        grad_direction  = ek.select(self.active, grad_direction, 0.0)
-        grad_divergence = ek.select(self.active, grad_divergence, 0.0)
+        grad_direction  = dr.select(self.active, grad_direction, 0.0)
+        grad_divergence = dr.select(self.active, grad_divergence, 0.0)
         ray_frame = Frame3f(self.ray.d)
         rng = self.rng
         rng_clone = PCG32(rng)
 
         ray = Ray3f(self.ray)
-        ek.enable_grad(ray.o)
+        dr.enable_grad(ray.o)
 
         warp_fields = []
         for i in range(self.num_rays):
@@ -354,33 +354,33 @@ class _ReparameterizeOp(ek.CustomOp):
             dZ += dZ_i
 
         # Un-normalized values
-        V = ek.zero(Vector3f, ek.width(Z))
-        div_V_1 = ek.zero(Float, ek.width(Z))
-        ek.enable_grad(V, div_V_1)
+        V = dr.zero(Vector3f, dr.width(Z))
+        div_V_1 = dr.zero(Float, dr.width(Z))
+        dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
-        Z = ek.max(Z, 1e-8)
+        Z = dr.max(Z, 1e-8)
         V_theta = V / Z
-        divergence = (div_V_1 - ek.dot(V_theta, dZ)) / Z
-        direction = ek.normalize(self.ray.d + V_theta)
+        divergence = (div_V_1 - dr.dot(V_theta, dZ)) / Z
+        direction = dr.normalize(self.ray.d + V_theta)
 
-        ek.set_grad(direction, grad_direction)
-        ek.set_grad(divergence, grad_divergence)
-        ek.enqueue(ek.ADMode.Backward, direction, divergence)
-        ek.traverse(Float, ek.ADMode.Backward)
+        dr.set_grad(direction, grad_direction)
+        dr.set_grad(divergence, grad_divergence)
+        dr.enqueue(dr.ADMode.Backward, direction, divergence)
+        dr.traverse(Float, dr.ADMode.Backward)
 
-        grad_V = ek.grad(V)
-        grad_div_V_1 = ek.grad(div_V_1)
+        grad_V = dr.grad(V)
+        grad_div_V_1 = dr.grad(div_V_1)
 
         for _, _, V_i, div_V_1_i in warp_fields:
-            ek.set_grad(V_i, grad_V)
-            ek.set_grad(div_V_1_i, grad_div_V_1)
-            ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
+            dr.set_grad(V_i, grad_V)
+            dr.set_grad(div_V_1_i, grad_div_V_1)
+            dr.enqueue(dr.ADMode.Backward, V_i, div_V_1_i)
 
-        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
-        ray_grad = ek.detach(ek.zero(type(self.ray)))
-        ray_grad.o = ek.grad(ray.o)
+        ray_grad = dr.detach(dr.zero(type(self.ray)))
+        ray_grad.o = dr.grad(ray.o)
         self.set_grad_in('ray', ray_grad)
 
 
@@ -447,5 +447,5 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         determinant of the change of variables.
     """
 
-    return ek.custom(_ReparameterizeOp, scene, rng, params, ray, num_rays,
+    return dr.custom(_ReparameterizeOp, scene, rng, params, ray, num_rays,
                      kappa, exponent, antithetic, unroll, active)

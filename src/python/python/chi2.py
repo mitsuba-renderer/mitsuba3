@@ -1,5 +1,5 @@
 import mitsuba
-import enoki as ek
+import drjit as dr
 import numpy as np
 import time
 
@@ -90,7 +90,7 @@ class ChiSquareTest:
         if domain.aspect() is None:
             self.res = ScalarVector2u(res, 1)
         else:
-            self.res = ek.max(ScalarVector2u(
+            self.res = dr.max(ScalarVector2u(
                 int(res / domain.aspect()), res), 1)
         self.ires = ires
         self.seed = seed
@@ -115,7 +115,7 @@ class ChiSquareTest:
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
             UInt64, PCG32, sample_tea_32
 
-        idx = ek.arange(UInt64, self.sample_count)
+        idx = dr.arange(UInt64, self.sample_count)
         v0, v1 = sample_tea_32(idx, self.seed)
 
         # Scramble seed and stream index using TEA, a linearly increasing sequence 
@@ -133,7 +133,7 @@ class ChiSquareTest:
         if type(samples_out) is tuple:
             weights_out = samples_out[1]
             samples_out = samples_out[0]
-            assert ek.array_depth_v(weights_out) == 1
+            assert dr.array_depth_v(weights_out) == 1
         else:
             weights_out = Float(1.0)
 
@@ -142,35 +142,35 @@ class ChiSquareTest:
 
         # Sanity check
         eps = self.bounds.extents() * 1e-4
-        in_domain = ek.all((xy >= self.bounds.min - eps) &
+        in_domain = dr.all((xy >= self.bounds.min - eps) &
                            (xy <= self.bounds.max + eps))
-        if not ek.all(in_domain):
+        if not dr.all(in_domain):
             self._log('Encountered samples outside of the specified '
                       'domain!')
             self.fail = True
 
         # Normalize position values
         xy = (xy - self.bounds.min) / self.bounds.extents()
-        xy = Vector2u(ek.clamp(xy * Vector2f(self.res), 0,
+        xy = Vector2u(dr.clamp(xy * Vector2f(self.res), 0,
                                Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
-        self.histogram = ek.zero(Float, ek.hprod(self.res))
+        self.histogram = dr.zero(Float, dr.hprod(self.res))
 
-        ek.scatter_reduce(
-            ek.ReduceOp.Add,
+        dr.scatter_reduce(
+            dr.ReduceOp.Add,
             self.histogram,
             weights_out,
             xy.x + xy.y * self.res.x,
         )
 
-        histogram_min = ek.hmin(self.histogram)
+        histogram_min = dr.hmin(self.histogram)
         if not histogram_min >= 0:
             self._log('Encountered a cell with negative sample '
                       'weights: %f' % histogram_min)
             self.fail = True
 
-        self.histogram_sum = ek.hsum(self.histogram) / self.sample_count
+        self.histogram_sum = dr.hsum(self.histogram) / self.sample_count
         if self.histogram_sum > 1.1:
             self._log('Sample weights add up to a value greater '
                       'than 1.0: %f' % self.histogram_sum)
@@ -193,7 +193,7 @@ class ChiSquareTest:
         # Determine total number of samples and construct an initial index
         sample_count    = self.ires**2
         cell_count      = self.res.x * self.res.y
-        index           = ek.arange(UInt32, cell_count * sample_count)
+        index           = dr.arange(UInt32, cell_count * sample_count)
         extents         = self.bounds.extents()
         cell_size       = extents / self.res
         sample_spacing  = cell_size / (self.ires - 1)
@@ -213,9 +213,9 @@ class ChiSquareTest:
         p += (sample_index_2d + 1e-4) * (1-2e-4) * sample_spacing
 
         # Trapezoid rule integration weights
-        weights = ek.hprod(ek.select(ek.eq(sample_index_2d, 0) |
-                                     ek.eq(sample_index_2d, self.ires - 1), 0.5, 1))
-        weights *= ek.hprod(sample_spacing) * self.sample_count
+        weights = dr.hprod(dr.select(dr.eq(sample_index_2d, 0) |
+                                     dr.eq(sample_index_2d, self.ires - 1), 0.5, 1))
+        weights *= dr.hprod(sample_spacing) * self.sample_count
 
         # Remap onto the target domain
         p = self.domain.map_forward(p)
@@ -224,19 +224,19 @@ class ChiSquareTest:
         pdf = self.pdf_func(p)
 
         # Sum over each cell
-        self.pdf = ek.block_sum(pdf * weights, sample_count)
+        self.pdf = dr.block_sum(pdf * weights, sample_count)
 
         if len(self.pdf) == 1:
-            ek.resize(self.pdf, ek.width(xy))
+            dr.resize(self.pdf, dr.width(xy))
 
         # A few sanity checks
-        pdf_min = ek.hmin(self.pdf) / self.sample_count
+        pdf_min = dr.hmin(self.pdf) / self.sample_count
         if not pdf_min >= 0:
             self._log('Failure: Encountered a cell with a '
                       'negative PDF value: %f' % pdf_min)
             self.fail = True
 
-        self.pdf_sum = ek.hsum(self.pdf) / self.sample_count
+        self.pdf_sum = dr.hsum(self.pdf) / self.sample_count
         if self.pdf_sum > 1.1:
             self._log('Failure: PDF integrates to a value greater '
                       'than 1.0: %f' % self.pdf_sum)
@@ -278,8 +278,8 @@ class ChiSquareTest:
                                                       key=lambda x: x[1])]))
 
         # Sort entries by expected frequency (increasing)
-        pdf = Float64(ek.gather(Float, self.pdf, index))
-        histogram = Float64(ek.gather(Float, self.histogram, index))
+        pdf = Float64(dr.gather(Float, self.pdf, index))
+        histogram = Float64(dr.gather(Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
         chi2val, dof, pooled_in, pooled_out = \
@@ -289,7 +289,7 @@ class ChiSquareTest:
             self._log('Failure: The number of degrees of freedom is too low!')
             self.fail = True
 
-        if ek.any(ek.eq(pdf, 0) & ek.neq(histogram, 0)):
+        if dr.any(dr.eq(pdf, 0) & dr.neq(histogram, 0)):
             self._log('Failure: Found samples in a cell with expected '
                       'frequency 0. Rejecting the null hypothesis!')
             self.fail = True
@@ -323,7 +323,7 @@ class ChiSquareTest:
                       'density and histogram were written to "chi2_data.py')
             result = False
         elif self.p_value < significance_level \
-                or not ek.isfinite(self.p_value):
+                or not dr.isfinite(self.p_value):
             self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
                       ' significance level = %f). Target density and histogram'
                       ' were written to "chi2_data.py".'
@@ -403,7 +403,7 @@ class LineDomain:
 
     def map_backward(self, p):
         from mitsuba.core import Vector2f, Float
-        return Vector2f(p.x, ek.zero(Float, len(p.x)))
+        return Vector2f(p.x, dr.zero(Float, len(p.x)))
 
 
 class PlanarDomain:
@@ -436,7 +436,7 @@ class SphericalDomain:
 
     def bounds(self):
         from mitsuba.core import ScalarBoundingBox2f
-        return ScalarBoundingBox2f([-ek.Pi, -1], [ek.Pi, 1])
+        return ScalarBoundingBox2f([-dr.Pi, -1], [dr.Pi, 1])
 
     def aspect(self):
         return 2
@@ -445,8 +445,8 @@ class SphericalDomain:
         from mitsuba.core import Vector3f
 
         cos_theta = -p.y
-        sin_theta = ek.safe_sqrt(ek.fnmadd(cos_theta, cos_theta, 1))
-        sin_phi, cos_phi = ek.sincos(p.x)
+        sin_theta = dr.safe_sqrt(dr.fnmadd(cos_theta, cos_theta, 1))
+        sin_phi, cos_phi = dr.sincos(p.x)
 
         return Vector3f(
             cos_phi * sin_theta,
@@ -456,7 +456,7 @@ class SphericalDomain:
 
     def map_backward(self, p):
         from mitsuba.core import Vector2f
-        return Vector2f(ek.atan2(p.y, p.x), -p.z)
+        return Vector2f(dr.atan2(p.y, p.x), -p.z)
 
 
 # --------------------------------------
@@ -486,13 +486,13 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        si = ek.zero(SurfaceInteraction3f, ek.width(sample))
+        si = dr.zero(SurfaceInteraction3f, dr.width(sample))
         wavelength, weight = plugin.sample_spectrum(si, sample_shifted(sample[0]))
         return Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
-        si = ek.zero(SurfaceInteraction3f, ek.width(w))
+        si = dr.zero(SurfaceInteraction3f, dr.width(w))
         si.wavelengths = w
         return plugin.pdf_spectrum(si)[0]
 
@@ -520,7 +520,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = BSDFContext()
 
     def make_context(n):
-        si = ek.zero(SurfaceInteraction3f, n)
+        si = dr.zero(SurfaceInteraction3f, n)
         si.wi = wi
         return (si, ctx)
 
@@ -531,17 +531,17 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = ek.width(sample)
+        n = dr.width(sample)
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
 
-        w = ek.full(Float, 1.0, ek.width(weight))
-        w[ek.all(ek.eq(weight, 0))] = 0
+        w = dr.full(Float, 1.0, dr.width(weight))
+        w[dr.all(dr.eq(weight, 0))] = 0
         return bs.wo, w
 
     def pdf_functor(wo, *args):
-        n = ek.width(wo)
+        n = dr.width(wo)
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         return plugin.pdf(ctx, si, wo)
@@ -571,17 +571,17 @@ def EmitterAdapter(emitter_type, extra):
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = ek.width(sample)
+        n = dr.width(sample)
         plugin = instantiate(args)
-        si = ek.zero(Interaction3f)
+        si = dr.zero(Interaction3f)
         ds, w = plugin.sample_direction(si, sample)
         return ds.d
 
     def pdf_functor(wo, *args):
-        n = ek.width(wo)
+        n = dr.width(wo)
         plugin = instantiate(args)
-        si = ek.zero(Interaction3f)
-        ds = ek.zero(DirectionSample3f)
+        si = dr.zero(Interaction3f)
+        ds = dr.zero(DirectionSample3f)
         ds.d = wo
         return plugin.pdf_direction(si, ds)
 
@@ -599,8 +599,8 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     def instantiate(args):
         wi = [0, 0, 1]
         if len(args) == 1:
-            angle = args[0] * ek.Pi / 180
-            wi = [ek.sin(angle), 0, ek.cos(angle)]
+            angle = args[0] * dr.Pi / 180
+            wi = [dr.sin(angle), 0, dr.cos(angle)]
         return MicrofacetDistribution(md_type, alpha, sample_visible), wi
 
     def sample_functor(sample, *args):
@@ -635,7 +635,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = PhaseFunctionContext(None)
 
     def make_context(n):
-        mi = ek.zero(MediumInteraction3f, n)
+        mi = dr.zero(MediumInteraction3f, n)
         mi.wi = wi
         mi.sh_frame = Frame3f(mi.wi)
         mi.p = mitsuba.core.Point3f(0, 0, 0)
@@ -648,16 +648,16 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = ek.width(sample)
+        n = dr.width(sample)
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         wo, pdf = plugin.sample(ctx, mi, sample[0], [sample[1], sample[2]])
-        w = ek.full(Float, 1.0, ek.width(pdf))
-        w[ek.eq(pdf, 0)] = 0
+        w = dr.full(Float, 1.0, dr.width(pdf))
+        w[dr.eq(pdf, 0)] = 0
         return wo, w
 
     def pdf_functor(wo, *args):
-        n = ek.width(wo)
+        n = dr.width(wo)
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         return plugin.eval(ctx, mi, wo)

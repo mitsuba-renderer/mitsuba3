@@ -95,8 +95,8 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "ray"_a, "active"_a = true, D(Shape, ray_test));
 
-    if constexpr (ek::is_array_v<Ptr>)
-        bind_enoki_ptr_array(cls);
+    if constexpr (dr::is_array_v<Ptr>)
+        bind_drjit_ptr_array(cls);
 }
 
 MTS_PY_EXPORT(Shape) {
@@ -126,11 +126,11 @@ MTS_PY_EXPORT(Shape) {
 
     bind_shape_generic<Shape *>(shape);
 
-    if constexpr (ek::is_array_v<ShapePtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<ShapePtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<ShapePtr> cls(m, "ShapePtr", ek_array);
+        py::class_<ShapePtr> cls(m, "ShapePtr", dr_array);
         bind_shape_generic<ShapePtr>(cls);
     }
 

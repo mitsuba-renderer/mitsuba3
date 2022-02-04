@@ -1,6 +1,6 @@
 #pragma once
 
-#include <enoki/struct.h>
+#include <drjit/struct.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/spectrum.h>
@@ -15,21 +15,21 @@ NAMESPACE_BEGIN(mitsuba)
  * wavelegnth information associated with the ray.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
-    static constexpr size_t Size = ek::array_size_v<Point_>;
+    static constexpr size_t Size = dr::array_size_v<Point_>;
 
     using Point      = Point_;
-    // TODO: need this because ek::value_t<MaskedArray<Point3f>> isn't a masked array
+    // TODO: need this because dr::value_t<MaskedArray<Point3f>> isn't a masked array
     using Float =
-        std::conditional_t<ek::is_masked_array_v<Point>,
-                           ek::detail::MaskedArray<ek::value_t<Point>>,
-                           ek::value_t<Point>>;
+        std::conditional_t<dr::is_masked_array_v<Point>,
+                           dr::detail::MaskedArray<dr::value_t<Point>>,
+                           dr::value_t<Point>>;
     using Vector     = mitsuba::Vector<Float, Size>;
     using Spectrum   = Spectrum_;
     using Wavelength = wavelength_t<Spectrum_>;
 
     Point o;                         ///< Ray origin
     Vector d;                        ///< Ray direction
-    Float maxt = ek::Largest<Float>; ///< Maximum position on the ray segment
+    Float maxt = dr::Largest<Float>; ///< Maximum position on the ray segment
     Float time = 0.f;                ///< Time value associated with this ray
     Wavelength wavelengths;          ///< Wavelength associated with the ray
 
@@ -53,7 +53,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
           time(r.time), wavelengths(r.wavelengths) { }
 
     /// Return the position of a point along the ray
-    Point operator() (Float t) const { return ek::fmadd(d, t, o); }
+    Point operator() (Float t) const { return dr::fmadd(d, t, o); }
 
     /// Return a ray that points into the opposite direction
     Ray reverse() const {
@@ -66,7 +66,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, maxt, time, wavelengths)
+    DRJIT_STRUCT(Ray, o, d, maxt, time, wavelengths)
 };
 
 /**
@@ -99,13 +99,13 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     }
 
     void scale_differential(Float amount) {
-        o_x = ek::fmadd(o_x - o, amount, o);
-        o_y = ek::fmadd(o_y - o, amount, o);
-        d_x = ek::fmadd(d_x - d, amount, d);
-        d_y = ek::fmadd(d_y - d, amount, d);
+        o_x = dr::fmadd(o_x - o, amount, o);
+        o_y = dr::fmadd(o_y - o, amount, o);
+        d_x = dr::fmadd(d_x - d, amount, d);
+        d_y = dr::fmadd(d_y - d, amount, d);
     }
 
-    ENOKI_STRUCT(RayDifferential, o, d, maxt, time,
+    DRJIT_STRUCT(RayDifferential, o, d, maxt, time,
                  wavelengths, o_x, o_y, d_x, d_y)
 };
 

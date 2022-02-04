@@ -99,7 +99,7 @@ public:
         if constexpr (is_spectral_v<Spectrum>)
             return { m_distr.sample(sample, active), m_distr.integral() };
         else {
-            ENOKI_MARK_USED(sample);
+            DRJIT_MARK_USED(sample);
             NotImplementedError("sample");
         }
     }

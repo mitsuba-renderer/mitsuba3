@@ -1,7 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import mitsuba
-import enoki as ek
+import drjit as dr
 import gc
 
 
@@ -67,7 +67,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             sensor = scene.sensors()[sensor]
 
         # Disable derivatives in all of the following
-        with ek.suspend_grad():
+        with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(
                 sensor=sensor,
@@ -81,7 +81,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, state = self.sample(
-                mode=ek.ADMode.Primal,
+                mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
@@ -99,15 +99,15 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            alpha = ek.select(valid, Float(1), Float(0))
+            alpha = dr.select(valid, Float(1), Float(0))
             block.put(pos, ray.wavelengths, L * weight, alpha)
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid, state, alpha
 
             # Probably a little overkill, but why not.. If there are any
-            # Enoki arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in ek.eval().
+            # DrJit arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in dr.eval().
             gc.collect()
 
             # Perform the weight division and return an image tensor
@@ -141,8 +141,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         Before calling this function, you must first enable gradient tracking and
         furthermore associate concrete input gradients with one or more scene
         parameters, or the function will just return a zero-valued gradient image.
-        This is typically done by invoking ``ek.enable_grad()`` and
-        ``ek.set_grad()`` on elements of the ``SceneParameters`` data structure
+        This is typically done by invoking ``dr.enable_grad()`` and
+        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
         that can be obtained obtained via a call to
         ``mitsuba.python.util.traverse()``.
 
@@ -154,11 +154,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
            gradients. Typically this will be an instance of type
            ``mitsuba.python.utils.SceneParameters`` obtained via
            ``mitsuba.python.util.traverse()``. However, it could also be a Python
-           list/dict/object tree (Enoki will traverse it to find all parameters).
+           list/dict/object tree (DrJit will traverse it to find all parameters).
            Gradient tracking must be explicitly enabled for each of these
-           parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+           parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
            ``render_forward()`` will not do this for you). Furthermore,
-           ``ek.set_grad(...)`` must be used to associate specific gradient values
+           ``dr.set_grad(...)`` must be used to associate specific gradient values
            with each parameter.
 
         Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
@@ -188,7 +188,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         aovs = self.aovs()
 
         # Disable derivatives in all of the following
-        with ek.suspend_grad():
+        with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, aovs)
 
@@ -213,7 +213,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
-                mode=ek.ADMode.Primal,
+                mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
@@ -237,8 +237,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             sample_pos_deriv = None # disable by default
 
-            with ek.resume_grad():
-                if ek.grad_enabled(pos):
+            with dr.resume_grad():
+                if dr.grad_enabled(pos):
                     sample_pos_deriv = film.create_block()
 
                     # Only use the coalescing feature when rendering enough samples
@@ -250,34 +250,34 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                         wavelengths=ray.wavelengths,
                         value=L * weight * det,
                         weight=det,
-                        alpha=ek.select(valid, Float(1), Float(0))
+                        alpha=dr.select(valid, Float(1), Float(0))
                     )
 
                     # Compute the derivative of the reparameterized image ..
                     tensor = sample_pos_deriv.tensor()
-                    ek.forward_to(tensor,
-                                  flags=ek.ADFlag.ClearInterior | ek.ADFlag.ClearEdges)
+                    dr.forward_to(tensor,
+                                  flags=dr.ADFlag.ClearInterior | dr.ADFlag.ClearEdges)
 
-                    ek.schedule(tensor, ek.grad(tensor))
+                    dr.schedule(tensor, dr.grad(tensor))
 
                     # Done with this part, let's detach the image-space position
-                    ek.disable_grad(pos)
+                    dr.disable_grad(pos)
                     del tensor
 
             # Probably a little overkill, but why not.. If there are any
-            # Enoki arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in ek.eval().
+            # DrJit arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in dr.eval().
             gc.collect()
 
             # Launch a kernel with everything so far
-            ek.eval(state_out)
+            dr.eval(state_out)
 
             # Garbage collect unused values to simplify kernel about to be run
             del L, valid, params
 
             # Launch the Monte Carlo sampling process in forward mode
             δL, valid_2, state_out_2 = self.sample(
-                mode=ek.ADMode.Forward,
+                mode=dr.ADMode.Forward,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
@@ -299,7 +299,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 pos=pos,
                 wavelengths=ray.wavelengths,
                 value=δL * weight,
-                alpha=ek.select(valid_2, Float(1), Float(0))
+                alpha=dr.select(valid_2, Float(1), Float(0))
             )
 
             # Perform the weight division and return an image tensor
@@ -310,20 +310,20 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 state_out, state_out_2, block
 
             # Probably a little overkill, but why not.. If there are any
-            # Enoki arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in ek.eval().
+            # DrJit arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in dr.eval().
             gc.collect()
 
             result_grad = film.develop()
 
             # Potentially add the derivative of the reparameterized samples
             if sample_pos_deriv is not None:
-                with ek.resume_grad():
+                with dr.resume_grad():
                     film.prepare(aovs)
                     film.put_block(sample_pos_deriv)
                     reparam_result = film.develop()
-                    ek.forward_to(reparam_result)
-                    result_grad += ek.grad(reparam_result)
+                    dr.forward_to(reparam_result)
+                    result_grad += dr.grad(reparam_result)
 
         return result_grad
 
@@ -346,9 +346,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         Before calling this function, you must first enable gradient tracking for
         one or more scene parameters, or the function will not do anything. This is
-        typically done by invoking ``ek.enable_grad()`` on elements of the
+        typically done by invoking ``dr.enable_grad()`` on elements of the
         ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mitsuba.python.util.traverse()``. Use ``ek.grad()`` to query the
+        to ``mitsuba.python.util.traverse()``. Use ``dr.grad()`` to query the
         resulting gradients of these parameters once ``render_backward()`` returns.
 
         Parameter ``scene`` (``mitsuba.render.Scene``):
@@ -359,9 +359,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
            gradients. Typically this will be an instance of type
            ``mitsuba.python.utils.SceneParameters`` obtained via
            ``mitsuba.python.util.traverse()``. However, it could also be a Python
-           list/dict/object tree (Enoki will traverse it to find all parameters).
+           list/dict/object tree (DrJit will traverse it to find all parameters).
            Gradient tracking must be explicitly enabled for each of these
-           parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+           parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
            ``render_backward()`` will not do this for you).
 
         Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
@@ -394,7 +394,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         aovs = self.aovs()
 
         # Disable derivatives in all of the following
-        with ek.suspend_grad():
+        with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, aovs)
 
@@ -419,7 +419,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
-                mode=ek.ADMode.Primal,
+                mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
@@ -436,8 +436,8 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             # Only use the coalescing feature when rendering enough samples
             block.set_coalesce(block.coalesce() and spp >= 4)
 
-            with ek.resume_grad():
-                ek.enable_grad(L)
+            with dr.resume_grad():
+                dr.enable_grad(L)
 
                 # Accumulate into the image block
                 block.put(
@@ -445,31 +445,31 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     wavelengths=ray.wavelengths,
                     value=L * weight * det,
                     weight=det,
-                    alpha=ek.select(valid, Float(1), Float(0))
+                    alpha=dr.select(valid, Float(1), Float(0))
                 )
 
                 sensor.film().put_block(block)
 
                 # Probably a little overkill, but why not.. If there are any
-                # Enoki arrays to be collected by Python's cyclic GC, then
-                # freeing them may enable loop simplifications in ek.eval().
+                # DrJit arrays to be collected by Python's cyclic GC, then
+                # freeing them may enable loop simplifications in dr.eval().
                 del valid
                 gc.collect()
 
                 # This step launches a kernel
-                ek.schedule(state_out, block.tensor())
+                dr.schedule(state_out, block.tensor())
                 image = sensor.film().develop()
 
                 # Differentiate sample splatting and weight division steps to
                 # retrieve the adjoint radiance
-                ek.set_grad(image, grad_in)
-                ek.enqueue(ek.ADMode.Backward, image)
-                ek.traverse(Float, ek.ADMode.Backward)
-                δL = ek.grad(L)
+                dr.set_grad(image, grad_in)
+                dr.enqueue(dr.ADMode.Backward, image)
+                dr.traverse(Float, dr.ADMode.Backward)
+                δL = dr.grad(L)
 
             # Launch Monte Carlo sampling in backward AD mode (2)
             L_2, valid_2, state_out_2 = self.sample(
-                mode=ek.ADMode.Backward,
+                mode=dr.ADMode.Backward,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
@@ -485,12 +485,12 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 ray, weight, pos, block, sampler
 
             # Probably a little overkill, but why not.. If there are any
-            # Enoki arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in ek.eval().
+            # DrJit arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in dr.eval().
             gc.collect()
 
             # Run kernel representing side effects of the above
-            ek.eval()
+            dr.eval()
 
     def sample_rays(
         self,
@@ -532,19 +532,19 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         spp = sampler.sample_count()
 
         # Compute discrete sample position
-        idx = ek.arange(UInt32, ek.hprod(film_size) * spp)
+        idx = dr.arange(UInt32, dr.hprod(film_size) * spp)
 
         # Try to avoid a division by an unknown constant if we can help it
-        log_spp = ek.log2i(spp)
+        log_spp = dr.log2i(spp)
         if 1 << log_spp == spp:
-            idx >>= ek.opaque(UInt32, log_spp)
+            idx >>= dr.opaque(UInt32, log_spp)
         else:
-            idx //= ek.opaque(UInt32, spp)
+            idx //= dr.opaque(UInt32, spp)
 
         # Compute the position on the image plane
         pos = Vector2u()
         pos.y = idx // film_size[0]
-        pos.x = ek.fnmadd(film_size[0], pos.y, idx)
+        pos.x = dr.fnmadd(film_size[0], pos.y, idx)
 
         if film.sample_border():
             pos -= border_size
@@ -555,9 +555,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         pos_f = Vector2f(pos) + sampler.next_2d()
 
         # Re-scale the position to [0, 1]^2
-        scale = ek.rcp(ScalarVector2f(film.crop_size()))
+        scale = dr.rcp(ScalarVector2f(film.crop_size()))
         offset = -ScalarVector2f(film.crop_offset()) * scale
-        pos_adjusted = ek.fmadd(pos_f, scale, offset)
+        pos_adjusted = dr.fmadd(pos_f, scale, offset)
 
         aperture_sample = Vector2f(0.0)
         if sensor.needs_aperture_sample():
@@ -602,13 +602,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     "or leaving the viewport, it is recommended that you set "
                     "the film's 'sample_border' parameter to True.")
 
-            with ek.resume_grad():
+            with dr.resume_grad():
                 # Reparameterize the camera ray
                 reparam_d, reparam_det = reparam(ray=ray, depth=UInt32(0))
 
                 # Create a fake interaction along the sampled ray and use it to the
                 # position with derivative tracking
-                it = ek.zero(Interaction3f)
+                it = dr.zero(Interaction3f)
                 it.p = ray.o + reparam_d
                 ds, _ = sensor.sample_direction(it, aperture_sample)
 
@@ -661,9 +661,9 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         if film.sample_border():
             film_size += 2 * film.rfilter().border_size()
 
-        wavefront_size = ek.hprod(film_size) * spp
+        wavefront_size = dr.hprod(film_size) * spp
 
-        is_llvm = ek.is_llvm_array_v(mitsuba.core.Float)
+        is_llvm = dr.is_llvm_array_v(mitsuba.core.Float)
         wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
 
         if wavefront_size >  wavefront_size_limit:
@@ -673,7 +673,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 "for this backend). Please use fewer samples per pixel or "
                 "render using multiple passes." %
                 ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
-                 ek.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
+                 dr.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
 
         sampler.seed(seed, wavefront_size)
         film.prepare(aovs)
@@ -681,7 +681,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         return sampler, spp
 
     def sample(self,
-               mode: enoki.ADMode,
+               mode: drjit.ADMode,
                scene: mitsuba.render.Scene,
                sampler: mitsuba.render.Sampler,
                ray: mitsuba.core.Ray3f,
@@ -701,15 +701,15 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         In those concrete implementations, the function performs a Monte Carlo
         random walk, implementing a number of different behaviors depending on
         the ``mode`` argument. For example in primal mode (``mode ==
-        enoki.ADMode.Primal``), it behaves like a normal rendering algorithm
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
         and estimates the radiance incident along ``ray``.
 
-        In forward mode (``mode == enoki.ADMode.Forward``), it estimates the
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
         derivative of the incident radiance for a set of scene parameters being
         differentiated. (This requires that these parameters are attached to
-        the AD graph and have gradients specified via ``ek.set_grad()``)
+        the AD graph and have gradients specified via ``dr.set_grad()``)
 
-        In backward mode (``mode == enoki.ADMode.Backward``), it takes adjoint
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
         radiance ``δL`` and accumulates it into differentiable scene parameters.
 
         You are normally *not* expected to directly call this function. Instead,
@@ -718,7 +718,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         The parameters of this function are as follows:
 
-        Parameter ``mode`` (``enoki.ADMode``)
+        Parameter ``mode`` (``drjit.ADMode``)
             Specifies whether the rendering algorithm should run in primal or
             forward/backward derivative propagation mode
 
@@ -732,11 +732,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             Path depth of `ray` (typically set to zero). This is mainly useful
             for forward/backward differentiable rendering phases that need to
             obtain an incident radiance estimate. In this case, they may
-            recursively invoke ``sample(mode=ek.ADMode.Primal)`` with a nonzero
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
             depth.
 
         Parameter ``δL`` (``mitsuba.core.Spectrum``):
-            When back-propagating gradients (``mode == enoki.ADMode.Backward``)
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
             the ``δL`` parameter should specify the adjoint radiance associated
             with each ray. Otherwise, it must be set to ``None``.
 
@@ -806,8 +806,8 @@ def render_forward(self: mitsuba.render.Integrator,
     Before calling this function, you must first enable gradient tracking and
     furthermore associate concrete input gradients with one or more scene
     parameters, or the function will just return a zero-valued gradient image.
-    This is typically done by invoking ``ek.enable_grad()`` and
-    ``ek.set_grad()`` on elements of the ``SceneParameters`` data structure
+    This is typically done by invoking ``dr.enable_grad()`` and
+    ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
     that can be obtained obtained via a call to
     ``mitsuba.python.util.traverse()``.
 
@@ -829,11 +829,11 @@ def render_forward(self: mitsuba.render.Integrator,
        gradients. Typically this will be an instance of type
        ``mitsuba.python.utils.SceneParameters`` obtained via
        ``mitsuba.python.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (Enoki will traverse it to find all parameters).
+       list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
-       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render_forward()`` will not do this for you). Furthermore,
-       ``ek.set_grad(...)`` must be used to associate specific gradient values
+       ``dr.set_grad(...)`` must be used to associate specific gradient values
        with each parameter.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
@@ -855,7 +855,7 @@ def render_forward(self: mitsuba.render.Integrator,
     """
 
     # Recorded loops cannot be differentiated, so let's disable them
-    with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
+    with dr.scoped_set_flag(dr.JitFlag.LoopRecord, False):
         image = self.render(
             scene=scene,
             sensor=sensor,
@@ -867,9 +867,9 @@ def render_forward(self: mitsuba.render.Integrator,
 
         # Perform an AD traversal of all registered AD variables that
         # influence 'image' in a differentiable manner
-        ek.forward_to(image)
+        dr.forward_to(image)
 
-        return ek.grad(image)
+        return dr.grad(image)
 
 def render_backward(self: mitsuba.render.Integrator,
                     scene: mitsuba.render.Scene,
@@ -890,9 +890,9 @@ def render_backward(self: mitsuba.render.Integrator,
 
     Before calling this function, you must first enable gradient tracking for
     one or more scene parameters, or the function will not do anything. This is
-    typically done by invoking ``ek.enable_grad()`` on elements of the
+    typically done by invoking ``dr.enable_grad()`` on elements of the
     ``SceneParameters`` data structure that can be obtained obtained via a call
-    to ``mitsuba.python.util.traverse()``. Use ``ek.grad()`` to query the
+    to ``mitsuba.python.util.traverse()``. Use ``dr.grad()`` to query the
     resulting gradients of these parameters once ``render_backward()`` returns.
 
     Note the default implementation of this functionality relies on naive
@@ -913,9 +913,9 @@ def render_backward(self: mitsuba.render.Integrator,
        gradients. Typically this will be an instance of type
        ``mitsuba.python.utils.SceneParameters`` obtained via
        ``mitsuba.python.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (Enoki will traverse it to find all parameters).
+       list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
-       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render_backward()`` will not do this for you).
 
     Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
@@ -940,7 +940,7 @@ def render_backward(self: mitsuba.render.Integrator,
     """
 
     # Recorded loops cannot be differentiated, so let's disable them
-    with ek.scoped_set_flag(ek.JitFlag.LoopRecord, False):
+    with dr.scoped_set_flag(dr.JitFlag.LoopRecord, False):
         image = self.render(
             scene=scene,
             sensor=sensor,
@@ -951,7 +951,7 @@ def render_backward(self: mitsuba.render.Integrator,
         )
 
         # Process the computation graph using reverse-mode AD
-        ek.backward_from(image * grad_in)
+        dr.backward_from(image * grad_in)
 
 # Monkey-patch render_forward/backward into the Integrator base class
 mitsuba.render.Integrator.render_backward = render_backward
@@ -964,7 +964,7 @@ del render_forward
 #                         Rendering Custom Operation
 # ---------------------------------------------------------------------------
 
-class _RenderOp(ek.CustomOp):
+class _RenderOp(dr.CustomOp):
     """
     This class is an implementation detail of the render() function. It
     realizes a CustomOp that provides evaluation, and forward/reverse-mode
@@ -980,7 +980,7 @@ class _RenderOp(ek.CustomOp):
         self.seed = seed
         self.spp = spp
 
-        with ek.suspend_grad():
+        with dr.suspend_grad():
             return self.integrator.render(
                 scene=self.scene,
                 sensor=sensor,
@@ -1015,8 +1015,8 @@ def render(scene: mitsuba.render.Scene,
     rendering algorithms in Mitsuba. The function returns a rendered image that
     can be used in subsequent differentiable computation steps. At any later
     point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``ek.forward()`` and
-    ``ek.backward()``).
+    either forward or reverse mode (i.e., using ``dr.forward()`` and
+    ``dr.backward()``).
 
     Under the hood, the differentiation operation will be intercepted and
     routed to ``Integrator.render_forward()`` or
@@ -1041,11 +1041,11 @@ def render(scene: mitsuba.render.Scene,
        gradients. Typically this will be an instance of type
        ``mitsuba.python.utils.SceneParameters`` obtained via
        ``mitsuba.python.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (Enoki will traverse it to find all parameters).
+       list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
-       parameters using ``ek.enable_grad(params['parameter_name'])`` (i.e.
+       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render()`` will not do this for you). Furthermore,
-       ``ek.set_grad(...)`` must be used to associate specific gradient values
+       ``dr.set_grad(...)`` must be used to associate specific gradient values
        with parameters if forward mode derivatives are desired.
 
     Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
@@ -1102,7 +1102,7 @@ def render(scene: mitsuba.render.Scene,
         raise Exception('The primal and differential seed should be different '
                         'to ensure unbiased gradient computation!')
 
-    return ek.custom(_RenderOp, scene, sensor, params, integrator,
+    return dr.custom(_RenderOp, scene, sensor, params, integrator,
                      (seed, seed_grad), (spp, spp_grad))
 
 # ---------------------------------------------------------------------------
@@ -1119,9 +1119,9 @@ class _ReparamWrapper:
     3. Exposing the underlying RNG state to recorded loops.
     """
 
-    # ReparamWrapper instances can be provided as ek.Loop state
+    # ReparamWrapper instances can be provided as dr.Loop state
     # variables. For this to work we must declare relevant fields
-    ENOKI_STRUCT = { 'rng' : mitsuba.core.PCG32 }
+    DRJIT_STRUCT = { 'rng' : mitsuba.core.PCG32 }
 
     def __init__(self,
                  scene : mitsuba.render.Scene,
@@ -1150,8 +1150,8 @@ class _ReparamWrapper:
         # correlation with the main sampler. PCG32Sampler.seed() uses
         # the same logic except for the XOR with -1
 
-        idx = ek.arange(UInt32, wavefront_size)
-        tmp = ek.opaque(UInt32, 0xffffffff ^ seed)
+        idx = dr.arange(UInt32, wavefront_size)
+        tmp = dr.opaque(UInt32, 0xffffffff ^ seed)
         v0, v1 = sample_tea_32(tmp, idx)
         self.rng = PCG32(initstate=v0, initseq=v1)
 
@@ -1179,5 +1179,5 @@ def mis_weight(pdf_a, pdf_b):
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
     """
-    a2 = ek.sqr(pdf_a)
-    return ek.detach(ek.select(pdf_a > 0, a2 / ek.fmadd(pdf_b, pdf_b, a2), 0), True)
+    a2 = dr.sqr(pdf_a)
+    return dr.detach(dr.select(pdf_a > 0, a2 / dr.fmadd(pdf_b, pdf_b, a2), 0), True)

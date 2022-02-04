@@ -4,7 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sampler.h>
-#include <enoki/vcall.h>
+#include <drjit/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -217,7 +217,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_VCALL_REGISTER(Float, mitsuba::PhaseFunction)
+    DRJIT_VCALL_REGISTER(Float, mitsuba::PhaseFunction)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -255,17 +255,17 @@ MTS_EXTERN_CLASS_RENDER(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki support for vectorized function calls
+//! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
-    ENOKI_VCALL_METHOD(sample)
-    ENOKI_VCALL_METHOD(eval)
-    ENOKI_VCALL_METHOD(projected_area)
-    ENOKI_VCALL_METHOD(max_projected_area)
-    ENOKI_VCALL_GETTER(flags, uint32_t)
-    ENOKI_VCALL_GETTER(component_count, size_t)
-ENOKI_VCALL_TEMPLATE_END(mitsuba::PhaseFunction)
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
+    DRJIT_VCALL_METHOD(sample)
+    DRJIT_VCALL_METHOD(eval)
+    DRJIT_VCALL_METHOD(projected_area)
+    DRJIT_VCALL_METHOD(max_projected_area)
+    DRJIT_VCALL_GETTER(flags, uint32_t)
+    DRJIT_VCALL_GETTER(component_count, size_t)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::PhaseFunction)
 
 //! @}
 // -----------------------------------------------------------------------

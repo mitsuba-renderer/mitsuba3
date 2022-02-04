@@ -2,7 +2,7 @@
 
 #include <mitsuba/mitsuba.h>
 
-#if defined(ENOKI_X86_64)
+#if defined(DRJIT_X86_64)
 #  if defined(__GNUG__) && !defined(__clang__)
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wbool-operation"
@@ -28,7 +28,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct MTS_EXPORT_CORE Jit {
     std::mutex mutex;
-#if defined(ENOKI_X86_64)
+#if defined(DRJIT_X86_64)
     asmjit::JitRuntime runtime;
 #endif
 

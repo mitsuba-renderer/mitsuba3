@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 import tempfile
 import os
@@ -67,19 +67,19 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
                           f'</emitter>')
 
     # Test the sample_direction() interface
-    si = ek.zero(SurfaceInteraction3f)
+    si = dr.zero(SurfaceInteraction3f)
     ds, w = emitter.sample_direction(si, sample)
     si.wi = -ds.d
     w2 = emitter.eval(si) / emitter.pdf_direction(si, ds)
     w3 = emitter.eval_direction(si, ds) / ds.pdf
 
-    assert ek.allclose(w, w2, rtol=1e-3)
-    assert ek.allclose(w, w3, rtol=1e-3)
-    assert ek.hmin(w[0]) > 0.018 and ek.hmax(w[0]) < 0.02
+    assert dr.allclose(w, w2, rtol=1e-3)
+    assert dr.allclose(w, w3, rtol=1e-3)
+    assert dr.hmin(w[0]) > 0.018 and dr.hmax(w[0]) < 0.02
 
     # Test the sample_ray() interface
     ray, w = emitter.sample_ray(0, 0, sample, sample_2)
     si.wi = ray.d
     ds.d = -ray.d
-    w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * ek.Pi
-    assert ek.allclose(w4, w, rtol=1e-3)
+    w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * dr.Pi
+    assert dr.allclose(w4, w, rtol=1e-3)

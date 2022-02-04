@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 from mitsuba.python.test.util import fresolver_append_path
 
@@ -74,18 +74,18 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
                 assert si.prim_index == si_inst.prim_index
                 assert si.instance is None
                 assert si_inst.instance is not None
-                assert ek.allclose(si.t, si_inst.t, atol=2e-2)
-                assert ek.allclose(si.time, si_inst.time, atol=2e-2)
-                assert ek.allclose(si.p, si_inst.p, atol=2e-2)
-                assert ek.allclose(si.sh_frame.n, si_inst.sh_frame.n, atol=2e-2)
-                assert ek.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
-                assert ek.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
-                assert ek.allclose(si.uv, si_inst.uv, atol=2e-2)
-                assert ek.allclose(si.wi, si_inst.wi, atol=2e-2)
+                assert dr.allclose(si.t, si_inst.t, atol=2e-2)
+                assert dr.allclose(si.time, si_inst.time, atol=2e-2)
+                assert dr.allclose(si.p, si_inst.p, atol=2e-2)
+                assert dr.allclose(si.sh_frame.n, si_inst.sh_frame.n, atol=2e-2)
+                assert dr.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
+                assert dr.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
+                assert dr.allclose(si.uv, si_inst.uv, atol=2e-2)
+                assert dr.allclose(si.wi, si_inst.wi, atol=2e-2)
 
-                if ek.norm(si.dn_du) > 0.0 and ek.norm(si.dn_dv) > 0.0:
-                    assert ek.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
-                    assert ek.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
+                if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
+                    assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
+                    assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -125,17 +125,17 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                         assert si.prim_index == si_inst.prim_index
                         assert si.instance is None
                         assert si_inst.instance is not None
-                        assert ek.allclose(si.t, si_inst.t, atol=2e-2)
-                        assert ek.allclose(si.time, si_inst.time, atol=2e-2)
-                        assert ek.allclose(si.p, si_inst.p, atol=2e-2)
-                        assert ek.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
-                        assert ek.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
-                        assert ek.allclose(si.uv, si_inst.uv, atol=2e-2)
-                        assert ek.allclose(si.wi, si_inst.wi, atol=2e-2)
+                        assert dr.allclose(si.t, si_inst.t, atol=2e-2)
+                        assert dr.allclose(si.time, si_inst.time, atol=2e-2)
+                        assert dr.allclose(si.p, si_inst.p, atol=2e-2)
+                        assert dr.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
+                        assert dr.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
+                        assert dr.allclose(si.uv, si_inst.uv, atol=2e-2)
+                        assert dr.allclose(si.wi, si_inst.wi, atol=2e-2)
 
-                        if ek.norm(si.dn_du) > 0.0 and ek.norm(si.dn_dv) > 0.0:
-                            assert ek.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
-                            assert ek.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
+                        if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
+                            assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
+                            assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
 
 @pytest.mark.parametrize('width', [1, 10])
@@ -193,21 +193,21 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
 
     ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect(ray)
-    assert ek.all(pi.is_valid())
+    assert dr.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect(ray)
-    assert ek.all(pi.is_valid())
+    assert dr.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, 0.5]' in instance_str
 
     ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect(ray)
-    assert ek.all(pi.is_valid())
+    assert dr.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, 0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
@@ -215,7 +215,7 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect(ray)
 
-    assert ek.all(pi.is_valid())
+    assert dr.all(pi.is_valid())
 
     if scalar_mode:
         assert 'instance = nullptr' in str(pi)

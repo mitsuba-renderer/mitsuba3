@@ -31,7 +31,7 @@ public:
 
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
 
         auto fs            = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -98,7 +98,7 @@ public:
 
         if (!m_isotropic) {
             ScalarFloat *phi_i_data = (ScalarFloat *) phi_i.data;
-            m_reduction = (int) std::rint((2 * ek::Pi<ScalarFloat>) /
+            m_reduction = (int) std::rint((2 * dr::Pi<ScalarFloat>) /
                 (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
         }
 
@@ -166,8 +166,8 @@ public:
      *     safe_acos(Frame3f::cos_theta(d))
      */
     auto elevation(const Vector3f &d) const {
-        auto dist = ek::sqrt(ek::sqr(d.x()) + ek::sqr(d.y()) + ek::sqr(d.z() - 1.f));
-        return 2.f * ek::safe_asin(.5f * dist);
+        auto dist = dr::sqrt(dr::sqr(d.x()) + dr::sqr(d.y()) + dr::sqr(d.z() - 1.f));
+        return 2.f * dr::safe_asin(.5f * dist);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -177,11 +177,11 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
             return { bs, 0.f };
 
         Float sx = -1.f, sy = -1.f;
@@ -189,12 +189,12 @@ public:
         if (m_reduction >= 2) {
             sy = wi.y();
             sx = (m_reduction == 4) ? wi.x() : sy;
-            wi.x() = ek::mulsign_neg(wi.x(), sx);
-            wi.y() = ek::mulsign_neg(wi.y(), sy);
+            wi.x() = dr::mulsign_neg(wi.x(), sx);
+            wi.y() = dr::mulsign_neg(wi.y(), sy);
         }
 
         Float theta_i = elevation(wi),
-            phi_i   = ek::atan2(wi.y(), wi.x());
+            phi_i   = dr::atan2(wi.y(), wi.x());
 
         Float params[2] = { phi_i, theta_i };
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
@@ -218,8 +218,8 @@ public:
             phi_m += phi_i;
 
         // Spherical -> Cartesian coordinates
-        auto [sin_phi_m, cos_phi_m] = ek::sincos(phi_m);
-        auto [sin_theta_m, cos_theta_m] = ek::sincos(theta_m);
+        auto [sin_phi_m, cos_phi_m] = dr::sincos(phi_m);
+        auto [sin_theta_m, cos_theta_m] = dr::sincos(theta_m);
 
         Vector3f m(
             cos_phi_m * sin_theta_m,
@@ -227,25 +227,25 @@ public:
             cos_theta_m
         );
 
-        Float jacobian = ek::max(2.f * ek::sqr(ek::Pi<Float>) * u_m.x() *
-                                    sin_theta_m, 1e-6f) * 4.f * ek::dot(wi, m);
+        Float jacobian = dr::max(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() *
+                                    sin_theta_m, 1e-6f) * 4.f * dr::dot(wi, m);
 
-        bs.wo = ek::fmsub(m, 2.f * ek::dot(m, wi), wi);
+        bs.wo = dr::fmsub(m, 2.f * dr::dot(m, wi), wi);
         bs.pdf = ndf_pdf * pdf / jacobian;
 #else // MTS_SAMPLE_DIFFUSE
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
-        Vector3f m = ek::normalize(bs.wo + wi);
+        Vector3f m = dr::normalize(bs.wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_m = elevation(m),
-              phi_m   = ek::atan2(m.y(), m.x());
+              phi_m   = dr::atan2(m.y(), m.x());
 
         Vector2f u_m(theta2u(theta_m),
                      phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - ek::floor(u_m[1]);
+        u_m[1] = u_m[1] - dr::floor(u_m[1]);
 
     std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
 #endif // MTS_SAMPLE_DIFFUSE
@@ -255,7 +255,7 @@ public:
         bs.sampled_component = 0;
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < ek::array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < dr::array_size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
@@ -264,8 +264,8 @@ public:
             spec *= m_ndf.eval(u_m, params, active) /
                     (4 * m_sigma.eval(u_wi, params, active));
 
-        bs.wo.x() = ek::mulsign_neg(bs.wo.x(), sx);
-        bs.wo.y() = ek::mulsign_neg(bs.wo.y(), sy);
+        bs.wo.x() = dr::mulsign_neg(bs.wo.x(), sx);
+        bs.wo.y() = dr::mulsign_neg(bs.wo.y(), sy);
 
         active &= Frame3f::cos_theta(bs.wo) > 0;
 
@@ -281,39 +281,39 @@ public:
         active &= Frame3f::cos_theta(wi) > 0.f &&
                   Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
             return Spectrum(0.f);
 
         if (m_reduction >= 2) {
             Float sy = wi.y(),
                 sx = (m_reduction == 4) ? wi.x() : sy;
 
-            wi.x() = ek::mulsign_neg(wi.x(), sx);
-            wi.y() = ek::mulsign_neg(wi.y(), sy);
-            wo.x() = ek::mulsign_neg(wo.x(), sx);
-            wo.y() = ek::mulsign_neg(wo.y(), sy);
+            wi.x() = dr::mulsign_neg(wi.x(), sx);
+            wi.y() = dr::mulsign_neg(wi.y(), sy);
+            wo.x() = dr::mulsign_neg(wo.x(), sx);
+            wo.y() = dr::mulsign_neg(wo.y(), sy);
         }
 
-        Vector3f m = ek::normalize(wo + wi);
+        Vector3f m = dr::normalize(wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-              phi_i   = ek::atan2(wi.y(), wi.x()),
+              phi_i   = dr::atan2(wi.y(), wi.x()),
               theta_m = elevation(m),
-              phi_m   = ek::atan2(m.y(), m.x());
+              phi_m   = dr::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
                  u_m (theta2u(theta_m), phi2u(
                      m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - ek::floor(u_m[1]);
+        u_m[1] = u_m[1] - dr::floor(u_m[1]);
 
         Float params[2] = { phi_i, theta_i };
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < ek::array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < dr::array_size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
@@ -334,36 +334,36 @@ public:
         active &= Frame3f::cos_theta(wi) > 0.f &&
                   Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
             return 0.f;
 
         if (m_reduction >= 2) {
             Float sy = wi.y(),
                 sx = (m_reduction == 4) ? wi.x() : sy;
 
-            wi.x() = ek::mulsign_neg(wi.x(), sx);
-            wi.y() = ek::mulsign_neg(wi.y(), sy);
-            wo.x() = ek::mulsign_neg(wo.x(), sx);
-            wo.y() = ek::mulsign_neg(wo.y(), sy);
+            wi.x() = dr::mulsign_neg(wi.x(), sx);
+            wi.y() = dr::mulsign_neg(wi.y(), sy);
+            wo.x() = dr::mulsign_neg(wo.x(), sx);
+            wo.y() = dr::mulsign_neg(wo.y(), sy);
         }
 
 #if MTS_SAMPLE_DIFFUSE == 1
-        return ek::select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
+        return dr::select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
 #else // MTS_SAMPLE_DIFFUSE
-        Vector3f m = ek::normalize(wo + wi);
+        Vector3f m = dr::normalize(wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-              phi_i   = ek::atan2(wi.y(), wi.x()),
+              phi_i   = dr::atan2(wi.y(), wi.x()),
               theta_m = elevation(m),
-              phi_m   = ek::atan2(m.y(), m.x());
+              phi_m   = dr::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
         Vector2f u_m (theta2u(theta_m),
                       phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - ek::floor(u_m[1]);
+        u_m[1] = u_m[1] - dr::floor(u_m[1]);
 
         Float params[2] = { phi_i, theta_i };
         auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
@@ -374,12 +374,12 @@ public:
         #endif
 
         Float jacobian =
-            ek::max(2.f * ek::sqr(ek::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
-            ek::dot(wi, m);
+            dr::max(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            dr::dot(wi, m);
 
         pdf = vndf_pdf * pdf / jacobian;
 
-        return ek::select(active, pdf, 0.f);
+        return dr::select(active, pdf, 0.f);
 #endif // MTS_SAMPLE_DIFFUSE
     }
 
@@ -399,19 +399,19 @@ public:
     MTS_DECLARE_CLASS()
 private:
     template <typename Value> Value u2theta(Value u) const {
-        return ek::sqr(u) * (ek::Pi<Float> / 2.f);
+        return dr::sqr(u) * (dr::Pi<Float> / 2.f);
     }
 
     template <typename Value> Value u2phi(Value u) const {
-        return (2.f * u - 1.f) * ek::Pi<Float>;
+        return (2.f * u - 1.f) * dr::Pi<Float>;
     }
 
     template <typename Value> Value theta2u(Value theta) const {
-        return ek::sqrt(theta * (2.f / ek::Pi<Float>));
+        return dr::sqrt(theta * (2.f / dr::Pi<Float>));
     }
 
     template <typename Value> Value phi2u(Value phi) const {
-        return (phi + ek::Pi<Float>) * ek::InvTwoPi<Float>;
+        return (phi + dr::Pi<Float>) * dr::InvTwoPi<Float>;
     }
 
 private:

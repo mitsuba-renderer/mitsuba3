@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -85,8 +85,8 @@ def test03_distance(variant_scalar_rgb):
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([4, 2, 3], [5, 3, 5])) == 2
 
-    assert ek.abs(BBox([1, 2, 3], [2, 3, 5]).distance(
-        BBox([3, 4, 6], [7, 7, 7])) - ek.sqrt(3)) < 1e-6
+    assert dr.abs(BBox([1, 2, 3], [2, 3, 5]).distance(
+        BBox([3, 4, 6], [7, 7, 7])) - dr.sqrt(3)) < 1e-6
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([1.1, 2.2, 3.3], [1.8, 2.8, 3.8])) == 0
@@ -103,10 +103,10 @@ def test04_ray_intersect(variant_scalar_rgb):
     bbox = BBox([-1, -1, -1], [1, 1, 1])
 
     hit, mint, maxt = bbox.ray_intersect(Ray3f([-5, 0, 0], [1, 0, 0]))
-    assert hit and ek.allclose(mint, 4.0) and ek.allclose(maxt, 6.0)
+    assert hit and dr.allclose(mint, 4.0) and dr.allclose(maxt, 6.0)
 
-    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, -2, -2], ek.normalize(Vector3f(1))))
-    assert hit and ek.allclose(mint, ek.sqrt(3)) and ek.allclose(maxt, 3 * ek.sqrt(3))
+    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, -2, -2], dr.normalize(Vector3f(1))))
+    assert hit and dr.allclose(mint, dr.sqrt(3)) and dr.allclose(maxt, 3 * dr.sqrt(3))
 
     hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, 0, 0], [0, 1, 0]))
     assert not hit
@@ -133,10 +133,10 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
         from mitsuba.core import Ray3f
 
         bbox = BBox(-min, max)
-        hit, mint, maxt = bbox.ray_intersect(Ray3f(o, ek.normalize(-o)))
+        hit, mint, maxt = bbox.ray_intersect(Ray3f(o, dr.normalize(-o)))
 
-        mint = ek.select(hit, mint, -1.0)
-        maxt = ek.select(hit, maxt, -1.0)
+        mint = dr.select(hit, mint, -1.0)
+        maxt = dr.select(hit, maxt, -1.0)
 
         return mint, maxt
 

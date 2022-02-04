@@ -141,20 +141,20 @@ public:
     }
 
     void compute_srf_sampling() {
-        ScalarFloat resolution = ek::Infinity<ScalarFloat>;
+        ScalarFloat resolution = dr::Infinity<ScalarFloat>;
         // Compute full range of wavelengths and resolution in the film
         for (auto srf : m_srfs) {
-            m_range.x() = ek::min(m_range.x(), srf->wavelength_range().x());
-            m_range.y() = ek::max(m_range.y(), srf->wavelength_range().y());
-            resolution = ek::min(resolution, srf->spectral_resolution());
+            m_range.x() = dr::min(m_range.x(), srf->wavelength_range().x());
+            m_range.y() = dr::max(m_range.y(), srf->wavelength_range().y());
+            resolution = dr::min(resolution, srf->spectral_resolution());
         }
 
         // Compute resolution of the discretized PDF used for sampling
-        size_t n_points = (size_t) ek::ceil((m_range.y() - m_range.x()) / resolution);
-        FloatStorage mis_data = ek::zero<FloatStorage>(n_points);
-        Float mis_wavelengths = ek::linspace<Float>(m_range.x(), m_range.y(), n_points);
+        size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution);
+        FloatStorage mis_data = dr::zero<FloatStorage>(n_points);
+        Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points);
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = mis_wavelengths;
 
         for (auto srf : m_srfs) {
@@ -165,12 +165,12 @@ public:
         }
 
         // Conversion needed because Properties::Float is always double
-        using DoubleStorage = ek::float64_array_t<FloatStorage>;
+        using DoubleStorage = dr::float64_array_t<FloatStorage>;
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
 
-        auto && storage = ek::migrate(mis_data_dbl, AllocType::Host);
-        if constexpr (ek::is_jit_array_v<Float>)
-            ek::sync_thread();
+        auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
+        if constexpr (dr::is_jit_array_v<Float>)
+            dr::sync_thread();
 
         // Create new spectrum with the sampling information
         auto props = Properties("regular");
@@ -212,7 +212,7 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              ek::is_llvm_array_v<Float> /* coalesce */,
+                              dr::is_llvm_array_v<Float> /* coalesce */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
     }
@@ -221,20 +221,20 @@ public:
                         Float* aovs, Mask /* active */) const override {
         aovs[m_channels.size() - 1] = 1.f;   // Set sample weight
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
         UnpolarizedSpectrum inv_spec = m_srf->eval(si);
-        inv_spec = ek::select(ek::neq(inv_spec, 0.f), ek::rcp(inv_spec), 1.f);
+        inv_spec = dr::select(dr::neq(inv_spec, 0.f), dr::rcp(inv_spec), 1.f);
         UnpolarizedSpectrum values = spec * inv_spec;
 
         for (size_t j = 0; j < m_srfs.size(); ++j) {
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
-            aovs[j] = ek::zero<Float>();
+            aovs[j] = dr::zero<Float>();
 
             for (size_t i = 0; i<Spectrum::Size; ++i)
-                aovs[j] = ek::fmadd(weights[i], values[i], aovs[j]);
+                aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
 
             aovs[j] *= 1.f / Spectrum::Size;
         }
@@ -255,7 +255,7 @@ public:
             return m_storage->tensor();
         }
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             Float data;
             uint32_t source_ch;
             size_t pixel_count;
@@ -266,29 +266,29 @@ public:
                 data         = m_storage->tensor().array();
                 size         = m_storage->size();
                 source_ch    = (uint32_t) m_storage->channel_count();
-                pixel_count  = ek::hprod(m_storage->size());
+                pixel_count  = dr::hprod(m_storage->size());
             }
 
             // Number of channels of the target tensor
             uint32_t target_ch = (uint32_t) m_channels.size() - 1;
 
             // Index vectors referencing pixels & channels of the output image
-            UInt32 idx         = ek::arange<UInt32>(pixel_count * target_ch),
+            UInt32 idx         = dr::arange<UInt32>(pixel_count * target_ch),
                    pixel_idx   = idx / target_ch,
-                   channel_idx = ek::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
+                   channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
 
             /* Index vectors referencing source pixels/weights as follows:
                  values_idx = R1, G1, B1, R2, G2, B2 (for RGB response functions)
                  weight_idx = W1, W1, W1, W2, W2, W2 */
-            UInt32 values_idx = ek::fmadd(pixel_idx, source_ch, channel_idx),
-                   weight_idx = ek::fmadd(pixel_idx, source_ch, (uint32_t) (m_channels.size() - 1));
+            UInt32 values_idx = dr::fmadd(pixel_idx, source_ch, channel_idx),
+                   weight_idx = dr::fmadd(pixel_idx, source_ch, (uint32_t) (m_channels.size() - 1));
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::gather<Float>(data, weight_idx),
-                  values = ek::gather<Float>(data, values_idx);
+            Float weight = dr::gather<Float>(data, weight_idx),
+                  values = dr::gather<Float>(data, values_idx);
 
             // Perform the weight division unless the weight is zero
-            values /= ek::select(ek::eq(weight, 0.f), 1.f, weight);
+            values /= dr::select(dr::eq(weight, 0.f), 1.f, weight);
 
             size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
                                 target_ch };
@@ -297,8 +297,8 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * ek::hprod(size);
-            auto data = ek::load<DynamicBuffer<Float>>(source->data(), width);
+            size_t width = source->channel_count() * dr::hprod(size);
+            auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
 
             size_t shape[3] = { (size_t) source->height(),
                                 (size_t) source->width(),
@@ -314,10 +314,10 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = ek::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
 
-        if constexpr (ek::is_jit_array_v<Float>)
-            ek::sync_thread();
+        if constexpr (dr::is_jit_array_v<Float>)
+            dr::sync_thread();
 
         ref<Bitmap> source = new Bitmap(
             Bitmap::PixelFormat::MultiChannel,
@@ -379,7 +379,7 @@ public:
     }
 
     void schedule_storage() override {
-        ek::schedule(m_storage->tensor());
+        dr::schedule(m_storage->tensor());
     };
 
     std::string to_string() const override {
@@ -410,7 +410,7 @@ protected:
     std::vector<std::string> m_channels;
     std::vector<ref<Texture>> m_srfs;
     std::vector<std::string> m_names;
-    ScalarVector2f m_range { ek::Infinity<ScalarFloat>, -ek::Infinity<ScalarFloat> };
+    ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)

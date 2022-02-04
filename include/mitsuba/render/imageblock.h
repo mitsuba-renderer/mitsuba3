@@ -5,8 +5,8 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
-#include <enoki/dynamic.h>
-#include <enoki/tensor.h>
+#include <drjit/dynamic.h>
+#include <drjit/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -121,7 +121,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = ek::is_llvm_array_v<Float>,
+               bool coalesce = dr::is_llvm_array_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -142,7 +142,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = ek::is_llvm_array_v<Float>,
+               bool coalesce = dr::is_llvm_array_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -176,7 +176,7 @@ public:
              Float alpha = 1.f,
              Float weight = 1.f,
              Mask active = true) {
-        ENOKI_MARK_USED(wavelengths);
+        DRJIT_MARK_USED(wavelengths);
 
         UnpolarizedSpectrum spec_u = unpolarized_spectrum(value);
 

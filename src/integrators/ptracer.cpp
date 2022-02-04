@@ -86,23 +86,23 @@ public:
             scene->sample_emitter(sampler->next_1d());
 
         EmitterPtr emitter =
-            ek::gather<EmitterPtr>(scene->emitters_ek(), emitter_idx);
+            dr::gather<EmitterPtr>(scene->emitters_dr(), emitter_idx);
 
         // Don't connect delta emitters with sensor (both position and direction)
         Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
 
         // 3. Emitter position sampling
-        Spectrum emitter_weight = ek::zero<Spectrum>();
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        Spectrum emitter_weight = dr::zero<Spectrum>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
 
         // 3.a. Infinite emitters
         Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite),
              active_e = active && is_infinite;
-        if (ek::any_or<true>(active_e)) {
+        if (dr::any_or<true>(active_e)) {
             /* Sample a direction toward an envmap emitter starting
                from the center of the scene (the sensor is not part of the
                scene's bounding box, which could otherwise cause issues.) */
-            Interaction3f ref_it(0.f, time, ek::zero<Wavelength>(),
+            Interaction3f ref_it(0.f, time, dr::zero<Wavelength>(),
                                  sensor->world_transform().translation());
 
             auto [ds, dir_weight] = emitter->sample_direction(
@@ -113,20 +113,20 @@ public:
                below. Instead, we recompute just the factor due to the PDF.
                Also, convert to area measure. */
             emitter_weight[active_e] =
-                ek::select(ds.pdf > 0.f, ek::rcp(ds.pdf), 0.f) *
-                ek::sqr(ds.dist);
+                dr::select(ds.pdf > 0.f, dr::rcp(ds.pdf), 0.f) *
+                dr::sqr(ds.dist);
 
             si[active_e] = SurfaceInteraction3f(ds, ref_it.wavelengths);
         }
 
         // 3.b. Finite emitters
         active_e = active && !is_infinite;
-        if (ek::any_or<true>(active_e)) {
+        if (dr::any_or<true>(active_e)) {
             auto [ps, pos_weight] =
                 emitter->sample_position(time, sampler->next_2d(active), active_e);
 
             emitter_weight[active_e] = pos_weight;
-            si[active_e] = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
+            si[active_e] = SurfaceInteraction3f(ps, dr::zero<Wavelength>());
         }
 
         /* 4. Connect to the sensor.
@@ -198,10 +198,10 @@ public:
         if (m_max_depth >= 0)
             active &= depth < m_max_depth;
 
-        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
+        /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<Mask> loop("Particle Tracer Integrator", active, depth, ray,
+        dr::Loop<Mask> loop("Particle Tracer Integrator", active, depth, ray,
                             throughput, si, eta, sampler);
 
         // Incrementally build light path using BSDF sampling.
@@ -224,21 +224,21 @@ public:
                              sampler->next_2d(active), active);
 
             // Using geometric normals (wo points to the camera)
-            Float wi_dot_geo_n = ek::dot(si.n, -ray.d),
-                  wo_dot_geo_n = ek::dot(si.n, si.to_world(bs.wo));
+            Float wi_dot_geo_n = dr::dot(si.n, -ray.d),
+                  wo_dot_geo_n = dr::dot(si.n, si.to_world(bs.wo));
 
             // Prevent light leaks due to shading normals
             active &= (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                       (wo_dot_geo_n * Frame3f::cos_theta(bs.wo) > 0.f);
 
             // Adjoint BSDF for shading normals -- [Veach, p. 155]
-            Float correction = ek::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
+            Float correction = dr::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
                                        (Frame3f::cos_theta(bs.wo) * wi_dot_geo_n));
             throughput *= bsdf_val * correction;
             eta *= bs.eta;
 
-            active &= ek::any(ek::neq(unpolarized_spectrum(throughput), 0.f));
-            if (ek::none_or<false>(active))
+            active &= dr::any(dr::neq(unpolarized_spectrum(throughput), 0.f));
+            if (dr::none_or<false>(active))
                 break;
 
             // Intersect the BSDF ray against scene geometry (next vertex).
@@ -252,11 +252,11 @@ public:
 
             // Russian Roulette
             Mask use_rr = depth > m_rr_depth;
-            if (ek::any_or<true>(use_rr)) {
-                Float q = ek::min(
-                    ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), 0.95f);
-                ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
-                ek::masked(throughput, use_rr) *= ek::rcp(q);
+            if (dr::any_or<true>(use_rr)) {
+                Float q = dr::min(
+                    dr::hmax(unpolarized_spectrum(throughput)) * dr::sqr(eta), 0.95f);
+                dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
+                dr::masked(throughput, use_rr) *= dr::rcp(q);
             }
         }
 
@@ -280,43 +280,43 @@ public:
                             ImageBlock *block, ScalarFloat sample_scale,
                             Mask active) const {
         active &= (sensor_ds.pdf > 0.f) &&
-                  ek::any(ek::neq(unpolarized_spectrum(weight), 0.f));
-        if (ek::none_or<false>(active))
+                  dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
+        if (dr::none_or<false>(active))
             return 0.f;
 
         // Check that sensor is visible from current position (shadow ray).
         Ray3f sensor_ray = si.spawn_ray_to(sensor_ds.p);
         active &= !scene->ray_test(sensor_ray, active);
-        if (ek::none_or<false>(active))
+        if (dr::none_or<false>(active))
             return 0.f;
 
         // Foreshortening term and BSDF value for that direction (for surface interactions).
         Spectrum result = 0.f;
         Spectrum surface_weight = 1.f;
         Vector3f local_d        = si.to_local(sensor_ray.d);
-        Mask on_surface         = active && ek::neq(si.shape, nullptr);
-        if (ek::any_or<true>(on_surface)) {
+        Mask on_surface         = active && dr::neq(si.shape, nullptr);
+        if (dr::any_or<true>(on_surface)) {
             /* Note that foreshortening is only missing for directly visible
                emitters associated with a shape. Otherwise it's included in the
                BSDF. Clamp negative cosines (zero value if behind the surface). */
 
-            surface_weight[on_surface && ek::eq(bsdf, nullptr)] *=
-                ek::max(0.f, Frame3f::cos_theta(local_d));
+            surface_weight[on_surface && dr::eq(bsdf, nullptr)] *=
+                dr::max(0.f, Frame3f::cos_theta(local_d));
 
-            on_surface &= ek::neq(bsdf, nullptr);
-            if (ek::any_or<true>(on_surface)) {
+            on_surface &= dr::neq(bsdf, nullptr);
+            if (dr::any_or<true>(on_surface)) {
                 BSDFContext ctx(TransportMode::Importance);
                 // Using geometric normals
-                Float wi_dot_geo_n = ek::dot(si.n, si.to_world(si.wi)),
-                      wo_dot_geo_n = ek::dot(si.n, sensor_ray.d);
+                Float wi_dot_geo_n = dr::dot(si.n, si.to_world(si.wi)),
+                      wo_dot_geo_n = dr::dot(si.n, sensor_ray.d);
 
                 // Prevent light leaks due to shading normals
                 Mask valid = (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                              (wo_dot_geo_n * Frame3f::cos_theta(local_d) > 0.f);
 
                 // Adjoint BSDF for shading normals -- [Veach, p. 155]
-                Float correction = ek::select(valid,
-                    ek::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
+                Float correction = dr::select(valid,
+                    dr::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
                             (Frame3f::cos_theta(local_d) * wi_dot_geo_n)), 0.f);
 
                 surface_weight[on_surface] *=
@@ -326,8 +326,8 @@ public:
 
         /* Even if the ray is not coming from a surface (no foreshortening),
            we still don't want light coming from behind the emitter. */
-        Mask not_on_surface = active && ek::eq(si.shape, nullptr) && ek::eq(bsdf, nullptr);
-        if (ek::any_or<true>(not_on_surface)) {
+        Mask not_on_surface = active && dr::eq(si.shape, nullptr) && dr::eq(bsdf, nullptr);
+        if (dr::any_or<true>(not_on_surface)) {
             Mask invalid_side = Frame3f::cos_theta(local_d) <= 0.f;
             surface_weight[not_on_surface && invalid_side] = 0.f;
         }
@@ -338,7 +338,7 @@ public:
            The crop window is already accounted for in the UV positions
            returned by the sensor, here we just need to compensate for
            the block's offset that will be applied in `put`. */
-        Float alpha = ek::select(ek::neq(bsdf, nullptr), 1.f, 0.f);
+        Float alpha = dr::select(dr::neq(bsdf, nullptr), 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
 
         /* Splat RGB value onto the image buffer. The particle tracer

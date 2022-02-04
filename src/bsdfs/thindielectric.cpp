@@ -96,7 +96,7 @@ public:
                                BSDFFlags::BackSide);
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_components[0] | m_components[1];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -109,7 +109,7 @@ public:
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
 
-        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), m_eta));
+        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -117,13 +117,13 @@ public:
         Float t = 1.f - r;
 
         // Select the lobe to be sampled
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         UnpolarizedSpectrum weight;
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r && active;
             weight = 1.f;
-            bs.pdf = ek::select(selected_r, r, t);
+            bs.pdf = dr::select(selected_r, r, t);
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -134,17 +134,17 @@ public:
             }
         }
 
-        bs.wo = ek::select(selected_r, reflect(si.wi), -si.wi);
+        bs.wo = dr::select(selected_r, reflect(si.wi), -si.wi);
         bs.eta = 1.f;
-        bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_component = dr::select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type =
-            ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
+            dr::select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
 
-        if (m_specular_reflectance && ek::any_or<true>(selected_r))
+        if (m_specular_reflectance && dr::any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
         Mask selected_t = !selected_r && active;
-        if (m_specular_transmittance && ek::any_or<true>(selected_t))
+        if (m_specular_transmittance && dr::any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
         return { bs, depolarizer<Spectrum>(weight) & active };
@@ -163,7 +163,7 @@ public:
     Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
                                     Mask active) const override {
 
-        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), m_eta));
+        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -177,7 +177,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ek::make_opaque(m_eta);
+        dr::make_opaque(m_eta);
     }
 
     void traverse(TraversalCallback *callback) override {

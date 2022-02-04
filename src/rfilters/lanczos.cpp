@@ -37,16 +37,16 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        x = ek::abs(x);
+    Float eval(Float x, dr::mask_t<Float> /* active */) const override {
+        x = dr::abs(x);
 
-        Float x1     = ek::Pi<Float> * x,
+        Float x1     = dr::Pi<Float> * x,
               x2     = x1 / m_radius,
-              result = (ek::sin(x1) * ek::sin(x2)) / (x1 * x2);
+              result = (dr::sin(x1) * dr::sin(x2)) / (x1 * x2);
 
-        return ek::select(x < ek::Epsilon<Float>,
+        return dr::select(x < dr::Epsilon<Float>,
                       1.f,
-                      ek::select(x > m_radius, 0.f, result));
+                      dr::select(x > m_radius, 0.f, result));
     }
 
     std::string to_string() const override {

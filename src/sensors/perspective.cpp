@@ -160,7 +160,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         Ray3f ray;
@@ -174,12 +174,12 @@ public:
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = ek::normalize(Vector3f(near_p));
+        Vector3f d = dr::normalize(Vector3f(near_p));
 
         ray.o = m_to_world.value().translation();
         ray.d = m_to_world.value() * d;
 
-        Float inv_z = ek::rcp(d.z());
+        Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
@@ -194,7 +194,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         RayDifferential3f ray;
@@ -208,12 +208,12 @@ public:
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = ek::normalize(Vector3f(near_p));
+        Vector3f d = dr::normalize(Vector3f(near_p));
 
         ray.o = m_to_world.value().translation();
         ray.d = m_to_world.value() * d;
 
-        Float inv_z = ek::rcp(d.z());
+        Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
@@ -221,8 +221,8 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = m_to_world.value() * ek::normalize(Vector3f(near_p) + m_dx);
-        ray.d_y = m_to_world.value() * ek::normalize(Vector3f(near_p) + m_dy);
+        ray.d_x = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dx);
+        ray.d_y = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
         return { ray, wav_weight };
@@ -236,32 +236,32 @@ public:
         Point3f ref_p     = trafo.inverse().transform_affine(it.p);
 
         // Check if it is outside of the clip range
-        DirectionSample3f ds = ek::zero<DirectionSample3f>();
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         ds.pdf = 0.f;
         active &= (ref_p.z() >= m_near_clip) && (ref_p.z() <= m_far_clip);
-        if (ek::none_or<false>(active))
-            return { ds, ek::zero<Spectrum>() };
+        if (dr::none_or<false>(active))
+            return { ds, dr::zero<Spectrum>() };
 
         Point3f screen_sample = m_camera_to_sample * ref_p;
         ds.uv = Point2f(screen_sample.x() - m_principal_point_offset.x(),
                         screen_sample.y() - m_principal_point_offset.y());
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
                   (ds.uv.y() <= 1);
-        if (ek::none_or<false>(active))
-            return { ds, ek::zero<Spectrum>() };
+        if (dr::none_or<false>(active))
+            return { ds, dr::zero<Spectrum>() };
 
         ds.uv *= m_resolution;
 
         Vector3f local_d(ref_p);
-        Float dist     = ek::norm(local_d);
-        Float inv_dist = ek::rcp(dist);
+        Float dist     = dr::norm(local_d);
+        Float inv_dist = dr::rcp(dist);
         local_d *= inv_dist;
 
         ds.p    = trafo.transform_affine(Point3f(0.0f));
         ds.d    = (ds.p - it.p) * inv_dist;
         ds.dist = dist;
         ds.n    = trafo * Vector3f(0.0f, 0.0f, 1.0f);
-        ds.pdf  = ek::select(active, Float(1.f), Float(0.f));
+        ds.pdf  = dr::select(active, Float(1.f), Float(0.f));
 
         return { ds, Spectrum(importance(local_d) * inv_dist * inv_dist) };
     }
@@ -286,7 +286,7 @@ public:
 
            Then the visible rectangular portion of the plane has the area
 
-              A = (2 * ek::tan(0.5 * xfov in radians))^2 / aspect
+              A = (2 * dr::tan(0.5 * xfov in radians))^2 / aspect
 
            Since we allow crop regions, the actual visible area is
            potentially reduced:
@@ -302,7 +302,7 @@ public:
            To compute the solid angle density of a sampled point P on
            the rectangle, we can apply the usual measure conversion term:
 
-              d_omega = 1/A' * distance(P, origin)^2 / ek::cos(theta)
+              d_omega = 1/A' * distance(P, origin)^2 / dr::cos(theta)
 
            where theta is the angle that the unit direction vector from
            the origin to P makes with the rectangle. Since
@@ -311,7 +311,7 @@ public:
 
            and
 
-              ek::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
+              dr::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
 
            we have
 
@@ -319,7 +319,7 @@ public:
         */
 
         Float ct     = Frame3f::cos_theta(d),
-              inv_ct = ek::rcp(ct);
+              inv_ct = dr::rcp(ct);
 
         // Compute the position on the plane at distance 1
         Point2f p(d.x() * inv_ct, d.y() * inv_ct);
@@ -328,7 +328,7 @@ public:
            chosen crop rectangle */
         Mask valid = ct > 0 && m_image_rect.contains(p);
 
-        return ek::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
+        return dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
     }
 
     //! @}

@@ -29,7 +29,7 @@ struct Interaction {
     // =============================================================
 
     /// Distance traveled along the ray
-    Float t = ek::Infinity<Float>;
+    Float t = dr::Infinity<Float>;
 
     /// Time value associated with the interaction
     Float time;
@@ -56,29 +56,29 @@ struct Interaction {
         : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
 
     /**
-     * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
+     * This callback method is invoked by dr::zero<>, and takes care of fields that deviate
      * from the standard zero-initialization convention. In this particular class, the ``t``
      * field should be set to an infinite value to mark invalid intersection records.
      */
     void zero_(size_t size = 1) {
-        t = ek::full<Float>(ek::Infinity<Float>, size);
+        t = dr::full<Float>(dr::Infinity<Float>, size);
     }
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return ek::neq(t, ek::Infinity<Float>);
+        return dr::neq(t, dr::Infinity<Float>);
     }
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(offset_p(d), d, ek::Largest<Float>, time, wavelengths);
+        return Ray3f(offset_p(d), d, dr::Largest<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
     Ray3f spawn_ray_to(const Point3f &t) const {
         Point3f o = offset_p(t - p);
         Vector3f d = t - o;
-        Float dist = ek::norm(d);
+        Float dist = dr::norm(d);
         d /= dist;
         return Ray3f(o, d, dist * (1.f - math::ShadowEpsilon<Float>), time,
                      wavelengths);
@@ -87,7 +87,7 @@ struct Interaction {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(Interaction, t, time, wavelengths, p, n);
+    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n);
 
 private:
     /**
@@ -96,9 +96,9 @@ private:
      * position is offset along the surface normal to prevent self intersection.
      */
     Point3f offset_p(const Vector3f &d) const {
-        Float mag = (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>;
-        mag = ek::detach(ek::mulsign(mag, ek::dot(n, d)));
-        return ek::fmadd(mag, ek::detach(n), p);
+        Float mag = (1.f + dr::hmax(dr::abs(p))) * math::RayEpsilon<Float>;
+        mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
+        return dr::fmadd(mag, dr::detach(n), p);
     }
 };
 
@@ -191,13 +191,13 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     void initialize_sh_frame() {
         // When dp_du is invalid, use orthonormal basis
         Vector3f d = dp_du;
-        Mask singularity_mask = ek::all(ek::eq(d, 0.f));
-        if (unlikely(ek::any_or<true>(singularity_mask)))
+        Mask singularity_mask = dr::all(dr::eq(d, 0.f));
+        if (unlikely(dr::any_or<true>(singularity_mask)))
             d[singularity_mask] = coordinate_system(sh_frame.n).first;
 
-        sh_frame.s = ek::normalize(
-            ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, d), d));
-        sh_frame.t = ek::cross(sh_frame.n, sh_frame.s);
+        sh_frame.s = dr::normalize(
+            dr::fnmadd(sh_frame.n, dr::dot(sh_frame.n, d), d));
+        sh_frame.t = dr::cross(sh_frame.n, sh_frame.s);
     }
 
     /// Convert a local shading-space vector into world space
@@ -229,7 +229,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * contains the ``ray(this->p, d)``
      */
     MediumPtr target_medium(const Vector3f &d) const {
-        return target_medium(ek::dot(d, n));
+        return target_medium(dr::dot(d, n));
     }
 
     /**
@@ -240,7 +240,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * the interior medium when ``cos_theta <= 0``.
      */
     MediumPtr target_medium(const Float &cos_theta) const {
-        return ek::select(cos_theta > 0, shape->exterior_medium(),
+        return dr::select(cos_theta > 0, shape->exterior_medium(),
                                          shape->interior_medium());
     }
 
@@ -264,33 +264,33 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return;
 
         // Compute interaction with the two offset rays
-        Float d   = ek::dot(n, p),
-              t_x = (d - ek::dot(n, ray.o_x)) / ek::dot(n, ray.d_x),
-              t_y = (d - ek::dot(n, ray.o_y)) / ek::dot(n, ray.d_y);
+        Float d   = dr::dot(n, p),
+              t_x = (d - dr::dot(n, ray.o_x)) / dr::dot(n, ray.d_x),
+              t_y = (d - dr::dot(n, ray.o_y)) / dr::dot(n, ray.d_y);
 
         // Corresponding positions near the surface
-        Vector3f dp_dx = ek::fmadd(ray.d_x, t_x, ray.o_x) - p,
-                 dp_dy = ek::fmadd(ray.d_y, t_y, ray.o_y) - p;
+        Vector3f dp_dx = dr::fmadd(ray.d_x, t_x, ray.o_x) - p,
+                 dp_dy = dr::fmadd(ray.d_y, t_y, ray.o_y) - p;
 
         // Solve a least squares problem to turn this into UV coordinates
-        Float a00 = ek::dot(dp_du, dp_du),
-              a01 = ek::dot(dp_du, dp_dv),
-              a11 = ek::dot(dp_dv, dp_dv),
-              inv_det = ek::rcp(ek::fmsub(a00, a11, a01*a01));
+        Float a00 = dr::dot(dp_du, dp_du),
+              a01 = dr::dot(dp_du, dp_dv),
+              a11 = dr::dot(dp_dv, dp_dv),
+              inv_det = dr::rcp(dr::fmsub(a00, a11, a01*a01));
 
-        Float b0x = ek::dot(dp_du, dp_dx),
-              b1x = ek::dot(dp_dv, dp_dx),
-              b0y = ek::dot(dp_du, dp_dy),
-              b1y = ek::dot(dp_dv, dp_dy);
+        Float b0x = dr::dot(dp_du, dp_dx),
+              b1x = dr::dot(dp_dv, dp_dx),
+              b0y = dr::dot(dp_du, dp_dy),
+              b1y = dr::dot(dp_dv, dp_dy);
 
         // Set the UV partials to zero if dpdu and/or dpdv == 0
-        inv_det = ek::select(ek::isfinite(inv_det), inv_det, 0.f);
+        inv_det = dr::select(dr::isfinite(inv_det), inv_det, 0.f);
 
-        duv_dx = Vector2f(ek::fmsub(a11, b0x, a01 * b1x),
-                          ek::fmsub(a00, b1x, a01 * b0x)) * inv_det;
+        duv_dx = Vector2f(dr::fmsub(a11, b0x, a01 * b1x),
+                          dr::fmsub(a00, b1x, a01 * b0x)) * inv_det;
 
-        duv_dy = Vector2f(ek::fmsub(a11, b0y, a01 * b1y),
-                          ek::fmsub(a00, b1y, a01 * b0y)) * inv_det;
+        duv_dy = Vector2f(dr::fmsub(a11, b0y, a01 * b1y),
+                          dr::fmsub(a00, b1y, a01 * b0y)) * inv_det;
     }
 
     /**
@@ -334,8 +334,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                                  in_forward_world, in_basis_current, in_basis_target,
                                                  out_forward_world, out_basis_current, out_basis_target);
         } else {
-            ENOKI_MARK_USED(in_forward_local);
-            ENOKI_MARK_USED(out_forward_local);
+            DRJIT_MARK_USED(in_forward_local);
+            DRJIT_MARK_USED(out_forward_local);
             return M_local;
         }
     }
@@ -383,23 +383,23 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     bool has_uv_partials() const {
-        if constexpr (ek::is_dynamic_v<Float>)
-            return ek::width(duv_dx) > 0 || ek::width(duv_dy) > 0;
+        if constexpr (dr::is_dynamic_v<Float>)
+            return dr::width(duv_dx) > 0 || dr::width(duv_dy) > 0;
         else
-            return ek::any_nested(ek::neq(duv_dx, 0.f) || ek::neq(duv_dy, 0.f));
+            return dr::any_nested(dr::neq(duv_dx, 0.f) || dr::neq(duv_dy, 0.f));
     }
 
     bool has_n_partials() const {
-        if constexpr (ek::is_dynamic_v<Float>)
-            return ek::width(dn_du) > 0 || ek::width(dn_dv) > 0;
+        if constexpr (dr::is_dynamic_v<Float>)
+            return dr::width(dn_du) > 0 || dr::width(dn_dv) > 0;
         else
-            return ek::any_nested(ek::neq(dn_du, 0.f) || ek::neq(dn_dv, 0.f));
+            return dr::any_nested(dr::neq(dn_du, 0.f) || dr::neq(dn_dv, 0.f));
     }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
+    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
                  sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                  duv_dy, wi, prim_index, instance, boundary_test)
 };
@@ -464,7 +464,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
+    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };
@@ -552,7 +552,7 @@ struct PreliminaryIntersection {
     // =============================================================
 
     using Float    = Float_;
-    using ShapePtr = ek::replace_scalar_t<Float, const Shape_ *>;
+    using ShapePtr = dr::replace_scalar_t<Float, const Shape_ *>;
 
     MTS_IMPORT_CORE_TYPES()
 
@@ -568,7 +568,7 @@ struct PreliminaryIntersection {
     // =============================================================
 
     /// Distance traveled along the ray
-    Float t = ek::Infinity<Float>;
+    Float t = dr::Infinity<Float>;
 
     /// 2D coordinates on the primitive surface parameterization
     Point2f prim_uv;
@@ -593,17 +593,17 @@ struct PreliminaryIntersection {
     // =============================================================
 
     /**
-     * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
+     * This callback method is invoked by dr::zero<>, and takes care of fields that deviate
      * from the standard zero-initialization convention. In this particular class, the ``t``
      * field should be set to an infinite value to mark invalid intersection records.
      */
     void zero_(size_t size = 1) {
-        t = ek::full<Float>(ek::Infinity<Float>, size);
+        t = dr::full<Float>(dr::Infinity<Float>, size);
     }
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return ek::neq(t, ek::Infinity<Float>);
+        return dr::neq(t, dr::Infinity<Float>);
     }
 
     /**
@@ -626,8 +626,8 @@ struct PreliminaryIntersection {
             using ShapePtr = typename SurfaceInteraction3f::ShapePtr;
 
             active &= is_valid();
-            if (ek::none_or<false>(active)) {
-                SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+            if (dr::none_or<false>(active)) {
+                SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
                 si.wi = -ray.d;
                 si.wavelengths = ray.wavelengths;
                 return si;
@@ -635,15 +635,15 @@ struct PreliminaryIntersection {
 
             ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
 
-            ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
+            ShapePtr target = dr::select(dr::eq(instance, nullptr), shape, instance);
             SurfaceInteraction3f si =
                 target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
 
-            ek::masked(si.t, !active) = ek::Infinity<Float>;
+            dr::masked(si.t, !active) = dr::Infinity<Float>;
             active &= si.is_valid();
 
-            ek::masked(si.shape,    !active) = nullptr;
-            ek::masked(si.instance, !active) = nullptr;
+            dr::masked(si.shape,    !active) = nullptr;
+            dr::masked(si.instance, !active) = nullptr;
 
             si.prim_index  = prim_index;
             si.time        = ray.time;
@@ -653,13 +653,13 @@ struct PreliminaryIntersection {
                 si.initialize_sh_frame();
 
             // Incident direction in local coordinates
-            si.wi = ek::select(active, si.to_local(-ray.d), -ray.d);
+            si.wi = dr::select(active, si.to_local(-ray.d), -ray.d);
 
-            si.duv_dx = si.duv_dy = ek::zero<Point2f>();
+            si.duv_dx = si.duv_dy = dr::zero<Point2f>();
 
             if (has_flag(ray_flags, RayFlags::BoundaryTest))
                 si.boundary_test =
-                    ek::select(active, ek::detach(si.boundary_test), 1e8f);
+                    dr::select(active, dr::detach(si.boundary_test), 1e8f);
 
             return si;
         }
@@ -668,7 +668,7 @@ struct PreliminaryIntersection {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index,
+    DRJIT_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index,
                  shape, instance);
 };
 
@@ -676,7 +676,7 @@ struct PreliminaryIntersection {
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &it) {
-    if (ek::none(it.is_valid())) {
+    if (dr::none(it.is_valid())) {
         os << "Interaction[invalid]";
     } else {
         os << "Interaction[" << std::endl
@@ -691,7 +691,7 @@ std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &i
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spectrum> &it) {
-    if (ek::none(it.is_valid())) {
+    if (dr::none(it.is_valid())) {
         os << "SurfaceInteraction[invalid]";
     } else {
         os << "SurfaceInteraction[" << std::endl
@@ -724,7 +724,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectrum> &it) {
-    if (ek::none(it.is_valid())) {
+    if (dr::none(it.is_valid())) {
         os << "MediumInteraction[invalid]";
     } else {
         os << "MediumInteraction[" << std::endl
@@ -742,7 +742,7 @@ std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectr
 
 template <typename Float, typename Shape>
 std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, Shape> &pi) {
-    if (ek::none(pi.is_valid())) {
+    if (dr::none(pi.is_valid())) {
         os << "PreliminaryIntersection[invalid]";
     } else {
         os << "PreliminaryIntersection[" << std::endl

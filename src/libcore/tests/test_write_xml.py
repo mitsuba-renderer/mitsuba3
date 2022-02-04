@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 import os
@@ -289,7 +289,7 @@ def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
     tr1 = s1.sensors()[0].world_transform()
     tr2 = s2.sensors()[0].world_transform()
     for p in points:
-        assert ek.allclose(tr1 @ p, tr2 @ p)
+        assert dr.allclose(tr1 @ p, tr2 @ p)
 
 
 @fresolver_append_path

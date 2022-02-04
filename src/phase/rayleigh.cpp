@@ -39,7 +39,7 @@ public:
     }
 
     MTS_INLINE Float eval_rayleigh(Float cos_theta) const {
-        return (3.f / 16.f) * ek::InvPi<Float> * (1.f + ek::sqr(cos_theta));
+        return (3.f / 16.f) * dr::InvPi<Float> * (1.f + dr::sqr(cos_theta));
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
@@ -50,12 +50,12 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float z   = 2.f * (2.f * sample.x() - 1.f);
-        Float tmp = ek::sqrt(ek::sqr(z) + 1.f);
-        Float A   = ek::cbrt(z + tmp);
-        Float B   = ek::cbrt(z - tmp);
+        Float tmp = dr::sqrt(dr::sqr(z) + 1.f);
+        Float A   = dr::cbrt(z + tmp);
+        Float B   = dr::cbrt(z - tmp);
         Float cos_theta = A + B;
-        Float sin_theta = ek::safe_sqrt(1.0f - ek::sqr(cos_theta));
-        auto [sin_phi, cos_phi] = ek::sincos(ek::TwoPi<Float> * sample.y());
+        Float sin_theta = dr::safe_sqrt(1.0f - dr::sqr(cos_theta));
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
         auto wo = Vector3f{ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta };
 

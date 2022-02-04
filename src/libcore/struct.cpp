@@ -4,9 +4,9 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/jit.h>
-#include <enoki/array.h>
-#include <enoki/half.h>
-#include <enoki/color.h>
+#include <drjit/array.h>
+#include <drjit/half.h>
+#include <drjit/color.h>
 #include <unordered_map>
 #include <ostream>
 #include <map>
@@ -74,7 +74,7 @@ public:
     /// Floating point comparison
     template <typename X, typename Y>
     void ucomis(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vucomiss(x, y);
             #else
@@ -91,7 +91,7 @@ public:
 
     /// Floating point move operation
     template <typename X, typename Y> void movs(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmovss(x, y);
             #else
@@ -107,7 +107,7 @@ public:
     }
 
     void movs(const X86Xmm &x, const X86Xmm &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmovss(x, x, y);
             #else
@@ -123,7 +123,7 @@ public:
     }
 
     void xors(const X86Xmm &x) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vxorps(x, x, x);
             #else
@@ -141,7 +141,7 @@ public:
     /// Floating point blend operation
     template <typename X, typename Y, typename Z>
     void blend(const X &x, const Y &y, const Z &mask) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vblendvps(x, x, y, mask);
             #else
@@ -159,7 +159,7 @@ public:
     /// Floating point comparison
     template <typename X, typename Y>
     void cmps(const X &x, const Y &y, int mode) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vcmpss(x, x, y, Imm(mode));
             #else
@@ -177,7 +177,7 @@ public:
     /// Floating point addition operation (2op)
     template <typename X, typename Y>
     void adds(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vaddss(x, x, y);
             #else
@@ -195,7 +195,7 @@ public:
     /// Floating point subtraction operation (3op)
     template <typename X, typename Y, typename Z>
     void subs(const X &x, const Y &y, const Z &z) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vsubss(x, y, z);
             #else
@@ -215,7 +215,7 @@ public:
     /// Floating point multiplication operation (2op)
     template <typename X, typename Y>
     void muls(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmulss(x, x, y);
             #else
@@ -233,7 +233,7 @@ public:
     /// Floating point multiplication operation (3op)
     template <typename X, typename Y, typename Z>
     void muls(const X &x, const Y &y, const Z &z) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmulss(x, y, z);
             #else
@@ -253,7 +253,7 @@ public:
     /// Floating point division operation (2op)
     template <typename X, typename Y>
     void divs(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vdivss(x, x, y);
             #else
@@ -271,7 +271,7 @@ public:
     /// Floating point square root operation
     template <typename X, typename Y>
     void sqrts(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vsqrtss(x, x, y);
             #else
@@ -289,7 +289,7 @@ public:
     /// Floating point maximum operation
     template <typename X, typename Y>
     void maxs(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmaxss(x, x, y);
             #else
@@ -307,7 +307,7 @@ public:
     /// Floating point minimum operation
     template <typename X, typename Y>
     void mins(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vminss(x, x, y);
             #else
@@ -325,7 +325,7 @@ public:
     /// Floating point fused multiply-add operation
     template <typename X, typename Y, typename Z>
     void fmadd213(const X &x, const Y &y, const Z &z) {
-        #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
+        #if defined(DRJIT_X86_AVX) && defined(DRJIT_X86_FMA)
             #if !defined(DOUBLE_PRECISION)
                 cc.vfmadd213ss(x, y, z);
             #else
@@ -345,7 +345,7 @@ public:
     /// Floating point fused multiply-add operation
     template <typename X, typename Y, typename Z>
     void fmadd231(const X &x, const Y &y, const Z &z) {
-        #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_FMA)
+        #if defined(DRJIT_X86_AVX) && defined(DRJIT_X86_FMA)
             #if !defined(DOUBLE_PRECISION)
                 cc.vfmadd231ss(x, y, z);
             #else
@@ -368,7 +368,7 @@ public:
     /// Convert an integer to a floating point value
     template <typename X, typename Y>
     void cvtsi2s(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vcvtsi2ss(x, x, y);
             #else
@@ -386,7 +386,7 @@ public:
     /// Convert a floating point value to an integer (truncating)
     template <typename X, typename Y>
     void cvts2si(const X &x, const Y &y) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vcvtss2si(x, y);
             #else
@@ -404,7 +404,7 @@ public:
     /// Floating point rounding operation
     template <typename X, typename Y>
     void rounds(const X &x, const Y &y, int mode) {
-        #if defined(ENOKI_X86_AVX)
+        #if defined(DRJIT_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vroundss(x, x, y, Imm(mode));
             #else
@@ -592,13 +592,13 @@ public:
                     X86Gp temp = cc.newUInt32();
                     cc.mov(temp.r32(), x86::dword_ptr(input, offset));
                     cc.bswap(temp.r32());
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovd(value.xmm, temp.r32());
                     #else
                         cc.movd(value.xmm, temp.r32());
                     #endif
                 } else {
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovss(value.xmm, x86::dword_ptr(input, offset));
                     #else
                         cc.movss(value.xmm, x86::dword_ptr(input, offset));
@@ -611,13 +611,13 @@ public:
                     X86Gp temp = cc.newUInt64();
                     cc.mov(temp.r64(), x86::qword_ptr(input, offset));
                     cc.bswap(temp.r64());
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovq(value.xmm, temp.r64());
                     #else
                         cc.movq(value.xmm, temp.r64());
                     #endif
                 } else {
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovsd(value.xmm, x86::qword_ptr(input, offset));
                     #else
                         cc.movsd(value.xmm, x86::qword_ptr(input, offset));
@@ -632,18 +632,18 @@ public:
             if (field.type == Struct::Type::Float16) {
                 auto ref = cc.newUInt16Const(
                     asmjit::kConstScopeGlobal,
-                    ek::half::float32_to_float16((float) field.default_));
+                    dr::half::float32_to_float16((float) field.default_));
                 cc.cmp(value.gp.r16(), ref);
             } else if (field.type == Struct::Type::Float32) {
                 auto ref = cc.newFloatConst(asmjit::kConstScopeGlobal, (float) field.default_);
-                #if defined(ENOKI_X86_AVX)
+                #if defined(DRJIT_X86_AVX)
                     cc.vucomiss(value.xmm, ref);
                 #else
                     cc.ucomiss(value.xmm, ref);
                 #endif
             } else if (field.type == Struct::Type::Float64) {
                 auto ref = cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) field.default_);
-                #if defined(ENOKI_X86_AVX)
+                #if defined(DRJIT_X86_AVX)
                     cc.vucomisd(value.xmm, ref);
                 #else
                     cc.ucomisd(value.xmm, ref);
@@ -739,11 +739,11 @@ public:
 
             if (kr.type == Struct::Type::Float16) {
                 vr.xmm = cc.newXmm();
-                #if defined(ENOKI_X86_AVX) && defined(ENOKI_X86_F16C)
+                #if defined(DRJIT_X86_AVX) && defined(DRJIT_X86_F16C)
                     cc.vmovd(vr.xmm, vr.gp.r32());
                     cc.vcvtph2ps(vr.xmm, vr.xmm);
                 #else
-                    auto call = cc.call(imm_ptr((void *) ek::half::float16_to_float32),
+                    auto call = cc.call(imm_ptr((void *) dr::half::float16_to_float32),
                         FuncSignature1<float, uint16_t>(CallConv::kIdHostCDecl));
                     call->setArg(0, vr.gp);
                     call->setRet(0, vr.xmm);
@@ -754,7 +754,7 @@ public:
             if (kr.type == Struct::Type::Float32 && kr.type != struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
-                #if defined(ENOKI_X86_AVX)
+                #if defined(DRJIT_X86_AVX)
                     cc.vcvtss2sd(vr.xmm, vr.xmm, source);
                 #else
                     cc.cvtss2sd(vr.xmm, source);
@@ -765,7 +765,7 @@ public:
             if (kr.type == Struct::Type::Float64 && kr.type != struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
-                #if defined(ENOKI_X86_AVX)
+                #if defined(DRJIT_X86_AVX)
                     cc.vcvtsd2ss(vr.xmm, vr.xmm, source);
                 #else
                     cc.cvtsd2ss(vr.xmm, source);
@@ -807,9 +807,9 @@ public:
             value.xmm = temp;
 
             while ((double) range.first < range_dbl.first)
-                range.first = ek::next_float(range.first);
+                range.first = dr::next_float(range.first);
             while ((double) range.second > range_dbl.second)
-                range.second = ek::prev_float(range.second);
+                range.second = dr::prev_float(range.second);
 
             if (has_flag(field.flags, Struct::Flags::Normalized)) {
                 muls(value.xmm, const_(range.second));
@@ -822,13 +822,13 @@ public:
                         X86Gp base = cc.newUInt64();
                         cc.mov(base.r64(), Imm((uintptr_t) dither_matrix256));
                         dither_value = cc.newXmm();
-                        #if defined(ENOKI_X86_AVX)
+                        #if defined(DRJIT_X86_AVX)
                             cc.movss(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
                         #else
                             cc.vmovss(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
                         #endif
                         #if defined(DOUBLE_PRECISION)
-                            #if defined(ENOKI_X86_AVX)
+                            #if defined(DRJIT_X86_AVX)
                                 cc.vcvtss2sd(dither_value, dither_value, dither_value);
                             #else
                                 cc.cvtss2sd(dither_value, dither_value);
@@ -915,7 +915,7 @@ public:
             case Struct::Type::Float16:
                 if (key.type == Struct::Type::Float64) {
                     X86Xmm temp = cc.newXmm();
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vcvtsd2ss(temp, temp, value.xmm);
                     #else
                         cc.cvtsd2ss(temp, value.xmm);
@@ -931,7 +931,7 @@ public:
                         cc.vcvtps2ph(temp, value.xmm, 0);
                         cc.vmovd(value.gp.r32(), temp);
                     #else
-                        auto call = cc.call(imm_ptr((void *) ek::half::float32_to_float16),
+                        auto call = cc.call(imm_ptr((void *) dr::half::float32_to_float16),
                             FuncSignature1<uint16_t, float>(asmjit::CallConv::kIdHost));
                         call->setArg(0, value.xmm);
                         call->setRet(0, value.gp);
@@ -954,7 +954,7 @@ public:
             case Struct::Type::Float32:
                 if (key.type == Struct::Type::Float64) {
                     X86Xmm temp = cc.newXmm();
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vcvtsd2ss(temp, temp, value.xmm);
                     #else
                         cc.cvtsd2ss(temp, value.xmm);
@@ -963,7 +963,7 @@ public:
                 }
                 if (bswap) {
                     X86Gp temp = cc.newUInt32();
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovd(temp, value.xmm);
                     #else
                         cc.movd(temp, value.xmm);
@@ -971,7 +971,7 @@ public:
                     cc.bswap(temp);
                     cc.mov(x86::dword_ptr(output, offset), temp);
                 } else {
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovss(x86::dword_ptr(output, offset), value.xmm);
                     #else
                         cc.movss(x86::dword_ptr(output, offset), value.xmm);
@@ -982,7 +982,7 @@ public:
             case Struct::Type::Float64:
                 if (key.type == Struct::Type::Float32) {
                     X86Xmm temp = cc.newXmm();
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vcvtss2sd(temp, temp, value.xmm);
                     #else
                         cc.cvtss2sd(temp, value.xmm);
@@ -991,7 +991,7 @@ public:
                 }
                 if (bswap) {
                     X86Gp temp = cc.newUInt64();
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovq(temp, value.xmm);
                     #else
                         cc.movq(temp, value.xmm);
@@ -999,7 +999,7 @@ public:
                     cc.bswap(temp);
                     cc.mov(x86::qword_ptr(output, offset), temp);
                 } else {
-                    #if defined(ENOKI_X86_AVX)
+                    #if defined(DRJIT_X86_AVX)
                         cc.vmovsd(x86::qword_ptr(output, offset), value.xmm);
                     #else
                         cc.movsd(x86::qword_ptr(output, offset), value.xmm);
@@ -1208,8 +1208,8 @@ std::pair<double, double> Struct::range(Struct::Type type) {
         // Account for rounding errors in the conversions above.
         // (we want the bounds to be conservative)
         if (result.first != 0)
-            result.first = ek::next_float(result.first);
-        result.second = ek::prev_float(result.second);
+            result.first = dr::next_float(result.first);
+        result.second = dr::prev_float(result.second);
     }
 
     return result;
@@ -1560,7 +1560,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = ek::half::float16_to_float32(val);
+                value.s = dr::half::float16_to_float32(val);
                 value.type = Struct::Type::Float32;
             }
             break;
@@ -1569,7 +1569,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = ek::memcpy_cast<float>(val);
+                value.s = dr::memcpy_cast<float>(val);
             }
             break;
 
@@ -1577,7 +1577,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.d = ek::memcpy_cast<double>(val);
+                value.d = dr::memcpy_cast<double>(val);
             }
             break;
 
@@ -1616,7 +1616,7 @@ void StructConverter::linearize(Value &value) const {
             value.f = (Float) value.d;
     }
     if (has_flag(value.flags, Struct::Flags::Gamma)) {
-        value.f = ek::srgb_to_linear(value.f);
+        value.f = dr::srgb_to_linear(value.f);
         value.flags = value.flags & ~Struct::Flags::Gamma;
     }
 
@@ -1631,7 +1631,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
     dst += f.offset;
 
     if (has_flag(f.flags, Struct::Flags::Gamma) && !has_flag(value.flags, Struct::Flags::Gamma))
-        value.f = ek::linear_to_srgb(value.f);
+        value.f = dr::linear_to_srgb(value.f);
 
     if (f.is_integer() && value.type == struct_type_v<Float>) {
         auto range = f.range();
@@ -1717,7 +1717,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float16: {
-                uint16_t val = ek::half::float32_to_float16(value.s);
+                uint16_t val = dr::half::float32_to_float16(value.s);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint16_t *) dst) = val;
@@ -1725,7 +1725,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float32: {
-                uint32_t val = (uint32_t) ek::memcpy_cast<uint32_t>(value.s);
+                uint32_t val = (uint32_t) dr::memcpy_cast<uint32_t>(value.s);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint32_t *) dst) = val;
@@ -1733,7 +1733,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float64: {
-                uint64_t val = (uint64_t) ek::memcpy_cast<uint64_t>(value.d);
+                uint64_t val = (uint64_t) dr::memcpy_cast<uint64_t>(value.d);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint64_t *) dst) = val;

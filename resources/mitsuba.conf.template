@@ -163,244 +163,244 @@
     # LLVM variant definitions
 
     "llvm_mono": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_mono_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_mono_polarized": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_mono_polarized_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_rgb": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_rgb_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_rgb_polarized": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_rgb_polarized_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_spectral": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_spectral_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_spectral_polarized": {
-        "float": "ek::LLVMArray<float>",
+        "float": "dr::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "llvm_spectral_polarized_double": {
-        "float": "ek::LLVMArray<double>",
+        "float": "dr::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "llvm_ad_mono": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_ad_mono_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_ad_mono_polarized": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_ad_mono_polarized_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_ad_rgb": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_ad_rgb_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_ad_rgb_polarized": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_ad_rgb_polarized_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_ad_spectral": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_ad_spectral_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_ad_spectral_polarized": {
-        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "llvm_ad_spectral_polarized_double": {
-        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     # CUDA variant definitions
 
     "cuda_mono": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_mono_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_mono_polarized": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_mono_polarized_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_rgb": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_rgb_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_rgb_polarized": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_rgb_polarized_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_spectral": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_spectral_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_spectral_polarized": {
-        "float": "ek::CUDAArray<float>",
+        "float": "dr::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "cuda_spectral_polarized_double": {
-        "float": "ek::CUDAArray<double>",
+        "float": "dr::CUDAArray<double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "cuda_ad_mono": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_ad_mono_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_ad_mono_polarized": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_ad_mono_polarized_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_ad_rgb": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_ad_rgb_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_ad_rgb_polarized": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_ad_rgb_polarized_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_ad_spectral": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_ad_spectral_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_ad_spectral_polarized": {
-        "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "cuda_ad_spectral_polarized_double": {
-        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
 }

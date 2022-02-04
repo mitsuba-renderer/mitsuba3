@@ -4,8 +4,8 @@
 #include <ostream>
 #include <type_traits>
 
-#include <enoki/array_router.h>
-namespace ek = enoki;
+#include <drjit/array_router.h>
+namespace dr = drjit;
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -15,11 +15,11 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This class implements a simple wrapper that replicates instance attributes
  * on the host and device. This is only relevant when \c DeviceType is a
- * JIT-compiled Enoki array (when compiling the renderer in CUDA/LLVM mode).
+ * JIT-compiled Dr.Jit array (when compiling the renderer in CUDA/LLVM mode).
  *
  * Why is this needed? Mitsuba plugins represent their internal state using
  * attributes like position, intensity, etc., which are typically represented
- * using Enoki arrays. For technical reasons, it is helpful if those fields are
+ * using Dr.Jit arrays. For technical reasons, it is helpful if those fields are
  * both accessible on the host (in which case the lowest-level representation
  * builds on standard C++ types like float or int, for example Point<float, 3>)
  * or the device, whose types invoke the JIT compiler
@@ -31,13 +31,13 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename DeviceType,
           typename HostType =
-              std::decay_t<decltype(ek::slice(std::declval<DeviceType>()))>,
+              std::decay_t<decltype(dr::slice(std::declval<DeviceType>()))>,
           typename SFINAE = int>
 struct field {};
 
 template <typename DeviceType, typename HostType>
 struct field<DeviceType, HostType,
-             ek::enable_if_t<std::is_same_v<DeviceType, HostType>>> {
+             dr::enable_if_t<std::is_same_v<DeviceType, HostType>>> {
     field() {}
     field(const DeviceType &v) : m_scalar(v) { }
     field(DeviceType &&v) : m_scalar(v) { }
@@ -66,7 +66,7 @@ private:
 
 template <typename DeviceType, typename HostType>
 struct field<DeviceType, HostType,
-             ek::enable_if_t<!std::is_same_v<DeviceType, HostType>>> {
+             dr::enable_if_t<!std::is_same_v<DeviceType, HostType>>> {
     field() {}
     field(const HostType &v) : m_value(v), m_scalar(v) { }
     field(HostType &&v) : m_value(v), m_scalar(v) { }
@@ -93,15 +93,15 @@ struct field<DeviceType, HostType,
     }
     field& operator=(const DeviceType &v) {
         m_value = v;
-        m_scalar = ek::slice<HostType>(m_value);
+        m_scalar = dr::slice<HostType>(m_value);
         return *this;
     }
     field& operator=(DeviceType &&v) {
         m_value = v;
-        m_scalar = ek::slice<HostType>(m_value);
+        m_scalar = dr::slice<HostType>(m_value);
         return *this;
     }
-    void opaque_() { ek::make_opaque(m_value); }
+    void opaque_() { dr::make_opaque(m_value); }
 private:
     DeviceType m_value;
     HostType m_scalar;

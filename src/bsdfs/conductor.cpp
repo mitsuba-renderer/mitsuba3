@@ -199,7 +199,7 @@ public:
 
     SmoothConductor(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
 
         m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
@@ -225,9 +225,9 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum value(0.f);
-        if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
+        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
             return { bs, value };
 
         bs.sampled_component = 0;
@@ -236,7 +236,7 @@ public:
         bs.eta = 1.f;
         bs.pdf = 1.f;
 
-        ek::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
+        dr::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
                                              m_k->eval(si, active));
         UnpolarizedSpectrum reflectance = m_specular_reflectance->eval(si, active);
 
@@ -254,8 +254,8 @@ public:
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
-                     s_axis_out = ek::normalize(ek::cross(n, wi_hat));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(n, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(n, wi_hat));
 
             /* Rotate in/out reference vector of `value` s.t. it aligns with the
                implicit Stokes bases of -wo_hat & wi_hat. */

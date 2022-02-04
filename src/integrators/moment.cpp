@@ -80,7 +80,7 @@ public:
                 static_assert(is_spectral_v<Spectrum>);
                 /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                 auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                spec_u *= ek::select(ek::neq(pdf, 0.f), ek::rcp(pdf), 0.f);
+                spec_u *= dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
                 xyz = spectrum_to_xyz(spec_u, ray.wavelengths, active);
             }
 
@@ -88,7 +88,7 @@ public:
 
             // Write second moment AOVs
             for (size_t j = 0; j < m_integrators[i].second + 3; j++)
-                *(aovs - j + offset - 1) = ek::sqr(*(aovs - j - 1));
+                *(aovs - j + offset - 1) = dr::sqr(*(aovs - j - 1));
 
             if (i == 0)
                 result = result_sub;

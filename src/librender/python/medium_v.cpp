@@ -77,8 +77,8 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             "mi"_a, "active"_a=true,
             D(Medium, get_scattering_coefficients));
 
-    if constexpr (ek::is_array_v<Ptr>)
-        bind_enoki_ptr_array(cls);
+    if constexpr (dr::is_array_v<Ptr>)
+        bind_drjit_ptr_array(cls);
 }
 
 MTS_PY_EXPORT(Medium) {
@@ -92,32 +92,32 @@ MTS_PY_EXPORT(Medium) {
                 [](PyMedium &medium){ return medium.m_sample_emitters; },
                 [](PyMedium &medium, bool value){
                     medium.m_sample_emitters = value;
-                    ek::set_attr(&medium, "sample_emitters", value);
+                    dr::set_attr(&medium, "sample_emitters", value);
                 }
             )
             .def_property("m_is_homogeneous",
                 [](PyMedium &medium){ return medium.m_is_homogeneous; },
                 [](PyMedium &medium, bool value){
                     medium.m_is_homogeneous = value;
-                    ek::set_attr(&medium, "is_homogeneous", value);
+                    dr::set_attr(&medium, "is_homogeneous", value);
                 }
             )
             .def_property("m_has_spectral_extinction",
                 [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
                 [](PyMedium &medium, bool value){
                     medium.m_has_spectral_extinction = value;
-                    ek::set_attr(&medium, "has_spectral_extinction", value);
+                    dr::set_attr(&medium, "has_spectral_extinction", value);
                 }
             )
             .def("__repr__", &Medium::to_string);
 
     bind_medium_generic<Medium *>(medium);
 
-    if constexpr (ek::is_array_v<MediumPtr>) {
-        py::object ek       = py::module_::import("enoki"),
-                   ek_array = ek.attr("ArrayBase");
+    if constexpr (dr::is_array_v<MediumPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
 
-        py::class_<MediumPtr> cls(m, "MediumPtr", ek_array);
+        py::class_<MediumPtr> cls(m, "MediumPtr", dr_array);
         bind_medium_generic<MediumPtr>(cls);
     }
 

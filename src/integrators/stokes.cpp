@@ -94,7 +94,7 @@ public:
             auto sensor = scene->sensors()[0];
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
             Vector3f vertical = sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);
-            Vector3f target_basis = ek::cross(ray.d, vertical);
+            Vector3f target_basis = dr::cross(ray.d, vertical);
             spec = mueller::rotate_stokes_basis(-ray.d,
                                                  current_basis,
                                                  target_basis) * spec;
@@ -110,7 +110,7 @@ public:
                     static_assert(is_spectral_v<Spectrum>);
                     /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                     auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                    UnpolarizedSpectrum spec = stokes[i] * ek::select(ek::neq(pdf, 0.f), ek::rcp(pdf), 0.f);
+                    UnpolarizedSpectrum spec = stokes[i] * dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
                     rgb = spectrum_to_srgb(spec, ray.wavelengths, active);
                 }
 

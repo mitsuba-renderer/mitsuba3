@@ -78,7 +78,7 @@ public:
                 m_components.push_back(m_nested_bsdf[i]->flags(j));
 
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -101,24 +101,24 @@ public:
             return { bs, result };
         }
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum result(0.f);
 
         Mask m0 = active && sample1 >  weight,
              m1 = active && sample1 <= weight;
 
-        if (ek::any_or<true>(m0)) {
+        if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
-            ek::masked(bs, m0) = bs0;
-            ek::masked(result, m0) = result0;
+            dr::masked(bs, m0) = bs0;
+            dr::masked(result, m0) = result0;
         }
 
-        if (ek::any_or<true>(m1)) {
+        if (dr::any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, sample1 / weight, sample2, m1);
-            ek::masked(bs, m1) = bs1;
-            ek::masked(result, m1) = result1;
+            dr::masked(bs, m1) = bs1;
+            dr::masked(result, m1) = result1;
         }
 
         return { bs, result };
@@ -187,7 +187,7 @@ public:
     }
 
     MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        return ek::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
+        return dr::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
     void traverse(TraversalCallback *callback) override {

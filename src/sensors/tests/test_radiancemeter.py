@@ -1,6 +1,6 @@
 import pytest
 
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 
@@ -37,7 +37,7 @@ def test_construct(variant_scalar_rgb):
         up=[0, 0, 1]
     ))
     assert not sensor.bbox().valid()  # Degenerate bounding box
-    assert ek.allclose(
+    assert dr.allclose(
         sensor.world_transform().matrix,
         [[-1, 0, 0, 0],
          [0, 0, 1, 0],
@@ -48,7 +48,7 @@ def test_construct(variant_scalar_rgb):
     # Test construct from origin and direction
     sensor = make_sensor(origin=[0, 0, 0], direction=[0, 1, 0])
     assert not sensor.bbox().valid()  # Degenerate bounding box
-    assert ek.allclose(
+    assert dr.allclose(
         sensor.world_transform().matrix,
         [[0, 1, 0, 0],
          [0, 0, 1, 0],
@@ -67,7 +67,7 @@ def test_construct(variant_scalar_rgb):
         direction=[4, 1, 0]
     )
     assert not sensor.bbox().valid()  # Degenerate bounding box
-    assert ek.allclose(
+    assert dr.allclose(
         sensor.world_transform().matrix,
         [[-1, 0, 0, 0],
          [0, 0, 1, 0],
@@ -100,13 +100,13 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
 
     # Test regular ray sampling
     ray = sensor.sample_ray(1., 1., sample1, sample2, True)
-    assert ek.allclose(ray[0].o, origin, atol=1e-4)
-    assert ek.allclose(ray[0].d, ek.normalize(direction))
+    assert dr.allclose(ray[0].o, origin, atol=1e-4)
+    assert dr.allclose(ray[0].d, dr.normalize(direction))
 
     # Test ray differential sampling
     ray = sensor.sample_ray_differential(1., 1., sample2, sample1, True)
-    assert ek.allclose(ray[0].o, origin, atol=1e-4)
-    assert ek.allclose(ray[0].d, ek.normalize(direction))
+    assert dr.allclose(ray[0].o, origin, atol=1e-4)
+    assert dr.allclose(ray[0].d, dr.normalize(direction))
     assert not ray[0].has_differentials
 
 

@@ -139,7 +139,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
             color_management_static_shutdown();
             Scene<Float, Spectrum>::static_accel_shutdown();
 
-            /* The Enoki python module is responsible for cleaning up the
+            /* The DrJit python module is responsible for cleaning up the
                 JIT state, so jit_shutdown() shouldn't be called here. */
             weakref.dec_ref();
 
@@ -154,5 +154,5 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
 
     // Change module name back to correct value
-    m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
 }

@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 
@@ -9,8 +9,8 @@ def test01_construct(variant_scalar_rgb):
 
     md = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, True)
     assert md.type() == MicrofacetType.Beckmann
-    assert ek.allclose(md.alpha_u(), 0.1)
-    assert ek.allclose(md.alpha_v(), 0.1)
+    assert dr.allclose(md.alpha_u(), 0.1)
+    assert dr.allclose(md.alpha_v(), 0.1)
     assert md.sample_visible()
 
 
@@ -27,15 +27,15 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
     assert not mdf_i.is_anisotropic()
 
     steps = 20
-    theta = ek.linspace(Float, 0, ek.Pi, steps)
-    phi = ek.full(Float, ek.Pi / 2, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    theta = dr.linspace(Float, 0, dr.Pi, steps)
+    phi = dr.full(Float, dr.Pi / 2, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
     wi = Vector3f(0, 0, 1)
 
-    assert ek.allclose(mdf.eval(v),
+    assert dr.allclose(mdf.eval(v),
               [  1.06103287e+01,   8.22650051e+00,   3.57923722e+00,
                  6.84863329e-01,   3.26460004e-02,   1.01964230e-04,
                  5.87322635e-10,   0.00000000e+00,   0.00000000e+00,
@@ -44,7 +44,7 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00])
 
-    assert ek.allclose(mdf.pdf(wi, v),
+    assert dr.allclose(mdf.pdf(wi, v),
                [  1.06103287e+01,   8.11430168e+00,   3.38530421e+00,
                  6.02319300e-01,   2.57622823e-02,   6.90584930e-05,
                  3.21235011e-10,   0.00000000e+00,   0.00000000e+00,
@@ -53,7 +53,7 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00])
 
-    assert ek.allclose(mdf_i.eval(v),
+    assert dr.allclose(mdf_i.eval(v),
                [  3.18309879e+01,   2.07673073e+00,   3.02855828e-04,
                  1.01591990e-11,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
@@ -62,7 +62,7 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00])
 
-    assert ek.allclose(mdf_i.pdf(wi, v),
+    assert dr.allclose(mdf_i.pdf(wi, v),
                [  3.18309879e+01,   2.04840684e+00,   2.86446273e-04,
                  8.93474877e-12,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
@@ -71,26 +71,26 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00])
 
-    theta = ek.full(Float, 0.1, steps)
-    phi = ek.linspace(Float, 0, 2*ek.Pi, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    theta = dr.full(Float, 0.1, steps)
+    phi = dr.linspace(Float, 0, 2*dr.Pi, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert ek.allclose(mdf.eval(v),
+    assert dr.allclose(mdf.eval(v),
                [ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
                 9.62056446,  8.37803268,  6.42071199,  4.84459257,  4.05276537,
                 4.05276537,  4.84459257,  6.42071199,  8.37803268,  9.62056446,
                 9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706])
 
-    assert ek.allclose(mdf.pdf(wi, v),
+    assert dr.allclose(mdf.pdf(wi, v),
                Float([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
                 9.62056446,  8.37803268,  6.42071199,  4.84459257,  4.05276537,
                 4.05276537,  4.84459257,  6.42071199,  8.37803268,  9.62056446,
-                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]) * ek.cos(0.1))
+                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]) * dr.cos(0.1))
 
-    assert ek.allclose(mdf_i.eval(v), ek.full(Float, 11.86709118, steps))
-    assert ek.allclose(mdf_i.pdf(wi, v), ek.full(Float, 11.86709118 * ek.cos(0.1), steps))
+    assert dr.allclose(mdf_i.eval(v), dr.full(Float, 11.86709118, steps))
+    assert dr.allclose(mdf_i.pdf(wi, v), dr.full(Float, 11.86709118 * dr.cos(0.1), steps))
 
 
 def test03_smith_g1_beckmann(variants_vec_backends_once):
@@ -101,40 +101,40 @@ def test03_smith_g1_beckmann(variants_vec_backends_once):
     mdf   = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
     mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
     steps = 20
-    theta = ek.linspace(Float, ek.Pi/3, ek.Pi/2, steps)
+    theta = dr.linspace(Float, dr.Pi/3, dr.Pi/2, steps)
 
-    phi = ek.full(Float, ek.Pi/2, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    phi = dr.full(Float, dr.Pi/2, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
     wi = Vector3f(0, 0, 1)
 
-    assert ek.allclose(mdf.smith_g1(v, wi),
+    assert dr.allclose(mdf.smith_g1(v, wi),
                        [1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000523e+00, 9.9941480e-01,
                         9.9757767e-01, 9.9420297e-01, 9.8884594e-01, 9.8091525e-01, 9.6961778e-01,
                         9.5387781e-01, 9.3222123e-01, 9.0260512e-01, 8.6216795e-01, 8.0686140e-01,
                         7.3091686e-01, 6.2609726e-01, 4.8074335e-01, 2.7883825e-01, 1.9197471e-06], atol=1e-5)
 
-    assert ek.allclose(mdf_i.smith_g1(v, wi),
+    assert dr.allclose(mdf_i.smith_g1(v, wi),
                [1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00,
                 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00,
                 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 9.9828446e-01,
                 9.8627287e-01, 9.5088160e-01, 8.5989666e-01, 6.2535185e-01, 5.7592310e-06], atol=1e-5)
 
     steps = 20
-    theta = ek.full(Float, ek.Pi / 2 * 0.98, steps)
-    phi = ek.linspace(Float, 0, 2 * ek.Pi, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    theta = dr.full(Float, dr.Pi / 2 * 0.98, steps)
+    phi = dr.linspace(Float, 0, 2 * dr.Pi, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert ek.allclose(mdf.smith_g1(v, wi),
+    assert dr.allclose(mdf.smith_g1(v, wi),
                [ 0.67333597,  0.56164336,  0.42798978,  0.35298213,  0.31838724,
                  0.31201753,  0.33166203,  0.38421196,  0.48717275,  0.63746351,
                  0.63746351,  0.48717275,  0.38421196,  0.33166203,  0.31201753,
                  0.31838724,  0.35298213,  0.42798978,  0.56164336,  0.67333597])
 
-    assert ek.allclose(mdf_i.smith_g1(v, wi), ek.full(Float, 0.67333597, steps))
+    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(Float, 0.67333597, steps))
 
 
 def test04_sample_beckmann(variants_vec_backends_once):
@@ -145,8 +145,8 @@ def test04_sample_beckmann(variants_vec_backends_once):
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = ek.linspace(Float, 0, 1, steps)
-    u1, u2 = ek.meshgrid(u, u)
+    u = dr.linspace(Float, 0, 1, steps)
+    u1, u2 = dr.meshgrid(u, u)
     u = [u1, u2]
     wi = Vector3f(0, 0, 1)
 
@@ -198,8 +198,8 @@ def test04_sample_beckmann(variants_vec_backends_once):
              2.55768657,   0.        ,  10.61032867,   8.51669121,
              6.41503906,   4.302598  ,   2.17350101,   0.        ]))
 
-    assert ek.allclose(ref[0], result[0], atol=5e-4)
-    assert ek.allclose(ref[1], result[1], atol=1e-4)
+    assert dr.allclose(ref[0], result[0], atol=5e-4)
+    assert dr.allclose(ref[1], result[1], atol=1e-4)
 
 
 def test03_smith_g1_ggx(variants_vec_backends_once):
@@ -210,38 +210,38 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
     mdf   = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
     mdf_i = MicrofacetDistribution(MicrofacetType.GGX, 0.1, False)
     steps = 20
-    theta = ek.linspace(Float, ek.Pi/3, ek.Pi/2, steps)
-    phi = ek.full(Float, ek.Pi/2, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    theta = dr.linspace(Float, dr.Pi/3, dr.Pi/2, steps)
+    phi = dr.full(Float, dr.Pi/2, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
     wi = np.tile([0, 0, 1], (steps, 1))
 
-    assert ek.allclose(mdf.smith_g1(v, wi),
+    assert dr.allclose(mdf.smith_g1(v, wi),
                        [9.4031686e-01, 9.3310797e-01, 9.2485082e-01, 9.1534841e-01, 9.0435863e-01,
                         8.9158219e-01, 8.7664890e-01, 8.5909742e-01, 8.3835226e-01, 8.1369340e-01,
                         7.8421932e-01, 7.4880326e-01, 7.0604056e-01, 6.5419233e-01, 5.9112519e-01,
                         5.1425743e-01, 4.2051861e-01, 3.0633566e-01, 1.6765384e-01, 1.0861372e-06], atol=1e-5)
 
-    assert ek.allclose(mdf_i.smith_g1(v, wi),
+    assert dr.allclose(mdf_i.smith_g1(v, wi),
                        [9.9261039e-01, 9.9160647e-01, 9.9042398e-01, 9.8901933e-01, 9.8733366e-01,
                         9.8528832e-01, 9.8277503e-01, 9.7964239e-01, 9.7567332e-01, 9.7054905e-01,
                         9.6378750e-01, 9.5463598e-01, 9.4187391e-01, 9.2344058e-01, 8.9569420e-01,
                         8.5189372e-01, 7.7902949e-01, 6.5144652e-01, 4.1989169e-01, 3.2584082e-06], atol=1e-5)
 
-    theta = ek.full(Float, ek.Pi / 2 * 0.98, steps)
-    phi = ek.linspace(Float, 0, 2 * ek.Pi, steps)
-    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
-    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    theta = dr.full(Float, dr.Pi / 2 * 0.98, steps)
+    phi = dr.linspace(Float, 0, 2 * dr.Pi, steps)
+    cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
+    cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert ek.allclose(mdf.smith_g1(v, wi),
+    assert dr.allclose(mdf.smith_g1(v, wi),
       [ 0.46130955,  0.36801264,  0.26822716,  0.21645154,  0.19341162,
                  0.18922243,  0.20219423,  0.23769052,  0.31108665,  0.43013984,
                  0.43013984,  0.31108665,  0.23769052,  0.20219423,  0.18922243,
                  0.19341162,  0.21645154,  0.26822716,  0.36801264,  0.46130955])
 
-    assert ek.allclose(mdf_i.smith_g1(v, wi), ek.full(Float, 0.46130955, steps))
+    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(Float, 0.46130955, steps))
 
 
 def test05_sample_ggx(variants_vec_backends_once):
@@ -252,8 +252,8 @@ def test05_sample_ggx(variants_vec_backends_once):
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = ek.linspace(Float, 0, 1, steps)
-    u1, u2 = ek.meshgrid(u, u)
+    u = dr.linspace(Float, 0, 1, steps)
+    u1, u2 = dr.meshgrid(u, u)
     u = [u1, u2]
     wi = np.tile([0, 0, 1], (steps * steps, 1))
     result = mdf.sample(wi, u)
@@ -303,8 +303,8 @@ def test05_sample_ggx(variants_vec_backends_once):
              0.65056866,   0.        ,  10.61032867,   6.81609201,
              3.85797882,   1.73599267,   0.45013079,   0.        ])))
 
-    assert ek.allclose(ref[0], result[0], atol=5e-4)
-    assert ek.allclose(ref[1], result[1], atol=1e-4)
+    assert dr.allclose(ref[0], result[0], atol=5e-4)
+    assert dr.allclose(ref[1], result[1], atol=1e-4)
 
 
 @pytest.mark.parametrize("sample_visible", [True, False])

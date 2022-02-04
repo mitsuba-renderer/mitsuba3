@@ -4,7 +4,7 @@ import types
 import sys
 import threading
 from importlib import import_module as _import, reload as _reload
-import enoki as ek
+import drjit as dr
 import os
 
 if sys.version_info < (3, 6):

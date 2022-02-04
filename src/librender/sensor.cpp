@@ -109,12 +109,12 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
             return m_srf->sample_spectrum(
-                    ek::zero<SurfaceInteraction3f>(),
+                    dr::zero<SurfaceInteraction3f>(),
                     math::sample_shifted<Wavelength>(sample),
                     active);
         }
     } else {
-        ENOKI_MARK_USED(active);
+        DRJIT_MARK_USED(active);
     }
 
     return sample_wavelength<Float, Spectrum>(sample);
@@ -177,7 +177,7 @@ double parse_fov(const Properties &props, double aspect) {
         }
 
         fov = 2.0 *
-                ek::rad_to_deg(ek::atan(ek::sqrt(double(36 * 36 + 24 * 24)) / (2.0 * value)));
+                dr::rad_to_deg(dr::atan(dr::sqrt(double(36 * 36 + 24 * 24)) / (2.0 * value)));
         fov_axis = "diagonal";
     }
 
@@ -185,12 +185,12 @@ double parse_fov(const Properties &props, double aspect) {
     if (fov_axis == "x") {
         result = fov;
     } else if (fov_axis == "y") {
-        result = ek::rad_to_deg(
-            2.0 * ek::atan(ek::tan(0.5 * ek::deg_to_rad(fov)) * aspect));
+        result = dr::rad_to_deg(
+            2.0 * dr::atan(dr::tan(0.5 * dr::deg_to_rad(fov)) * aspect));
     } else if (fov_axis == "diagonal") {
-        double diagonal = 2.0 * ek::tan(0.5 * ek::deg_to_rad(fov));
-        double width    = diagonal / ek::sqrt(1.0 + 1.0 / (aspect * aspect));
-        result = ek::rad_to_deg(2.0 * ek::atan(width * 0.5));
+        double diagonal = 2.0 * dr::tan(0.5 * dr::deg_to_rad(fov));
+        double width    = diagonal / dr::sqrt(1.0 + 1.0 / (aspect * aspect));
+        result = dr::rad_to_deg(2.0 * dr::atan(width * 0.5));
     } else {
         Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
                 "'larger', 'diagonal', 'x', or 'y'!");

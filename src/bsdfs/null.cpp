@@ -36,7 +36,7 @@ public:
     Null(const Properties &props) : Base(props) {
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_components.back();
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -46,7 +46,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (sample_transmission) {
             bs.wo                = -si.wi;

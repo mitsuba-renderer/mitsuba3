@@ -28,7 +28,7 @@ MTS_PY_EXPORT(Interaction) {
         .def("zero_",        &Interaction3f::zero_, D(Interaction, zero))
         .def_repr(Interaction3f);
 
-    MTS_PY_ENOKI_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
+    MTS_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
 }
 
 MTS_PY_EXPORT(SurfaceInteraction) {
@@ -90,7 +90,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_n_partials))
         .def_repr(SurfaceInteraction3f);
 
-    MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
+    MTS_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
                         shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                         duv_dy, wi, prim_index, instance, boundary_test)
 }
@@ -117,7 +117,7 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
-    MTS_PY_ENOKI_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
+    MTS_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
                         medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
                         combined_extinction, mint)
 }
@@ -149,6 +149,6 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
         .def_repr(PreliminaryIntersection3f);
 
-    MTS_PY_ENOKI_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
+    MTS_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
                         shape_index, shape, instance);
 }

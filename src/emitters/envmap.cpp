@@ -7,7 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
-#include <enoki/tensor.h>
+#include <drjit/tensor.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fstream.h>
 
@@ -100,13 +100,13 @@ public:
                                           bitmap->component_format(), res);
 
         // Luminance image used for importance sampling
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(res)]);
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[dr::hprod(res)]);
 
         ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
                     *out_ptr = (ScalarFloat *) bitmap_2->data(),
                     *lum_ptr = (ScalarFloat *) luminance.get();
 
-        ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * ek::Pi<Float>;
+        ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * dr::Pi<Float>;
 
         /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
            Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
@@ -118,16 +118,16 @@ public:
 
             for (size_t y = 0; y < bitmap->size().y(); ++y) {
                 for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                    ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                    ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
                     ScalarFloat lum = mitsuba::luminance(rgb);
-                    min_lum = ek::min(min_lum, lum);
+                    min_lum = dr::min(min_lum, lum);
                     lum_accum_d += (double) lum;
                     in_ptr += 4;
                 }
             }
             in_ptr = (ScalarFloat *) bitmap->data();
 
-            luminance_offset = ScalarFloat(lum_accum_d / ek::hprod(bitmap->size()));
+            luminance_offset = ScalarFloat(lum_accum_d / dr::hprod(bitmap->size()));
 
             /* Be wary of constant environment maps: average and minimum
                should be sufficiently different */
@@ -136,10 +136,10 @@ public:
         }
 
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
-            ScalarFloat sin_theta = ek::sin(y * theta_scale);
+            ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
 
                 ScalarFloat lum = mitsuba::luminance(rgb);
 
@@ -147,23 +147,23 @@ public:
                 if constexpr (is_monochromatic_v<Spectrum>) {
                     coeff = ScalarVector4f(lum, lum, lum, 1.f);
                 } else if constexpr (is_rgb_v<Spectrum>) {
-                    coeff = ek::concat(rgb, ek::Array<ScalarFloat, 1>(1.f));
+                    coeff = dr::concat(rgb, dr::Array<ScalarFloat, 1>(1.f));
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
                     /* Evaluate the spectral upsampling model. This requires a
                        reflectance value (colors in [0, 1]) which is accomplished here by
                        scaling. We use a color where the highest component is 50%,
                        which generally yields a fairly smooth spectrum. */
-                    ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                    ScalarColor3f rgb_norm = rgb / ek::max(1e-8f, scale);
-                    coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
-                                       ek::Array<ScalarFloat, 1>(scale));
+                    ScalarFloat scale = dr::hmax(rgb) * 2.f;
+                    ScalarColor3f rgb_norm = rgb / dr::max(1e-8f, scale);
+                    coeff = dr::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
+                                       dr::Array<ScalarFloat, 1>(scale));
                 }
 
-                lum = ek::max(lum - luminance_offset, 0.f);
+                lum = dr::max(lum - luminance_offset, 0.f);
 
                 *lum_ptr++ = lum * sin_theta;
-                ek::store(out_ptr, coeff);
+                dr::store(out_ptr, coeff);
                 in_ptr += 4;
                 out_ptr += 4;
             }
@@ -171,7 +171,7 @@ public:
             // Last column of pixels mirrors first
             ScalarFloat temp = *(lum_ptr - bitmap->size().x());
             *lum_ptr++ = temp;
-            ek::store(out_ptr, ek::load<ScalarVector4f>(
+            dr::store(out_ptr, dr::load<ScalarVector4f>(
                                    out_ptr - bitmap->size().x() * 4));
             out_ptr += 4;
         }
@@ -183,14 +183,14 @@ public:
         m_warp = Warp(luminance.get(), res);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                ek::max(math::RayEpsilon<Float>,
+                dr::max(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
         } else {
             m_bsphere.center = 0.f;
@@ -204,8 +204,8 @@ public:
         Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
 
         // Convert to latitude-longitude texture coordinates
-        Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
-                             ek::safe_acos(v.y()) * ek::InvPi<Float>);
+        Point2f uv = Point2f(dr::atan2(v.x(), -v.z()) * dr::InvTwoPi<Float>,
+                             dr::safe_acos(v.y()) * dr::InvPi<Float>);
 
         return depolarizer<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
@@ -225,14 +225,14 @@ public:
 
         active &= pdf > 0.f;
 
-        Float theta = uv.y() * ek::Pi<Float>,
-              phi   = uv.x() * ek::TwoPi<Float>;
+        Float theta = uv.y() * dr::Pi<Float>,
+              phi   = uv.x() * dr::TwoPi<Float>;
 
-        Vector3f d = ek::sphdir(theta, phi);
+        Vector3f d = dr::sphdir(theta, phi);
         d = Vector3f(d.y(), d.z(), -d.x());
 
-        Float inv_sin_theta = ek::safe_rsqrt(ek::sqr(d.x()) + ek::sqr(d.z()));
-        pdf *= inv_sin_theta * ek::InvTwoPi<Float> * ek::InvPi<Float>;
+        Float inv_sin_theta = dr::safe_rsqrt(dr::sqr(d.x()) + dr::sqr(d.z()));
+        pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
         Vector3f d_global = m_to_world.value().transform_affine(-d);
@@ -244,7 +244,7 @@ public:
             m_bsphere.center + (perpendicular_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component (weight accounts for radiance)
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.t    = 0.f;
         si.time = time;
         si.p    = origin;
@@ -252,9 +252,9 @@ public:
         auto [wavelengths, weight] =
             sample_wavelengths(si, wavelength_sample, active);
 
-        ScalarFloat r2 = ek::sqr(m_bsphere.radius);
+        ScalarFloat r2 = dr::sqr(m_bsphere.radius);
         Ray3f ray(origin, d_global, time, wavelengths);
-        weight *= ek::Pi<Float> * r2 / pdf;
+        weight *= dr::Pi<Float> * r2 / pdf;
 
         return std::make_pair(ray, weight & active);
     }
@@ -268,18 +268,18 @@ public:
         uv.x() += .5f / (m_data.shape(1) - 1);
         active &= pdf > 0.f;
 
-        Float theta = uv.y() * ek::Pi<Float>,
-              phi   = uv.x() * ek::TwoPi<Float>;
+        Float theta = uv.y() * dr::Pi<Float>,
+              phi   = uv.x() * dr::TwoPi<Float>;
 
-        Vector3f d = ek::sphdir(theta, phi);
+        Vector3f d = dr::sphdir(theta, phi);
         d = Vector3f(d.y(), d.z(), -d.x());
 
         // Needed when the reference point is on the sensor, which is not part of the bbox
-        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
+        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
 
-        Float inv_sin_theta = ek::safe_rsqrt(ek::max(
-            ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+        Float inv_sin_theta = dr::safe_rsqrt(dr::max(
+            dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
 
         d = m_to_world.value().transform_affine(d);
 
@@ -288,9 +288,9 @@ public:
         ds.n       = -d;
         ds.uv      = uv;
         ds.time    = it.time;
-        ds.pdf     = ek::select(
+        ds.pdf     = dr::select(
             active,
-            pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))),
+            pdf * inv_sin_theta * (1.f / (2.f * dr::sqr(dr::Pi<Float>))),
             0.f
         );
         ds.delta   = false;
@@ -312,15 +312,15 @@ public:
         Vector3f d = m_to_world.value().inverse().transform_affine(ds.d);
 
         // Convert to latitude-longitude texture coordinates
-        Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
-                             ek::safe_acos(d.y()) * ek::InvPi<Float>);
+        Point2f uv = Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
+                             dr::safe_acos(d.y()) * dr::InvPi<Float>);
         uv.x() -= .5f / (m_data.shape(1) - 1u);
-        uv -= ek::floor(uv);
+        uv -= dr::floor(uv);
 
-        Float inv_sin_theta = ek::safe_rsqrt(ek::max(
-            ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+        Float inv_sin_theta = dr::safe_rsqrt(dr::max(
+            dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
 
-        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::sqr(dr::Pi<Float>)));
     }
 
     Spectrum eval_direction(const Interaction3f &it,
@@ -343,12 +343,12 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             /* Do not throw an exception in JIT-compiled variants. This
-               function might be invoked by Enoki's virtual function call
+               function might be invoked by DrJit's virtual function call
                recording mechanism despite not influencing any actual
                calculation. */
-            return { ek::zero<PositionSample3f>(), ek::NaN<Float> };
+            return { dr::zero<PositionSample3f>(), dr::NaN<Float> };
         } else {
             NotImplementedError("sample_position");
         }
@@ -368,40 +368,40 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
-            auto&& data = ek::migrate(m_data.array(), AllocType::Host);
+            auto&& data = dr::migrate(m_data.array(), AllocType::Host);
 
-            if constexpr (ek::is_jit_array_v<Float>)
-                ek::sync_thread();
+            if constexpr (dr::is_jit_array_v<Float>)
+                dr::sync_thread();
 
             std::unique_ptr<ScalarFloat[]> luminance(
-                new ScalarFloat[ek::hprod(res)]);
+                new ScalarFloat[dr::hprod(res)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
-            ScalarFloat theta_scale = 1.f / (res.y() - 1) * ek::Pi<Float>;
+            ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
             for (size_t y = 0; y < res.y(); ++y) {
-                ScalarFloat sin_theta = ek::sin(y * theta_scale);
+                ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
                 // Enforce horizontal continuity
                 ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
-                ScalarVector4f v0  = ek::load_aligned<ScalarVector4f>(ptr),
-                               v1  = ek::load_aligned<ScalarVector4f>(ptr2),
+                ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
+                               v1  = dr::load_aligned<ScalarVector4f>(ptr2),
                                v01 = .5f * (v0 + v1);
-                ek::store_aligned(ptr, v01),
-                ek::store_aligned(ptr2, v01);
+                dr::store_aligned(ptr, v01),
+                dr::store_aligned(ptr2, v01);
 
                 for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarVector4f coeff = ek::load_aligned<ScalarVector4f>(ptr);
+                    ScalarVector4f coeff = dr::load_aligned<ScalarVector4f>(ptr);
                     ScalarFloat lum;
 
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = mitsuba::luminance(ScalarColor3f(ek::head<3>(coeff)));
+                        lum = mitsuba::luminance(ScalarColor3f(dr::head<3>(coeff)));
                     } else {
                         static_assert(is_spectral_v<Spectrum>);
-                        lum = srgb_model_mean(ek::head<3>(coeff)) * coeff.w();
+                        lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
                     }
 
                     *lum_ptr++ = lum * sin_theta;
@@ -411,8 +411,8 @@ public:
 
             m_warp = Warp(luminance.get(), res);
 
-            if constexpr (ek::is_jit_array_v<Float>)
-                m_data.array() = ek::migrate(data, ek::is_cuda_array_v<Float>
+            if constexpr (dr::is_jit_array_v<Float>)
+                m_data.array() = dr::migrate(data, dr::is_cuda_array_v<Float>
                                                        ? AllocType::Device
                                                        : AllocType::HostAsync);
         }
@@ -435,58 +435,58 @@ protected:
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
         uv.x() -= .5f / (res.x() - 1u);
-        uv -= ek::floor(uv);
+        uv -= dr::floor(uv);
         uv *= Vector2f(res - 1u);
 
-        Point2u pos = ek::min(Point2u(uv), res - 2u);
+        Point2u pos = dr::min(Point2u(uv), res - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
 
         const uint32_t width = res.x();
-        UInt32 index = ek::fmadd(pos.y(), width, pos.x());
+        UInt32 index = dr::fmadd(pos.y(), width, pos.x());
 
-        Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
-                 v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
-                 v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
-                 v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
+        Vector4f v00 = dr::gather<Vector4f>(m_data.array(), index, active),
+                 v10 = dr::gather<Vector4f>(m_data.array(), index + 1, active),
+                 v01 = dr::gather<Vector4f>(m_data.array(), index + width, active),
+                 v11 = dr::gather<Vector4f>(m_data.array(), index + width + 1, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
             Float f0, f1, f;
 
-            s00 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v00), wavelengths);
-            s10 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v10), wavelengths);
-            s01 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v01), wavelengths);
-            s11 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v11), wavelengths);
+            s00 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v00), wavelengths);
+            s10 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v10), wavelengths);
+            s01 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v01), wavelengths);
+            s11 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v11), wavelengths);
 
-            s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
-            s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
-            f0  = ek::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
-            f1  = ek::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
+            s0  = dr::fmadd(w0.x(), s00, w1.x() * s10);
+            s1  = dr::fmadd(w0.x(), s01, w1.x() * s11);
+            f0  = dr::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
+            f1  = dr::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
 
-            s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
-            f   = ek::fmadd(w0.y(), f0, w1.y() * f1);
+            s   = dr::fmadd(w0.y(), s0, w1.y() * s1);
+            f   = dr::fmadd(w0.y(), f0, w1.y() * f1);
 
             UnpolarizedSpectrum result = s * f * m_scale;
 
             if (include_whitepoint) {
-                SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+                SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
                 si.wavelengths = wavelengths;
                 result *= m_d65->eval(si, active);
             }
 
             return result;
         } else {
-            ENOKI_MARK_USED(wavelengths);
-            Vector4f v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
-                     v1 = ek::fmadd(w0.x(), v01, w1.x() * v11),
-                     v  = ek::fmadd(w0.y(), v0, w1.y() * v1);
+            DRJIT_MARK_USED(wavelengths);
+            Vector4f v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
+                     v1 = dr::fmadd(w0.x(), v01, w1.x() * v11),
+                     v  = dr::fmadd(w0.y(), v0, w1.y() * v1);
 
             if constexpr (is_monochromatic_v<Spectrum>)
-                return ek::head<1>(v) * m_scale;
+                return dr::head<1>(v) * m_scale;
             else
-                return ek::head<3>(v) * m_scale;
+                return dr::head<3>(v) * m_scale;
         }
     }
 

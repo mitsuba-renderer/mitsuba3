@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.1, focus_dist=15, near_clip=1.0):
@@ -46,14 +46,14 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     camera = create_camera(
         origin, direction, s_open=s_open, s_close=s_open + s_time)
 
-    assert ek.allclose(camera.near_clip(), 1)
-    assert ek.allclose(camera.far_clip(), 35)
-    assert ek.allclose(camera.focus_distance(), 15)
-    assert ek.allclose(camera.shutter_open(), s_open)
-    assert ek.allclose(camera.shutter_open_time(), s_time)
+    assert dr.allclose(camera.near_clip(), 1)
+    assert dr.allclose(camera.far_clip(), 35)
+    assert dr.allclose(camera.focus_distance(), 15)
+    assert dr.allclose(camera.shutter_open(), s_open)
+    assert dr.allclose(camera.shutter_open_time(), s_time)
     assert camera.needs_aperture_sample()
     assert camera.bbox() == BoundingBox3f(origin, origin)
-    assert ek.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().matrix,
                        Transform4f.look_at(origin, Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
@@ -80,20 +80,20 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
-    assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(spec_weight, spec)
-    assert ek.allclose(ray.time, time)
+    assert dr.allclose(ray.wavelengths, wav)
+    assert dr.allclose(spec_weight, spec)
+    assert dr.allclose(ray.time, time)
 
-    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
     o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
-    assert ek.allclose(ray.o, o, atol=1e-4)
+    assert dr.allclose(ray.o, o, atol=1e-4)
 
 
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
 
     ray, _ = cam.sample_ray(0, 0, [0.5, 0.5], [0.5, 0.5])
-    assert ek.allclose(ray.d, direction, atol=1e-7)
+    assert dr.allclose(ray.d, direction, atol=1e-7)
 
     # ----------------------------------------
     # Check correctness of aperture sampling
@@ -108,12 +108,12 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     tmp = aperture_rad * warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ Vector3f(tmp.x, tmp.y, 0)
 
-    inv_z_centered = ek.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
     o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
-    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
     o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
-    assert ek.allclose(ray.o, o, atol=1e-4)
-    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
+    assert dr.allclose(ray.o, o, atol=1e-4)
+    assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 
 @pytest.mark.parametrize("origin", origins)
@@ -139,24 +139,24 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
-    assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(spec_weight, spec)
-    assert ek.allclose(ray.time, time)
+    assert dr.allclose(ray.wavelengths, wav)
+    assert dr.allclose(spec_weight, spec)
+    assert dr.allclose(ray.time, time)
 
-    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
     o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
-    assert ek.allclose(ray.o, o, atol=1e-4)
+    assert dr.allclose(ray.o, o, atol=1e-4)
 
     # ----------------------------------------_
     # Check that the derivatives are orthogonal
 
-    assert ek.allclose(ek.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
+    assert dr.allclose(dr.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
 
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
 
     ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], [0.5, 0.5])
-    assert ek.allclose(ray_center.d, direction, atol=1e-7)
+    assert dr.allclose(ray_center.d, direction, atol=1e-7)
 
     # ----------------------------------------
     # Check correctness of the ray derivatives
@@ -172,8 +172,8 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     ray_dx, _ = cam.sample_ray_differential(0, 0, [0.5 + dx, 0.5], aperture_sample)
     ray_dy, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5 + dy], aperture_sample)
 
-    assert ek.allclose(ray_dx.d, ray_center.d_x)
-    assert ek.allclose(ray_dy.d, ray_center.d_y)
+    assert dr.allclose(ray_dx.d, ray_center.d_x)
+    assert dr.allclose(ray_dy.d, ray_center.d_y)
 
     # --------------------------------------
     # Check correctness of aperture sampling
@@ -188,12 +188,12 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ (aperture_rad * Vector3f(tmp.x, tmp.y, 0))
 
-    inv_z_centered = ek.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
     o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
-    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
     o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
-    assert ek.allclose(ray.o, o, atol=1e-4)
-    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
+    assert dr.allclose(ray.o, o, atol=1e-4)
+    assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])
@@ -209,8 +209,8 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     def check_fov(camera, sample):
         # aperture position at the center
         ray, _ = camera.sample_ray(0, 0, sample, [0.5, 0.5])
-        assert ek.allclose(ek.acos(ek.dot(ray.d, direction))
-                           * 180 / ek.Pi, fov / 2)
+        assert dr.allclose(dr.acos(dr.dot(ray.d, direction))
+                           * 180 / dr.Pi, fov / 2)
 
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:
@@ -239,8 +239,8 @@ def test05_spectrum_sampling(variants_vec_spectral):
         "type": "thinlens",
         "aperture_radius": 1.0,
     })
-    wavelengths, _ =  camera.sample_wavelengths(ek.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
-    assert (ek.all_nested((wavelengths >= MTS_CIE_MIN) & (wavelengths <= MTS_CIE_MAX)))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
+    assert (dr.all_nested((wavelengths >= MTS_CIE_MIN) & (wavelengths <= MTS_CIE_MAX)))
 
     # Check custom SRF wavelength sampling
     camera = load_dict({
@@ -251,8 +251,8 @@ def test05_spectrum_sampling(variants_vec_spectral):
             "value": [(1200,1.0), (1400,1.0)]
         }
     })
-    wavelengths, _ =  camera.sample_wavelengths(ek.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
-    assert (ek.all_nested((wavelengths >= 1200) & (wavelengths <= 1400)))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
+    assert (dr.all_nested((wavelengths >= 1200) & (wavelengths <= 1400)))
 
     # Check error if double SRF is defined
     with pytest.raises(RuntimeError, match=r'Sensor\(\)'):

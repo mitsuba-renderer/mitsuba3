@@ -38,8 +38,8 @@ public:
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        x = ek::abs(x);
-        Float x2 = ek::sqr(x), x3 = x2*x;
+        x = dr::abs(x);
+        Float x2 = dr::sqr(x), x3 = x2*x;
 
         ScalarFloat a3 = (12.f - 9.f * m_b - 6.f * m_c),
                     a2 = (-18.f + 12.f * m_b + 6.f * m_c),
@@ -49,13 +49,13 @@ public:
                     b1 = (-12.f * m_b - 48.f * m_c),
                     b0 = (8.f * m_b + 24.f * m_c);
 
-        Float result = (1.f / 6.f) * ek::select(
+        Float result = (1.f / 6.f) * dr::select(
            x < 1,
-           ek::fmadd(a3, x3, ek::fmadd(a2, x2, a0)),
-           ek::fmadd(b3, x3, ek::fmadd(b2, x2, ek::fmadd(b1, x, b0)))
+           dr::fmadd(a3, x3, dr::fmadd(a2, x2, a0)),
+           dr::fmadd(b3, x3, dr::fmadd(b2, x2, dr::fmadd(b1, x, b0)))
         );
 
-        return ek::select(x < 2.f, result, 0.f);
+        return dr::select(x < 2.f, result, 0.f);
     }
 
     std::string to_string() const override {

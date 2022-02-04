@@ -174,7 +174,7 @@ public:
         active &= cos_theta_i > 0.f;
 
         BSDFSample3f bs;
-        if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return { bs, 0.f };
 
         MicrofacetDistribution distr(MicrofacetType::GGX,
@@ -198,7 +198,7 @@ public:
         bs.eta = 1.f;
 
         Spectrum value = eval(ctx, si, bs.wo, active);
-        return { bs, ek::select(active && bs.pdf > 0, value / bs.pdf, 0.f) };
+        return { bs, dr::select(active && bs.pdf > 0, value / bs.pdf, 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -209,7 +209,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
         active &= (cos_theta_i > 0.f && cos_theta_o > 0.f);
 
-        if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return 0.f;
 
         /* Due to the coordinate system rotations for polarization-aware
@@ -234,19 +234,19 @@ public:
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection. See Figure 4. */
             Vector3f zo_std = -wo_std,
-                     to_std = ek::normalize(ek::cross(wo_std - wi_std, zo_std)),
-                     yo_std = ek::normalize(ek::cross(to_std, zo_std)),
-                     xo_std = ek::cross(yo_std, zo_std),
+                     to_std = dr::normalize(dr::cross(wo_std - wi_std, zo_std)),
+                     yo_std = dr::normalize(dr::cross(to_std, zo_std)),
+                     xo_std = dr::cross(yo_std, zo_std),
                      zi_std = wi_std,
-                     ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
-                     yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
-                     xi_std = ek::cross(yi_std, zi_std);
+                     ti_std = dr::normalize(dr::cross(wi_std - wo_std, zi_std)),
+                     yi_std = dr::normalize(dr::cross(ti_std, zi_std)),
+                     xi_std = dr::cross(yi_std, zi_std);
 
             if (m_wavelength == -1.f) {
                 for (int i = 0; i < 4; ++i) {
                     for (int j = 0; j < 4; ++j) {
                         UnpolarizedSpectrum tmp(0.f);
-                        for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
+                        for (size_t k = 0; k < dr::array_size_v<UnpolarizedSpectrum>; ++k) {
                             Float params[4] = {
                                 phi_d, theta_d, theta_h,
                                 si.wavelengths[k]
@@ -270,10 +270,10 @@ public:
 
             /* Invalid configurations such as transmission directions are encoded as NaNs.
                Make sure these values don't end up in the interpolated value. */
-            ek::masked(value, ek::any(ek::isnan(value(0,0)))) = 0.f;
+            dr::masked(value, dr::any(dr::isnan(value(0,0)))) = 0.f;
 
             // Make sure intensity is non-negative
-            value(0, 0) = ek::max(0.f, value(0,0));
+            value(0, 0) = dr::max(0.f, value(0,0));
 
             // Reverse phi rotation from above on Stokes reference frames
             Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
@@ -286,7 +286,7 @@ public:
                                                    wi_hat, xi_hat, mueller::stokes_basis(wi_hat));
         } else {
             if (m_wavelength == -1.f) {
-                for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
+                for (size_t k = 0; k < dr::array_size_v<UnpolarizedSpectrum>; ++k) {
                     Float params[4] = {
                         phi_d, theta_d, theta_h,
                         si.wavelengths[k]
@@ -303,7 +303,7 @@ public:
             }
 
             // Make sure BRDF is non-negative
-            value = ek::max(0.f, value);
+            value = dr::max(0.f, value);
         }
 
         return (value * cos_theta_o) & active;
@@ -313,7 +313,7 @@ public:
               const Vector3f &wo, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return 0.f;
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
@@ -322,16 +322,16 @@ public:
         MicrofacetDistribution distr(MicrofacetType::GGX,
                                      m_alpha_sample, m_alpha_sample, true);
 
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
 
         Float pdf_diffuse = warp::square_to_cosine_hemisphere_pdf(wo);
-        Float pdf_microfacet = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+        Float pdf_microfacet = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
 
         Float pdf = 0.f;
         pdf += pdf_diffuse * COSINE_HEMISPHERE_PDF_WEIGHT;
         pdf += pdf_microfacet * (1.f - COSINE_HEMISPHERE_PDF_WEIGHT);
 
-        return ek::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
+        return dr::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
     std::string to_string() const override {
@@ -344,38 +344,38 @@ public:
 
 private:
     template <typename Vector3,
-              typename Value = ek::value_t<Vector3>>
+              typename Value = dr::value_t<Vector3>>
     Value phi(const Vector3 &v) const {
-        Value p = ek::atan2(v.y(), v.x());
-        ek::masked(p, p < 0) += 2.f*ek::Pi<Float>;
+        Value p = dr::atan2(v.y(), v.x());
+        dr::masked(p, p < 0) += 2.f*dr::Pi<Float>;
         return p;
     }
 
-    template <typename Vector3, typename Value = ek::value_t<Vector3>>
+    template <typename Vector3, typename Value = dr::value_t<Vector3>>
     MTS_INLINE
     Vector3 rotate_vector(const Vector3 &v, const Vector3 &axis_, Value angle) const {
-        Vector3 axis = ek::normalize(axis_);
-        auto [sin_angle, cos_angle] = ek::sincos(angle);
-        return v*cos_angle + axis*ek::dot(v, axis)*(1.f - cos_angle) + sin_angle*ek::cross(axis, v);
+        Vector3 axis = dr::normalize(axis_);
+        auto [sin_angle, cos_angle] = dr::sincos(angle);
+        return v*cos_angle + axis*dr::dot(v, axis)*(1.f - cos_angle) + sin_angle*dr::cross(axis, v);
     }
 
-    template <typename Vector3, typename Value = ek::value_t<Vector3>>
+    template <typename Vector3, typename Value = dr::value_t<Vector3>>
     MTS_INLINE
     std::tuple<Value, Value, Value> directions_to_rusinkiewicz(const Vector3 &i, const Vector3 &o) const {
-        Vector3 h = ek::normalize(i + o);
+        Vector3 h = dr::normalize(i + o);
 
         Vector3 n(0, 0, 1);
-        Vector3 b = ek::normalize(ek::cross(n, h)),
-                t = ek::normalize(ek::cross(b, h));
+        Vector3 b = dr::normalize(dr::cross(n, h)),
+                t = dr::normalize(dr::cross(b, h));
 
-        Value td = ek::safe_acos(ek::dot(h, i)),
-              th = ek::safe_acos(ek::dot(n, h));
+        Value td = dr::safe_acos(dr::dot(h, i)),
+              th = dr::safe_acos(dr::dot(n, h));
 
-        Vector3 i_prj = ek::normalize(i - ek::dot(i, h)*h);
-        Value cos_phi_d = ek::clamp(ek::dot(t, i_prj), -1.f, 1.f),
-              sin_phi_d = ek::clamp(ek::dot(b, i_prj), -1.f, 1.f);
+        Vector3 i_prj = dr::normalize(i - dr::dot(i, h)*h);
+        Value cos_phi_d = dr::clamp(dr::dot(t, i_prj), -1.f, 1.f),
+              sin_phi_d = dr::clamp(dr::dot(b, i_prj), -1.f, 1.f);
 
-        Value pd = ek::atan2(sin_phi_d, cos_phi_d);
+        Value pd = dr::atan2(sin_phi_d, cos_phi_d);
 
         return std::make_tuple(pd, th, td);
     }

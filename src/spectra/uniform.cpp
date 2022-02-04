@@ -21,7 +21,7 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     UniformSpectrum(const Properties &props) : Texture(props) {
-        m_value = ek::opaque<Float>(props.get<ScalarFloat>("value"));
+        m_value = dr::opaque<Float>(props.get<ScalarFloat>("value"));
         m_range = ScalarVector2f(props.get<ScalarFloat>("wavelength_min", MTS_CIE_MIN),
                                  props.get<ScalarFloat>("wavelength_max", MTS_CIE_MAX));
     }
@@ -53,8 +53,8 @@ public:
                          (m_range.y() - m_range.x()) * sample,
                      m_value * (m_range.y() - m_range.x()) };
         } else {
-            ENOKI_MARK_USED(sample);
-            return { ek::empty<Wavelength>(), m_value };
+            DRJIT_MARK_USED(sample);
+            return { dr::empty<Wavelength>(), m_value };
         }
     }
 
@@ -69,7 +69,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ek::make_opaque(m_value);
+        dr::make_opaque(m_value);
     }
 
     void traverse(TraversalCallback *callback) override {

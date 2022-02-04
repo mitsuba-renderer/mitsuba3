@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXu as UInt32
+import drjit as dr
+from drjit.scalar import ArrayXu as UInt32
 
 
 def test01_create(variant_scalar_rgb):
@@ -45,10 +45,10 @@ def test02_pdf(variant_scalar_rgb):
     si.wi = [0, 0, 1]
     ctx = BSDFContext()
     p_pdf = bsdf.pdf(ctx, si, [0, 0, 1])
-    assert ek.allclose(p_pdf, ek.InvPi)
+    assert dr.allclose(p_pdf, dr.InvPi)
 
     p_pdf = bsdf.pdf(ctx, si, [0, 0, -1])
-    assert ek.allclose(p_pdf, 0.0)
+    assert dr.allclose(p_pdf, 0.0)
 
 
 def test03_sample_eval_pdf(variant_scalar_rgb):
@@ -73,31 +73,31 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
 
     n = 5
     ctx = BSDFContext()
-    for u in ek.arange(UInt32, n):
-        for v in ek.arange(UInt32, n):
+    for u in dr.arange(UInt32, n):
+        for v in dr.arange(UInt32, n):
             si.wi = square_to_uniform_sphere([u / float(n-1),
                                                        v / float(n-1)])
-            up = ek.dot(si.wi, [0, 0, 1]) > 0
+            up = dr.dot(si.wi, [0, 0, 1]) > 0
 
-            for x in ek.arange(UInt32, n):
-                for y in ek.arange(UInt32, n):
+            for x in dr.arange(UInt32, n):
+                for y in dr.arange(UInt32, n):
                     sample = [x / float(n-1), y / float(n-1)]
                     (bs, s_value) = bsdf.sample(ctx, si, 0.5, sample)
 
-                    if ek.any(s_value > 0):
+                    if dr.any(s_value > 0):
                         # Multiply by square_to_cosine_hemisphere_theta
-                        s_value *= bs.wo[2] * ek.InvPi
+                        s_value *= bs.wo[2] * dr.InvPi
                         if not up:
                             s_value *= -1
 
                         e_value = bsdf.eval(ctx, si, bs.wo)
                         p_pdf   = bsdf.pdf(ctx, si, bs.wo)
 
-                        assert ek.allclose(s_value, e_value, atol=1e-2)
-                        assert ek.allclose(bs.pdf, p_pdf)
-                        assert not ek.any(ek.isnan(e_value) | ek.isnan(s_value))
+                        assert dr.allclose(s_value, e_value, atol=1e-2)
+                        assert dr.allclose(bs.pdf, p_pdf)
+                        assert not dr.any(dr.isnan(e_value) | dr.isnan(s_value))
                     # Otherwise, sampling failed and we can't rely on bs.wo.
 
                         v_eval_pdf = bsdf.eval_pdf(ctx, si, bs.wo)
-                        assert ek.allclose(e_value, v_eval_pdf[0])
-                        assert ek.allclose(p_pdf, v_eval_pdf[1])
+                        assert dr.allclose(e_value, v_eval_pdf[0])
+                        assert dr.allclose(p_pdf, v_eval_pdf[1])

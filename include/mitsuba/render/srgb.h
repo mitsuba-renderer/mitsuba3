@@ -11,11 +11,11 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
     static_assert(!is_polarized_v<Spectrum>, "srgb_model_eval(): requires unpolarized spectrum type!");
 
     if constexpr (is_spectral_v<Spectrum>) {
-        Spectrum v = ek::fmadd(ek::fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+        Spectrum v = dr::fmadd(dr::fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
-        return ek::select(
-            ek::isinf(coeff.z()), ek::fmadd(ek::sign(coeff.z()), .5f, .5f),
-            ek::max(0.f, ek::fmadd(.5f * v, ek::rsqrt(ek::fmadd(v, v, 1.f)), .5f))
+        return dr::select(
+            dr::isinf(coeff.z()), dr::fmadd(dr::sign(coeff.z()), .5f, .5f),
+            dr::max(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f))
         );
     } else {
         Throw("srgb_model_eval(): invoked for a non-spectral color type!");
@@ -23,15 +23,15 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
 }
 
 template <typename Array3f>
-MTS_INLINE ek::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
-    using Float = ek::value_t<Array3f>;
-    using Vec = ek::Array<Float, 16>;
+MTS_INLINE dr::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
+    using Float = dr::value_t<Array3f>;
+    using Vec = dr::Array<Float, 16>;
 
-    Vec lambda = ek::linspace<Vec>(MTS_CIE_MIN, MTS_CIE_MAX);
-    Vec v = ek::fmadd(ek::fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
-    Vec result = ek::select(ek::isinf(coeff.z()), ek::fmadd(ek::sign(coeff.z()), .5f, .5f),
-                        ek::max(0.f, ek::fmadd(.5f * v, ek::rsqrt(ek::fmadd(v, v, 1.f)), .5f)));
-    return ek::hmean(result);
+    Vec lambda = dr::linspace<Vec>(MTS_CIE_MIN, MTS_CIE_MAX);
+    Vec v = dr::fmadd(dr::fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
+    Vec result = dr::select(dr::isinf(coeff.z()), dr::fmadd(dr::sign(coeff.z()), .5f, .5f),
+                        dr::max(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f)));
+    return dr::hmean(result);
 }
 
 /**
@@ -39,9 +39,9 @@ MTS_INLINE ek::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
  * @param  c An sRGB color value where all components are in [0, 1].
  * @return   Coefficients for use with \ref srgb_model_eval
  */
-MTS_EXPORT_RENDER ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
+MTS_EXPORT_RENDER dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
 
 /// Sanity check: convert the coefficients back to sRGB
-// MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const ek::Array<float, 3> &);
+// MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &);
 
 NAMESPACE_END(mitsuba)

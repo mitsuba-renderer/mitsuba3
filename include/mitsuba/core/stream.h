@@ -1,6 +1,6 @@
 #pragma once
 
-#include <enoki/array_utils.h>
+#include <drjit/array_utils.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/logger.h>
 #include <set>
@@ -252,25 +252,25 @@ template <typename T, std::enable_if_t<sizeof(T) == 1, int> = 0> T swap(const T 
 
 template <typename T, std::enable_if_t<sizeof(T) == 2, int> = 0> T swap(const T &v) {
 #if !defined(_WIN32)
-    return ek::memcpy_cast<T>(__builtin_bswap16(ek::memcpy_cast<uint16_t>(v)));
+    return dr::memcpy_cast<T>(__builtin_bswap16(dr::memcpy_cast<uint16_t>(v)));
 #else
-    return ek::memcpy_cast<T>(_byteswap_ushort(ek::memcpy_cast<uint16_t>(v)));
+    return dr::memcpy_cast<T>(_byteswap_ushort(dr::memcpy_cast<uint16_t>(v)));
 #endif
 }
 
 template <typename T, std::enable_if_t<sizeof(T) == 4, int> = 0> T swap(const T &v) {
 #if !defined(_WIN32)
-    return ek::memcpy_cast<T>(__builtin_bswap32(ek::memcpy_cast<uint32_t>(v)));
+    return dr::memcpy_cast<T>(__builtin_bswap32(dr::memcpy_cast<uint32_t>(v)));
 #else
-    return ek::memcpy_cast<T>(_byteswap_ulong(ek::memcpy_cast<uint32_t>(v)));
+    return dr::memcpy_cast<T>(_byteswap_ulong(dr::memcpy_cast<uint32_t>(v)));
 #endif
 }
 
 template <typename T, std::enable_if_t<sizeof(T) == 8, int> = 0> T swap(const T &v) {
 #if !defined(_WIN32)
-    return ek::memcpy_cast<T>(__builtin_bswap64(ek::memcpy_cast<uint64_t>(v)));
+    return dr::memcpy_cast<T>(__builtin_bswap64(dr::memcpy_cast<uint64_t>(v)));
 #else
-    return ek::memcpy_cast<T>(_byteswap_uint64(ek::memcpy_cast<uint64_t>(v)));
+    return dr::memcpy_cast<T>(_byteswap_uint64(dr::memcpy_cast<uint64_t>(v)));
 #endif
 }
 

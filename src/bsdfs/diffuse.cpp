@@ -72,7 +72,7 @@ public:
     SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.texture<Texture>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 
@@ -84,10 +84,10 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
 
         active &= cos_theta_i > 0.f;
-        if (unlikely(ek::none_or<false>(active) ||
+        if (unlikely(dr::none_or<false>(active) ||
                      !ctx.is_enabled(BSDFFlags::DiffuseReflection)))
             return { bs, 0.f };
 
@@ -115,7 +115,7 @@ public:
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         UnpolarizedSpectrum value =
-            m_reflectance->eval(si, active) * ek::InvPi<Float> * cos_theta_o;
+            m_reflectance->eval(si, active) * dr::InvPi<Float> * cos_theta_o;
 
         return depolarizer<Spectrum>(value) & active;
     }
@@ -132,7 +132,7 @@ public:
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return ek::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
+        return dr::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -150,11 +150,11 @@ public:
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         UnpolarizedSpectrum value =
-            m_reflectance->eval(si, active) * ek::InvPi<Float> * cos_theta_o;
+            m_reflectance->eval(si, active) * dr::InvPi<Float> * cos_theta_o;
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return { depolarizer<Spectrum>(value) & active, ek::select(active, pdf, 0.f) };
+        return { depolarizer<Spectrum>(value) & active, dr::select(active, pdf, 0.f) };
     }
 
     void traverse(TraversalCallback *callback) override {

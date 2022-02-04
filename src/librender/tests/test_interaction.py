@@ -1,22 +1,22 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 def test01_interaction_invalid_init(variants_all_backends_once):
     from mitsuba.render import SurfaceInteraction3f
 
-    si = ek.zero(SurfaceInteraction3f)
-    assert ek.none(si.is_valid())
+    si = dr.zero(SurfaceInteraction3f)
+    assert dr.none(si.is_valid())
 
-    si = ek.zero(SurfaceInteraction3f, 4)
-    assert ek.none(si.is_valid())
+    si = dr.zero(SurfaceInteraction3f, 4)
+    assert dr.none(si.is_valid())
 
 
 def test02_intersection_construction(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import SurfaceInteraction3f
 
-    si = ek.zero(SurfaceInteraction3f)
+    si = dr.zero(SurfaceInteraction3f)
     assert not si.is_valid()
 
     si.shape = None
@@ -87,8 +87,8 @@ def test03_intersection_partials(variant_scalar_rgb):
     si.p = r(10)
     si.dp_du = [0.5514372, 0.84608955, 0.41559092]
     si.dp_dv = [0.14551054, 0.54917541, 0.39286475]
-    si.n = ek.cross(si.dp_du, si.dp_dv)
-    si.n /= ek.norm(si.n)
+    si.n = dr.cross(si.dp_du, si.dp_dv)
+    si.n /= dr.norm(si.n)
     si.t = 0
 
     si.compute_uv_partials(r)
@@ -99,25 +99,25 @@ def test03_intersection_partials(variant_scalar_rgb):
 
     # Manually
     px2 = r.o_x + r.d_x * \
-        ((ek.dot(si.n, si.p) - ek.dot(si.n, r.o_x)) / ek.dot(si.n, r.d_x))
+        ((dr.dot(si.n, si.p) - dr.dot(si.n, r.o_x)) / dr.dot(si.n, r.d_x))
     py2 = r.o_y + r.d_y * \
-        ((ek.dot(si.n, si.p) - ek.dot(si.n, r.o_y)) / ek.dot(si.n, r.d_y))
+        ((dr.dot(si.n, si.p) - dr.dot(si.n, r.o_y)) / dr.dot(si.n, r.d_y))
     px2 -= si.p
     py2 -= si.p
 
-    assert ek.allclose(px1, px2, atol=1e-6)
-    assert ek.allclose(py1, py2, atol=1e-6)
+    assert dr.allclose(px1, px2, atol=1e-6)
+    assert dr.allclose(py1, py2, atol=1e-6)
 
     si.dp_du = [0, 0, 0]
     si.compute_uv_partials(r)
 
-    assert ek.allclose(px1, px2, atol=1e-6)
-    assert ek.allclose(py1, py2, atol=1e-6)
+    assert dr.allclose(px1, px2, atol=1e-6)
+    assert dr.allclose(py1, py2, atol=1e-6)
 
     si.compute_uv_partials(r)
 
-    assert ek.allclose(si.duv_dx, [0, 0])
-    assert ek.allclose(si.duv_dy, [0, 0])
+    assert dr.allclose(si.duv_dx, [0, 0])
+    assert dr.allclose(si.duv_dy, [0, 0])
 
 def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     """
@@ -137,13 +137,13 @@ def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     from mitsuba.render.mueller import linear_polarizer
 
     si = SurfaceInteraction3f()
-    si.sh_frame = Frame3f(ek.normalize(Vector3f(1.0, 1.0, 1.0)))
+    si.sh_frame = Frame3f(dr.normalize(Vector3f(1.0, 1.0, 1.0)))
 
     M = linear_polarizer(UnpolarizedSpectrum(1.0))
 
     # Random incident and outgoing directions
-    wi_world = ek.normalize(Vector3f(0.2, 0.0, 1.0))
-    wo_world = ek.normalize(Vector3f(0.0, -0.8, 1.0))
+    wi_world = dr.normalize(Vector3f(0.2, 0.0, 1.0))
+    wo_world = dr.normalize(Vector3f(0.0, -0.8, 1.0))
 
     wi_local = si.to_local(wi_world)
     wo_local = si.to_local(wo_world)
@@ -151,4 +151,4 @@ def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     M_local = si.to_local_mueller(M, wi_world, wo_world)
     M_world = si.to_world_mueller(M_local, wi_local, wo_local)
 
-    assert ek.allclose(M, M_world, atol=1e-5)
+    assert dr.allclose(M, M_world, atol=1e-5)

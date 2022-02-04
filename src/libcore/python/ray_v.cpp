@@ -23,7 +23,7 @@ MTS_PY_EXPORT(Ray) {
             .def_field(Ray3f, wavelengths, D(Ray, wavelengths))
             .def_repr(Ray3f);
 
-        MTS_PY_ENOKI_STRUCT(ray, Ray3f, o, d, maxt, time, wavelengths)
+        MTS_PY_DRJIT_STRUCT(ray, Ray3f, o, d, maxt, time, wavelengths)
     }
 
     {
@@ -41,7 +41,7 @@ MTS_PY_EXPORT(Ray) {
             .def_field(RayDifferential3f, d_y, D(RayDifferential, d_y))
             .def_field(RayDifferential3f, has_differentials, D(RayDifferential, has_differentials));
 
-        MTS_PY_ENOKI_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
+        MTS_PY_DRJIT_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
                             wavelengths, o_x, o_y, d_x, d_y)
     }
 

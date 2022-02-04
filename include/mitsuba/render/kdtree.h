@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <atomic>
 
-#include <enoki-thread/thread.h>
+#include <drjit-thread/thread.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>
@@ -63,7 +63,7 @@ public:
      * Walks through the list of chunks to find one with enough
      * free memory. If no chunk could be found, a new one is created.
      */
-    template <typename T> ENOKI_MALLOC T * allocate(size_t size) {
+    template <typename T> DRJIT_MALLOC T * allocate(size_t size) {
         size *= sizeof(T);
 
         for (auto &chunk : m_chunks) {
@@ -377,8 +377,8 @@ public:
     using Derived     = Derived_;
     using Point       = typename BoundingBox::Point;
     using Vector      = typename BoundingBox::Vector;
-    using Scalar      = ek::value_t<Vector>;
-    using SizedInt    = ek::uint_array_t<Scalar>;
+    using Scalar      = dr::value_t<Vector>;
+    using SizedInt    = dr::uint_array_t<Scalar>;
     using IndexVector = std::vector<Index>;
 
     static constexpr size_t Dimension     = Vector::Size;
@@ -490,7 +490,7 @@ protected:
     struct KDNode {
         union {
             /// Inner node
-            struct ENOKI_PACK {
+            struct DRJIT_PACK {
                 /// Split plane coordinate
                 Scalar split;
 
@@ -502,7 +502,7 @@ protected:
             } inner;
 
             /// Leaf node
-            struct ENOKI_PACK {
+            struct DRJIT_PACK {
                 #if defined(LITTLE_ENDIAN)
                     /// How many primitives does this leaf reference?
                     SizedInt prim_count : MantissaBits;
@@ -704,7 +704,7 @@ protected:
 
     /// Data type for split candidates suggested by the tree cost model
     struct SplitCandidate {
-        Scalar cost = ek::Infinity<Scalar>;
+        Scalar cost = dr::Infinity<Scalar>;
         Scalar split = 0;
         int axis = 0;
         Size left_count = 0, right_count = 0;
@@ -840,7 +840,7 @@ protected:
         }
 
         MTS_INLINE void put(BoundingBox bbox) {
-            using IndexArray = ek::Array<Index, 3>;
+            using IndexArray = dr::Array<Index, 3>;
             const IndexArray offset_min = IndexArray(0, 2 * m_bin_count, 4 * m_bin_count);
             const IndexArray offset_max = offset_min + 1;
             Index *ptr = m_bins.data();
@@ -849,21 +849,21 @@ protected:
             Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
             Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            rel_min = ek::min(ek::max(rel_min, ek::zero<Vector>()), m_max_bin);
-            rel_max = ek::min(ek::max(rel_max, ek::zero<Vector>()), m_max_bin);
+            rel_min = dr::min(dr::max(rel_min, dr::zero<Vector>()), m_max_bin);
+            rel_max = dr::min(dr::max(rel_max, dr::zero<Vector>()), m_max_bin);
 
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
 
-            Assert(ek::all(index_min <= index_max));
+            Assert(dr::all(index_min <= index_max));
             index_min = index_min + index_min + offset_min;
             index_max = index_max + index_max + offset_max;
 
-            IndexArray minCounts = ek::gather<IndexArray>(ptr, index_min),
-                       maxCounts = ek::gather<IndexArray>(ptr, index_max);
+            IndexArray minCounts = dr::gather<IndexArray>(ptr, index_min),
+                       maxCounts = dr::gather<IndexArray>(ptr, index_max);
 
-            ek::scatter(ptr, minCounts + 1, index_min);
-            ek::scatter(ptr, maxCounts + 1, index_max);
+            dr::scatter(ptr, minCounts + 1, index_min);
+            dr::scatter(ptr, maxCounts + 1, index_max);
         }
 
         SplitCandidate best_candidate(Size prim_count, const CostModel &model) const {
@@ -956,7 +956,7 @@ protected:
                 /* Double-check that it worked */
                 Assert(predicate(best.split));
                 Assert(!predicate(std::nextafter(
-                    best.split, ek::Infinity<Scalar>)));
+                    best.split, dr::Infinity<Scalar>)));
             }
 
             return best;
@@ -988,9 +988,9 @@ protected:
             Size left_count = 0, right_count = 0;
             BoundingBox left_bounds, right_bounds;
 
-            ek::parallel_for(
-                ek::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
-                [&](const ek::blocked_range<Index> &range) {
+            dr::parallel_for(
+                dr::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
+                [&](const dr::blocked_range<Index> &range) {
                     IndexVector left_indices_local, right_indices_local;
                     BoundingBox left_bounds_local, right_bounds_local;
 
@@ -1147,9 +1147,9 @@ protected:
             /* Accumulate all shapes into bins */
             MinMaxBins bins(derived.min_max_bins(), m_tight_bbox);
             std::mutex bins_mutex;
-            ek::parallel_for(
-                ek::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
-                [&](const ek::blocked_range<Index> &range) {
+            dr::parallel_for(
+                dr::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
+                [&](const dr::blocked_range<Index> &range) {
                     MinMaxBins bins_local(derived.min_max_bins(), m_tight_bbox);
                     for (Index i = range.begin(); i != range.end(); ++i)
                         bins_local.put(derived.bbox(m_indices[i]));
@@ -1166,7 +1166,7 @@ protected:
             model.set_bounding_box(m_bbox);
             auto best = bins.best_candidate(prim_count, model);
 
-            Assert(ek::isfinite(best.cost));
+            Assert(dr::isfinite(best.cost));
             Assert(best.split >= m_bbox.min[best.axis]);
             Assert(best.split <= m_bbox.max[best.axis]);
 
@@ -1222,10 +1222,10 @@ protected:
                 right_bounds, partition.right_bounds, m_depth + 1,
                 m_bad_refines, &right_cost);
 
-            Task *left_ek_task =
-                ek::do_async([&]() { left_task.execute(); });
+            Task *left_dr_task =
+                dr::do_async([&]() { left_task.execute(); });
             right_task.execute();
-            task_wait_and_release(left_ek_task);
+            task_wait_and_release(left_dr_task);
 
             /* ==================================================================== */
             /*                           Final decision                             */
@@ -1376,7 +1376,7 @@ protected:
             if (best.cost >= leaf_cost) {
                 if ((best.cost > 4 * leaf_cost && prim_count < 16)
                     || bad_refines >= derived.max_bad_refines()
-                    || !ek::isfinite(best.cost)) {
+                    || !dr::isfinite(best.cost)) {
                     make_leaf(node, prim_count, events_start, events_end);
                     return leaf_cost;
                 }
@@ -1838,7 +1838,7 @@ protected:
 
         Size prim_count = derived().primitive_count();
         if (m_max_depth == 0)
-            m_max_depth = (int) (8 + 1.3f * ek::log2i(prim_count));
+            m_max_depth = (int) (8 + 1.3f * dr::log2i(prim_count));
         m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
 
         Log(m_log_level, "kd-tree configuration:");
@@ -1901,9 +1901,9 @@ protected:
         m_index_count = (Index) ctx.index_storage.size();
 
         m_indices.reset(new Index[m_index_count]);
-        ek::parallel_for(
-            ek::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
-            [&](const ek::blocked_range<Size> &range) {
+        dr::parallel_for(
+            dr::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
+            [&](const dr::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_indices[i] = ctx.index_storage[i];
             }
@@ -1911,9 +1911,9 @@ protected:
         ctx.index_storage.release();
 
         m_nodes.reset(new KDNode[m_node_count]);
-        ek::parallel_for(
-            ek::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
-            [&](const ek::blocked_range<Size> &range) {
+        dr::parallel_for(
+            dr::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
+            [&](const dr::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_nodes[i] = ctx.node_storage[i];
             }
@@ -1922,7 +1922,7 @@ protected:
 
         /* Slightly avoid the bounding box to avoid numerical issues
            involving geometry that exactly lies on the boundary */
-        Vector extra = (m_bbox.extents() + 1.f) * ek::Epsilon<Scalar>;
+        Vector extra = (m_bbox.extents() + 1.f) * dr::Epsilon<Scalar>;
         m_bbox.min -= extra;
         m_bbox.max += extra;
 
@@ -2065,13 +2065,13 @@ public:
     void set_bounding_box(const BoundingBox3f &bbox) {
         auto extents = bbox.extents();
         Float temp = 2.f / bbox.surface_area();
-        auto a = ek::shuffle<1, 2, 0>(extents);
-        auto b = ek::shuffle<2, 0, 1>(extents);
+        auto a = dr::shuffle<1, 2, 0>(extents);
+        auto b = dr::shuffle<2, 0, 1>(extents);
         m_temp0 = m_temp1 = (a * b) * temp;
         m_temp2 = (a + b) * temp;
 
-        m_temp0 = ek::fnmadd(m_temp2, bbox.min, m_temp0);
-        m_temp1 = ek::fmadd(m_temp2, bbox.max, m_temp1);
+        m_temp0 = dr::fnmadd(m_temp2, bbox.min, m_temp0);
+        m_temp1 = dr::fmadd(m_temp2, bbox.max, m_temp1);
     }
 
     /// \brief Evaluate the cost of a leaf node
@@ -2120,8 +2120,8 @@ private:
 };
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<ek::scalar_t<Float>, 3>>, uint32_t,
-                                                          SurfaceAreaHeuristic3<ek::scalar_t<Float>>,
+class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scalar_t<Float>, 3>>, uint32_t,
+                                                          SurfaceAreaHeuristic3<dr::scalar_t<Float>>,
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
     MTS_IMPORT_TYPES(Shape, Mesh)
@@ -2187,8 +2187,8 @@ public:
     template <bool ShadowRay>
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                    Mask active) const {
-        ENOKI_MARK_USED(active);
-        if constexpr (!ek::is_array_v<Float>)
+        DRJIT_MARK_USED(active);
+        if constexpr (!dr::is_array_v<Float>)
             return ray_intersect_scalar<ShadowRay>(ray);
         else
             Throw("kdtree should only be used in scalar mode");
@@ -2218,7 +2218,7 @@ public:
         ScalarFloat mint = std::max(ScalarFloat(0), std::get<1>(bbox_result)),
                     maxt = std::min(ray.maxt, std::get<2>(bbox_result));
 
-        ScalarVector3f d_rcp = ek::rcp(ray.d);
+        ScalarVector3f d_rcp = dr::rcp(ray.d);
 
         const KDNode *node = m_nodes.get();
         while (mint <= maxt) {
@@ -2232,7 +2232,7 @@ public:
                 bool left_first  = (ray.o[axis] < split) ||
                                    (ray.o[axis] == split && ray.d[axis] >= 0.f),
                      start_after = t_plane<mint, end_before = t_plane> maxt ||
-                                   t_plane < 0.f || !ek::isfinite(t_plane),
+                                   t_plane < 0.f || !dr::isfinite(t_plane),
                      single_node = start_after || end_before;
 
                 /* If we only need to visit one node, just pick the correct one and continue */
@@ -2311,38 +2311,38 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
 
         const KDNode *node = m_nodes.get();
 
         /* Intersect against the scene bounding box */
         auto bbox_result = m_bbox.ray_intersect(ray);
-        Float mint = ek::max(ray.mint, std::get<1>(bbox_result));
-        Float maxt = ek::min(ray.maxt, std::get<2>(bbox_result));
+        Float mint = dr::max(ray.mint, std::get<1>(bbox_result));
+        Float maxt = dr::min(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
             active = active && (maxt >= mint);
             if (ShadowRay)
                 active = active && !pi.is_valid();
 
-            if (likely(ek::any(active))) {
+            if (likely(dr::any(active))) {
                 if (likely(!node->leaf())) { // Inner node
-                    const ek::scalar_t<Float> split = node->split();
+                    const dr::scalar_t<Float> split = node->split();
                     const uint32_t axis = node->axis();
 
                     // Compute parametric distance along the rays to the split plane
                     Float t_plane          = (split - ray.o[axis]) * ray.d_rcp[axis];
                     Mask left_first        = (ray.o[axis] < split) ||
-                                              (ek::eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
+                                              (dr::eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
                          start_after       = t_plane < mint,
-                         end_before        = t_plane > maxt || t_plane < 0.f || !ek::isfinite(t_plane),
+                         end_before        = t_plane > maxt || t_plane < 0.f || !dr::isfinite(t_plane),
                          single_node       = start_after || end_before,
-                         visit_left        = ek::eq(end_before, left_first),
+                         visit_left        = dr::eq(end_before, left_first),
                          visit_only_left   = single_node &&  visit_left,
                          visit_only_right  = single_node && !visit_left;
 
-                    bool all_visit_only_left  = ek::all(visit_only_left || !active),
-                         all_visit_only_right = ek::all(visit_only_right || !active),
+                    bool all_visit_only_left  = dr::all(visit_only_left || !active),
+                         all_visit_only_right = dr::all(visit_only_right || !active),
                          all_visit_same_node  = all_visit_only_left || all_visit_only_right;
 
                     /* If we only need to visit one node, just pick the correct one and continue */
@@ -2357,10 +2357,10 @@ public:
                     bool go_left = left_votes >= right_votes;
 
                     Mask go_left_bcast = Mask(go_left),
-                         correct_order = ek::eq(left_first, go_left_bcast),
+                         correct_order = dr::eq(left_first, go_left_bcast),
                          visit_both    = !single_node,
                          visit_cur     = visit_both || eq (visit_left, go_left_bcast),
-                         visit_next    = visit_both || ek::neq(visit_left, go_left_bcast);
+                         visit_next    = visit_both || dr::neq(visit_left, go_left_bcast);
 
                     /* Visit both child nodes in the right order */
                     Index node_offset = go_left ? 0 : 1;
@@ -2372,14 +2372,14 @@ public:
                     Mask sel0 =  correct_order && visit_both,
                          sel1 = !correct_order && visit_both;
                     KDStackEntry& entry = stack[stack_index++];
-                    entry.mint = ek::select(sel0, t_plane, mint);
-                    entry.maxt = ek::select(sel1, t_plane, maxt);
+                    entry.mint = dr::select(sel0, t_plane, mint);
+                    entry.maxt = dr::select(sel1, t_plane, maxt);
                     entry.active = active && visit_next;
                     entry.node = n_next;
 
                     /* Visit 'n_cur' now */
-                    mint = ek::select(sel1, t_plane, mint);
-                    maxt = ek::select(sel0, t_plane, maxt);
+                    mint = dr::select(sel1, t_plane, mint);
+                    maxt = dr::select(sel0, t_plane, maxt);
                     active = active && visit_cur;
                     node = n_cur;
                     continue;
@@ -2392,13 +2392,13 @@ public:
                         PreliminaryIntersection3f prim_pi =
                             intersect_prim<ShadowRay>(prim_index, ray, active);
 
-                        ek::masked(pi, prim_pi.is_valid()) = prim_pi;
+                        dr::masked(pi, prim_pi.is_valid()) = prim_pi;
 
                         if constexpr (!ShadowRay) {
-                            Assert(ek::all(!prim_pi.is_valid() ||
+                            Assert(dr::all(!prim_pi.is_valid() ||
                                        (prim_pi.t >= ray.mint &&
                                         prim_pi.t <= ray.maxt)));
-                            ek::masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;
+                            dr::masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;
                         }
                     }
                 }
@@ -2408,7 +2408,7 @@ public:
                 --stack_index;
                 KDStackEntry& entry = stack[stack_index];
                 mint = entry.mint;
-                maxt = ek::min(entry.maxt, ray.maxt);
+                maxt = dr::min(entry.maxt, ray.maxt);
                 active = entry.active;
                 node = entry.node;
             } else {
@@ -2424,20 +2424,20 @@ public:
     template <bool ShadowRay>
     MTS_INLINE PreliminaryIntersection3f
     ray_intersect_naive(Ray3f ray, Mask active) const {
-        if constexpr (!ek::is_array_v<Float>) {
-            PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        if constexpr (!dr::is_array_v<Float>) {
+            PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
 
             for (Size i = 0; i < primitive_count(); ++i) {
                 PreliminaryIntersection3f prim_pi = intersect_prim<ShadowRay>(i, ray);
 
-                if constexpr (ek::is_array_v<Float>) {
-                    ek::masked(pi, prim_pi.is_valid()) = prim_pi;
+                if constexpr (dr::is_array_v<Float>) {
+                    dr::masked(pi, prim_pi.is_valid()) = prim_pi;
                 } else if (prim_pi.is_valid()) {
                     pi = prim_pi;
                     ray.maxt = prim_pi.t;
                 }
 
-                if (ShadowRay && ek::all(pi.is_valid() || !active))
+                if (ShadowRay && dr::all(pi.is_valid() || !active))
                     break;
             }
 
@@ -2464,7 +2464,7 @@ protected:
 
         Index shape_index = math::find_interval<Index>(
             Size(m_primitive_map.size()),
-            [&](Index k) ENOKI_INLINE_LAMBDA {
+            [&](Index k) DRJIT_INLINE_LAMBDA {
                 return m_primitive_map[k] <= i;
             }
         );
@@ -2497,10 +2497,10 @@ protected:
         if constexpr (ShadowRay) {
             bool hit;
             if (shape->is_mesh())
-                hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != ek::Infinity<ScalarFloat>;
+                hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != dr::Infinity<ScalarFloat>;
             else
                 hit = shape->ray_test_scalar(ray);
-            pi.t = ek::select(hit, 0.f , pi.t);
+            pi.t = dr::select(hit, 0.f , pi.t);
         } else {
             uint32_t inst_index = (uint32_t) -1;
             if (shape->is_mesh())

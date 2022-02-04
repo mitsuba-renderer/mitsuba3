@@ -3,7 +3,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/fresnel.h>
-#include <enoki/matrix.h>
+#include <drjit/matrix.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mueller)
 *   The value of the (0, 0) element
 */
 template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
-    MuellerMatrix<Float> result = ek::zero<MuellerMatrix<Float>>();
+    MuellerMatrix<Float> result = dr::zero<MuellerMatrix<Float>>();
     result(0, 0) = value;
     return result;
 }
@@ -86,7 +86,7 @@ template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.
  */
 template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
     Float s, c;
-    std::tie(s, c) = ek::sincos(phase);
+    std::tie(s, c) = dr::sincos(phase);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -103,7 +103,7 @@ template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
 template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
     Float a = .5f * (x + y),
           b = .5f * (x - y),
-          c = ek::sqrt(x * y);
+          c = dr::sqrt(x * y);
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -126,7 +126,7 @@ template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
   * "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
   */
 template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
-    auto [s, c] = ek::sincos(2.f * theta);
+    auto [s, c] = dr::sincos(2.f * theta);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, c, s, 0,
@@ -160,7 +160,7 @@ MuellerMatrix<Float> rotated_element(Float theta,
  */
 template <typename Float, typename Eta>
 MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
-    ek::Complex<Float> a_s, a_p;
+    dr::Complex<Float> a_s, a_p;
 
     std::tie(a_s, a_p, std::ignore, std::ignore, std::ignore) =
         fresnel_polarized(cos_theta_i, eta);
@@ -169,14 +169,14 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     Float sin_delta, cos_delta;
     std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_p, a_s);
 
-    Float r_s = ek::abs(ek::sqr(a_s)),
-          r_p = ek::abs(ek::sqr(a_p)),
+    Float r_s = dr::abs(dr::sqr(a_s)),
+          r_p = dr::abs(dr::sqr(a_p)),
           a = .5f * (r_s + r_p),
           b = .5f * (r_s - r_p),
-          c = ek::sqrt(r_s * r_p);
+          c = dr::sqrt(r_s * r_p);
 
-    ek::masked(sin_delta, ek::eq(c, 0.f)) = 0.f; // avoid issues with NaNs
-    ek::masked(cos_delta, ek::eq(c, 0.f)) = 0.f;
+    dr::masked(sin_delta, dr::eq(c, 0.f)) = 0.f; // avoid issues with NaNs
+    dr::masked(cos_delta, dr::eq(c, 0.f)) = 0.f;
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -200,25 +200,25 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
  */
 template <typename Float>
 MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
-    ek::Complex<Float> a_s, a_p;
+    dr::Complex<Float> a_s, a_p;
     Float cos_theta_t, eta_it, eta_ti;
 
     std::tie(a_s, a_p, cos_theta_t, eta_it, eta_ti) =
         fresnel_polarized(cos_theta_i, eta);
 
     // Unit conversion factor
-    Float factor = -eta_it * ek::select(ek::abs(cos_theta_i) > 1e-8f,
+    Float factor = -eta_it * dr::select(dr::abs(cos_theta_i) > 1e-8f,
                                     cos_theta_t / cos_theta_i, 0.f);
 
     // Compute transmission amplitudes
     Float a_s_r = 1.f + real(a_s),
           a_p_r = (1.f + real(a_p)) * eta_ti;
 
-    Float t_s = ek::sqr(a_s_r),
-          t_p = ek::sqr(a_p_r),
+    Float t_s = dr::sqr(a_s_r),
+          t_p = dr::sqr(a_p_r),
           a = .5f * factor * (t_s + t_p),
           b = .5f * factor * (t_s - t_p),
-          c = factor * ek::sqrt(t_s * t_p);
+          c = factor * dr::sqrt(t_s * t_p);
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -274,15 +274,15 @@ Vector3 stokes_basis(const Vector3 &forward) {
  *      Mueller matrix that performs the desired change of reference frames.
  */
 template <typename Vector3,
-          typename Float = ek::value_t<Vector3>,
+          typename Float = dr::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
                                   const Vector3 &basis_current,
                                   const Vector3 &basis_target) {
-    Float theta = unit_angle(ek::normalize(basis_current),
-                             ek::normalize(basis_target));
+    Float theta = unit_angle(dr::normalize(basis_current),
+                             dr::normalize(basis_target));
 
-    ek::masked(theta, ek::dot(forward, ek::cross(basis_current, basis_target)) < 0) *= -1.f;
+    dr::masked(theta, dr::dot(forward, dr::cross(basis_current, basis_target)) < 0) *= -1.f;
     return rotator(theta);
 }
 
@@ -320,7 +320,7 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  *      New Mueller matrix that operates from \c in_basis_target to \c out_basis_target.
  */
 template <typename Vector3,
-          typename Float = ek::value_t<Vector3>,
+          typename Float = dr::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
                                    const Vector3 &in_forward,
@@ -359,7 +359,7 @@ MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
  *      New Mueller matrix that operates from \c basis_target to \c basis_target.
  */
 template <typename Vector3,
-          typename Float = ek::value_t<Vector3>,
+          typename Float = dr::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
                                              const Vector3 &forward,

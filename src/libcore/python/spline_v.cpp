@@ -1,12 +1,12 @@
 #include <mitsuba/core/spline.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
 template<typename Float_>
 void bind_spline(py::module &m) {
     MTS_PY_IMPORT_TYPES()
-    if constexpr (!ek::is_cuda_array_v<Float_>) {
+    if constexpr (!dr::is_cuda_array_v<Float_>) {
         m.def("eval_spline", spline::eval_spline<ScalarFloat>, "f0"_a, "f1"_a,
               "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
             .def("eval_spline_d", spline::eval_spline_d<ScalarFloat>, "f0"_a,
@@ -44,7 +44,7 @@ void bind_spline(py::module &m) {
                          throw std::runtime_error(
                              "'values' must be a one-dimensional array!");
                      using Result  = DynamicBuffer<ScalarFloat>;
-                     Result result = ek::empty<Result>(values.size());
+                     Result result = dr::empty<Result>(values.size());
                      spline::integrate_1d(min, max, values.data(),
                                           (uint32_t) values.size(),
                                           result.data());
@@ -62,7 +62,7 @@ void bind_spline(py::module &m) {
                          throw std::runtime_error(
                              "'nodes' and 'values' must have a matching size!");
                      using Result  = DynamicBuffer<ScalarFloat>;
-                     Result result = ek::empty<Result>(values.size());
+                     Result result = dr::empty<Result>(values.size());
                      spline::integrate_1d(nodes.data(), values.data(),
                                           (uint32_t) values.size(),
                                           result.data());

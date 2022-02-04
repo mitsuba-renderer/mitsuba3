@@ -1,5 +1,5 @@
 import os
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -46,7 +46,7 @@ def check_contents(stream):
         elif type(v) is int:
             assert v == stream.read_int64()
         elif type(v) is float:
-            assert ek.abs(stream.read_single() - v) / v < 1e-5
+            assert dr.abs(stream.read_single() - v) / v < 1e-5
         elif type(v) is bool:
             assert v == stream.read_bool()
 

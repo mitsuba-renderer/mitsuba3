@@ -25,8 +25,8 @@ NAMESPACE_BEGIN(quad)
  */
 template <typename Float>
 std::pair<Float, Float> gauss_legendre(int n) {
-    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
-    using ScalarFloat = ek::scalar_t<Float>;
+    static_assert(dr::is_dynamic_v<Float>, "Template type must be dynamic!");
+    using ScalarFloat = dr::scalar_t<Float>;
 
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
@@ -39,7 +39,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
         nodes[0] = (ScalarFloat) 0;
         weights[0] = (ScalarFloat) 2;
     } else if (n == 1) {
-        nodes[0] = (ScalarFloat) -ek::sqrt(1.0 / 3.0);
+        nodes[0] = (ScalarFloat) -dr::sqrt(1.0 / 3.0);
         nodes[1] = -nodes[0];
         weights[0] = weights[1] = (ScalarFloat) 1;
     }
@@ -47,7 +47,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
     int m = (n + 1) / 2;
     for (int i = 0; i < m; ++i) {
         // Initial guess for this root using that of a Chebyshev polynomial
-        double x = -ek::cos((double) (2*i + 1) / (double) (2*n + 2) * ek::Pi<double>);
+        double x = -dr::cos((double) (2*i + 1) / (double) (2*n + 2) * dr::Pi<double>);
         int it = 0;
 
         while (true) {
@@ -61,7 +61,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
             double step = L.first / L.second;
             x -= step;
 
-            if (ek::abs(step) <= 4 * ek::abs(x) * ek::Epsilon<double>)
+            if (dr::abs(step) <= 4 * dr::abs(x) * dr::Epsilon<double>)
                 break;
         }
 
@@ -80,8 +80,8 @@ std::pair<Float, Float> gauss_legendre(int n) {
     }
 
     return {
-        ek::load<Float>(nodes.data(), nodes.size()),
-        ek::load<Float>(weights.data(), weights.size())
+        dr::load<Float>(nodes.data(), nodes.size()),
+        dr::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -110,8 +110,8 @@ std::pair<Float, Float> gauss_legendre(int n) {
  */
 template <typename Float>
 std::pair<Float, Float> gauss_lobatto(int n) {
-    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
-    using ScalarFloat = ek::scalar_t<Float>;
+    static_assert(dr::is_dynamic_v<Float>, "Template type must be dynamic!");
+    using ScalarFloat = dr::scalar_t<Float>;
 
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
@@ -129,8 +129,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
         /* Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
            and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999 */
 
-        double x = -ek::cos((i + 0.25) * ek::Pi<double> / n -
-                            3 / (8 * n * ek::Pi<double> * (i + 0.25)));
+        double x = -dr::cos((i + 0.25) * dr::Pi<double> / n -
+                            3 / (8 * n * dr::Pi<double> * (i + 0.25)));
         int it = 0;
 
         while (true) {
@@ -145,7 +145,7 @@ std::pair<Float, Float> gauss_lobatto(int n) {
             double step = Q.first / Q.second;
             x -= step;
 
-            if (ek::abs(step) <= 4 * ek::abs(x) * ek::Epsilon<double>)
+            if (dr::abs(step) <= 4 * dr::abs(x) * dr::Epsilon<double>)
                 break;
         }
 
@@ -163,8 +163,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
     }
 
     return {
-        ek::load<Float>(nodes.data(), nodes.size()),
-        ek::load<Float>(weights.data(), weights.size())
+        dr::load<Float>(nodes.data(), nodes.size()),
+        dr::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -186,8 +186,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
  */
 template <typename Float>
 std::pair<Float, Float> composite_simpson(int n) {
-    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
-    using ScalarFloat = ek::scalar_t<Float>;
+    static_assert(dr::is_dynamic_v<Float>, "Template type must be dynamic!");
+    using ScalarFloat = dr::scalar_t<Float>;
 
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
@@ -211,8 +211,8 @@ std::pair<Float, Float> composite_simpson(int n) {
     weights[2*n] = weight;
 
     return {
-        ek::load<Float>(nodes.data(), nodes.size()),
-        ek::load<Float>(weights.data(), weights.size())
+        dr::load<Float>(nodes.data(), nodes.size()),
+        dr::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -234,8 +234,8 @@ std::pair<Float, Float> composite_simpson(int n) {
  */
 template <typename Float>
 std::pair<Float, Float> composite_simpson_38(int n) {
-    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
-    using ScalarFloat = ek::scalar_t<Float>;
+    static_assert(dr::is_dynamic_v<Float>, "Template type must be dynamic!");
+    using ScalarFloat = dr::scalar_t<Float>;
 
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
@@ -261,8 +261,8 @@ std::pair<Float, Float> composite_simpson_38(int n) {
     weights[3*n] = weight;
 
     return {
-        ek::load<Float>(nodes.data(), nodes.size()),
-        ek::load<Float>(weights.data(), weights.size())
+        dr::load<Float>(nodes.data(), nodes.size()),
+        dr::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -276,10 +276,10 @@ std::pair<Float, Float> composite_simpson_38(int n) {
  *     Desired number of points
  */
 template <typename Float> Float chebyshev(int n) {
-    using ScalarFloat = ek::scalar_t<Float>;
-    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
+    using ScalarFloat = dr::scalar_t<Float>;
+    static_assert(dr::is_dynamic_v<Float>, "Template type must be dynamic!");
     ScalarFloat eps = 1 / ScalarFloat(2 * n);
-    return -ek::cos(ek::linspace<Float>(eps, 1 - eps, n) * ek::Pi<Float>);
+    return -dr::cos(dr::linspace<Float>(eps, 1 - eps, n) * dr::Pi<Float>);
 }
 
 NAMESPACE_END(quad)

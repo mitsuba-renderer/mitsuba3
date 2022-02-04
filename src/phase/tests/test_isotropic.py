@@ -2,8 +2,8 @@ import numpy as np
 
 import mitsuba
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
+import drjit as dr
+from drjit.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
@@ -24,7 +24,7 @@ def test02_eval(variant_scalar_rgb):
         for ph in np.linspace(0, np.pi, 4):
             wo = [np.sin(theta), 0, np.cos(theta)]
             v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * ek.Pi))
+            assert np.allclose(v_eval, 1.0 / (4 * dr.Pi))
 
 
 def test03_chi2(variants_vec_backends_once_rgb):

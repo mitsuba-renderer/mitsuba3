@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import pytest
 import mitsuba
 
@@ -31,9 +31,9 @@ def test02_round_to_power_of_two(variant_scalar_rgb):
 
 def test03_solve_quadratic(variant_scalar_rgb):
     from mitsuba.core import math
-    assert ek.allclose(math.solve_quadratic(1, 4, -5), (1, -5, 1))
-    assert ek.allclose(math.solve_quadratic(0, 5, -10), (1, 2, 2))
-    assert ek.allclose(math.solve_quadratic(0, -5, 10), (1, 2, 2))
+    assert dr.allclose(math.solve_quadratic(1, 4, -5), (1, -5, 1))
+    assert dr.allclose(math.solve_quadratic(0, 5, -10), (1, 2, 2))
+    assert dr.allclose(math.solve_quadratic(0, -5, 10), (1, 2, 2))
 
 
 def test04_solve_quadratic_vec(variant_scalar_rgb):
@@ -43,8 +43,8 @@ def test04_solve_quadratic_vec(variant_scalar_rgb):
         from mitsuba.core import math
 
         found, x, y = math.solve_quadratic(a, b, c)
-        x = ek.select(found, x, 0.0)
-        y = ek.select(found, y, 0.0)
+        x = dr.select(found, x, 0.0)
+        y = dr.select(found, y, 0.0)
 
         return x, y
 
@@ -53,28 +53,28 @@ def test04_solve_quadratic_vec(variant_scalar_rgb):
 
 def test05_legendre_p(variant_scalar_rgb):
     from mitsuba.core import math
-    assert ek.allclose(math.legendre_p(0, 0), 1)
-    assert ek.allclose(math.legendre_p(1, 0), 0)
-    assert ek.allclose(math.legendre_p(1, 1), 1)
-    assert ek.allclose(math.legendre_p(2, 0), -0.5)
-    assert ek.allclose(math.legendre_p(2, 1), 1)
-    assert ek.allclose(math.legendre_p(3, 0), 0)
+    assert dr.allclose(math.legendre_p(0, 0), 1)
+    assert dr.allclose(math.legendre_p(1, 0), 0)
+    assert dr.allclose(math.legendre_p(1, 1), 1)
+    assert dr.allclose(math.legendre_p(2, 0), -0.5)
+    assert dr.allclose(math.legendre_p(2, 1), 1)
+    assert dr.allclose(math.legendre_p(3, 0), 0)
 
 
 def test06_legendre_pd(variant_scalar_rgb):
     from mitsuba.core import math
-    assert ek.allclose(math.legendre_pd(0, 0),   [1, 0])
-    assert ek.allclose(math.legendre_pd(1, 0),   [0, 1])
-    assert ek.allclose(math.legendre_pd(1, 0.5), [0.5, 1])
-    assert ek.allclose(math.legendre_pd(2, 0),   [-0.5, 0])
+    assert dr.allclose(math.legendre_pd(0, 0),   [1, 0])
+    assert dr.allclose(math.legendre_pd(1, 0),   [0, 1])
+    assert dr.allclose(math.legendre_pd(1, 0.5), [0.5, 1])
+    assert dr.allclose(math.legendre_pd(2, 0),   [-0.5, 0])
 
 
 def test07_legendre_pd_diff(variant_scalar_rgb):
     from mitsuba.core import math, Vector2f
-    assert ek.allclose(math.legendre_pd_diff(1, 1),   Vector2f(math.legendre_pd(1+1, 1))   - Vector2f(math.legendre_pd(1-1, 1)))
-    assert ek.allclose(math.legendre_pd_diff(2, 1),   Vector2f(math.legendre_pd(2+1, 1))   - Vector2f(math.legendre_pd(2-1, 1)))
-    assert ek.allclose(math.legendre_pd_diff(3, 0),   Vector2f(math.legendre_pd(3+1, 0))   - Vector2f(math.legendre_pd(3-1, 0)))
-    assert ek.allclose(math.legendre_pd_diff(4, 0.1), Vector2f(math.legendre_pd(4+1, 0.1)) - Vector2f(math.legendre_pd(4-1, 0.1)))
+    assert dr.allclose(math.legendre_pd_diff(1, 1),   Vector2f(math.legendre_pd(1+1, 1))   - Vector2f(math.legendre_pd(1-1, 1)))
+    assert dr.allclose(math.legendre_pd_diff(2, 1),   Vector2f(math.legendre_pd(2+1, 1))   - Vector2f(math.legendre_pd(2-1, 1)))
+    assert dr.allclose(math.legendre_pd_diff(3, 0),   Vector2f(math.legendre_pd(3+1, 0))   - Vector2f(math.legendre_pd(3-1, 0)))
+    assert dr.allclose(math.legendre_pd_diff(4, 0.1), Vector2f(math.legendre_pd(4+1, 0.1)) - Vector2f(math.legendre_pd(4-1, 0.1)))
 
 
 def test08_legendre_vec(variant_scalar_rgb):
@@ -93,7 +93,7 @@ def test08_morton2(variant_scalar_rgb):
     v0 = [123, 456]
     v1 = math.morton_encode2(v0)
     v2 = math.morton_decode2(v1)
-    assert ek.all(v0 == v2)
+    assert dr.all(v0 == v2)
 
 
 def test09_morton3(variant_scalar_rgb):
@@ -101,4 +101,4 @@ def test09_morton3(variant_scalar_rgb):
     v0 = [123, 456, 789]
     v1 = math.morton_encode3(v0)
     v2 = math.morton_decode3(v1)
-    assert ek.all(v0 == v2)
+    assert dr.all(v0 == v2)

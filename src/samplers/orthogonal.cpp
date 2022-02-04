@@ -84,14 +84,14 @@ public:
         };
 
         m_resolution = 2;
-        while (ek::sqr(m_resolution) < spp || !is_prime(m_resolution))
+        while (dr::sqr(m_resolution) < spp || !is_prime(m_resolution))
             m_resolution++;
 
-        if (spp != ek::sqr(m_resolution))
+        if (spp != dr::sqr(m_resolution))
             Log(Warn, "Sample count should be the square of a prime"
-                "number, rounding to %i", ek::sqr(m_resolution));
+                "number, rounding to %i", dr::sqr(m_resolution));
 
-        m_sample_count = ek::sqr(m_resolution);
+        m_sample_count = dr::sqr(m_resolution);
         m_resolution_div = m_resolution;
     }
 
@@ -138,7 +138,7 @@ public:
 
     void schedule_state() override {
         Base::schedule_state();
-        ek::schedule(m_permutation_seed);
+        dr::schedule(m_permutation_seed);
     }
 
     std::string to_string() const override {
@@ -177,7 +177,7 @@ private:
                UInt32 j, // dimension
                UInt32 p, // pseudo-random permutation seed
                Mask active = true) {
-        uint32_t N = ek::pow(m_resolution, m_strength);
+        uint32_t N = dr::pow(m_resolution, m_strength);
         uint32_t stm = m_resolution_div(N);
 
         // Convert the permuted sample index to base strength
@@ -209,15 +209,15 @@ private:
 
         // Bose construction scheme
         // Linear combination of the 2D mapping (modulo the grid resolution)
-        UInt32 k = ek::select((j % 2) > 0, j - 1, j + 1);
+        UInt32 k = dr::select((j % 2) > 0, j - 1, j + 1);
         UInt32 a_ij = (a_i0 + (j - 1) * a_i1) % m_resolution;
         UInt32 a_ik = (a_i0 + (k - 1) * a_i1) % m_resolution;
-        Mask j_is_zero = ek::eq(j, 0u);
-        ek::masked(a_ij, j_is_zero) = a_i0;
-        ek::masked(a_ik, j_is_zero) = a_i1;
-        Mask j_is_one  = ek::eq(j, 1u);
-        ek::masked(a_ij, j_is_one)  = a_i1;
-        ek::masked(a_ik, j_is_one)  = a_i0;
+        Mask j_is_zero = dr::eq(j, 0u);
+        dr::masked(a_ij, j_is_zero) = a_i0;
+        dr::masked(a_ik, j_is_zero) = a_i1;
+        Mask j_is_one  = dr::eq(j, 1u);
+        dr::masked(a_ij, j_is_one)  = a_i1;
+        dr::masked(a_ik, j_is_one)  = a_i0;
 
         // Correlated multi-jitter flavor with random perturbation
         UInt32 stratum     = permute_kensler(a_ij, m_resolution, p * (j + 1) * 0x51633e2d, active);
@@ -240,7 +240,7 @@ private:
 
     /// Stratification grid resolution
     uint32_t m_resolution;
-    ek::divisor<uint32_t> m_resolution_div;
+    dr::divisor<uint32_t> m_resolution_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

@@ -67,16 +67,16 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
-    ek::set_attr(this, "emitter", m_emitter.get());
-    ek::set_attr(this, "sensor", m_sensor.get());
-    ek::set_attr(this, "bsdf", m_bsdf.get());
-    ek::set_attr(this, "interior_medium", m_interior_medium.get());
-    ek::set_attr(this, "exterior_medium", m_exterior_medium.get());
+    dr::set_attr(this, "emitter", m_emitter.get());
+    dr::set_attr(this, "sensor", m_sensor.get());
+    dr::set_attr(this, "bsdf", m_bsdf.get());
+    dr::set_attr(this, "interior_medium", m_interior_medium.get());
+    dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
 }
 
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
 #if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_array_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
 }
@@ -125,7 +125,7 @@ void embree_intersect_scalar(int* valid,
         return;
 
     // Create a Mitsuba ray
-    Ray3f ray = ek::zero<Ray3f>();
+    Ray3f ray = dr::zero<Ray3f>();
     ray.o.x() = rtc_ray->org_x;
     ray.o.y() = rtc_ray->org_y;
     ray.o.z() = rtc_ray->org_z;
@@ -140,17 +140,17 @@ void embree_intersect_scalar(int* valid,
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
         PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray);
-        if (ek::all(pi.is_valid())) {
-            rtc_ray->tfar      = (float) ek::slice(pi.t);
-            rtc_hit->u         = (float) ek::slice(pi.prim_uv.x());
-            rtc_hit->v         = (float) ek::slice(pi.prim_uv.y());
+        if (dr::all(pi.is_valid())) {
+            rtc_ray->tfar      = (float) dr::slice(pi.t);
+            rtc_hit->u         = (float) dr::slice(pi.prim_uv.x());
+            rtc_hit->v         = (float) dr::slice(pi.prim_uv.y());
             rtc_hit->geomID    = geomID;
             rtc_hit->primID    = 0;
             rtc_hit->instID[0] = instID;
         }
     } else {
-        if (ek::all(shape->ray_test(ray)))
-            rtc_ray->tfar = -ek::Infinity<float>;
+        if (dr::all(shape->ray_test(ray)))
+            rtc_ray->tfar = -dr::Infinity<float>;
     }
 }
 
@@ -161,48 +161,48 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
                                     RTCHit_ *rtc_hit) {
     MTS_IMPORT_TYPES(Shape)
 
-    using FloatP   = ek::Packet<ek::scalar_t<Float>, N>;
-    using MaskP    = ek::mask_t<FloatP>;
+    using FloatP   = dr::Packet<dr::scalar_t<Float>, N>;
+    using MaskP    = dr::mask_t<FloatP>;
     using Point2fP = Point<FloatP, 2>;
     using Point3fP = Point<FloatP, 3>;
     using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
-    using UInt32P  = ek::uint32_array_t<FloatP>;
-    using Float32P = ek::Packet<ek::scalar_t<Float32>, N>;
+    using UInt32P  = dr::uint32_array_t<FloatP>;
+    using Float32P = dr::Packet<dr::scalar_t<Float32>, N>;
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
-    MaskP active = ek::neq(ek::load_aligned<UInt32P>(valid), 0);
-    if (ek::none(active))
+    MaskP active = dr::neq(dr::load_aligned<UInt32P>(valid), 0);
+    if (dr::none(active))
         return;
 
     // Create Mitsuba ray
     Ray3fP ray;
-    ray.o.x() = ek::load_aligned<Float32P>(rtc_ray->org_x);
-    ray.o.y() = ek::load_aligned<Float32P>(rtc_ray->org_y);
-    ray.o.z() = ek::load_aligned<Float32P>(rtc_ray->org_z);
-    ray.d.x() = ek::load_aligned<Float32P>(rtc_ray->dir_x);
-    ray.d.y() = ek::load_aligned<Float32P>(rtc_ray->dir_y);
-    ray.d.z() = ek::load_aligned<Float32P>(rtc_ray->dir_z);
-    ray.time  = ek::load_aligned<Float32P>(rtc_ray->time);
+    ray.o.x() = dr::load_aligned<Float32P>(rtc_ray->org_x);
+    ray.o.y() = dr::load_aligned<Float32P>(rtc_ray->org_y);
+    ray.o.z() = dr::load_aligned<Float32P>(rtc_ray->org_z);
+    ray.d.x() = dr::load_aligned<Float32P>(rtc_ray->dir_x);
+    ray.d.y() = dr::load_aligned<Float32P>(rtc_ray->dir_y);
+    ray.d.z() = dr::load_aligned<Float32P>(rtc_ray->dir_z);
+    ray.time  = dr::load_aligned<Float32P>(rtc_ray->time);
 
-    Float32P tnear = ek::load_aligned<Float32P>(rtc_ray->tnear),
-             tfar  = ek::load_aligned<Float32P>(rtc_ray->tfar);
+    Float32P tnear = dr::load_aligned<Float32P>(rtc_ray->tnear),
+             tfar  = dr::load_aligned<Float32P>(rtc_ray->tfar);
     ray.o += ray.d * tnear;
     ray.maxt = tfar - tnear;
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
         auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, active);
-        active &= ek::neq(t, ek::Infinity<Float>);
-        ek::store_aligned(rtc_ray->tfar,      Float32P(ek::select(active, t,           ray.maxt)));
-        ek::store_aligned(rtc_hit->u,         Float32P(ek::select(active, prim_uv.x(), ek::load_aligned<Float32P>(rtc_hit->u))));
-        ek::store_aligned(rtc_hit->v,         Float32P(ek::select(active, prim_uv.y(), ek::load_aligned<Float32P>(rtc_hit->v))));
-        ek::store_aligned(rtc_hit->geomID,    ek::select(active, UInt32P(geomID), ek::load_aligned<UInt32P>(rtc_hit->geomID)));
-        ek::store_aligned(rtc_hit->primID,    ek::select(active, UInt32P(0),      ek::load_aligned<UInt32P>(rtc_hit->primID)));
-        ek::store_aligned(rtc_hit->instID[0], ek::select(active, UInt32P(instID), ek::load_aligned<UInt32P>(rtc_hit->instID[0])));
+        active &= dr::neq(t, dr::Infinity<Float>);
+        dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
+        dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
+        dr::store_aligned(rtc_hit->v,         Float32P(dr::select(active, prim_uv.y(), dr::load_aligned<Float32P>(rtc_hit->v))));
+        dr::store_aligned(rtc_hit->geomID,    dr::select(active, UInt32P(geomID), dr::load_aligned<UInt32P>(rtc_hit->geomID)));
+        dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(0),      dr::load_aligned<UInt32P>(rtc_hit->primID)));
+        dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, active);
-        ek::store_aligned(rtc_ray->tfar, Float32P(ek::select(active, -ek::Infinity<Float>, tfar)));
+        dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
     }
 }
 
@@ -287,7 +287,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 }
 
 MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    if constexpr (!ek::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
         rtcSetGeometryUserData(geom, (void *) this);
@@ -297,7 +297,7 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
         rtcCommitGeometry(geom);
         return geom;
     } else {
-        ENOKI_MARK_USED(device);
+        DRJIT_MARK_USED(device);
         Throw("embree_geometry() should only be called in CPU mode.");
     }
 }
@@ -353,13 +353,13 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     DirectionSample3f ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
 
-    Float dist_squared = ek::squared_norm(ds.d);
-    ds.dist = ek::sqrt(dist_squared);
+    Float dist_squared = dr::squared_norm(ds.d);
+    ds.dist = dr::sqrt(dist_squared);
     ds.d /= ds.dist;
 
-    Float dp = ek::abs_dot(ds.d, ds.n);
+    Float dp = dr::abs_dot(ds.d, ds.n);
     Float x = dist_squared / dp;
-    ds.pdf *= ek::select(ek::isfinite(x), x, 0.f);
+    ds.pdf *= dr::select(dr::isfinite(x), x, 0.f);
 
     return ds;
 }
@@ -370,9 +370,9 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*
     MTS_MASK_ARGUMENT(active);
 
     Float pdf = pdf_position(ds, active),
-           dp = ek::abs_dot(ds.d, ds.n);
+           dp = dr::abs_dot(ds.d, ds.n);
 
-    pdf *= ek::select(ek::neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
+    pdf *= dr::select(dr::neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
 
     return pdf;
 }
@@ -404,7 +404,7 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
     Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,              \
                                             MaskP##N active) const {           \
         auto res = ray_intersect_preliminary_packet(ray, active);              \
-        return ek::neq(std::get<0>(res), ek::Infinity<Float>);                 \
+        return dr::neq(std::get<0>(res), dr::Infinity<Float>);                 \
     }
 
 MTS_DEFAULT_RAY_INTERSECT_PACKET(4)
@@ -499,9 +499,9 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 MTS_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_array_v<Float>) {
             if (!is_mesh())
-                ek::make_opaque(m_to_world, m_to_object);
+                dr::make_opaque(m_to_world, m_to_object);
         }
 
         if (m_emitter)
@@ -510,7 +510,7 @@ void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &
             m_sensor->parameters_changed({"parent"});
 
 #if defined(MTS_ENABLE_CUDA)
-        if constexpr (ek::is_cuda_array_v<Float>)
+        if constexpr (dr::is_cuda_array_v<Float>)
             optix_prepare_geometry();
 #endif
     }
@@ -521,9 +521,9 @@ MTS_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::initialize() {
-    if constexpr (ek::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_array_v<Float>) {
         if (!is_mesh())
-            ek::make_opaque(m_to_world, m_to_object);
+            dr::make_opaque(m_to_world, m_to_object);
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects

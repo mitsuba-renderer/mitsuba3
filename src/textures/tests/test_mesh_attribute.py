@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 import numpy as np
 
 
@@ -46,10 +46,10 @@ def test01_eval(variant_scalar_rgb):
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         value = texture.eval(mesh.eval_parameterization([u, v]))
-        assert ek.allclose(value, [u, v, 0])
+        assert dr.allclose(value, [u, v, 0])
 
         value = texture.eval_3(mesh.eval_parameterization([u, v]))
-        assert ek.allclose(value, [u, v, 0])
+        assert dr.allclose(value, [u, v, 0])
 
         with pytest.raises(Exception) as e:
             texture.eval_1(mesh.eval_parameterization([u, v]))
@@ -65,7 +65,7 @@ def test01_eval(variant_scalar_rgb):
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         a, b, c, d = [1.0, 2.0, 3.0, 4.0]
         value = (1.0 - v) * (a * (1.0 - u) + b * u) + v * (c * (1.0 - u) + d * u)
-        assert ek.allclose(value, texture.eval_1(mesh.eval_parameterization([u, v])))
+        assert dr.allclose(value, texture.eval_1(mesh.eval_parameterization([u, v])))
 
 
     # Check face color attribute
@@ -77,7 +77,7 @@ def test01_eval(variant_scalar_rgb):
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
-        assert ek.allclose(texture.eval(si), [0, 0, si.prim_index])
+        assert dr.allclose(texture.eval(si), [0, 0, si.prim_index])
 
     # Check face mono attribute
 
@@ -88,7 +88,7 @@ def test01_eval(variant_scalar_rgb):
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
-        assert ek.allclose(texture.eval_1(si), si.prim_index)
+        assert dr.allclose(texture.eval_1(si), si.prim_index)
 
 
 def test02_eval_spectrum(variant_scalar_spectral):
@@ -107,7 +107,7 @@ def test02_eval_spectrum(variant_scalar_spectral):
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
         si.wavelengths = wavelengths
-        ek.allclose(texture.eval(si), srgb_model_eval(srgb_model_fetch([u, v, 0]), wavelengths))
+        dr.allclose(texture.eval(si), srgb_model_eval(srgb_model_fetch([u, v, 0]), wavelengths))
 
 
 def test03_invalid_attribute(variant_scalar_rgb):

@@ -18,7 +18,7 @@ MTS_PY_EXPORT(PositionSample) {
         .def_readwrite("delta",  &PositionSample3f::delta,  D(PositionSample, delta))
         .def_repr(PositionSample3f);
 
-    MTS_PY_ENOKI_STRUCT(pos, PositionSample3f, p, n, uv, time, pdf, delta)
+    MTS_PY_DRJIT_STRUCT(pos, PositionSample3f, p, n, uv, time, pdf, delta)
 }
 
 MTS_PY_EXPORT(DirectionSample) {
@@ -39,5 +39,5 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))
         .def_repr(DirectionSample3f);
 
-    MTS_PY_ENOKI_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, emitter, d, dist)
+    MTS_PY_DRJIT_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, emitter, d, dist)
 }

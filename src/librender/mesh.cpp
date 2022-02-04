@@ -39,13 +39,13 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     m_vertex_count = vertex_count;
     m_face_count = face_count;
 
-    m_faces = ek::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
-    m_vertex_positions = ek::zero<FloatStorage>(m_vertex_count * 3);
+    m_faces = dr::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
+    m_vertex_positions = dr::zero<FloatStorage>(m_vertex_count * 3);
 
     if (has_vertex_normals)
-        m_vertex_normals = ek::zero<FloatStorage>(m_vertex_count * 3);
+        m_vertex_normals = dr::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
-        m_vertex_texcoords = ek::zero<FloatStorage>(m_vertex_count * 2);
+        m_vertex_texcoords = dr::zero<FloatStorage>(m_vertex_count * 2);
 
     initialize();
 }
@@ -71,7 +71,7 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    if constexpr (ek::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_array_v<Float>)
         Throw("bbox(ScalarIndex) is not available in CUDA mode!");
 
     Assert(index <= m_face_count);
@@ -86,15 +86,15 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
 
-    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(ek::min(min(v0, v1), v2),
-                                                               ek::max(ek::max(v0, v1), v2));
+    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(dr::min(min(v0, v1), v2),
+                                                               dr::max(dr::max(v0, v1), v2));
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
-    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
-    auto&& vertex_normals   = ek::migrate(m_vertex_normals, AllocType::Host);
-    auto&& vertex_texcoords = ek::migrate(m_vertex_texcoords, AllocType::Host);
-    auto&& faces = ek::migrate(m_faces, AllocType::Host);
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& vertex_normals   = dr::migrate(m_vertex_normals, AllocType::Host);
+    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
+    auto&& faces = dr::migrate(m_faces, AllocType::Host);
 
     std::vector<std::pair<std::string, MeshAttribute>> vertex_attributes;
     std::vector<std::pair<std::string, MeshAttribute>> face_attributes;
@@ -112,8 +112,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         }
     }
     // Evaluate buffers if necessary
-    if constexpr (ek::is_jit_array_v<Float>)
-        ek::sync_thread();
+    if constexpr (dr::is_jit_array_v<Float>)
+        dr::sync_thread();
 
     ref<FileStream> stream =
         new FileStream(filename, FileStream::ETruncReadWrite);
@@ -225,9 +225,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
 
-    if constexpr (!ek::is_dynamic_v<Float>) {
+    if constexpr (!dr::is_dynamic_v<Float>) {
         size_t invalid_counter = 0;
-        std::vector<InputNormal3f> normals(m_vertex_count, ek::zero<InputNormal3f>());
+        std::vector<InputNormal3f> normals(m_vertex_count, dr::zero<InputNormal3f>());
 
         for (ScalarSize i = 0; i < m_face_count; ++i) {
             auto fi = face_indices(i);
@@ -241,15 +241,15 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
             InputVector3f side_0 = v[1] - v[0],
                           side_1 = v[2] - v[0];
-            InputNormal3f n = ek::cross(side_0, side_1);
-            InputFloat length_sqr = ek::squared_norm(n);
+            InputNormal3f n = dr::cross(side_0, side_1);
+            InputFloat length_sqr = dr::squared_norm(n);
             if (likely(length_sqr > 0)) {
-                n *= ek::rsqrt(length_sqr);
+                n *= dr::rsqrt(length_sqr);
 
-                // Use Enoki to compute the face angles at the same time
-                auto side1 = transpose(ek::Array<ek::Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
-                auto side2 = transpose(ek::Array<ek::Packet<InputFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
-                InputVector3f face_angles = unit_angle(ek::normalize(side1), ek::normalize(side2));
+                // Use DrJit to compute the face angles at the same time
+                auto side1 = transpose(dr::Array<dr::Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
+                auto side2 = transpose(dr::Array<dr::Packet<InputFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
+                InputVector3f face_angles = unit_angle(dr::normalize(side1), dr::normalize(side2));
 
                 for (size_t j = 0; j < 3; ++j)
                     normals[fi[j]] += n * face_angles[j];
@@ -258,7 +258,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         for (ScalarSize i = 0; i < m_vertex_count; i++) {
             InputNormal3f n = normals[i];
-            InputFloat length = ek::norm(n);
+            InputFloat length = dr::norm(n);
             if (likely(length != 0.f)) {
                 n /= length;
             } else {
@@ -266,7 +266,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 invalid_counter++;
             }
 
-            ek::store(m_vertex_normals.data() + 3 * i, n);
+            dr::store(m_vertex_normals.data() + 3 * i, n);
         }
 
         if (invalid_counter > 0)
@@ -276,42 +276,42 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         // The following is JITed into two separate kernel launches
 
         // --------------------- Kernel 1 starts here ---------------------
-        Vector3u fi = face_indices(ek::arange<UInt32>(m_face_count));
+        Vector3u fi = face_indices(dr::arange<UInt32>(m_face_count));
 
         Vector3f v[3] = { vertex_position(fi[0]),
                           vertex_position(fi[1]),
                           vertex_position(fi[2]) };
 
-        Vector3f n = ek::normalize(ek::cross(v[1] - v[0], v[2] - v[0]));
+        Vector3f n = dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
 
-        Vector3f normals = ek::zero<Vector3f>(m_vertex_count);
+        Vector3f normals = dr::zero<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
-            Vector3f d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
-            Vector3f d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
-            Float face_angle = ek::safe_acos(ek::dot(d0, d1));
+            Vector3f d0 = dr::normalize(v[(i + 1) % 3] - v[i]);
+            Vector3f d1 = dr::normalize(v[(i + 2) % 3] - v[i]);
+            Float face_angle = dr::safe_acos(dr::dot(d0, d1));
 
             Vector3f nn = n * face_angle;
             for (int j = 0; j < 3; ++j)
-                ek::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
+                dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
         }
 
         // --------------------- Kernel 2 starts here ---------------------
 
-        normals = ek::normalize(normals);
+        normals = dr::normalize(normals);
 
-        UInt32 ni = ek::arange<UInt32>(m_vertex_count) * 3;
+        UInt32 ni = dr::arange<UInt32>(m_vertex_count) * 3;
         for (size_t i = 0; i < 3; ++i)
-            ek::scatter(m_vertex_normals,
-                        ek::float32_array_t<Float>(normals[i]), ni + i);
+            dr::scatter(m_vertex_normals,
+                        dr::float32_array_t<Float>(normals[i]), ni + i);
 
-        ek::eval(m_vertex_normals);
+        dr::eval(m_vertex_normals);
     }
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
-    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
-    if constexpr (ek::is_jit_array_v<Float>)
-        ek::sync_thread();
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    if constexpr (dr::is_jit_array_v<Float>)
+        dr::sync_thread();
 
     const InputFloat *ptr = vertex_positions.data();
 
@@ -330,23 +330,23 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
-    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
-    auto&& faces = ek::migrate(m_faces, AllocType::Host);
-    if constexpr (ek::is_jit_array_v<Float>)
-        ek::sync_thread();
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& faces = dr::migrate(m_faces, AllocType::Host);
+    if constexpr (dr::is_jit_array_v<Float>)
+        dr::sync_thread();
 
     const InputFloat *pos_p = vertex_positions.data();
     const ScalarIndex *idx_p = faces.data();
 
     std::vector<ScalarFloat> table(m_face_count);
     for (ScalarIndex i = 0; i < m_face_count; i++) {
-        ScalarPoint3u idx = ek::load<ScalarPoint3u>(idx_p + 3 * i);
+        ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
 
-        ScalarPoint3f p0 = ek::load<InputPoint3f>(pos_p + 3 * idx.x()),
-                      p1 = ek::load<InputPoint3f>(pos_p + 3 * idx.y()),
-                      p2 = ek::load<InputPoint3f>(pos_p + 3 * idx.z());
+        ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
+                      p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
+                      p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
 
-        table[i] = .5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
+        table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
     }
 
     m_area_pmf = DiscreteDistribution<Float>(
@@ -388,29 +388,29 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
         has_vertex_texcoords());
 
     result->m_vertex_positions =
-        ek::concat(m_vertex_positions, other->m_vertex_positions);
+        dr::concat(m_vertex_positions, other->m_vertex_positions);
 
     if (has_vertex_normals())
         result->m_vertex_normals =
-            ek::concat(m_vertex_normals, other->m_vertex_normals);
+            dr::concat(m_vertex_normals, other->m_vertex_normals);
 
     if (has_vertex_texcoords())
         result->m_vertex_texcoords =
-            ek::concat(m_vertex_texcoords, other->m_vertex_texcoords);
+            dr::concat(m_vertex_texcoords, other->m_vertex_texcoords);
 
-    result->m_faces = ek::concat(m_faces, other->m_faces);
+    result->m_faces = dr::concat(m_faces, other->m_faces);
     result->m_bbox = m_bbox;
     result->m_bbox.expand(other->m_bbox);
 
-    if constexpr (ek::is_jit_array_v<Float>) {
-        UInt32 threshold = ek::opaque<UInt32>(face_count() * 3),
-               offset    = ek::opaque<UInt32>(vertex_count()),
-               index     = ek::arange<UInt32>(result->face_count() * 3);
+    if constexpr (dr::is_jit_array_v<Float>) {
+        UInt32 threshold = dr::opaque<UInt32>(face_count() * 3),
+               offset    = dr::opaque<UInt32>(vertex_count()),
+               index     = dr::arange<UInt32>(result->face_count() * 3);
 
-        result->m_faces = ek::select(index < threshold, result->m_faces,
+        result->m_faces = dr::select(index < threshold, result->m_faces,
                                      result->m_faces + offset);
 
-        ek::eval(result->m_faces, result->m_vertex_positions,
+        dr::eval(result->m_faces, result->m_vertex_positions,
                  result->m_vertex_normals, result->m_vertex_texcoords);
     } else {
         uint32_t  offset = vertex_count(),
@@ -438,9 +438,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
-    auto&& vertex_texcoords = ek::migrate(m_vertex_texcoords, AllocType::Host);
-    if constexpr (ek::is_jit_array_v<Float>)
-        ek::sync_thread();
+    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
+    if constexpr (dr::is_jit_array_v<Float>)
+        dr::sync_thread();
 
     const InputFloat *ptr = vertex_texcoords.data();
 
@@ -455,7 +455,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
         bbox.expand(ScalarPoint3f(u, v, 0.f));
     }
     mesh->m_vertex_positions =
-        ek::load<FloatStorage>(pos_out.data(), m_vertex_count * 3);
+        dr::load<FloatStorage>(pos_out.data(), m_vertex_count * 3);
     mesh->m_bbox = bbox;
     mesh->initialize();
 
@@ -477,7 +477,7 @@ MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
     ensure_pmf_built();
 
-    using Index = ek::replace_scalar_t<Float, ScalarIndex>;
+    using Index = dr::replace_scalar_t<Float, ScalarIndex>;
     Index face_idx;
     Point2f sample = sample_;
 
@@ -494,7 +494,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     Point2f b = warp::square_to_uniform_triangle(sample);
 
     PositionSample3f ps;
-    ps.p     = ek::fmadd(e0, b.x(), ek::fmadd(e1, b.y(), p0));
+    ps.p     = dr::fmadd(e0, b.x(), dr::fmadd(e1, b.y(), p0));
     ps.time  = time;
     ps.pdf   = m_area_pmf.normalization();
     ps.delta = false;
@@ -504,8 +504,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
-        ps.uv = ek::fmadd(uv0, (1.f - b.x() - b.y()),
-                          ek::fmadd(uv1, b.x(), uv2 * b.y()));
+        ps.uv = dr::fmadd(uv0, (1.f - b.x() - b.y()),
+                          dr::fmadd(uv1, b.x(), uv2 * b.y()));
     } else {
         ps.uv = b;
     }
@@ -515,13 +515,13 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        ps.n = ek::fmadd(n0, (1.f - b.x() - b.y()),
-                         ek::fmadd(n1, b.x(), n2 * b.y()));
+        ps.n = dr::fmadd(n0, (1.f - b.x() - b.y()),
+                         dr::fmadd(n1, b.x(), n2 * b.y()));
     } else {
-        ps.n = ek::cross(e0, e1);
+        ps.n = dr::cross(e0, e1);
     }
 
-    ps.n = ek::normalize(ps.n);
+    ps.n = dr::normalize(ps.n);
 
     if (m_flip_normals)
         ps.n = -ps.n;
@@ -544,8 +544,8 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
         m_parameterization->ray_intersect_preliminary(
             ray, /* coherent = */ true, active);
 
-    if (ek::none_or<false>(pi.is_valid()))
-        return ek::zero<SurfaceInteraction3f>();
+    if (dr::none_or<false>(pi.is_valid()))
+        return dr::zero<SurfaceInteraction3f>();
 
     pi.shape = this;
 
@@ -572,13 +572,13 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
-    Float b1  = ek::dot(du, rel), b2 = ek::dot(dv, rel),
-          a11 = ek::dot(du, du), a12 = ek::dot(du, dv),
-          a22 = ek::dot(dv, dv),
-          inv_det = ek::rcp(a11 * a22 - a12 * a12);
+    Float b1  = dr::dot(du, rel), b2 = dr::dot(dv, rel),
+          a11 = dr::dot(du, du), a12 = dr::dot(du, dv),
+          a22 = dr::dot(dv, dv),
+          inv_det = dr::rcp(a11 * a22 - a12 * a12);
 
-    Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
-          v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
+    Float u = dr::fmsub (a22, b1, a12 * b2) * inv_det,
+          v = dr::fnmadd(a12, b1, a11 * b2) * inv_det,
           w = 1.f - u - v;
 
     return {w, u, v};
@@ -593,7 +593,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    constexpr bool IsDiff = ek::is_diff_array_v<Float>;
+    constexpr bool IsDiff = dr::is_diff_array_v<Float>;
 
     Vector3u fi = face_indices(pi.prim_index, active);
 
@@ -610,27 +610,27 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
 
         if (has_flag(ray_flags, RayFlags::DetachShape)) {
-            p0 = ek::detach<true>(p0);
-            p1 = ek::detach<true>(p1);
-            p2 = ek::detach<true>(p2);
+            p0 = dr::detach<true>(p0);
+            p1 = dr::detach<true>(p1);
+            p2 = dr::detach<true>(p2);
         }
 
         /* When either the input ray or the vertex positions (p0, p1, p2) have
            gradient tracking enabled, we need to perform a differentiable
            ray-triangle intersection (done here via the method by Moeller and
-           Trumbore). The result is mapped through `ek::replace_grad` so that we
+           Trumbore). The result is mapped through `dr::replace_grad` so that we
            don't actually recompute the primal intersection but only use the
            intersection computation graph for derivative tracking (this assumes
            that the function is eventually differentiated). When the
            'FollowShape' ray flag is specified, we skip this part since the
            intersection position should be rigidly attached to the mesh. */
-        if (ek::grad_enabled(p0, p1, p2, ray.o, ray.d /* <- any enabled? */) &&
+        if (dr::grad_enabled(p0, p1, p2, ray.o, ray.d /* <- any enabled? */) &&
             !has_flag(ray_flags, RayFlags::FollowShape)) {
             auto [t_d, prim_uv_d, hit] =
                 moeller_trumbore(ray, p0, p1, p2);
 
-            prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
-            t = ek::replace_grad(t, t_d);
+            prim_uv = dr::replace_grad(prim_uv, prim_uv_d);
+            t = dr::replace_grad(t, t_d);
         }
     }
 
@@ -641,19 +641,19 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
 
-    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+    SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
 
     // Re-interpolate intersection using barycentric coordinates
-    si.p = ek::fmadd(p0, b0, ek::fmadd(p1, b1, p2 * b2));
+    si.p = dr::fmadd(p0, b0, dr::fmadd(p1, b1, p2 * b2));
 
     // Potentially recompute the distance traveled to the surface interaction hit point
     if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape))
-        t = ek::sqrt(ek::squared_norm(si.p - ray.o) / ek::squared_norm(ray.d));
+        t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
 
-    si.t = ek::select(active, t, ek::Infinity<Float>);
+    si.t = dr::select(active, t, dr::Infinity<Float>);
 
     // Face normal
-    si.n = ek::normalize(ek::cross(dp0, dp1));
+    si.n = dr::normalize(dr::cross(dp0, dp1));
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
@@ -668,24 +668,24 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                 uv2 = vertex_texcoord(fi[2], active);
 
         if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
-            uv0 = ek::detach<true>(uv0);
-            uv1 = ek::detach<true>(uv1);
-            uv2 = ek::detach<true>(uv2);
+            uv0 = dr::detach<true>(uv0);
+            uv1 = dr::detach<true>(uv1);
+            uv2 = dr::detach<true>(uv2);
         }
 
-        si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
+        si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));
 
         if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
-            Float det     = ek::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
-                  inv_det = ek::rcp(det);
+            Float det     = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+                  inv_det = dr::rcp(det);
 
-            Mask valid = ek::neq(det, 0.f);
+            Mask valid = dr::neq(det, 0.f);
 
-            si.dp_du[valid] = ek::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-            si.dp_dv[valid] = ek::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+            si.dp_du[valid] = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+            si.dp_dv[valid] = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
         }
     }
 
@@ -704,13 +704,13 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
                has_flag(ray_flags, RayFlags::dNSdUV))) {
         if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
-            n0 = ek::detach<true>(n0);
-            n1 = ek::detach<true>(n1);
-            n2 = ek::detach<true>(n2);
+            n0 = dr::detach<true>(n0);
+            n1 = dr::detach<true>(n1);
+            n2 = dr::detach<true>(n2);
         }
 
-        Normal3f n = ek::fmadd(n2, b2, ek::fmadd(n1, b1, n0 * b0));
-        Float il = ek::rsqrt(ek::squared_norm(n));
+        Normal3f n = dr::fmadd(n2, b2, dr::fmadd(n1, b1, n0 * b0));
+        Float il = dr::rsqrt(dr::squared_norm(n));
         n *= il;
 
         si.sh_frame.n = n;
@@ -725,10 +725,10 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 
-            si.dn_du = ek::fnmadd(n, ek::dot(n, si.dn_du), si.dn_du);
-            si.dn_dv = ek::fnmadd(n, ek::dot(n, si.dn_dv), si.dn_dv);
+            si.dn_du = dr::fnmadd(n, dr::dot(n, si.dn_du), si.dn_du);
+            si.dn_dv = dr::fnmadd(n, dr::dot(n, si.dn_dv), si.dn_dv);
         } else {
-            si.dn_du = si.dn_dv = ek::zero<Vector3f>();
+            si.dn_du = si.dn_dv = dr::zero<Vector3f>();
         }
     } else {
         si.sh_frame.n = si.n;
@@ -747,15 +747,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         /* Solve a least squares problem to determine
            the UV coordinates within the current triangle */
-        Float b1  = ek::dot(dp0, rel),
-              b2  = ek::dot(dp1, rel),
-              a11 = ek::dot(dp0, dp0),
-              a12 = ek::dot(dp0, dp1),
-              a22 = ek::dot(dp1, dp1),
-              inv_det = ek::rcp(a11 * a22 - a12 * a12);
+        Float b1  = dr::dot(dp0, rel),
+              b2  = dr::dot(dp1, rel),
+              a11 = dr::dot(dp0, dp0),
+              a12 = dr::dot(dp0, dp1),
+              a22 = dr::dot(dp1, dp1),
+              inv_det = dr::rcp(a11 * a22 - a12 * a12);
 
-        Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
-              v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
+        Float u = dr::fmsub (a22, b1, a12 * b2) * inv_det,
+              v = dr::fnmadd(a12, b1, a11 * b2) * inv_det,
               w = 1.f - u - v;
 
         /* If we are using flat shading, just fall back to a signed distance
@@ -767,7 +767,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             // Equilateral triangle
             Point2f tp0 = Point2f(0, 0),
                     tp1 = Point2f(1, 0),
-                    tp2 = Point2f(0.5f, 0.5f * ek::sqrt(3.f));
+                    tp2 = Point2f(0.5f, 0.5f * dr::sqrt(3.f));
 
             Point2f p = tp0 * w + tp1 * u + tp2 * v;
 
@@ -777,25 +777,25 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                      v0 = p - tp0,
                      v1 = p - tp1,
                      v2 = p - tp2;
-            Vector2f pq0 = v0 - e0 * ek::clamp(ek::dot(v0, e0) / ek::dot(e0, e0), 0, 1),
-                     pq1 = v1 - e1 * ek::clamp(ek::dot(v1, e1) / ek::dot(e1, e1), 0, 1),
-                     pq2 = v2 - e2 * ek::clamp(ek::dot(v2, e2) / ek::dot(e2, e2), 0, 1);
-            Float s = ek::sign(e0.x() * e2.y() - e0.y() * e2.x());
-            Vector2f d = ek::min(ek::min(Vector2f(ek::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
-                                         Vector2f(ek::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
-                                         Vector2f(ek::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
-            Float dist = ek::sqrt(d.x());
+            Vector2f pq0 = v0 - e0 * dr::clamp(dr::dot(v0, e0) / dr::dot(e0, e0), 0, 1),
+                     pq1 = v1 - e1 * dr::clamp(dr::dot(v1, e1) / dr::dot(e1, e1), 0, 1),
+                     pq2 = v2 - e2 * dr::clamp(dr::dot(v2, e2) / dr::dot(e2, e2), 0, 1);
+            Float s = dr::sign(e0.x() * e2.y() - e0.y() * e2.x());
+            Vector2f d = dr::min(dr::min(Vector2f(dr::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
+                                         Vector2f(dr::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
+                                         Vector2f(dr::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
+            Float dist = dr::sqrt(d.x());
             // Scale s.t. farthest point / barycenter is one
-            dist /= ek::sqrt(3.f) / 6.f;
+            dist /= dr::sqrt(3.f) / 6.f;
             si.boundary_test = dist;
         } else {
-            Normal3f normal = ek::fmadd(n0, w, ek::fmadd(n1, u, n2 * v));
+            Normal3f normal = dr::fmadd(n0, w, dr::fmadd(n1, u, n2 * v));
 
             // Dot product between surface normal and the ray direction is 0 at silhouette points
-            Float dp = ek::dot(normal, -ray.d);
+            Float dp = dr::dot(normal, -ray.d);
 
             // Add non-linearity by squaring the returned value
-            si.boundary_test = ek::sqr(dp);
+            si.boundary_test = dr::sqr(dp);
         }
     }
 
@@ -822,13 +822,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
         if (dim == 3 && name.find("color") != std::string::npos) {
             InputFloat *ptr = (InputFloat *) data.data();
             for (size_t i = 0; i < count; ++i) {
-                ek::store(ptr, srgb_model_fetch(ek::load<Color<InputFloat, 3>>(ptr)));
+                dr::store(ptr, srgb_model_fetch(dr::load<Color<InputFloat, 3>>(ptr)));
                 ptr += 3;
             }
         }
     }
 
-    FloatStorage buffer = ek::load<FloatStorage>(data.data(), count * dim);
+    FloatStorage buffer = dr::load<FloatStorage>(data.data(), count * dim);
     m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 
@@ -1063,7 +1063,7 @@ static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
-    m_vertex_buffer_ptr = (void*) m_vertex_positions.data(); // triggers ek::eval()
+    m_vertex_buffer_ptr = (void*) m_vertex_positions.data(); // triggers dr::eval()
     build_input.type                           = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
     build_input.triangleArray.indexFormat      = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
@@ -1115,10 +1115,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     bool result = false;
     for (auto &[name, attribute]: m_mesh_attributes)
-        result |= ek::grad_enabled(attribute.buf);
-    result |= ek::grad_enabled(m_vertex_positions);
-    result |= ek::grad_enabled(m_vertex_normals);
-    result |= ek::grad_enabled(m_vertex_texcoords);
+        result |= dr::grad_enabled(attribute.buf);
+    result |= dr::grad_enabled(m_vertex_positions);
+    result |= dr::grad_enabled(m_vertex_normals);
+    result |= dr::grad_enabled(m_vertex_texcoords);
     return result;
 }
 

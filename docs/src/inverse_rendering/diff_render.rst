@@ -192,9 +192,9 @@ Gradient-based optimization
 ---------------------------
 
 Mitsuba can either optimize scene parameters in *standalone mode* using
-optimization algorithms implemented on top of Enoki, or it can be used as a
+optimization algorithms implemented on top of Dr.Jit, or it can be used as a
 differentiable node within a larger PyTorch computation graph. Communication
-between PyTorch and Enoki causes certain overheads, hence we generally
+between PyTorch and Dr.Jit causes certain overheads, hence we generally
 recommend standalone mode unless your computation contains elements where
 PyTorch provides a clear advantage (for example, neural network building blocks
 like fully connected layers or convolutions). The remainder of this section
@@ -330,7 +330,7 @@ Forward-mode differentiation
 
 The previous example demonstrated *reverse-mode differentiation* (a.k.a.
 backpropagation) where a desired small change to the output image was converted
-into a small change to the scene parameters. Mitsuba and Enoki can also
+into a small change to the scene parameters. Mitsuba and Dr.Jit can also
 propagate derivatives in the other direction, i.e., from input parameters to
 the output image. This technique, known as *forward mode differentiation*, is
 not usable for optimization, as each parameter must be handled using a separate
@@ -364,11 +364,11 @@ the graph.
 
     # Forward-propagate previously assigned gradients. The set_gradient call
     # above already indicated which derivatives to propagate, hence we use the
-    # static FloatD.forward() function. See the Enoki documentation for further
+    # static FloatD.forward() function. See the Dr.Jit documentation for further
     # explanations of the various ways in which derivatives can be propagated.
     Float.forward()
 
-See Enoki's documentation regarding `automatic differentiation
+See Dr.Jit's documentation regarding `automatic differentiation
 <https://enoki.readthedocs.io/en/master/autodiff.html>`_ for further details on
 these steps. Finally, we can write the resulting gradient visualization to
 disk.

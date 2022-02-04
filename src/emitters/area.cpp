@@ -63,7 +63,7 @@ public:
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -89,14 +89,14 @@ public:
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
+        SurfaceInteraction3f si(ps, dr::zero<Wavelength>());
         auto [wavelength, wav_weight] =
             sample_wavelengths(si, wavelength_sample, active);
         si.time = time;
         si.wavelengths = wavelength;
 
         // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
-        Spectrum weight = pos_weight * wav_weight * ek::Pi<ScalarFloat>;
+        Spectrum weight = pos_weight * wav_weight * dr::Pi<ScalarFloat>;
 
         return { si.spawn_ray(si.to_world(local)),
                  depolarizer<Spectrum>(weight) };
@@ -113,13 +113,13 @@ public:
         if (likely(!m_radiance->is_spatially_varying())) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
             ds = m_shape->sample_direction(it, sample, active);
-            active &= ek::dot(ds.d, ds.n) < 0.f && ek::neq(ds.pdf, 0.f);
+            active &= dr::dot(ds.d, ds.n) < 0.f && dr::neq(ds.pdf, 0.f);
 
             si = SurfaceInteraction3f(ds, it.wavelengths);
         } else {
             // Importance sample the texture, then map onto the shape
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
-            active &= ek::neq(pdf, 0.f);
+            active &= dr::neq(pdf, 0.f);
 
             si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             si.wavelengths = it.wavelengths;
@@ -132,13 +132,13 @@ public:
             ds.delta = false;
             ds.d = ds.p - it.p;
 
-            Float dist_squared = ek::squared_norm(ds.d);
-            ds.dist = ek::sqrt(dist_squared);
+            Float dist_squared = dr::squared_norm(ds.d);
+            ds.dist = dr::sqrt(dist_squared);
             ds.d /= ds.dist;
 
-            Float dp = ek::dot(ds.d, ds.n);
+            Float dp = dr::dot(ds.d, ds.n);
             active &= dp < 0.f;
-            ds.pdf = ek::select(active, pdf / ek::norm(ek::cross(si.dp_du, si.dp_dv)) *
+            ds.pdf = dr::select(active, pdf / dr::norm(dr::cross(si.dp_du, si.dp_dv)) *
                                         dist_squared / -dp, 0.f);
         }
 
@@ -154,7 +154,7 @@ public:
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        Float dp = ek::dot(ds.d, ds.n);
+        Float dp = dr::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
         Float value;
@@ -165,18 +165,18 @@ public:
             SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
             active &= si.is_valid();
 
-            value = m_radiance->pdf_position(ds.uv, active) * ek::sqr(ds.dist) /
-                    (ek::norm(ek::cross(si.dp_du, si.dp_dv)) * -dp);
+            value = m_radiance->pdf_position(ds.uv, active) * dr::sqr(ds.dist) /
+                    (dr::norm(dr::cross(si.dp_du, si.dp_dv)) * -dp);
         }
 
-        return ek::select(active, value, 0.f);
+        return dr::select(active, value, 0.f);
     }
 
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        Float dp = ek::dot(ds.d, ds.n);
+        Float dp = dr::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
         SurfaceInteraction3f si(ds, it.wavelengths);
@@ -184,7 +184,7 @@ public:
         if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
             spec *= m_d65->eval(si, active);
 
-        return ek::select(active, depolarizer<Spectrum>(spec), 0.f);
+        return dr::select(active, depolarizer<Spectrum>(spec), 0.f);
     }
 
     std::pair<PositionSample3f, Float>
@@ -201,18 +201,18 @@ public:
         } else {
             // Importance sample texture
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
-            active &= ek::neq(pdf, 0.f);
+            active &= dr::neq(pdf, 0.f);
 
             auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             active &= si.is_valid();
-            pdf /= ek::norm(ek::cross(si.dp_du, si.dp_dv));
+            pdf /= dr::norm(dr::cross(si.dp_du, si.dp_dv));
 
             ps = si;
             ps.pdf = pdf;
             ps.delta = false;
         }
 
-        Float weight = ek::select(active && ps.pdf > 0.f, ek::rcp(ps.pdf), Float(0.f));
+        Float weight = dr::select(active && ps.pdf > 0.f, dr::rcp(ps.pdf), Float(0.f));
         return { ps, weight };
     }
 

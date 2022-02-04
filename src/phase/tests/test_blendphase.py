@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 
 
 def test01_create(variant_scalar_rgb):
@@ -59,11 +59,11 @@ def test02_eval_all(variant_scalar_rgb):
     ctx = PhaseFunctionContext(None)
 
     # Evaluate the blend of both components
-    expected = (1.0 - weight) * ek.InvFourPi + weight * ek.InvFourPi * (1.0 - g) / (
+    expected = (1.0 - weight) * dr.InvFourPi + weight * dr.InvFourPi * (1.0 - g) / (
         1.0 + g
     ) ** 2
     value = phase.eval(ctx, mi, wo)
-    assert ek.allclose(value, expected)
+    assert dr.allclose(value, expected)
 
 
 def test03_sample_all(variant_scalar_rgb):
@@ -94,14 +94,14 @@ def test03_sample_all(variant_scalar_rgb):
     # components are chosen.
 
     # -- Sample above weight: first component (isotropic) is selected
-    expected_a = ek.InvFourPi
+    expected_a = dr.InvFourPi
     wo_a, pdf_a = phase.sample(ctx, mi, 0.3, [0.5, 0.5])
-    assert ek.allclose(pdf_a, expected_a)
+    assert dr.allclose(pdf_a, expected_a)
 
     # -- Sample below weight: second component (HG) is selected
-    expected_b = ek.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_b = dr.InvFourPi * (1 - g) / (1 + g) ** 2
     wo_b, pdf_b = phase.sample(ctx, mi, 0.1, [0, 0])
-    assert ek.allclose(pdf_b, expected_b)
+    assert dr.allclose(pdf_b, expected_b)
 
 
 def test04_eval_components(variant_scalar_rgb):
@@ -133,13 +133,13 @@ def test04_eval_components(variant_scalar_rgb):
 
     ctx.component = 0
     value0 = phase.eval(ctx, mi, wo)
-    expected0 = (1 - weight) * ek.InvFourPi
-    assert ek.allclose(value0, expected0)
+    expected0 = (1 - weight) * dr.InvFourPi
+    assert dr.allclose(value0, expected0)
 
     ctx.component = 1
     value1 = phase.eval(ctx, mi, wo)
-    expected1 = weight * ek.InvFourPi * (1.0 - g) / (1.0 + g) ** 2
-    assert ek.allclose(value1, expected1)
+    expected1 = weight * dr.InvFourPi * (1.0 - g) / (1.0 + g) ** 2
+    assert dr.allclose(value1, expected1)
 
 
 def test05_sample_components(variant_scalar_rgb):
@@ -172,21 +172,21 @@ def test05_sample_components(variant_scalar_rgb):
     # -- Select component 0: first component is always sampled
     ctx.component = 0
 
-    expected_a = (1 - weight) *  ek.InvFourPi
+    expected_a = (1 - weight) *  dr.InvFourPi
     wo_a, pdf_a = phase.sample(ctx, mi, 0.3, [0.5, 0.5])
-    assert ek.allclose(pdf_a, expected_a)
+    assert dr.allclose(pdf_a, expected_a)
 
-    expected_b = (1 - weight) *  ek.InvFourPi
+    expected_b = (1 - weight) *  dr.InvFourPi
     wo_b, pdf_b = phase.sample(ctx, mi, 0.1, [0.5, 0.5])
-    assert ek.allclose(pdf_b, expected_b)
+    assert dr.allclose(pdf_b, expected_b)
 
     # -- Select component 1: second component is always sampled
     ctx.component = 1
 
-    expected_a = weight *  ek.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_a = weight *  dr.InvFourPi * (1 - g) / (1 + g) ** 2
     wo_a, pdf_a = phase.sample(ctx, mi, 0.3, [0.0, 0.0])
-    assert ek.allclose(pdf_a, expected_a)
+    assert dr.allclose(pdf_a, expected_a)
 
-    expected_b = weight * ek.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_b = weight * dr.InvFourPi * (1 - g) / (1 + g) ** 2
     wo_b, pdf_b = phase.sample(ctx, mi, 0.1, [0.0, 0.0])
-    assert ek.allclose(pdf_b, expected_b)
+    assert dr.allclose(pdf_b, expected_b)

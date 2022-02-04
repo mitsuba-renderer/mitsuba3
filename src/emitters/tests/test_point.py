@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 spectrum_strings = {
@@ -49,14 +49,14 @@ def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
-    assert ek.allclose(res, spec * 4 * ek.Pi)
-    assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(ray.d, warp.square_to_uniform_sphere(dir_sample))
-    assert ek.allclose(ray.o, Vector3f(emitter_pos))
+    assert dr.allclose(res, spec * 4 * dr.Pi)
+    assert dr.allclose(ray.time, time)
+    assert dr.allclose(ray.wavelengths, wav)
+    assert dr.allclose(ray.d, warp.square_to_uniform_sphere(dir_sample))
+    assert dr.allclose(ray.o, Vector3f(emitter_pos))
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
@@ -69,13 +69,13 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = ek.zero(SurfaceInteraction3f)
+    it = dr.zero(SurfaceInteraction3f)
     it.p = [0.0, -2.0, 4.5]  # Some position
     it.time = 0.3
 
     # Direction from the position to the point emitter
     d = -it.p + emitter_pos
-    dist = ek.norm(d)
+    dist = dr.norm(d)
     d /= dist
 
     # Sample a direction on the emitter
@@ -85,11 +85,11 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     assert ds.time == it.time
     assert ds.pdf == 1.0
     assert ds.delta
-    assert ek.allclose(ds.d, d)
+    assert dr.allclose(ds.d, d)
 
     # Evaluate the spectrum
     spec = spectrum.eval(it) / (dist**2)
-    assert ek.allclose(res, spec)
+    assert dr.allclose(res, spec)
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
@@ -100,27 +100,27 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = ek.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(SurfaceInteraction3f, 3)
     it.p = [[0.0, 0.0, 0.0], [-2.0, 0.0, -2.0],
             [4.5, 4.5, 0.0]]  # Some positions
     it.time = [0.3, 0.3, 0.3]
 
     # Direction from the position to the point emitter
     d = -it.p + emitter_pos
-    dist = ek.norm(d)
+    dist = dr.norm(d)
     d /= dist
 
     # Sample direction on the emitter
     sample = [0.1, 0.5]
     ds, res = emitter.sample_direction(it, sample)
 
-    assert ek.all(ds.time == it.time)
-    assert ek.all(ds.pdf == 1.0)
-    assert ek.all(ds.delta)
-    assert ek.allclose(ds.d, d, atol=1e-3)
+    assert dr.all(ds.time == it.time)
+    assert dr.all(ds.pdf == 1.0)
+    assert dr.all(ds.delta)
+    assert dr.allclose(ds.d, d, atol=1e-3)
     assert emitter.pdf_direction(it, ds) == 0
 
     # Evaluate the spectrum
     spec = spectrum.eval(it) / (dist**2)
-    assert ek.allclose(res, spec)
-    assert ek.allclose(emitter.eval_direction(it, ds), spec)
+    assert dr.allclose(res, spec)
+    assert dr.allclose(emitter.eval_direction(it, ds), spec)

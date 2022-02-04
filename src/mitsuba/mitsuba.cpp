@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
         logger->set_log_level(log_level_mitsuba[std::min(log_level, 2)]);
 
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-        ::LogLevel log_level_enoki[] = {
+        ::LogLevel log_level_drjit[] = {
             ::LogLevel::Error,
             ::LogLevel::Warn,
             ::LogLevel::Info,
@@ -227,10 +227,10 @@ int main(int argc, char *argv[]) {
             ::LogLevel::Debug,
             ::LogLevel::Trace
         };
-        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 6)]);
+        jit_set_log_level_stderr(log_level_drjit[std::min(log_level, 6)]);
 #endif
 
-        // Initialize enoki-thread with the requested number of threads
+        // Initialize drjit-thread with the requested number of threads
         size_t thread_count = Thread::thread_count();
         if (*arg_threads) {
             thread_count = arg_threads->as_int();
@@ -299,9 +299,9 @@ int main(int argc, char *argv[]) {
             }
         }
 #else
-        ENOKI_MARK_USED(arg_wavefront);
-        ENOKI_MARK_USED(arg_optim_lev);
-        ENOKI_MARK_USED(arg_source);
+        DRJIT_MARK_USED(arg_wavefront);
+        DRJIT_MARK_USED(arg_optim_lev);
+        DRJIT_MARK_USED(arg_source);
 #endif
 
         if (!cuda && !llvm &&

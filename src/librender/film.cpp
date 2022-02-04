@@ -67,7 +67,7 @@ Film<Float, Spectrum>::sensor_response_function() {
 
 MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
                                                         const ScalarVector2u &crop_size) {
-    if (ek::any(crop_offset + crop_size > m_size))
+    if (dr::any(crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification: crop_offset(%u, %u) + "
               "crop_size(%u, %u) > size(%u, %u)", crop_offset.x(), crop_offset.y(),
               crop_size.x(), crop_size.y(), m_size.x(), m_size.y());

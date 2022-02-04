@@ -62,7 +62,7 @@ public:
         }
 
         m_flags = +PhaseFunctionFlags::Anisotropic;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 
@@ -74,13 +74,13 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta = m_distr.sample(sample2.x());
-        Float sin_theta = ek::safe_sqrt(1.f - cos_theta * cos_theta);
+        Float sin_theta = dr::safe_sqrt(1.f - cos_theta * cos_theta);
         auto [sin_phi, cos_phi] =
-            ek::sincos(2.f * ek::Pi<ScalarFloat> * sample2.y());
+            dr::sincos(2.f * dr::Pi<ScalarFloat> * sample2.y());
         Vector3f wo{ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta };
         wo        = -mi.to_world(wo);
         Float pdf = m_distr.eval_pdf_normalized(-cos_theta, active) *
-                    ek::InvTwoPi<ScalarFloat>;
+                    dr::InvTwoPi<ScalarFloat>;
 
         return { wo, pdf };
     }
@@ -92,7 +92,7 @@ public:
 
         Float cos_theta = dot(wo, mi.wi);
         return m_distr.eval_pdf_normalized(-cos_theta, active) *
-               ek::InvTwoPi<ScalarFloat>;
+               dr::InvTwoPi<ScalarFloat>;
     }
 
     void traverse(TraversalCallback *callback) override {

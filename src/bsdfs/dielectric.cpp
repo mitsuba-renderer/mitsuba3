@@ -196,7 +196,7 @@ public:
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
 
         m_flags = m_components[0] | m_components[1];
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -216,11 +216,11 @@ public:
         Float t_i = 1.f - r_i;
 
         // Lobe selection
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r_i && active;
-            bs.pdf = ek::select(selected_r, r_i, t_i);
+            bs.pdf = dr::select(selected_r, r_i, t_i);
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -231,15 +231,15 @@ public:
         }
         Mask selected_t = !selected_r && active;
 
-        bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
-        bs.sampled_type      = ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
+        bs.sampled_component = dr::select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_type      = dr::select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
                                                       UInt32(+BSDFFlags::DeltaTransmission));
 
-        bs.wo = ek::select(selected_r,
+        bs.wo = dr::select(selected_r,
                        reflect(si.wi),
                        refract(si.wi, cos_theta_t, eta_ti));
 
-        bs.eta = ek::select(selected_r, Float(1.f), eta_it);
+        bs.eta = dr::select(selected_r, Float(1.f), eta_it);
 
         UnpolarizedSpectrum reflectance = 1.f, transmittance = 1.f;
         if (m_specular_reflectance)
@@ -262,7 +262,7 @@ public:
                      T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta));
 
             if (likely(has_reflection && has_transmission)) {
-                weight = ek::select(selected_r, R, T) / bs.pdf;
+                weight = dr::select(selected_r, R, T) / bs.pdf;
             } else if (has_reflection || has_transmission) {
                 weight = has_reflection ? R : T;
                 bs.pdf = 1.f;
@@ -271,8 +271,8 @@ public:
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
-                     s_axis_out = ek::normalize(ek::cross(n, wi_hat));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(n, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(n, wi_hat));
 
             /* Rotate in/out reference vector of `weight` s.t. it aligns with the
                implicit Stokes bases of -wo_hat & wi_hat. */
@@ -280,10 +280,10 @@ public:
                                                    -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                     wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
 
-            if (ek::any_or<true>(selected_r))
+            if (dr::any_or<true>(selected_r))
                 weight[selected_r] *= mueller::absorber(reflectance);
 
-            if (ek::any_or<true>(selected_t))
+            if (dr::any_or<true>(selected_t))
                 weight[selected_t] *= mueller::absorber(transmittance);
 
         } else {
@@ -293,18 +293,18 @@ public:
                 weight = has_reflection ? r_i : t_i;
             }
 
-            if (ek::any_or<true>(selected_r))
+            if (dr::any_or<true>(selected_r))
                 weight[selected_r] *= reflectance;
 
-            if (ek::any_or<true>(selected_t))
+            if (dr::any_or<true>(selected_t))
                 weight[selected_t] *= transmittance;
         }
 
-        if (ek::any_or<true>(selected_t)) {
+        if (dr::any_or<true>(selected_t)) {
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
             Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
-            weight[selected_t] *= ek::sqr(factor);
+            weight[selected_t] *= dr::sqr(factor);
         }
 
         return { bs, weight & active };

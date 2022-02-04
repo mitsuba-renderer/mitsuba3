@@ -308,7 +308,7 @@ static_assert(sizeof(ref<Object>) == sizeof(Object *),
 NAMESPACE_END(mitsuba)
 
 // Necessary when printing jit arrays of pointers to mitsuba::Object
-namespace enoki {
+namespace drjit {
     template <typename Array>
     struct call_support<mitsuba::Object, Array> {
         static constexpr const char *Domain = "mitsuba::Object";

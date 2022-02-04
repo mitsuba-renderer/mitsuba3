@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 xml_spectrum = {
@@ -54,7 +54,7 @@ def test_construct(variant_scalar_rgb):
     # Test if the emitter can be constructed as intended
     emitter = make_emitter()
     assert not emitter.bbox().valid()  # Degenerate bounding box
-    assert ek.allclose(
+    assert dr.allclose(
         emitter.world_transform().matrix,
         [[1, 0, 0, 0],
          [0, 1, 0, 0],
@@ -64,7 +64,7 @@ def test_construct(variant_scalar_rgb):
 
     # Check transform setup correctness
     emitter = make_emitter(direction=[0, 0, -1])
-    assert ek.allclose(
+    assert dr.allclose(
         emitter.world_transform().matrix,
         [[0, 1, 0, 0],
          [1, 0, 0, 0],
@@ -87,14 +87,14 @@ def test_eval(variant_scalar_spectral, spectrum_key):
     it = SurfaceInteraction3f()
     it.p = [0, 0, 0]
     it.wi = wi
-    assert ek.allclose(emitter.eval(it), 0.)
+    assert dr.allclose(emitter.eval(it), 0.)
 
     # Incident direction off the illuminated direction
     wi = [0, 0, 1.1]
     it = SurfaceInteraction3f()
     it.p = [0, 0, 0]
     it.wi = wi
-    assert ek.allclose(emitter.eval(it), 0.)
+    assert dr.allclose(emitter.eval(it), 0.)
 
 
 @pytest.mark.parametrize("spectrum_key", xml_spectrum_keys)
@@ -109,7 +109,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     emitter = make_emitter(direction, spectrum_key)
     spectrum = make_spectrum(spectrum_key)
 
-    it = ek.zero(SurfaceInteraction3f)
+    it = dr.zero(SurfaceInteraction3f)
     # Some position inside the unit sphere (i.e. within the emitter's default bounding sphere)
     it.p = [-0.5, 0.3, -0.1]
     it.time = 1.0
@@ -119,24 +119,24 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     ds, res = emitter.sample_direction(it, samples)
 
     # Direction should point *towards* the illuminated direction
-    assert ek.allclose(ds.d, -direction / ek.norm(direction))
-    assert ek.allclose(ds.pdf, 1.)
-    assert ek.allclose(emitter.pdf_direction(it, ds), 0.)
-    assert ek.allclose(ds.time, it.time)
+    assert dr.allclose(ds.d, -direction / dr.norm(direction))
+    assert dr.allclose(ds.pdf, 1.)
+    assert dr.allclose(emitter.pdf_direction(it, ds), 0.)
+    assert dr.allclose(ds.time, it.time)
 
     # Check spectrum (no attenuation vs distance)
     spec = spectrum.eval(it)
-    assert ek.allclose(res, spec)
+    assert dr.allclose(res, spec)
 
 
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
 def test_sample_ray(variant_scalar_spectral, direction):
-    import enoki as ek
+    import drjit as dr
     from mitsuba.core import Vector3f
 
     emitter = make_emitter(direction=direction)
     direction = Vector3f(direction)
-    direction = direction / ek.norm(direction)
+    direction = direction / dr.norm(direction)
 
     time = 1.0
     wavelength_sample = 0.3
@@ -159,8 +159,8 @@ def test_sample_ray(variant_scalar_spectral, direction):
             time, wavelength_sample, spatial_sample, directional_sample)
 
         # Check that ray direction is what is expected
-        assert ek.allclose(ray.d, direction)
+        assert dr.allclose(ray.d, direction)
 
         # Check that ray origin is outside of bounding sphere
         # Bounding sphere is centered at world origin and has radius 1 without scene
-        assert ek.norm(ray.o) >= 1.
+        assert dr.norm(ray.o) >= 1.

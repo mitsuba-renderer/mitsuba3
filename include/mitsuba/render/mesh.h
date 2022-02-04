@@ -9,7 +9,7 @@
 #include <mitsuba/core/properties.h>
 #include <unordered_map>
 #include <mutex>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -27,7 +27,7 @@ public:
     using InputVector3f = Vector<InputFloat, 3>;
     using InputNormal3f = Normal<InputFloat, 3>;
 
-    using FloatStorage = DynamicBuffer<ek::replace_scalar_t<Float, InputFloat>>;
+    using FloatStorage = DynamicBuffer<dr::replace_scalar_t<Float, InputFloat>>;
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
@@ -84,40 +84,40 @@ public:
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MTS_INLINE auto face_indices(Index index,
-                                 ek::mask_t<Index> active = true) const {
-        using Result = ek::Array<ek::uint32_array_t<Index>, 3>;
-        return ek::gather<Result>(m_faces, index, active);
+                                 dr::mask_t<Index> active = true) const {
+        using Result = dr::Array<dr::uint32_array_t<Index>, 3>;
+        return dr::gather<Result>(m_faces, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index,
-                                    ek::mask_t<Index> active = true) const {
-        using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 3>;
-        return ek::gather<Result>(m_vertex_positions, index, active);
+                                    dr::mask_t<Index> active = true) const {
+        using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 3>;
+        return dr::gather<Result>(m_vertex_positions, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index,
-                                  ek::mask_t<Index> active = true) const {
-        using Result = Normal<ek::replace_scalar_t<Index, InputFloat>, 3>;
-        return ek::gather<Result>(m_vertex_normals, index, active);
+                                  dr::mask_t<Index> active = true) const {
+        using Result = Normal<dr::replace_scalar_t<Index, InputFloat>, 3>;
+        return dr::gather<Result>(m_vertex_normals, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index,
-                                    ek::mask_t<Index> active = true) const {
-        using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 2>;
-        return ek::gather<Result>(m_vertex_texcoords, index, active);
+                                    dr::mask_t<Index> active = true) const {
+        using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 2>;
+        return dr::gather<Result>(m_vertex_texcoords, index, active);
     }
 
     /// Does this mesh have per-vertex normals?
-    bool has_vertex_normals() const { return ek::width(m_vertex_normals) != 0; }
+    bool has_vertex_normals() const { return dr::width(m_vertex_normals) != 0; }
 
     /// Does this mesh have per-vertex texture coordinates?
-    bool has_vertex_texcoords() const { return ek::width(m_vertex_texcoords) != 0; }
+    bool has_vertex_texcoords() const { return dr::width(m_vertex_texcoords) != 0; }
 
     /// Does this mesh have additional mesh attributes?
     bool has_mesh_attributes() const { return m_mesh_attributes.size() > 0; }
@@ -202,21 +202,21 @@ public:
      */
     template <typename T, typename Ray3>
     std::pair<T, Point<T, 2>>
-    ray_intersect_triangle_impl(const ek::uint32_array_t<T> &index,
+    ray_intersect_triangle_impl(const dr::uint32_array_t<T> &index,
                                 const Ray3 &ray,
-                                ek::mask_t<T> active = true) const {
+                                dr::mask_t<T> active = true) const {
         using Point3T = Point<T, 3>;
-        using Faces = ek::Array<ek::uint32_array_t<T>, 3>;
+        using Faces = dr::Array<dr::uint32_array_t<T>, 3>;
 
         Faces fi;
         Point3T p0, p1, p2;
 #if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
-        // Ensure we don't rely on enoki-jit when called from an LLVM kernel
-        if constexpr (!ek::is_array_v<T> && ek::is_llvm_array_v<Float>) {
-            fi = ek::gather<Faces>(m_faces_ptr, index, active);
-            p0 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[0], active),
-            p1 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[1], active),
-            p2 = ek::gather<InputPoint3f>(m_vertex_positions_ptr, fi[2], active);
+        // Ensure we don't rely on drjit-core when called from an LLVM kernel
+        if constexpr (!dr::is_array_v<T> && dr::is_llvm_array_v<Float>) {
+            fi = dr::gather<Faces>(m_faces_ptr, index, active);
+            p0 = dr::gather<InputPoint3f>(m_vertex_positions_ptr, fi[0], active),
+            p1 = dr::gather<InputPoint3f>(m_vertex_positions_ptr, fi[1], active),
+            p2 = dr::gather<InputPoint3f>(m_vertex_positions_ptr, fi[2], active);
         } else
 #endif
         {
@@ -227,13 +227,13 @@ public:
         }
 
         auto [t, uv, hit] = moeller_trumbore(ray, p0, p1, p2, active);
-        return { ek::select(hit, t, ek::Infinity<T>), uv };
+        return { dr::select(hit, t, dr::Infinity<T>), uv };
     }
 
     MTS_INLINE PreliminaryIntersection3f
     ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
                            Mask active = true) const {
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
         std::tie(pi.t, pi.prim_uv) = ray_intersect_triangle_impl<Float>(index, ray, active);
         pi.prim_index = index;
         pi.shape = this;
@@ -247,9 +247,9 @@ public:
     }
 
 #define MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(N)                            \
-    using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;                \
-    using MaskP##N    = ek::mask_t<FloatP##N>;                             \
-    using UInt32P##N  = ek::uint32_array_t<FloatP##N>;                     \
+    using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;                \
+    using MaskP##N    = dr::mask_t<FloatP##N>;                             \
+    using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                     \
     using Point2fP##N = Point<FloatP##N, 2>;                               \
     using Point3fP##N = Point<FloatP##N, 3>;                               \
     using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                        \
@@ -311,7 +311,7 @@ protected:
     void build_parameterization();
 
     // Ensures that the sampling table are ready.
-    ENOKI_INLINE void ensure_pmf_built() const {
+    DRJIT_INLINE void ensure_pmf_built() const {
         if (unlikely(m_area_pmf.empty()))
             const_cast<Mesh *>(this)->build_pmf();
     }
@@ -338,25 +338,25 @@ protected:
      *    barycentric coordinates
      */
     template <typename T, typename Ray3>
-    std::tuple<T, Point<T, 2>, ek::mask_t<T>>
+    std::tuple<T, Point<T, 2>, dr::mask_t<T>>
     moeller_trumbore(const Ray3 &ray, const Point<T, 3> &p0,
                      const Point<T, 3> &p1, const Point<T, 3> &p2,
-                     ek::mask_t<T> active = true) const {
+                     dr::mask_t<T> active = true) const {
         using Vector3T = Vector<T, 3>;
         Vector3T e1 = p1 - p0, e2 = p2 - p0;
 
-        Vector3T pvec = ek::cross(ray.d, e2);
-        T inv_det = ek::rcp(ek::dot(e1, pvec));
+        Vector3T pvec = dr::cross(ray.d, e2);
+        T inv_det = dr::rcp(dr::dot(e1, pvec));
 
         Vector3T tvec = ray.o - p0;
-        T u = ek::dot(tvec, pvec) * inv_det;
+        T u = dr::dot(tvec, pvec) * inv_det;
         active &= u >= 0.f && u <= 1.f;
 
-        Vector3T qvec = ek::cross(tvec, e1);
-        T v = ek::dot(ray.d, qvec) * inv_det;
+        Vector3T qvec = dr::cross(tvec, e1);
+        T v = dr::dot(ray.d, qvec) * inv_det;
         active &= v >= 0.f && u + v <= 1.f;
 
-        T t = ek::dot(e2, qvec) * inv_det;
+        T t = dr::dot(e2, qvec) * inv_det;
         active &= t >= 0.f && t <= ray.maxt;
 
         return { t, { u, v }, active };
@@ -375,7 +375,7 @@ protected:
         mutable FloatStorage buf;
 
         MeshAttribute migrate(AllocType at) const {
-            return MeshAttribute { size, type, ek::migrate(buf, at) };
+            return MeshAttribute { size, type, dr::migrate(buf, at) };
         }
     };
 
@@ -386,17 +386,17 @@ protected:
                                Mask active) const {
         using StorageType =
             std::conditional_t<Size == 1,
-                               ek::replace_scalar_t<Float, InputFloat>,
-                               ek::replace_scalar_t<Color3f, InputFloat>>;
+                               dr::replace_scalar_t<Float, InputFloat>,
+                               dr::replace_scalar_t<Color3f, InputFloat>>;
         using ReturnType = std::conditional_t<Size == 1, Float, Color3f>;
 
         if (type == MeshAttributeType::Vertex) {
             auto fi = face_indices(si.prim_index, active);
             Point3f b = barycentric_coordinates(si, active);
 
-            StorageType v0 = ek::gather<StorageType>(buf, fi[0], active),
-                        v1 = ek::gather<StorageType>(buf, fi[1], active),
-                        v2 = ek::gather<StorageType>(buf, fi[2], active);
+            StorageType v0 = dr::gather<StorageType>(buf, fi[0], active),
+                        v1 = dr::gather<StorageType>(buf, fi[1], active),
+                        v2 = dr::gather<StorageType>(buf, fi[2], active);
 
             // Barycentric interpolation
             if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
@@ -409,12 +409,12 @@ protected:
                 c1 = srgb_model_eval<UnpolarizedSpectrum>(v1, si.wavelengths);
                 c2 = srgb_model_eval<UnpolarizedSpectrum>(v2, si.wavelengths);
 
-                return ek::fmadd(c0, b[0], ek::fmadd(c1, b[1], c2 * b[2]));
+                return dr::fmadd(c0, b[0], dr::fmadd(c1, b[1], c2 * b[2]));
             } else {
-                return (ReturnType) ek::fmadd(v0, b[0], ek::fmadd(v1, b[1], v2 * b[2]));
+                return (ReturnType) dr::fmadd(v0, b[0], dr::fmadd(v1, b[1], v2 * b[2]));
             }
         } else {
-            StorageType v = ek::gather<StorageType>(buf, si.prim_index, active);
+            StorageType v = dr::gather<StorageType>(buf, si.prim_index, active);
             if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
                 return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
             } else {
@@ -438,7 +438,7 @@ protected:
 
 #if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
     /* Data pointer to ensure triangle intersection routine doesn't rely on
-       enoki-jit when called from an LLVM kernel */
+       drjit-core when called from an LLVM kernel */
     float* m_vertex_positions_ptr;
     uint32_t* m_faces_ptr;
 #endif

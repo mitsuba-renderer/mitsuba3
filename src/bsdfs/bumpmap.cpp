@@ -95,7 +95,7 @@ public:
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));
         m_flags = m_nested_bsdf->flags();
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -111,7 +111,7 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= ek::any(ek::neq(unpolarized_spectrum(weight), 0.f));
+        active &= dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
 
         // Transform sampled 'wo' back to original frame and check orientation
         Vector3f perturbed_wo = perturbed_si.to_world(bs.wo);
@@ -135,7 +135,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return ek::select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        return dr::select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -151,7 +151,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return ek::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        return dr::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -170,7 +170,7 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
-        return { value & active, ek::select(active, pdf, 0.f) };
+        return { value & active, dr::select(active, pdf, 0.f) };
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
@@ -178,22 +178,22 @@ public:
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);
 
         // Compute perturbed differential geometry
-        Vector3f dp_du = ek::fmadd(si.sh_frame.n, grad_uv.x() - ek::dot(si.sh_frame.n, si.dp_du), si.dp_du);
-        Vector3f dp_dv = ek::fmadd(si.sh_frame.n, grad_uv.y() - ek::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
+        Vector3f dp_du = dr::fmadd(si.sh_frame.n, grad_uv.x() - dr::dot(si.sh_frame.n, si.dp_du), si.dp_du);
+        Vector3f dp_dv = dr::fmadd(si.sh_frame.n, grad_uv.y() - dr::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
 
         // Bump-mapped shading normal
         Frame3f result;
-        result.n = ek::normalize(ek::cross(dp_du, dp_dv));
+        result.n = dr::normalize(dr::cross(dp_du, dp_dv));
 
         // Flip if not aligned with geometric normal
-        result.n[ek::dot(si.n, result.n) < .0f] *= -1.f;
+        result.n[dr::dot(si.n, result.n) < .0f] *= -1.f;
 
         // Convert to small rotation from original shading frame
         result.n = si.to_local(result.n);
 
         // Gram-schmidt orthogonalization to compute local shading frame
-        result.s = ek::normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
-        result.t = ek::cross(result.n, result.s);
+        result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
+        result.t = dr::cross(result.n, result.s);
 
         return result;
     }

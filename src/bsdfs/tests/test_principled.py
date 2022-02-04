@@ -1,5 +1,5 @@
 import pytest
-import enoki as ek
+import drjit as dr
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 def test01_chi2_principled_normal(variants_vec_backends_once_rgb):
@@ -11,7 +11,7 @@ def test01_chi2_principled_normal(variants_vec_backends_once_rgb):
              <float name="clearcoat" value="0.8"/>
              <float name="eta" value="1.33"/>
           """
-    wi = ek.normalize(ScalarVector3f([1, 0, 1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("principled", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -32,7 +32,7 @@ def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
              <float name="spec_trans" value="0.7"/>
              <float name="eta" value="1.3296"/>
           """
-    wi = ek.normalize(ScalarVector3f([1, 0, 1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("principled", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -52,7 +52,7 @@ def test03_chi2_spec_trans_inside(variants_vec_backends_once_rgb):
              <float name="spec_trans" value="0.7"/>
              <float name="eta" value="1.5"/>
           """
-    wi = ek.normalize(ScalarVector3f([1, 0, -1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, -1]))
     sample_func, pdf_func = BSDFAdapter("principled", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -74,7 +74,7 @@ def test04_chi2_spec_trans_less_dense(variants_vec_backends_once_rgb):
              <float name="spec_trans" value="0.5"/>
              <float name="eta" value="0.5"/>
           """
-    wi = ek.normalize(ScalarVector3f([1, 0, 1]))
+    wi = dr.normalize(ScalarVector3f([1, 0, 1]))
     sample_func, pdf_func = BSDFAdapter("principled", xml, wi=wi)
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
@@ -157,8 +157,8 @@ def test05_eval_pdf(variant_scalar_rgb):
     pdf = []
     evaluate = []
     for i in range(20):
-        theta = i / 19.0 * (ek.Pi / 2)
-        wo = [ek.sin(theta), 0, ek.cos(theta)]
-        assert ek.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
-        assert ek.allclose(bsdf.eval(ctx, si, wo=wo)[0], evaluate_true[i])
+        theta = i / 19.0 * (dr.Pi / 2)
+        wo = [dr.sin(theta), 0, dr.cos(theta)]
+        assert dr.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
+        assert dr.allclose(bsdf.eval(ctx, si, wo=wo)[0], evaluate_true[i])
         

@@ -72,15 +72,15 @@ public:
 
     void set_sample_count(uint32_t spp) override {
         // Find stratification grid resolution with aspect ratio close to 1
-        m_resolution[1] = uint32_t(ek::sqrt(ScalarFloat(spp)));
+        m_resolution[1] = uint32_t(dr::sqrt(ScalarFloat(spp)));
         m_resolution[0] = (spp + m_resolution[1] - 1) / m_resolution[1];
 
-        if (spp != ek::hprod(m_resolution))
-            Log(Warn, "Sample count rounded up to %i", ek::hprod(m_resolution));
+        if (spp != dr::hprod(m_resolution))
+            Log(Warn, "Sample count rounded up to %i", dr::hprod(m_resolution));
 
-        m_sample_count = ek::hprod(m_resolution);
-        m_inv_sample_count = ek::rcp(ScalarFloat(m_sample_count));
-        m_inv_resolution   = ek::rcp(ScalarPoint2f(m_resolution));
+        m_sample_count = dr::hprod(m_resolution);
+        m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
+        m_inv_resolution   = dr::rcp(ScalarPoint2f(m_resolution));
         m_resolution_x_div = m_resolution[0];
     }
 
@@ -152,7 +152,7 @@ public:
 
     void schedule_state() override {
         Base::schedule_state();
-        ek::schedule(m_permutation_seed);
+        dr::schedule(m_permutation_seed);
     }
 
     std::string to_string() const override {
@@ -182,7 +182,7 @@ private:
     ScalarPoint2u m_resolution;
     ScalarPoint2f m_inv_resolution;
     ScalarFloat m_inv_sample_count;
-    ek::divisor<uint32_t> m_resolution_x_div;
+    dr::divisor<uint32_t> m_resolution_x_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

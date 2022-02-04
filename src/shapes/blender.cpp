@@ -1,5 +1,5 @@
 #include <mitsuba/render/mesh.h>
-#include <enoki/color.h>
+#include <drjit/color.h>
 #include <array>
 
 // Blender Mesh format types for the exporter
@@ -212,7 +212,7 @@ public:
             const blender::MVert &v1 = verts[loops[tri_loop.tri[1]].v];
             const blender::MVert &v2 = verts[loops[tri_loop.tri[2]].v];
 
-            ek::Array<InputPoint3f, 3> face_points;
+            dr::Array<InputPoint3f, 3> face_points;
             face_points[0] = InputPoint3f(v0.co[0], v0.co[1], v0.co[2]);
             face_points[1] = InputPoint3f(v1.co[0], v1.co[1], v1.co[2]);
             face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
@@ -222,14 +222,14 @@ public:
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
-                normal = m_to_world.scalar().transform_affine(ek::cross(e1, e2));
-                if(unlikely(ek::all(ek::eq(normal, 0.f))))
+                normal = m_to_world.scalar().transform_affine(dr::cross(e1, e2));
+                if(unlikely(dr::all(dr::eq(normal, 0.f))))
                     continue; // Degenerate triangle, ignore it
                 else
-                    normal = ek::normalize(normal);
+                    normal = dr::normalize(normal);
             }
 
-            InputFloat color_factor = ek::rcp(255.f);
+            InputFloat color_factor = dr::rcp(255.f);
 
             for (int i = 0; i < 3; i++) {
                 const size_t loop_index = tri_loop.tri[i];
@@ -243,10 +243,10 @@ public:
                 if (blender::ME_SMOOTH & face.flag || m_face_normals) {
                     // Store per vertex normals if the face is smooth or if the mesh is globally flat
                     normal = m_to_world.scalar().transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
-                    if(unlikely(ek::all(ek::eq(normal, 0.f))))
+                    if(unlikely(dr::all(dr::eq(normal, 0.f))))
                         fail("Mesh has invalid normals!");
                     else
-                        normal = ek::normalize(normal);
+                        normal = dr::normalize(normal);
                     vert_key.smooth = true;
                 } else {
                     // vert_key.smooth = false (default), flat shading
@@ -291,9 +291,9 @@ public:
                         for (size_t p = 0; p < cols.size(); p++) {
                             const blender::MLoopCol &loop_col = cols[p].second[loop_index];
                             // Blender stores vertex colors in sRGB space
-                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.r * color_factor));
-                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.g * color_factor));
-                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.b * color_factor));
+                            tmp_cols[p].push_back(dr::srgb_to_linear(loop_col.r * color_factor));
+                            tmp_cols[p].push_back(dr::srgb_to_linear(loop_col.g * color_factor));
+                            tmp_cols[p].push_back(dr::srgb_to_linear(loop_col.b * color_factor));
                         }
                     }
                     triangle[i] = vert_id;
@@ -307,15 +307,15 @@ public:
             return;
 
         m_face_count = (ScalarSize) tmp_triangles.size();
-        m_faces = ek::load<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
+        m_faces = dr::load<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
 
         m_vertex_count = vertex_ctr;
-        m_vertex_positions = ek::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
+        m_vertex_positions = dr::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
         if (!m_face_normals)
-            m_vertex_normals = ek::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
+            m_vertex_normals = dr::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)
-            m_vertex_texcoords = ek::load<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
+            m_vertex_texcoords = dr::load<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
 
         if (has_cols) {
             for (size_t p = 0; p < cols.size(); p++)

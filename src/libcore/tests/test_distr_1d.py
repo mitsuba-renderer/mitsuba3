@@ -1,5 +1,5 @@
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def test01_discr_empty(variants_all_backends_once):
@@ -40,16 +40,16 @@ def test04_discr_basic(variants_vec_backends_once):
     assert len(x) == 3
 
     assert x.sum() == 6
-    assert ek.allclose(x.normalization(), 1.0 / 6.0)
+    assert dr.allclose(x.normalization(), 1.0 / 6.0)
     assert x.pmf() == [1, 3, 2]
     assert x.cdf() == [1, 4, 6]
     assert x.eval_pmf([1, 2, 0]) == [3, 2, 1]
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.eval_pmf_normalized([1, 2, 0]),
         Float([3, 2, 1]) / 6.0
     )
-    assert ek.allclose(
+    assert dr.allclose(
         x.eval_cdf_normalized([1, 2, 0]),
         Float([4, 6, 1]) / 6.0
     )
@@ -61,7 +61,7 @@ def test04_discr_basic(variants_vec_backends_once):
     x.update()
     assert x.cdf() == [1, 2, 3]
     assert x.sum() == 3
-    assert ek.allclose(x.normalization(), 1.0 / 3.0)
+    assert dr.allclose(x.normalization(), 1.0 / 3.0)
 
 
 def test05_discr_sample(variants_vec_backends_once):
@@ -74,28 +74,28 @@ def test05_discr_sample(variants_vec_backends_once):
     assert x.sample([1 / 6.0 - eps, 1 / 6.0 + eps]) == [0, 1]
     assert x.sample([4 / 6.0 - eps, 4 / 6.0 + eps]) == [1, 2]
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.sample_pmf([-1, 0, 1, 2]),
         ([0, 0, 2, 2], Float([1, 1, 2, 2]) / 6)
     )
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.sample_pmf([1 / 6.0 - eps, 1 / 6.0 + eps]),
         ([0, 1], Float([1, 3]) / 6)
     )
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.sample_pmf([4 / 6.0 - eps, 4 / 6.0 + eps]),
         ([1, 2], Float([3, 2]) / 6)
     )
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.sample_reuse([0, 1 / 12.0, 1 / 6.0 - eps, 1 / 6.0 + eps]),
         ([0, 0, 0, 1], Float([0, .5, 1, 0])),
         atol=3 * eps
     )
 
-    assert ek.allclose(
+    assert dr.allclose(
         x.sample_reuse_pmf([0, 1 / 12.0, 1 / 6.0 - eps, 1 / 6.0 + eps]),
         ([0, 0, 0, 1], Float([0, .5, 1, 0]), Float([1, 1, 1, 3]) / 6),
         atol=3 * eps
@@ -106,22 +106,22 @@ def test06_discr_bruteforce(variants_vec_backends_once):
     # Brute force validation of discrete distribution sampling
     from mitsuba.core import DiscreteDistribution, Float, PCG32, UInt64
 
-    rng = PCG32(initseq=ek.arange(UInt64, 50))
+    rng = PCG32(initseq=dr.arange(UInt64, 50))
 
     for size in range(2, 20, 5):
         for i in range(2, 50, 5):
             density = Float(rng.next_uint32_bounded(i)[0:size])
-            if ek.hsum(density) == 0:
+            if dr.hsum(density) == 0:
                 continue
             ddistr = DiscreteDistribution(density)
 
-            x = ek.linspace(Float, 0, 1, 20)
+            x = dr.linspace(Float, 0, 1, 20)
             y = ddistr.sample(x)
-            z = ek.gather(Float, ddistr.cdf(), y - 1, y > 0)
+            z = dr.gather(Float, ddistr.cdf(), y - 1, y > 0)
             x *= ddistr.sum()
 
             # Did we sample the right interval?
-            assert ek.all((x > z) | (ek.eq(x, 0) & (x >= z)))
+            assert dr.all((x > z) | (dr.eq(x, 0) & (x >= z)))
 
 
 def test07_discr_leading_trailing_zeros(variants_vec_backends_once):
@@ -187,22 +187,22 @@ def test12_cont_eval(variants_vec_backends_once):
     d = ContinuousDistribution([2, 3], [1, 2])
     eps = 1e-6
 
-    assert ek.allclose(d.integral(), 3.0 / 2.0)
-    assert ek.allclose(d.normalization(), 2.0 / 3.0)
-    assert ek.allclose(
+    assert dr.allclose(d.integral(), 3.0 / 2.0)
+    assert dr.allclose(d.normalization(), 2.0 / 3.0)
+    assert dr.allclose(
         d.eval_pdf_normalized([1, 2 - eps, 2, 2.5, 3, 3 + eps, 4]),
         [0, 0, 2.0 / 3.0, 1.0, 4.0 / 3.0, 0, 0]
     )
-    assert ek.allclose(
+    assert dr.allclose(
         d.eval_cdf_normalized([1, 2, 2.5, 3, 4]),
         [0, 0, 5.0 / 12.0, 1, 1]
     )
 
     assert d.sample([0, 1]) == [2, 3]
     x, pdf = d.sample_pdf([0, 0.5, 1])
-    dx = (ek.sqrt(10) - 2) / 2
+    dx = (dr.sqrt(10) - 2) / 2
     assert x == [2, 2 + dx, 3]
-    assert ek.allclose(
+    assert dr.allclose(
         pdf,
         [2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0]
     )
@@ -212,13 +212,13 @@ def test13_cont_func(variants_vec_backends_once):
     # Test continuous 1D distribution integral against analytic result
     from mitsuba.core import ContinuousDistribution, Float
 
-    x = ek.linspace(Float, -2, 2, 513)
-    y = ek.exp(-ek.sqr(x))
+    x = dr.linspace(Float, -2, 2, 513)
+    y = dr.exp(-dr.sqr(x))
 
     d = ContinuousDistribution([-2, 2], y)
-    assert ek.allclose(d.integral(), ek.sqrt(ek.Pi) * ek.erf(2.0))
-    assert ek.allclose(d.eval_pdf([1]), [ek.exp(-1)])
-    assert ek.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
+    assert dr.allclose(d.integral(), dr.sqrt(dr.Pi) * dr.erf(2.0))
+    assert dr.allclose(d.eval_pdf([1]), [dr.exp(-1)])
+    assert dr.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
 
 
 def test14_irrcont_empty(variants_all_backends_once):
@@ -273,24 +273,24 @@ def test18_irrcont_simple_function(variants_vec_backends_once):
     from mitsuba.core import IrregularContinuousDistribution, Float
 
     d = IrregularContinuousDistribution([1, 1.5, 1.8, 5], [1, 3, 0, 1])
-    assert ek.allclose(d.integral(), 3.05)
-    assert ek.allclose(
+    assert dr.allclose(d.integral(), 3.05)
+    assert dr.allclose(
         d.eval_pdf([0, 1, 2, 3, 4, 5, 6]),
         [0, 1, 0.0625, 0.375, 0.6875, 1, 0]
     )
-    assert ek.allclose(
+    assert dr.allclose(
         d.eval_cdf([0, 1, 2, 3, 4, 5, 6]),
         [0, 0, 1.45625, 1.675, 2.20625, 3.05, 3.05]
     )
 
-    assert ek.allclose(
-        d.sample(ek.linspace(Float, 0, 1, 11)),
+    assert dr.allclose(
+        d.sample(dr.linspace(Float, 0, 1, 11)),
         [1., 1.21368, 1.35622, 1.47111, 1.58552, 2.49282,
          3.35949, 3.8938, 4.31714, 4.67889, 5.]
     )
 
-    assert ek.allclose(
-        d.sample_pdf(ek.linspace(Float, 0, 1, 11)),
+    assert dr.allclose(
+        d.sample_pdf(dr.linspace(Float, 0, 1, 11)),
         ([1., 1.21368, 1.35622, 1.47111, 1.58552, 2.49282,
           3.35949, 3.8938, 4.31714, 4.67889, 5.],
          Float([1., 1.85472, 2.42487, 2.88444, 2.14476, 0.216506,

@@ -36,7 +36,7 @@ MTS_PY_EXPORT(ShapeKDTree) {
         .def_method(ShapeKDTree, build)
         .def_method(ShapeKDTree, build);
 #else
-    ENOKI_MARK_USED(m);
+    DRJIT_MARK_USED(m);
 #endif
 }
 
@@ -86,8 +86,8 @@ MTS_PY_EXPORT(Scene) {
         .def_method(Scene, bbox)
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
-        .def("emitters_ek", &Scene::emitters_ek, D(Scene, emitters_ek))
-        .def("shapes_ek", &Scene::shapes_ek, D(Scene, shapes_ek))
+        .def("emitters_dr", &Scene::emitters_dr, D(Scene, emitters_dr))
+        .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def_method(Scene, environment)
         .def("shapes", [](const Scene &scene) {
             py::list result;

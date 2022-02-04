@@ -161,7 +161,7 @@ public:
 
     /// Is this an isotropic microfacet distribution?
     bool is_isotropic() const {
-        if constexpr (ek::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_array_v<Float>)
             return m_alpha_u.index() == m_alpha_v.index();
         else
             return m_alpha_u == m_alpha_v;
@@ -185,25 +185,25 @@ public:
     Float eval(const Vector3f &m) const {
         Float alpha_uv = m_alpha_u * m_alpha_v,
               cos_theta         = Frame3f::cos_theta(m),
-              cos_theta_2       = ek::sqr(cos_theta),
+              cos_theta_2       = dr::sqr(cos_theta),
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
             // Beckmann distribution function for Gaussian random surfaces
-            result = ek::exp(-(ek::sqr(m.x() / m_alpha_u) +
-                               ek::sqr(m.y() / m_alpha_v)) /
+            result = dr::exp(-(dr::sqr(m.x() / m_alpha_u) +
+                               dr::sqr(m.y() / m_alpha_v)) /
                              cos_theta_2) /
-                     (ek::Pi<Float> * alpha_uv * ek::sqr(cos_theta_2));
+                     (dr::Pi<Float> * alpha_uv * dr::sqr(cos_theta_2));
         } else {
             // GGX / Trowbridge-Reitz distribution function
             result =
-                ek::rcp(ek::Pi<Float> * alpha_uv *
-                        ek::sqr(ek::sqr(m.x() / m_alpha_u) +
-                                ek::sqr(m.y() / m_alpha_v) + ek::sqr(m.z())));
+                dr::rcp(dr::Pi<Float> * alpha_uv *
+                        dr::sqr(dr::sqr(m.x() / m_alpha_u) +
+                                dr::sqr(m.y() / m_alpha_v) + dr::sqr(m.z())));
         }
 
         // Prevent potential numerical issues in other stages of the model
-        return ek::select(result * cos_theta > 1e-20f, result, 0.f);
+        return dr::select(result * cos_theta > 1e-20f, result, 0.f);
     }
 
     /**
@@ -220,7 +220,7 @@ public:
         Float result = eval(m);
 
         if (m_sample_visible)
-            result *= smith_g1(wi, m) * ek::abs_dot(wi, m) / Frame3f::cos_theta(wi);
+            result *= smith_g1(wi, m) * dr::abs_dot(wi, m) / Frame3f::cos_theta(wi);
         else
             result *= Frame3f::cos_theta(m);
 
@@ -248,44 +248,44 @@ public:
 
             // Sample azimuth component (identical for Beckmann & GGX)
             if (is_isotropic()) {
-                std::tie(sin_phi, cos_phi) = ek::sincos((2.f * ek::Pi<Float>) * sample.y());
+                std::tie(sin_phi, cos_phi) = dr::sincos((2.f * dr::Pi<Float>) * sample.y());
 
                 alpha_2 = m_alpha_u * m_alpha_u;
             } else {
                 Float ratio  = m_alpha_v / m_alpha_u,
-                      tmp    = ratio * ek::tan((2.f * ek::Pi<Float>) * sample.y());
+                      tmp    = ratio * dr::tan((2.f * dr::Pi<Float>) * sample.y());
 
-                cos_phi = ek::rsqrt(ek::fmadd(tmp, tmp, 1.f));
-                cos_phi = ek::mulsign(cos_phi, ek::abs(sample.y() - .5f) - .25f);
+                cos_phi = dr::rsqrt(dr::fmadd(tmp, tmp, 1.f));
+                cos_phi = dr::mulsign(cos_phi, dr::abs(sample.y() - .5f) - .25f);
 
                 sin_phi = cos_phi * tmp;
 
-                alpha_2 = ek::rcp(ek::sqr(cos_phi / m_alpha_u) +
-                                  ek::sqr(sin_phi / m_alpha_v));
+                alpha_2 = dr::rcp(dr::sqr(cos_phi / m_alpha_u) +
+                                  dr::sqr(sin_phi / m_alpha_v));
             }
 
             // Sample elevation component
             if (m_type == MicrofacetType::Beckmann) {
                 // Beckmann distribution function for Gaussian random surfaces
-                cos_theta = ek::rsqrt(ek::fnmadd(alpha_2, ek::log(1.f - sample.x()), 1.f));
-                cos_theta_2 = ek::sqr(cos_theta);
+                cos_theta = dr::rsqrt(dr::fnmadd(alpha_2, dr::log(1.f - sample.x()), 1.f));
+                cos_theta_2 = dr::sqr(cos_theta);
 
                 // Compute probability density of the sampled position
-                Float cos_theta_3 = ek::max(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = (1.f - sample.x()) / (ek::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
+                Float cos_theta_3 = dr::max(cos_theta_2 * cos_theta, 1e-20f);
+                pdf = (1.f - sample.x()) / (dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
             } else {
                 // GGX / Trowbridge-Reitz distribution function
                 Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
-                cos_theta = ek::rsqrt(1.f + tan_theta_m_2);
-                cos_theta_2 = ek::sqr(cos_theta);
+                cos_theta = dr::rsqrt(1.f + tan_theta_m_2);
+                cos_theta_2 = dr::sqr(cos_theta);
 
                 // Compute probability density of the sampled position
                 Float temp = 1.f + tan_theta_m_2 / alpha_2,
-                      cos_theta_3 = ek::max(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = ek::rcp(ek::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * ek::sqr(temp));
+                      cos_theta_3 = dr::max(cos_theta_2 * cos_theta, 1e-20f);
+                pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::sqr(temp));
             }
 
-            Float sin_theta = ek::sqrt(1.f - cos_theta_2);
+            Float sin_theta = dr::sqrt(1.f - cos_theta_2);
 
             return {
                 Normal3f(cos_phi * sin_theta,
@@ -298,7 +298,7 @@ public:
             Float sin_phi, cos_phi, cos_theta;
 
             // Step 1: stretch wi
-            Vector3f wi_p = ek::normalize(Vector3f(
+            Vector3f wi_p = dr::normalize(Vector3f(
                 m_alpha_u * wi.x(),
                 m_alpha_v * wi.y(),
                 wi.z()
@@ -312,13 +312,13 @@ public:
 
             // Step 3: rotate & unstretch
             slope = Vector2f(
-                ek::fmsub(cos_phi, slope.x(), sin_phi * slope.y()) * m_alpha_u,
-                ek::fmadd(sin_phi, slope.x(), cos_phi * slope.y()) * m_alpha_v);
+                dr::fmsub(cos_phi, slope.x(), sin_phi * slope.y()) * m_alpha_u,
+                dr::fmadd(sin_phi, slope.x(), cos_phi * slope.y()) * m_alpha_v);
 
             // Step 4: compute normal & PDF
-            Normal3f m = ek::normalize(Vector3f(-slope.x(), -slope.y(), 1));
+            Normal3f m = dr::normalize(Vector3f(-slope.x(), -slope.y(), 1));
 
-            Float pdf = eval(m) * smith_g1(wi, m) * ek::abs_dot(wi, m) /
+            Float pdf = eval(m) * smith_g1(wi, m) * dr::abs_dot(wi, m) /
                         Frame3f::cos_theta(wi);
 
             return { m, pdf };
@@ -339,27 +339,27 @@ public:
      *     The microfacet normal
      */
     Float smith_g1(const Vector3f &v, const Vector3f &m) const {
-        Float xy_alpha_2 = ek::sqr(m_alpha_u * v.x()) + ek::sqr(m_alpha_v * v.y()),
-              tan_theta_alpha_2 = xy_alpha_2 / ek::sqr(v.z()),
+        Float xy_alpha_2 = dr::sqr(m_alpha_u * v.x()) + dr::sqr(m_alpha_v * v.y()),
+              tan_theta_alpha_2 = xy_alpha_2 / dr::sqr(v.z()),
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
-            Float a = ek::rsqrt(tan_theta_alpha_2), a_sqr = ek::sqr(a);
+            Float a = dr::rsqrt(tan_theta_alpha_2), a_sqr = dr::sqr(a);
             /* Use a fast and accurate (<0.35% rel. error) rational
                approximation to the shadowing-masking function */
-            result = ek::select(a >= 1.6f, 1.f,
+            result = dr::select(a >= 1.6f, 1.f,
                                 (3.535f * a + 2.181f * a_sqr) /
                                     (1.f + 2.276f * a + 2.577f * a_sqr));
         } else {
-            result = 2.f / (1.f + ek::sqrt(1.f + tan_theta_alpha_2));
+            result = 2.f / (1.f + dr::sqrt(1.f + tan_theta_alpha_2));
         }
 
         // Perpendicular incidence -- no shadowing/masking
-        ek::masked(result, ek::eq(xy_alpha_2, 0.f)) = 1.f;
+        dr::masked(result, dr::eq(xy_alpha_2, 0.f)) = 1.f;
 
         /* Ensure consistent orientation (can't see the back
            of the microfacet from the front and vice versa) */
-        ek::masked(result, ek::dot(v, m) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
+        dr::masked(result, dr::dot(v, m) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
 
         return result;
     }
@@ -373,69 +373,69 @@ public:
                performs a numerical inversion with better behavior */
 
             Float tan_theta_i =
-                ek::safe_sqrt(ek::fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
+                dr::safe_sqrt(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
                 cos_theta_i;
-            Float cot_theta_i = ek::rcp(tan_theta_i);
+            Float cot_theta_i = dr::rcp(tan_theta_i);
 
             /* Search interval -- everything is parameterized
                in the erf() domain */
-            Float maxval = ek::erf(cot_theta_i);
+            Float maxval = dr::erf(cot_theta_i);
 
             /* Start with a good initial guess (analytic solution for
                theta_i = pi/2, which is the most nonlinear case) */
-            sample = ek::max(ek::min(sample, 1.f - 1e-6f), 1e-6f);
-            Float x = maxval - (maxval + 1.f) * ek::erf(ek::sqrt(-ek::log(sample.x())));
+            sample = dr::max(dr::min(sample, 1.f - 1e-6f), 1e-6f);
+            Float x = maxval - (maxval + 1.f) * dr::erf(dr::sqrt(-dr::log(sample.x())));
 
             // Normalization factor for the CDF
-            sample.x() *= 1.f + maxval + ek::InvSqrtPi<Float> *
-                          tan_theta_i * ek::exp(-ek::sqr(cot_theta_i));
+            sample.x() *= 1.f + maxval + dr::InvSqrtPi<Float> *
+                          tan_theta_i * dr::exp(-dr::sqr(cot_theta_i));
 
             // Three Newton iterations
-            ENOKI_NOUNROLL for (size_t i = 0; i < 3; ++i) {
-                Float slope = ek::erfinv(x),
-                      value = 1.f + x + ek::InvSqrtPi<Float> * tan_theta_i *
-                              ek::exp(-ek::sqr(slope)) - sample.x(),
+            DRJIT_NOUNROLL for (size_t i = 0; i < 3; ++i) {
+                Float slope = dr::erfinv(x),
+                      value = 1.f + x + dr::InvSqrtPi<Float> * tan_theta_i *
+                              dr::exp(-dr::sqr(slope)) - sample.x(),
                       derivative = 1.f - slope * tan_theta_i;
 
                 x -= value / derivative;
             }
 
             // Now convert back into a slope value
-            return ek::erfinv(Vector2f(x, ek::fmsub(2.f, sample.y(), 1.f)));
+            return dr::erfinv(Vector2f(x, dr::fmsub(2.f, sample.y(), 1.f)));
         } else {
             // Choose a projection direction and re-scale the sample
             Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
             Float s = 0.5f * (1.f + cos_theta_i);
-            p.y() = ek::lerp(ek::safe_sqrt(1.f - ek::sqr(p.x())), p.y(), s);
+            p.y() = dr::lerp(dr::safe_sqrt(1.f - dr::sqr(p.x())), p.y(), s);
 
             // Project onto chosen side of the hemisphere
             Float x = p.x(), y = p.y(),
-                  z = ek::safe_sqrt(1.f - ek::squared_norm(p));
+                  z = dr::safe_sqrt(1.f - dr::squared_norm(p));
 
             // Convert to slope
-            Float sin_theta_i = ek::safe_sqrt(1.f - ek::sqr(cos_theta_i));
-            Float norm = ek::rcp(ek::fmadd(sin_theta_i, y, cos_theta_i * z));
-            return Vector2f(ek::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
+            Float sin_theta_i = dr::safe_sqrt(1.f - dr::sqr(cos_theta_i));
+            Float norm = dr::rcp(dr::fmadd(sin_theta_i, y, cos_theta_i * z));
+            return Vector2f(dr::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
         }
     }
 
 
 protected:
     void configure() {
-        m_alpha_u = ek::max(m_alpha_u, 1e-4f);
-        m_alpha_v = ek::max(m_alpha_v, 1e-4f);
+        m_alpha_u = dr::max(m_alpha_u, 1e-4f);
+        m_alpha_v = dr::max(m_alpha_v, 1e-4f);
     }
 
     /// Compute the squared 1D roughness along direction \c v
     Float project_roughness_2(const Vector3f &v) const {
         if (is_isotropic())
-            return ek::sqr(m_alpha_u);
+            return dr::sqr(m_alpha_u);
 
         Float sin_phi_2, cos_phi_2;
         std::tie(sin_phi_2, cos_phi_2) = Frame3f::sincos_phi_2(v);
 
-        return sin_phi_2 * ek::sqr(m_alpha_v) + cos_phi_2 * ek::sqr(m_alpha_u);
+        return sin_phi_2 * dr::sqr(m_alpha_v) + cos_phi_2 * dr::sqr(m_alpha_u);
     }
 
 protected:
@@ -462,7 +462,7 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
 
 template <typename Float, typename MicrofaceDistributionP>
 Float eval_reflectance(const MicrofaceDistributionP &distr,
-                       const Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
+                       const Vector<Float, 3> &wi, dr::scalar_t<Float> eta) {
     MTS_IMPORT_CORE_TYPES()
 
     if (!distr.sample_visible())
@@ -470,43 +470,43 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 
     int res = eta > 1 ? 32 : 128;
 
-    using FloatX = ek::DynamicArray<ek::scalar_t<Float>>;
+    using FloatX = dr::DynamicArray<dr::scalar_t<Float>>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
-    Float result = ek::zero<Float>(ek::width(wi));
+    Float result = dr::zero<Float>(dr::width(wi));
 
-    auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
-    auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
+    auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);
+    auto [weights_x, weights_y] = dr::meshgrid(weights, weights);
 
-    using FloatP = ek::Packet<ek::scalar_t<Float>>;
+    using FloatP = dr::Packet<dr::scalar_t<Float>>;
     using Normal3fP = Normal<FloatP, 3>;
     using Vector3fP = Vector<FloatP, 3>;
 
-    size_t packet_count = ek::width(wi) / FloatP::Size;
+    size_t packet_count = dr::width(wi) / FloatP::Size;
 
-    Assert(ek::width(wi) % FloatP::Size == 0);
+    Assert(dr::width(wi) % FloatP::Size == 0);
 
     for (size_t i = 0; i < packet_count; ++i) {
         Vector3fP wi_p;
-        wi_p.x() = ek::load<FloatP>(wi.x().data() + i * FloatP::Size);
-        wi_p.y() = ek::load<FloatP>(wi.y().data() + i * FloatP::Size);
-        wi_p.z() = ek::load<FloatP>(wi.z().data() + i * FloatP::Size);
+        wi_p.x() = dr::load<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = dr::load<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = dr::load<FloatP>(wi.z().data() + i * FloatP::Size);
 
         FloatP result_p = 0.f;
 
-        for (size_t j = 0; j < ek::width(nodes_x); ++j) {
+        for (size_t j = 0; j < dr::width(nodes_x); ++j) {
             ScalarVector2f node = { nodes_x[j], nodes_y[j] };
             ScalarVector2f weight = { weights_x[j], weights_y[j] };
-            node = ek::fmadd(node, 0.5f, 0.5f);
+            node = dr::fmadd(node, 0.5f, 0.5f);
 
             Normal3fP m = std::get<0>(distr.sample(wi_p, node));
             Vector3fP wo = reflect(wi_p, m);
-            FloatP f = std::get<0>(fresnel(ek::dot(wi_p, m), FloatP(eta)));
+            FloatP f = std::get<0>(fresnel(dr::dot(wi_p, m), FloatP(eta)));
             FloatP smith = distr.smith_g1(wo, m) * f;
-            ek::masked(smith, wo.z() <= 0.f || wi_p.z() <= 0.f) = 0.f;
-            result_p += smith * ek::hprod(weight) * 0.25f;
+            dr::masked(smith, wo.z() <= 0.f || wi_p.z() <= 0.f) = 0.f;
+            result_p += smith * dr::hprod(weight) * 0.25f;
         }
 
-        ek::store(result.data() + i * FloatP::Size, result_p);
+        dr::store(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;
@@ -514,7 +514,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 
 template <typename Float, typename MicrofaceDistributionP>
 Float eval_transmittance(const MicrofaceDistributionP &distr,
-                         Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
+                         Vector<Float, 3> &wi, dr::scalar_t<Float> eta) {
     MTS_IMPORT_CORE_TYPES()
 
     if (!distr.sample_visible())
@@ -522,46 +522,46 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
 
     int res = eta > 1 ? 32 : 128;
 
-    using ScalarFloat = ek::scalar_t<Float>;
-    using FloatX = ek::DynamicArray<ScalarFloat>;
+    using ScalarFloat = dr::scalar_t<Float>;
+    using FloatX = dr::DynamicArray<ScalarFloat>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
-    Float result = ek::zero<Float>(ek::width(wi));
+    Float result = dr::zero<Float>(dr::width(wi));
 
-    auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
-    auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
+    auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);
+    auto [weights_x, weights_y] = dr::meshgrid(weights, weights);
 
-    using FloatP = ek::Packet<ek::scalar_t<Float>>;
+    using FloatP = dr::Packet<dr::scalar_t<Float>>;
     using Normal3fP = Normal<FloatP, 3>;
     using Vector3fP = Vector<FloatP, 3>;
 
-    size_t packet_count = ek::width(wi) / FloatP::Size;
+    size_t packet_count = dr::width(wi) / FloatP::Size;
 
-    Assert(ek::width(wi) % FloatP::Size == 0);
+    Assert(dr::width(wi) % FloatP::Size == 0);
 
     for (size_t i = 0; i < packet_count; ++i) {
         Vector3fP wi_p;
-        wi_p.x() = ek::load<FloatP>(wi.x().data() + i * FloatP::Size);
-        wi_p.y() = ek::load<FloatP>(wi.y().data() + i * FloatP::Size);
-        wi_p.z() = ek::load<FloatP>(wi.z().data() + i * FloatP::Size);
+        wi_p.x() = dr::load<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = dr::load<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = dr::load<FloatP>(wi.z().data() + i * FloatP::Size);
 
         FloatP result_p = 0.f;
 
-        for (size_t j = 0; j < ek::width(nodes_x); ++j) {
+        for (size_t j = 0; j < dr::width(nodes_x); ++j) {
             ScalarVector2f node = { nodes_x[j], nodes_y[j] };
             ScalarVector2f weight = { weights_x[j], weights_y[j] };
-            node = ek::fmadd(node, 0.5f, 0.5f);
+            node = dr::fmadd(node, 0.5f, 0.5f);
 
             Normal3fP m = std::get<0>(distr.sample(wi_p, node));
-            auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi_p, m), FloatP(eta));
+            auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(dr::dot(wi_p, m), FloatP(eta));
 
             Vector3fP wo = refract(wi_p, m, cos_theta_t, eta_ti);
             FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
-            ek::masked(smith, wo.z() * wi_p.z() >= 0.f) = 0.f;
+            dr::masked(smith, wo.z() * wi_p.z() >= 0.f) = 0.f;
 
-            result_p += smith * ek::hprod(weight) * 0.25f;
+            result_p += smith * dr::hprod(weight) * 0.25f;
         }
 
-        ek::store(result.data() + i * FloatP::Size, result_p);
+        dr::store(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;

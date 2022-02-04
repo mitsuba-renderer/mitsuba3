@@ -1,6 +1,6 @@
 #include <mutex>
 
-#include <enoki/morton.h>
+#include <drjit/morton.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/progress.h>
@@ -13,7 +13,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
-#include <enoki-thread/thread.h>
+#include <drjit-thread/thread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -108,7 +108,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     m_render_timer.reset();
 
     TensorXf result;
-    if constexpr (!ek::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_array_v<Float>) {
         // Render on the CPU using a spiral pattern
         uint32_t n_threads = (uint32_t) Thread::thread_count();
 
@@ -126,7 +126,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             block_size = MTS_BLOCK_SIZE; // 32x32
             while (true) {
                 // Ensure that there is a block for every thread
-                if (block_size == 1 || ek::hprod((film_size + block_size - 1) /
+                if (block_size == 1 || dr::hprod((film_size + block_size - 1) /
                                                  block_size) >= n_threads)
                     break;
                 block_size /= 2;
@@ -146,12 +146,12 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         uint32_t grain_size = std::max(total_blocks / (4 * n_threads), 1u);
 
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
-        seed *= ek::hprod(film_size);
+        seed *= dr::hprod(film_size);
 
         ThreadEnvironment env;
-        ek::parallel_for(
-            ek::blocked_range<uint32_t>(0, total_blocks, grain_size),
-            [&](const ek::blocked_range<uint32_t> &range) {
+        dr::parallel_for(
+            dr::blocked_range<uint32_t>(0, total_blocks, grain_size),
+            [&](const dr::blocked_range<uint32_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
                 // Fork a non-overlapping sampler for the current worker
                 ref<Sampler> sampler = sensor->sampler()->fork();
@@ -167,7 +167,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 for (uint32_t i = range.begin();
                      i != range.end() && !should_stop(); ++i) {
                     auto [offset, size, block_id] = spiral.next_block();
-                    Assert(ek::hprod(size) != 0);
+                    Assert(dr::hprod(size) != 0);
 
                     if (film->sample_border())
                         offset -= film->rfilter()->border_size();
@@ -192,7 +192,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (develop)
             result = film->develop();
     } else {
-        ek::sync_thread(); // Separate from scene initialization (for timings)
+        dr::sync_thread(); // Separate from scene initialization (for timings)
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
@@ -207,15 +207,15 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
                wavefront_size_limit =
-                   ek::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+                   dr::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (wavefront_size > wavefront_size_limit)
             Throw("Tried to perform a %s-based rendering with a total sample "
                   "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
                   "for this backend). Please use fewer samples per pixel or "
                   "render using multiple passes.",
-                  ek::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
-                  wavefront_size, ek::log2i(wavefront_size_limit + 1),
+                  dr::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  wavefront_size, dr::log2i(wavefront_size_limit + 1),
                   wavefront_size_limit);
 
         // Inform the sampler about the passes (needed in vectorized modes)
@@ -232,19 +232,19 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         block->set_coalesce(block->coalesce() && spp_per_pass >= 4);
 
         // Compute discrete sample position
-        UInt32 idx = ek::arange<UInt32>((uint32_t) wavefront_size);
+        UInt32 idx = dr::arange<UInt32>((uint32_t) wavefront_size);
 
         // Try to avoid a division by an unknown constant if we can help it
-        uint32_t log_spp_per_pass = ek::log2i(spp_per_pass);
+        uint32_t log_spp_per_pass = dr::log2i(spp_per_pass);
         if ((1u << log_spp_per_pass) == spp_per_pass)
-            idx >>= ek::opaque<UInt32>(log_spp_per_pass);
+            idx >>= dr::opaque<UInt32>(log_spp_per_pass);
         else
-            idx /= ek::opaque<UInt32>(spp_per_pass);
+            idx /= dr::opaque<UInt32>(spp_per_pass);
 
         // Compute the position on the image plane
         Vector2u pos;
         pos.y() = idx / film_size[0];
-        pos.x() = ek::fnmadd(film_size[0], pos.y(), idx);
+        pos.x() = dr::fnmadd(film_size[0], pos.y(), idx);
 
         if (film->sample_border())
             pos -= film->rfilter()->border_size();
@@ -255,7 +255,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         Vector2f pos_f = Vector2f(pos);
 
         // Scale factor that will be applied to ray differentials
-        ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) spp);
+        ScalarFloat diff_scale_factor = dr::rsqrt((ScalarFloat) spp);
 
         Timer timer;
         std::unique_ptr<Float[]> aovs(new Float[n_channels]);
@@ -268,7 +268,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
                 sampler->schedule_state();
-                ek::eval(block->tensor());
+                dr::eval(block->tensor());
             }
         }
 
@@ -282,13 +282,13 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         if (develop) {
             result = film->develop();
-            ek::schedule(result);
+            dr::schedule(result);
         } else {
             film->schedule_storage();
         }
 
         if (evaluate) {
-            ek::eval();
+            dr::eval();
 
             if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
                 jit_flag(JitFlag::LoopRecord)) {
@@ -300,11 +300,11 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 m_render_timer.reset();
             }
 
-            ek::sync_thread();
+            dr::sync_thread();
         }
     }
 
-    if (!m_stop && (evaluate || !ek::is_jit_array_v<Float>))
+    if (!m_stop && (evaluate || !dr::is_jit_array_v<Float>))
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 
@@ -321,14 +321,14 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                                                                    uint32_t block_id,
                                                                    uint32_t block_size) const {
 
-    if constexpr (!ek::is_array_v<Float>) {
+    if constexpr (!dr::is_array_v<Float>) {
         uint32_t pixel_count = block_size * block_size;
 
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
         seed += block_id * pixel_count;
 
         // Scale down ray differentials when tracing multiple rays per pixel
-        Float diff_scale_factor = ek::rsqrt((Float) sample_count);
+        Float diff_scale_factor = dr::rsqrt((Float) sample_count);
 
         // Clear block (it's being reused)
         block->clear();
@@ -336,8 +336,8 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
             sampler->seed(seed + i);
 
-            Point2u pos = ek::morton_decode<Point2u>(i);
-            if (ek::any(pos >= block->size()))
+            Point2u pos = dr::morton_decode<Point2u>(i);
+            if (dr::any(pos >= block->size()))
                 continue;
 
             ScalarPoint2f pos_f = ScalarPoint2f(Point2i(pos) + block->offset());
@@ -348,15 +348,15 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
             }
         }
     } else {
-        ENOKI_MARK_USED(scene);
-        ENOKI_MARK_USED(sensor);
-        ENOKI_MARK_USED(sampler);
-        ENOKI_MARK_USED(block);
-        ENOKI_MARK_USED(aovs);
-        ENOKI_MARK_USED(sample_count);
-        ENOKI_MARK_USED(seed);
-        ENOKI_MARK_USED(block_id);
-        ENOKI_MARK_USED(block_size);
+        DRJIT_MARK_USED(scene);
+        DRJIT_MARK_USED(sensor);
+        DRJIT_MARK_USED(sampler);
+        DRJIT_MARK_USED(block);
+        DRJIT_MARK_USED(aovs);
+        DRJIT_MARK_USED(sample_count);
+        DRJIT_MARK_USED(seed);
+        DRJIT_MARK_USED(block_id);
+        DRJIT_MARK_USED(block_size);
         Throw("Not implemented for JIT arrays.");
     }
 }
@@ -377,7 +377,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                    offset = -ScalarVector2f(film->crop_offset()) * scale;
 
     Vector2f sample_pos   = pos + sampler->next_2d(active),
-             adjusted_pos = ek::fmadd(sample_pos, scale, offset);
+             adjusted_pos = dr::fmadd(sample_pos, scale, offset);
 
     Point2f aperture_sample(.5f);
     if (sensor->needs_aperture_sample())
@@ -420,7 +420,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         aovs[2] = rgb.z();
 
         if (likely(has_alpha)) {
-            aovs[3] = ek::select(valid, Float(1.f), Float(0.f));
+            aovs[3] = dr::select(valid, Float(1.f), Float(0.f));
             aovs[4] = 1.f;
         } else {
             aovs[3] = 1.f;
@@ -512,7 +512,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     uint32_t n_passes = spp / spp_per_pass;
 
-    size_t samples_per_pass = spp_per_pass * (size_t) ek::hprod(film_size);
+    size_t samples_per_pass = spp_per_pass * (size_t) dr::hprod(film_size);
 
     std::vector<std::string> aovs = aov_names();
     if (!aovs.empty())
@@ -525,7 +525,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         TensorXf result;
         if (develop) {
             result = film->develop();
-            ek::schedule(result);
+            dr::schedule(result);
         } else {
             film->schedule_storage();
         }
@@ -533,10 +533,10 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     }
 
     ScalarFloat sample_scale =
-        ek::hprod(crop_size) / ScalarFloat(spp * ek::hprod(film_size));
+        dr::hprod(crop_size) / ScalarFloat(spp * dr::hprod(film_size));
 
     TensorXf result;
-    if constexpr (!ek::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_array_v<Float>) {
         size_t n_threads = Thread::thread_count();
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
@@ -563,9 +563,9 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         m_render_timer.reset();
 
         ThreadEnvironment env;
-        ek::parallel_for(
-            ek::blocked_range<size_t>(0, total_samples, grain_size),
-            [&](const ek::blocked_range<size_t> &range) {
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, total_samples, grain_size),
+            [&](const dr::blocked_range<size_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
 
                 // Fork a non-overlapping sampler for the current worker
@@ -620,15 +620,15 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
                wavefront_size_limit =
-                   ek::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+                   dr::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (wavefront_size > wavefront_size_limit)
             Throw("Tried to perform a %s-based rendering with a total sample "
                   "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
                   "for this backend). Please use fewer samples per pixel or "
                   "render using multiple passes.",
-                  ek::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
-                  wavefront_size, ek::log2i(wavefront_size_limit + 1),
+                  dr::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  wavefront_size, dr::log2i(wavefront_size_limit + 1),
                   wavefront_size_limit);
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
@@ -659,7 +659,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
                 sampler->schedule_state();
-                ek::eval(block->tensor());
+                dr::eval(block->tensor());
             }
         }
 
@@ -667,13 +667,13 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         if (develop) {
             result = film->develop();
-            ek::schedule(result);
+            dr::schedule(result);
         } else {
             film->schedule_storage();
         }
 
         if (evaluate) {
-            ek::eval();
+            dr::eval();
 
             if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
                 jit_flag(JitFlag::LoopRecord)) {
@@ -685,11 +685,11 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                 m_render_timer.reset();
             }
 
-            ek::sync_thread();
+            dr::sync_thread();
         }
     }
 
-    if (!m_stop && (evaluate || !ek::is_jit_array_v<Float>))
+    if (!m_stop && (evaluate || !dr::is_jit_array_v<Float>))
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 

@@ -1,7 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/python/python.h>
-#include <enoki/dynamic.h>
+#include <drjit/dynamic.h>
 
 MTS_PY_EXPORT(MicrofacetDistribution) {
     MTS_PY_IMPORT_TYPES(MicrofacetDistribution)
@@ -44,7 +44,7 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
         [](MicrofacetType type, float alpha_u, float alpha_v,
            const Vector<DynamicBuffer<Float>, 3> &wi,
            float eta) {
-            mitsuba::MicrofacetDistribution<ek::Packet<float>, Spectrum> d(type, alpha_u, alpha_v);
+            mitsuba::MicrofacetDistribution<dr::Packet<float>, Spectrum> d(type, alpha_u, alpha_v);
             return eval_reflectance(d, wi, eta);
         }, "type"_a, "alpha_u"_a, "alpha_v"_a, "wi"_a, "eta"_a);
 }

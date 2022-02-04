@@ -1,6 +1,6 @@
 
 import pytest
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 import numpy as np
@@ -13,8 +13,8 @@ def test01_basics(variants_all_backends_once):
     from mitsuba.core import Transform4f, Matrix4f
 
     # Check that default constructor give identity transform
-    assert ek.allclose(Transform4f().matrix, ek.identity(Matrix4f))
-    assert ek.allclose(Transform4f().inverse_transpose, ek.identity(Matrix4f))
+    assert dr.allclose(Transform4f().matrix, dr.identity(Matrix4f))
+    assert dr.allclose(Transform4f().inverse_transpose, dr.identity(Matrix4f))
 
     # Check Matrix and Transfrom construction from Python array and Numpy array
     m1 = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
@@ -22,15 +22,15 @@ def test01_basics(variants_all_backends_once):
     m3 = Matrix4f(m1)
     m4 = Matrix4f(m2)
 
-    assert(ek.allclose(m3, m2))
-    assert(ek.allclose(m4, m2))
-    assert(ek.allclose(m3, m4))
+    assert(dr.allclose(m3, m2))
+    assert(dr.allclose(m4, m2))
+    assert(dr.allclose(m3, m4))
 
-    assert ek.allclose(Transform4f(m1).matrix, m1)
-    assert ek.allclose(Transform4f(m2).matrix, m2)
-    assert ek.allclose(Transform4f(m3).matrix, m3)
+    assert dr.allclose(Transform4f(m1).matrix, m1)
+    assert dr.allclose(Transform4f(m2).matrix, m2)
+    assert dr.allclose(Transform4f(m3).matrix, m3)
 
-    if ek.is_jit_array_v(Matrix4f):
+    if dr.is_jit_array_v(Matrix4f):
         assert(
             repr(Transform4f(Matrix4f(m1))) ==
             "[[[1, 2, 3, 4],\n  [5, 6, 7, 8],\n  [9, 10, 11, 12],\n  [13, 14, 15, 16]]]"
@@ -49,20 +49,20 @@ def test02_inverse(variant_scalar_rgb, np_rng):
     def check_inverse(tr, expected):
         inv_trafo = tr.inverse()
 
-        assert ek.allclose(inv_trafo.matrix, np.array(expected)), \
+        assert dr.allclose(inv_trafo.matrix, np.array(expected)), \
                '\n' + str(inv_trafo.matrix) + '\n' + str(expected)
 
-        assert ek.allclose(inv_trafo @ (tr @ p), p,
+        assert dr.allclose(inv_trafo @ (tr @ p), p,
                            rtol=1e-4)
 
     # --- Scale
     trafo = Transform4f.scale([1.0, 10.0, 500.0])
-    assert ek.allclose(trafo.matrix,
+    assert dr.allclose(trafo.matrix,
                        [[1, 0, 0, 0],
                         [0, 10, 0, 0],
                         [0, 0, 500, 0],
                         [0, 0, 0, 1]])
-    assert ek.allclose(trafo @ p, [1, 20, 1500])
+    assert dr.allclose(trafo @ p, [1, 20, 1500])
     check_inverse(trafo, [
         [1,      0,       0,    0],
         [0, 1/10.0,       0,    0],
@@ -72,12 +72,12 @@ def test02_inverse(variant_scalar_rgb, np_rng):
 
     # --- Translation
     trafo = Transform4f.translate([1, 0, 1.5])
-    assert ek.allclose(trafo.matrix,
+    assert dr.allclose(trafo.matrix,
                        [[1, 0, 0, 1],
                         [0, 1, 0, 0],
                         [0, 0, 1, 1.5],
                         [0, 0, 0, 1]])
-    assert ek.allclose(trafo @ p, [2, 2, 4.5])
+    assert dr.allclose(trafo @ p, [2, 2, 4.5])
     check_inverse(trafo, [
         [1, 0, 0,   -1],
         [0, 1, 0,    0],
@@ -94,7 +94,7 @@ def test02_inverse(variant_scalar_rgb, np_rng):
         [         0,          0, 1.001001, -1.001001],
         [         0,          0,        1,         0]
     ]
-    assert ek.allclose(trafo.matrix, expected)
+    assert dr.allclose(trafo.matrix, expected)
     check_inverse(trafo, la.inv(expected))
 
     for i in range(10):
@@ -102,9 +102,9 @@ def test02_inverse(variant_scalar_rgb, np_rng):
         inv_ref = la.inv(mtx)
 
         trafo = Transform4f(mtx)
-        inv_val = ek.transpose(trafo.inverse_transpose)
+        inv_val = dr.transpose(trafo.inverse_transpose)
 
-        assert ek.allclose(trafo.matrix, mtx, atol=1e-4)
+        assert dr.allclose(trafo.matrix, mtx, atol=1e-4)
         assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4
 
         p = np_rng.random((3,))
@@ -119,8 +119,8 @@ def test03_matmul(variant_scalar_rgb):
     B = np.array([[1, -2, 3, -4], [5, -6, 7, -8], [9, -10, 11, -12], [13, -14, 15, -16]])
     At = Transform4f(A)
     Bt = Transform4f(B)
-    assert ek.allclose(np.dot(A, B), (At*Bt).matrix)
-    assert ek.allclose(np.dot(B, A), (Bt*At).matrix)
+    assert dr.allclose(np.dot(A, B), (At*Bt).matrix)
+    assert dr.allclose(np.dot(B, A), (Bt*At).matrix)
 
 
 def test04_transform_point(variant_scalar_rgb):
@@ -128,8 +128,8 @@ def test04_transform_point(variant_scalar_rgb):
 
     A = Matrix4f(1)
     A[3, 3] = 2
-    assert ek.allclose(Transform4f(A) @ Point3f(2, 4, 6), [1, 2, 3])
-    assert ek.allclose(Transform4f(A) @ Point3f(4, 6, 8), [2, 3, 4])
+    assert dr.allclose(Transform4f(A) @ Point3f(2, 4, 6), [1, 2, 3])
+    assert dr.allclose(Transform4f(A) @ Point3f(4, 6, 8), [2, 3, 4])
 
     def kernel(p : Point3f):
         from mitsuba.core import Transform4f
@@ -144,7 +144,7 @@ def test05_transform_vector(variant_scalar_rgb):
     A = Matrix4f(1)
     A[3, 3] = 2
     A[1, 1] = .5
-    assert ek.allclose(Transform4f(A) @ Vector3f(2, 4, 6), [2, 2, 6])
+    assert dr.allclose(Transform4f(A) @ Vector3f(2, 4, 6), [2, 2, 6])
 
     def kernel(v : Vector3f):
         from mitsuba.core import Transform4f
@@ -160,7 +160,7 @@ def test06_transform_normal(variant_scalar_rgb):
     A[3, 3] = 2
     A[1, 2] = .5
     A[1, 1] = .5
-    assert ek.allclose(Transform4f(A)@ Normal3f(2, 4, 6), [2, 8, 2])
+    assert dr.allclose(Transform4f(A)@ Normal3f(2, 4, 6), [2, 8, 2])
 
     def kernel(n : Normal3f):
         from mitsuba.core import Transform4f
@@ -207,9 +207,9 @@ def test07_transform_has_scale(variant_scalar_rgb):
 #     a.append(2, trafo0)
 #     a.append(3, trafo1)
 
-#     assert ek.allclose(a.eval(-10).matrix, trafo0.matrix)
-#     assert ek.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
-#     assert ek.allclose(a.eval( 10).matrix, trafo1.matrix)
+#     assert dr.allclose(a.eval(-10).matrix, trafo0.matrix)
+#     assert dr.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
+#     assert dr.allclose(a.eval( 10).matrix, trafo1.matrix)
 
 
 # def test11_atransform_interpolate_scale(variant_scalar_rgb):
@@ -219,6 +219,6 @@ def test07_transform_has_scale(variant_scalar_rgb):
 #     trafo_mid = Transform4f.scale([2.5, 3.5, 4.5])
 #     a.append(2, trafo0)
 #     a.append(3, trafo1)
-#     assert ek.allclose(a.eval(-10).matrix, trafo0.matrix)
-#     assert ek.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
-#     assert ek.allclose(a.eval( 10).matrix, trafo1.matrix)
+#     assert dr.allclose(a.eval(-10).matrix, trafo0.matrix)
+#     assert dr.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
+#     assert dr.allclose(a.eval( 10).matrix, trafo1.matrix)

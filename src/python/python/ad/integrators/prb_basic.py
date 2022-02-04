@@ -1,6 +1,6 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 from .common import ADIntegrator
@@ -22,7 +22,7 @@ class BasicPRBIntegrator(ADIntegrator):
     """
 
     def sample(self,
-               mode: enoki.ADMode,
+               mode: drjit.ADMode,
                scene: mitsuba.render.Scene,
                sampler: mitsuba.render.Sampler,
                ray: mitsuba.core.Ray3f,
@@ -41,7 +41,7 @@ class BasicPRBIntegrator(ADIntegrator):
         from mitsuba.render import BSDFContext
 
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
-        primal = mode == ek.ADMode.Primal
+        primal = mode == dr.ADMode.Primal
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = BSDFContext()
@@ -67,7 +67,7 @@ class BasicPRBIntegrator(ADIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
 
-            with ek.resume_grad(when=not primal):
+            with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray)
 
                 # Differentiable evaluation of intersected emitter / envmap
@@ -93,12 +93,12 @@ class BasicPRBIntegrator(ADIntegrator):
             β *= bsdf_weight
 
             # Don't run another iteration if the throughput has reached zero
-            active_next &= ek.any(ek.neq(β, 0))
+            active_next &= dr.any(dr.neq(β, 0))
 
             # ------------------ Differential phase only ------------------
 
             if not primal:
-                with ek.resume_grad():
+                with dr.resume_grad():
                     # 'L' stores the reflected radiance at the current vertex
                     # but does not track parameter derivatives. The following
                     # addresses this by canceling the detached BSDF value and
@@ -113,29 +113,29 @@ class BasicPRBIntegrator(ADIntegrator):
 
                     # Detached version of the above term and inverse
                     bsdf_val_det = bsdf_weight * bsdf_sample.pdf
-                    inv_bsdf_val_det = ek.select(ek.neq(bsdf_val_det, 0),
-                                                 ek.rcp(bsdf_val_det), 0)
+                    inv_bsdf_val_det = dr.select(dr.neq(bsdf_val_det, 0),
+                                                 dr.rcp(bsdf_val_det), 0)
 
                     # Differentiable version of the reflected radiance. Minor
                     # optional tweak: indicate that the primal value of the
                     # second term is 1.
-                    Lr = L * ek.replace_grad(1, inv_bsdf_val_det * bsdf_val)
+                    Lr = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val)
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr
 
                     # Propagate derivatives from/to 'Lo' based on 'mode'
-                    if mode == ek.ADMode.Backward:
-                        ek.backward_from(δL * Lo)
+                    if mode == dr.ADMode.Backward:
+                        dr.backward_from(δL * Lo)
                     else:
-                        δL += ek.forward_to(Lo)
+                        δL += dr.forward_to(Lo)
 
             depth[si.is_valid()] += 1
             active = active_next
 
         return (
             L if primal else δL, # Radiance/differential radiance
-            ek.neq(depth, 0),    # Ray validity flag for alpha blending
+            dr.neq(depth, 0),    # Ray validity flag for alpha blending
             L                    # State the for differential phase
         )
 

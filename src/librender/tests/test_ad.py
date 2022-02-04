@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 
 def make_simple_scene(res=1, integrator="path"):
@@ -44,11 +44,11 @@ def make_simple_scene(res=1, integrator="path"):
     })
 
 
-if hasattr(ek, 'JitFlag'):
+if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
-        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
     ]
 else:
     jit_flags_options = []
@@ -57,9 +57,9 @@ else:
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4, 44])
 def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.python.util import traverse
@@ -71,16 +71,16 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
 
     # Enable gradients
     params = traverse(scene)
-    ek.enable_grad(params[key])
+    dr.enable_grad(params[key])
 
     # Forward rendering - first time
     img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Backward pass and gradient descent step
-    loss = ek.hsum_async(img_1)
-    ek.backward(loss)
+    loss = dr.hsum_async(img_1)
+    dr.backward(loss)
 
-    grad = ek.grad(params[key])
+    grad = dr.grad(params[key])
 
     lr = 0.01
     params[key][0] += lr
@@ -89,18 +89,18 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
     # Forward rendering - second time
     img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
-    new_loss = ek.hsum_async(img_2)
+    new_loss = dr.hsum_async(img_2)
 
-    assert ek.allclose(loss, new_loss - lr * grad[0])
+    assert dr.allclose(loss, new_loss - lr * grad[0])
 
 
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4])
 def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
 # def test02_bsdf_reflectance_forward(variant_cuda_ad_rgb, jit_flags, spp):
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.core import Float
@@ -116,7 +116,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
 
     # Add differential value to the BSDF reflectance
     X = Float(0.1)
-    ek.enable_grad(X)
+    dr.enable_grad(X)
     params[key] += X
     params.update()
 
@@ -124,9 +124,9 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
     img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Compute forward gradients
-    assert ek.grad(img_1) == 0.0
-    ek.forward(X)
-    grad = ek.grad(img_1)
+    assert dr.grad(img_1) == 0.0
+    dr.forward(X)
+    grad = dr.grad(img_1)
 
     # Modify reflectance value and re-render
     lr = 0.1
@@ -135,7 +135,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
 
     img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
-    assert ek.allclose(img_1, img_2 - lr * grad)
+    assert dr.allclose(img_1, img_2 - lr * grad)
 
 
 @pytest.mark.parametrize("spp", [8])
@@ -158,7 +158,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
     opt = getattr(mitsuba.python.ad, opt_type)(*opt_args, params=params)
 
     opt[key] = Color3f(0.1)
-    ek.set_label(opt[key], key)
+    dr.set_label(opt[key], key)
     opt.update()
 
     avrg_params = Color3f(0)
@@ -171,16 +171,16 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
     for it in range(N):
         # Perform a differentiable rendering of the scene
         image = scene.integrator().render(scene, seed=0, spp=spp)
-        ek.set_label(image, 'image')
+        dr.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'
-        ob_val = ek.hsum_async(ek.sqr(image - image_ref)) / len(image)
-        ek.set_label(ob_val, 'ob_val')
+        ob_val = dr.hsum_async(dr.sqr(image - image_ref)) / len(image)
+        dr.set_label(ob_val, 'ob_val')
 
-        # print(ek.graphviz_str(Float(1)))
+        # print(dr.graphviz_str(Float(1)))
 
         # Back-propagate errors to input parameters
-        ek.backward(ob_val)
+        dr.backward(ob_val)
 
         # Optimizer: take a gradient step
         opt.step()
@@ -188,7 +188,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         # Optimizer: Update the scene parameters
         opt.update()
 
-        err_ref = ek.hsum(ek.detach(ek.sqr(param_ref - params[key])))[0]
+        err_ref = dr.hsum(dr.detach(dr.sqr(param_ref - params[key])))[0]
         print('Iteration %03i: error=%g' % (it, err_ref))
 
         if it >= N - W:
@@ -196,16 +196,16 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
 
     avrg_params /= W
 
-    assert ek.allclose(avrg_params, param_ref, atol=1e-3)
+    assert dr.allclose(avrg_params, param_ref, atol=1e-3)
 
 
 @pytest.mark.parametrize("eval_grad", [False, True])
 @pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval_grad, N, jit_flags):
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
     from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
@@ -222,14 +222,14 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     # Enable gradients
     bsdf_params = traverse(bsdf)
     p = bsdf_params['reflectance.value']
-    ek.enable_grad(p)
-    ek.set_label(p, "albedo_1")
+    dr.enable_grad(p)
+    dr.set_label(p, "albedo_1")
     bsdf_params.update()
 
-    mask = ek.eq(ek.arange(UInt32, N) & 1, 0)
-    bsdf_ptr = ek.select(mask, BSDFPtr(bsdf), ek.zero(BSDFPtr))
+    mask = dr.eq(dr.arange(UInt32, N) & 1, 0)
+    bsdf_ptr = dr.select(mask, BSDFPtr(bsdf), dr.zero(BSDFPtr))
 
-    si    = ek.zero(SurfaceInteraction3f, N)
+    si    = dr.zero(SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
@@ -238,41 +238,41 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     ctx = BSDFContext()
 
-    theta = 0.5 * (ek.Pi / 2)
-    wo = [ek.sin(theta), 0, ek.cos(theta)]
+    theta = 0.5 * (dr.Pi / 2)
+    wo = [dr.sin(theta), 0, dr.cos(theta)]
 
     # Evaluate BSDF (using vcalls)
-    ek.set_label(si, "si")
-    ek.set_label(wo, "wo")
+    dr.set_label(si, "si")
+    dr.set_label(wo, "wo")
     v_eval = bsdf_ptr.eval(ctx, si, wo)
-    ek.set_label(v_eval, "v_eval")
+    dr.set_label(v_eval, "v_eval")
 
     # Check against reference value
-    v = Float(ek.cos(theta) * ek.InvPi)
-    v_ref = ek.select(mask, Color3f(v, 0, 0), Color3f(0))
-    assert ek.allclose(v_eval, v_ref)
+    v = Float(dr.cos(theta) * dr.InvPi)
+    v_ref = dr.select(mask, Color3f(v, 0, 0), Color3f(0))
+    assert dr.allclose(v_eval, v_ref)
 
-    loss = ek.hsum(v_eval)
+    loss = dr.hsum(v_eval)
 
     # Backpropagate through vcall
     if eval_grad:
-        loss_grad = ek.arange(Float, N)
-        ek.eval(loss_grad)
+        loss_grad = dr.arange(Float, N)
+        dr.eval(loss_grad)
     else:
         loss_grad = Float(1)
 
-    ek.set_grad(loss, loss_grad)
-    ek.enqueue(ek.ADMode.Backward, loss)
-    ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+    dr.set_grad(loss, loss_grad)
+    dr.enqueue(dr.ADMode.Backward, loss)
+    dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
     # Check gradients
-    grad = ek.grad(bsdf_params['reflectance.value'])
+    grad = dr.grad(bsdf_params['reflectance.value'])
 
-    assert ek.allclose(grad, v * ek.hsum(ek.select(mask, loss_grad, 0.0)))
+    assert dr.allclose(grad, v * dr.hsum(dr.select(mask, loss_grad, 0.0)))
 
     # Forward propagate gradients to loss
-    ek.forward(bsdf_params['reflectance.value'], ek.ADFlag.ClearVertices)
-    assert ek.allclose(ek.grad(loss), ek.select(mask, 3 * v, 0.0))
+    dr.forward(bsdf_params['reflectance.value'], dr.ADFlag.ClearVertices)
+    assert dr.allclose(dr.grad(loss), dr.select(mask, 3 * v, 0.0))
 
 
 @pytest.mark.parametrize("mode", ['backward', 'forward'])
@@ -281,9 +281,9 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("indirect", [False, True])
 def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flags, indirect):
-    # Set enoki JIT flags
+    # Set drjit JIT flags
     for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        dr.set_flag(k, v)
 
     from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
     from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
@@ -308,27 +308,27 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     # Enable gradients
     bsdf1_params = traverse(bsdf1)
     p1 = bsdf1_params['reflectance.value']
-    ek.enable_grad(p1)
-    ek.set_label(p1, "albedo_1")
+    dr.enable_grad(p1)
+    dr.set_label(p1, "albedo_1")
     bsdf1_params.update()
 
     bsdf2_params = traverse(bsdf2)
     if indirect:
         p2 = Color3f(1e-10, 1e-10, 1)
-        ek.enable_grad(p2)
-        ek.set_label(p2, "albedo_2_indirect")
-        p2_2 = ek.min(p2, Color3f(100))
+        dr.enable_grad(p2)
+        dr.set_label(p2, "albedo_2_indirect")
+        p2_2 = dr.min(p2, Color3f(100))
         bsdf2_params['reflectance.value'] = p2_2
     else:
         p2 = bsdf2_params['reflectance.value']
-        ek.enable_grad(p2)
-        ek.set_label(p2, "albedo_2")
+        dr.enable_grad(p2)
+        dr.set_label(p2, "albedo_2")
     bsdf2_params.update()
 
-    mask = ek.eq(ek.arange(UInt32, N) & 1, 0)
-    bsdf_ptr = ek.select(mask, BSDFPtr(bsdf1), BSDFPtr(bsdf2))
+    mask = dr.eq(dr.arange(UInt32, N) & 1, 0)
+    bsdf_ptr = dr.select(mask, BSDFPtr(bsdf1), BSDFPtr(bsdf2))
 
-    si    = ek.zero(SurfaceInteraction3f, N)
+    si    = dr.zero(SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
@@ -337,61 +337,61 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
     ctx = BSDFContext()
 
-    theta = 0.5 * (ek.Pi / 2)
-    wo = [ek.sin(theta), 0, ek.cos(theta)]
+    theta = 0.5 * (dr.Pi / 2)
+    wo = [dr.sin(theta), 0, dr.cos(theta)]
 
     # Evaluate BSDF (using vcalls)
-    ek.set_label(si, "si")
-    ek.set_label(wo, "wo")
+    dr.set_label(si, "si")
+    dr.set_label(wo, "wo")
     v_eval = bsdf_ptr.eval(ctx, si, wo)
-    ek.set_label(v_eval, "v_eval")
+    dr.set_label(v_eval, "v_eval")
 
     # Check against reference value
-    v = ek.cos(theta) * ek.InvPi
-    v_ref = ek.select(mask, Color3f(v, 0, 0), Color3f(0, 0, v))
-    assert ek.allclose(v_eval, v_ref)
+    v = dr.cos(theta) * dr.InvPi
+    v_ref = dr.select(mask, Color3f(v, 0, 0), Color3f(0, 0, v))
+    assert dr.allclose(v_eval, v_ref)
 
     # Make their gradients a bit different
     mult1 = Float(0.5)
     mult2 = Float(4.0)
-    v_eval *= ek.select(mask, mult1, mult2)
+    v_eval *= dr.select(mask, mult1, mult2)
 
-    loss = ek.hsum(v_eval)
-    ek.set_label(loss, "loss")
+    loss = dr.hsum(v_eval)
+    dr.set_label(loss, "loss")
 
     if mode == "backward":
         if eval_grad:
-            loss_grad = ek.arange(Float, N)
-            ek.eval(loss_grad)
+            loss_grad = dr.arange(Float, N)
+            dr.eval(loss_grad)
         else:
             loss_grad = Float(1)
 
-        ek.set_grad(loss, loss_grad)
-        ek.enqueue(ek.ADMode.Backward, loss)
-        ek.traverse(Float, ek.ADMode.Backward, ek.ADFlag.ClearVertices)
+        dr.set_grad(loss, loss_grad)
+        dr.enqueue(dr.ADMode.Backward, loss)
+        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
         # Check gradients
-        grad1 = ek.grad(p1)
-        grad2 = ek.grad(p2)
+        grad1 = dr.grad(p1)
+        grad2 = dr.grad(p2)
 
-        assert ek.allclose(grad1, v * mult1 * ek.hsum(ek.select(mask,  loss_grad, 0.0)))
-        assert ek.allclose(grad2, v * mult2 * ek.hsum(ek.select(~mask, loss_grad, 0.0)))
+        assert dr.allclose(grad1, v * mult1 * dr.hsum(dr.select(mask,  loss_grad, 0.0)))
+        assert dr.allclose(grad2, v * mult2 * dr.hsum(dr.select(~mask, loss_grad, 0.0)))
 
     if mode == "forward":
         # Forward propagate gradients to loss, one BSDF at a time
-        ek.set_grad(p1, 1)
-        ek.set_grad(p2, 0)
-        ek.enqueue(ek.ADMode.Forward, p1)
-        ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearVertices)
+        dr.set_grad(p1, 1)
+        dr.set_grad(p2, 0)
+        dr.enqueue(dr.ADMode.Forward, p1)
+        dr.enqueue(dr.ADMode.Forward, p2)
+        dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
-        ek.set_grad(p1, 0)
-        ek.set_grad(p2, 1)
-        ek.enqueue(ek.ADMode.Forward, p1)
-        ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, ek.ADMode.Forward, ek.ADFlag.ClearVertices)
+        dr.set_grad(p1, 0)
+        dr.set_grad(p2, 1)
+        dr.enqueue(dr.ADMode.Forward, p1)
+        dr.enqueue(dr.ADMode.Forward, p2)
+        dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
-        assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
+        assert dr.allclose(dr.grad(loss), 3 * v * dr.select(mask, mult1, mult2))
 
 
 def test06_optimizer_state(variants_all_ad_rgb):
@@ -415,25 +415,25 @@ def test06_optimizer_state(variants_all_ad_rgb):
         assert key in opt.variables
 
         for _ in range(3):
-            ek.set_grad(opt[key], Float([-1, 1, 2]))
+            dr.set_grad(opt[key], Float([-1, 1, 2]))
             opt.step()
 
         assert key in opt.state
         state_before = ensure_iterable(opt.state[key])
         for s in state_before:
-            assert ek.all(ek.neq(s, 0))
+            assert dr.all(dr.neq(s, 0))
 
         # A value change should not affect the state
-        opt[key] = ek.clamp(opt[key], 0, 2)
+        opt[key] = dr.clamp(opt[key], 0, 2)
         state_after = ensure_iterable(opt.state[key])
         for a, b in zip(state_before, state_after):
-            assert ek.allclose(a, b)
+            assert dr.allclose(a, b)
 
         # A size change should reset the state
         opt[key] = Float([1.0, 2.0])
         state_after = ensure_iterable(opt.state[key])
         for s in state_after:
-            assert ek.all(ek.eq(s, 0))
+            assert dr.all(dr.eq(s, 0))
 
 
 @pytest.mark.parametrize('opt', ['SGD', 'Adam'])
@@ -448,7 +448,7 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
             return [v]
 
     n = 5
-    x = ek.full(Float, 1.0, n)
+    x = dr.full(Float, 1.0, n)
     params = {'x': x}
 
     if opt == 'SGD':
@@ -459,30 +459,30 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
     opt.load()
 
     # Build momentum for a few iterations
-    g1 = ek.full(Float, -1.0, n)
+    g1 = dr.full(Float, -1.0, n)
     for _ in range(5):
-        ek.set_grad(params['x'], g1)
+        dr.set_grad(params['x'], g1)
         opt.step()
         opt.update()
-    assert ek.all(params['x'] > 2.4)
+    assert dr.all(params['x'] > 2.4)
 
     # Masked updates: parameters and state should only
     # be updated where gradients are nonzero.
     prev_x = Float(params['x'])
     prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]
     for zero_i in range(n):
-        is_zero = ek.eq(ek.arange(UInt32, n), zero_i)
-        g2 = ek.select(is_zero, 0, Float(g1))
+        is_zero = dr.eq(dr.arange(UInt32, n), zero_i)
+        g2 = dr.select(is_zero, 0, Float(g1))
 
-        ek.set_grad(params['x'], g2)
+        dr.set_grad(params['x'], g2)
         opt.step()
         opt.update()
 
-        assert ek.all(ek.eq(params['x'], prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
-        assert ek.all(ek.neq(params['x'], prev_x) | is_zero), 'Param should be updated where grad != 0'
+        assert dr.all(dr.eq(params['x'], prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
+        assert dr.all(dr.neq(params['x'], prev_x) | is_zero), 'Param should be updated where grad != 0'
         for v1, v2 in zip(ensure_iterable(opt.state['x']), prev_state):
-            assert ek.all(ek.eq(v1, v2) | ~is_zero), 'State should not be updated where grad == 0'
-            assert ek.all(ek.neq(v1, v2) | is_zero), 'State should be updated where grad != 0'
+            assert dr.all(dr.eq(v1, v2) | ~is_zero), 'State should not be updated where grad == 0'
+            assert dr.all(dr.neq(v1, v2) | is_zero), 'State should be updated where grad != 0'
 
         prev_x = Float(params['x'])
         prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]

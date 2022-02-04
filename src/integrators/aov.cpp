@@ -183,13 +183,13 @@ public:
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, RayFlags::All | RayFlags::BoundaryTest, true, active);
-        ek::masked(si, !si.is_valid()) = ek::zero<SurfaceInteraction3f>();
+        dr::masked(si, !si.is_valid()) = dr::zero<SurfaceInteraction3f>();
         size_t ctr = 0;
 
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case Type::Depth:
-                    *aovs++ = ek::select(si.is_valid(), si.t, 0.f);
+                    *aovs++ = dr::select(si.is_valid(), si.t, 0.f);
                     break;
 
                 case Type::Position:
@@ -216,7 +216,7 @@ public:
                     break;
 
                 case Type::BoundaryTest:
-                    *aovs++ = ek::select(si.is_valid(), si.boundary_test, 1.f);
+                    *aovs++ = dr::select(si.is_valid(), si.boundary_test, 1.f);
                     break;
 
                 case Type::dPdU:
@@ -246,7 +246,7 @@ public:
                     break;
 
                 case Type::ShapeIndex:
-                    *aovs++ = Float(ek::reinterpret_array<UInt32>(si.shape));
+                    *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
                     break;
 
                 case Type::IntegratorRGBA: {
@@ -265,12 +265,12 @@ public:
                             static_assert(is_spectral_v<Spectrum>);
                             /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                             auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                            spec_u *= ek::select(ek::neq(pdf, 0.f), ek::rcp(pdf), 0.f);
+                            spec_u *= dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
                             rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
                         }
 
                         *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
-                        *aovs++ = ek::select(result_sub.second, Float(1.f), Float(0.f));
+                        *aovs++ = dr::select(result_sub.second, Float(1.f), Float(0.f));
 
                         if (ctr == 0)
                             result = result_sub;

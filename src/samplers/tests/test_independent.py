@@ -1,6 +1,6 @@
 import mitsuba
 import pytest
-import enoki as ek
+import drjit as dr
 
 from .utils import check_deep_copy_sampler_scalar ,check_deep_copy_sampler_wavefront
 
@@ -21,10 +21,10 @@ def test02_sample_vs_pcg32(variant_scalar_rgb):
                              </sampler>""" % 8)
 
     # IndependentSampler uses the default-constructed PCG if no seed is provided.
-    rng = ek.scalar.PCG32()
+    rng = dr.scalar.PCG32()
     for i in range(10):
-        assert ek.all(sampler.next_1d() == rng.next_float32())
-        assert ek.all(sampler.next_2d() == [rng.next_float32(), rng.next_float32()])
+        assert dr.all(sampler.next_1d() == rng.next_float32())
+        assert dr.all(sampler.next_2d() == [rng.next_float32(), rng.next_float32()])
 
 
 def test03_copy_sampler_scalar(variants_any_scalar):

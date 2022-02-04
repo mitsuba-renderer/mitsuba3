@@ -1,4 +1,4 @@
-import enoki as ek
+import drjit as dr
 import mitsuba
 import pytest
 
@@ -117,7 +117,7 @@ def test01_render_simple(variants_all, emitter):
     scene, integrator = create_test_scene(emitter=emitter)
     assert isinstance(integrator, AdjointIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop=True)
-    assert ek.count(ek.ravel(image) > 0) >= 0.2 * ek.hprod(ek.shape(image))
+    assert dr.count(dr.ravel(image) > 0) >= 0.2 * dr.hprod(dr.shape(image))
 
 
 @pytest.mark.slow
@@ -130,7 +130,7 @@ def test02_render_infinite_emitter(variants_all, emitter, shape):
     image = integrator.render(scene, seed=0, spp=4, develop=True)
     # Infinite emitters are sampled very inefficiently, so with such low spp
     # it's possible that the vast majority of pixels are still zero.
-    assert ek.count(ek.ravel(image) > 0) >= 0.02 * ek.hprod(ek.shape(image))
+    assert dr.count(dr.ravel(image) > 0) >= 0.02 * dr.hprod(dr.shape(image))
 
 
 @pytest.mark.parametrize('emitter', ['constant', 'envmap', 'area', 'texturedarea'])
@@ -139,7 +139,7 @@ def test03_render_hide_emitters(variants_all, emitter):
     be visible when hide_emitters is enabled."""
     scene, integrator = create_test_scene(emitter=emitter, shape=None, hide_emitters=True)
     image = integrator.render(scene, seed=0, spp=4, develop=True)
-    assert ek.all(ek.ravel(image) == 0)
+    assert dr.all(dr.ravel(image) == 0)
 
 @pytest.mark.slow
 @pytest.mark.parametrize('develop', [False, True])
@@ -149,9 +149,9 @@ def test04_render_no_emitters(variants_all, develop):
 
     image = integrator.render(scene, seed=0, spp=2, develop=develop)
     if not develop:
-        assert len(ek.shape(image)) == 0
+        assert len(dr.shape(image)) == 0
         image = scene.sensors()[0].film().develop()
-    assert ek.all((image == 0) | ek.isnan(image))
+    assert dr.all((image == 0) | dr.isnan(image))
 
 
 def test05_render_crop_film(variants_all):
@@ -164,7 +164,7 @@ def test05_render_crop_film(variants_all):
     scene, integrator = create_test_scene(emitter='texturedarea')
     image1 = integrator.render(scene, seed=0, spp=4, develop=True)
     image1_cropped = image1[offset[1]:offset[1]+size[1], offset[0]:offset[0]+size[0], :]
-    ek.eval(image1_cropped)
+    dr.eval(image1_cropped)
 
     # 2. Use the film's crop window via the Python API
     film = scene.sensors()[0].film()
@@ -173,12 +173,12 @@ def test05_render_crop_film(variants_all):
         # TODO: ideally, we shouldn't need to call this explicitly
         scene.sensors()[0].parameters_changed()
     image2 = integrator.render(scene, seed=0, spp=4, develop=True)
-    ek.eval(image2)
+    dr.eval(image2)
 
     # 3. Specify the crop window at scene loading time
     scene, integrator = create_test_scene(emitter='texturedarea', crop_window=(offset, size))
     image3 = integrator.render(scene, seed=0, spp=4, develop=True)
-    ek.eval(image3)
+    dr.eval(image3)
 
     if False:
         from mitsuba.core import Bitmap
@@ -189,9 +189,9 @@ def test05_render_crop_film(variants_all):
 
     # Since we trace the exact same rays regardless of crops, even the noise
     # pattern should be identical
-    assert ek.allclose(ek.ravel(image1_cropped), ek.ravel(image2), atol=1e-4), \
+    assert dr.allclose(dr.ravel(image1_cropped), dr.ravel(image2), atol=1e-4), \
         'Cropping the result should be the same as setting a crop window'
-    assert ek.allclose(ek.ravel(image2), ek.ravel(image3), atol=1e-4), \
+    assert dr.allclose(dr.ravel(image2), dr.ravel(image3), atol=1e-4), \
         'Cropping at runtime should be equivalent to cropping at load time'
 
 
@@ -210,17 +210,17 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     opt.load()
     opt.update()
 
-    with ek.suspend_grad():
+    with dr.suspend_grad():
         image = integrator.render(scene, seed=0, spp=64)
 
-    ek.enable_grad(image)
-    loss = ek.hmean_async(image)
-    ek.backward(loss)
-    adjoint = ek.grad(image)
-    ek.set_grad(image, 0.0)
+    dr.enable_grad(image)
+    loss = dr.hmean_async(image)
+    dr.backward(loss)
+    adjoint = dr.grad(image)
+    dr.set_grad(image, 0.0)
 
     integrator.render_backward(scene, grad_in=adjoint, seed=3,
                                spp=64, params=params)
-    g = ek.grad(params[key])
-    assert ek.shape(g) == ek.shape(params[key])
-    assert ek.allclose(g, 0.33647, atol=1e-5) # TODO improve this test (don't use hardcoded value)
+    g = dr.grad(params[key])
+    assert dr.shape(g) == dr.shape(params[key])
+    assert dr.allclose(g, 0.33647, atol=1e-5) # TODO improve this test (don't use hardcoded value)

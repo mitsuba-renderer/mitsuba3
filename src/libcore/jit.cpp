@@ -9,13 +9,13 @@ Jit::Jit() { }
 Jit *Jit::get_instance() { return jit; }
 
 void Jit::static_initialization() {
-#if defined(ENOKI_X86_64)
+#if defined(DRJIT_X86_64)
     jit = new Jit();
 #endif
 }
 
 void Jit::static_shutdown() {
-#if defined(ENOKI_X86_64)
+#if defined(DRJIT_X86_64)
     delete jit;
     jit = nullptr;
 #endif

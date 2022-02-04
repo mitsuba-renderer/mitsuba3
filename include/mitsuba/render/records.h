@@ -85,7 +85,7 @@ struct PositionSample {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta)
+    DRJIT_STRUCT(PositionSample, p, n, uv, time, pdf, delta)
 };
 
 // -----------------------------------------------------------------------------
@@ -174,7 +174,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
                     const SurfaceInteraction3f &si,
                     const Interaction3f &ref) : Base(si) {
         Vector3f rel = si.p - ref.p;
-        dist = ek::norm(rel);
+        dist = dr::norm(rel);
         d = select(si.is_valid(), rel / dist, -si.wi);
         emitter = si.emitter(scene);
     }
@@ -191,7 +191,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
+    DRJIT_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
 };
 
 // -----------------------------------------------------------------------------

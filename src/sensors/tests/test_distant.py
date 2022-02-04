@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import enoki as ek
+import drjit as dr
 
 
 def sensor_dict(target=None, direction=None):
@@ -79,8 +79,8 @@ def test_construct(variant_scalar_rgb):
     ]:
         sensor = make_sensor(sensor_dict(direction=direction))
         result = sensor.world_transform().matrix
-        assert ek.allclose(result, expected)
-        # Couldn't get ek.allclose() to work here
+        assert dr.allclose(result, expected)
+        # Couldn't get dr.allclose() to work here
 
     # Test different combinations of target and origin values
     # -- No target
@@ -117,7 +117,7 @@ def test_sample_ray_direction(variant_scalar_rgb, direction):
         ray, _ = sensor.sample_ray(1.0, 1.0, sample1, sample2, True)
 
         # Check that ray direction is what is expected
-        assert ek.allclose(ray.d, ek.normalize(ScalarVector3f(direction)))
+        assert dr.allclose(ray.d, dr.normalize(ScalarVector3f(direction)))
 
 
 @pytest.mark.parametrize(
@@ -384,5 +384,5 @@ def test_checkerboard(variants_all_rgb):
     scene = load_dict(scene_dict)
     data = np.array(scene.render())
 
-    expected = l_o * 0.5 * (rho0 + rho1) / ek.Pi
+    expected = l_o * 0.5 * (rho0 + rho1) / dr.Pi
     assert np.allclose(data, expected, atol=1e-3)

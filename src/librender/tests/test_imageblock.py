@@ -2,7 +2,7 @@ import math
 import os
 
 import pytest
-import enoki as ek
+import drjit as dr
 import mitsuba
 
 
@@ -12,11 +12,11 @@ def test01_construct(variant_scalar_rgb):
 
     im = ImageBlock([33, 12], [2, 3], 4)
     assert im is not None
-    assert ek.all(im.offset() == [2, 3])
+    assert dr.all(im.offset() == [2, 3])
     im.set_offset([10, 20])
-    assert ek.all(im.offset() == [10, 20])
+    assert dr.all(im.offset() == [10, 20])
 
-    assert ek.all(im.size() == [33, 12])
+    assert dr.all(im.size() == [33, 12])
     assert im.warn_invalid()
     assert im.border_size() == 0  # Since there's no reconstruction filter
     assert im.channel_count() == 4
@@ -52,7 +52,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
         for i in range(5):
             # Intentional: one of the points is exactly on a boundary
             pos = Point2f(3.3+0.25*i, 3+0.25*j)
-            ek.make_opaque(pos)
+            dr.make_opaque(pos)
 
             size = ScalarVector2u(6, 6)
 
@@ -67,24 +67,24 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
             block.put(pos=pos, values=[1])
 
             size += 2 * block.border_size()
-            Array1f = Float if not scalar else ek.scalar.ArrayXf
+            Array1f = Float if not scalar else dr.scalar.ArrayXf
 
             shift = 0.5 - pos - block.border_size() + block.offset()
-            p = ek.meshgrid(
-                ek.arange(Array1f, size[0]) + shift[0],
-                ek.arange(Array1f, size[1]) + shift[1]
+            p = dr.meshgrid(
+                dr.arange(Array1f, size[0]) + shift[0],
+                dr.arange(Array1f, size[1]) + shift[1]
             )
 
             import numpy as np
             if scalar:
-                ref = ek.zero(TensorXf, block.tensor().shape)
+                ref = dr.zero(TensorXf, block.tensor().shape)
                 if filter_name == 'box':
                     eval_method = rfilter.eval
                 else:
                     eval_method = rfilter.eval_discretized
 
                 out = ref.array
-                for i in range(ek.hprod(size)):
+                for i in range(dr.hprod(size)):
                     out[i] = eval_method(-p[0][i]) * \
                              eval_method(-p[1][i])
             else:
@@ -93,10 +93,10 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
                                block.tensor().shape)
 
             if normalize:
-                value = ek.hsum(ref)
+                value = dr.hsum(ref)
                 if value > 0:
                     ref /= value
-            match = ek.allclose(block.tensor(), ref, atol=1e-5)
+            match = dr.allclose(block.tensor(), ref, atol=1e-5)
 
             if not match:
                 print(f'pos={pos}, rfilter={rfilter}, '
@@ -118,18 +118,18 @@ def test03_put_boundary(variants_all_rgb, filter_name):
     im = ImageBlock([3, 3], [0, 0], 1, rfilter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
-    if ek.is_jit_array_v(Float):
-        a = ek.slice(rfilter.eval(0))
-        b = ek.slice(rfilter.eval(1))
+    if dr.is_jit_array_v(Float):
+        a = dr.slice(rfilter.eval(0))
+        b = dr.slice(rfilter.eval(1))
         c = b**2
-        assert ek.allclose(im.tensor().array, [c, b, c,
+        assert dr.allclose(im.tensor().array, [c, b, c,
                                                b, a, b,
                                                c, b, c], atol=1e-3)
     else:
         a = rfilter.eval_discretized(0)
         b = rfilter.eval_discretized(1)
         c = b**2
-        assert ek.allclose(im.tensor().array, [c, b, c,
+        assert dr.allclose(im.tensor().array, [c, b, c,
                                                b, a, b,
                                                c, b, c], atol=1e-3)
 
@@ -156,12 +156,12 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
     if border:
         size_b += rfilter.border_size() * 2
 
-    Array1f = Float if not scalar else ek.scalar.ArrayXf
+    Array1f = Float if not scalar else dr.scalar.ArrayXf
 
     src = Array1f(np.float32(np.random.rand(size_b[0]*size_b[1])))
 
-    if ek.is_diff_array_v(Float) and enable_ad:
-        ek.enable_grad(src)
+    if dr.is_diff_array_v(Float) and enable_ad:
+        dr.enable_grad(src)
 
     source_tensor = TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
 
@@ -174,12 +174,12 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
         for i in range(5):
             # Intentional: one of the points is exactly on a boundary
             pos = Point2f(3.3+0.25*i, 3+0.25*j)
-            ek.make_opaque(pos)
+            dr.make_opaque(pos)
 
             shift = 0.5 - pos - block.border_size() + block.offset()
-            p = ek.meshgrid(
-                ek.arange(Array1f, size_b[0]) + shift[0],
-                ek.arange(Array1f, size_b[1]) + shift[1]
+            p = dr.meshgrid(
+                dr.arange(Array1f, size_b[0]) + shift[0],
+                dr.arange(Array1f, size_b[1]) + shift[1]
             )
 
             value = block.read(pos)[0]
@@ -192,18 +192,18 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                     eval_method = rfilter.eval_discretized
 
                 weights = ref = 0
-                for i in range(ek.hprod(size)):
+                for i in range(dr.hprod(size)):
                     weight = eval_method(-p[0][i]) * eval_method(-p[1][i])
-                    ref = ek.fmadd(src[i], weight, ref)
+                    ref = dr.fmadd(src[i], weight, ref)
                     weights += weight
 
                 if weights > 0 and normalize:
                     ref /= weights
             else:
                 weight = rfilter.eval(-p[0]) * rfilter.eval(-p[1])
-                ref = ek.hsum(weight * ek.detach(source_tensor.array))
+                ref = dr.hsum(weight * dr.detach(source_tensor.array))
 
                 if normalize:
-                    ref /= ek.hsum(weight)
+                    ref /= dr.hsum(weight)
 
-            assert ek.allclose(value, ref, atol=1e-5)
+            assert dr.allclose(value, ref, atol=1e-5)

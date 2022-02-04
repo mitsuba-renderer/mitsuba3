@@ -155,7 +155,7 @@ public:
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::DiffuseReflection;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
-        ek::set_attr(this, "flags", m_flags);
+        dr::set_attr(this, "flags", m_flags);
         m_flags = m_flags | BSDFFlags::FrontSide;
 
         m_components.clear();
@@ -177,8 +177,8 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = ek::zero<BSDFSample3f>();
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, 0.f };
 
         Float prob_specular = m_specular_sampling_weight;
@@ -190,19 +190,19 @@ public:
 
         bs.eta = 1.f;
 
-        if (ek::any_or<true>(sample_specular)) {
+        if (dr::any_or<true>(sample_specular)) {
             MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
-            ek::masked(bs.wo, sample_specular) = reflect(si.wi, m);
-            ek::masked(bs.sampled_component, sample_specular) = 0;
-            ek::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
+            dr::masked(bs.wo, sample_specular) = reflect(si.wi, m);
+            dr::masked(bs.sampled_component, sample_specular) = 0;
+            dr::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
         }
 
-        if (ek::any_or<true>(sample_diffuse)) {
-            ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
-            ek::masked(bs.sampled_component, sample_diffuse) = 1;
-            ek::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
+        if (dr::any_or<true>(sample_diffuse)) {
+            dr::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
+            dr::masked(bs.sampled_component, sample_diffuse) = 1;
+            dr::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
         }
 
         bs.pdf = pdf(ctx, si, bs.wo, active);
@@ -223,7 +223,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return 0.f;
 
         Spectrum result = 0.f;
@@ -238,7 +238,7 @@ public:
 
             if (has_specular) {
                 MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
-                Vector3f H = ek::normalize(wo + si.wi);
+                Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
                 // Mueller matrix for specular reflection.
@@ -246,8 +246,8 @@ public:
 
                 /* The Stokes reference frame vector of this matrix lies perpendicular
                    to the plane of reflection. */
-                Vector3f s_axis_in  = ek::normalize(ek::cross(H, -wo_hat)),
-                         s_axis_out = ek::normalize(ek::cross(H, wi_hat));
+                Vector3f s_axis_in  = dr::normalize(dr::cross(H, -wo_hat)),
+                         s_axis_out = dr::normalize(dr::cross(H, wi_hat));
 
                 /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                    Stokes bases of -wo_hat & wi_hat. */
@@ -272,24 +272,24 @@ public:
                    The refraction to the outside will introduce some polarization. */
 
                 // Refract inside
-                Spectrum To = mueller::specular_transmission(ek::abs(Frame3f::cos_theta(wo_hat)), m_eta);
+                Spectrum To = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wo_hat)), m_eta);
 
                 // Diffuse subsurface scattering that acts as a depolarizer.
                 Spectrum diff = depolarizer<Spectrum>(m_diffuse_reflectance->eval(si, active));
 
                 // Refract outside
                 Normal3f n(0.f, 0.f, 1.f);
-                Float inv_eta = ek::rcp(m_eta);
+                Float inv_eta = dr::rcp(m_eta);
                 Float cos_theta_t_i = std::get<1>(fresnel(cos_theta_i, m_eta));
                 Vector3f wi_hat_p = -refract(wi_hat, cos_theta_t_i, inv_eta);
-                Spectrum Ti = mueller::specular_transmission(ek::abs(Frame3f::cos_theta(wi_hat_p)), inv_eta);
+                Spectrum Ti = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wi_hat_p)), inv_eta);
 
                 diff = Ti * diff * To;
 
                 /* The Stokes reference frame vector of `diff` lies perpendicular
                    to the plane of reflection. */
-                Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
-                         s_axis_out = ek::normalize(ek::cross(n,  wi_hat));
+                Vector3f s_axis_in  = dr::normalize(dr::cross(n, -wo_hat)),
+                         s_axis_out = dr::normalize(dr::cross(n,  wi_hat));
 
                 /* Rotate in/out reference vector of `diff` s.t. it aligns with the
                    implicit Stokes bases of -wo_hat & wi_hat. */
@@ -297,12 +297,12 @@ public:
                                                       -wo_hat, s_axis_in,  mueller::stokes_basis(-wo_hat),
                                                        wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
 
-                result += diff * ek::InvPi<Float> * cos_theta_o;
+                result += diff * dr::InvPi<Float> * cos_theta_o;
             }
         } else {
             if (has_specular) {
                 MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
-                Vector3f H = ek::normalize(wo + si.wi);
+                Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
                 Spectrum F = std::get<0>(fresnel(dot(si.wi, H), m_eta));
@@ -324,7 +324,7 @@ public:
                 UnpolarizedSpectrum r_i = std::get<0>(fresnel(cos_theta_i, m_eta)),
                                     r_o = std::get<0>(fresnel(cos_theta_o, m_eta));
                 diff = (1.f - r_o) * diff * (1.f - r_i);
-                result += diff * ek::InvPi<Float> * cos_theta_o;
+                result += diff * dr::InvPi<Float> * cos_theta_o;
             }
         }
 
@@ -343,7 +343,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return 0.f;
 
         Float prob_specular = m_specular_sampling_weight,
@@ -352,20 +352,20 @@ public:
             prob_specular = has_specular ? 1.f : 0.f;
 
         // Specular component
-        Vector3f H = ek::normalize(wo + si.wi);
+        Vector3f H = dr::normalize(wo + si.wi);
         MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
 
         Float p_specular;
         if (m_sample_visible)
             p_specular = distr.eval(H) * distr.smith_g1(si.wi, H) / (4.f * cos_theta_i);
         else
-            p_specular = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
-        ek::masked(p_specular, ek::dot(si.wi, H) <= 0.f || ek::dot(wo, H) <= 0.f) = 0.f;
+            p_specular = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
+        dr::masked(p_specular, dr::dot(si.wi, H) <= 0.f || dr::dot(wo, H) <= 0.f) = 0.f;
 
         // Diffuse component
         Float p_diffuse = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return ek::select(active, prob_specular * p_specular + prob_diffuse * p_diffuse, 0.f);
+        return dr::select(active, prob_specular * p_specular + prob_diffuse * p_diffuse, 0.f);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -392,7 +392,7 @@ public:
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
-        ek::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
+        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
     }
 
     std::string to_string() const override {

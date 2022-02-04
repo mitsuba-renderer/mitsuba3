@@ -21,7 +21,7 @@ MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(
 
     /* For some emitters, set_shape() will never be called, so we
        must ensure that m_shape is at least initialized. */
-    ek::set_attr(this, "shape", m_shape);
+    dr::set_attr(this, "shape", m_shape);
 }
 
 MTS_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
@@ -33,7 +33,7 @@ MTS_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape *shape) {
         Throw("An endpoint can be only be attached to a single shape.");
 
     m_shape = shape;
-    ek::set_attr(this, "shape", m_shape);
+    dr::set_attr(this, "shape", m_shape);
 }
 
 MTS_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
@@ -41,7 +41,7 @@ MTS_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
         Throw("An endpoint can be only be attached to a single medium.");
 
     m_medium = medium;
-    ek::set_attr(this, "medium", m_medium);
+    dr::set_attr(this, "medium", m_medium);
 }
 
 MTS_VARIANT std::pair<typename Endpoint<Float, Spectrum>::Ray3f, Spectrum>

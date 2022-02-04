@@ -2,7 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
-#include <enoki-thread/thread.h>
+#include <drjit-thread/thread.h>
 #include <thread>
 #include <mutex>
 #include <vector>

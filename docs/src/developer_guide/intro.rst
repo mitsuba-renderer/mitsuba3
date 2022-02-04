@@ -4,8 +4,8 @@ Introduction
 ============
 
 New developers will want to begin by *thoroughly* reading the documentation of
-`Enoki <https://enoki.readthedocs.io/en/master/index.html>`_ before looking at
-any Mitsuba code. Enoki is a template library for vector and matrix arithmetic
+`Dr.Jit <https://enoki.readthedocs.io/en/master/index.html>`_ before looking at
+any Mitsuba code. Dr.Jit is a template library for vector and matrix arithmetic
 that constitutes the foundation of Mitsuba 2. It also drives the code
 transformations that enable systematic vectorization and automatic
 differentiation of the renderer.

@@ -1,14 +1,14 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
-#include <enoki/array_traits.h>
-#include <enoki/map.h>
+#include <drjit/array_traits.h>
+#include <drjit/map.h>
 #include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Define Enoki namespace alias
-namespace ek = enoki;
+/// Define Dr.Jit namespace alias
+namespace dr = drjit;
 
 // =============================================================
 //! @{ \name Forward declarations of Mitsuba classes/structs
@@ -66,8 +66,8 @@ template <typename Vector>                      struct Frame;
 template <typename Float>                       struct DiscreteDistribution;
 template <typename Float>                       struct ContinuousDistribution;
 
-template <typename Spectrum> using StokesVector  = ek::Array<Spectrum, 4>;
-template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
+template <typename Spectrum> using StokesVector  = dr::Array<Spectrum, 4>;
+template <typename Spectrum> using MuellerMatrix = dr::Matrix<Spectrum, 4>;
 
 //! @}
 // =============================================================
@@ -77,10 +77,10 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 // =============================================================
 
 template <typename Value,
-          typename T = std::conditional_t<ek::is_static_array_v<Value>,
-                                          ek::value_t<Value>, Value>>
+          typename T = std::conditional_t<dr::is_static_array_v<Value>,
+                                          dr::value_t<Value>, Value>>
 using DynamicBuffer =
-    std::conditional_t<ek::is_dynamic_array_v<T>, T, ek::DynamicArray<T>>;
+    std::conditional_t<dr::is_dynamic_array_v<T>, T, dr::DynamicArray<T>>;
 
 //! @}
 // =============================================================
@@ -92,16 +92,16 @@ using DynamicBuffer =
 template <typename Float_> struct CoreAliases {
     using Float = Float_;
 
-    using Mask = ek::mask_t<Float>;
+    using Mask = dr::mask_t<Float>;
     using Bool = Mask;
 
-    using Int8    = ek::replace_scalar_t<Float, int8_t>;
-    using Int32   = ek::int32_array_t<Float>;
-    using UInt32  = ek::uint32_array_t<Float>;
-    using Int64   = ek::int64_array_t<Float>;
-    using UInt64  = ek::uint64_array_t<Float>;
-    using Float32 = ek::float32_array_t<Float>;
-    using Float64 = ek::float64_array_t<Float>;
+    using Int8    = dr::replace_scalar_t<Float, int8_t>;
+    using Int32   = dr::int32_array_t<Float>;
+    using UInt32  = dr::uint32_array_t<Float>;
+    using Int64   = dr::int64_array_t<Float>;
+    using UInt64  = dr::uint64_array_t<Float>;
+    using Float32 = dr::float32_array_t<Float>;
+    using Float64 = dr::float64_array_t<Float>;
 
     using Vector1i = Vector<Int32, 1>;
     using Vector2i = Vector<Int32, 2>;
@@ -146,15 +146,15 @@ template <typename Float_> struct CoreAliases {
     using Normal3f = Normal<Float, 3>;
     using Normal3d = Normal<Float64, 3>;
 
-    using Matrix2f = ek::Matrix<Float, 2>;
-    using Matrix2d = ek::Matrix<Float64, 2>;
-    using Matrix3f = ek::Matrix<Float, 3>;
-    using Matrix3d = ek::Matrix<Float64, 3>;
-    using Matrix4f = ek::Matrix<Float, 4>;
-    using Matrix4d = ek::Matrix<Float64, 4>;
+    using Matrix2f = dr::Matrix<Float, 2>;
+    using Matrix2d = dr::Matrix<Float64, 2>;
+    using Matrix3f = dr::Matrix<Float, 3>;
+    using Matrix3d = dr::Matrix<Float64, 3>;
+    using Matrix4f = dr::Matrix<Float, 4>;
+    using Matrix4d = dr::Matrix<Float64, 4>;
 
-    using Quaternion4f = ek::Quaternion<Float>;
-    using Quaternion4d = ek::Quaternion<Float64>;
+    using Quaternion4f = dr::Quaternion<Float>;
+    using Quaternion4d = dr::Quaternion<Float64>;
 
     using BoundingBox1f    = BoundingBox<Point1f>;
     using BoundingBox2f    = BoundingBox<Point2f>;
@@ -176,14 +176,14 @@ template <typename Float_> struct CoreAliases {
     using Color1d = Color<Float64, 1>;
     using Color3d = Color<Float64, 3>;
 
-    using TensorXf = ek::Tensor<mitsuba::DynamicBuffer<Float>>;
+    using TensorXf = dr::Tensor<mitsuba::DynamicBuffer<Float>>;
 
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
      */
-    using Array1f = ek::Array<Float, 1>;
-    using Array3f = ek::Array<Float, 3>;
+    using Array1f = dr::Array<Float, 1>;
+    using Array3f = dr::Array<Float, 3>;
     using DynamicBuffer = mitsuba::DynamicBuffer<Float>;
 
 };
@@ -267,26 +267,26 @@ template <typename Float_> struct CoreAliases {
 
 // Variadic macro to import a set of types from the base class
 #define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;
-#define MTS_USING_TYPES(...) ENOKI_MAP(__MTS_USING_TYPES_MACRO__, __VA_ARGS__)
+#define MTS_USING_TYPES(...) DRJIT_MAP(__MTS_USING_TYPES_MACRO__, __VA_ARGS__)
 
 // Variadic macro to import a set of variables from the base class
 #define __MTS_USING_MEMBERS_MACRO__(x) using Base::x;
-#define MTS_USING_MEMBERS(...) ENOKI_MAP(__MTS_USING_MEMBERS_MACRO__, __VA_ARGS__)
+#define MTS_USING_MEMBERS(...) DRJIT_MAP(__MTS_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
 #define MTS_IMPORT_CORE_TYPES()                                                                    \
     MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
-    using ScalarFloat = ek::scalar_t<Float>;                                                       \
+    using ScalarFloat = dr::scalar_t<Float>;                                                       \
     MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
 #define MTS_MASK_ARGUMENT(mask)                                                                    \
     (void) mask;                                                                                   \
-    if constexpr (!ek::is_array_v<Float>)                                                          \
+    if constexpr (!dr::is_array_v<Float>)                                                          \
         mask = true;
 
 #define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
     ScopedPhase scope_phase(profiler_phase);                                                       \
     (void) mask;                                                                                   \
-    if constexpr (!ek::is_array_v<Float>)                                                          \
+    if constexpr (!dr::is_array_v<Float>)                                                          \
         mask = true;
 
 NAMESPACE_BEGIN(filesystem)
@@ -326,7 +326,7 @@ extern "C" {
     constexpr uint32_t operator+(name e) { return (uint32_t) e; }              \
     template <typename UInt32>                                                 \
     constexpr auto has_flag(UInt32 flags, name f) {                            \
-        return enoki::neq(flags & (uint32_t) f, 0u);                           \
+        return drjit::neq(flags & (uint32_t) f, 0u);                           \
     }
 
 //! @}
