@@ -38,7 +38,7 @@ Homogeneous medium (:monosp:`homogeneous`)
  * - scale
    - |float|
    - Optional scale factor that will be applied to the extinction parameter.
-     It is provided for convenience when accomodating data based on different
+     It is provided for convenience when accommodating data based on different
      units, or to simply tweak the density of the medium. (Default: 1)
 
  * - sample_emitters
