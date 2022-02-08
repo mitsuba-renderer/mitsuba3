@@ -25,7 +25,7 @@ private:
  * The underlying file abstraction is std::fstream, and so most
  * operations can be expected to behave similarly.
  */
-class MTS_EXPORT_CORE FileStream : public Stream {
+class MTS_EXPORT_LIB FileStream : public Stream {
 public:
     enum EMode {
         /// Opens a file in (binary) read-only mode

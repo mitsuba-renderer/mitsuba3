@@ -45,7 +45,7 @@ NAMESPACE_BEGIN(filesystem)
  * representation. The path can be converted back to the system-specific string
  * using <tt>native()</tt> or <tt>string()</tt>.
  */
-class MTS_EXPORT_CORE path {
+class MTS_EXPORT_LIB path {
 public:
     /// Default constructor. Constructs an empty path. An empty path is considered relative.
     path() : m_absolute(false) { }
@@ -160,7 +160,7 @@ public:
 #endif
 
     /// Prints the path as it would be returned by <tt>string()</tt>.
-    MTS_EXPORT_CORE friend std::ostream& operator<<(std::ostream &os, const path &path);
+    MTS_EXPORT_LIB friend std::ostream& operator<<(std::ostream &os, const path &path);
 
     /** Equality operator. Warning: this only checks for lexicographic equivalence.
      * To check whether two paths point to the same filesystem resource,
@@ -188,54 +188,54 @@ protected:
 };
 
 /// Returns the current working directory (equivalent to getcwd)
-extern MTS_EXPORT_CORE path current_path();
+extern MTS_EXPORT_LIB path current_path();
 
 /** \brief Returns an absolute path to the same location pointed by <tt>p</tt>,
  * relative to <tt>base</tt>.
  * \see http ://en.cppreference.com/w/cpp/experimental/fs/absolute)
  */
-extern MTS_EXPORT_CORE path absolute(const path& p);
+extern MTS_EXPORT_LIB path absolute(const path& p);
 
 /// Checks if <tt>p</tt> points to a regular file, as opposed to a directory or symlink.
-extern MTS_EXPORT_CORE bool is_regular_file(const path& p) noexcept;
+extern MTS_EXPORT_LIB bool is_regular_file(const path& p) noexcept;
 /// Checks if <tt>p</tt> points to a directory.
-extern MTS_EXPORT_CORE bool is_directory(const path& p) noexcept;
+extern MTS_EXPORT_LIB bool is_directory(const path& p) noexcept;
 /// Checks if <tt>p</tt> points to an existing filesystem object.
-extern MTS_EXPORT_CORE bool exists(const path& p) noexcept;
+extern MTS_EXPORT_LIB bool exists(const path& p) noexcept;
 /** \brief Returns the size (in bytes) of a regular file at <tt>p</tt>.
  * Attempting to determine the size of a directory (as well as any other file
  * that is not a regular file or a symlink) is treated as an error.
  */
-extern MTS_EXPORT_CORE size_t file_size(const path& p);
+extern MTS_EXPORT_LIB size_t file_size(const path& p);
 
 /** \brief Checks whether two paths refer to the same file system object.
  * Both must refer to an existing file or directory.
  * Symlinks are followed to determine equivalence.
  */
-extern MTS_EXPORT_CORE bool equivalent(const path& p1, const path& p2);
+extern MTS_EXPORT_LIB bool equivalent(const path& p1, const path& p2);
 
 /** \brief Creates a directory at <tt>p</tt> as if <tt>mkdir</tt> was used.
  * Returns true if directory creation was successful, false otherwise.
  * If <tt>p</tt> already exists and is already a directory, the function
  * does nothing (this condition is not treated as an error).
  */
-extern MTS_EXPORT_CORE bool create_directory(const path& p) noexcept;
+extern MTS_EXPORT_LIB bool create_directory(const path& p) noexcept;
 /** \brief Changes the size of the regular file named by <tt>p</tt> as if
  * <tt>truncate</tt> was called. If the file was larger than <tt>target_length</tt>,
  * the remainder is discarded. The file must exist.
  */
-extern MTS_EXPORT_CORE bool resize_file(const path& p, size_t target_length) noexcept;
+extern MTS_EXPORT_LIB bool resize_file(const path& p, size_t target_length) noexcept;
 
 /** \brief Removes a file or empty directory. Returns true if removal was
  * successful, false if there was an error (e.g. the file did not exist).
  */
-extern MTS_EXPORT_CORE bool remove(const path& p);
+extern MTS_EXPORT_LIB bool remove(const path& p);
 
 
 /** \brief Renames a file or directory. Returns true if renaming was
  * successful, false if there was an error (e.g. the file did not exist).
  */
-extern MTS_EXPORT_CORE bool rename(const path& src, const path &dst);
+extern MTS_EXPORT_LIB bool rename(const path& src, const path &dst);
 
 NAMESPACE_END(filesystem)
 

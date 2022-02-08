@@ -2120,7 +2120,7 @@ private:
 };
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scalar_t<Float>, 3>>, uint32_t,
+class MTS_EXPORT_LIB ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scalar_t<Float>, 3>>, uint32_t,
                                                           SurfaceAreaHeuristic3<dr::scalar_t<Float>>,
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
@@ -2524,5 +2524,5 @@ protected:
     std::vector<Size> m_primitive_map;
 };
 
-MTS_EXTERN_CLASS_RENDER(ShapeKDTree)
+MTS_EXTERN_CLASS(ShapeKDTree)
 NAMESPACE_END(mitsuba)

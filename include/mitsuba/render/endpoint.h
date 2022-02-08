@@ -51,7 +51,7 @@ NAMESPACE_BEGIN(mitsuba)
  * these redundancies and remove them retroactively.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Endpoint : public Object {
+class MTS_EXPORT_LIB Endpoint : public Object {
 public:
     MTS_IMPORT_TYPES(Medium, Scene, Shape)
 
@@ -400,5 +400,5 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS_RENDER(Endpoint)
+MTS_EXTERN_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

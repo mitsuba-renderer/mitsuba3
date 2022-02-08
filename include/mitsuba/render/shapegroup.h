@@ -15,7 +15,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ShapeGroup : public Shape<Float, Spectrum> {
+class MTS_EXPORT_LIB ShapeGroup : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_id)
     MTS_IMPORT_TYPES(ShapeKDTree, ShapePtr)
@@ -98,5 +98,5 @@ private:
     bool m_has_meshes, m_has_others;
 };
 
-MTS_EXTERN_CLASS_RENDER(ShapeGroup)
+MTS_EXTERN_CLASS(ShapeGroup)
 NAMESPACE_END(mitsuba)

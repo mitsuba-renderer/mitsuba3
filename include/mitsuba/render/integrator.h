@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mitsuba)
  * implementations.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Integrator : public Object {
+class MTS_EXPORT_LIB Integrator : public Object {
 public:
     MTS_IMPORT_TYPES(Scene, Sensor)
 
@@ -152,7 +152,7 @@ protected:
  * all pixels of the image.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
+class MTS_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Integrator, should_stop, aov_names,
                     m_stop, m_timeout, m_render_timer, m_hide_emitters)
@@ -265,7 +265,7 @@ protected:
  * termination technique should start to become active.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER MonteCarloIntegrator
+class MTS_EXPORT_LIB MonteCarloIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
@@ -296,7 +296,7 @@ protected:
  * output variables (AOVs).
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER AdjointIntegrator : public Integrator<Float, Spectrum> {
+class MTS_EXPORT_LIB AdjointIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Integrator, should_stop, aov_names, m_stop, m_timeout,
                     m_render_timer, m_hide_emitters)
@@ -371,8 +371,8 @@ protected:
 };
 
 
-MTS_EXTERN_CLASS_RENDER(Integrator)
-MTS_EXTERN_CLASS_RENDER(SamplingIntegrator)
-MTS_EXTERN_CLASS_RENDER(MonteCarloIntegrator)
-MTS_EXTERN_CLASS_RENDER(AdjointIntegrator)
+MTS_EXTERN_CLASS(Integrator)
+MTS_EXTERN_CLASS(SamplingIntegrator)
+MTS_EXTERN_CLASS(MonteCarloIntegrator)
+MTS_EXTERN_CLASS(AdjointIntegrator)
 NAMESPACE_END(mitsuba)

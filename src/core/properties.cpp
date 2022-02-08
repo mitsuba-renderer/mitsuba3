@@ -510,8 +510,8 @@ ref<Object> Properties::find_object(const std::string &name) const {
 }
 
 #define EXPORT_PROPERTY_ACCESSOR(T) \
-    template MTS_EXPORT_CORE T Properties::get<T>(const std::string &) const; \
-    template MTS_EXPORT_CORE T Properties::get<T>(const std::string &, const T&) const;
+    template MTS_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
+    template MTS_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
 
 #define T(...) __VA_ARGS__
 EXPORT_PROPERTY_ACCESSOR(T(bool))

@@ -27,31 +27,18 @@
 #  define MTS_INLINE    __attribute__((always_inline)) inline
 #endif
 
-#define MTS_MODULE_CORE   1
-#define MTS_MODULE_RENDER 2
-#define MTS_MODULE_UI     3
+#define MTS_MODULE_LIB    1
+#define MTS_MODULE_UI     2
 
-#if MTS_BUILD_MODULE == MTS_MODULE_CORE
-#  define MTS_EXPORT_CORE MTS_EXPORT
-#  define MTS_EXTERN_CORE extern
+#if MTS_BUILD_MODULE == MTS_MODULE_LIB
+#  define MTS_EXPORT_LIB MTS_EXPORT
+#  define MTS_EXTERN_LIB extern
 #else
-#  define MTS_EXPORT_CORE MTS_IMPORT
+#  define MTS_EXPORT_LIB MTS_IMPORT
 #  if defined(_MSC_VER)
-#    define MTS_EXTERN_CORE
+#    define MTS_EXTERN_LIB
 #  else
-#    define MTS_EXTERN_CORE extern
-#  endif
-#endif
-
-#if MTS_BUILD_MODULE == MTS_MODULE_RENDER
-#  define MTS_EXPORT_RENDER MTS_EXPORT
-#  define MTS_EXTERN_RENDER extern
-#else
-#  define MTS_EXPORT_RENDER MTS_IMPORT
-#  if defined(_MSC_VER)
-#    define MTS_EXTERN_RENDER
-#  else
-#    define MTS_EXTERN_RENDER extern
+#    define MTS_EXTERN_LIB extern
 #  endif
 #endif
 

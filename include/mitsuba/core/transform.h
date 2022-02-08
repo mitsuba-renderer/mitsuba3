@@ -376,7 +376,7 @@ template <typename Point_> struct Transform {
  * scale/shear matrix, a rotation quaternion, and a translation vector. These
  * will all be interpolated independently at eval time.
  */
-class MTS_EXPORT_CORE AnimatedTransform : public Object {
+class MTS_EXPORT_LIB AnimatedTransform : public Object {
 public:
     using Float = float;
     MTS_IMPORT_CORE_TYPES()

@@ -27,7 +27,7 @@ NAMESPACE_BEGIN(mitsuba)
  * implementation that only adds 32 bits to the base object (for the counter)
  * and has no overhead for references.
  */
-class MTS_EXPORT_CORE Object {
+class MTS_EXPORT_LIB Object {
 public:
     /// Default constructor
     Object() { }
@@ -292,7 +292,7 @@ protected:
 };
 
 /// Prints the canonical string representation of an object instance
-MTS_EXPORT_CORE std::ostream& operator<<(std::ostream &os, const Object *object);
+MTS_EXPORT_LIB std::ostream& operator<<(std::ostream &os, const Object *object);
 
 /// Prints the canonical string representation of an object instance
 template <typename T>

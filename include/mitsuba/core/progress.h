@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * take longer than a second or so. It provides interactive feedback when
  * Mitsuba is run on the console, via the OpenGL GUI, or in Jupyter Notebook.
  */
-class MTS_EXPORT_CORE ProgressReporter : public Object {
+class MTS_EXPORT_LIB ProgressReporter : public Object {
 public:
     /**
      * \brief Construct a new progress reporter.

@@ -28,7 +28,7 @@ NAMESPACE_END(detail)
  *
  * \sa FileStream, MemoryStream, DummyStream
  */
-class MTS_EXPORT_CORE Stream : public Object {
+class MTS_EXPORT_LIB Stream : public Object {
 
 protected:
     /* In general, only low-level type serializers should call the stream's
@@ -235,7 +235,7 @@ private:
     EByteOrder m_byte_order;
 };
 
-extern MTS_EXPORT_CORE std::ostream
+extern MTS_EXPORT_LIB std::ostream
     &operator<<(std::ostream &os, const Stream::EByteOrder &value);
 
 NAMESPACE_BEGIN(detail)

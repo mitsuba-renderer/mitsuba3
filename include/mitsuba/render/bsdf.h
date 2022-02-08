@@ -129,7 +129,7 @@ MTS_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * The \ref BSDFContext data structure encodes these preferences and is
  * supplied to most \ref BSDF methods.
  */
-struct MTS_EXPORT_RENDER BSDFContext {
+struct MTS_EXPORT_LIB BSDFContext {
     // =============================================================
     //! @{ \name Fields
     // =============================================================
@@ -263,7 +263,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * \sa mitsuba.render.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER BSDF : public Object {
+class MTS_EXPORT_LIB BSDF : public Object {
 public:
     MTS_IMPORT_TYPES()
 
@@ -490,10 +490,10 @@ protected:
 //! @{ \name Misc implementations
 // -----------------------------------------------------------------------
 
-extern MTS_EXPORT_RENDER std::ostream &operator<<(
+extern MTS_EXPORT_LIB std::ostream &operator<<(
     std::ostream &os, const TransportMode &mode);
 
-extern MTS_EXPORT_RENDER std::ostream &operator<<(std::ostream &os,
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
                                                   const BSDFContext& ctx);
 
 template <typename Float, typename Spectrum>
@@ -528,7 +528,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 //! @}
 // -----------------------------------------------------------------------
 
-MTS_EXTERN_CLASS_RENDER(BSDF)
+MTS_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

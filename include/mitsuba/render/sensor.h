@@ -15,7 +15,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
+class MTS_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Film, Sampler, Texture)
     MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
@@ -184,7 +184,7 @@ protected:
  * \ingroup librender
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
+class MTS_EXPORT_LIB ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Sensor)
     MTS_IMPORT_TYPES()
@@ -222,7 +222,7 @@ protected:
 // ========================================================================
 
 /// Helper function to parse the field of view field of a camera
-extern MTS_EXPORT_RENDER double parse_fov(const Properties &props, double aspect);
+extern MTS_EXPORT_LIB double parse_fov(const Properties &props, double aspect);
 
 /// Helper function to create a perspective projection transformation matrix
 template <typename Float> Transform<Point<Float, 4>>
@@ -266,8 +266,8 @@ perspective_projection(const Vector<int, 2> &film_size,
 //! @}
 // ========================================================================
 
-MTS_EXTERN_CLASS_RENDER(Sensor)
-MTS_EXTERN_CLASS_RENDER(ProjectiveCamera)
+MTS_EXTERN_CLASS(Sensor)
+MTS_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

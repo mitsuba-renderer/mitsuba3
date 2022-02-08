@@ -376,7 +376,7 @@ function(add_plugin)
   list(GET ARGV 0 TARGET)
   list(REMOVE_AT ARGV 0)
   add_library(${TARGET} SHARED ${ARGV})
-  target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render)
+  target_link_libraries(${TARGET} PRIVATE mitsuba)
   set_target_properties(${TARGET} PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
@@ -483,7 +483,7 @@ if (NOT SKBUILD)
 endif()
 
 # Set up location for build products
-set_target_properties(mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
+set_target_properties(mitsuba-bin mitsuba ${MTS_DEPEND}
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
@@ -498,7 +498,7 @@ set_target_properties(mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
 )
 
 install(
-  TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPEND}
+  TARGETS mitsuba-bin mitsuba ${MTS_DEPEND}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

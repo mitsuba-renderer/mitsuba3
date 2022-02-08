@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Abstract base class for 3D volumes.
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Volume : public Object {
+class MTS_EXPORT_LIB Volume : public Object {
 public:
     MTS_IMPORT_TYPES(Texture)
 
@@ -86,5 +86,5 @@ protected:
     ScalarBoundingBox3f m_bbox;
 };
 
-MTS_EXTERN_CLASS_RENDER(Volume)
+MTS_EXTERN_CLASS(Volume)
 NAMESPACE_END(mitsuba)

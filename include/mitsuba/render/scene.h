@@ -33,7 +33,7 @@ NAMESPACE_BEGIN(mitsuba)
  * </ul>
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Scene : public Object {
+class MTS_EXPORT_LIB Scene : public Object {
 public:
     MTS_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
                      ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
@@ -616,7 +616,7 @@ protected:
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded
-extern MTS_EXPORT_RENDER void librender_nop();
+extern MTS_EXPORT_LIB void librender_nop();
 
 // See interaction.h
 template <typename Float, typename Spectrum>
@@ -633,5 +633,5 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
     }
 }
 
-MTS_EXTERN_CLASS_RENDER(Scene)
+MTS_EXTERN_CLASS(Scene)
 NAMESPACE_END(mitsuba)

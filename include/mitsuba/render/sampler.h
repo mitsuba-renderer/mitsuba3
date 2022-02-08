@@ -61,7 +61,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Sampler : public Object {
+class MTS_EXPORT_LIB Sampler : public Object {
 public:
     MTS_IMPORT_TYPES()
 
@@ -160,7 +160,7 @@ protected:
 
 /// Interface for sampler plugins based on the PCG32 random number generator
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER PCG32Sampler : public Sampler<Float, Spectrum> {
+class MTS_EXPORT_LIB PCG32Sampler : public Sampler<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Sampler, m_base_seed, m_wavefront_size)
     MTS_IMPORT_TYPES()
@@ -181,6 +181,6 @@ protected:
     PCG32 m_rng;
 };
 
-MTS_EXTERN_CLASS_RENDER(Sampler)
-MTS_EXTERN_CLASS_RENDER(PCG32Sampler)
+MTS_EXTERN_CLASS(Sampler)
+MTS_EXTERN_CLASS(PCG32Sampler)
 NAMESPACE_END(mitsuba)

@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * acceleration data structures.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Shape : public Object {
+class MTS_EXPORT_LIB Shape : public Object {
 public:
     MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
 
@@ -572,7 +572,7 @@ private:
     bool m_dirty = true;
 };
 
-MTS_EXTERN_CLASS_RENDER(Shape)
+MTS_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)
 
 #define MTS_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \

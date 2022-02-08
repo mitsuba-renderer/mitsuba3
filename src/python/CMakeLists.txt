@@ -1,4 +1,69 @@
 # ----------------------------------------------------------
+#   Mitsuba python library
+# ----------------------------------------------------------
+
+foreach (MTS_VARIANT ${MTS_VARIANTS})
+  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
+  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
+  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
+  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
+  set(TARGET_NAME mitsuba_${MTS_VARIANT_NAME}_ext)
+
+  pybind11_add_module(${TARGET_NAME}
+      THIN_LTO OPT_SIZE
+      main_v.cpp
+      ${CORE_PY_V_SRC}
+      ${RENDER_PY_V_SRC}
+  )
+
+  target_compile_definitions(${TARGET_NAME} PRIVATE
+      "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
+      "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
+      "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
+      # macOS: Avoid warnings about loop unrolling being disabled with -Os
+      "-DDRJIT_UNROLL= "
+  )
+
+  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba)
+
+  set_target_properties(${TARGET_NAME}
+      PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+      FOLDER python
+  )
+
+  install(TARGETS ${TARGET_NAME}
+      LIBRARY DESTINATION mitsuba
+  )
+endforeach()
+
+pybind11_add_module(mitsuba_ext
+  THIN_LTO OPT_SIZE
+  main.cpp
+  ${CORE_PY_SRC}
+  ${RENDER_PY_SRC}
+)
+
+# macOS: Avoid warnings about loop unrolling being disabled with -Os
+target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
+
+target_link_libraries(mitsuba_ext PRIVATE mitsuba)
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
+target_link_libraries(mitsuba_ext PRIVATE asmjit)
+endif()
+
+set_target_properties(mitsuba_ext
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+  FOLDER python
+)
+
+install(TARGETS mitsuba_ext
+  LIBRARY DESTINATION mitsuba
+)
+
+# ----------------------------------------------------------
 #   Copy & installation targets for files in 'src/python'
 # ----------------------------------------------------------
 

@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
  * and a set of search paths. The implementation walks through the
  * search paths in order and stops once the file is found.
  */
-class MTS_EXPORT_CORE FileResolver : public Object {
+class MTS_EXPORT_LIB FileResolver : public Object {
 public:
     using iterator       = std::vector<fs::path>::iterator;
     using const_iterator = std::vector<fs::path>::const_iterator;

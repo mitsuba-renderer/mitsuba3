@@ -1,18 +1,37 @@
-# Mitsuba support libraries
-add_subdirectory(libcore)
-add_subdirectory(librender)
+# ----------------------------------------------------------
+#  Mitsuba library
+# ----------------------------------------------------------
+
+add_subdirectory(core)
+add_subdirectory(render)
+
+add_library(mitsuba SHARED)
+target_link_libraries(mitsuba PUBLIC mitsuba-core)
+target_link_libraries(mitsuba PUBLIC mitsuba-render)
+set_target_properties(mitsuba PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
+
+# ----------------------------------------------------------
+#  Other libraries
+# ----------------------------------------------------------
+
 if (MTS_ENABLE_GUI)
     add_subdirectory(libui)
 endif()
 
-# Mitsuba executables
+# ----------------------------------------------------------
+#  Mitsuba executables
+# ----------------------------------------------------------
+
 add_subdirectory(mitsuba)
 
 if (MTS_ENABLE_GUI)
     add_subdirectory(mtsgui)
 endif()
 
-# # Plugins
+# ----------------------------------------------------------
+#  Plugins
+# ----------------------------------------------------------
+
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
 add_subdirectory(films)
@@ -26,6 +45,10 @@ add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 add_subdirectory(volumes)
+
+# ----------------------------------------------------------
+#  Python bindings and extensions
+# ----------------------------------------------------------
 
 if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)

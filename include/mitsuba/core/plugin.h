@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * scene file by essentially translating the XML elements into calls
  * to \ref create_object().
  */
-class MTS_EXPORT_CORE PluginManager : public Object {
+class MTS_EXPORT_LIB PluginManager : public Object {
 public:
 
     /// Return the global plugin manager

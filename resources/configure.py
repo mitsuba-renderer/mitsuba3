@@ -18,8 +18,7 @@ def write_core_config_cpp(f, enabled, default_variant):
     def w(s):
         if is_gcc:
             # Symbols are always globally visible on GCC
-            s = s.replace('MTS_EXPORT_CORE ', '')
-            s = s.replace('MTS_EXPORT_RENDER ', '')
+            s = s.replace('MTS_EXPORT_LIB ', '')
             s = s.replace('MTS_EXPORT ', '')
         f.write(s.ljust(79) + ' \\\n')
 
@@ -53,27 +52,15 @@ def write_core_config_cpp(f, enabled, default_variant):
     f.write('\n')
 
     f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_STRUCT_CORE(Name)')
+    w('#define MTS_EXTERN_STRUCT(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    MTS_EXTERN_CORE template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+        w('    MTS_EXTERN_LIB template struct MTS_EXPORT_LIB Name<%s, %s>;' % (float_, spectrum))
     f.write('\n')
 
     f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_CLASS_CORE(Name)')
+    w('#define MTS_EXTERN_CLASS(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    MTS_EXTERN_CORE template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n')
-
-    f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_STRUCT_RENDER(Name)')
-    for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    MTS_EXTERN_RENDER template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n')
-
-    f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_CLASS_RENDER(Name)')
-    for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    MTS_EXTERN_RENDER template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
+        w('    MTS_EXTERN_LIB template class MTS_EXPORT_LIB Name<%s, %s>;' % (float_, spectrum))
     f.write('\n')
 
     f.write('/// Explicitly instantiate all variants of a "struct" template\n')

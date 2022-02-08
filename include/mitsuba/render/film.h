@@ -47,7 +47,7 @@ MTS_DECLARE_ENUM_OPERATORS(FilmFlags)
  * is then committed to the film using the \ref put() method.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Film : public Object {
+class MTS_EXPORT_LIB Film : public Object {
 public:
     MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
 
@@ -159,5 +159,5 @@ protected:
     ref<Texture> m_srf;
 };
 
-MTS_EXTERN_CLASS_RENDER(Film)
+MTS_EXTERN_CLASS(Film)
 NAMESPACE_END(mitsuba)
