@@ -200,7 +200,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
 
-    py::object mitsuba_ext = py::module::import("mitsuba_ext");
+    py::object mitsuba_ext = py::module::import("mitsuba.mitsuba_ext");
     cast_object = (Caster) (void *)((py::capsule) mitsuba_ext.attr("cast_object"));
 
     /// Register the variant-specific caster with the 'core_ext' module
