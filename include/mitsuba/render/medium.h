@@ -9,7 +9,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Medium : public Object {
+class MTS_EXPORT_LIB Medium : public Object {
 public:
     MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
@@ -110,7 +110,7 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS_RENDER(Medium)
+MTS_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

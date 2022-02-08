@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * This class provides convenient memory-mapped read-only access to tensor
  * data, usually exported from NumPy.
  */
-class MTS_EXPORT_CORE TensorFile : public MemoryMappedFile {
+class MTS_EXPORT_LIB TensorFile : public MemoryMappedFile {
 public:
 
     /// Information about the specified field

@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \sa ref, Object
  */
-class MTS_EXPORT_CORE Class {
+class MTS_EXPORT_LIB Class {
 public:
     using ConstructFunctor   = std::function<Object *(const Properties &props)>;
     using UnserializeFunctor = std::function<Object *(Stream *stream)>;
@@ -129,7 +129,7 @@ private:
  */
 #define MTS_CLASS(x) x::m_class
 
-extern MTS_EXPORT_CORE const Class* m_class;
+extern MTS_EXPORT_LIB const Class* m_class;
 
 /**
  * \brief This macro should be invoked in the class declaration of classes

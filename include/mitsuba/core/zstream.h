@@ -20,7 +20,7 @@ NAMESPACE_END(detail)
  * This class transparently decompresses and compresses reads and writes
  * to a nested stream, respectively.
  */
-class MTS_EXPORT_CORE ZStream : public Stream {
+class MTS_EXPORT_LIB ZStream : public Stream {
 public:
 
     enum EStreamType {

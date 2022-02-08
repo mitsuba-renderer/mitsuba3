@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * This class is used to implement Halton and Hammersley sequences for QMC
  * integration in Mitsuba.
  */
-class MTS_EXPORT_CORE RadicalInverse : public Object {
+class MTS_EXPORT_LIB RadicalInverse : public Object {
 public:
     /**
      * \brief Precompute data structures that are used to evaluate the radical

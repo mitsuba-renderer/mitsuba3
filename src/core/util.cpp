@@ -213,7 +213,7 @@ fs::path library_path() {
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i=0; i<imageCount; ++i) {
         const char *imageName = _dyld_get_image_name(i);
-        if (string::ends_with(imageName, "libmitsuba-core.dylib")) {
+        if (string::ends_with(imageName, "libmitsuba.dylib")) {
             result = fs::path(imageName);
             break;
         }
@@ -244,7 +244,7 @@ fs::path library_path() {
         result = fs::path(lpFilename.data());
 #endif
     if (result.empty())
-        Throw("Could not detect the core library path!");
+        Throw("Could not detect the mitsuba library path!");
     return fs::absolute(result);
 }
 

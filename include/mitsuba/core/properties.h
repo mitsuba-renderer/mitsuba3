@@ -33,7 +33,7 @@ private:
  * myProps["spectrumProperty"] = mitsuba.core.Spectrum(1.0)
  * \endcode
  */
-class MTS_EXPORT_CORE Properties {
+class MTS_EXPORT_LIB Properties {
 public:
     /// Supported types of properties
     enum class Type {
@@ -150,7 +150,7 @@ public:
         return !operator==(props);
     }
 
-    MTS_EXPORT_CORE friend
+    MTS_EXPORT_LIB friend
     std::ostream &operator<<(std::ostream &os, const Properties &p);
 
 public:  // Type-specific getters and setters ----------------------------------
@@ -328,8 +328,8 @@ private:
 };
 
 #define EXTERN_EXPORT_PROPERTY_ACCESSOR(T) \
-    extern template MTS_EXPORT_CORE T Properties::get<T>(const std::string &) const; \
-    extern template MTS_EXPORT_CORE T Properties::get<T>(const std::string &, const T&) const;
+    extern template MTS_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
+    extern template MTS_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
 
 #define T(...) __VA_ARGS__
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(bool))

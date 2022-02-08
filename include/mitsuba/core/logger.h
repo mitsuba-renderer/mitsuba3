@@ -24,7 +24,7 @@ enum LogLevel : int {
  *
  * \ingroup libcore
  */
-class MTS_EXPORT_CORE Logger : public Object {
+class MTS_EXPORT_LIB Logger : public Object {
 public:
     /// Construct a new logger with the given minimum log level
     Logger(LogLevel log_level = Debug);
@@ -129,7 +129,7 @@ private:
 
 NAMESPACE_BEGIN(detail)
 
-[[noreturn]] extern MTS_EXPORT_CORE
+[[noreturn]] extern MTS_EXPORT_LIB
 void Throw(LogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg);
 

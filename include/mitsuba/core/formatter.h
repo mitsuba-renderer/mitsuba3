@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 /** \brief Abstract interface for converting log information into
  * a human-readable format
  */
-class MTS_EXPORT_CORE Formatter : public Object {
+class MTS_EXPORT_LIB Formatter : public Object {
 public:
     /**
      * \brief Turn a log message into a human-readable format
@@ -32,7 +32,7 @@ protected:
 /** \brief The default formatter used to turn log messages into
  * a human-readable form
  */
-class MTS_EXPORT_CORE DefaultFormatter : public Formatter {
+class MTS_EXPORT_LIB DefaultFormatter : public Formatter {
     friend class Logger;
 public:
     /// Create a new default formatter

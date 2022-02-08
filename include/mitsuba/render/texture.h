@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
  * the underlying function it is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Texture : public Object {
+class MTS_EXPORT_LIB Texture : public Object {
 public:
     MTS_IMPORT_TYPES()
 
@@ -222,5 +222,5 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS_RENDER(Texture)
+MTS_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)

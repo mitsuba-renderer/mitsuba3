@@ -228,7 +228,7 @@ struct OptixShaderBindingTable {
 #if defined(OPTIX_API_IMPL)
 #  define D(name, ...) OptixResult (*name)(__VA_ARGS__) = nullptr;
 #else
-#  define D(name, ...) extern MTS_EXPORT_RENDER OptixResult (*name)(__VA_ARGS__)
+#  define D(name, ...) extern MTS_EXPORT_LIB OptixResult (*name)(__VA_ARGS__)
 #endif
 
 D(optixAccelComputeMemoryUsage, OptixDeviceContext,
@@ -252,8 +252,8 @@ D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
 #undef D
 
 NAMESPACE_BEGIN(mitsuba)
-extern MTS_EXPORT_RENDER void optix_initialize();
-extern MTS_EXPORT_RENDER void optix_shutdown();
+extern MTS_EXPORT_LIB void optix_initialize();
+extern MTS_EXPORT_LIB void optix_shutdown();
 NAMESPACE_END(mitsuba)
 
 #endif // defined(MTS_ENABLE_CUDA)

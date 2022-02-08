@@ -79,8 +79,8 @@ constexpr const char
     };
 
 #if defined(MTS_ENABLE_ITTNOTIFY)
-extern MTS_EXPORT_CORE __itt_domain *mitsuba_itt_domain;
-extern MTS_EXPORT_CORE __itt_string_handle *
+extern MTS_EXPORT_LIB __itt_domain *mitsuba_itt_domain;
+extern MTS_EXPORT_LIB __itt_string_handle *
     mitsuba_itt_phase[int(ProfilerPhase::ProfilerPhaseCount)];
 #endif
 
@@ -112,7 +112,7 @@ struct ScopedPhase {
     ScopedPhase &operator=(const ScopedPhase &) = delete;
 };
 
-class MTS_EXPORT_CORE Profiler {
+class MTS_EXPORT_LIB Profiler {
 public:
     static void static_initialization();
     static void static_shutdown();

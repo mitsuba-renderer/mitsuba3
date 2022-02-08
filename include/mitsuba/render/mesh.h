@@ -14,7 +14,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
+class MTS_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
@@ -462,5 +462,5 @@ protected:
     ref<Scene<Float, Spectrum>> m_parameterization;
 };
 
-MTS_EXTERN_CLASS_RENDER(Mesh)
+MTS_EXTERN_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

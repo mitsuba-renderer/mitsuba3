@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * metadata, and the gamma setting can be stored as well. Please see
  * the class methods and enumerations for further detail.
  */
-class MTS_EXPORT_CORE Bitmap : public Object {
+class MTS_EXPORT_LIB Bitmap : public Object {
 public:
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
@@ -724,8 +724,8 @@ void accumulate_2d(ConstT source,
     }
 }
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value);
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value);
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value);
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value);
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value);
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value);
 
 NAMESPACE_END(mitsuba)

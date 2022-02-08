@@ -44,11 +44,11 @@ template <typename T> T stof(const std::string &s);
  */
 template <typename T> T strtof(const char *s, char **endptr);
 
-extern template MTS_EXPORT_CORE float  stof<float>(const std::string &str);
-extern template MTS_EXPORT_CORE double stof<double>(const std::string &str);
+extern template MTS_EXPORT_LIB float  stof<float>(const std::string &str);
+extern template MTS_EXPORT_LIB double stof<double>(const std::string &str);
 
-extern template MTS_EXPORT_CORE float  strtof<float>(const char *str, char **endptr);
-extern template MTS_EXPORT_CORE double strtof<double>(const char *str, char **endptr);
+extern template MTS_EXPORT_LIB float  strtof<float>(const char *str, char **endptr);
+extern template MTS_EXPORT_LIB double strtof<double>(const char *str, char **endptr);
 
 /// Check if the given string starts with a specified prefix
 inline bool starts_with(const std::string &string, const std::string &prefix) {
@@ -83,12 +83,12 @@ inline std::string to_upper(const std::string &s) {
 }
 
 /// Chop up the string given a set of delimiters (warning: not unicode compliant)
-extern MTS_EXPORT_CORE std::vector<std::string> tokenize(const std::string &string,
+extern MTS_EXPORT_LIB std::vector<std::string> tokenize(const std::string &string,
                                                          const std::string &delim = ", ",
                                                          bool include_empty = false);
 
 /// Indent every line of a string by some number of spaces
-extern MTS_EXPORT_CORE std::string indent(const std::string &string, size_t amount = 2);
+extern MTS_EXPORT_LIB std::string indent(const std::string &string, size_t amount = 2);
 
 /// Turn a type into a string representation and indent every line by some number of spaces
 template <typename T>
@@ -99,7 +99,7 @@ inline std::string indent(const T &value, size_t amount = 2) {
     return string::indent(string, amount);
 }
 
-extern MTS_EXPORT_CORE std::string indent(const Object *value, size_t amount = 2);
+extern MTS_EXPORT_LIB std::string indent(const Object *value, size_t amount = 2);
 
 template <typename T, typename T2 = Object, std::enable_if_t<std::is_base_of_v<T2, T>, int> = 0>
 std::string indent(const T *value, size_t amount = 2) {
@@ -116,11 +116,11 @@ inline void replace_inplace(std::string &str, const std::string &source,
 }
 
 /// Remove leading and trailing characters
-extern MTS_EXPORT_CORE std::string trim(const std::string &s,
+extern MTS_EXPORT_LIB std::string trim(const std::string &s,
                                         const std::string &whitespace = " \t");
 
 /// Check if a list of keys contains a specific key
-extern MTS_EXPORT_CORE bool contains(const std::vector<std::string> &keys, const std::string &key);
+extern MTS_EXPORT_LIB bool contains(const std::vector<std::string> &keys, const std::string &key);
 
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)

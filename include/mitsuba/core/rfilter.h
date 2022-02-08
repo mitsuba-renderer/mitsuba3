@@ -45,7 +45,7 @@ enum class FilterBoundaryCondition {
  * representation, whose resolution given by \ref MTS_FILTER_RESOLUTION.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_CORE ReconstructionFilter : public Object {
+class MTS_EXPORT_LIB ReconstructionFilter : public Object {
 public:
     MTS_IMPORT_CORE_TYPES()
 
@@ -411,9 +411,9 @@ private:
     };
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os,
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
                                                 const FilterBoundaryCondition &value);
 
-MTS_EXTERN_CLASS_CORE(ReconstructionFilter)
+MTS_EXTERN_CLASS(ReconstructionFilter)
 
 NAMESPACE_END(mitsuba)

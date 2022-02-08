@@ -87,17 +87,17 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 }
 
 /// Explicit instantiations
-template MTS_EXPORT void spectrum_from_file(const std::string &filename,
-                                            std::vector<float> &wavelengths,
-                                            std::vector<float> &values);
-template MTS_EXPORT void spectrum_from_file(const std::string &filename,
-                                            std::vector<double> &wavelengths,
-                                            std::vector<double> &values);
+template MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
+                                                std::vector<float> &wavelengths,
+                                                std::vector<float> &values);
+template MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
+                                                std::vector<double> &wavelengths,
+                                                std::vector<double> &values);
 
-template MTS_EXPORT Color<float, 3>
+template MTS_EXPORT_LIB Color<float, 3>
 spectrum_list_to_srgb(const std::vector<float> &wavelengths,
                       const std::vector<float> &values, bool bounded);
-template MTS_EXPORT Color<double, 3>
+template MTS_EXPORT_LIB Color<double, 3>
 spectrum_list_to_srgb(const std::vector<double> &wavelengths,
                       const std::vector<double> &values, bool bounded);
 

@@ -48,7 +48,7 @@ template <typename UInt32> constexpr auto has_flag(UInt32 flags, PhaseFunctionFl
  *
  */
 MTS_VARIANT
-struct MTS_EXPORT_RENDER PhaseFunctionContext {
+struct MTS_EXPORT_LIB PhaseFunctionContext {
     MTS_IMPORT_TYPES(Sampler);
 
     // =============================================================
@@ -115,7 +115,7 @@ struct MTS_EXPORT_RENDER PhaseFunctionContext {
  */
 
 MTS_VARIANT
-class MTS_EXPORT_RENDER PhaseFunction : public Object {
+class MTS_EXPORT_LIB PhaseFunction : public Object {
 public:
     MTS_IMPORT_TYPES(PhaseFunctionContext);
 
@@ -251,7 +251,7 @@ std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spe
 
 //! @}
 // -----------------------------------------------------------------------
-MTS_EXTERN_CLASS_RENDER(PhaseFunction)
+MTS_EXTERN_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

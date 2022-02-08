@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \remark The python API provides an additional ``dtype()`` method, which
  * returns the NumPy \c dtype equivalent of a given \c Struct instance.
  */
-class MTS_EXPORT_CORE Struct : public Object {
+class MTS_EXPORT_LIB Struct : public Object {
 public:
 
     /// Type of a field in the \c Struct
@@ -124,7 +124,7 @@ public:
         std::vector<std::pair<double, std::string>> blend;
 
         /// Return a hash code associated with this \c Field
-        friend MTS_EXPORT_CORE size_t hash(const Field &f);
+        friend MTS_EXPORT_LIB size_t hash(const Field &f);
 
         /// Equality operator
         bool operator==(const Field &f) const {
@@ -234,7 +234,7 @@ public:
     FieldIterator end() { return m_fields.end(); }
 
     /// Return a hash code associated with this \c Struct
-    friend MTS_EXPORT_CORE size_t hash(const Struct &s);
+    friend MTS_EXPORT_LIB size_t hash(const Struct &s);
 
     /// Equality operator
     bool operator==(const Struct &s) const {
@@ -363,7 +363,7 @@ MTS_DECLARE_ENUM_OPERATORS(Struct::Flags)
  * on. Note that JIT compilation only works on x86_64 processors; other
  * platforms use a slow generic fallback implementation.
  */
-class MTS_EXPORT_CORE StructConverter : public Object {
+class MTS_EXPORT_LIB StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
     using Float = float;
@@ -440,6 +440,6 @@ protected:
 #endif
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Struct::Type value);
+extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Struct::Type value);
 
 NAMESPACE_END(mitsuba)

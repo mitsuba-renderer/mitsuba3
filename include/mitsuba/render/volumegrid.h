@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * specification.
  */
 MTS_VARIANT
-class MTS_EXPORT_RENDER VolumeGrid : public Object {
+class MTS_EXPORT_LIB VolumeGrid : public Object {
 public:
     MTS_IMPORT_CORE_TYPES()
 
@@ -102,5 +102,5 @@ protected:
     ScalarFloat m_max;
 };
 
-MTS_EXTERN_CLASS_RENDER(VolumeGrid)
+MTS_EXTERN_CLASS(VolumeGrid)
 NAMESPACE_END(mitsuba)

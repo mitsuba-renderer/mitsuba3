@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * Copyright 2005 Program of Computer Graphics, Cornell University
  * \ingroup librender
  */
-class MTS_EXPORT_RENDER Spiral : public Object {
+class MTS_EXPORT_LIB Spiral : public Object {
 public:
     using Vector2i = Vector<int32_t, 2>;
     using Vector2u = Vector<uint32_t, 2>;

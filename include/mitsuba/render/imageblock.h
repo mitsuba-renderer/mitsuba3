@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ImageBlock : public Object {
+class MTS_EXPORT_LIB ImageBlock : public Object {
 public:
     MTS_IMPORT_TYPES(ReconstructionFilter)
 
@@ -326,5 +326,5 @@ protected:
     bool m_warn_invalid;
 };
 
-MTS_EXTERN_CLASS_RENDER(ImageBlock)
+MTS_EXTERN_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

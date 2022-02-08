@@ -50,7 +50,7 @@ enum class EmitterFlags : uint32_t {
 MTS_DECLARE_ENUM_OPERATORS(EmitterFlags)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {
+class MTS_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Endpoint, m_shape)
 
@@ -77,7 +77,7 @@ protected:
     uint32_t m_flags;
 };
 
-MTS_EXTERN_CLASS_RENDER(Emitter)
+MTS_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

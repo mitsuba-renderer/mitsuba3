@@ -171,12 +171,12 @@ private:
     bool initialized = false;
 };
 
-extern MTS_EXPORT_CORE CIE1932Tables<float> color_space_tables_scalar;
+extern MTS_EXPORT_LIB CIE1932Tables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-extern MTS_EXPORT_CORE CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
+extern MTS_EXPORT_LIB CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-extern MTS_EXPORT_CORE CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
+extern MTS_EXPORT_LIB CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
 #endif
 
 template <typename Float> auto get_color_space_tables() {
@@ -195,8 +195,8 @@ template <typename Float> auto get_color_space_tables() {
 NAMESPACE_END(detail)
 
 /// Allocate arrays for the color space tables
-extern MTS_EXPORT_CORE void color_management_static_initialization(bool cuda, bool llvm);
-extern MTS_EXPORT_CORE void color_management_static_shutdown();
+extern MTS_EXPORT_LIB void color_management_static_initialization(bool cuda, bool llvm);
+extern MTS_EXPORT_LIB void color_management_static_shutdown();
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -406,12 +406,12 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
 }
 
 template <typename Scalar>
-MTS_EXPORT_CORE void spectrum_from_file(const std::string &filename,
+MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                         std::vector<Scalar> &wavelengths,
                                         std::vector<Scalar> &values);
 
 template <typename Scalar>
-MTS_EXPORT_CORE Color<Scalar, 3>
+MTS_EXPORT_LIB Color<Scalar, 3>
 spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values, bool bounded = true);
 
