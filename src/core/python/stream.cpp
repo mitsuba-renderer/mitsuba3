@@ -21,8 +21,8 @@
              return py::cast(v);                                               \
          }, D(Stream, write, 2))
 
-MTS_PY_EXPORT(Stream) {
-    auto cls = MTS_PY_CLASS(Stream, Object);
+MI_PY_EXPORT(Stream) {
+    auto cls = MI_PY_CLASS(Stream, Object);
 
     py::enum_<Stream::EByteOrder>(cls, "EByteOrder", D(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian, D(Stream, EByteOrder, EBigEndian))
@@ -70,13 +70,13 @@ MTS_PY_EXPORT(Stream) {
 
 #undef DECLARE_RW
 
-MTS_PY_EXPORT(DummyStream) {
-    MTS_PY_CLASS(DummyStream, Stream)
+MI_PY_EXPORT(DummyStream) {
+    MI_PY_CLASS(DummyStream, Stream)
         .def(py::init<>(), D(DummyStream, DummyStream));
 }
 
-MTS_PY_EXPORT(FileStream) {
-    auto fs = MTS_PY_CLASS(FileStream, Stream)
+MI_PY_EXPORT(FileStream) {
+    auto fs = MI_PY_CLASS(FileStream, Stream)
         .def_method(FileStream, path);
 
     py::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
@@ -89,16 +89,16 @@ MTS_PY_EXPORT(FileStream) {
         "p"_a, "mode"_a = FileStream::ERead, D(FileStream, FileStream));
 }
 
-MTS_PY_EXPORT(MemoryStream) {
-    MTS_PY_CLASS(MemoryStream, Stream)
+MI_PY_EXPORT(MemoryStream) {
+    MI_PY_CLASS(MemoryStream, Stream)
         .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
             "capacity"_a = 512)
         .def_method(MemoryStream, capacity)
         .def_method(MemoryStream, owns_buffer);
 }
 
-MTS_PY_EXPORT(ZStream) {
-    auto c = MTS_PY_CLASS(ZStream, Stream);
+MI_PY_EXPORT(ZStream) {
+    auto c = MI_PY_CLASS(ZStream, Stream);
 
     py::enum_<ZStream::EStreamType>(c, "EStreamType", D(ZStream, EStreamType))
         .value("EDeflateStream", ZStream::EDeflateStream, D(ZStream, EStreamType, EDeflateStream))

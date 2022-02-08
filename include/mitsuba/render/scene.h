@@ -33,9 +33,9 @@ NAMESPACE_BEGIN(mitsuba)
  * </ul>
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Scene : public Object {
+class MI_EXPORT_LIB Scene : public Object {
 public:
-    MTS_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
+    MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
                      ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
 
     /// Instantiate a scene from a \ref Properties object
@@ -554,7 +554,7 @@ public:
     /// Static shutdown of ray-intersection acceleration data structure
     static void static_accel_shutdown();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Virtual destructor
     virtual ~Scene();
@@ -577,19 +577,19 @@ protected:
     static void static_accel_shutdown_gpu();
 
     /// Trace a ray and only return a preliminary intersection data structure
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
+    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
         const Ray3f &ray, Mask coherent, Mask active) const;
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
+    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
         const Ray3f &ray, Mask active) const;
 
     /// Trace a ray
-    MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
-    MTS_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags, Mask active) const;
-    MTS_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
+    MI_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
+    MI_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags, Mask active) const;
+    MI_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray
-    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
-    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
+    MI_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
+    MI_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
@@ -616,7 +616,7 @@ protected:
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded
-extern MTS_EXPORT_LIB void librender_nop();
+extern MI_EXPORT_LIB void librender_nop();
 
 // See interaction.h
 template <typename Float, typename Spectrum>
@@ -633,5 +633,5 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
     }
 }
 
-MTS_EXTERN_CLASS(Scene)
+MI_EXTERN_CLASS(Scene)
 NAMESPACE_END(mitsuba)

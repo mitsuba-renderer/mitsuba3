@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * scene file by essentially translating the XML elements into calls
  * to \ref create_object().
  */
-class MTS_EXPORT_LIB PluginManager : public Object {
+class MI_EXPORT_LIB PluginManager : public Object {
 public:
 
     /// Return the global plugin manager
@@ -52,10 +52,10 @@ public:
 
     /// Convenience template wrapper around \ref create_object()
     template <typename T> ref<T> create_object(const Properties &props) {
-        return static_cast<T *>(create_object(props, MTS_CLASS(T)).get());
+        return static_cast<T *>(create_object(props, MI_CLASS(T)).get());
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     PluginManager();
 

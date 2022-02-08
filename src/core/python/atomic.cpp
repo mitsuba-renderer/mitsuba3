@@ -1,7 +1,7 @@
 #include <mitsuba/core/atomic.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(atomic) {
+MI_PY_EXPORT(atomic) {
     using AtomicFloat = mitsuba::AtomicFloat<>;
 
     py::class_<AtomicFloat>(m, "AtomicFloat", D(AtomicFloat))

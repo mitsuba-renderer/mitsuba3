@@ -2,7 +2,7 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(rfilter) {
+MI_PY_EXPORT(rfilter) {
     py::enum_<FilterBoundaryCondition>(m, "FilterBoundaryCondition", D(FilterBoundaryCondition))
         .value("Clamp", FilterBoundaryCondition::Clamp, D(FilterBoundaryCondition, Clamp))
         .value("Repeat", FilterBoundaryCondition::Repeat, D(FilterBoundaryCondition, Repeat))
@@ -47,5 +47,5 @@ MTS_PY_EXPORT(rfilter) {
             D(Resampler, resample), "self"_a, "source"_a, "source_stride"_a,
             "target_stride"_a, "channels"_a);
 
-    m.attr("MTS_FILTER_RESOLUTION") = MTS_FILTER_RESOLUTION;
+    m.attr("MI_FILTER_RESOLUTION") = MI_FILTER_RESOLUTION;
 }

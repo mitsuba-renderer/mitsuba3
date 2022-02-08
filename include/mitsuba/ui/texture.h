@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * Wraps nanogui::Texture and adds a new constructor for creating
  * textures from \ref mitsuba::Bitmap instances.
  */
-class MTS_EXPORT_UI GPUTexture : public nanogui::Texture {
+class MI_EXPORT_UI GPUTexture : public nanogui::Texture {
 public:
     using Base = nanogui::Texture;
     using Base::Base;

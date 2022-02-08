@@ -22,7 +22,7 @@
 
 /// Helper routine to cast Mitsuba plugins to their underlying interfaces
 static py::object caster(Object *o) {
-    MTS_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES()
 
     // Try casting, starting from the most precise types
     PY_TRY_CAST(Scene);
@@ -55,62 +55,62 @@ static py::object caster(Object *o) {
 }
 
 // core
-MTS_PY_DECLARE(DrJit);
-MTS_PY_DECLARE(Object);
-MTS_PY_DECLARE(BoundingBox);
-MTS_PY_DECLARE(BoundingSphere);
-MTS_PY_DECLARE(Frame);
-MTS_PY_DECLARE(Ray);
-MTS_PY_DECLARE(DiscreteDistribution);
-MTS_PY_DECLARE(DiscreteDistribution2D);
-MTS_PY_DECLARE(ContinuousDistribution);
-MTS_PY_DECLARE(IrregularContinuousDistribution);
-MTS_PY_DECLARE(Hierarchical2D);
-MTS_PY_DECLARE(Marginal2D);
-MTS_PY_DECLARE(math);
-MTS_PY_DECLARE(qmc);
-MTS_PY_DECLARE(Properties);
-MTS_PY_DECLARE(rfilter);
-MTS_PY_DECLARE(sample_tea);
-MTS_PY_DECLARE(spline);
-MTS_PY_DECLARE(Spectrum);
-MTS_PY_DECLARE(Transform);
-MTS_PY_DECLARE(AnimatedTransform);
-MTS_PY_DECLARE(vector);
-MTS_PY_DECLARE(warp);
-MTS_PY_DECLARE(xml);
-MTS_PY_DECLARE(quad);
+MI_PY_DECLARE(DrJit);
+MI_PY_DECLARE(Object);
+MI_PY_DECLARE(BoundingBox);
+MI_PY_DECLARE(BoundingSphere);
+MI_PY_DECLARE(Frame);
+MI_PY_DECLARE(Ray);
+MI_PY_DECLARE(DiscreteDistribution);
+MI_PY_DECLARE(DiscreteDistribution2D);
+MI_PY_DECLARE(ContinuousDistribution);
+MI_PY_DECLARE(IrregularContinuousDistribution);
+MI_PY_DECLARE(Hierarchical2D);
+MI_PY_DECLARE(Marginal2D);
+MI_PY_DECLARE(math);
+MI_PY_DECLARE(qmc);
+MI_PY_DECLARE(Properties);
+MI_PY_DECLARE(rfilter);
+MI_PY_DECLARE(sample_tea);
+MI_PY_DECLARE(spline);
+MI_PY_DECLARE(Spectrum);
+MI_PY_DECLARE(Transform);
+MI_PY_DECLARE(AnimatedTransform);
+MI_PY_DECLARE(vector);
+MI_PY_DECLARE(warp);
+MI_PY_DECLARE(xml);
+MI_PY_DECLARE(quad);
 
 // render
-MTS_PY_DECLARE(BSDFSample);
-MTS_PY_DECLARE(BSDF);
-MTS_PY_DECLARE(Emitter);
-MTS_PY_DECLARE(Endpoint);
-MTS_PY_DECLARE(Film);
-MTS_PY_DECLARE(fresnel);
-MTS_PY_DECLARE(ImageBlock);
-MTS_PY_DECLARE(Integrator);
-MTS_PY_DECLARE(Interaction);
-MTS_PY_DECLARE(SurfaceInteraction);
-MTS_PY_DECLARE(MediumInteraction);
-MTS_PY_DECLARE(PreliminaryIntersection);
-MTS_PY_DECLARE(Medium);
-MTS_PY_DECLARE(mueller);
-MTS_PY_DECLARE(MicrofacetDistribution);
-MTS_PY_DECLARE(PositionSample);
-MTS_PY_DECLARE(PhaseFunction);
-MTS_PY_DECLARE(DirectionSample);
-MTS_PY_DECLARE(Sampler);
-MTS_PY_DECLARE(Scene);
-MTS_PY_DECLARE(Sensor);
-MTS_PY_DECLARE(Shape);
-MTS_PY_DECLARE(ShapeKDTree);
-MTS_PY_DECLARE(srgb);
-MTS_PY_DECLARE(Texture);
-MTS_PY_DECLARE(Volume);
-MTS_PY_DECLARE(VolumeGrid);
+MI_PY_DECLARE(BSDFSample);
+MI_PY_DECLARE(BSDF);
+MI_PY_DECLARE(Emitter);
+MI_PY_DECLARE(Endpoint);
+MI_PY_DECLARE(Film);
+MI_PY_DECLARE(fresnel);
+MI_PY_DECLARE(ImageBlock);
+MI_PY_DECLARE(Integrator);
+MI_PY_DECLARE(Interaction);
+MI_PY_DECLARE(SurfaceInteraction);
+MI_PY_DECLARE(MediumInteraction);
+MI_PY_DECLARE(PreliminaryIntersection);
+MI_PY_DECLARE(Medium);
+MI_PY_DECLARE(mueller);
+MI_PY_DECLARE(MicrofacetDistribution);
+MI_PY_DECLARE(PositionSample);
+MI_PY_DECLARE(PhaseFunction);
+MI_PY_DECLARE(DirectionSample);
+MI_PY_DECLARE(Sampler);
+MI_PY_DECLARE(Scene);
+MI_PY_DECLARE(Sensor);
+MI_PY_DECLARE(Shape);
+MI_PY_DECLARE(ShapeKDTree);
+MI_PY_DECLARE(srgb);
+MI_PY_DECLARE(Texture);
+MI_PY_DECLARE(Volume);
+MI_PY_DECLARE(VolumeGrid);
 
-#define MODULE_NAME MTS_MODULE_NAME(mitsuba, MTS_VARIANT_NAME)
+#define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
 
 using Caster = py::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
@@ -119,7 +119,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba";
 
-    MTS_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES()
 
     // Create sub-modules
     py::module math    = create_submodule(m, "math"),
@@ -135,7 +135,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     quad.doc()    = "Functions for numerical quadrature";
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
-    MTS_PY_IMPORT(DrJit);
+    MI_PY_IMPORT(DrJit);
 
     m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
@@ -147,58 +147,58 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                                            dr::is_llvm_array_v<Float>);
     Scene::static_accel_initialization();
 
-    MTS_PY_IMPORT(Object);
-    MTS_PY_IMPORT(Ray);
-    MTS_PY_IMPORT(BoundingBox);
-    MTS_PY_IMPORT(BoundingSphere);
-    MTS_PY_IMPORT(Frame);
-    MTS_PY_IMPORT(DiscreteDistribution);
-    MTS_PY_IMPORT(DiscreteDistribution2D);
-    MTS_PY_IMPORT(ContinuousDistribution);
-    MTS_PY_IMPORT(IrregularContinuousDistribution);
-    MTS_PY_IMPORT_SUBMODULE(math);
-    MTS_PY_IMPORT(qmc);
-    MTS_PY_IMPORT(Properties);
-    MTS_PY_IMPORT(rfilter);
-    MTS_PY_IMPORT(sample_tea);
-    MTS_PY_IMPORT_SUBMODULE(spline);
-    MTS_PY_IMPORT(Spectrum);
-    MTS_PY_IMPORT(Transform);
-    MTS_PY_IMPORT(AnimatedTransform);
-    MTS_PY_IMPORT(Hierarchical2D);
-    MTS_PY_IMPORT(Marginal2D);
-    MTS_PY_IMPORT(vector);
-    MTS_PY_IMPORT_SUBMODULE(quad);
-    MTS_PY_IMPORT_SUBMODULE(warp);
-    MTS_PY_IMPORT(xml);
+    MI_PY_IMPORT(Object);
+    MI_PY_IMPORT(Ray);
+    MI_PY_IMPORT(BoundingBox);
+    MI_PY_IMPORT(BoundingSphere);
+    MI_PY_IMPORT(Frame);
+    MI_PY_IMPORT(DiscreteDistribution);
+    MI_PY_IMPORT(DiscreteDistribution2D);
+    MI_PY_IMPORT(ContinuousDistribution);
+    MI_PY_IMPORT(IrregularContinuousDistribution);
+    MI_PY_IMPORT_SUBMODULE(math);
+    MI_PY_IMPORT(qmc);
+    MI_PY_IMPORT(Properties);
+    MI_PY_IMPORT(rfilter);
+    MI_PY_IMPORT(sample_tea);
+    MI_PY_IMPORT_SUBMODULE(spline);
+    MI_PY_IMPORT(Spectrum);
+    MI_PY_IMPORT(Transform);
+    MI_PY_IMPORT(AnimatedTransform);
+    MI_PY_IMPORT(Hierarchical2D);
+    MI_PY_IMPORT(Marginal2D);
+    MI_PY_IMPORT(vector);
+    MI_PY_IMPORT_SUBMODULE(quad);
+    MI_PY_IMPORT_SUBMODULE(warp);
+    MI_PY_IMPORT(xml);
 
-    MTS_PY_IMPORT(Scene);
-    MTS_PY_IMPORT(Shape);
-    MTS_PY_IMPORT(Medium);
-    MTS_PY_IMPORT(Endpoint);
-    MTS_PY_IMPORT(Emitter);
-    MTS_PY_IMPORT(Interaction);
-    MTS_PY_IMPORT(SurfaceInteraction);
-    MTS_PY_IMPORT(MediumInteraction);
-    MTS_PY_IMPORT(PreliminaryIntersection);
-    MTS_PY_IMPORT(PositionSample);
-    MTS_PY_IMPORT(DirectionSample);
-    MTS_PY_IMPORT(BSDFSample);
-    MTS_PY_IMPORT(BSDF);
-    MTS_PY_IMPORT(Film);
-    MTS_PY_IMPORT(fresnel);
-    MTS_PY_IMPORT(ImageBlock);
-    MTS_PY_IMPORT(Integrator);
-    MTS_PY_IMPORT_SUBMODULE(mueller);
-    MTS_PY_IMPORT(MicrofacetDistribution);
-    MTS_PY_IMPORT(PhaseFunction);
-    MTS_PY_IMPORT(Sampler);
-    MTS_PY_IMPORT(Sensor);
-    MTS_PY_IMPORT(ShapeKDTree);
-    MTS_PY_IMPORT(srgb);
-    MTS_PY_IMPORT(Texture);
-    MTS_PY_IMPORT(Volume);
-    MTS_PY_IMPORT(VolumeGrid);
+    MI_PY_IMPORT(Scene);
+    MI_PY_IMPORT(Shape);
+    MI_PY_IMPORT(Medium);
+    MI_PY_IMPORT(Endpoint);
+    MI_PY_IMPORT(Emitter);
+    MI_PY_IMPORT(Interaction);
+    MI_PY_IMPORT(SurfaceInteraction);
+    MI_PY_IMPORT(MediumInteraction);
+    MI_PY_IMPORT(PreliminaryIntersection);
+    MI_PY_IMPORT(PositionSample);
+    MI_PY_IMPORT(DirectionSample);
+    MI_PY_IMPORT(BSDFSample);
+    MI_PY_IMPORT(BSDF);
+    MI_PY_IMPORT(Film);
+    MI_PY_IMPORT(fresnel);
+    MI_PY_IMPORT(ImageBlock);
+    MI_PY_IMPORT(Integrator);
+    MI_PY_IMPORT_SUBMODULE(mueller);
+    MI_PY_IMPORT(MicrofacetDistribution);
+    MI_PY_IMPORT(PhaseFunction);
+    MI_PY_IMPORT(Sampler);
+    MI_PY_IMPORT(Sensor);
+    MI_PY_IMPORT(ShapeKDTree);
+    MI_PY_IMPORT(srgb);
+    MI_PY_IMPORT(Texture);
+    MI_PY_IMPORT(Volume);
+    MI_PY_IMPORT(VolumeGrid);
 
     py::object mitsuba_ext = py::module::import("mitsuba_ext");
     cast_object = (Caster) (void *)((py::capsule) mitsuba_ext.attr("cast_object"));

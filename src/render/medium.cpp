@@ -7,9 +7,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
+MI_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
 
-MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
+MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
     for (auto &[name, obj] : props.objects(false)) {
         auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
@@ -31,13 +31,13 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
     dr::set_attr(this, "phase_function", m_phase_function.get());
 }
 
-MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
+MI_VARIANT Medium<Float, Spectrum>::~Medium() {}
 
-MTS_VARIANT
+MI_VARIANT
 typename Medium<Float, Spectrum>::MediumInteraction3f
 Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
                                             UInt32 channel, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
 
     // initialize basic medium interaction fields
     MediumInteraction3f mi = dr::zero<MediumInteraction3f>();
@@ -77,13 +77,13 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     return mi;
 }
 
-MTS_VARIANT
+MI_VARIANT
 std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
           typename Medium<Float, Spectrum>::UnpolarizedSpectrum>
 Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
                                          const SurfaceInteraction3f &si,
                                          Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
     Float t      = dr::min(mi.t, si.t) - mi.mint;
     UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
@@ -91,6 +91,6 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
     return { tr, pdf };
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
-MTS_INSTANTIATE_CLASS(Medium)
+MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
+MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)

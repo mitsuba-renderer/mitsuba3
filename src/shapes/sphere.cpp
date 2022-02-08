@@ -8,7 +8,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     #include "optix/sphere.cuh"
 #endif
 
@@ -87,9 +87,9 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
@@ -153,7 +153,7 @@ public:
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Point3f local = warp::square_to_uniform_sphere(sample);
 
@@ -172,13 +172,13 @@ public:
     }
 
     Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
     DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
                                        Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         DirectionSample3f result = dr::zero<DirectionSample3f>();
 
         Vector3f dc_v = m_center.value() - it.p;
@@ -255,7 +255,7 @@ public:
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Float sin_alpha = m_radius.value() * dr::rcp(dr::norm(m_center.value() - it.p)),
@@ -280,7 +280,7 @@ public:
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
                                               dr::is_diff_array_v<Float>,
@@ -329,7 +329,7 @@ public:
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
                                      dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
                                               dr::is_diff_array_v<Float>,
@@ -369,14 +369,14 @@ public:
         return solution_found && !out_bounds && !in_bounds && active;
     }
 
-    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
+    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Recompute ray intersection to get differentiable t
         Float t = pi.t;
@@ -468,7 +468,7 @@ public:
         Base::parameters_changed();
     }
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
@@ -498,7 +498,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     /// Center in world-space
     field<Point3f> m_center;
@@ -510,6 +510,6 @@ private:
     bool m_flip_normals;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Sphere, Shape)
-MTS_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
+MI_IMPLEMENT_CLASS_VARIANT(Sphere, Shape)
+MI_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
 NAMESPACE_END(mitsuba)

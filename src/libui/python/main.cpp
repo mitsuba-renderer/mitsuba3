@@ -3,8 +3,8 @@
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, nanogui::ref<T>)
 
-MTS_PY_EXPORT(Texture) {
-    MTS_PY_CHECK_ALIAS(mitsuba::GPUTexture, "Texture") {
+MI_PY_EXPORT(Texture) {
+    MI_PY_CHECK_ALIAS(mitsuba::GPUTexture, "Texture") {
         py::class_<mitsuba::GPUTexture, nanogui::Texture, nanogui::ref<mitsuba::GPUTexture>>(m, "Texture", D(Texture))
             .def(py::init<const Bitmap *, nanogui::Texture::InterpolationMode,
                         nanogui::Texture::InterpolationMode, nanogui::Texture::WrapMode>(),
@@ -21,7 +21,7 @@ PYBIND11_MODULE(mitsuba_ui_ext, m_) {
 
     py::module m = py::module::import("mitsuba");
     std::vector<py::module> submodule_list;
-    MTS_PY_DEF_SUBMODULE(submodule_list, ui)
+    MI_PY_DEF_SUBMODULE(submodule_list, ui)
 
-    MTS_PY_IMPORT(Texture);
+    MI_PY_IMPORT(Texture);
 }

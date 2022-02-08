@@ -93,11 +93,11 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
                     sample_wavelengths)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     // =============================================================
     //! @{ \name Constructors
@@ -157,7 +157,7 @@ public:
                                           const Point2f &position_sample,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
             sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
@@ -191,7 +191,7 @@ public:
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
                             const Point2f & /*aperture_sample*/, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
             sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
@@ -362,7 +362,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
@@ -373,6 +373,6 @@ private:
     ScalarVector2f m_principal_point_offset;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
-MTS_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");
+MI_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
+MI_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");
 NAMESPACE_END(mitsuba)

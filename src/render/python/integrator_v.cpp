@@ -5,12 +5,12 @@
 #include "signal.h"
 
 #if defined(__APPLE__) || defined(__linux__)
-#  define MTS_HANDLE_SIGINT 1
+#  define MI_HANDLE_SIGINT 1
 #else
-#  define MTS_HANDLE_SIGINT 0
+#  define MI_HANDLE_SIGINT 0
 #endif
 
-#if MTS_HANDLE_SIGINT
+#if MI_HANDLE_SIGINT
 #include <signal.h>
 
 /// Current signal handler
@@ -22,7 +22,7 @@ static void (*sigint_handler_prev)(int) = nullptr;
 
 /// RAII helper to catch Ctrl-C keypresses and cancel an ongoing render job
 ScopedSignalHandler::ScopedSignalHandler(IntegratorT *integrator) {
-#if MTS_HANDLE_SIGINT
+#if MI_HANDLE_SIGINT
     // Install new signal handler
     sigint_handler = [integrator]() {
         integrator->cancel();
@@ -43,16 +43,16 @@ ScopedSignalHandler::ScopedSignalHandler(IntegratorT *integrator) {
 }
 
 ScopedSignalHandler::~ScopedSignalHandler() {
-#if MTS_HANDLE_SIGINT
+#if MI_HANDLE_SIGINT
     // Restore previous signal handler
     signal(SIGINT, sigint_handler_prev);
 #endif
 }
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
+MI_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
         if constexpr (!dr::is_jit_array_v<Float>) {
@@ -109,11 +109,11 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Integrator) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Integrator) {
+    MI_PY_IMPORT_TYPES()
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
 
-    MTS_PY_CLASS(Integrator, Object)
+    MI_PY_CLASS(Integrator, Object)
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, Sensor *sensor,
@@ -158,11 +158,11 @@ MTS_PY_EXPORT(Integrator) {
         "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr, "active"_a = true,
         D(SamplingIntegrator, sample));
 
-    MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)
+    MI_PY_REGISTER_OBJECT("register_integrator", Integrator)
 
-    MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+    MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    MTS_PY_CLASS(AdjointIntegrator, Integrator)
+    MI_PY_CLASS(AdjointIntegrator, Integrator)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
                     "sampler"_a, "block"_a, "sample_scale"_a);
 }

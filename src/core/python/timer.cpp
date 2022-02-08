@@ -1,7 +1,7 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Timer) {
+MI_PY_EXPORT(Timer) {
     py::class_<Timer>(m, "Timer")
         .def(py::init<>())
         .def_method(Timer, value)

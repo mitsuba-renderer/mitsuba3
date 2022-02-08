@@ -1,8 +1,8 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Ray) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Ray) {
+    MI_PY_IMPORT_TYPES()
     {
         auto ray = py::class_<Ray3f>(m, "Ray3f", D(Ray))
             .def(py::init<>(), "Create an unitialized ray")
@@ -23,7 +23,7 @@ MTS_PY_EXPORT(Ray) {
             .def_field(Ray3f, wavelengths, D(Ray, wavelengths))
             .def_repr(Ray3f);
 
-        MTS_PY_DRJIT_STRUCT(ray, Ray3f, o, d, maxt, time, wavelengths)
+        MI_PY_DRJIT_STRUCT(ray, Ray3f, o, d, maxt, time, wavelengths)
     }
 
     {
@@ -41,7 +41,7 @@ MTS_PY_EXPORT(Ray) {
             .def_field(RayDifferential3f, d_y, D(RayDifferential, d_y))
             .def_field(RayDifferential3f, has_differentials, D(RayDifferential, has_differentials));
 
-        MTS_PY_DRJIT_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
+        MI_PY_DRJIT_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
                             wavelengths, o_x, o_y, d_x, d_y)
     }
 

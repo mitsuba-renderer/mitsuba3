@@ -22,7 +22,7 @@ specified from an RGB color value.
 template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     SRGBEmitterSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.get<ScalarColor3f>("color");
@@ -53,7 +53,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>)
             return m_d65->eval(si, active) *
@@ -65,15 +65,15 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             // TODO: better sampling strategy
             SurfaceInteraction3f si(_si);
-            si.wavelengths = MTS_CIE_MIN +
-                             (MTS_CIE_MAX - MTS_CIE_MIN) * sample;
-            return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
-                                                         MTS_CIE_MIN) };
+            si.wavelengths = MI_CIE_MIN +
+                             (MI_CIE_MAX - MI_CIE_MIN) * sample;
+            return { si.wavelengths, eval(si, active) * (MI_CIE_MAX -
+                                                         MI_CIE_MIN) };
         } else {
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
@@ -97,7 +97,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients
@@ -109,6 +109,6 @@ private:
     ref<Texture> m_d65;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SRGBEmitterSpectrum, Texture)
-MTS_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
+MI_IMPLEMENT_CLASS_VARIANT(SRGBEmitterSpectrum, Texture)
+MI_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
 NAMESPACE_END(mitsuba)

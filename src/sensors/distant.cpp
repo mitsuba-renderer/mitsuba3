@@ -69,8 +69,8 @@ Ray origins are positioned outside of the scene's geometry.
 template <typename Float, typename Spectrum>
 class DistantSensor final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
-    MTS_IMPORT_TYPES(Scene, Shape)
+    MI_IMPORT_BASE(Sensor, m_to_world, m_film)
+    MI_IMPORT_TYPES(Scene, Shape)
 
     DistantSensor(const Properties &props) : Base(props), m_props(props) {
 
@@ -123,7 +123,7 @@ public:
         return { result };
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     Properties m_props;
@@ -133,8 +133,8 @@ protected:
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class DistantSensorImpl final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths)
-    MTS_IMPORT_TYPES(Scene, Shape)
+    MI_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths)
+    MI_IMPORT_TYPES(Scene, Shape)
 
     DistantSensorImpl(const Properties &props) : Base(props) {
         // Check film size
@@ -190,7 +190,7 @@ public:
     sample_ray(Float time, Float wavelength_sample,
                     const Point2f & /*film_sample*/,
                     const Point2f &aperture_sample, Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Ray3f ray;
         ray.time = time;
@@ -234,7 +234,7 @@ public:
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
         Float time, Float wavelength_sample, const Point2f &film_sample,
         const Point2f &aperture_sample, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         RayDifferential3f ray;
         Spectrum ray_weight;
@@ -270,7 +270,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     ScalarBoundingSphere3f m_bsphere;
@@ -278,8 +278,8 @@ protected:
     Point3f m_target_point;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(DistantSensor, Sensor)
-MTS_EXPORT_PLUGIN(DistantSensor, "DistantSensor")
+MI_IMPLEMENT_CLASS_VARIANT(DistantSensor, Sensor)
+MI_EXPORT_PLUGIN(DistantSensor, "DistantSensor")
 
 NAMESPACE_BEGIN(detail)
 template <RayTargetType TargetType>

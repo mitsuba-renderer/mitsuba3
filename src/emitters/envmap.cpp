@@ -70,8 +70,8 @@ High quality free light probes are available on
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
 
@@ -199,7 +199,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
 
@@ -214,7 +214,7 @@ public:
                                           const Point2f &sample2,
                                           const Point2f &sample3,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
@@ -262,7 +262,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
         uv.x() += .5f / (m_data.shape(1) - 1);
@@ -307,7 +307,7 @@ public:
 
     Float pdf_direction(const Interaction3f & /*it*/, const DirectionSample3f &ds,
                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         Vector3f d = m_to_world.value().inverse().transform_affine(ds.d);
 
@@ -326,7 +326,7 @@ public:
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         return eval_spectrum(ds.uv, it.wavelengths, active);
     }
 
@@ -490,7 +490,7 @@ protected:
         }
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     std::string m_filename;
     ScalarBoundingSphere3f m_bsphere;
@@ -500,6 +500,6 @@ protected:
     ScalarFloat m_scale;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
-MTS_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter")
+MI_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
+MI_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter")
 NAMESPACE_END(mitsuba)

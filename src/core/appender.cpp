@@ -114,7 +114,7 @@ StreamAppender::~StreamAppender() {
     }
 }
 
-MTS_IMPLEMENT_CLASS(Appender, Object)
-MTS_IMPLEMENT_CLASS(StreamAppender, Appender)
+MI_IMPLEMENT_CLASS(Appender, Object)
+MI_IMPLEMENT_CLASS(StreamAppender, Appender)
 
 NAMESPACE_END(mitsuba)

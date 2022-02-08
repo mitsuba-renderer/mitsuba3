@@ -3,27 +3,27 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &/*props*/) { }
-MTS_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
+MI_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &/*props*/) { }
+MI_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 
-MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
+MI_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
     Assert(m_radius > 0);
 
     if constexpr (!dr::is_jit_array_v<Float>) {
-        m_values.resize(MTS_FILTER_RESOLUTION + 1);
+        m_values.resize(MI_FILTER_RESOLUTION + 1);
 
         // Evaluate and store the filter values
-        for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
-            m_values[i] = eval((m_radius * i) / MTS_FILTER_RESOLUTION);
+        for (size_t i = 0; i < MI_FILTER_RESOLUTION; ++i)
+            m_values[i] = eval((m_radius * i) / MI_FILTER_RESOLUTION);
 
-        m_values[MTS_FILTER_RESOLUTION] = 0;
+        m_values[MI_FILTER_RESOLUTION] = 0;
     }
 
-    m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
+    m_scale_factor = MI_FILTER_RESOLUTION / m_radius;
     m_border_size = (int) dr::ceil(m_radius - .5f - 2.f * math::RayEpsilon<ScalarFloat>);
 }
 
-MTS_VARIANT bool ReconstructionFilter<Float, Spectrum>::is_box_filter() const {
+MI_VARIANT bool ReconstructionFilter<Float, Spectrum>::is_box_filter() const {
     // The box filter is the only filter in Mitsuba 2 with 1/2px radius
     return m_radius == .5f;
 }
@@ -41,6 +41,6 @@ std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value)
     return os;
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
-MTS_INSTANTIATE_CLASS(ReconstructionFilter)
+MI_IMPLEMENT_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
+MI_INSTANTIATE_CLASS(ReconstructionFilter)
 NAMESPACE_END(mitsuba)

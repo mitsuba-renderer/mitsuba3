@@ -1588,7 +1588,7 @@ static const char *__doc_mitsuba_Class_Class =
 R"doc(Construct a new class descriptor
 
 This method should never be called manually. Instead, use the
-MTS_DECLARE_CLASS macro to automatically do this for you.
+MI_DECLARE_CLASS macro to automatically do this for you.
 
 Parameter ``name``:
     Name of the class
@@ -5650,7 +5650,7 @@ Various kinds are implemented as subclasses of this interface.
 Because image filters are generally too expensive to evaluate for each
 sample, the implementation of this class internally precomputes an
 discrete representation, whose resolution given by
-MTS_FILTER_RESOLUTION.)doc";
+MI_FILTER_RESOLUTION.)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_2 = R"doc()doc";
 
@@ -8485,7 +8485,7 @@ static const char *__doc_mitsuba_Texture_m_id = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_mean =
 R"doc(Return the mean value of the spectrum over the support
-(MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
+(MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
 
 Not every implementation necessarily provides this function. The
 default implementation throws an exception.
@@ -8565,7 +8565,7 @@ default implementation throws an exception.)doc";
 static const char *__doc_mitsuba_Texture_wavelength_range =
 R"doc(Returns the range of wavelengths covered by the spectrum
 
-The default implementation returns ``(MTS_CIE_MIN, MTS_CIE_MAX)``)doc";
+The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``)doc";
 
 static const char *__doc_mitsuba_Thread =
 R"doc(Cross-platform thread implementation

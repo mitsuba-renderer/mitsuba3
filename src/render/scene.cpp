@@ -5,20 +5,20 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/integrator.h>
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
 #  include "scene_embree.inl"
 #else
 #  include <mitsuba/render/kdtree.h>
 #  include "scene_native.inl"
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 #  include "scene_optix.inl"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
+MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     for (auto &kv : props.objects()) {
         m_children.push_back(kv.second.get());
 
@@ -117,7 +117,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     m_shapes_grad_enabled = false;
 }
 
-MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
+MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     if constexpr (dr::is_cuda_array_v<Float>)
         accel_release_gpu();
     else
@@ -138,7 +138,7 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
     }
 }
 
-MTS_VARIANT ref<Bitmap>
+MI_VARIANT ref<Bitmap>
 Scene<Float, Spectrum>::render(uint32_t sensor_index, uint32_t seed, uint32_t spp) {
     m_integrator->render(this, sensor_index, seed, spp, /* develop = */ false);
     return m_sensors[sensor_index]->film()->bitmap();
@@ -146,9 +146,9 @@ Scene<Float, Spectrum>::render(uint32_t sensor_index, uint32_t seed, uint32_t sp
 
 // -----------------------------------------------------------------------
 
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
 
     if constexpr (dr::is_cuda_array_v<Float>)
@@ -157,7 +157,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
         return ray_intersect_cpu(ray, ray_flags, coherent, active);
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coherent, Mask active) const {
     DRJIT_MARK_USED(coherent);
     if constexpr (dr::is_cuda_array_v<Float>)
@@ -166,9 +166,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coheren
         return ray_intersect_preliminary_cpu(ray, coherent, active);
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
 
     if constexpr (dr::is_cuda_array_v<Float>)
@@ -177,11 +177,11 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) c
         return ray_test_cpu(ray, coherent, active);
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
-#if !defined(MTS_ENABLE_EMBREE)
+#if !defined(MI_ENABLE_EMBREE)
     if constexpr (!dr::is_cuda_array_v<Float>)
         return ray_intersect_naive_cpu(ray, active);
 #endif
@@ -192,9 +192,9 @@ Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const
 
 // -----------------------------------------------------------------------
 
-MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
+MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
 Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
 
     if (unlikely(m_emitters.size() < 2)) {
         if (m_emitters.size() == 1)
@@ -212,18 +212,18 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     return { index, emitter_count_f, index_sample_scaled - Float(index) };
 }
 
-MTS_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
+MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
                                                       Mask /*active*/) const {
     return m_emitter_pmf;
 }
 
-MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
+MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
                        const typename Scene<Float, Spectrum>::EmitterPtr>
 Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            const Point2f &sample2,
                                            const Point2f &sample3,
                                            Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
 
     Ray3f ray;
@@ -256,10 +256,10 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     return { ray, weight, emitter };
 }
 
-MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
+MI_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
                                                  bool test_visibility, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
     Point2f sample(sample_);
     DirectionSample3f ds;
@@ -312,21 +312,21 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     return { ds, spec };
 }
 
-MTS_VARIANT Float
+MI_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
     return ds.emitter->pdf_direction(ref, ds, active) * m_emitter_pmf;
 }
 
-MTS_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
+MI_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
     const Interaction3f &ref, const DirectionSample3f &ds, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
     return ds.emitter->eval_direction(ref, ds, active);
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     for (auto& child : m_children) {
         std::string id = child->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
@@ -335,7 +335,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (m_environment)
         m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
 
@@ -361,7 +361,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
     }
 }
 
-MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
+MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Scene[" << std::endl
         << "  children = [" << std::endl;
@@ -376,51 +376,51 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
     if constexpr (dr::is_cuda_array_v<Float>)
         Scene::static_accel_initialization_gpu();
     else
         Scene::static_accel_initialization_cpu();
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
     if constexpr (dr::is_cuda_array_v<Float>)
         Scene::static_accel_shutdown_gpu();
     else
         Scene::static_accel_shutdown_cpu();
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_cpu() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_cpu() { }
 
 void librender_nop() { }
 
-#if !defined(MTS_ENABLE_CUDA)
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &) {
+#if !defined(MI_ENABLE_CUDA)
+MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &) {
     NotImplementedError("accel_init_gpu");
 }
-MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     NotImplementedError("accel_parameters_changed_gpu");
 }
-MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     NotImplementedError("accel_release_gpu");
 }
-MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, Mask) const {
     NotImplementedError("ray_intersect_preliminary_gpu");
 }
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &, uint32_t, Mask) const {
     NotImplementedError("ray_intersect_naive_gpu");
 }
-MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, Mask) const {
     NotImplementedError("ray_test_gpu");
 }
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
-MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
-MTS_INSTANTIATE_CLASS(Scene)
+MI_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
+MI_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)

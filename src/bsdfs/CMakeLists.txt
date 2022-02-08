@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "bsdfs")
+set(MI_PLUGIN_PREFIX "bsdfs")
 
 add_plugin(blendbsdf            blendbsdf.cpp)
 add_plugin(bumpmap              bumpmap.cpp)

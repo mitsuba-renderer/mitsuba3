@@ -8,7 +8,7 @@
 
 template <typename Float>
 void bind_transform3f(py::module &m, const char *name) {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     auto trans3 = py::class_<Transform3f>(m, name, D(Transform))
         .def(py::init<>(), "Initialize with the identity matrix")
@@ -62,12 +62,12 @@ void bind_transform3f(py::module &m, const char *name) {
     if constexpr (dr::is_dynamic_v<Float>)
         trans3.def(py::init<const ScalarTransform3f &>(), "Broadcast constructor");
 
-    MTS_PY_DRJIT_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
+    MI_PY_DRJIT_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
 }
 
 template <typename Float, typename Spectrum>
 void bind_transform4f(py::module &m, const char *name) {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point<Float, 3>, Spectrum>;
     auto trans4 = py::class_<Transform4f>(m, name, D(Transform))
         .def(py::init<>(), "Initialize with the identity matrix")
@@ -144,43 +144,43 @@ void bind_transform4f(py::module &m, const char *name) {
     if constexpr (dr::is_dynamic_v<Float>)
         trans4.def(py::init<const ScalarTransform4f &>(), "Broadcast constructor");
 
-    MTS_PY_DRJIT_STRUCT(trans4, Transform4f, matrix, inverse_transpose)
+    MI_PY_DRJIT_STRUCT(trans4, Transform4f, matrix, inverse_transpose)
 }
 
-MTS_PY_EXPORT(Transform) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Transform) {
+    MI_PY_IMPORT_TYPES()
     using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
 
-    MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
+    MI_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
         bind_transform3f<Float>(m, "Transform3f");
     }
 
-    MTS_PY_CHECK_ALIAS(ScalarTransform3f, "ScalarTransform3f") {
+    MI_PY_CHECK_ALIAS(ScalarTransform3f, "ScalarTransform3f") {
         if constexpr (dr::is_dynamic_v<Float>) {
             bind_transform3f<ScalarFloat>(m, "ScalarTransform3f");
             py::implicitly_convertible<ScalarTransform3f, Transform3f>();
         }
     }
 
-    MTS_PY_CHECK_ALIAS(ScalarTransform3d, "ScalarTransform3d") {
+    MI_PY_CHECK_ALIAS(ScalarTransform3d, "ScalarTransform3d") {
         if constexpr (dr::is_dynamic_v<Float>) {
             bind_transform3f<ScalarFloat64>(m, "ScalarTransform3d");
             py::implicitly_convertible<ScalarTransform3d, ScalarTransform3f>();
         }
     }
 
-    MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
+    MI_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
         bind_transform4f<Float, Spectrum>(m, "Transform4f");
     }
 
-    MTS_PY_CHECK_ALIAS(ScalarTransform4f, "ScalarTransform4f") {
+    MI_PY_CHECK_ALIAS(ScalarTransform4f, "ScalarTransform4f") {
         if constexpr (dr::is_dynamic_v<Float>) {
             bind_transform4f<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform4f");
             py::implicitly_convertible<ScalarTransform4f, Transform4f>();
         }
     }
 
-    MTS_PY_CHECK_ALIAS(ScalarTransform4d, "ScalarTransform4d") {
+    MI_PY_CHECK_ALIAS(ScalarTransform4d, "ScalarTransform4d") {
         if constexpr (dr::is_dynamic_v<Float>) {
             bind_transform4f<ScalarFloat64, ScalarSpectrum>(m, "ScalarTransform4d");
             py::implicitly_convertible<ScalarTransform4d, ScalarTransform4f>();
@@ -191,8 +191,8 @@ MTS_PY_EXPORT(Transform) {
     py::implicitly_convertible<Matrix4f, Transform4f>();
 }
 
-MTS_PY_EXPORT(AnimatedTransform) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(AnimatedTransform) {
+    MI_PY_IMPORT_TYPES()
     using Keyframe      = typename AnimatedTransform::Keyframe;
     using _Float        = typename AnimatedTransform::Float;
     using _Matrix3f     = typename AnimatedTransform::Matrix3f;
@@ -200,8 +200,8 @@ MTS_PY_EXPORT(AnimatedTransform) {
     using _Vector3f     = typename AnimatedTransform::Vector3f;
     using _Transform4f  = typename AnimatedTransform::Transform4f;
 
-    MTS_PY_CHECK_ALIAS(AnimatedTransform, "AnimatedTransform") {
-        auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
+    MI_PY_CHECK_ALIAS(AnimatedTransform, "AnimatedTransform") {
+        auto atrafo = MI_PY_CLASS(AnimatedTransform, Object);
 
         py::class_<Keyframe>(atrafo, "Keyframe")
             .def(py::init<float, _Matrix3f, _Quaternion4f, _Vector3f>())

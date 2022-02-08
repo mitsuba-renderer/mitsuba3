@@ -6,8 +6,8 @@
 #include <mitsuba/render/imageblock.h>
 #include <mutex>
 
-#if !defined(MTS_BLOCK_SIZE)
-#  define MTS_BLOCK_SIZE 32
+#if !defined(MI_BLOCK_SIZE)
+#  define MI_BLOCK_SIZE 32
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * Copyright 2005 Program of Computer Graphics, Cornell University
  * \ingroup librender
  */
-class MTS_EXPORT_LIB Spiral : public Object {
+class MI_EXPORT_LIB Spiral : public Object {
 public:
     using Vector2i = Vector<int32_t, 2>;
     using Vector2u = Vector<uint32_t, 2>;
@@ -50,7 +50,7 @@ public:
      */
     std::tuple<Vector2i, Vector2u, uint32_t> next_block();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     enum class Direction { Right, Down, Left, Up };
 

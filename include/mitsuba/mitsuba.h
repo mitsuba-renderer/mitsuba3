@@ -8,24 +8,24 @@
 
 #pragma once
 
-#define MTS_VERSION_MAJOR 2
-#define MTS_VERSION_MINOR 2
-#define MTS_VERSION_PATCH 1
+#define MI_VERSION_MAJOR 2
+#define MI_VERSION_MINOR 2
+#define MI_VERSION_PATCH 1
 
-#define MTS_STRINGIFY(x) #x
-#define MTS_TOSTRING(x)  MTS_STRINGIFY(x)
+#define MI_STRINGIFY(x) #x
+#define MI_TOSTRING(x)  MI_STRINGIFY(x)
 
 /// Current release of Mitsuba
-#define MTS_VERSION                                                       \
-    MTS_TOSTRING(MTS_VERSION_MAJOR) "."                                   \
-    MTS_TOSTRING(MTS_VERSION_MINOR) "."                                   \
-    MTS_TOSTRING(MTS_VERSION_PATCH)
+#define MI_VERSION                                                       \
+    MI_TOSTRING(MI_VERSION_MAJOR) "."                                   \
+    MI_TOSTRING(MI_VERSION_MINOR) "."                                   \
+    MI_TOSTRING(MI_VERSION_PATCH)
 
 /// Year of the current release
-#define MTS_YEAR "2021"
+#define MI_YEAR "2021"
 
 /// Authors list
-#define MTS_AUTHORS "Realistic Graphics Lab, EPFL"
+#define MI_AUTHORS "Realistic Graphics Lab, EPFL"
 
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/platform.h>

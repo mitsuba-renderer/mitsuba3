@@ -39,8 +39,8 @@ uniformly radiates illumination into all directions.
 template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world)
+    MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -65,7 +65,7 @@ public:
                                           const Point2f & /*pos_sample*/,
                                           const Point2f &dir_sample,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, weight] = sample_wavelengths(
             dr::zero<SurfaceInteraction3f>(), wavelength_sample, active);
@@ -82,7 +82,7 @@ public:
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f & /*sample*/,
                                                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
         ds.p       = m_position.value();
@@ -130,7 +130,7 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f & /*sample*/,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         PositionSample3f ps = dr::zero<PositionSample3f>();
         ps.p = m_position.value();
@@ -177,13 +177,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_intensity;
     field<Point3f> m_position;
 };
 
 
-MTS_IMPLEMENT_CLASS_VARIANT(PointLight, Emitter)
-MTS_EXPORT_PLUGIN(PointLight, "Point emitter")
+MI_IMPLEMENT_CLASS_VARIANT(PointLight, Emitter)
+MI_EXPORT_PLUGIN(PointLight, "Point emitter")
 NAMESPACE_END(mitsuba)

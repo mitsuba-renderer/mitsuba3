@@ -68,7 +68,7 @@ public:
 
     virtual void run() override { Log(Error, "The main thread is already running!"); }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     virtual ~MainThread() { }
 };
@@ -80,7 +80,7 @@ public:
 
     virtual void run() override { Throw("The worker thread is already running!"); }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     virtual ~WorkerThread() { }
     static std::atomic<uint32_t> m_counter;
@@ -568,8 +568,8 @@ ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
     thread->set_file_resolver(m_file_resolver);
 }
 
-MTS_IMPLEMENT_CLASS(Thread, Object)
-MTS_IMPLEMENT_CLASS(MainThread, Thread)
-MTS_IMPLEMENT_CLASS(WorkerThread, Thread)
+MI_IMPLEMENT_CLASS(Thread, Object)
+MI_IMPLEMENT_CLASS(MainThread, Thread)
+MI_IMPLEMENT_CLASS(WorkerThread, Thread)
 
 NAMESPACE_END(mitsuba)

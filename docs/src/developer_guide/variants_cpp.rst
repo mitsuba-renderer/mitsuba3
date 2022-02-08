@@ -61,7 +61,7 @@ function, we are then able to use other templated Mitsuba types (e.g.
     template <typename Float, typename Spectrum>
     void my_function() {
         /// Import type aliases (e.g. using Vector3f = Vector<Float, 3>;)
-        MTS_IMPORT_TYPES()
+        MI_IMPORT_TYPES()
 
         // Can now use those types as if they were not templated
         Point3f p(4.f, 3.f, 0.f);
@@ -72,7 +72,7 @@ function, we are then able to use other templated Mitsuba types (e.g.
 
 .. note::
 
-    The ``MTS_VARIANT`` macro is often used as a shorthand notation instead of
+    The ``MI_VARIANT`` macro is often used as a shorthand notation instead of
     the somewhat verbose ``template <typename Float, typename Spectum>``.
 
 Those macros are described in more detail in the next chapter:
@@ -183,7 +183,7 @@ and always assumes the condition to be true.
 Pointer types
 -------------
 
-The ``MTS_IMPORT_TYPES`` macro also imports variant-specific type aliases for
+The ``MI_IMPORT_TYPES`` macro also imports variant-specific type aliases for
 pointer types. This is important: for example, consider the ``BSDF`` associated
 with a surface intersection. In a scalar variant , this is nicely represented
 using a ``const BSDF *`` pointer. However, on a vectorized variants (``cuda_*``,
@@ -194,7 +194,7 @@ pointer aliases are used as follows:
 .. code-block:: c++
 
     // Imports BSDFPtr, EmitterPtr, etc..
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     Scene scene = ...;
     Mask active = ...;

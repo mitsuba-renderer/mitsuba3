@@ -53,10 +53,10 @@ on the order of the machine epsilon (:math:`6\cdot 10^{-8}`) in single precision
 template <typename Float, typename Spectrum>
 class IndependentSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed,
+    MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed,
                     seeded, m_samples_per_wavefront, m_wavefront_size,
                     schedule_state)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     IndependentSampler(const Properties &props) : Base(props) { }
 
@@ -93,12 +93,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 private:
     IndependentSampler(const IndependentSampler &sampler) : Base(sampler) {}
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)
-MTS_EXPORT_PLUGIN(IndependentSampler, "Independent Sampler");
+MI_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)
+MI_EXPORT_PLUGIN(IndependentSampler, "Independent Sampler");
 NAMESPACE_END(mitsuba)

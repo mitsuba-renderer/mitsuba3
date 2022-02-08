@@ -3,12 +3,12 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
+MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
     : m_flags(+BSDFFlags::None), m_id(props.id()) { }
 
-MTS_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
+MI_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
 
-MTS_VARIANT std::pair<Spectrum, Float>
+MI_VARIANT std::pair<Spectrum, Float>
 BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si,
                                 const Vector3f &wo,
@@ -16,7 +16,7 @@ BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
     return { eval(ctx, si, wo, active), pdf(ctx, si, wo, active) };
 }
 
-MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
+MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     const SurfaceInteraction3f & /* si */, Mask /* active */) const {
     return 0.f;
 }
@@ -144,6 +144,6 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     return os;
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(BSDF, Object, "bsdf")
-MTS_INSTANTIATE_CLASS(BSDF)
+MI_IMPLEMENT_CLASS_VARIANT(BSDF, Object, "bsdf")
+MI_INSTANTIATE_CLASS(BSDF)
 NAMESPACE_END(mitsuba)

@@ -5,8 +5,8 @@
 #include <bitset>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(math) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(math) {
+    MI_PY_IMPORT_TYPES()
 
     m.attr("RayEpsilon")      = py::cast(math::RayEpsilon<Float>);
     m.attr("ShadowEpsilon")   = py::cast(math::ShadowEpsilon<Float>);

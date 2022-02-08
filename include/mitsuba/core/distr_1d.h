@@ -115,7 +115,7 @@ public:
      *     The discrete index associated with the sample
      */
     Index sample(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         value *= m_sum;
 
@@ -141,7 +141,7 @@ public:
      *     2. the normalized probability value of the sample.
      */
     std::pair<Index, Value> sample_pmf(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Index index = sample(value, active);
         return { index, eval_pmf_normalized(index) };
@@ -165,7 +165,7 @@ public:
      */
     std::pair<Index, Value>
     sample_reuse(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Index index = sample(value, active);
 
@@ -194,7 +194,7 @@ public:
      */
     std::tuple<Index, Value, Value>
     sample_reuse_pmf(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         auto [index, pdf] = sample_pmf(value, active);
 
@@ -340,7 +340,7 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
     Value eval_pdf(Value x, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
@@ -358,14 +358,14 @@ public:
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
     Value eval_pdf_normalized(Value x, Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Value eval_cdf(Value x_, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Value x = (x_ - m_range.x()) * m_inv_interval_size;
 
@@ -383,7 +383,7 @@ public:
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Value eval_cdf_normalized(Value x, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         return eval_cdf(x, active) * m_normalization;
     }
@@ -399,7 +399,7 @@ public:
      *     The sampled position.
      */
     Value sample(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         value *= m_integral;
 
@@ -437,7 +437,7 @@ public:
      *     2. the normalized probability density of the sample.
      */
     std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         value *= m_integral;
 
@@ -627,7 +627,7 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
     Value eval_pdf(Value x, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         active &= x >= m_range.x() && x <= m_range.y();
 
@@ -652,14 +652,14 @@ public:
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
     Value eval_pdf_normalized(Value x, Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Value eval_cdf(Value x, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Index index = dr::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
@@ -685,7 +685,7 @@ public:
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Value eval_cdf_normalized(Value x, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         return eval_cdf(x, active) * m_normalization;
     }
@@ -701,7 +701,7 @@ public:
      *     The sampled position.
      */
     Value sample(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         value *= m_integral;
 
@@ -742,7 +742,7 @@ public:
      *     2. the normalized probability density of the sample.
      */
     std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         value *= m_integral;
 

@@ -62,8 +62,8 @@ The following XML snippet describes a material configuration for a transparent l
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
+    MI_IMPORT_TYPES(Texture)
 
     MaskBSDF(const Properties &props) : Base(props) {
         // Scalar-typed opacity texture
@@ -96,7 +96,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         uint32_t null_index = (uint32_t) component_count() - 1;
 
@@ -132,7 +132,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float opacity = eval_opacity(si, active);
         return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
@@ -140,7 +140,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         uint32_t null_index      = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
@@ -160,7 +160,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         uint32_t null_index      = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
@@ -186,7 +186,7 @@ public:
         return 1 - opacity * (1 - m_nested_bsdf->eval_null_transmission(si, active));
     }
 
-    MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
+    MI_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
         return dr::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
@@ -204,12 +204,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_opacity;
     ref<Base> m_nested_bsdf;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)
-MTS_EXPORT_PLUGIN(MaskBSDF, "Mask material")
+MI_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)
+MI_EXPORT_PLUGIN(MaskBSDF, "Mask material")
 NAMESPACE_END(mitsuba)

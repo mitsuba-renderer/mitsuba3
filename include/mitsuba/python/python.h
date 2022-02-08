@@ -21,15 +21,15 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
 /// Shorthand notation for defining a data structure
-#define MTS_PY_STRUCT(Name, ...) \
+#define MI_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
 
 /// Shorthand notation for defining a Mitsuba class deriving from a base class
-#define MTS_PY_CLASS(Name, Base, ...) \
+#define MI_PY_CLASS(Name, Base, ...) \
     py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
 
 /// Shorthand notation for defining a Mitsuba class that can be extended in Python
-#define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
+#define MI_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
     py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, D(Name), ##__VA_ARGS__)
 
 /// Shorthand notation for defining attributes with read-write access
@@ -54,7 +54,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 /// Shorthand notation for defining object registration routine for trampoline objects
 /// WARNING: this will leak out memory as the constructed py::object will never be destroyed
-#define MTS_PY_REGISTER_OBJECT(Function, Name)                                 \
+#define MI_PY_REGISTER_OBJECT(Function, Name)                                 \
     m.def(                                                                     \
         Function,                                                              \
         [](const std::string &name,                                            \
@@ -90,13 +90,13 @@ py::handle type_of() {
         return py::type::of<T>();
 }
 
-#define MTS_PY_DRJIT_STRUCT_BIND_FIELD(x) \
+#define MI_PY_DRJIT_STRUCT_BIND_FIELD(x) \
     fields[#x] = type_of<decltype(struct_type_().x)>();
 
-#define MTS_PY_DRJIT_STRUCT(cls, Type, ...)                                    \
+#define MI_PY_DRJIT_STRUCT(cls, Type, ...)                                    \
     py::dict fields;                                                           \
     using struct_type_ = Type;                                                 \
-    DRJIT_MAP(MTS_PY_DRJIT_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
+    DRJIT_MAP(MI_PY_DRJIT_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
     cls.attr("DRJIT_STRUCT") = fields;                                         \
     cls.def("assign", [](Type &a, const Type &b) {                             \
         if (&a != &b)                                                          \
@@ -119,19 +119,19 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
-#define MTS_PY_DECLARE(Name) extern void python_export_##Name(py::module_ &m)
-#define MTS_PY_EXPORT(Name) void python_export_##Name(py::module_ &m)
-#define MTS_PY_IMPORT(Name) python_export_##Name(m)
-#define MTS_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
+#define MI_PY_DECLARE(Name) extern void python_export_##Name(py::module_ &m)
+#define MI_PY_EXPORT(Name) void python_export_##Name(py::module_ &m)
+#define MI_PY_IMPORT(Name) python_export_##Name(m)
+#define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
-#define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
-#define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)
+#define MI_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
+#define MI_MODULE_NAME(lib, variant) MI_MODULE_NAME_1(lib, variant)
 
-#define MTS_PY_IMPORT_TYPES(...)                                                                   \
-    using Float    = MTS_VARIANT_FLOAT;                                                            \
-    using Spectrum = MTS_VARIANT_SPECTRUM;                                                         \
-    MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
-    MTS_IMPORT_OBJECT_TYPES()
+#define MI_PY_IMPORT_TYPES(...)                                                                   \
+    using Float    = MI_VARIANT_FLOAT;                                                            \
+    using Spectrum = MI_VARIANT_SPECTRUM;                                                         \
+    MI_IMPORT_TYPES(__VA_ARGS__)                                                                  \
+    MI_IMPORT_OBJECT_TYPES()
 
 inline py::module_ create_submodule(py::module_ &m, const char *name) {
     std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
@@ -229,13 +229,13 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
     }
 }
 
-#define MTS_PY_CHECK_ALIAS(Type, Name)                \
+#define MI_PY_CHECK_ALIAS(Type, Name)                \
     if (auto h = get_type_handle<Type>(); h) {        \
         m.attr(Name) = h;                             \
     }                                                 \
     else
 
-#define MTS_PY_DECLARE_ENUM_OPERATORS(Type, m)        \
+#define MI_PY_DECLARE_ENUM_OPERATORS(Type, m)        \
     m.def(py::self == py::self)                       \
      .def(py::self | py::self)                        \
      .def(int() | py::self)                           \

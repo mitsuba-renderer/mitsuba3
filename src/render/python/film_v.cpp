@@ -7,9 +7,9 @@
 #include <mitsuba/render/spiral.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Film) {
-    MTS_PY_IMPORT_TYPES(Film)
-    MTS_PY_CLASS(Film, Object)
+MI_PY_EXPORT(Film) {
+    MI_PY_IMPORT_TYPES(Film)
+    MI_PY_CLASS(Film, Object)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, develop, "raw"_a = false)

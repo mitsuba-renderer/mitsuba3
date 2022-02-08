@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
  * <tt>MemoryMappedFile(filename, array)<tt>, which creates a new
  * file, maps it into memory, and copies the array contents.
  */
-class MTS_EXPORT_LIB MemoryMappedFile : public Object {
+class MI_EXPORT_LIB MemoryMappedFile : public Object {
 public:
     /// Create a new memory-mapped file of the specified size
     MemoryMappedFile(const fs::path &filename, size_t size);
@@ -55,7 +55,7 @@ public:
      */
     static ref<MemoryMappedFile> create_temporary(size_t size);
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Internal constructor
     MemoryMappedFile();

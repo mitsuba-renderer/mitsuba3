@@ -2,16 +2,16 @@
 #  Undo 'cmake-defaults' settings that interfere with dependencies
 # ---------------------------------------------------------------------------
 
-get_directory_property(MTS_EXT_COMPILE_OPTIONS        COMPILE_OPTIONS)
-get_directory_property(MTS_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
-list(REMOVE_ITEM MTS_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
+get_directory_property(MI_EXT_COMPILE_OPTIONS        COMPILE_OPTIONS)
+get_directory_property(MI_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
+list(REMOVE_ITEM MI_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 
 # ---------------------------------------------------------------------------
 #  Link against Intel ITT (profiler events for VTune, optional)
 # ---------------------------------------------------------------------------
 
-if (MTS_PROFILER_ITTNOTIFY)
-  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS_NOWARN}")
+if (MI_PROFILER_ITTNOTIFY)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS_NOWARN}")
   add_subdirectory(ittnotify/ittnotify)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
   set(ITT_INCLUDE_DIRS ${ITT_INCLUDE_DIRS} PARENT_SCOPE)
@@ -23,11 +23,11 @@ endif()
 #  Build Dr.Jit (+ Python bindings, JIT compiler, etc.)
 # ---------------------------------------------------------------------------
 
-set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS}")
-set(DRJIT_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
-set(DRJIT_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
-set(DRJIT_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-if (MTS_PROFILER_NVTX)
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS}")
+set(DRJIT_ENABLE_JIT      ${MI_ENABLE_JIT} CACHE BOOL " " FORCE)
+set(DRJIT_ENABLE_AUTODIFF ${MI_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
+set(DRJIT_ENABLE_PYTHON   ${MI_ENABLE_PYTHON} CACHE BOOL " " FORCE)
+if (MI_PROFILER_NVTX)
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
     set(DRJIT_JIT_ENABLE_NVTX ON)
 endif()
@@ -35,18 +35,18 @@ endif()
 if (NOT SKBUILD)
   add_subdirectory(drjit)
 
-  if (NOT MTS_ENABLE_JIT)
+  if (NOT MI_ENABLE_JIT)
     add_subdirectory(drjit/ext/drjit-core/ext/drjit-thread)
     set_target_properties(drjit-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drjit")
   endif()
 
   set_target_properties(drjit-thread PROPERTIES FOLDER "drjit")
 
-  if (MTS_ENABLE_JIT)
+  if (MI_ENABLE_JIT)
     set_target_properties(drjit-core PROPERTIES FOLDER "drjit")
   endif()
 
-  if (MTS_ENABLE_AUTODIFF)
+  if (MI_ENABLE_AUTODIFF)
     set_target_properties(drjit-autodiff PROPERTIES FOLDER "drjit")
     if (TARGET drjit-autodiff-scalar-f32)
       set_target_properties(drjit-autodiff-scalar-f32 drjit-autodiff-scalar-f64 PROPERTIES FOLDER "drjit")
@@ -59,7 +59,7 @@ if (NOT SKBUILD)
     endif()
   endif()
 
-  if (MTS_ENABLE_PYTHON)
+  if (MI_ENABLE_PYTHON)
     set_target_properties(drjit-python PROPERTIES FOLDER "drjit")
   endif()
 endif()
@@ -75,7 +75,7 @@ mark_as_advanced(
 #  Compile Intel Embree (optional)
 # ----------------------------------------------------------
 
-if (MTS_ENABLE_EMBREE)
+if (MI_ENABLE_EMBREE)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "")
 
   set(EMBREE_ISPC_SUPPORT              OFF CACHE BOOL " " FORCE)
@@ -156,7 +156,7 @@ mark_as_advanced(FORCE EMBREE_ADDRESS_SANITIZER EMBREE_API_NAMESPACE
 #  Build OpenEXR (and zlib on Windows)
 # ----------------------------------------------------------
 
-set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS_NOWARN}")
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS_NOWARN}")
 if (WIN32)
   set(ZLIB_BUILD_STATIC_LIBS OFF CACHE BOOL " " FORCE)
   set(ZLIB_BUILD_SHARED_LIBS ON  CACHE BOOL " " FORCE)
@@ -244,7 +244,7 @@ if (WIN32 OR APPLE)
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "png" PARENT_SCOPE)
-  set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
+  set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
 
   mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
     PNG_PREFIX PNG_SHARED PNG_STATIC PNG_TESTS PNG_BUILD_ZLIB PNG_DEBUG
@@ -255,7 +255,7 @@ else()
   if (PNG_FOUND)
     set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
     set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
+    set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
   else()
     message(WARNING "\n${BoldRed}libpng could not be found: Mitsuba will "
             "not be able to read/write PNG files!${ColorReset}")
@@ -275,7 +275,7 @@ if (WIN32 OR APPLE)
 
   set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
   set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
-  set(JPEG_DEFINES      -DMTS_HAS_LIBJPEG PARENT_SCOPE)
+  set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 
   # Give libpng & libjpeg a name that's guaranteeed not to match other
   # libraries that may already be loaded (e.g. into a Python interpreter)
@@ -291,17 +291,17 @@ else()
   if (JPEG_FOUND)
     set(JPEG_LIBRARIES    ${JPEG_LIBRARIES} PARENT_SCOPE)
     set(JPEG_INCLUDE_DIRS ${JPEG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(JPEG_DEFINES      -DMTS_HAS_LIBJPEG PARENT_SCOPE)
+    set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
   else()
     message(WARNING "\n${BoldRed}libjpeg could not be found: Mitsuba will "
             "not be able to read/write JPEG files!${ColorReset}")
   endif()
 endif()
 
-# if (MTS_ENABLE_GUI)
+# if (MI_ENABLE_GUI)
 #     set(NANOGUI_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
 #     set(NANOGUI_BUILD_SHARED   ON  CACHE BOOL " " FORCE)
-#     set(NANOGUI_BUILD_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
+#     set(NANOGUI_BUILD_PYTHON   ${MI_ENABLE_PYTHON} CACHE BOOL " " FORCE)
 #     set(NANOGUI_INSTALL        OFF CACHE BOOL " " FORCE)
 #     set(NANOGUI_PYBIND11_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/pybind11")
 #     add_subdirectory(nanogui)
@@ -314,7 +314,7 @@ endif()
 #     PARENT_SCOPE)
 #     set(NANOGUI_EXTRA_DEFS ${NANOGUI_EXTRA_DEFS} PARENT_SCOPE)
 #
-#     if (MTS_ENABLE_PYTHON)
+#     if (MI_ENABLE_PYTHON)
 #         set_target_properties(nanogui-python PROPERTIES FOLDER "dependencies")
 #     endif()
 # endif()

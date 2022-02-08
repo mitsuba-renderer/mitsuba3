@@ -29,8 +29,8 @@ this also increases ringing. Values of 2 or 3 are common (3 is the default).
 template <typename Float, typename Spectrum>
 class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MI_IMPORT_TYPES()
 
     LanczosSincFilter(const Properties &props) : Base(props) {
         m_radius = (ScalarFloat) props.get<int>("lobes", 3);
@@ -53,9 +53,9 @@ public:
         return tfm::format("LanczosSincFilter[lobes=%f]", m_radius);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
-MTS_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter")
+MI_IMPLEMENT_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
+MI_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter")
 NAMESPACE_END(mitsuba)

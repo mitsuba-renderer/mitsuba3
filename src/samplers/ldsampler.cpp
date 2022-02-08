@@ -60,10 +60,10 @@ which is a quality criterion on their spatial distribution.
 template <typename Float, typename Spectrum>
 class LowDiscrepancySampler  final : public Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sampler, m_sample_count, m_base_seed, seeded,
+    MI_IMPORT_BASE(Sampler, m_sample_count, m_base_seed, seeded,
                     m_samples_per_wavefront, m_dimension_index,
                     current_sample_index, compute_per_sequence_seed)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     LowDiscrepancySampler (const Properties &props) : Base(props) {
         set_sample_count(m_sample_count);
@@ -145,7 +145,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 private:
     LowDiscrepancySampler(const LowDiscrepancySampler &sampler) : Base(sampler) {
@@ -156,6 +156,6 @@ private:
     UInt32 m_scramble_seed;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(LowDiscrepancySampler , Sampler)
-MTS_EXPORT_PLUGIN(LowDiscrepancySampler , "Low Discrepancy Sampler");
+MI_IMPLEMENT_CLASS_VARIANT(LowDiscrepancySampler , Sampler)
+MI_EXPORT_PLUGIN(LowDiscrepancySampler , "Low Discrepancy Sampler");
 NAMESPACE_END(mitsuba)

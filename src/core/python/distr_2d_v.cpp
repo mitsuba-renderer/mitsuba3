@@ -100,8 +100,8 @@ template <typename Warp> void bind_warp_marginal(py::module &m, const char *name
     );
 }
 
-MTS_PY_EXPORT(Hierarchical2D) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Hierarchical2D) {
+    MI_PY_IMPORT_TYPES()
 
     bind_warp_hierarchical<Hierarchical2D<Float, 0>>(m, "Hierarchical2D0");
     bind_warp_hierarchical<Hierarchical2D<Float, 1>>(m, "Hierarchical2D1");
@@ -109,8 +109,8 @@ MTS_PY_EXPORT(Hierarchical2D) {
     bind_warp_hierarchical<Hierarchical2D<Float, 3>>(m, "Hierarchical2D3");
 }
 
-MTS_PY_EXPORT(Marginal2D) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Marginal2D) {
+    MI_PY_IMPORT_TYPES()
 
     bind_warp_marginal<Marginal2D<Float, 0, false>>(m, "MarginalDiscrete2D0");
     bind_warp_marginal<Marginal2D<Float, 1, false>>(m, "MarginalDiscrete2D1");
@@ -123,8 +123,8 @@ MTS_PY_EXPORT(Marginal2D) {
     bind_warp_marginal<Marginal2D<Float, 3, true>>(m, "MarginalContinuous2D3");
 }
 
-MTS_PY_EXPORT(DiscreteDistribution2D) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(DiscreteDistribution2D) {
+    MI_PY_IMPORT_TYPES()
     using Warp = DiscreteDistribution2D<Float>;
 
     py::class_<Warp>(m, "DiscreteDistribution2D", py::module_local())

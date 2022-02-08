@@ -2,7 +2,7 @@ Plugins & Macros
 ================
 
 This section briefly reviews the "skeleton" of a basic plugin definition to
-clarify the role of the various ``MTS_*`` macros, which are responsible for
+clarify the role of the various ``MI_*`` macros, which are responsible for
 importing types, instantiating variants, and providing run-time type
 information.
 
@@ -18,18 +18,18 @@ Consider the following hypothetical plugin ``MyPlugin``:
     template <typename Float, typename Spectrum>
     class MyPlugin : public PluginInterface<Float, Spectrum> {
     public:
-        MTS_IMPORT_BASE(PluginInterface, m_some_member, some_method)
-        MTS_IMPORT_TYPES()
+        MI_IMPORT_BASE(PluginInterface, m_some_member, some_method)
+        MI_IMPORT_TYPES()
 
         MyPlugin();
 
         Spectrum foo(..., Mask active) const override {
-            MTS_MASKED_FUNCTION(ProfilerPhase::MyEval, active)
+            MI_MASKED_FUNCTION(ProfilerPhase::MyEval, active)
             // ...
         }
 
         /// Declare RTTI data structures
-        MTS_DECLARE_CLASS()
+        MI_DECLARE_CLASS()
     protected:
         /// Important: declare a protected virtual destructor
         virtual ~MyPlugin();
@@ -37,8 +37,8 @@ Consider the following hypothetical plugin ``MyPlugin``:
     };
 
     /// Implement RTTI data structures
-    MTS_IMPLEMENT_CLASS_VARIANT(MyPlugin, PluginInterface)
-    MTS_EXPORT_PLUGIN(MyPlugin, "Description of my plugin")
+    MI_IMPLEMENT_CLASS_VARIANT(MyPlugin, PluginInterface)
+    MI_EXPORT_PLUGIN(MyPlugin, "Description of my plugin")
     NAMESPACE_END(mitsuba)
 
 Macros
@@ -46,7 +46,7 @@ Macros
 
 Note that not all macros listed here actually occur in the above code example.
 
-:monosp:`MTS_MASK_ARGUMENT(mask)`
+:monosp:`MI_MASK_ARGUMENT(mask)`
 *********************************
 
 This macro typically occurs at the beginning of a function that takes
@@ -55,12 +55,12 @@ a mask as an argument.
 .. code-block:: cpp
 
     void my_method(..., Mask active) {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
     }
 
 Masking is not really needed on scalar variants: if a function is called, we
 assume that ``active=true``. Masking can unfortunately decrease performance in
-this case due to the generation of extra branches. Here, ``MTS_MASK_ARGUMENT``
+this case due to the generation of extra branches. Here, ``MI_MASK_ARGUMENT``
 therefore expands to
 
 .. code-block:: cpp
@@ -70,25 +70,25 @@ therefore expands to
 
 which turns the mask argument into a compile-time constant on scalar targets,
 allowing the compiler to optimize away the undesired branches.
-``MTS_MASK_ARGUMENT`` is also part of the next macro.
+``MI_MASK_ARGUMENT`` is also part of the next macro.
 
 
-:monosp:`MTS_MASKED_FUNCTION(phase, mask)`
+:monosp:`MI_MASKED_FUNCTION(phase, mask)`
 ------------------------------------------
 
-This macro builds on the ``MTS_MASK_ARGUMENT`` macro and typically occurs at
+This macro builds on the ``MI_MASK_ARGUMENT`` macro and typically occurs at
 the beginning of a function that takes a mask as an argument.
 
 .. code-block:: cpp
 
     void my_method(..., Mask mask) {
-        MTS_MASKED_FUNCTION(ProfilerPhase::MyMethod, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::MyMethod, active);
     }
 
 Masking is not really needed on scalar variants: if a function is called, we
 assume that ``active=true``. Masking can unfortunately decrease performance in
 this case due to the generation of extra branches. Here,
-``MTS_MASKED_FUNCTION`` macro expands to
+``MI_MASKED_FUNCTION`` macro expands to
 
 .. code-block:: cpp
 
@@ -105,17 +105,17 @@ informs this profiler that we are currently executing a function that belongs
 to the profiler phase ``phase``.
 
 
-:monosp:`MTS_IMPORT_BASE(Name, ...)`
+:monosp:`MI_IMPORT_BASE(Name, ...)`
 ------------------------------------
 Because most Mitsuba classes are templates, attributes and methods of parent
 classes are not visible by default. They can be imported explicitly via ``using
 Base::some_method;`` statements, but writing many such statements is tiresome.
-The variadic macro ``MTS_IMPORT_BASE`` expands into arbitrarily many such
+The variadic macro ``MI_IMPORT_BASE`` expands into arbitrarily many such
 ``using`` statements. For example,
 
 .. code-block:: cpp
 
-    MTS_IMPORT_BASE(Name, m_some_member, some_method)
+    MI_IMPORT_BASE(Name, m_some_member, some_method)
 
 expands to
 
@@ -127,7 +127,7 @@ expands to
 
 .. _macro-import-core-types:
 
-:monosp:`MTS_IMPORT_CORE_TYPES()`
+:monosp:`MI_IMPORT_CORE_TYPES()`
 ---------------------------------
 
 This macro will generate a sequence of ``using`` declarations to import the
@@ -144,7 +144,7 @@ For example,
 
     using Float = float;
 
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     // expands to:
 
@@ -158,10 +158,10 @@ For example,
 
 .. _macro-import-types:
 
-:monosp:`MTS_IMPORT_TYPES(...)`
+:monosp:`MI_IMPORT_TYPES(...)`
 -------------------------------
 
-This macro invokes ``MTS_IMPORT_CORE_TYPES()`` and furthermore imports
+This macro invokes ``MI_IMPORT_CORE_TYPES()`` and furthermore imports
 rendering-related types, such as ``Ray3f``, ``SurfaceInteraction3f``, ``BSDF``,
 etc. These templated aliases will depend on the preceding declaration of the
 ``Float`` and ``Spectrum``.
@@ -174,11 +174,11 @@ aliases will be created:
     using Float    = float;
     using Spectrum = Spectrum<Float, 4>;
 
-    MTS_IMPORT_TYPES(MyType1, MyType2)
+    MI_IMPORT_TYPES(MyType1, MyType2)
 
     // expands to:
 
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     // ...
     using Ray3f = Ray<Point<Float, 3>, Spectrum>;
     // ...
@@ -188,7 +188,7 @@ aliases will be created:
     using MyType2 = MyType2<Float, Spectrum>;
 
 
-:monosp:`MTS_DECLARE_CLASS()`
+:monosp:`MI_DECLARE_CLASS()`
 -----------------------------
 
 This macro should be invoked in the :monosp:`class` declaration of the plugin.
@@ -201,30 +201,30 @@ doing things like:
 - Unserializing a :monosp:`class` from a binary data stream
 
 
-:monosp:`MTS_IMPLEMENT_CLASS_VARIANT(Name, Parent)`
+:monosp:`MI_IMPLEMENT_CLASS_VARIANT(Name, Parent)`
 ---------------------------------------------------
 
 This macro should be invoked at the bottom of ``.cpp`` files that implement new
 plugin classes. Its role is to initialize the RTTI data structures for this
-plugin that were previously declared using ``MTS_DECLARE_CLASS()``.
+plugin that were previously declared using ``MI_DECLARE_CLASS()``.
 
 - The ``Name`` argument should be the name of the plugin :monosp:`class`.
 - The ``Parent`` argument should take the name of the plugin interface :monosp:`class`.
 
 
-:monosp:`MTS_EXPORT_PLUGIN(Name, Descr)`
+:monosp:`MI_EXPORT_PLUGIN(Name, Descr)`
 ----------------------------------------
 
 This macro will explicitly instantiate all enabled variants of a plugin:
 
 .. code-block:: cpp
 
-    MTS_EXPORT_PLUGIN(Name, "My fancy plugin")
+    MI_EXPORT_PLUGIN(Name, "My fancy plugin")
 
     // expands to:
 
-    template class MTS_EXPORT Name<float, Color<float, 1>>    // scalar_mono
-    template class MTS_EXPORT Name<float, Spectrum<float, 4>> // scalar_spectral
+    template class MI_EXPORT Name<float, Color<float, 1>>    // scalar_mono
+    template class MI_EXPORT Name<float, Spectrum<float, 4>> // scalar_spectral
     // ...
 
 It also associates a human-readable description ``Descr`` with the plugin that

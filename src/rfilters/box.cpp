@@ -20,8 +20,8 @@ though some rare situations may warrant its use.
 template <typename Float, typename Spectrum>
 class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MI_IMPORT_TYPES()
 
     BoxFilter(const Properties &props) : Base(props) {
         m_radius = .5f;
@@ -34,9 +34,9 @@ public:
 
     std::string to_string() const override { return "BoxFilter[]"; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BoxFilter, ReconstructionFilter)
-MTS_EXPORT_PLUGIN(BoxFilter, "Box filter");
+MI_IMPLEMENT_CLASS_VARIANT(BoxFilter, ReconstructionFilter)
+MI_EXPORT_PLUGIN(BoxFilter, "Box filter");
 NAMESPACE_END(mitsuba)

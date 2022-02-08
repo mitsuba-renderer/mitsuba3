@@ -26,8 +26,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RayleighPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags)
-    MTS_IMPORT_TYPES(PhaseFunctionContext)
+    MI_IMPORT_BASE(PhaseFunction, m_flags)
+    MI_IMPORT_TYPES(PhaseFunctionContext)
 
     RayleighPhaseFunction(const Properties &props) : Base(props) {
         if constexpr (is_polarized_v<Spectrum>)
@@ -38,7 +38,7 @@ public:
         m_flags = +PhaseFunctionFlags::Anisotropic;
     }
 
-    MTS_INLINE Float eval_rayleigh(Float cos_theta) const {
+    MI_INLINE Float eval_rayleigh(Float cos_theta) const {
         return (3.f / 16.f) * dr::InvPi<Float> * (1.f + dr::sqr(cos_theta));
     }
 
@@ -47,7 +47,7 @@ public:
                                       Float /* sample1 */,
                                       const Point2f &sample,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float z   = 2.f * (2.f * sample.x() - 1.f);
         Float tmp = dr::sqrt(dr::sqr(z) + 1.f);
@@ -67,15 +67,15 @@ public:
     Float eval(const PhaseFunctionContext & /* ctx */,
                const MediumInteraction3f &mi, const Vector3f &wo,
                Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return eval_rayleigh(dot(wo, mi.wi));
     }
 
     std::string to_string() const override { return "RayleighPhaseFunction[]"; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(RayleighPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(RayleighPhaseFunction, "Rayleigh phase function")
+MI_IMPLEMENT_CLASS_VARIANT(RayleighPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(RayleighPhaseFunction, "Rayleigh phase function")
 NAMESPACE_END(mitsuba)

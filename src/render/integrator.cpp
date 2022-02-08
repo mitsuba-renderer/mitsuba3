@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 // -----------------------------------------------------------------------------
 
-MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
+MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     : m_stop(false) {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
@@ -27,7 +27,7 @@ MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     m_hide_emitters = props.get<bool>("hide_emitters", false);
 }
 
-MTS_VARIANT typename Integrator<Float, Spectrum>::TensorXf
+MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t sensor_index,
                                     uint32_t seed,
@@ -41,17 +41,17 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                   seed, spp, develop, evaluate);
 }
 
-MTS_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
+MI_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
     return { };
 }
 
-MTS_VARIANT void Integrator<Float, Spectrum>::cancel() {
+MI_VARIANT void Integrator<Float, Spectrum>::cancel() {
     m_stop = true;
 }
 
 // -----------------------------------------------------------------------------
 
-MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Properties &props)
+MI_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Properties &props)
     : Base(props) {
 
     m_block_size = props.get<uint32_t>("block_size", 0);
@@ -67,9 +67,9 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Proper
     m_samples_per_pass = props.get<uint32_t>("samples_per_pass", (uint32_t) -1);
 }
 
-MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
+MI_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 
-MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
+MI_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             Sensor *sensor,
                                             uint32_t seed,
@@ -123,7 +123,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         // If no block size was specified, find size that is good for parallelization
         uint32_t block_size = m_block_size;
         if (block_size == 0) {
-            block_size = MTS_BLOCK_SIZE; // 32x32
+            block_size = MI_BLOCK_SIZE; // 32x32
             while (true) {
                 // Ensure that there is a block for every thread
                 if (block_size == 1 || dr::hprod((film_size + block_size - 1) /
@@ -311,7 +311,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     return result;
 }
 
-MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *scene,
+MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *scene,
                                                                    const Sensor *sensor,
                                                                    Sampler *sampler,
                                                                    ImageBlock *block,
@@ -361,7 +361,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
     }
 }
 
-MTS_VARIANT void
+MI_VARIANT void
 SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Sensor *sensor,
                                                    Sampler *sampler,
@@ -430,7 +430,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     block->put(sample_pos, aovs, active);
 }
 
-MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
+MI_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
 SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
                                             Sampler * /* sampler */,
                                             const RayDifferential3f & /* ray */,
@@ -442,7 +442,7 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 
 // -----------------------------------------------------------------------------
 
-MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
+MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
     /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
         visualize only directly visible light sources. \c 2 will lead to
@@ -461,11 +461,11 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
     m_rr_depth = (uint32_t) rr_depth;
 }
 
-MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
+MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 
 // -----------------------------------------------------------------------------
 
-MTS_VARIANT AdjointIntegrator<Float, Spectrum>::AdjointIntegrator(const Properties &props)
+MI_VARIANT AdjointIntegrator<Float, Spectrum>::AdjointIntegrator(const Properties &props)
     : Base(props) {
 
     m_samples_per_pass = props.get<uint32_t>("samples_per_pass", (uint32_t) -1);
@@ -479,9 +479,9 @@ MTS_VARIANT AdjointIntegrator<Float, Spectrum>::AdjointIntegrator(const Properti
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 }
 
-MTS_VARIANT AdjointIntegrator<Float, Spectrum>::~AdjointIntegrator() { }
+MI_VARIANT AdjointIntegrator<Float, Spectrum>::~AdjointIntegrator() { }
 
-MTS_VARIANT typename AdjointIntegrator<Float, Spectrum>::TensorXf
+MI_VARIANT typename AdjointIntegrator<Float, Spectrum>::TensorXf
 AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                                            Sensor *sensor,
                                            uint32_t seed,
@@ -698,14 +698,14 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
 // -----------------------------------------------------------------------------
 
-MTS_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
-MTS_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
-MTS_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
-MTS_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
+MI_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
+MI_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
+MI_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
+MI_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
 
-MTS_INSTANTIATE_CLASS(Integrator)
-MTS_INSTANTIATE_CLASS(SamplingIntegrator)
-MTS_INSTANTIATE_CLASS(MonteCarloIntegrator)
-MTS_INSTANTIATE_CLASS(AdjointIntegrator)
+MI_INSTANTIATE_CLASS(Integrator)
+MI_INSTANTIATE_CLASS(SamplingIntegrator)
+MI_INSTANTIATE_CLASS(MonteCarloIntegrator)
+MI_INSTANTIATE_CLASS(AdjointIntegrator)
 
 NAMESPACE_END(mitsuba)

@@ -92,7 +92,7 @@ at all.
 template <typename Float, typename Spectrum>
 class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f())
@@ -243,7 +243,7 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.shape()[2];
         if (channels == 3 && is_spectral_v<Spectrum> && m_raw) {
@@ -277,7 +277,7 @@ public:
 
     Float eval_1(const SurfaceInteraction3f &si,
                  Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.shape()[2];
         if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {
@@ -299,7 +299,7 @@ public:
 
     Vector2f eval_1_grad(const SurfaceInteraction3f &si,
                          Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.shape()[2];
         if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {
@@ -378,7 +378,7 @@ public:
 
     Color3f eval_3(const SurfaceInteraction3f &si,
                    Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.shape()[2];
         if (channels != 3) {
@@ -486,16 +486,16 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if (dr::none_or<false>(active))
             return { dr::zero<Wavelength>(), dr::zero<UnpolarizedSpectrum>() };
 
         if constexpr (is_spectral_v<Spectrum>) {
             SurfaceInteraction3f si(_si);
-            si.wavelengths = MTS_CIE_MIN + (MTS_CIE_MAX - MTS_CIE_MIN) * sample;
+            si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
             return { si.wavelengths,
-                     eval(si, active) * (MTS_CIE_MAX - MTS_CIE_MIN) };
+                     eval(si, active) * (MI_CIE_MAX - MI_CIE_MIN) };
         } else {
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
@@ -548,14 +548,14 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     /**
      * \brief Evaluates the texture at the given surface interaction using
      * spectral upsampling
      */
-    MTS_INLINE UnpolarizedSpectrum
+    MI_INLINE UnpolarizedSpectrum
     interpolate_spectral(const SurfaceInteraction3f &si, Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
@@ -608,7 +608,7 @@ protected:
      *
      * Should only be used when the texture has exactly 1 channel.
      */
-    MTS_INLINE Float interpolate_1(const SurfaceInteraction3f &si,
+    MI_INLINE Float interpolate_1(const SurfaceInteraction3f &si,
                                    Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
@@ -629,7 +629,7 @@ protected:
      *
      * Should only be used when the texture has exactly 3 channels.
      */
-    MTS_INLINE Color3f interpolate_3(const SurfaceInteraction3f &si,
+    MI_INLINE Color3f interpolate_3(const SurfaceInteraction3f &si,
                                      Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
@@ -712,7 +712,7 @@ protected:
     }
 
     /// Construct 2D distribution upon first access, avoid races
-    MTS_INLINE void init_distr() const {
+    MI_INLINE void init_distr() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
             auto self = const_cast<BitmapTexture *>(this);
@@ -734,7 +734,7 @@ protected:
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
+MI_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
 NAMESPACE_END(mitsuba)

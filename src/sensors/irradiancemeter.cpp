@@ -43,10 +43,10 @@ simply instantiate the desired sensor shape and specify an
     </shape>
 */
 
-MTS_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {
+MI_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
-    MTS_IMPORT_TYPES(Shape)
+    MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
+    MI_IMPORT_TYPES(Shape)
 
     IrradianceMeter(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -65,7 +65,7 @@ public:
                             const Point2f & sample3,
                             Mask active) const override {
 
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2, active);
@@ -120,9 +120,9 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(IrradianceMeter, Sensor)
-MTS_EXPORT_PLUGIN(IrradianceMeter, "IrradianceMeter");
+MI_IMPLEMENT_CLASS_VARIANT(IrradianceMeter, Sensor)
+MI_EXPORT_PLUGIN(IrradianceMeter, "IrradianceMeter");
 NAMESPACE_END(mitsuba)

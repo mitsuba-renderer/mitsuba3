@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 
 #include <iomanip>
 #include <mitsuba/core/platform.h>
@@ -228,7 +228,7 @@ struct OptixShaderBindingTable {
 #if defined(OPTIX_API_IMPL)
 #  define D(name, ...) OptixResult (*name)(__VA_ARGS__) = nullptr;
 #else
-#  define D(name, ...) extern MTS_EXPORT_LIB OptixResult (*name)(__VA_ARGS__)
+#  define D(name, ...) extern MI_EXPORT_LIB OptixResult (*name)(__VA_ARGS__)
 #endif
 
 D(optixAccelComputeMemoryUsage, OptixDeviceContext,
@@ -252,8 +252,8 @@ D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
 #undef D
 
 NAMESPACE_BEGIN(mitsuba)
-extern MTS_EXPORT_LIB void optix_initialize();
-extern MTS_EXPORT_LIB void optix_shutdown();
+extern MI_EXPORT_LIB void optix_initialize();
+extern MI_EXPORT_LIB void optix_shutdown();
 NAMESPACE_END(mitsuba)
 
-#endif // defined(MTS_ENABLE_CUDA)
+#endif // defined(MI_ENABLE_CUDA)

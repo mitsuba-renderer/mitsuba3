@@ -20,7 +20,7 @@ placed samples.
 template <typename Float, typename Spectrum>
 class IrregularSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
 public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
@@ -83,7 +83,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>)
             return m_distr.eval_pdf(si.wavelengths, active);
@@ -94,7 +94,7 @@ public:
     }
 
     Wavelength pdf_spectrum(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>)
             return m_distr.eval_pdf_normalized(si.wavelengths, active);
@@ -107,7 +107,7 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum> sample_spectrum(const SurfaceInteraction3f & /*si*/,
                                                       const Wavelength &sample,
                                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if constexpr (is_spectral_v<Spectrum>)
             return { m_distr.sample(sample, active), m_distr.integral() };
@@ -138,11 +138,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     IrregularContinuousDistribution<Wavelength> m_distr;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
-MTS_EXPORT_PLUGIN(IrregularSpectrum, "Irregular interpolated spectrum")
+MI_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
+MI_EXPORT_PLUGIN(IrregularSpectrum, "Irregular interpolated spectrum")
 NAMESPACE_END(mitsuba)

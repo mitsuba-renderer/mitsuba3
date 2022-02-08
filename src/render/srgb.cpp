@@ -50,13 +50,13 @@ Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &coeff) {
     if (expanded.size() == 1)
         d65 = (Texture *) expanded[0].get();
 
-    const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
+    const size_t n_samples = ((MI_CIE_SAMPLES - 1) * 3 + 1);
 
     SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
     Array3f accum = 0.f;
-    float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
+    float h = (MI_CIE_MAX - MI_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {
-        float lambda = MTS_CIE_MIN + i * h;
+        float lambda = MI_CIE_MIN + i * h;
 
         float weight = 3.f / 8.f * h;
         if (i == 0 || i == n_samples - 1)

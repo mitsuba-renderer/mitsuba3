@@ -2,9 +2,9 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Texture) {
-    MTS_PY_IMPORT_TYPES(Texture)
-    MTS_PY_CLASS(Texture, Object)
+MI_PY_EXPORT(Texture) {
+    MI_PY_IMPORT_TYPES(Texture)
+    MI_PY_CLASS(Texture, Object)
         .def_static("D65", &Texture::D65, "scale"_a = 1.f)
         .def("mean", &Texture::mean, D(Texture, mean))
         .def("is_spatially_varying", &Texture::is_spatially_varying,

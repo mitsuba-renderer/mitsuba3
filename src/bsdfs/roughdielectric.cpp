@@ -136,8 +136,8 @@ to significantly slower convergence.
 template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
         if (props.has_property("specular_reflectance"))
@@ -207,7 +207,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         // Determine the type of interaction
         bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
@@ -313,7 +313,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -389,7 +389,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -456,7 +456,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -599,7 +599,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
@@ -609,6 +609,6 @@ private:
     bool m_sample_visible;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(RoughDielectric, BSDF)
-MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric")
+MI_IMPLEMENT_CLASS_VARIANT(RoughDielectric, BSDF)
+MI_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric")
 NAMESPACE_END(mitsuba)

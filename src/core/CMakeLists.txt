@@ -70,11 +70,11 @@ add_library(mitsuba-core OBJECT
 set_property(
   SOURCE util.cpp
   PROPERTY COMPILE_DEFINITIONS
-  MTS_BRANCH="${GIT_BRANCH}" MTS_HASH="${GIT_COMMIT_HASH}"
+  MI_BRANCH="${GIT_BRANCH}" MI_HASH="${GIT_COMMIT_HASH}"
 )
 
 target_compile_definitions(mitsuba-core
-  PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_LIB)
+  PRIVATE ${PNG_DEFINES} -DMI_BUILD_MODULE=MI_MODULE_LIB)
 
 set_target_properties(mitsuba-core PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON)
@@ -109,16 +109,16 @@ endif()
 target_link_libraries(mitsuba-core PUBLIC drjit)
 target_link_libraries(mitsuba-core PRIVATE fast_float)
 
-if (MTS_ENABLE_JIT)
+if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-core PUBLIC drjit-core)
 endif()
 
-if (MTS_ENABLE_AUTODIFF)
+if (MI_ENABLE_AUTODIFF)
   target_link_libraries(mitsuba-core PUBLIC drjit-autodiff)
 endif()
 
 # Python bindings
-if (MTS_ENABLE_PYTHON)
+if (MI_ENABLE_PYTHON)
   add_subdirectory(python)
   set(CORE_PY_V_SRC ${CORE_PY_V_SRC} PARENT_SCOPE)
   set(CORE_PY_SRC   ${CORE_PY_SRC}   PARENT_SCOPE)

@@ -37,10 +37,10 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 */
 
-MTS_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
+MI_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Scene, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MI_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -87,7 +87,7 @@ public:
                                           const Point2f &spatial_sample,
                                           const Point2f & /*direction_sample*/,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
         Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
@@ -119,7 +119,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         Vector3f d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
         // Needed when the reference point is on the sensor, which is not part of the bbox
@@ -192,13 +192,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     ref<Texture> m_irradiance;
     ScalarBoundingSphere3f m_bsphere;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
-MTS_EXPORT_PLUGIN(DirectionalEmitter, "Distant directional emitter")
+MI_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
+MI_EXPORT_PLUGIN(DirectionalEmitter, "Distant directional emitter")
 NAMESPACE_END(mitsuba)

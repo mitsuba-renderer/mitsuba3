@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Sampler implementations
 // =======================================================================
 
-MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
+MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
     : Object() {
     m_sample_count = props.get<uint32_t>("sample_count", 4);
     m_base_seed = props.get<uint32_t>("seed", 0);
@@ -19,7 +19,7 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
     m_wavefront_size = 0;
 }
 
-MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
+MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
     : Object() {
     m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
@@ -29,9 +29,9 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
     m_sample_index          = sampler.m_sample_index;
 }
 
-MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
+MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
-MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
+MI_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
                                                 uint32_t wavefront_size) {
     if constexpr (dr::is_array_v<Float>) {
         // Only overwrite when specified
@@ -49,30 +49,30 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
     m_sample_index = dr::opaque<UInt32>(0);
 }
 
-MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
+MI_VARIANT void Sampler<Float, Spectrum>::advance() {
     m_dimension_index = dr::opaque<UInt32>(0);
     m_sample_index++;
 }
 
-MTS_VARIANT Float Sampler<Float, Spectrum>::next_1d(Mask) {
+MI_VARIANT Float Sampler<Float, Spectrum>::next_1d(Mask) {
     NotImplementedError("next_1d");
 }
 
-MTS_VARIANT typename Sampler<Float, Spectrum>::Point2f
+MI_VARIANT typename Sampler<Float, Spectrum>::Point2f
 Sampler<Float, Spectrum>::next_2d(Mask) {
     NotImplementedError("next_2d");
 }
 
-MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
+MI_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
     dr::schedule(m_sample_index, m_dimension_index);
 }
 
-MTS_VARIANT
+MI_VARIANT
 void Sampler<Float, Spectrum>::loop_put(dr::Loop<Mask> &loop) {
     loop.put(m_sample_index, m_dimension_index);
 }
 
-MTS_VARIANT void
+MI_VARIANT void
 Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefront) {
     if constexpr (!dr::is_array_v<Float>)
         Throw("set_samples_per_wavefront should not be used in scalar variants of the renderer.");
@@ -82,7 +82,7 @@ Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefro
         Throw("sample_count should be a multiple of samples_per_wavefront!");
 }
 
-MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
+MI_VARIANT typename Sampler<Float, Spectrum>::UInt32
 Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed) const {
     UInt32 indices      = dr::arange<UInt32>(m_wavefront_size),
            sequence_idx = m_samples_per_wavefront * (indices / m_samples_per_wavefront);
@@ -91,7 +91,7 @@ Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed) const {
                          sequence_idx + dr::opaque<UInt32>(seed, 1)).first;
 }
 
-MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
+MI_VARIANT typename Sampler<Float, Spectrum>::UInt32
 Sampler<Float, Spectrum>::current_sample_index() const {
     // Build an array of offsets for the sample indices in the wavefront
     UInt32 wavefront_sample_offsets = 0;
@@ -109,10 +109,10 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 //! @{ \name PCG32Sampler implementations
 // =======================================================================
 
-MTS_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
+MI_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
     : Base(props) { }
 
-MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
                                                      uint32_t wavefront_size) {
     Base::seed(seed, wavefront_size);
 
@@ -133,18 +133,18 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
     }
 }
 
-MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
     Base::schedule_state();
     dr::schedule(m_rng.inc, m_rng.state);
 }
 
-MTS_VARIANT void
+MI_VARIANT void
 PCG32Sampler<Float, Spectrum>::loop_put(dr::Loop<Mask> &loop) {
     Base::loop_put(loop);
     loop.put(m_rng.state);
 }
 
-MTS_VARIANT
+MI_VARIANT
 PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
     : Base(sampler) {
     m_rng = sampler.m_rng;
@@ -153,9 +153,9 @@ PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
 //! @}
 // =======================================================================
 
-MTS_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
-MTS_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
+MI_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
+MI_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
 
-MTS_INSTANTIATE_CLASS(Sampler)
-MTS_INSTANTIATE_CLASS(PCG32Sampler)
+MI_INSTANTIATE_CLASS(Sampler)
+MI_INSTANTIATE_CLASS(PCG32Sampler)
 NAMESPACE_END(mitsuba)

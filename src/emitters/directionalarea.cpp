@@ -18,9 +18,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class DirectionalArea final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, set_shape, m_flags, m_shape, m_medium,
+    MI_IMPORT_BASE(Emitter, set_shape, m_flags, m_shape, m_medium,
                     m_needs_sample_3)
-    MTS_IMPORT_TYPES(Scene, Shape, Mesh, Texture)
+    MI_IMPORT_TYPES(Scene, Shape, Mesh, Texture)
 
     DirectionalArea(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -128,12 +128,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_radiance;
     Float m_area = 0.f;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(DirectionalArea, Emitter)
-MTS_EXPORT_PLUGIN(DirectionalArea, "Directional area emitter");
+MI_IMPLEMENT_CLASS_VARIANT(DirectionalArea, Emitter)
+MI_EXPORT_PLUGIN(DirectionalArea, "Directional area emitter");
 NAMESPACE_END(mitsuba)

@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /// Reconstruction filters will be tabulated at this resolution
-#define MTS_FILTER_RESOLUTION 31
+#define MI_FILTER_RESOLUTION 31
 
 /**
  * \brief When resampling data to a different resolution using \ref
@@ -42,12 +42,12 @@ enum class FilterBoundaryCondition {
  *
  * Because image filters are generally too expensive to evaluate for each
  * sample, the implementation of this class internally precomputes an discrete
- * representation, whose resolution given by \ref MTS_FILTER_RESOLUTION.
+ * representation, whose resolution given by \ref MI_FILTER_RESOLUTION.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB ReconstructionFilter : public Object {
+class MI_EXPORT_LIB ReconstructionFilter : public Object {
 public:
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     /// Return the filter's width
     ScalarFloat radius() const { return m_radius; }
@@ -62,10 +62,10 @@ public:
     bool is_box_filter() const;
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
-    MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
+    MI_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!dr::is_jit_array_v<Float>) {
             UInt32 index = dr::min(UInt32(dr::abs(x * m_scale_factor)),
-                                   MTS_FILTER_RESOLUTION);
+                                   MI_FILTER_RESOLUTION);
             return dr::gather<Float>(m_values.data(), index, active);
         } else {
             Throw("ReconstructionFilter::eval_discretized(): not supported in "
@@ -73,7 +73,7 @@ public:
         }
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);
@@ -411,9 +411,9 @@ private:
     };
 };
 
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
                                                 const FilterBoundaryCondition &value);
 
-MTS_EXTERN_CLASS(ReconstructionFilter)
+MI_EXTERN_CLASS(ReconstructionFilter)
 
 NAMESPACE_END(mitsuba)

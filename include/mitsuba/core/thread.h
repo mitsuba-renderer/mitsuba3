@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  * state (Loggers, Path resolvers, etc.) that is inherited when a thread
  * launches another thread.
  */
-class MTS_EXPORT_LIB Thread : public Object {
+class MI_EXPORT_LIB Thread : public Object {
 public:
 
     friend class ScopedThreadEnvironment;
@@ -159,7 +159,7 @@ public:
     /// Wait for previously registered drjit-thread tasks to complete
     static void wait_for_tasks();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Thread();
@@ -185,7 +185,7 @@ private:
  * \brief Captures a thread environment (logger and file resolver).
  * Used with \ref ScopedSetThreadEnvironment
  */
-class MTS_EXPORT_LIB ThreadEnvironment {
+class MI_EXPORT_LIB ThreadEnvironment {
     friend class ScopedSetThreadEnvironment;
 public:
     ThreadEnvironment();
@@ -198,7 +198,7 @@ private:
 };
 
 /// RAII-style class to temporarily switch to another thread's logger/file resolver
-class MTS_EXPORT_LIB ScopedSetThreadEnvironment {
+class MI_EXPORT_LIB ScopedSetThreadEnvironment {
 public:
     ScopedSetThreadEnvironment(ThreadEnvironment &env);
     ~ScopedSetThreadEnvironment();

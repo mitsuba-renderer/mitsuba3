@@ -2,12 +2,12 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
-foreach (MTS_VARIANT ${MTS_VARIANTS})
-  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
-  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
-  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
-  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
-  set(TARGET_NAME mitsuba_${MTS_VARIANT_NAME}_ext)
+foreach (MI_VARIANT ${MI_VARIANTS})
+  string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+  list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+  list(GET MI_VARIANT 1 MI_VARIANT_FLOAT)
+  list(GET MI_VARIANT 2 MI_VARIANT_SPECTRUM)
+  set(TARGET_NAME mitsuba_${MI_VARIANT_NAME}_ext)
 
   pybind11_add_module(${TARGET_NAME}
       THIN_LTO OPT_SIZE
@@ -17,9 +17,9 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   )
 
   target_compile_definitions(${TARGET_NAME} PRIVATE
-      "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
-      "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
-      "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
+      "-DMI_VARIANT_NAME=${MI_VARIANT_NAME}"
+      "-DMI_VARIANT_FLOAT=${MI_VARIANT_FLOAT}"
+      "-DMI_VARIANT_SPECTRUM=${MI_VARIANT_SPECTRUM}"
       # macOS: Avoid warnings about loop unrolling being disabled with -Os
       "-DDRJIT_UNROLL= "
   )
@@ -28,7 +28,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
 
   set_target_properties(${TARGET_NAME}
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+      LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
       FOLDER python
   )
 
@@ -55,7 +55,7 @@ endif()
 
 set_target_properties(mitsuba_ext
   PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
   FOLDER python
 )
 
@@ -67,10 +67,10 @@ install(TARGETS mitsuba_ext
 #   Copy & installation targets for files in 'src/python'
 # ----------------------------------------------------------
 
-file(GLOB_RECURSE MTS_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+file(GLOB_RECURSE MI_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
 
-set(MTS_COPY_FILES "")
-foreach(file ${MTS_PYTHON_FILES})
+set(MI_COPY_FILES "")
+foreach(file ${MI_PYTHON_FILES})
   get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
   ro_copy(${IN_FILE} python/mitsuba/${file})
@@ -98,14 +98,14 @@ if (NOT SKBUILD)
   if (MSVC)
     set_target_properties(drjit-python
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/drjit
-      LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/drjit
-      LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/drjit
-      LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/drjit)
+      LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MI_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MI_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MI_BINARY_DIR}/python/drjit
+      LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MI_BINARY_DIR}/python/drjit)
   else ()
     set_target_properties(drjit-python
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/drjit)
+      LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/drjit)
   endif()
 
   set(DRJIT_PYTHON_FILES
@@ -124,14 +124,14 @@ endif()
 #   pytest.ini file
 # ----------------------------------------------------------
 
-get_filename_component(MTS_TEST_BASE ..
+get_filename_component(MI_TEST_BASE ..
     REALPATH BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 file(WRITE
   ${CMAKE_CURRENT_BINARY_DIR}/../../pytest.ini
   "[pytest]\n"
   "minversion = 3.0\n"
-  "testpaths = \"${MTS_TEST_BASE}\"\n"
+  "testpaths = \"${MI_TEST_BASE}\"\n"
 )
 
 if (MSVC)
@@ -139,7 +139,7 @@ if (MSVC)
 endif()
 
 
-add_custom_target(copy-python ALL DEPENDS ${MTS_COPY_FILES})
+add_custom_target(copy-python ALL DEPENDS ${MI_COPY_FILES})
 set_target_properties(copy-python PROPERTIES FOLDER python)
 
 # ----------------------------------------------------------

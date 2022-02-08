@@ -39,7 +39,7 @@ in all spectral rendering modes.
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     D65Spectrum(const Properties &props) : Texture(props) {
         /* The default scale factor is set so that integrating
@@ -52,8 +52,8 @@ public:
     std::vector<ref<Object>> expand() const override {
         // This plugin recursively expands into an instance of 'interpolated'
         Properties props("regular");
-        props.set_float("lambda_min", (Properties::Float) MTS_CIE_MIN);
-        props.set_float("lambda_max", (Properties::Float) MTS_CIE_MAX);
+        props.set_float("lambda_min", (Properties::Float) MI_CIE_MIN);
+        props.set_float("lambda_max", (Properties::Float) MI_CIE_MAX);
         props.set_int("size", 95);
         Properties::Float tmp[95];
         for (size_t i = 0; i < 95; ++i)
@@ -76,11 +76,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ScalarFloat m_scale;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
-MTS_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
+MI_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
+MI_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
 NAMESPACE_END(mitsuba)

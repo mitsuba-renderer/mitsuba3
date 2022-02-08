@@ -12,8 +12,8 @@
 #include <map>
 
 /// Set this to '1' to view generated conversion code
-#if !defined(MTS_JIT_LOG_ASSEMBLY)
-#  define MTS_JIT_LOG_ASSEMBLY 0
+#if !defined(MI_JIT_LOG_ASSEMBLY)
+#  define MI_JIT_LOG_ASSEMBLY 0
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -29,7 +29,7 @@ NAMESPACE_BEGIN(detail)
 #  define Float float
 #endif
 
-#if MTS_STRUCTCONVERTER_USE_JIT == 1
+#if MI_STRUCTCONVERTER_USE_JIT == 1
 
 using namespace asmjit;
 
@@ -421,7 +421,7 @@ public:
 
     /// Forward/inverse gamma correction using the sRGB profile
     X86Xmm gamma(X86Xmm x, bool to_srgb) {
-        #if MTS_JIT_LOG_ASSEMBLY == 1
+        #if MI_JIT_LOG_ASSEMBLY == 1
             cc.comment(to_srgb ? "# Linear -> sRGB conversion"
                                : "# sRGB -> linear conversion");
         #endif
@@ -518,7 +518,7 @@ public:
         if (it != cache.end())
             return *it;
 
-        #if MTS_JIT_LOG_ASSEMBLY == 1
+        #if MI_JIT_LOG_ASSEMBLY == 1
             cc.comment(("# Load field \""+ name + "\"").c_str());
        #endif
 
@@ -787,7 +787,7 @@ public:
               Struct::Field field, const std::pair<Key, Value> &kv) {
         Key key = kv.first; Value value = kv.second;
 
-        #if MTS_JIT_LOG_ASSEMBLY == 1
+        #if MI_JIT_LOG_ASSEMBLY == 1
             cc.comment(("# Save field \""+ field.name + "\"").c_str());
         #endif
 
@@ -1237,7 +1237,7 @@ static std::unordered_map<
 
 StructConverter::StructConverter(const Struct *source, const Struct *target, bool dither)
  : m_source(source), m_target(target) {
-#if MTS_STRUCTCONVERTER_USE_JIT == 1
+#if MI_STRUCTCONVERTER_USE_JIT == 1
     using namespace asmjit;
 
     // Use the Jit instance to cache structure converters
@@ -1255,7 +1255,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 
     CodeHolder code;
     code.init(jit->runtime.getCodeInfo());
-    #if MTS_JIT_LOG_ASSEMBLY == 1
+    #if MI_JIT_LOG_ASSEMBLY == 1
         Log(Info, "Converting from %s to %s", source, target);
         StringLogger logger;
         logger.addOptions(asmjit::Logger::kOptionBinaryForm);
@@ -1480,7 +1480,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 
     jit->runtime.add((void **) &m_func, &code);
 
-    #if MTS_JIT_LOG_ASSEMBLY == 1
+    #if MI_JIT_LOG_ASSEMBLY == 1
        Log(Info, "Assembly:\n%s", logger.getString());
     #endif
 
@@ -1490,7 +1490,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 #endif
 }
 
-#if MTS_STRUCTCONVERTER_USE_JIT == 0
+#if MI_STRUCTCONVERTER_USE_JIT == 0
 
 bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &value) const {
     bool source_swap = m_source->byte_order() != Struct::host_byte_order();
@@ -1871,6 +1871,6 @@ std::string StructConverter::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(Struct, Object)
-MTS_IMPLEMENT_CLASS(StructConverter, Object)
+MI_IMPLEMENT_CLASS(Struct, Object)
+MI_IMPLEMENT_CLASS(StructConverter, Object)
 NAMESPACE_END(mitsuba)

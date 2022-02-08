@@ -57,6 +57,6 @@ void ProgressReporter::update(float progress) {
     m_last_update = elapsed;
 }
 
-MTS_IMPLEMENT_CLASS(ProgressReporter, Object)
+MI_IMPLEMENT_CLASS(ProgressReporter, Object)
 
 NAMESPACE_END(mitsuba)

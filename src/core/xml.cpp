@@ -89,7 +89,7 @@ bool is_unbounded_spectrum(const std::string &name) {
 NAMESPACE_BEGIN(detail)
 
 using Float = Properties::Float;
-MTS_IMPORT_CORE_TYPES()
+MI_IMPORT_CORE_TYPES()
 
 static int64_t stoll(const std::string &s) {
     size_t offset = 0;
@@ -255,7 +255,7 @@ struct XMLParseContext {
 
     XMLParseContext(const std::string &variant, bool parallel)
         : variant(variant), parallel(parallel) {
-        color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
+        color_mode = MI_INVOKE_VARIANT(variant, variant_to_color_mode);
     }
 
     bool is_cuda() const { return string::starts_with(variant, "cuda_"); }
@@ -330,7 +330,7 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0) {
 }
 
 void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) {
-    if (version == Version(MTS_VERSION_MAJOR, MTS_VERSION_MINOR, MTS_VERSION_PATCH))
+    if (version == Version(MI_VERSION_MAJOR, MI_VERSION_MINOR, MI_VERSION_PATCH))
         return;
 
     if (version < Version(2, 0, 0)) {
@@ -419,7 +419,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
     if (src.modified)
         Log(Info, "\"%s\": in-memory version upgrade (v%s -> v%s) ..", src.id, version,
-            Version(MTS_VERSION));
+            Version(MI_VERSION));
 }
 
 static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseContext &ctx,
@@ -657,9 +657,9 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.depth + 1
                     };
 
-                    if (nested_src.depth > MTS_XML_INCLUDE_MAX_RECURSION)
+                    if (nested_src.depth > MI_XML_INCLUDE_MAX_RECURSION)
                         Throw("Exceeded <include> recursion limit of %i",
-                              MTS_XML_INCLUDE_MAX_RECURSION);
+                              MI_XML_INCLUDE_MAX_RECURSION);
 
                     if (!result) // There was a parser / file IO error
                         src.throw_error(node, "error while loading \"%s\" (at %s): %s",
@@ -1028,7 +1028,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
-            #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
+            #if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
                 if (ctx.is_jit()) {
                     // Ensures dr::scatter occuring in object constructors are flushed
                     dr::eval();
@@ -1145,7 +1145,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             and converting to sRGB yields (1, 1, 1) for D65. */
         Float unit_conversion = 1;
         if (within_emitter || !is_spectral_mode)
-            unit_conversion = Float(MTS_CIE_Y_NORMALIZATION);
+            unit_conversion = Float(MI_CIE_Y_NORMALIZATION);
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
@@ -1295,7 +1295,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
                 Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
 
             // Update version number
-            root.prepend_attribute("version").set_value(MTS_VERSION);
+            root.prepend_attribute("version").set_value(MI_VERSION);
             if (root.attribute("type").value() == std::string("scene"))
                 root.remove_attribute("type");
 

@@ -19,14 +19,14 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Formatter) {
-    MTS_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
+MI_PY_EXPORT(Formatter) {
+    MI_PY_TRAMPOLINE_CLASS(PyFormatter, Formatter, Object)
         .def(py::init<>())
         .def_method(Formatter, format, "level"_a, "class_"_a,
             "thread"_a, "file"_a, "line"_a,
             "msg"_a);
 
-    MTS_PY_CLASS(DefaultFormatter, Formatter)
+    MI_PY_CLASS(DefaultFormatter, Formatter)
         .def(py::init<>())
         .def_method(DefaultFormatter, has_date)
         .def_method(DefaultFormatter, set_has_date)

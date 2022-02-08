@@ -1,8 +1,8 @@
 #include <mitsuba/core/random.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(sample_tea) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(sample_tea) {
+    MI_PY_IMPORT_TYPES()
 
     if constexpr (dr::is_jit_array_v<UInt32>) {
         m.def("sample_tea_32", sample_tea_32<uint32_t>,

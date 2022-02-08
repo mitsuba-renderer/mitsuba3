@@ -132,8 +132,8 @@ between 0.0 and 1.0.
 template <typename Float, typename Spectrum>
 class Principled final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
     using GTR1 = GTR1Isotropic<Float, Spectrum>;
 
     Principled(const Properties &props) : Base(props) {
@@ -209,7 +209,7 @@ public:
     std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         BSDFSample3f bs   = dr::zero<BSDFSample3f>();
@@ -369,7 +369,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations
@@ -589,7 +589,7 @@ public:
 
     Float pdf(const BSDFContext &, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations.
@@ -798,7 +798,7 @@ public:
 
         return oss.str();
     }
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     /// Parameters
     ref<Texture> m_base_color;
@@ -832,6 +832,6 @@ private:
     bool m_has_flatness;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Principled, BSDF)
-MTS_EXPORT_PLUGIN(Principled, "The Principled Material")
+MI_IMPLEMENT_CLASS_VARIANT(Principled, BSDF)
+MI_EXPORT_PLUGIN(Principled, "The Principled Material")
 NAMESPACE_END(mitsuba)

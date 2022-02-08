@@ -1,9 +1,9 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Sampler) {
-    MTS_PY_IMPORT_TYPES(Sampler)
-    MTS_PY_CLASS(Sampler, Object)
+MI_PY_EXPORT(Sampler) {
+    MI_PY_IMPORT_TYPES(Sampler)
+    MI_PY_CLASS(Sampler, Object)
         .def_method(Sampler, fork)
         .def_method(Sampler, clone)
         .def_method(Sampler, sample_count)

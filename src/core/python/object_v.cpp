@@ -37,8 +37,8 @@
         return;                                                                \
     }
 
-MTS_PY_EXPORT(Object) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Object) {
+    MI_PY_IMPORT_TYPES()
 
     m.def(
         "get_property",

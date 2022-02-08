@@ -8,9 +8,9 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Endpoint) {
-    MTS_PY_IMPORT_TYPES()
-    MTS_PY_CLASS(Endpoint, Object)
+MI_PY_EXPORT(Endpoint) {
+    MI_PY_IMPORT_TYPES()
+    MI_PY_CLASS(Endpoint, Object)
         .def("sample_ray", &Endpoint::sample_ray,
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
             D(Endpoint, sample_ray))

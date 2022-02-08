@@ -40,7 +40,7 @@ add_library(mitsuba-ui-obj OBJECT
 add_library(mitsuba-ui SHARED $<TARGET_OBJECTS:mitsuba-ui-obj>)
 set_property(TARGET mitsuba-ui-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-ui-obj mitsuba-ui PROPERTIES FOLDER mitsuba-ui)
-target_compile_definitions(mitsuba-ui-obj PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_UI ${NANOGUI_EXTRA_DEFS})
+target_compile_definitions(mitsuba-ui-obj PRIVATE -DMI_BUILD_MODULE=MI_MODULE_UI ${NANOGUI_EXTRA_DEFS})
 
 # Link to Mitsuba core library
 target_link_libraries(mitsuba-ui PUBLIC mitsuba-core)

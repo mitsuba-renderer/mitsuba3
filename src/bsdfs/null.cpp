@@ -30,8 +30,8 @@ The main purpose of this material is to be used as the BSDF of a shape enclosing
 template <typename Float, typename Spectrum>
 class Null final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     Null(const Properties &props) : Base(props) {
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
@@ -44,7 +44,7 @@ public:
                                              Float /*sample1*/,
                                              const Point2f & /*sample2*/,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
         BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Spectrum result(0.f);
@@ -88,9 +88,9 @@ public:
 
     std::string to_string() const override { return "Null[]"; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Null, BSDF)
-MTS_EXPORT_PLUGIN(Null, "Null material")
+MI_IMPLEMENT_CLASS_VARIANT(Null, BSDF)
+MI_EXPORT_PLUGIN(Null, "Null material")
 NAMESPACE_END(mitsuba)

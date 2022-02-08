@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium)
+    MI_IMPORT_BASE(SamplingIntegrator)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium)
 
     DepthIntegrator(const Properties &props) : Base(props) { }
 
@@ -22,7 +22,7 @@ public:
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
             ray, /* coherent = */ true, active);
@@ -33,9 +33,9 @@ public:
         };
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
-MTS_EXPORT_PLUGIN(DepthIntegrator, "Depth integrator");
+MI_IMPLEMENT_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
+MI_EXPORT_PLUGIN(DepthIntegrator, "Depth integrator");
 NAMESPACE_END(mitsuba)

@@ -3,7 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(BSDFContext) {
+MI_PY_EXPORT(BSDFContext) {
     py::enum_<TransportMode>(m, "TransportMode", D(TransportMode))
         .def_value(TransportMode, Radiance)
         .def_value(TransportMode, Importance);
@@ -31,7 +31,7 @@ MTS_PY_EXPORT(BSDFContext) {
         .def_value(BSDFFlags, Delta1D)
         .def_value(BSDFFlags, All);
 
-    MTS_PY_DECLARE_ENUM_OPERATORS(BSDFFlags, e)
+    MI_PY_DECLARE_ENUM_OPERATORS(BSDFFlags, e)
 
     py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
         .def(py::init<TransportMode>(),

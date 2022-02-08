@@ -84,10 +84,10 @@ operation remains efficient even if only a single pixel is turned on.
 
 */
 
-MTS_VARIANT class Projector final : public Emitter<Float, Spectrum> {
+MI_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
         m_intensity = Texture::D65(props.get<ScalarFloat>("scale", 1));
@@ -117,7 +117,7 @@ public:
                                           const Point2f & /*spatial_sample*/,
                                           const Point2f & direction_sample,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
 
         // 1. Sample position on film
@@ -152,7 +152,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
         Point it_local = m_to_world.value().inverse().transform_affine(it.p);
@@ -196,7 +196,7 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f & /*sample*/,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         Vector3f center_dir = m_to_world.value() * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
@@ -247,7 +247,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     ref<Texture> m_irradiance;
@@ -258,6 +258,6 @@ protected:
     ScalarFloat m_sensor_area;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)
-MTS_EXPORT_PLUGIN(Projector, "Projection emitter")
+MI_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)
+MI_EXPORT_PLUGIN(Projector, "Projection emitter")
 NAMESPACE_END(mitsuba)

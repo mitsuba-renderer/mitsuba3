@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT
+MI_VARIANT
 ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
                                         const ScalarPoint2i &offset,
                                         uint32_t channel_count,
@@ -28,7 +28,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
     set_size(size);
 }
 
-MTS_VARIANT
+MI_VARIANT
 ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
                                         const ScalarPoint2i &offset,
                                         const ReconstructionFilter *rfilter,
@@ -64,9 +64,9 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
         m_tensor = TensorXf(tensor.array(), 3, tensor.shape().data());
 }
 
-MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() { }
+MI_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() { }
 
-MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
+MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     using Array = typename TensorXf::Array;
 
     ScalarVector2u size_ext = m_size + 2 * m_border_size;
@@ -77,7 +77,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     m_tensor = TensorXf(dr::zero<Array>(size_flat), 3, shape);
 }
 
-MTS_VARIANT void
+MI_VARIANT void
 ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
     using Array = typename TensorXf::Array;
 
@@ -93,7 +93,7 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
     m_size = size;
 }
 
-MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) {
+MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
 
     if (unlikely(block->channel_count() != channel_count()))
@@ -132,7 +132,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block)
     }
 }
 
-MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
+MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                                                   const Float *values,
                                                   Mask active) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
@@ -511,7 +511,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     }
 }
 
-MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
+MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                                                    Float *values,
                                                    Mask active) const {
     constexpr bool JIT = dr::is_jit_array_v<Float>;
@@ -733,7 +733,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     }
 }
 
-MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
+MI_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
 
     oss << "ImageBlock[" << std::endl
@@ -752,6 +752,6 @@ MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(ImageBlock, Object)
-MTS_INSTANTIATE_CLASS(ImageBlock)
+MI_IMPLEMENT_CLASS_VARIANT(ImageBlock, Object)
+MI_INSTANTIATE_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,7 @@
 #include <mitsuba/render/texture.h>
 #include <drjit/dynamic.h>
 
-#define MTS_ROUGH_TRANSMITTANCE_RES 64
+#define MI_ROUGH_TRANSMITTANCE_RES 64
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -143,8 +143,8 @@ of this parameter given in the :ref:`plastic <bsdf-plastic>` plugin section.
 template <typename Float, typename Spectrum>
 class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface
@@ -189,7 +189,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -203,7 +203,7 @@ public:
             return { bs, result };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
-                                MTS_ROUGH_TRANSMITTANCE_RES, active);
+                                MI_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
@@ -244,7 +244,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -282,9 +282,9 @@ public:
 
         if (has_diffuse) {
             Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
-                                    MTS_ROUGH_TRANSMITTANCE_RES, active),
+                                    MI_ROUGH_TRANSMITTANCE_RES, active),
                   t_o = lerp_gather(m_external_transmittance, cos_theta_o,
-                                    MTS_ROUGH_TRANSMITTANCE_RES, active);
+                                    MI_ROUGH_TRANSMITTANCE_RES, active);
 
             UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
@@ -310,7 +310,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -324,7 +324,7 @@ public:
             return 0.f;
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
-                                MTS_ROUGH_TRANSMITTANCE_RES, active);
+                                MI_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
@@ -356,7 +356,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -370,7 +370,7 @@ public:
             return { 0.f, 0.f };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
-                                MTS_ROUGH_TRANSMITTANCE_RES, active);
+                                MI_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
@@ -419,7 +419,7 @@ public:
 
         if (has_diffuse) {
             Float t_o = lerp_gather(m_external_transmittance, cos_theta_o,
-                                    MTS_ROUGH_TRANSMITTANCE_RES, active);
+                                    MI_ROUGH_TRANSMITTANCE_RES, active);
 
             UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
@@ -461,8 +461,8 @@ public:
 
             using FloatP = dr::Packet<dr::scalar_t<Float>>;
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
-            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MTS_ROUGH_TRANSMITTANCE_RES));
-            FloatX zero = dr::zero<FloatX>(MTS_ROUGH_TRANSMITTANCE_RES);
+            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MI_ROUGH_TRANSMITTANCE_RES));
+            FloatX zero = dr::zero<FloatX>(MI_ROUGH_TRANSMITTANCE_RES);
 
             Vector3fX wi = Vector3fX(dr::sqrt(1 - mu * mu), zero, mu);
 
@@ -497,7 +497,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
@@ -512,6 +512,6 @@ private:
     Float m_internal_reflectance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
-MTS_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
+MI_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
+MI_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
 NAMESPACE_END(mitsuba)

@@ -6,41 +6,41 @@
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_DECLARE(atomic);
-MTS_PY_DECLARE(filesystem);
-MTS_PY_DECLARE(Object);
-MTS_PY_DECLARE(Cast);
-MTS_PY_DECLARE(Struct);
-MTS_PY_DECLARE(Appender);
-MTS_PY_DECLARE(ArgParser);
-MTS_PY_DECLARE(Bitmap);
-MTS_PY_DECLARE(Formatter);
-MTS_PY_DECLARE(FileResolver);
-MTS_PY_DECLARE(Logger);
-MTS_PY_DECLARE(MemoryMappedFile);
-MTS_PY_DECLARE(Stream);
-MTS_PY_DECLARE(DummyStream);
-MTS_PY_DECLARE(FileStream);
-MTS_PY_DECLARE(MemoryStream);
-MTS_PY_DECLARE(ZStream);
-MTS_PY_DECLARE(ProgressReporter);
-MTS_PY_DECLARE(rfilter);
-MTS_PY_DECLARE(Thread);
-MTS_PY_DECLARE(Timer);
-MTS_PY_DECLARE(util);
+MI_PY_DECLARE(atomic);
+MI_PY_DECLARE(filesystem);
+MI_PY_DECLARE(Object);
+MI_PY_DECLARE(Cast);
+MI_PY_DECLARE(Struct);
+MI_PY_DECLARE(Appender);
+MI_PY_DECLARE(ArgParser);
+MI_PY_DECLARE(Bitmap);
+MI_PY_DECLARE(Formatter);
+MI_PY_DECLARE(FileResolver);
+MI_PY_DECLARE(Logger);
+MI_PY_DECLARE(MemoryMappedFile);
+MI_PY_DECLARE(Stream);
+MI_PY_DECLARE(DummyStream);
+MI_PY_DECLARE(FileStream);
+MI_PY_DECLARE(MemoryStream);
+MI_PY_DECLARE(ZStream);
+MI_PY_DECLARE(ProgressReporter);
+MI_PY_DECLARE(rfilter);
+MI_PY_DECLARE(Thread);
+MI_PY_DECLARE(Timer);
+MI_PY_DECLARE(util);
 
 PYBIND11_MODULE(core_ext, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.core";
 
     // Expose some constants in the main `mitsuba` module
-    m.attr("__version__")       = MTS_VERSION;
-    m.attr("MTS_VERSION")       = MTS_VERSION;
-    m.attr("MTS_VERSION_MAJOR") = MTS_VERSION_MAJOR;
-    m.attr("MTS_VERSION_MINOR") = MTS_VERSION_MINOR;
-    m.attr("MTS_VERSION_PATCH") = MTS_VERSION_PATCH;
-    m.attr("MTS_YEAR")          = MTS_YEAR;
-    m.attr("MTS_AUTHORS")       = MTS_AUTHORS;
+    m.attr("__version__")       = MI_VERSION;
+    m.attr("MI_VERSION")       = MI_VERSION;
+    m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
+    m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
+    m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
+    m.attr("MI_YEAR")          = MI_YEAR;
+    m.attr("MI_AUTHORS")       = MI_AUTHORS;
 
 #if defined(NDEBUG)
     m.attr("DEBUG") = false;
@@ -48,16 +48,16 @@ PYBIND11_MODULE(core_ext, m) {
     m.attr("DEBUG") = true;
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
-    m.attr("MTS_ENABLE_CUDA") = true;
+#if defined(MI_ENABLE_CUDA)
+    m.attr("MI_ENABLE_CUDA") = true;
 #else
-    m.attr("MTS_ENABLE_CUDA") = false;
+    m.attr("MI_ENABLE_CUDA") = false;
 #endif
 
-#if defined(MTS_ENABLE_EMBREE)
-    m.attr("MTS_ENABLE_EMBREE") = true;
+#if defined(MI_ENABLE_EMBREE)
+    m.attr("MI_ENABLE_EMBREE") = true;
 #else
-    m.attr("MTS_ENABLE_EMBREE") = false;
+    m.attr("MI_ENABLE_EMBREE") = false;
 #endif
 
     Jit::static_initialization();
@@ -74,28 +74,28 @@ PYBIND11_MODULE(core_ext, m) {
         fr->append(base_path);
 
     // Register python modules
-    MTS_PY_IMPORT(atomic);
-    MTS_PY_IMPORT(filesystem);
-    MTS_PY_IMPORT(Object);
-    MTS_PY_IMPORT(Cast);
-    MTS_PY_IMPORT(Struct);
-    MTS_PY_IMPORT(Appender);
-    MTS_PY_IMPORT(ArgParser);
-    MTS_PY_IMPORT(rfilter);
-    MTS_PY_IMPORT(Stream);
-    MTS_PY_IMPORT(Bitmap);
-    MTS_PY_IMPORT(Formatter);
-    MTS_PY_IMPORT(FileResolver);
-    MTS_PY_IMPORT(Logger);
-    MTS_PY_IMPORT(MemoryMappedFile);
-    MTS_PY_IMPORT(DummyStream);
-    MTS_PY_IMPORT(FileStream);
-    MTS_PY_IMPORT(MemoryStream);
-    MTS_PY_IMPORT(ZStream);
-    MTS_PY_IMPORT(ProgressReporter);
-    MTS_PY_IMPORT(Thread);
-    MTS_PY_IMPORT(Timer);
-    MTS_PY_IMPORT(util);
+    MI_PY_IMPORT(atomic);
+    MI_PY_IMPORT(filesystem);
+    MI_PY_IMPORT(Object);
+    MI_PY_IMPORT(Cast);
+    MI_PY_IMPORT(Struct);
+    MI_PY_IMPORT(Appender);
+    MI_PY_IMPORT(ArgParser);
+    MI_PY_IMPORT(rfilter);
+    MI_PY_IMPORT(Stream);
+    MI_PY_IMPORT(Bitmap);
+    MI_PY_IMPORT(Formatter);
+    MI_PY_IMPORT(FileResolver);
+    MI_PY_IMPORT(Logger);
+    MI_PY_IMPORT(MemoryMappedFile);
+    MI_PY_IMPORT(DummyStream);
+    MI_PY_IMPORT(FileStream);
+    MI_PY_IMPORT(MemoryStream);
+    MI_PY_IMPORT(ZStream);
+    MI_PY_IMPORT(ProgressReporter);
+    MI_PY_IMPORT(Thread);
+    MI_PY_IMPORT(Timer);
+    MI_PY_IMPORT(util);
 
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */

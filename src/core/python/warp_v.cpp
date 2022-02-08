@@ -1,8 +1,8 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(warp) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(warp) {
+    MI_PY_IMPORT_TYPES()
 
     m.def("square_to_uniform_disk",
           warp::square_to_uniform_disk<Float>,

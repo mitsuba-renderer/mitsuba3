@@ -65,8 +65,8 @@ transmitting material that absorbs 50% of the incident illumination.
 template <typename Float, typename Spectrum>
 class LinearPolarizer final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     LinearPolarizer(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
@@ -81,7 +81,7 @@ public:
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float /* sample1 */, const Point2f &/* sample2 */,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         BSDFSample3f bs = dr::zero<BSDFSample3f>();
         bs.wo = -si.wi;
@@ -143,7 +143,7 @@ public:
     }
 
     Spectrum eval_null_transmission(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
@@ -201,13 +201,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     bool m_polarizing;
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)
-MTS_EXPORT_PLUGIN(LinearPolarizer, "Linear polarizer material")
+MI_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)
+MI_EXPORT_PLUGIN(LinearPolarizer, "Linear polarizer material")
 NAMESPACE_END(mitsuba)

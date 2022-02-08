@@ -67,8 +67,8 @@ or BSDF sampling-only integrator.
 template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(SamplingIntegrator, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_BASE(SamplingIntegrator, m_hide_emitters)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     // =============================================================
     //! @{ \name Constructors
@@ -107,7 +107,7 @@ public:
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, +RayFlags::All, /* coherent = */ true, active);
@@ -213,7 +213,7 @@ public:
         return dr::select(dr::isfinite(w), w, 0.f);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
@@ -221,6 +221,6 @@ private:
     ScalarFloat m_weight_bsdf, m_weight_lum;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
-MTS_EXPORT_PLUGIN(DirectIntegrator, "Direct integrator");
+MI_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
+MI_EXPORT_PLUGIN(DirectIntegrator, "Direct integrator");
 NAMESPACE_END(mitsuba)

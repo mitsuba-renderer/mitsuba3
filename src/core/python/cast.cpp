@@ -14,7 +14,7 @@ py::object cast_object(Object *o) {
     return py::cast(o);
 }
 
-MTS_PY_EXPORT(Cast) {
+MI_PY_EXPORT(Cast) {
     m.attr("casters") = py::cast((void *) &casters);
     m.attr("cast_object") = py::cast((void *) &cast_object);
 }

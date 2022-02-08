@@ -4,10 +4,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
+MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
     : Base(props) {}
-MTS_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
+MI_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
 
-MTS_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
-MTS_INSTANTIATE_CLASS(Emitter)
+MI_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
+MI_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)

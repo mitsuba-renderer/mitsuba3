@@ -18,8 +18,8 @@ struct Interaction {
 
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_RENDER_BASIC_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MI_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_OBJECT_TYPES()
 
     //! @}
     // =============================================================
@@ -116,10 +116,10 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
 
     // Make parent fields/functions visible
-    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
 
-    MTS_IMPORT_RENDER_BASIC_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MI_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_OBJECT_TYPES()
 
     using Index            = typename CoreAliases::UInt32;
     using PositionSample3f = typename RenderAliases::PositionSample3f;
@@ -415,12 +415,12 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_RENDER_BASIC_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MI_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_OBJECT_TYPES()
     using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
-    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
     //! @}
     // =============================================================
 
@@ -530,7 +530,7 @@ enum class RayFlags : uint32_t {
     AllNonDifferentiable = All | DetachShape,
 };
 
-MTS_DECLARE_ENUM_OPERATORS(RayFlags)
+MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
@@ -554,7 +554,7 @@ struct PreliminaryIntersection {
     using Float    = Float_;
     using ShapePtr = dr::replace_scalar_t<Float, const Shape_ *>;
 
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     using Index = typename CoreAliases::UInt32;
     using Ray3f = typename Shape_::Ray3f;

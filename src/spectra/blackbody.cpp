@@ -40,7 +40,7 @@ your scene should be modeled in meters for this plugin to work properly.
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     // A few natural constants
     constexpr static ScalarFloat c = ScalarFloat(2.99792458e+8);   /// Speed of light
@@ -54,8 +54,8 @@ public:
     BlackBodySpectrum(const Properties &props) : Texture(props) {
         m_temperature = props.get<ScalarFloat>("temperature");
         m_wavelength_range = ScalarVector2f(
-            props.get<ScalarFloat>("lambda_min", MTS_CIE_MIN),
-            props.get<ScalarFloat>("lambda_max", MTS_CIE_MAX)
+            props.get<ScalarFloat>("lambda_min", MI_CIE_MIN),
+            props.get<ScalarFloat>("lambda_max", MI_CIE_MAX)
         );
         parameters_changed();
     }
@@ -93,7 +93,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return eval_impl(si.wavelengths, active);
     }
 
@@ -149,7 +149,7 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f & /* si */,
                     const Wavelength &sample_, Mask active_) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active_);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active_);
 
         using WavelengthMask = dr::mask_t<Wavelength>;
 
@@ -209,7 +209,7 @@ public:
         callback->put_parameter("temperature", m_temperature);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ScalarFloat m_temperature;
     ScalarFloat m_integral_min;
@@ -217,6 +217,6 @@ private:
     ScalarVector2f m_wavelength_range;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)
-MTS_EXPORT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
+MI_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)
+MI_EXPORT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
 NAMESPACE_END(mitsuba)

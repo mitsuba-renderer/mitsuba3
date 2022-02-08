@@ -1,7 +1,7 @@
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(ArgParser) {
+MI_PY_EXPORT(ArgParser) {
     py::class_<ArgParser> argp(m, "ArgParser", D(ArgParser));
     py::class_<ArgParser::Arg> argpa(argp, "Arg", D(ArgParser, Arg));
 

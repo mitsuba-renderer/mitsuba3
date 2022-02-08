@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 /** \brief Abstract interface for converting log information into
  * a human-readable format
  */
-class MTS_EXPORT_LIB Formatter : public Object {
+class MI_EXPORT_LIB Formatter : public Object {
 public:
     /**
      * \brief Turn a log message into a human-readable format
@@ -23,7 +23,7 @@ public:
                                const Thread *thread, const char *file, int line,
                                const std::string &msg) = 0;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Formatter() = default;
@@ -32,7 +32,7 @@ protected:
 /** \brief The default formatter used to turn log messages into
  * a human-readable form
  */
-class MTS_EXPORT_LIB DefaultFormatter : public Formatter {
+class MI_EXPORT_LIB DefaultFormatter : public Formatter {
     friend class Logger;
 public:
     /// Create a new default formatter
@@ -62,7 +62,7 @@ public:
     /// \sa set_has_class
     bool has_class() { return m_has_class; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     bool m_has_date;
     bool m_has_log_level;

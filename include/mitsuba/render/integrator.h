@@ -34,9 +34,9 @@ NAMESPACE_BEGIN(mitsuba)
  * implementations.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Integrator : public Object {
+class MI_EXPORT_LIB Integrator : public Object {
 public:
-    MTS_IMPORT_TYPES(Scene, Sensor)
+    MI_IMPORT_TYPES(Scene, Sensor)
 
     /**
      * \brief Render the scene
@@ -115,7 +115,7 @@ public:
      */
     virtual std::vector<std::string> aov_names() const;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Create an integrator
     Integrator(const Properties & props);
@@ -152,11 +152,11 @@ protected:
  * all pixels of the image.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
+class MI_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Integrator, should_stop, aov_names,
+    MI_IMPORT_BASE(Integrator, should_stop, aov_names,
                     m_stop, m_timeout, m_render_timer, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
+    MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
 
     /**
      * \brief Sample the incident radiance along a ray.
@@ -218,7 +218,7 @@ public:
     //! @}
     // =========================================================================
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     SamplingIntegrator(const Properties &props);
     virtual ~SamplingIntegrator();
@@ -265,10 +265,10 @@ protected:
  * termination technique should start to become active.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB MonteCarloIntegrator
+class MI_EXPORT_LIB MonteCarloIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(SamplingIntegrator)
+    MI_IMPORT_BASE(SamplingIntegrator)
 
 protected:
     /// Create an integrator
@@ -277,7 +277,7 @@ protected:
     /// Virtual destructor
     virtual ~MonteCarloIntegrator();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     uint32_t m_max_depth;
     uint32_t m_rr_depth;
@@ -296,11 +296,11 @@ protected:
  * output variables (AOVs).
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB AdjointIntegrator : public Integrator<Float, Spectrum> {
+class MI_EXPORT_LIB AdjointIntegrator : public Integrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Integrator, should_stop, aov_names, m_stop, m_timeout,
+    MI_IMPORT_BASE(Integrator, should_stop, aov_names, m_stop, m_timeout,
                     m_render_timer, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sensor, Film, BSDF, BSDFPtr, ImageBlock, Sampler,
+    MI_IMPORT_TYPES(Scene, Sensor, Film, BSDF, BSDFPtr, ImageBlock, Sampler,
                      EmitterPtr)
 
     /**
@@ -341,7 +341,7 @@ public:
     //! @}
     // =========================================================================
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     /// Create an integrator
@@ -371,8 +371,8 @@ protected:
 };
 
 
-MTS_EXTERN_CLASS(Integrator)
-MTS_EXTERN_CLASS(SamplingIntegrator)
-MTS_EXTERN_CLASS(MonteCarloIntegrator)
-MTS_EXTERN_CLASS(AdjointIntegrator)
+MI_EXTERN_CLASS(Integrator)
+MI_EXTERN_CLASS(SamplingIntegrator)
+MI_EXTERN_CLASS(MonteCarloIntegrator)
+MI_EXTERN_CLASS(AdjointIntegrator)
 NAMESPACE_END(mitsuba)

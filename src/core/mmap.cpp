@@ -285,6 +285,6 @@ std::string MemoryMappedFile::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(MemoryMappedFile, Object)
+MI_IMPLEMENT_CLASS(MemoryMappedFile, Object)
 
 NAMESPACE_END(mitsuba)

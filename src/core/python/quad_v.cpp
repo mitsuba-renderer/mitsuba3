@@ -2,8 +2,8 @@
 #include <mitsuba/python/python.h>
 #include <drjit/dynamic.h>
 
-MTS_PY_EXPORT(quad) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(quad) {
+    MI_PY_IMPORT_TYPES()
     using FloatX = DynamicBuffer<Float>;
     m.def("gauss_legendre", &quad::gauss_legendre<FloatX>, "n"_a, D(quad, gauss_legendre));
     m.def("gauss_lobatto", &quad::gauss_lobatto<FloatX>, "n"_a, D(quad, gauss_lobatto));

@@ -10,7 +10,7 @@
 
 #include <drjit/packet.h>
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     #include "optix/cylinder.cuh"
 #endif
 
@@ -75,9 +75,9 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
@@ -216,7 +216,7 @@ public:
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         auto [sin_theta, cos_theta] = dr::sincos(2.f * dr::Pi<Float> * sample.y());
 
@@ -239,7 +239,7 @@ public:
     }
 
     Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
@@ -255,7 +255,7 @@ public:
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
                                               dr::is_diff_array_v<Float>,
@@ -318,7 +318,7 @@ public:
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
                                      dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
                                               dr::is_diff_array_v<Float>,
@@ -371,14 +371,14 @@ public:
         return valid_intersection;
     }
 
-    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
+    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Recompute ray intersection to get differentiable prim_uv and t
         Float t = pi.t;
@@ -453,7 +453,7 @@ public:
         Base::parameters_changed();
     }
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
@@ -482,13 +482,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     field<Float> m_radius, m_length;
     Float m_inv_surface_area;
     bool m_flip_normals;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)
-MTS_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
+MI_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)
+MI_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
 NAMESPACE_END(mitsuba)

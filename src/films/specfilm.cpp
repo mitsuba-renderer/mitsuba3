@@ -94,9 +94,9 @@ Notice that in this example, each band contains the spectral sensitivity of one 
 template <typename Float, typename Spectrum>
 class SpecFilm final : public Film<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
+    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
                     m_sample_border, m_filter, m_flags, m_srf)
-    MTS_IMPORT_TYPES(ImageBlock, Texture)
+    MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
 
     SpecFilm(const Properties &props) : Base(props) {
@@ -400,7 +400,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
@@ -413,6 +413,6 @@ protected:
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)
-MTS_EXPORT_PLUGIN(SpecFilm, "Spectral Bands Film")
+MI_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)
+MI_EXPORT_PLUGIN(SpecFilm, "Spectral Bands Film")
 NAMESPACE_END(mitsuba)

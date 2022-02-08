@@ -115,7 +115,7 @@ Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const dr::Array<Float, 6> &s) {
  * \return The projected area of the SGGX microflake distribution
  */
 template <typename Float>
-MTS_INLINE Float sggx_projected_area(const Vector<Float, 3> &wi,
+MI_INLINE Float sggx_projected_area(const Vector<Float, 3> &wi,
                                      const dr::Array<Float, 6> &s) {
     const size_t XX = 0, YY = 1, ZZ = 2, XY = 3, XZ = 4, YZ = 5;
 

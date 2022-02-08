@@ -7,19 +7,19 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/core/plugin.h>
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
 #  include <embree3/rtcore.h>
 #else
 #  include <mitsuba/render/kdtree.h>
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/shapes.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
+MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     m_to_world =
         (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     m_to_object = m_to_world.scalar().inverse();
@@ -74,31 +74,31 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
     dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
 }
 
-MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
-#if defined(MTS_ENABLE_CUDA)
+MI_VARIANT Shape<Float, Spectrum>::~Shape() {
+#if defined(MI_ENABLE_CUDA)
     if constexpr (dr::is_cuda_array_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
 }
 
-MTS_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
+MI_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
     return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
+MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
 Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,
                                         Mask /*active*/) const {
     NotImplementedError("sample_position");
 }
 
-MTS_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const {
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const {
     NotImplementedError("pdf_position");
 }
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
 template <typename Float, typename Spectrum>
 void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
-    MTS_IMPORT_TYPES(Shape)
+    MI_IMPORT_TYPES(Shape)
     const Shape* shape = (const Shape*) args->geometryUserPtr;
     ScalarBoundingBox3f bbox = shape->bbox();
     RTCBounds* bounds_o = args->bounds_o;
@@ -117,7 +117,7 @@ void embree_intersect_scalar(int* valid,
                              unsigned int instID,
                              RTCRay* rtc_ray,
                              RTCHit* rtc_hit) {
-    MTS_IMPORT_TYPES(Shape)
+    MI_IMPORT_TYPES(Shape)
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
@@ -159,7 +159,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
                                     unsigned int geomID, unsigned int instID,
                                     RTCRay_ *rtc_ray,
                                     RTCHit_ *rtc_hit) {
-    MTS_IMPORT_TYPES(Shape)
+    MI_IMPORT_TYPES(Shape)
 
     using FloatP   = dr::Packet<dr::scalar_t<Float>, N>;
     using MaskP    = dr::mask_t<FloatP>;
@@ -286,7 +286,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
     }
 }
 
-MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
+MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
     if constexpr (!dr::is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
@@ -303,14 +303,14 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
 }
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
-MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
+MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
     NotImplementedError("optix_prepare_geometry");
 }
 
-MTS_VARIANT
+MI_VARIANT
 void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
                                                          const OptixProgramGroup *program_groups) {
     optix_prepare_geometry();
@@ -326,14 +326,14 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
                                              &hitgroup_records.back()));
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
+MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
                                                            std::vector<OptixInstance>& /*instances*/,
                                                            uint32_t /*instance_id*/,
                                                            const ScalarTransform4f& /*transf*/) {
     NotImplementedError("optix_prepare_ias");
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
+MI_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
     build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
     // Assumes the aabb is always the first member of the data struct
     build_input.customPrimitiveArray.aabbBuffers   = (CUdeviceptr*) &m_optix_data_ptr;
@@ -344,11 +344,11 @@ MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &buil
 }
 #endif
 
-MTS_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
+MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
 Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
                                          const Point2f &sample,
                                          Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
 
     DirectionSample3f ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
@@ -364,10 +364,10 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     return ds;
 }
 
-MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
                                                         const DirectionSample3f &ds,
                                                         Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
 
     Float pdf = pdf_position(ds, active),
            dp = dr::abs_dot(ds.d, ds.n);
@@ -377,12 +377,12 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*
     return pdf;
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
+MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
 Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }
 
-MTS_VARIANT
+MI_VARIANT
 std::tuple<typename Shape<Float, Spectrum>::ScalarFloat,
            typename Shape<Float, Spectrum>::ScalarPoint2f,
            typename Shape<Float, Spectrum>::ScalarUInt32,
@@ -391,8 +391,8 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
     NotImplementedError("ray_intersect_preliminary_scalar");
 }
 
-#define MTS_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
-    MTS_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,         \
+#define MI_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
+    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,         \
                            typename Shape<Float, Spectrum>::Point2fP##N,       \
                            typename Shape<Float, Spectrum>::UInt32P##N,        \
                            typename Shape<Float, Spectrum>::UInt32P##N>        \
@@ -400,29 +400,29 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
         const Ray3fP##N & /*ray*/, MaskP##N /*active*/) const {                \
         NotImplementedError("ray_intersect_preliminary_packet");               \
     }                                                                          \
-    MTS_VARIANT typename Shape<Float, Spectrum>::MaskP##N                      \
+    MI_VARIANT typename Shape<Float, Spectrum>::MaskP##N                      \
     Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,              \
                                             MaskP##N active) const {           \
         auto res = ray_intersect_preliminary_packet(ray, active);              \
         return dr::neq(std::get<0>(res), dr::Infinity<Float>);                 \
     }
 
-MTS_DEFAULT_RAY_INTERSECT_PACKET(4)
-MTS_DEFAULT_RAY_INTERSECT_PACKET(8)
-MTS_DEFAULT_RAY_INTERSECT_PACKET(16)
+MI_DEFAULT_RAY_INTERSECT_PACKET(4)
+MI_DEFAULT_RAY_INTERSECT_PACKET(8)
+MI_DEFAULT_RAY_INTERSECT_PACKET(16)
 
-MTS_VARIANT typename Shape<Float, Spectrum>::Mask
+MI_VARIANT typename Shape<Float, Spectrum>::Mask
 Shape<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
     return ray_intersect_preliminary(ray, active).is_valid();
 }
 
-MTS_VARIANT
+MI_VARIANT
 bool Shape<Float, Spectrum>::ray_test_scalar(const ScalarRay3f & /*ray*/) const {
     NotImplementedError("ray_intersect_test_scalar");
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
                                                     const PreliminaryIntersection3f &/*pi*/,
                                                     uint32_t /*ray_flags*/,
@@ -431,60 +431,60 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
     NotImplementedError("compute_surface_interaction");
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
     auto pi = ray_intersect_preliminary(ray, active);
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
+MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
 Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
                                        const SurfaceInteraction3f & /*si*/,
                                        Mask /*active*/) const {
     NotImplementedError("eval_attribute");
 }
 
-MTS_VARIANT Float
+MI_VARIANT Float
 Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
                                          const SurfaceInteraction3f &/*si*/,
                                          Mask /*active*/) const {
     NotImplementedError("eval_attribute_1");
 }
-MTS_VARIANT typename Shape<Float, Spectrum>::Color3f
+MI_VARIANT typename Shape<Float, Spectrum>::Color3f
 Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
                                          const SurfaceInteraction3f &/*si*/,
                                          Mask /*active*/) const {
     NotImplementedError("eval_attribute_3");
 }
 
-MTS_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
+MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
+MI_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
 Shape<Float, Spectrum>::bbox(ScalarIndex) const {
     return bbox();
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
+MI_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
 Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
     ScalarBoundingBox3f result = bbox(index);
     result.clip(clip);
     return result;
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::ScalarSize
+MI_VARIANT typename Shape<Float, Spectrum>::ScalarSize
 Shape<Float, Spectrum>::primitive_count() const {
     return 1;
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::ScalarSize
+MI_VARIANT typename Shape<Float, Spectrum>::ScalarSize
 Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_object("bsdf", m_bsdf.get());
     if (m_emitter)
         callback->put_object("emitter", m_emitter.get());
@@ -496,7 +496,7 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get());
 }
 
-MTS_VARIANT
+MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_array_v<Float>) {
@@ -509,18 +509,18 @@ void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &
         if (m_sensor)
             m_sensor->parameters_changed({"parent"});
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
         if constexpr (dr::is_cuda_array_v<Float>)
             optix_prepare_geometry();
 #endif
     }
 }
 
-MTS_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
+MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
     return false;
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::initialize() {
+MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_array_v<Float>) {
         if (!is_mesh())
             dr::make_opaque(m_to_world, m_to_object);
@@ -533,13 +533,13 @@ MTS_VARIANT void Shape<Float, Spectrum>::initialize() {
         m_sensor->set_shape(this);
 }
 
-MTS_VARIANT
+MI_VARIANT
 typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::eval_parameterization(const Point2f &, uint32_t, Mask) const {
     NotImplementedError("eval_parameterization");
 }
 
-MTS_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
+MI_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     std::vector<std::pair<std::string, const Object*>> children;
     children.push_back({ "bsdf", m_bsdf });
     if (m_emitter) children.push_back({ "emitter", m_emitter });
@@ -555,6 +555,6 @@ MTS_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
-MTS_INSTANTIATE_CLASS(Shape)
+MI_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
+MI_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

@@ -51,9 +51,9 @@ NAMESPACE_BEGIN(mitsuba)
  * these redundancies and remove them retroactively.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Endpoint : public Object {
+class MI_EXPORT_LIB Endpoint : public Object {
 public:
-    MTS_IMPORT_TYPES(Medium, Scene, Shape)
+    MI_IMPORT_TYPES(Medium, Scene, Shape)
 
     // =============================================================
     //! @{ \name Wavelength sampling interface
@@ -385,7 +385,7 @@ public:
     void traverse(TraversalCallback *callback) override;
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Endpoint)
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);
 
@@ -400,5 +400,5 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS(Endpoint)
+MI_EXTERN_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

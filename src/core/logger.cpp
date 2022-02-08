@@ -94,7 +94,7 @@ void Logger::remove_appender(Appender *appender) {
 std::string Logger::read_log() {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto appender: d->appenders) {
-        if (appender->class_()->derives_from(MTS_CLASS(StreamAppender))) {
+        if (appender->class_()->derives_from(MI_CLASS(StreamAppender))) {
             auto sa = static_cast<StreamAppender *>(appender.get());
             if (sa->logs_to_file())
                 return sa->read_log();
@@ -144,7 +144,7 @@ NAMESPACE_BEGIN(detail)
 void Throw(LogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg_) {
     // Trap if we're running in a debugger to facilitate debugging.
-    #if defined(MTS_THROW_TRAPS_DEBUGGER)
+    #if defined(MI_THROW_TRAPS_DEBUGGER)
     util::trap_debugger();
     #endif
 
@@ -169,6 +169,6 @@ void Throw(LogLevel level, const Class *class_, const char *file,
 
 NAMESPACE_END(detail)
 
-MTS_IMPLEMENT_CLASS(Logger, Object)
+MI_IMPLEMENT_CLASS(Logger, Object)
 
 NAMESPACE_END(mitsuba)

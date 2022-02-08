@@ -115,7 +115,7 @@ private:
 #pragma GCC visibility pop
 #endif
 
-MTS_PY_EXPORT(ProgressReporter) {
+MI_PY_EXPORT(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
      * running within Jupyter notebook */
     py::object modules = py::module::import("sys").attr("modules");

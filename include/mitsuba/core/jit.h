@@ -26,7 +26,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-struct MTS_EXPORT_LIB Jit {
+struct MI_EXPORT_LIB Jit {
     std::mutex mutex;
 #if defined(DRJIT_X86_64)
     asmjit::JitRuntime runtime;

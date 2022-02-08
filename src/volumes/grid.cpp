@@ -118,8 +118,8 @@ little endian encoding and is specified as follows:
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
-    MTS_IMPORT_TYPES(VolumeGrid)
+    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
+    MI_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props) {
         std::string filter_type_str = props.string("filter_type", "trilinear");
@@ -214,7 +214,7 @@ public:
 
     UnpolarizedSpectrum eval(const Interaction3f &it,
                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = nchannels();
         if (channels == 3 && is_spectral_v<Spectrum> && m_raw)
@@ -250,7 +250,7 @@ public:
     }
 
     Float eval_1(const Interaction3f &it, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = nchannels();
         if (channels == 3 && is_spectral_v<Spectrum> && !m_raw)
@@ -273,7 +273,7 @@ public:
 
     Vector3f eval_3(const Interaction3f &it,
                     Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = nchannels();
         if (channels != 3) {
@@ -293,7 +293,7 @@ public:
 
     dr::Array<Float, 6> eval_6(const Interaction3f &it,
                                Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = nchannels();
         if (channels != 6)
@@ -346,7 +346,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     /**
@@ -355,7 +355,7 @@ protected:
      * For object instances that perform spectral upsampling, the channel that
      * holds all scaling coefficients is omitted.
      */
-    MTS_INLINE size_t nchannels() const {
+    MI_INLINE size_t nchannels() const {
         const size_t channels = m_texture.shape()[3];
         // When spectral upsampling is requested, a fourth channel is added to
         // the internal texture data to handle scaling coefficients.
@@ -369,9 +369,9 @@ protected:
      * \brief Evaluates the volume at the given interaction using spectral
      * upsampling
      */
-    MTS_INLINE UnpolarizedSpectrum interpolate_spectral(const Interaction3f &it,
+    MI_INLINE UnpolarizedSpectrum interpolate_spectral(const Interaction3f &it,
                                                         Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
 
@@ -445,8 +445,8 @@ protected:
      *
      * Should only be used when the volume data has exactly 1 channel.
      */
-    MTS_INLINE Float interpolate_1(const Interaction3f &it, Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+    MI_INLINE Float interpolate_1(const Interaction3f &it, Mask active) const {
+        MI_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         Float result;
@@ -463,9 +463,9 @@ protected:
      *
      * Should only be used when the volume data has exactly 3 channels.
      */
-    MTS_INLINE Color3f interpolate_3(const Interaction3f &it,
+    MI_INLINE Color3f interpolate_3(const Interaction3f &it,
                                      Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         Color3f result;
@@ -482,9 +482,9 @@ protected:
      *
      * Should only be used when the volume data has exactly 6 channels.
      */
-    MTS_INLINE dr::Array<Float, 6> interpolate_6(const Interaction3f &it,
+    MI_INLINE dr::Array<Float, 6> interpolate_6(const Interaction3f &it,
                                                  Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         dr::Array<Float, 6> result;
@@ -505,7 +505,7 @@ protected:
     ScalarFloat m_max;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
-MTS_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
+MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
+MI_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
 
 NAMESPACE_END(mitsuba)

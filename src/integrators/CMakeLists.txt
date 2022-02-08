@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "integrators")
+set(MI_PLUGIN_PREFIX "integrators")
 
 add_plugin(aov        aov.cpp)
 add_plugin(depth      depth.cpp)

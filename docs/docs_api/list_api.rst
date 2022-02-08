@@ -78,27 +78,27 @@
 
 .. autoclass:: mitsuba.core.Loop
 
-.. autofunction:: mitsuba.core.MTS_AUTHORS
+.. autofunction:: mitsuba.core.MI_AUTHORS
 
-.. autofunction:: mitsuba.core.MTS_CIE_MAX
+.. autofunction:: mitsuba.core.MI_CIE_MAX
 
-.. autofunction:: mitsuba.core.MTS_CIE_MIN
+.. autofunction:: mitsuba.core.MI_CIE_MIN
 
-.. autofunction:: mitsuba.core.MTS_ENABLE_CUDA
+.. autofunction:: mitsuba.core.MI_ENABLE_CUDA
 
-.. autofunction:: mitsuba.core.MTS_ENABLE_EMBREE
+.. autofunction:: mitsuba.core.MI_ENABLE_EMBREE
 
-.. autofunction:: mitsuba.core.MTS_FILTER_RESOLUTION
+.. autofunction:: mitsuba.core.MI_FILTER_RESOLUTION
 
-.. autofunction:: mitsuba.core.MTS_VERSION
+.. autofunction:: mitsuba.core.MI_VERSION
 
-.. autofunction:: mitsuba.core.MTS_VERSION_MAJOR
+.. autofunction:: mitsuba.core.MI_VERSION_MAJOR
 
-.. autofunction:: mitsuba.core.MTS_VERSION_MINOR
+.. autofunction:: mitsuba.core.MI_VERSION_MINOR
 
-.. autofunction:: mitsuba.core.MTS_VERSION_PATCH
+.. autofunction:: mitsuba.core.MI_VERSION_PATCH
 
-.. autofunction:: mitsuba.core.MTS_YEAR
+.. autofunction:: mitsuba.core.MI_YEAR
 
 .. autoclass:: mitsuba.core.MarginalContinuous2D0
 

@@ -92,7 +92,7 @@ def test01_eval(variant_scalar_rgb):
 
 
 def test02_eval_spectrum(variant_scalar_spectral):
-    from mitsuba.core import load_dict, MTS_CIE_MIN, MTS_CIE_MAX, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.core import load_dict, MI_CIE_MIN, MI_CIE_MAX, MI_WAVELENGTH_SAMPLES
     from mitsuba.render import srgb_model_fetch, srgb_model_eval
 
     mesh = create_rectangle()
@@ -102,7 +102,7 @@ def test02_eval_spectrum(variant_scalar_spectral):
         "name" : "vertex_color",
     })
 
-    wavelengths = np.linspace(MTS_CIE_MIN, MTS_CIE_MAX, MTS_WAVELENGTH_SAMPLES)
+    wavelengths = np.linspace(MI_CIE_MIN, MI_CIE_MAX, MI_WAVELENGTH_SAMPLES)
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])

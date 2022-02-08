@@ -8,7 +8,7 @@ template <typename B, typename I, typename C, typename D>
 thread_local typename TShapeKDTree<B, I, C, D>::LocalBuildContext
     TShapeKDTree<B, I, C, D>::BuildTask::m_local = {};
 
-MTS_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
+MI_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
     : Base(SurfaceAreaHeuristic3f(
           /* kd-tree construction: Relative cost of a shape intersection
              operation in the surface area heuristic. */
@@ -51,7 +51,7 @@ MTS_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
     m_primitive_map.push_back(0);
 }
 
-MTS_VARIANT void ShapeKDTree<Float, Spectrum>::clear() {
+MI_VARIANT void ShapeKDTree<Float, Spectrum>::clear() {
     m_shapes.clear();
     m_primitive_map.clear();
     m_primitive_map.push_back(0);
@@ -62,7 +62,7 @@ MTS_VARIANT void ShapeKDTree<Float, Spectrum>::clear() {
     m_index_count = 0;
 }
 
-MTS_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
+MI_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
     Timer timer;
     Log(Info, "Building a SAH kd-tree (%i primitives) ..",
         primitive_count());
@@ -76,7 +76,7 @@ MTS_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
     );
 }
 
-MTS_VARIANT void ShapeKDTree<Float, Spectrum>::add_shape(Shape *shape) {
+MI_VARIANT void ShapeKDTree<Float, Spectrum>::add_shape(Shape *shape) {
     Assert(!ready());
     m_primitive_map.push_back(m_primitive_map.back() +
                               shape->primitive_count());
@@ -84,7 +84,7 @@ MTS_VARIANT void ShapeKDTree<Float, Spectrum>::add_shape(Shape *shape) {
     m_bbox.expand(shape->bbox());
 }
 
-MTS_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
+MI_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "ShapeKDTreeKDTree[" << std::endl
         << "  shapes = [" << std::endl;
@@ -95,6 +95,6 @@ MTS_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(ShapeKDTree, TShapeKDTree)
-MTS_INSTANTIATE_CLASS(ShapeKDTree)
+MI_IMPLEMENT_CLASS_VARIANT(ShapeKDTree, TShapeKDTree)
+MI_INSTANTIATE_CLASS(ShapeKDTree)
 NAMESPACE_END(mitsuba)

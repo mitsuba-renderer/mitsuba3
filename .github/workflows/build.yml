@@ -33,7 +33,7 @@ jobs:
       - name: Configure
         run: |
           mkdir build
-          cmake -S . -B build -DMTS_DEFAULT_VARIANTS="scalar_rgb;scalar_spectral;llvm_ad_rgb" -DPython_ROOT_DIR="$env:pythonLocation"
+          cmake -S . -B build -DMI_DEFAULT_VARIANTS="scalar_rgb;scalar_spectral;llvm_ad_rgb" -DPython_ROOT_DIR="$env:pythonLocation"
 
       - name: Download LLVM (12.0.1)
         run: |

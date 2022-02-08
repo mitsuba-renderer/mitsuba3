@@ -18,10 +18,10 @@ NAMESPACE_BEGIN(mitsuba)
  * metadata, and the gamma setting can be stored as well. Please see
  * the class methods and enumerations for further detail.
  */
-class MTS_EXPORT_LIB Bitmap : public Object {
+class MI_EXPORT_LIB Bitmap : public Object {
 public:
     using Float = float;
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
@@ -590,7 +590,7 @@ public:
     /// Free the resources used by static_initialization()
     static void static_shutdown();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
  protected:
      /// Protected destructor
      virtual ~Bitmap();
@@ -724,8 +724,8 @@ void accumulate_2d(ConstT source,
     }
 }
 
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value);
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value);
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value);
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value);
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value);
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value);
 
 NAMESPACE_END(mitsuba)

@@ -4,12 +4,12 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Bitmap) {
+MI_PY_EXPORT(Bitmap) {
     using Float = typename Bitmap::Float;
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
 
-    auto bitmap = MTS_PY_CLASS(Bitmap, Object);
+    auto bitmap = MI_PY_CLASS(Bitmap, Object);
 
     py::enum_<Bitmap::PixelFormat>(bitmap, "PixelFormat", D(Bitmap, PixelFormat))
         .value("Y",     Bitmap::PixelFormat::Y,     D(Bitmap, PixelFormat, Y))

@@ -58,8 +58,8 @@ integrator:
 template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium)
+    MI_IMPORT_BASE(SamplingIntegrator)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium)
 
     StokesIntegrator(const Properties &props) : Base(props) {
         if constexpr (!is_polarized_v<Spectrum>)
@@ -83,7 +83,7 @@ public:
                                      const Medium *medium,
                                      Float *aovs,
                                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         auto [spec, mask] = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
 
@@ -133,11 +133,11 @@ public:
         callback->put_object("integrator", m_integrator.get());
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Base> m_integrator;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
-MTS_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
+MI_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
+MI_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
 NAMESPACE_END(mitsuba)

@@ -120,6 +120,6 @@ void Stream::skip(size_t amount) {
     seek(tell() + amount);
 }
 
-MTS_IMPLEMENT_CLASS(Stream, Object)
+MI_IMPLEMENT_CLASS(Stream, Object)
 
 NAMESPACE_END(mitsuba)

@@ -27,8 +27,8 @@ integrator.
 template <typename Float, typename Spectrum>
 class MomentIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium)
+    MI_IMPORT_BASE(SamplingIntegrator)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium)
 
     MomentIntegrator(const Properties &props) : Base(props) {
         // Get the nested integrators and their AOVs
@@ -58,7 +58,7 @@ public:
                                      const Medium *medium,
                                      Float *aovs,
                                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         std::pair<Spectrum, Mask> result { 0.f, false };
 
@@ -122,12 +122,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     std::vector<std::string> m_aov_names;
     std::vector<std::pair<ref<Base>, size_t>> m_integrators;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MomentIntegrator, SamplingIntegrator)
-MTS_EXPORT_PLUGIN(MomentIntegrator, "Moment integrator");
+MI_IMPLEMENT_CLASS_VARIANT(MomentIntegrator, SamplingIntegrator)
+MI_EXPORT_PLUGIN(MomentIntegrator, "Moment integrator");
 NAMESPACE_END(mitsuba)

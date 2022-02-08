@@ -66,8 +66,8 @@ Alternatively, the reflectance can be textured:
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.texture<Texture>("reflectance", .5f);
@@ -81,7 +81,7 @@ public:
                                              Float /* sample1 */,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         BSDFSample3f bs = dr::zero<BSDFSample3f>();
@@ -104,7 +104,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
@@ -122,7 +122,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
@@ -139,7 +139,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return { 0.f, 0.f };
@@ -169,11 +169,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_reflectance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SmoothDiffuse, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
+MI_IMPLEMENT_CLASS_VARIANT(SmoothDiffuse, BSDF)
+MI_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
 NAMESPACE_END(mitsuba)

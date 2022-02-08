@@ -18,17 +18,17 @@ This spectrum returns a constant reflectance or emission value between 360 and 8
 template <typename Float, typename Spectrum>
 class UniformSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     UniformSpectrum(const Properties &props) : Texture(props) {
         m_value = dr::opaque<Float>(props.get<ScalarFloat>("value"));
-        m_range = ScalarVector2f(props.get<ScalarFloat>("wavelength_min", MTS_CIE_MIN),
-                                 props.get<ScalarFloat>("wavelength_max", MTS_CIE_MAX));
+        m_range = ScalarVector2f(props.get<ScalarFloat>("wavelength_min", MI_CIE_MIN),
+                                 props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX));
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f & /*si*/,
                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>)
             return UnpolarizedSpectrum(m_value);
@@ -37,7 +37,7 @@ public:
     }
 
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return m_value;
     }
 
@@ -80,12 +80,12 @@ public:
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     Float m_value;
     ScalarVector2f m_range;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
-MTS_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
+MI_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
+MI_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
 NAMESPACE_END(mitsuba)

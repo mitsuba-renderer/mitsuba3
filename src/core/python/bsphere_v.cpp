@@ -6,7 +6,7 @@ template <typename BSphere, typename Ray> auto bind_bsphere(py::module &m, const
         using Point = typename BSphere::Point;
         using Float = typename BSphere::Float;
 
-        MTS_PY_CHECK_ALIAS(BSphere, name) {
+        MI_PY_CHECK_ALIAS(BSphere, name) {
         py::class_<BSphere>(m, name, D(BoundingSphere))
             .def(py::init<>(), D(BoundingSphere, BoundingSphere))
             .def(py::init<Point, Float>(), D(BoundingSphere, BoundingSphere, 2))
@@ -30,8 +30,8 @@ template <typename BSphere, typename Ray> auto bind_bsphere(py::module &m, const
         }
 }
 
-MTS_PY_EXPORT(BoundingSphere) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(BoundingSphere) {
+    MI_PY_IMPORT_TYPES()
 
     bind_bsphere<BoundingSphere3f, Ray3f>(m, "BoundingSphere3f");
 

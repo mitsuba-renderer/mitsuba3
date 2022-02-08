@@ -35,10 +35,10 @@ Options:
     -m, --mode
         Request a specific mode/variant of the renderer
 
-        Default: )" MTS_DEFAULT_VARIANT R"(
+        Default: )" MI_DEFAULT_VARIANT R"(
 
         Available:
-              )" << string::indent(MTS_VARIANTS, 14) << R"(
+              )" << string::indent(MI_VARIANTS, 14) << R"(
     -v, --verbose
         Be more verbose. (can be specified multiple times)
 
@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
 
         logger->set_log_level(log_level_mitsuba[std::min(log_level, 2)]);
 
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
         ::LogLevel log_level_drjit[] = {
             ::LogLevel::Error,
             ::LogLevel::Warn,
@@ -251,21 +251,21 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
-        mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
+        mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
         bool cuda = string::starts_with(mode, "cuda_");
         bool llvm = string::starts_with(mode, "llvm_");
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
         if (cuda)
             jit_init((uint32_t) JitBackend::CUDA);
 #endif
 
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
         if (llvm)
             jit_init((uint32_t) JitBackend::LLVM);
 #endif
 
-#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
         if (cuda || llvm) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
@@ -311,7 +311,7 @@ int main(int argc, char *argv[]) {
         Profiler::static_initialization();
         color_management_static_initialization(cuda, llvm);
 
-        MTS_INVOKE_VARIANT(mode, scene_static_accel_initialization);
+        MI_INVOKE_VARIANT(mode, scene_static_accel_initialization);
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
                 xml::load_file(arg_extra->as_string(), mode, params,
                                *arg_update, parallel_loading);
 
-            MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
+            MI_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
@@ -399,7 +399,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    MTS_INVOKE_VARIANT(mode, scene_static_accel_shutdown);
+    MI_INVOKE_VARIANT(mode, scene_static_accel_shutdown);
     color_management_static_shutdown();
     Profiler::static_shutdown();
     Bitmap::static_shutdown();
@@ -409,14 +409,14 @@ int main(int argc, char *argv[]) {
     Jit::static_shutdown();
 
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     if (string::starts_with(mode, "cuda_")) {
         printf("%s\n", jit_var_whos());
         jit_shutdown();
     }
 #endif
 
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
     if (string::starts_with(mode, "llvm_")) {
         printf("%s\n", jit_var_whos());
         jit_shutdown();

@@ -77,8 +77,8 @@ template <typename Point_, typename Spectrum_>
 struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
 
-    MTS_USING_TYPES(Float, Point, Vector, Wavelength)
-    MTS_USING_MEMBERS(o, d, maxt, time, wavelengths)
+    MI_USING_TYPES(Float, Point, Vector, Wavelength)
+    MI_USING_MEMBERS(o, d, maxt, time, wavelengths)
 
     Point o_x, o_y;
     Vector d_x, d_y;

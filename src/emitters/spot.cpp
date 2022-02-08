@@ -66,8 +66,8 @@ after which it remains at the maximum value. A projection texture may optionally
 template <typename Float, typename Spectrum>
 class SpotLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
-    MTS_IMPORT_TYPES(Scene, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
+    MI_IMPORT_TYPES(Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
@@ -124,7 +124,7 @@ public:
                                           const Point2f &spatial_sample,
                                           const Point2f & /*dir_sample*/,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample directional component
         Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float) m_cos_cutoff_angle);
@@ -147,7 +147,7 @@ public:
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f &/*sample*/,
                                                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
         ds.p        = m_to_world.value().translation();
@@ -188,7 +188,7 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f & /*sample*/,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         Vector3f center_dir = m_to_world.value() * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
@@ -244,7 +244,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_intensity;
     ref<Texture> m_texture;
@@ -253,6 +253,6 @@ private:
 };
 
 
-MTS_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
-MTS_EXPORT_PLUGIN(SpotLight, "Spot emitter")
+MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
+MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
 NAMESPACE_END(mitsuba)

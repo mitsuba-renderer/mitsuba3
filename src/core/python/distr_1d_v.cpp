@@ -1,13 +1,13 @@
 #include <mitsuba/core/distr_1d.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(DiscreteDistribution) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(DiscreteDistribution) {
+    MI_PY_IMPORT_TYPES()
 
     using DiscreteDistribution = mitsuba::DiscreteDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MTS_PY_STRUCT(DiscreteDistribution, py::module_local())
+    MI_PY_STRUCT(DiscreteDistribution, py::module_local())
         .def(py::init<>(), D(DiscreteDistribution))
         .def(py::init<const DiscreteDistribution &>(), "Copy constructor")
         .def(py::init<const FloatStorage &>(), "pmf"_a,
@@ -45,13 +45,13 @@ MTS_PY_EXPORT(DiscreteDistribution) {
         .def_repr(DiscreteDistribution);
 }
 
-MTS_PY_EXPORT(ContinuousDistribution) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(ContinuousDistribution) {
+    MI_PY_IMPORT_TYPES()
 
     using ContinuousDistribution = mitsuba::ContinuousDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MTS_PY_STRUCT(ContinuousDistribution, py::module_local())
+    MI_PY_STRUCT(ContinuousDistribution, py::module_local())
         .def(py::init<>(), D(ContinuousDistribution))
         .def(py::init<const ContinuousDistribution &>(), "Copy constructor")
         .def(py::init<const ScalarVector2f &, const FloatStorage &>(),
@@ -86,13 +86,13 @@ MTS_PY_EXPORT(ContinuousDistribution) {
         .def_repr(ContinuousDistribution);
 }
 
-MTS_PY_EXPORT(IrregularContinuousDistribution) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(IrregularContinuousDistribution) {
+    MI_PY_IMPORT_TYPES()
 
     using IrregularContinuousDistribution = mitsuba::IrregularContinuousDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MTS_PY_STRUCT(IrregularContinuousDistribution, py::module_local())
+    MI_PY_STRUCT(IrregularContinuousDistribution, py::module_local())
         .def(py::init<>(), D(IrregularContinuousDistribution))
         .def(py::init<const IrregularContinuousDistribution &>(), "Copy constructor")
         .def(py::init<const FloatStorage &, const FloatStorage &>(),

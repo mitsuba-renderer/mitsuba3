@@ -3,9 +3,9 @@
 #include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PySensor : public Sensor<Float, Spectrum> {
+MI_VARIANT class PySensor : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Sensor)
+    MI_IMPORT_TYPES(Sensor)
 
     PySensor(const Properties &props) : Sensor(props) { }
 
@@ -52,8 +52,8 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Sensor) {
-    MTS_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
+MI_PY_EXPORT(Sensor) {
+    MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
 
     py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
@@ -66,9 +66,9 @@ MTS_PY_EXPORT(Sensor) {
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
 
-    MTS_PY_REGISTER_OBJECT("register_sensor", Sensor)
+    MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
-    MTS_PY_CLASS(ProjectiveCamera, Sensor)
+    MI_PY_CLASS(ProjectiveCamera, Sensor)
         .def_method(ProjectiveCamera, near_clip)
         .def_method(ProjectiveCamera, far_clip)
         .def_method(ProjectiveCamera, focus_distance);
@@ -119,5 +119,5 @@ MTS_PY_EXPORT(Sensor) {
         bind_drjit_ptr_array(cls);
     }
 
-    MTS_PY_REGISTER_OBJECT("register_sensor", Sensor)
+    MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 }

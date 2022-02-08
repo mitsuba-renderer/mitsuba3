@@ -99,9 +99,9 @@ class MitsubaModule(types.ModuleType):
 
             try:
                 # No variant was set, try the default variant if possible
-                from .config import MTS_DEFAULT_VARIANT
-                if MTS_DEFAULT_VARIANT != "":
-                    set_variant(MTS_DEFAULT_VARIANT)
+                from .config import MI_DEFAULT_VARIANT
+                if MI_DEFAULT_VARIANT != "":
+                    set_variant(MI_DEFAULT_VARIANT)
                     return self.__getattribute__(key)
             except Exception:
                 pass
@@ -204,8 +204,8 @@ def variant():
 
 def variants():
     'Returns a list of all variants that have been compiled'
-    from .config import MTS_VARIANTS
-    return MTS_VARIANTS
+    from .config import MI_VARIANTS
+    return MI_VARIANTS
 
 
 # Cleanup

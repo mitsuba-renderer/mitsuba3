@@ -3,8 +3,8 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Volume) {
-    MTS_PY_CLASS(Volume, Object)
+MI_PY_EXPORT(Volume) {
+    MI_PY_CLASS(Volume, Object)
         .def(py::init<const Properties &>())
         .def("eval",
             py::overload_cast<const Interaction3f&, Mask>(

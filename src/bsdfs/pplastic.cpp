@@ -124,8 +124,8 @@ The following XML snippet describes the purple material from the test scene abov
 template <typename Float, typename Spectrum>
 class PolarizedPlastic final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     PolarizedPlastic(const Properties &props) : Base(props) {
         m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
@@ -169,7 +169,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -214,7 +214,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -333,7 +333,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -410,7 +410,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     /// Diffuse reflectance component
     ref<Texture> m_diffuse_reflectance;
@@ -431,6 +431,6 @@ private:
     Float m_specular_sampling_weight;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(PolarizedPlastic, BSDF)
-MTS_EXPORT_PLUGIN(PolarizedPlastic, "Polarized plastic")
+MI_IMPLEMENT_CLASS_VARIANT(PolarizedPlastic, BSDF)
+MI_EXPORT_PLUGIN(PolarizedPlastic, "Polarized plastic")
 NAMESPACE_END(mitsuba)

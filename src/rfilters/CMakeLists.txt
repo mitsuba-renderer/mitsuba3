@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "rfilters")
+set(MI_PLUGIN_PREFIX "rfilters")
 
 add_plugin(box        box.cpp)
 add_plugin(tent       tent.cpp)

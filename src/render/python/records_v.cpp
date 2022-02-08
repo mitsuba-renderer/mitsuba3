@@ -3,8 +3,8 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(PositionSample) {
-    MTS_PY_IMPORT_TYPES(ObjectPtr)
+MI_PY_EXPORT(PositionSample) {
+    MI_PY_IMPORT_TYPES(ObjectPtr)
     auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample))
         .def(py::init<>(), "Construct an unitialized position sample")
         .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)
@@ -18,11 +18,11 @@ MTS_PY_EXPORT(PositionSample) {
         .def_readwrite("delta",  &PositionSample3f::delta,  D(PositionSample, delta))
         .def_repr(PositionSample3f);
 
-    MTS_PY_DRJIT_STRUCT(pos, PositionSample3f, p, n, uv, time, pdf, delta)
+    MI_PY_DRJIT_STRUCT(pos, PositionSample3f, p, n, uv, time, pdf, delta)
 }
 
-MTS_PY_EXPORT(DirectionSample) {
-    MTS_PY_IMPORT_TYPES(ObjectPtr)
+MI_PY_EXPORT(DirectionSample) {
+    MI_PY_IMPORT_TYPES(ObjectPtr)
     auto pos = py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample))
         .def(py::init<>(), "Construct an unitialized direct sample")
         .def(py::init<const PositionSample3f &>(), "Construct from a position sample", "other"_a)
@@ -39,5 +39,5 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))
         .def_repr(DirectionSample3f);
 
-    MTS_PY_DRJIT_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, emitter, d, dist)
+    MI_PY_DRJIT_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, emitter, d, dist)
 }

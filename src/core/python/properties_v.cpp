@@ -53,8 +53,8 @@ py::object properties_get(const Properties& p, const std::string &key) {
 }
 
 
-MTS_PY_EXPORT(Properties) {
-    MTS_PY_CHECK_ALIAS(Properties, "Properties") {
+MI_PY_EXPORT(Properties) {
+    MI_PY_CHECK_ALIAS(Properties, "Properties") {
         using Color3f = Color<float, 3>;
         using Color3d = Color<double, 3>;
 

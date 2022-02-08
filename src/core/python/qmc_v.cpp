@@ -2,8 +2,8 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(qmc) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(qmc) {
+    MI_PY_IMPORT_TYPES()
 
     py::class_<RadicalInverse, Object, ref<RadicalInverse>>(m, "RadicalInverse", D(RadicalInverse),
                                                             py::module_local())

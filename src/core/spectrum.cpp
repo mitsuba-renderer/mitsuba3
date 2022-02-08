@@ -45,9 +45,9 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 
     const int steps = 1000;
     for (int i = 0; i < steps; ++i) {
-        Scalar x = (Scalar) MTS_CIE_MIN +
-                   (i / (Scalar)(steps - 1)) * ((Scalar) MTS_CIE_MAX -
-                                                (Scalar) MTS_CIE_MIN);
+        Scalar x = (Scalar) MI_CIE_MIN +
+                   (i / (Scalar)(steps - 1)) * ((Scalar) MI_CIE_MAX -
+                                                (Scalar) MI_CIE_MIN);
 
         if (x < wavelengths.front() || x > wavelengths.back())
             continue;
@@ -72,7 +72,7 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
     }
 
     // Last specified value repeats implicitly
-    color *= ((Scalar) MTS_CIE_MAX - (Scalar) MTS_CIE_MIN) / (Scalar) steps;
+    color *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) / (Scalar) steps;
     color = xyz_to_srgb(color);
 
     if (bounded && dr::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
@@ -87,17 +87,17 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 }
 
 /// Explicit instantiations
-template MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
+template MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                                 std::vector<float> &wavelengths,
                                                 std::vector<float> &values);
-template MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
+template MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                                 std::vector<double> &wavelengths,
                                                 std::vector<double> &values);
 
-template MTS_EXPORT_LIB Color<float, 3>
+template MI_EXPORT_LIB Color<float, 3>
 spectrum_list_to_srgb(const std::vector<float> &wavelengths,
                       const std::vector<float> &values, bool bounded);
-template MTS_EXPORT_LIB Color<double, 3>
+template MI_EXPORT_LIB Color<double, 3>
 spectrum_list_to_srgb(const std::vector<double> &wavelengths,
                       const std::vector<double> &values, bool bounded);
 
@@ -106,7 +106,7 @@ spectrum_list_to_srgb(const std::vector<double> &wavelengths,
 // =======================================================================
 using Float = float;
 
-static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
+static const Float cie1931_tbl[MI_CIE_SAMPLES * 3] = {
     Float(0.000129900000), Float(0.000232100000), Float(0.000414900000), Float(0.000741600000),
     Float(0.001368000000), Float(0.002236000000), Float(0.004243000000), Float(0.007650000000),
     Float(0.014310000000), Float(0.023190000000), Float(0.043510000000), Float(0.077630000000),
@@ -185,21 +185,21 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
 
 NAMESPACE_BEGIN(detail)
 CIE1932Tables<float> color_space_tables_scalar;
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
 CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
 #endif
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
 #endif
 NAMESPACE_END(detail)
 
 void color_management_static_initialization(bool cuda, bool llvm) {
     detail::color_space_tables_scalar.initialize(cie1931_tbl);
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
     if (llvm)
         detail::color_space_tables_llvm.initialize(cie1931_tbl);
 #endif
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     if (cuda)
         detail::color_space_tables_cuda.initialize(cie1931_tbl);
 #endif
@@ -208,10 +208,10 @@ void color_management_static_initialization(bool cuda, bool llvm) {
 
 void color_management_static_shutdown() {
     detail::color_space_tables_scalar.release();
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
     detail::color_space_tables_llvm.release();
 #endif
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     detail::color_space_tables_cuda.release();
 #endif
 }

@@ -56,8 +56,8 @@ The following snippet describes a two-sided diffuse material:
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES()
 
     TwoSidedBRDF(const Properties &props) : Base(props) {
         auto bsdfs = props.objects();
@@ -96,7 +96,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         using Result = std::pair<BSDFSample3f, Spectrum>;
 
@@ -132,7 +132,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx_, const SurfaceInteraction3f &si_,
                   const Vector3f &wo_, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
@@ -167,7 +167,7 @@ public:
 
     Float pdf(const BSDFContext &ctx_, const SurfaceInteraction3f &si_,
               const Vector3f &wo_, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
@@ -203,7 +203,7 @@ public:
                                         const SurfaceInteraction3f &si_,
                                         const Vector3f &wo_,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
@@ -254,11 +254,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Base> m_brdf[2];
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)
-MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter")
+MI_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)
+MI_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter")
 NAMESPACE_END(mitsuba)

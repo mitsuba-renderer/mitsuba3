@@ -14,10 +14,10 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
+class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
+    MI_IMPORT_TYPES()
+    MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                     m_interior_medium, m_exterior_medium)
 
     // Mesh is always stored in single precision
@@ -83,7 +83,7 @@ public:
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
-    MTS_INLINE auto face_indices(Index index,
+    MI_INLINE auto face_indices(Index index,
                                  dr::mask_t<Index> active = true) const {
         using Result = dr::Array<dr::uint32_array_t<Index>, 3>;
         return dr::gather<Result>(m_faces, index, active);
@@ -91,7 +91,7 @@ public:
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_position(Index index,
+    MI_INLINE auto vertex_position(Index index,
                                     dr::mask_t<Index> active = true) const {
         using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 3>;
         return dr::gather<Result>(m_vertex_positions, index, active);
@@ -99,7 +99,7 @@ public:
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_normal(Index index,
+    MI_INLINE auto vertex_normal(Index index,
                                   dr::mask_t<Index> active = true) const {
         using Result = Normal<dr::replace_scalar_t<Index, InputFloat>, 3>;
         return dr::gather<Result>(m_vertex_normals, index, active);
@@ -107,7 +107,7 @@ public:
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_texcoord(Index index,
+    MI_INLINE auto vertex_texcoord(Index index,
                                     dr::mask_t<Index> active = true) const {
         using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 2>;
         return dr::gather<Result>(m_vertex_texcoords, index, active);
@@ -210,7 +210,7 @@ public:
 
         Faces fi;
         Point3T p0, p1, p2;
-#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
         // Ensure we don't rely on drjit-core when called from an LLVM kernel
         if constexpr (!dr::is_array_v<T> && dr::is_llvm_array_v<Float>) {
             fi = dr::gather<Faces>(m_faces_ptr, index, active);
@@ -230,7 +230,7 @@ public:
         return { dr::select(hit, t, dr::Infinity<T>), uv };
     }
 
-    MTS_INLINE PreliminaryIntersection3f
+    MI_INLINE PreliminaryIntersection3f
     ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
                            Mask active = true) const {
         PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
@@ -241,12 +241,12 @@ public:
     }
 
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
-    MTS_INLINE std::pair<ScalarFloat, ScalarPoint2f>
+    MI_INLINE std::pair<ScalarFloat, ScalarPoint2f>
     ray_intersect_triangle_scalar(const ScalarUInt32 &index, const ScalarRay3f &ray) const {
         return ray_intersect_triangle_impl<ScalarFloat>(index, ray, true);
     }
 
-#define MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(N)                            \
+#define MI_DECLARE_RAY_INTERSECT_TRI_PACKET(N)                            \
     using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;                \
     using MaskP##N    = dr::mask_t<FloatP##N>;                             \
     using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                     \
@@ -260,16 +260,16 @@ public:
         return ray_intersect_triangle_impl<FloatP##N>(index, ray, active); \
     }
 
-    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(4)
-    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
-    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
+    MI_DECLARE_RAY_INTERSECT_TRI_PACKET(4)
+    MI_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
+    MI_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) override;
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
     virtual void optix_prepare_geometry() override;
     virtual void optix_build_input(OptixBuildInput&) const override;
@@ -362,7 +362,7 @@ protected:
         return { t, { u, v }, active };
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     enum MeshAttributeType {
@@ -436,7 +436,7 @@ protected:
 
     mutable DynamicBuffer<UInt32> m_faces;
 
-#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     /* Data pointer to ensure triangle intersection routine doesn't rely on
        drjit-core when called from an LLVM kernel */
     float* m_vertex_positions_ptr;
@@ -445,7 +445,7 @@ protected:
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     mutable void* m_vertex_buffer_ptr = nullptr;
 #endif
 
@@ -462,5 +462,5 @@ protected:
     ref<Scene<Float, Spectrum>> m_parameterization;
 };
 
-MTS_EXTERN_CLASS(Mesh)
+MI_EXTERN_CLASS(Mesh)
 NAMESPACE_END(mitsuba)
