@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "spectra")
+set(MI_PLUGIN_PREFIX "spectra")
 
 add_plugin(blackbody blackbody.cpp)
 add_plugin(uniform uniform.cpp)

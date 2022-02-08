@@ -33,10 +33,10 @@ Options:
         Rendering mode. Defines a combination of floating point
         and color types.
 
-        Default: )" MTS_DEFAULT_VARIANT R"(
+        Default: )" MI_DEFAULT_VARIANT R"(
 
         Available modes:
-              )" << string::indent(MTS_VARIANTS, 14) << R"(
+              )" << string::indent(MI_VARIANTS, 14) << R"(
     -v, --verbose
         Be more verbose. (can be specified multiple times)
 

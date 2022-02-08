@@ -10,7 +10,7 @@ static RTCDevice embree_device = nullptr;
 
 template <typename Float>
 struct EmbreeState {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
@@ -79,7 +79,7 @@ void rtcIntersect32(const int *valid, RTCScene scene,
     }
 }
 
-MTS_VARIANT void
+MI_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     if (!embree_device) {
         embree_threads = std::max((uint32_t) 1, pool_size());
@@ -118,7 +118,7 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     if constexpr (dr::is_llvm_array_v<Float>)
         dr::sync_thread();
 
@@ -168,7 +168,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     if constexpr (dr::is_llvm_array_v<Float>) {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
@@ -193,7 +193,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     m_accel = nullptr;
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       Mask coherent,
                                                       Mask active) const {
@@ -326,7 +326,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
     if constexpr (!dr::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_cpu(ray, coherent, active);
@@ -340,7 +340,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, 
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     using Single = dr::float32_array_t<Float>;
@@ -419,7 +419,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray,
                                                 Mask active) const {
     return ray_intersect_cpu(ray, +RayFlags::All, false, active);

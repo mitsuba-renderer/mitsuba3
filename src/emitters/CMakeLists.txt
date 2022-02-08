@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "emitters")
+set(MI_PLUGIN_PREFIX "emitters")
 
 add_plugin(area            area.cpp)
 add_plugin(point           point.cpp)

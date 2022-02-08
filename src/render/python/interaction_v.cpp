@@ -6,8 +6,8 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Interaction) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Interaction) {
+    MI_PY_IMPORT_TYPES()
     auto it = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction))
         // Members
         .def_field(Interaction3f, t,           D(Interaction, t))
@@ -28,11 +28,11 @@ MTS_PY_EXPORT(Interaction) {
         .def("zero_",        &Interaction3f::zero_, D(Interaction, zero))
         .def_repr(Interaction3f);
 
-    MTS_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
+    MI_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
 }
 
-MTS_PY_EXPORT(SurfaceInteraction) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(SurfaceInteraction) {
+    MI_PY_IMPORT_TYPES()
     auto si =
         py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
                                                         D(SurfaceInteraction))
@@ -90,13 +90,13 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_n_partials))
         .def_repr(SurfaceInteraction3f);
 
-    MTS_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
+    MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
                         shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                         duv_dy, wi, prim_index, instance, boundary_test)
 }
 
-MTS_PY_EXPORT(MediumInteraction) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(MediumInteraction) {
+    MI_PY_IMPORT_TYPES()
     auto mi =
         py::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
@@ -117,13 +117,13 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
-    MTS_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
+    MI_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
                         medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
                         combined_extinction, mint)
 }
 
-MTS_PY_EXPORT(PreliminaryIntersection) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(PreliminaryIntersection) {
+    MI_PY_IMPORT_TYPES()
 
     m.def("has_flag", [](uint32_t f0, RayFlags f1) { return has_flag(f0, f1); });
 
@@ -149,6 +149,6 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
         .def_repr(PreliminaryIntersection3f);
 
-    MTS_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
+    MI_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
                         shape_index, shape, instance);
 }

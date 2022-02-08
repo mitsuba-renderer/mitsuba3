@@ -10,7 +10,7 @@ namespace ng = nanogui;
 /**
  * \brief Main class of the Mitsuba user interface
  */
-class MTS_EXPORT_UI MitsubaViewer : public ng::Screen {
+class MI_EXPORT_UI MitsubaViewer : public ng::Screen {
 public:
     struct Tab;
 

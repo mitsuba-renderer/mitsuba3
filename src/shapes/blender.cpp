@@ -62,11 +62,11 @@ in the mitsuba2-blender addon for an example.
 template <typename Float, typename Spectrum>
 class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, m_face_normals,
                     add_attribute, initialize)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::MeshAttributeType;
     using typename Base::ScalarSize;
@@ -325,9 +325,9 @@ public:
         initialize();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
-MTS_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
+MI_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
+MI_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
 NAMESPACE_END(mitsuba)

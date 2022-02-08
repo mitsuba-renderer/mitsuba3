@@ -141,8 +141,8 @@ implementation of the underlying Fresnel equations.
 template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
         std::string material = props.string("material", "none");
@@ -199,7 +199,7 @@ public:
                                              Float /* sample1 */,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
@@ -277,7 +277,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -347,7 +347,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -386,7 +386,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -494,7 +494,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
@@ -510,6 +510,6 @@ private:
     ref<Texture> m_specular_reflectance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
-MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor")
+MI_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
+MI_EXPORT_PLUGIN(RoughConductor, "Rough conductor")
 NAMESPACE_END(mitsuba)

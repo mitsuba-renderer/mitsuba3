@@ -60,10 +60,10 @@ columns and the rows.
 template <typename Float, typename Spectrum>
 class MultijitterSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
+    MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
                     m_samples_per_wavefront, m_dimension_index,
                     current_sample_index, compute_per_sequence_seed)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     MultijitterSampler(const Properties &props) : Base(props) {
         m_jitter = props.get<bool>("jitter", true);
@@ -164,7 +164,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 private:
     MultijitterSampler(const MultijitterSampler &sampler) : Base(sampler) {
@@ -188,6 +188,6 @@ private:
     UInt32 m_permutation_seed;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MultijitterSampler, Sampler)
-MTS_EXPORT_PLUGIN(MultijitterSampler, "Correlated Multi-Jittered Sampler");
+MI_IMPLEMENT_CLASS_VARIANT(MultijitterSampler, Sampler)
+MI_EXPORT_PLUGIN(MultijitterSampler, "Correlated Multi-Jittered Sampler");
 NAMESPACE_END(mitsuba)

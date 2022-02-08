@@ -37,8 +37,8 @@ isotropic- (g=0) to forward (g>0) scattering.
 template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
-    MTS_IMPORT_TYPES(PhaseFunctionContext)
+    MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
+    MI_IMPORT_TYPES(PhaseFunctionContext)
 
     HGPhaseFunction(const Properties &props) : Base(props) {
         m_g = props.get<ScalarFloat>("g", 0.8f);
@@ -50,7 +50,7 @@ public:
         m_components.push_back(m_flags); // TODO: check
     }
 
-    MTS_INLINE Float eval_hg(Float cos_theta) const {
+    MI_INLINE Float eval_hg(Float cos_theta) const {
         Float temp = 1.0f + m_g * m_g + 2.0f * m_g * cos_theta;
         return dr::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * dr::sqrt(temp));
     }
@@ -60,7 +60,7 @@ public:
                                       Float /* sample1 */,
                                       const Point2f &sample2,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta;
         if (dr::abs(m_g) < dr::Epsilon<ScalarFloat>) {
@@ -80,7 +80,7 @@ public:
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,
                const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return eval_hg(dr::dot(wo, mi.wi));
     }
 
@@ -96,12 +96,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ScalarFloat m_g;
 
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(HGPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(HGPhaseFunction, "Henyey-Greenstein phase function")
+MI_IMPLEMENT_CLASS_VARIANT(HGPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(HGPhaseFunction, "Henyey-Greenstein phase function")
 NAMESPACE_END(mitsuba)

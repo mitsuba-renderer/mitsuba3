@@ -15,10 +15,10 @@ NAMESPACE_BEGIN(mitsuba)
  * Please see the documentation of gridvolume (grid3d.cpp) for the file format
  * specification.
  */
-MTS_VARIANT
-class MTS_EXPORT_LIB VolumeGrid : public Object {
+MI_VARIANT
+class MI_EXPORT_LIB VolumeGrid : public Object {
 public:
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
     ScalarTransform4f bbox_transform() const {
@@ -88,7 +88,7 @@ public:
     /// Return a human-readable summary of this volume grid
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     void read(Stream *stream);
@@ -102,5 +102,5 @@ protected:
     ScalarFloat m_max;
 };
 
-MTS_EXTERN_CLASS(VolumeGrid)
+MI_EXTERN_CLASS(VolumeGrid)
 NAMESPACE_END(mitsuba)

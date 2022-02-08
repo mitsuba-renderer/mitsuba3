@@ -1293,7 +1293,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generatedBy"))
-        metadata.set_string("generatedBy", "Mitsuba version " MTS_VERSION);
+        metadata.set_string("generatedBy", "Mitsuba version " MI_VERSION);
 
     std::vector<std::string> keys = metadata.property_names();
 
@@ -1780,7 +1780,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generated_by"))
-        metadata.set_string("generated_by", "Mitsuba version " MTS_VERSION);
+        metadata.set_string("generated_by", "Mitsuba version " MI_VERSION);
 
     std::vector<std::string> keys = metadata.property_names();
     std::vector<std::string> values(keys.size());
@@ -2501,6 +2501,6 @@ void Bitmap::static_initialization() {
 
 void Bitmap::static_shutdown() { }
 
-MTS_IMPLEMENT_CLASS(Bitmap, Object)
+MI_IMPLEMENT_CLASS(Bitmap, Object)
 
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * It can be used, for example, to measure the precise amount of memory needed
  * to store serialized content.
  */
-class MTS_EXPORT_LIB DummyStream : public Stream {
+class MI_EXPORT_LIB DummyStream : public Stream {
 public:
     DummyStream();
 
@@ -42,7 +42,7 @@ public:
     //! @}
     // =========================================================================
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
 
     /// Protected destructor.

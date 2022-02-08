@@ -26,8 +26,8 @@ pixels be default.
 template <typename Float, typename Spectrum>
 class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MI_IMPORT_TYPES()
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation
@@ -91,13 +91,13 @@ public:
                            m_stddev, m_radius);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     ScalarFloat m_stddev;
     Float m_coeff[10];
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
-MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
+MI_IMPLEMENT_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
+MI_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)

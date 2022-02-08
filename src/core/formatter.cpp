@@ -65,7 +65,7 @@ std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS(Formatter, Object)
-MTS_IMPLEMENT_CLASS(DefaultFormatter, Formatter)
+MI_IMPLEMENT_CLASS(Formatter, Object)
+MI_IMPLEMENT_CLASS(DefaultFormatter, Formatter)
 
 NAMESPACE_END(mitsuba)

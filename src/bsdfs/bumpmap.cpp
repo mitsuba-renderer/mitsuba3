@@ -63,8 +63,8 @@ map. Note the we set the ``raw`` properties of the bump map ``bitmap`` object to
 template <typename Float, typename Spectrum>
 class BumpMap final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &[name, obj] : props.objects(false)) {
@@ -103,7 +103,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         // Sample nested BSDF with perturbed shading frame
         SurfaceInteraction3f perturbed_si(si);
@@ -124,7 +124,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
         SurfaceInteraction3f perturbed_si(si);
@@ -140,7 +140,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF pdf with perturbed shading frame
         SurfaceInteraction3f perturbed_si(si);
@@ -158,7 +158,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
         SurfaceInteraction3f perturbed_si(si);
@@ -214,13 +214,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)
-MTS_EXPORT_PLUGIN(BumpMap, "Bump map material adapter")
+MI_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)
+MI_EXPORT_PLUGIN(BumpMap, "Bump map material adapter")
 NAMESPACE_END(mitsuba)

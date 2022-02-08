@@ -1,8 +1,8 @@
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(fresnel) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(fresnel) {
+    MI_PY_IMPORT_TYPES()
     m.def("fresnel",
         &fresnel<Float>,
         "cos_theta_i"_a, "eta"_a, D(fresnel))

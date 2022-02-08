@@ -168,8 +168,8 @@ parameter:
 template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     SmoothDielectric(const Properties &props) : Base(props) {
 
@@ -204,7 +204,7 @@ public:
                                              Float sample1,
                                              const Point2f & /* sample2 */,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::DeltaTransmission, 1);
@@ -340,13 +340,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ScalarFloat m_eta;
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SmoothDielectric, BSDF)
-MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
+MI_IMPLEMENT_CLASS_VARIANT(SmoothDielectric, BSDF)
+MI_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
 NAMESPACE_END(mitsuba)

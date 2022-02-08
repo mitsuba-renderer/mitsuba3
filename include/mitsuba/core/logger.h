@@ -24,7 +24,7 @@ enum LogLevel : int {
  *
  * \ingroup libcore
  */
-class MTS_EXPORT_LIB Logger : public Object {
+class MI_EXPORT_LIB Logger : public Object {
 public:
     /// Construct a new logger with the given minimum log level
     Logger(LogLevel log_level = Debug);
@@ -116,7 +116,7 @@ public:
     /// Shutdown logging
     static void static_shutdown();
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Logger();
@@ -129,11 +129,11 @@ private:
 
 NAMESPACE_BEGIN(detail)
 
-[[noreturn]] extern MTS_EXPORT_LIB
+[[noreturn]] extern MI_EXPORT_LIB
 void Throw(LogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg);
 
-template <typename... Args> MTS_INLINE
+template <typename... Args> MI_INLINE
 static void Log(LogLevel level, const Class *class_,
                 const char *filename, int line, Args &&... args) {
     auto logger = mitsuba::Thread::thread()->logger();
@@ -159,20 +159,20 @@ NAMESPACE_END(detail)
 
 #if !defined(NDEBUG)
 /// Assert that a condition is true
-#define MTS_ASSERT1(cond) do { \
+#define MI_ASSERT1(cond) do { \
         if (!(cond)) Throw("Assertion \"%s\" failed in " \
             "%s:%i", #cond, __FILE__, __LINE__); \
     } while (0)
 
 /// Assertion with a customizable error explanation
-#define MTS_ASSERT2(cond, explanation) do { \
+#define MI_ASSERT2(cond, explanation) do { \
         if (!(cond)) Throw("Assertion \"%s\" failed in " \
             "%s:%i (" explanation ")", #cond, __FILE__, __LINE__); \
     } while (0)
 
 /// Expose both of the above macros using overloading, i.e. <tt>Assert(cond)</tt> or <tt>Assert(cond, explanation)</tt>
-#define Assert(...) MTS_EXPAND(MTS_EXPAND(MTS_CAT(MTS_ASSERT, \
-                MTS_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+#define Assert(...) MI_EXPAND(MI_EXPAND(MI_CAT(MI_ASSERT, \
+                MI_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
 #else
 #define Assert(...) ((void) 0)
 #endif  // !defined(NDEBUG)

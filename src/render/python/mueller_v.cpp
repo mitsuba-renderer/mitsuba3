@@ -2,8 +2,8 @@
 #include <mitsuba/python/python.h>
 #include <drjit/sphere.h>
 
-MTS_PY_EXPORT(mueller) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(mueller) {
+    MI_PY_IMPORT_TYPES()
 
     m.def("depolarizer", &mueller::depolarizer<Float>,
           "value"_a = 1.f, D(mueller, depolarizer));

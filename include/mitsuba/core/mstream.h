@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * The underlying memory storage of this implementation dynamically expands
  * as data is written to the stream, à la <tt>std::vector</tt>.
  */
-class MTS_EXPORT_LIB MemoryStream : public Stream {
+class MI_EXPORT_LIB MemoryStream : public Stream {
 public:
     using Stream::read;
     using Stream::write;
@@ -113,7 +113,7 @@ public:
     //! @}
     // =========================================================================
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
 
     /// Protected destructor

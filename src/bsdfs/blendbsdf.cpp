@@ -53,8 +53,8 @@ The following XML snippet describes the material shown above:
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
@@ -86,7 +86,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -126,7 +126,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -145,7 +145,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
@@ -164,7 +164,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -186,7 +186,7 @@ public:
                  pdf_0 * (1 - weight) + pdf_1 * weight };
     }
 
-    MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
+    MI_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
         return dr::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
@@ -206,12 +206,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Texture> m_weight;
     ref<Base> m_nested_bsdf[2];
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)
-MTS_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
+MI_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)
+MI_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
 NAMESPACE_END(mitsuba)

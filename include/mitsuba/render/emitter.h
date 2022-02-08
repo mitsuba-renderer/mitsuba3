@@ -47,12 +47,12 @@ enum class EmitterFlags : uint32_t {
     Delta        = DeltaPosition | DeltaDirection,
 };
 
-MTS_DECLARE_ENUM_OPERATORS(EmitterFlags)
+MI_DECLARE_ENUM_OPERATORS(EmitterFlags)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
+class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Endpoint, m_shape)
+    MI_IMPORT_BASE(Endpoint, m_shape)
 
     /// Is this an environment map light emitter?
     bool is_environment() const {
@@ -66,7 +66,7 @@ public:
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Emitter)
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Emitter(const Properties &props);
 
@@ -77,7 +77,7 @@ protected:
     uint32_t m_flags;
 };
 
-MTS_EXTERN_CLASS(Emitter)
+MI_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

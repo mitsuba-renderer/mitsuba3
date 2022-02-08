@@ -4,7 +4,7 @@
 
 template <typename ReconstructionFilter>
 void bind_rfilter(py::module &m, const char *name) {
-    MTS_PY_CHECK_ALIAS(ReconstructionFilter, name) {
+    MI_PY_CHECK_ALIAS(ReconstructionFilter, name) {
         py::class_<ReconstructionFilter, Object, ref<ReconstructionFilter>>(
             m, name, D(ReconstructionFilter))
             .def("border_size", &ReconstructionFilter::border_size,
@@ -21,8 +21,8 @@ void bind_rfilter(py::module &m, const char *name) {
     }
 }
 
-MTS_PY_EXPORT(rfilter) {
-    MTS_PY_IMPORT_TYPES(ReconstructionFilter)
+MI_PY_EXPORT(rfilter) {
+    MI_PY_IMPORT_TYPES(ReconstructionFilter)
     using BitmapReconstructionFilter = Bitmap::ReconstructionFilter;
 
     bind_rfilter<ReconstructionFilter>(m, "ReconstructionFilter");

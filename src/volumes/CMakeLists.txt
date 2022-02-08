@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "volumes")
+set(MI_PLUGIN_PREFIX "volumes")
 
 add_plugin(constvolume  const.cpp)
 add_plugin(gridvolume   grid.cpp)

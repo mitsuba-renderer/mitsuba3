@@ -26,9 +26,9 @@ NAMESPACE_BEGIN(mitsuba)
  * \endcode
  *
  */
-class MTS_EXPORT_LIB ArgParser {
+class MI_EXPORT_LIB ArgParser {
 public:
-    struct MTS_EXPORT_LIB Arg {
+    struct MI_EXPORT_LIB Arg {
         friend class ArgParser;
     public:
         /// Returns whether the argument has been specified

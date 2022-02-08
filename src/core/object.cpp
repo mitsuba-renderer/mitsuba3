@@ -39,5 +39,5 @@ std::ostream& operator<<(std::ostream &os, const Object *object) {
     return os;
 }
 
-MTS_IMPLEMENT_CLASS(Object,)
+MI_IMPLEMENT_CLASS(Object,)
 NAMESPACE_END(mitsuba)

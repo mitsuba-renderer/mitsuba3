@@ -2,11 +2,11 @@
 
 #include <mitsuba/core/object.h>
 
-#if defined(MTS_ENABLE_ITTNOTIFY)
+#if defined(MI_ENABLE_ITTNOTIFY)
 #  include <ittnotify.h>
 #endif
 
-#if defined(MTS_ENABLE_NVTX)
+#if defined(MI_ENABLE_NVTX)
 #  include <nvtx3/nvToolsExt.h>
 #endif
 
@@ -78,32 +78,32 @@ constexpr const char
         "Texture::eval()"
     };
 
-#if defined(MTS_ENABLE_ITTNOTIFY)
-extern MTS_EXPORT_LIB __itt_domain *mitsuba_itt_domain;
-extern MTS_EXPORT_LIB __itt_string_handle *
+#if defined(MI_ENABLE_ITTNOTIFY)
+extern MI_EXPORT_LIB __itt_domain *mitsuba_itt_domain;
+extern MI_EXPORT_LIB __itt_string_handle *
     mitsuba_itt_phase[int(ProfilerPhase::ProfilerPhaseCount)];
 #endif
 
 struct ScopedPhase {
     ScopedPhase(ProfilerPhase phase) {
         /// Interface with various external visual profilers
-#if defined(MTS_ENABLE_ITTNOTIFY)
+#if defined(MI_ENABLE_ITTNOTIFY)
         __itt_task_begin(mitsuba_itt_domain, __itt_null, __itt_null,
                          mitsuba_itt_phase[(int) phase]);
 #endif
 
-#if defined(MTS_ENABLE_NVTX)
+#if defined(MI_ENABLE_NVTX)
         nvtxRangePush(profiler_phase_id[(int) phase]);
 #endif
         (void) phase;
     }
 
     ~ScopedPhase() {
-#if defined(MTS_ENABLE_ITTNOTIFY)
+#if defined(MI_ENABLE_ITTNOTIFY)
         __itt_task_end(mitsuba_itt_domain);
 #endif
 
-#if defined(MTS_ENABLE_NVTX)
+#if defined(MI_ENABLE_NVTX)
         nvtxRangePop();
 #endif
     }
@@ -112,7 +112,7 @@ struct ScopedPhase {
     ScopedPhase &operator=(const ScopedPhase &) = delete;
 };
 
-class MTS_EXPORT_LIB Profiler {
+class MI_EXPORT_LIB Profiler {
 public:
     static void static_initialization();
     static void static_shutdown();

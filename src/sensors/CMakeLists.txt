@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "sensors")
+set(MI_PLUGIN_PREFIX "sensors")
 
 add_plugin(perspective     perspective.cpp)
 add_plugin(radiancemeter   radiancemeter.cpp)

@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Float_> struct Frame {
     using Float    = Float_;
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     Vector3f s, t;
     Normal3f n;

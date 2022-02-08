@@ -36,8 +36,8 @@ atmosphere).
 template <typename Float, typename Spectrum>
 class BlendPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
-    MTS_IMPORT_TYPES(PhaseFunctionContext, Volume)
+    MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
+    MI_IMPORT_TYPES(PhaseFunctionContext, Volume)
 
     BlendPhaseFunction(const Properties &props) : Base(props) {
         int phase_index = 0;
@@ -70,7 +70,7 @@ public:
                                       const MediumInteraction3f &mi,
                                       Float sample1, const Point2f &sample2,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float weight = eval_weight(mi, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
@@ -111,14 +111,14 @@ public:
         return { wo, pdf };
     }
 
-    MTS_INLINE Float eval_weight(const MediumInteraction3f &mi,
+    MI_INLINE Float eval_weight(const MediumInteraction3f &mi,
                                  const Mask &active) const {
         return dr::clamp(m_weight->eval_1(mi, active), 0.f, 1.f);
     }
 
     Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
                const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
 
         Float weight = eval_weight(mi, active);
 
@@ -157,12 +157,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Volume> m_weight;
     ref<Base> m_nested_phase[2];
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BlendPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(BlendPhaseFunction, "Blended phase function")
+MI_IMPLEMENT_CLASS_VARIANT(BlendPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(BlendPhaseFunction, "Blended phase function")
 NAMESPACE_END(mitsuba)

@@ -17,19 +17,19 @@
 #include <mitsuba/render/mesh.h>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
-#define MTS_KD_MAXDEPTH 48u
+#define MI_KD_MAXDEPTH 48u
 
 /// OrderedChunkAllocator: don't create chunks smaller than 5MiB
-#define MTS_KD_MIN_ALLOC 5*1024u*1024u
+#define MI_KD_MIN_ALLOC 5*1024u*1024u
 
 /// Grain size for parallelization
-#define MTS_KD_GRAIN_SIZE 10240u
+#define MI_KD_GRAIN_SIZE 10240u
 
 /**
  * Temporary scratch space that is used to cache intersection information
  * (# of floats)
  */
-#define MTS_KD_INTERSECTION_CACHE_SIZE 6
+#define MI_KD_INTERSECTION_CACHE_SIZE 6
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -48,7 +48,7 @@ NAMESPACE_BEGIN(detail)
  */
 class OrderedChunkAllocator {
 public:
-    OrderedChunkAllocator(size_t min_allocation = MTS_KD_MIN_ALLOC)
+    OrderedChunkAllocator(size_t min_allocation = MI_KD_MIN_ALLOC)
         : m_min_allocation(min_allocation) {
         m_chunks.reserve(4);
     }
@@ -472,7 +472,7 @@ public:
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /* ==================================================================== */
     /*                  Essential internal data structures                  */
@@ -839,7 +839,7 @@ protected:
             return *this;
         }
 
-        MTS_INLINE void put(BoundingBox bbox) {
+        MI_INLINE void put(BoundingBox bbox) {
             using IndexArray = dr::Array<Index, 3>;
             const IndexArray offset_min = IndexArray(0, 2 * m_bin_count, 4 * m_bin_count);
             const IndexArray offset_max = offset_min + 1;
@@ -989,7 +989,7 @@ protected:
             BoundingBox left_bounds, right_bounds;
 
             dr::parallel_for(
-                dr::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
+                dr::blocked_range<Size>(0u, Size(indices.size()), MI_KD_GRAIN_SIZE),
                 [&](const dr::blocked_range<Index> &range) {
                     IndexVector left_indices_local, right_indices_local;
                     BoundingBox left_bounds_local, right_bounds_local;
@@ -1148,7 +1148,7 @@ protected:
             MinMaxBins bins(derived.min_max_bins(), m_tight_bbox);
             std::mutex bins_mutex;
             dr::parallel_for(
-                dr::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
+                dr::blocked_range<Size>(0u, prim_count, MI_KD_GRAIN_SIZE),
                 [&](const dr::blocked_range<Index> &range) {
                     MinMaxBins bins_local(derived.min_max_bins(), m_tight_bbox);
                     for (Index i = range.begin(); i != range.end(); ++i)
@@ -1839,7 +1839,7 @@ protected:
         Size prim_count = derived().primitive_count();
         if (m_max_depth == 0)
             m_max_depth = (int) (8 + 1.3f * dr::log2i(prim_count));
-        m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
+        m_max_depth = std::min(m_max_depth, (Size) MI_KD_MAXDEPTH);
 
         Log(m_log_level, "kd-tree configuration:");
         Log(m_log_level, "   Cost model               : %s",
@@ -1902,7 +1902,7 @@ protected:
 
         m_indices.reset(new Index[m_index_count]);
         dr::parallel_for(
-            dr::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
+            dr::blocked_range<Size>(0u, m_index_count, MI_KD_GRAIN_SIZE),
             [&](const dr::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_indices[i] = ctx.index_storage[i];
@@ -1912,7 +1912,7 @@ protected:
 
         m_nodes.reset(new KDNode[m_node_count]);
         dr::parallel_for(
-            dr::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
+            dr::blocked_range<Size>(0u, m_node_count, MI_KD_GRAIN_SIZE),
             [&](const dr::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_nodes[i] = ctx.node_storage[i];
@@ -2120,11 +2120,11 @@ private:
 };
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scalar_t<Float>, 3>>, uint32_t,
+class MI_EXPORT_LIB ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scalar_t<Float>, 3>>, uint32_t,
                                                           SurfaceAreaHeuristic3<dr::scalar_t<Float>>,
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
-    MTS_IMPORT_TYPES(Shape, Mesh)
+    MI_IMPORT_TYPES(Shape, Mesh)
 
     using ScalarRay3f = Ray<Point<ScalarFloat, 3>, Spectrum>;
 
@@ -2173,19 +2173,19 @@ public:
     Shape *shape(size_t i) { Assert(i < m_shapes.size()); return m_shapes[i]; }
 
     /// Return the bounding box of the i-th primitive
-    MTS_INLINE ScalarBoundingBox3f bbox(Index i) const {
+    MI_INLINE ScalarBoundingBox3f bbox(Index i) const {
         Index shape_index = find_shape(i);
         return m_shapes[shape_index]->bbox(i);
     }
 
     /// Return the (clipped) bounding box of the i-th primitive
-    MTS_INLINE ScalarBoundingBox3f bbox(Index i, const ScalarBoundingBox3f &clip) const {
+    MI_INLINE ScalarBoundingBox3f bbox(Index i, const ScalarBoundingBox3f &clip) const {
         Index shape_index = find_shape(i);
         return m_shapes[shape_index]->bbox(i, clip);
     }
 
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                    Mask active) const {
         DRJIT_MARK_USED(active);
         if constexpr (!dr::is_array_v<Float>)
@@ -2195,7 +2195,7 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection<ScalarFloat, Shape>
+    MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
     ray_intersect_scalar(ScalarRay3f ray) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
@@ -2206,7 +2206,7 @@ public:
         };
 
         // Allocate the node stack
-        KDStackEntry stack[MTS_KD_MAXDEPTH];
+        KDStackEntry stack[MI_KD_MAXDEPTH];
         int32_t stack_index = 0;
 
         // Resulting intersection struct
@@ -2294,7 +2294,7 @@ public:
 
 #if 0
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_packet(Ray3f ray,
+    MI_INLINE PreliminaryIntersection3f ray_intersect_packet(Ray3f ray,
                                                               Mask active) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
@@ -2307,7 +2307,7 @@ public:
         };
 
         // Allocate the node stack
-        KDStackEntry stack[MTS_KD_MAXDEPTH];
+        KDStackEntry stack[MI_KD_MAXDEPTH];
         int32_t stack_index = 0;
 
         // Resulting intersection struct
@@ -2422,7 +2422,7 @@ public:
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f
+    MI_INLINE PreliminaryIntersection3f
     ray_intersect_naive(Ray3f ray, Mask active) const {
         if constexpr (!dr::is_array_v<Float>) {
             PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
@@ -2450,7 +2450,7 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /**
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific
@@ -2459,7 +2459,7 @@ protected:
      * The function returns the shape index and updates the \a idx parameter to
      * point to the primitive index (e.g. triangle ID) within the shape.
      */
-    MTS_INLINE Index find_shape(Index &i) const {
+    MI_INLINE Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
         Index shape_index = math::find_interval<Index>(
@@ -2486,7 +2486,7 @@ protected:
      * create a detailed intersection record.
      */
     template <bool ShadowRay = false>
-    MTS_INLINE PreliminaryIntersection<ScalarFloat, Shape>
+    MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
     intersect_prim(Index prim_index, const ScalarRay3f &ray) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
@@ -2524,5 +2524,5 @@ protected:
     std::vector<Size> m_primitive_map;
 };
 
-MTS_EXTERN_CLASS(ShapeKDTree)
+MI_EXTERN_CLASS(ShapeKDTree)
 NAMESPACE_END(mitsuba)

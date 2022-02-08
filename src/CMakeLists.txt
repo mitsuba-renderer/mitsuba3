@@ -14,7 +14,7 @@ set_target_properties(mitsuba PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 #  Other libraries
 # ----------------------------------------------------------
 
-if (MTS_ENABLE_GUI)
+if (MI_ENABLE_GUI)
     add_subdirectory(libui)
 endif()
 
@@ -24,7 +24,7 @@ endif()
 
 add_subdirectory(mitsuba)
 
-if (MTS_ENABLE_GUI)
+if (MI_ENABLE_GUI)
     add_subdirectory(mtsgui)
 endif()
 
@@ -50,6 +50,6 @@ add_subdirectory(volumes)
 #  Python bindings and extensions
 # ----------------------------------------------------------
 
-if (MTS_ENABLE_PYTHON)
+if (MI_ENABLE_PYTHON)
   add_subdirectory(python)
 endif()

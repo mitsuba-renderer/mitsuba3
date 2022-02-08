@@ -15,10 +15,10 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
+class MI_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Film, Sampler, Texture)
-    MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
+    MI_IMPORT_TYPES(Film, Sampler, Texture)
+    MI_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -148,7 +148,7 @@ public:
     }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Sensor)
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Sensor(const Properties &props);
 
@@ -184,10 +184,10 @@ protected:
  * \ingroup librender
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB ProjectiveCamera : public Sensor<Float, Spectrum> {
+class MI_EXPORT_LIB ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(Sensor)
+    MI_IMPORT_TYPES()
 
     /// Return the near clip plane distance
     ScalarFloat near_clip() const { return m_near_clip; }
@@ -205,7 +205,7 @@ public:
         Base::traverse(callback);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ProjectiveCamera(const Properties &props);
 
@@ -222,7 +222,7 @@ protected:
 // ========================================================================
 
 /// Helper function to parse the field of view field of a camera
-extern MTS_EXPORT_LIB double parse_fov(const Properties &props, double aspect);
+extern MI_EXPORT_LIB double parse_fov(const Properties &props, double aspect);
 
 /// Helper function to create a perspective projection transformation matrix
 template <typename Float> Transform<Point<Float, 4>>
@@ -266,8 +266,8 @@ perspective_projection(const Vector<int, 2> &film_size,
 //! @}
 // ========================================================================
 
-MTS_EXTERN_CLASS(Sensor)
-MTS_EXTERN_CLASS(ProjectiveCamera)
+MI_EXTERN_CLASS(Sensor)
+MI_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

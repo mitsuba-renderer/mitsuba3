@@ -14,11 +14,11 @@ extern Caster cast_object;
 template <typename Float, typename Spectrum>
 ref<Object> load_dict(const std::string& dict_key, const py::dict& dict, std::map<std::string, ref<Object>> &instances);
 
-/// Shorthand notation for accessing the MTS_VARIANT string
+/// Shorthand notation for accessing the MI_VARIANT string
 #define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
 
-MTS_PY_EXPORT(xml) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(xml) {
+    MI_PY_IMPORT_TYPES()
 
     m.def(
         "load_file",
@@ -174,7 +174,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
 template <typename Float, typename Spectrum>
 ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
                       std::map<std::string, ref<Object>> &instances) {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
     using ScalarArray3f = dr::Array<ScalarFloat, 3>;
 
     std::string type = get_type(dict);

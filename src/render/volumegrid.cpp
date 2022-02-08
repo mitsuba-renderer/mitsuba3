@@ -6,16 +6,16 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT
+MI_VARIANT
 VolumeGrid<Float, Spectrum>::VolumeGrid(Stream *stream) { read(stream); }
 
-MTS_VARIANT
+MI_VARIANT
 VolumeGrid<Float, Spectrum>::VolumeGrid(const fs::path &filename) {
     ref<FileStream> fs = new FileStream(filename);
     read(fs);
 }
 
-MTS_VARIANT
+MI_VARIANT
 VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
                                         ScalarUInt32 channel_count)
     : m_size(size), m_channel_count(channel_count),
@@ -24,7 +24,7 @@ VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
         new ScalarFloat[dr::hprod(m_size) * m_channel_count]);
 }
 
-MTS_VARIANT
+MI_VARIANT
 void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     char header[3];
     stream->read(header, 3);
@@ -79,13 +79,13 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
         m_size, m_max);
 }
 
-MTS_VARIANT
+MI_VARIANT
 void VolumeGrid<Float, Spectrum>::write(const fs::path &path) const {
     ref<FileStream> fs = new FileStream(path, FileStream::ETruncReadWrite);
     write(fs);
 }
 
-MTS_VARIANT
+MI_VARIANT
 void VolumeGrid<Float, Spectrum>::write(Stream *stream) const {
     stream->write("VOL", 3);
     stream->write(uint8_t(3)); // file format version
@@ -113,7 +113,7 @@ void VolumeGrid<Float, Spectrum>::write(Stream *stream) const {
     }
 }
 
-MTS_VARIANT
+MI_VARIANT
 std::string VolumeGrid<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "VolumeGrid[" << std::endl
@@ -126,7 +126,7 @@ std::string VolumeGrid<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(VolumeGrid, Object)
-MTS_INSTANTIATE_CLASS(VolumeGrid)
+MI_IMPLEMENT_CLASS_VARIANT(VolumeGrid, Object)
+MI_INSTANTIATE_CLASS(VolumeGrid)
 
 NAMESPACE_END(mitsuba)

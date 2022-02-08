@@ -49,8 +49,8 @@ template <typename Float, typename Spectrum>
 class SGGXPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags)
-    MTS_IMPORT_TYPES(PhaseFunctionContext, Volume)
+    MI_IMPORT_BASE(PhaseFunction, m_flags)
+    MI_IMPORT_TYPES(PhaseFunctionContext, Volume)
 
     SGGXPhaseFunction(const Properties &props) : Base(props) {
         // m_diffuse    = props.get<bool>("diffuse", false);
@@ -59,7 +59,7 @@ public:
         dr::set_attr(this, "flags", m_flags);
     }
 
-    MTS_INLINE
+    MI_INLINE
     dr::Array<Float, 6> eval_ndf_params(const MediumInteraction3f &mi, Mask active) const {
         return m_ndf_params->eval_6(mi, active);
     }
@@ -69,7 +69,7 @@ public:
                                       const Float /* sample1 */,
                                       const Point2f &sample2,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
         auto s = eval_ndf_params(mi, active);
         auto sampled_n = sggx_sample_vndf(mi.sh_frame, sample2, s);
 
@@ -91,7 +91,7 @@ public:
     Float eval(const PhaseFunctionContext & /* ctx */,
                const MediumInteraction3f &mi, const Vector3f &wo,
                Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         auto s = eval_ndf_params(mi, active);
         /* if (m_diffuse) {
             auto sampled_n = sggx_sample_vndf(mi.sh_frame, ctx.sampler->next_2d(active), s);
@@ -119,12 +119,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     // bool m_diffuse;
     ref<Volume> m_ndf_params;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SGGXPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(SGGXPhaseFunction, "SGGX phase function")
+MI_IMPLEMENT_CLASS_VARIANT(SGGXPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(SGGXPhaseFunction, "SGGX phase function")
 NAMESPACE_END(mitsuba)

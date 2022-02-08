@@ -59,7 +59,7 @@ public:
 
 NAMESPACE_END(mitsuba)
 
-MTS_PY_EXPORT(Thread) {
+MI_PY_EXPORT(Thread) {
     auto thr = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread));
 
     py::enum_<Thread::EPriority>(thr, "EPriority", D(Thread, EPriority))

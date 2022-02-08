@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \sa ref, Object
  */
-class MTS_EXPORT_LIB Class {
+class MI_EXPORT_LIB Class {
 public:
     using ConstructFunctor   = std::function<Object *(const Properties &props)>;
     using UnserializeFunctor = std::function<Object *(Stream *stream)>;
@@ -30,7 +30,7 @@ public:
      * \brief Construct a new class descriptor
      *
      * This method should never be called manually. Instead, use
-     * the \ref MTS_DECLARE_CLASS macro to automatically do this for you.
+     * the \ref MI_DECLARE_CLASS macro to automatically do this for you.
      *
      * \param name
      *     Name of the class
@@ -125,17 +125,17 @@ private:
 /**
  * \brief Return the \ref Class object corresponding to a named class.
  *
- * Call the Macro without quotes, e.g. \c MTS_CLASS(SerializableObject)
+ * Call the Macro without quotes, e.g. \c MI_CLASS(SerializableObject)
  */
-#define MTS_CLASS(x) x::m_class
+#define MI_CLASS(x) x::m_class
 
-extern MTS_EXPORT_LIB const Class* m_class;
+extern MI_EXPORT_LIB const Class* m_class;
 
 /**
  * \brief This macro should be invoked in the class declaration of classes
  * that directly or indirectly derive from \ref Object.
  */
-#define MTS_DECLARE_CLASS()                         \
+#define MI_DECLARE_CLASS()                         \
     virtual const Class *class_() const override;   \
 public:                                             \
     static Class *m_class;
@@ -154,7 +154,7 @@ public:                                             \
  *     MyObject();
  *
  *     /// Declare RTTI data structures
- *     MTS_DECLARE_CLASS()
+ *     MI_DECLARE_CLASS()
  * protected:
  *     /// Important: declare a protected virtual destructor
  *     virtual ~MyObject();
@@ -163,16 +163,16 @@ public:                                             \
  *
  * /// in .cpp file
  * /// Implement RTTI data structures
- * MTS_IMPLEMENT_CLASS(MyObject, Object)
+ * MI_IMPLEMENT_CLASS(MyObject, Object)
  * \endcode
  *
  * The virtual protected destructure ensures that instances can only be
  * deallocated using the reference counting wrapper \ref ref.
  *
- * \sa MTS_IMPLEMENT_CLASS
+ * \sa MI_IMPLEMENT_CLASS
  */
 
-#define MTS_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
+#define MI_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
     Class *Name::m_class = new Class(                                                              \
         #Name, #Parent, "",                                                                        \
         ::mitsuba::detail::get_construct_functor<Name>(),                                          \
@@ -190,25 +190,25 @@ public:                                             \
  * The virtual protected destructure ensures that instances can only be
  * deallocated using the reference counting wrapper \ref ref.
  *
- * \sa MTS_IMPLEMENT_CLASS_VARIANT
+ * \sa MI_IMPLEMENT_CLASS_VARIANT
  */
-#define MTS_IMPLEMENT_CLASS_VARIANT(Name, Parent, ...)                                             \
-    MTS_VARIANT Class *Name<Float, Spectrum>::m_class = new Class(                                 \
+#define MI_IMPLEMENT_CLASS_VARIANT(Name, Parent, ...)                                             \
+    MI_VARIANT Class *Name<Float, Spectrum>::m_class = new Class(                                 \
         #Name, #Parent,                                                                            \
         ::mitsuba::detail::get_variant<Float, Spectrum>(),                                         \
         ::mitsuba::detail::get_construct_functor<Name<Float, Spectrum>>(),                         \
         ::mitsuba::detail::get_unserialize_functor<Name<Float, Spectrum>>(),                       \
          ## __VA_ARGS__);                                                                          \
-    MTS_VARIANT const Class *Name<Float, Spectrum>::class_() const { return m_class; }
+    MI_VARIANT const Class *Name<Float, Spectrum>::class_() const { return m_class; }
 
 
 /// Instantiate and export a Mitsuba plugin
-#define MTS_EXPORT_PLUGIN(Name, Descr)                                                             \
+#define MI_EXPORT_PLUGIN(Name, Descr)                                                             \
     extern "C" {                                                                                   \
-        MTS_EXPORT const char *plugin_name() { return #Name; }                                     \
-        MTS_EXPORT const char *plugin_descr() { return Descr; }                                    \
+        MI_EXPORT const char *plugin_name() { return #Name; }                                     \
+        MI_EXPORT const char *plugin_descr() { return Descr; }                                    \
     }                                                                                              \
-    MTS_INSTANTIATE_CLASS(Name)
+    MI_INSTANTIATE_CLASS(Name)
 
 NAMESPACE_BEGIN(detail)
 template <typename, typename Arg, typename = void>

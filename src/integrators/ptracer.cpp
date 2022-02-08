@@ -51,9 +51,9 @@ useful in wavefront mode.
 template <typename Float, typename Spectrum>
 class ParticleTracerIntegrator final : public AdjointIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_hide_emitters,
+    MI_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_hide_emitters,
                     m_rr_depth, m_max_depth)
-    MTS_IMPORT_TYPES(Scene, Sensor, Film, Sampler, ImageBlock, Emitter,
+    MI_IMPORT_TYPES(Scene, Sensor, Film, Sampler, ImageBlock, Emitter,
                      EmitterPtr, BSDF, BSDFPtr)
 
     ParticleTracerIntegrator(const Properties &props) : Base(props) { }
@@ -360,9 +360,9 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, AdjointIntegrator);
-MTS_EXPORT_PLUGIN(ParticleTracerIntegrator, "Particle Tracer integrator");
+MI_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, AdjointIntegrator);
+MI_EXPORT_PLUGIN(ParticleTracerIntegrator, "Particle Tracer integrator");
 NAMESPACE_END(mitsuba)

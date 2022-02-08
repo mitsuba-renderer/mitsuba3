@@ -2,6 +2,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_INSTANTIATE_CLASS(MicrofacetDistribution)
+MI_INSTANTIATE_CLASS(MicrofacetDistribution)
 
 NAMESPACE_END(mitsuba)

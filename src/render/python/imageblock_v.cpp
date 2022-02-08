@@ -2,9 +2,9 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(ImageBlock) {
-    MTS_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
-    MTS_PY_CLASS(ImageBlock, Object)
+MI_PY_EXPORT(ImageBlock) {
+    MI_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
+    MI_PY_CLASS(ImageBlock, Object)
         .def(py::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool, bool,
                       bool>(),

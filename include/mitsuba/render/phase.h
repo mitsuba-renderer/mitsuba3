@@ -47,9 +47,9 @@ template <typename UInt32> constexpr auto has_flag(UInt32 flags, PhaseFunctionFl
  * the evaluation or sampling functions need additional random numbers.
  *
  */
-MTS_VARIANT
-struct MTS_EXPORT_LIB PhaseFunctionContext {
-    MTS_IMPORT_TYPES(Sampler);
+MI_VARIANT
+struct MI_EXPORT_LIB PhaseFunctionContext {
+    MI_IMPORT_TYPES(Sampler);
 
     // =============================================================
     //! @{ \name Fields
@@ -114,10 +114,10 @@ struct MTS_EXPORT_LIB PhaseFunctionContext {
  * Mitsuba. It exposes functions for evaluating and sampling the model.
  */
 
-MTS_VARIANT
-class MTS_EXPORT_LIB PhaseFunction : public Object {
+MI_VARIANT
+class MI_EXPORT_LIB PhaseFunction : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunctionContext);
+    MI_IMPORT_TYPES(PhaseFunctionContext);
 
     /**
      * \brief Importance sample the phase function model
@@ -219,7 +219,7 @@ public:
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::PhaseFunction)
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     PhaseFunction(const Properties &props);
     virtual ~PhaseFunction();
@@ -235,7 +235,7 @@ protected:
     std::string m_id;
 };
 
-MTS_VARIANT
+MI_VARIANT
 std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spectrum>& ctx) {
     os << "PhaseFunctionContext[" << std::endl
        << "  mode = " << ctx.mode << "," << std::endl
@@ -251,7 +251,7 @@ std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spe
 
 //! @}
 // -----------------------------------------------------------------------
-MTS_EXTERN_CLASS(PhaseFunction)
+MI_EXTERN_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

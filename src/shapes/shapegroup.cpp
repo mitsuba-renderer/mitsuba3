@@ -59,15 +59,15 @@ where only a few distinct types of trees have to be kept in memory. An example i
 template <typename Float, typename Spectrum>
 class ShapeGroupPlugin final : public ShapeGroup<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ShapeGroup)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(ShapeGroup)
+    MI_IMPORT_TYPES()
 
     ShapeGroupPlugin(const Properties &props) : Base(props) { }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ShapeGroupPlugin, ShapeGroup)
-MTS_EXPORT_PLUGIN(ShapeGroupPlugin, "Shape group plugin")
+MI_IMPLEMENT_CLASS_VARIANT(ShapeGroupPlugin, ShapeGroup)
+MI_EXPORT_PLUGIN(ShapeGroupPlugin, "Shape group plugin")
 
 NAMESPACE_END(mitsuba)

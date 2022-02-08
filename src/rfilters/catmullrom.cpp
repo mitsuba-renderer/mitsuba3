@@ -19,7 +19,7 @@ features at the cost of more ringing.
 template <typename Float, typename Spectrum>
 class CatmullRomFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MI_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     CatmullRomFilter(const Properties &props) : Base(props) {
         m_radius = 2.f;
@@ -47,9 +47,9 @@ public:
         return tfm::format("CatmullRomFilter[radius=%f]", m_radius);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)
-MTS_EXPORT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
+MI_IMPLEMENT_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)
+MI_EXPORT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
 NAMESPACE_END(mitsuba)

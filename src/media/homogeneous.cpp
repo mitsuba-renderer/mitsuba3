@@ -107,8 +107,8 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
-    MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
+    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = true;
@@ -122,7 +122,7 @@ public:
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
-    MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
+    MI_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
         auto sigmat = m_sigmat->eval(mi) * m_scale;
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigmat *= m_phase_function->projected_area(mi, active);
@@ -132,14 +132,14 @@ public:
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return eval_sigmat(mi, active) & active;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         auto sigmat                = eval_sigmat(mi, active);
         auto sigmas                = sigmat * m_albedo->eval(mi, active);
         UnpolarizedSpectrum sigman = 0.f;
@@ -169,12 +169,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)
-MTS_EXPORT_PLUGIN(HomogeneousMedium, "Homogeneous Medium")
+MI_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)
+MI_EXPORT_PLUGIN(HomogeneousMedium, "Homogeneous Medium")
 NAMESPACE_END(mitsuba)

@@ -71,13 +71,13 @@ multidimentional attribute named ``{vertex|face}_color``.
 template <typename Float, typename Spectrum>
 class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, add_attribute,
                     m_face_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals,
                     initialize)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
@@ -780,9 +780,9 @@ private:
             flush_attribute();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(PLYMesh, Mesh)
-MTS_EXPORT_PLUGIN(PLYMesh, "PLY Mesh")
+MI_IMPLEMENT_CLASS_VARIANT(PLYMesh, Mesh)
+MI_EXPORT_PLUGIN(PLYMesh, "PLY Mesh")
 NAMESPACE_END(mitsuba)

@@ -14,7 +14,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 #if !defined(NDEBUG)
-#  define MTS_OPTIX_DEBUG 1
+#  define MI_OPTIX_DEBUG 1
 #endif
 
 #ifdef _MSC_VER
@@ -74,7 +74,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
 
         OptixModuleCompileOptions module_compile_options { };
         module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-    #if !defined(MTS_OPTIX_DEBUG)
+    #if !defined(MI_OPTIX_DEBUG)
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
         module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     #else
@@ -97,7 +97,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             config.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
 
-    #if !defined(MTS_OPTIX_DEBUG)
+    #if !defined(MI_OPTIX_DEBUG)
         config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     #else
         config.pipeline_compile_options.exceptionFlags =
@@ -185,7 +185,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
     return config_index;
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
+MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
     if constexpr (dr::is_cuda_array_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
@@ -259,7 +259,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (dr::is_cuda_array_v<Float>) {
         dr::sync_thread();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
@@ -360,7 +360,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
+MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (dr::is_cuda_array_v<Float>) {
         // Ensure all raytracing kernels are terminated before releasing the scene
         dr::sync_thread();
@@ -373,8 +373,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
     Log(Debug, "Optix configuration shutdown..");
     for (size_t j = 0; j < 8; j++) {
         OptixConfig &config = optix_configs[j];
@@ -389,7 +389,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_array_v<Float>) {
@@ -470,7 +470,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (dr::is_cuda_array_v<Float>) {
@@ -484,7 +484,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
     }
 }
 
-MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (dr::is_cuda_array_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;

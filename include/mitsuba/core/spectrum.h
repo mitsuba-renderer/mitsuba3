@@ -123,13 +123,13 @@ struct Spectrum<dr::detail::MaskedArray<Value_>, Size_>
 //! @}
 // =======================================================================
 
-#define MTS_CIE_MIN           360.f
-#define MTS_CIE_MAX           830.f
-#define MTS_CIE_SAMPLES       95
+#define MI_CIE_MIN           360.f
+#define MI_CIE_MAX           830.f
+#define MI_CIE_SAMPLES       95
 
 /* Scaling the CIE curves by the following constant ensures that
    a unit-valued spectrum integrates to a luminance of 1.0 */
-#define MTS_CIE_Y_NORMALIZATION (1.0 / 106.7502593994140625)
+#define MI_CIE_Y_NORMALIZATION (1.0 / 106.7502593994140625)
 
 /**
  * \brief Struct carrying color space tables with fits for \ref cie1931_xyz and
@@ -146,9 +146,9 @@ template <typename Float> struct CIE1932Tables {
         initialized = true;
 
         xyz = Color<FloatStorage, 3>(
-            dr::load<FloatStorage>(ptr, MTS_CIE_SAMPLES),
-            dr::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES),
-            dr::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES)
+            dr::load<FloatStorage>(ptr, MI_CIE_SAMPLES),
+            dr::load<FloatStorage>(ptr + MI_CIE_SAMPLES, MI_CIE_SAMPLES),
+            dr::load<FloatStorage>(ptr + MI_CIE_SAMPLES * 2, MI_CIE_SAMPLES)
         );
 
         srgb = xyz_to_srgb(xyz);
@@ -171,21 +171,21 @@ private:
     bool initialized = false;
 };
 
-extern MTS_EXPORT_LIB CIE1932Tables<float> color_space_tables_scalar;
-#if defined(MTS_ENABLE_LLVM)
-extern MTS_EXPORT_LIB CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
+extern MI_EXPORT_LIB CIE1932Tables<float> color_space_tables_scalar;
+#if defined(MI_ENABLE_LLVM)
+extern MI_EXPORT_LIB CIE1932Tables<dr::LLVMArray<float>> color_space_tables_llvm;
 #endif
-#if defined(MTS_ENABLE_CUDA)
-extern MTS_EXPORT_LIB CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
+#if defined(MI_ENABLE_CUDA)
+extern MI_EXPORT_LIB CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
 #endif
 
 template <typename Float> auto get_color_space_tables() {
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
     if constexpr (dr::is_llvm_array_v<Float>)
         return color_space_tables_llvm;
     else
 #endif
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     if constexpr (dr::is_cuda_array_v<Float>)
         return color_space_tables_cuda;
     else
@@ -195,8 +195,8 @@ template <typename Float> auto get_color_space_tables() {
 NAMESPACE_END(detail)
 
 /// Allocate arrays for the color space tables
-extern MTS_EXPORT_LIB void color_management_static_initialization(bool cuda, bool llvm);
-extern MTS_EXPORT_LIB void color_management_static_shutdown();
+extern MI_EXPORT_LIB void color_management_static_initialization(bool cuda, bool llvm);
+extern MI_EXPORT_LIB void color_management_static_shutdown();
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -208,14 +208,14 @@ Result cie1931_xyz(Float wavelength, dr::mask_t<Float> active = true) {
     using Float32     = dr::float32_array_t<Float>;
     using ScalarFloat = dr::scalar_t<Float>;
 
-    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
-              ((MTS_CIE_SAMPLES - 1) /
-               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+    Float t = (wavelength - (ScalarFloat) MI_CIE_MIN) *
+              ((MI_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MI_CIE_MAX - (ScalarFloat) MI_CIE_MIN));
 
-    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
-              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+    active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
+              wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -244,14 +244,14 @@ Float cie1931_y(Float wavelength, dr::mask_t<Float> active = true) {
     using Float32     = dr::float32_array_t<Float>;
     using ScalarFloat = dr::scalar_t<Float>;
 
-    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
-              ((MTS_CIE_SAMPLES - 1) /
-               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+    Float t = (wavelength - (ScalarFloat) MI_CIE_MIN) *
+              ((MI_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MI_CIE_MAX - (ScalarFloat) MI_CIE_MIN));
 
-    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
-              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+    active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
+              wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -274,14 +274,14 @@ Result linear_rgb_rec(Float wavelength, dr::mask_t<Float> active = true) {
     using Float32     = dr::float32_array_t<Float>;
     using ScalarFloat = dr::scalar_t<Float>;
 
-    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
-              ((MTS_CIE_SAMPLES - 1) /
-               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+    Float t = (wavelength - (ScalarFloat) MI_CIE_MIN) *
+              ((MI_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MI_CIE_MAX - (ScalarFloat) MI_CIE_MIN));
 
-    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
-              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+    active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
+              wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -388,7 +388,7 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  */
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     Value tmp = dr::sech(0.0072f * (wavelengths - 538.f));
-    return dr::select(wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX,
+    return dr::select(wavelengths >= MI_CIE_MIN && wavelengths <= MI_CIE_MAX,
                       0.003939804229326285f * tmp * tmp, dr::zero<Value>());
 }
 
@@ -406,12 +406,12 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
 }
 
 template <typename Scalar>
-MTS_EXPORT_LIB void spectrum_from_file(const std::string &filename,
+MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                         std::vector<Scalar> &wavelengths,
                                         std::vector<Scalar> &values);
 
 template <typename Scalar>
-MTS_EXPORT_LIB Color<Scalar, 3>
+MI_EXPORT_LIB Color<Scalar, 3>
 spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values, bool bounded = true);
 

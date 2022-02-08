@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class GTR1Isotropic {
 public:
-    MTS_IMPORT_TYPES();
+    MI_IMPORT_TYPES();
     /**
      * Create an isotropic microfacet distribution for clearcoat lobe
      * based on GTR1.

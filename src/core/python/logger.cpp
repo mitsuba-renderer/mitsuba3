@@ -23,8 +23,8 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }
 
-MTS_PY_EXPORT(Logger) {
-    MTS_PY_CLASS(Logger, Object)
+MI_PY_EXPORT(Logger) {
+    MI_PY_CLASS(Logger, Object)
         .def(py::init<mitsuba::LogLevel>(), D(Logger, Logger))
         .def_method(Logger, log_progress, "progress"_a, "name"_a,
             "formatted"_a, "eta"_a, "ptr"_a = py::none())

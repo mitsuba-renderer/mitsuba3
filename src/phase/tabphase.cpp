@@ -37,8 +37,8 @@ function of the cosine of the scattering angle.
 template <typename Float, typename Spectrum>
 class TabulatedPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
-    MTS_IMPORT_TYPES(PhaseFunctionContext)
+    MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
+    MI_IMPORT_TYPES(PhaseFunctionContext)
 
     TabulatedPhaseFunction(const Properties &props) : Base(props) {
         if (props.type("values") == Properties::Type::String) {
@@ -71,7 +71,7 @@ public:
                                       Float /* sample1 */,
                                       const Point2f &sample2,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta = m_distr.sample(sample2.x());
         Float sin_theta = dr::safe_sqrt(1.f - cos_theta * cos_theta);
@@ -88,7 +88,7 @@ public:
     Float eval(const PhaseFunctionContext & /* ctx */,
                const MediumInteraction3f &mi, const Vector3f &wo,
                Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
 
         Float cos_theta = dot(wo, mi.wi);
         return m_distr.eval_pdf_normalized(-cos_theta, active) *
@@ -111,11 +111,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ContinuousDistribution<Float> m_distr;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(TabulatedPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(TabulatedPhaseFunction, "Tabulated phase function")
+MI_IMPLEMENT_CLASS_VARIANT(TabulatedPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(TabulatedPhaseFunction, "Tabulated phase function")
 NAMESPACE_END(mitsuba)

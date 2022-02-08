@@ -7,7 +7,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/shapegroup.h>
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
 
@@ -51,8 +51,8 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object)
-    MTS_IMPORT_TYPES(BSDF)
+    MI_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object)
+    MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
@@ -106,7 +106,7 @@ public:
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
             return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.scalar().transform_affine(ray));
         } else {
@@ -116,7 +116,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, dr::mask_t<FloatP> active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
             return m_shapegroup->ray_test_scalar(m_to_object.scalar().transform_affine(ray));
@@ -125,14 +125,14 @@ public:
         }
     }
 
-    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
+    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
             m_to_object.value().transform_affine(ray), pi, ray_flags, recursion_depth, active);
@@ -184,7 +184,7 @@ public:
         return oss.str();
     }
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
         DRJIT_MARK_USED(device);
         if constexpr (!dr::is_cuda_array_v<Float>) {
@@ -200,7 +200,7 @@ public:
     }
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     virtual void optix_prepare_ias(const OptixDeviceContext& context,
                                    std::vector<OptixInstance>& instances,
                                    uint32_t instance_id,
@@ -215,11 +215,11 @@ public:
     }
 #endif
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
    ref<ShapeGroup_> m_shapegroup;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Instance, Shape)
-MTS_EXPORT_PLUGIN(Instance, "Instanced geometry")
+MI_IMPLEMENT_CLASS_VARIANT(Instance, Shape)
+MI_EXPORT_PLUGIN(Instance, "Instanced geometry")
 NAMESPACE_END(mitsuba)

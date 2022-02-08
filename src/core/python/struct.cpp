@@ -32,8 +32,8 @@ py::dtype dtype_for_struct(const Struct *s) {
     return py::dtype(names, formats, offsets, s->size());
 }
 
-MTS_PY_EXPORT(Struct) {
-    auto c = MTS_PY_CLASS(Struct, Object);
+MI_PY_EXPORT(Struct) {
+    auto c = MI_PY_CLASS(Struct, Object);
     py::class_<Struct::Field> field(c, "Field", D(Struct, Field));
 
     py::enum_<Struct::Type>(c, "Type")
@@ -147,7 +147,7 @@ MTS_PY_EXPORT(Struct) {
         .def_readwrite("name", &Struct::Field::name, D(Struct, Field, name))
         .def_readwrite("blend", &Struct::Field::blend, D(Struct, Field, blend));
 
-    MTS_PY_CLASS(StructConverter, Object)
+    MI_PY_CLASS(StructConverter, Object)
         .def(py::init<const Struct *, const Struct *, bool>(), "source"_a, "target"_a, "dither"_a = false)
         .def_method(StructConverter, source)
         .def_method(StructConverter, target)

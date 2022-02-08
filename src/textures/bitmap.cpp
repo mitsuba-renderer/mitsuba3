@@ -93,7 +93,7 @@ class BitmapTextureImpl;
 template <typename Float, typename Spectrum>
 class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
@@ -235,7 +235,7 @@ public:
         return { ref<Object>(expand_1()) };
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     Object* expand_1() const {
@@ -265,7 +265,7 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class BitmapTextureImpl final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     BitmapTextureImpl(const Properties &props,
                       const Bitmap *bitmap,
@@ -286,7 +286,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
             DRJIT_MARK_USED(si);
@@ -304,7 +304,7 @@ public:
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             DRJIT_MARK_USED(si);
@@ -323,7 +323,7 @@ public:
     }
 
     Vector2f eval_1_grad(const SurfaceInteraction3f& si, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             DRJIT_MARK_USED(si);
@@ -388,7 +388,7 @@ public:
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels != 3) {
             DRJIT_MARK_USED(si);
@@ -428,7 +428,7 @@ public:
         }
     }
 
-    MTS_INLINE auto interpolate(const SurfaceInteraction3f &si, Mask active) const {
+    MI_INLINE auto interpolate(const SurfaceInteraction3f &si, Mask active) const {
         // Storage representation underlying this texture
         using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
 
@@ -592,13 +592,13 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             SurfaceInteraction3f si(_si);
-            si.wavelengths = MTS_CIE_MIN + (MTS_CIE_MAX - MTS_CIE_MIN) * sample;
-            return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
-                                                         MTS_CIE_MIN) };
+            si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+            return { si.wavelengths, eval(si, active) * (MI_CIE_MAX -
+                                                         MI_CIE_MIN) };
         } else {
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
@@ -643,7 +643,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     /**
@@ -725,12 +725,12 @@ protected:
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
+MI_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
 
 /* This class has a name that depends on extra template parameters, so
-   the standard MTS_IMPLEMENT_CLASS_VARIANT macro cannot be used */
+   the standard MI_IMPLEMENT_CLASS_VARIANT macro cannot be used */
 
 NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>

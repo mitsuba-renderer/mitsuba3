@@ -110,9 +110,9 @@ and both parameters are allowed to be spectrally varying.
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
+    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
                     m_phase_function)
-    MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
+    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
@@ -131,14 +131,14 @@ public:
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f & /* mi */,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
         auto sigmat = m_scale * m_sigmat->eval(mi, active);
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
@@ -175,7 +175,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
@@ -183,6 +183,6 @@ private:
     Float m_max_density;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
-MTS_EXPORT_PLUGIN(HeterogeneousMedium, "Heterogeneous Medium")
+MI_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
+MI_EXPORT_PLUGIN(HeterogeneousMedium, "Heterogeneous Medium")
 NAMESPACE_END(mitsuba)

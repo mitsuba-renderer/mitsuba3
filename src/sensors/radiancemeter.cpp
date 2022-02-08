@@ -50,11 +50,11 @@ priority.
 
 */
 
-MTS_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
+MI_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
+    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
                     m_needs_sample_3, sample_wavelengths)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     RadianceMeter(const Properties &props) : Base(props) {
         if (props.has_property("to_world")) {
@@ -96,7 +96,7 @@ public:
                                           const Point2f & /*position_sample*/,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         Ray3f ray;
         ray.time = time;
 
@@ -120,7 +120,7 @@ public:
                             const Point2f & /*position_sample*/,
                             const Point2f & /*aperture_sample*/,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         RayDifferential3f ray;
         ray.time = time;
 
@@ -157,9 +157,9 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(RadianceMeter, Sensor)
-MTS_EXPORT_PLUGIN(RadianceMeter, "RadianceMeter");
+MI_IMPLEMENT_CLASS_VARIANT(RadianceMeter, Sensor)
+MI_EXPORT_PLUGIN(RadianceMeter, "RadianceMeter");
 NAMESPACE_END(mitsuba)

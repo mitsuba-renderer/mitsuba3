@@ -94,8 +94,8 @@ paths of arbitrary length to compute both direct and indirect illumination.
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
 
@@ -105,7 +105,7 @@ public:
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Bool active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         if (unlikely(m_max_depth == 0))
             return { 0.f, false };
@@ -312,9 +312,9 @@ public:
             return dr::fmadd(a, b, c);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
-MTS_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");
+MI_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
+MI_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");
 NAMESPACE_END(mitsuba)

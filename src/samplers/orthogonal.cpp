@@ -63,10 +63,10 @@ stratification of 2D projections of those samples wouldn't be ensured anymore.
 template <typename Float, typename Spectrum>
 class OrthogonalSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
+    MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
                     m_samples_per_wavefront, m_dimension_index,
                     current_sample_index, compute_per_sequence_seed)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     OrthogonalSampler(const Properties &props) : Base(props) {
         m_jitter = props.get<bool>("jitter", true);
@@ -150,7 +150,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 private:
     /// Compute the digits of decimal value \ref i expressed in base \ref m_strength
@@ -246,6 +246,6 @@ private:
     UInt32 m_permutation_seed;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(OrthogonalSampler, Sampler)
-MTS_EXPORT_PLUGIN(OrthogonalSampler, "Orthogonal Array Sampler");
+MI_IMPLEMENT_CLASS_VARIANT(OrthogonalSampler, Sampler)
+MI_EXPORT_PLUGIN(OrthogonalSampler, "Orthogonal Array Sampler");
 NAMESPACE_END(mitsuba)

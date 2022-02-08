@@ -300,7 +300,7 @@ template <typename Point_> struct BoundingBox {
      * associated with the ray.
      */
     template <typename Ray>
-    MTS_INLINE auto ray_intersect(const Ray &ray) const {
+    MI_INLINE auto ray_intersect(const Ray &ray) const {
         using Float  = typename Ray::Float;
         using Vector = typename Ray::Vector;
 

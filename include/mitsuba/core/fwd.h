@@ -180,7 +180,7 @@ template <typename Float_> struct CoreAliases {
 
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
-     * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
+     * They won't be exposed by the MI_IMPORT_BASE_TYPES macro.
      */
     using Array1f = dr::Array<Float, 1>;
     using Array3f = dr::Array<Float, 3>;
@@ -191,9 +191,9 @@ template <typename Float_> struct CoreAliases {
 //! @}
 // =============================================================
 
-#define MTS_VARIANT template <typename Float, typename Spectrum>
+#define MI_VARIANT template <typename Float, typename Spectrum>
 
-#define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
+#define MI_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
     using prefix ## Bool                 = typename prefix ## CoreAliases::Bool;                   \
@@ -266,24 +266,24 @@ template <typename Float_> struct CoreAliases {
     using prefix ## TensorXf             = typename prefix ## CoreAliases::TensorXf;
 
 // Variadic macro to import a set of types from the base class
-#define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;
-#define MTS_USING_TYPES(...) DRJIT_MAP(__MTS_USING_TYPES_MACRO__, __VA_ARGS__)
+#define __MI_USING_TYPES_MACRO__(x) using typename Base::x;
+#define MI_USING_TYPES(...) DRJIT_MAP(__MI_USING_TYPES_MACRO__, __VA_ARGS__)
 
 // Variadic macro to import a set of variables from the base class
-#define __MTS_USING_MEMBERS_MACRO__(x) using Base::x;
-#define MTS_USING_MEMBERS(...) DRJIT_MAP(__MTS_USING_MEMBERS_MACRO__, __VA_ARGS__)
+#define __MI_USING_MEMBERS_MACRO__(x) using Base::x;
+#define MI_USING_MEMBERS(...) DRJIT_MAP(__MI_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
-#define MTS_IMPORT_CORE_TYPES()                                                                    \
-    MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
+#define MI_IMPORT_CORE_TYPES()                                                                    \
+    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
     using ScalarFloat = dr::scalar_t<Float>;                                                       \
-    MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
+    MI_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
-#define MTS_MASK_ARGUMENT(mask)                                                                    \
+#define MI_MASK_ARGUMENT(mask)                                                                    \
     (void) mask;                                                                                   \
     if constexpr (!dr::is_array_v<Float>)                                                          \
         mask = true;
 
-#define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
+#define MI_MASKED_FUNCTION(profiler_phase, mask)                                                  \
     ScopedPhase scope_phase(profiler_phase);                                                       \
     (void) mask;                                                                                   \
     if constexpr (!dr::is_array_v<Float>)                                                          \
@@ -298,7 +298,7 @@ namespace fs = filesystem;
 NAMESPACE_END(mitsuba)
 
 extern "C" {
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     // Forward declarations for Embree
     typedef struct RTCDeviceTy* RTCDevice;
     typedef struct RTCSceneTy* RTCScene;
@@ -309,7 +309,7 @@ extern "C" {
 //! @{ \name Helper macros
 // =============================================================
 
-#define MTS_DECLARE_ENUM_OPERATORS(name)                                       \
+#define MI_DECLARE_ENUM_OPERATORS(name)                                       \
     constexpr uint32_t operator|(name f1, name f2) {                           \
         return (uint32_t) f1 | (uint32_t) f2;                                  \
     }                                                                          \

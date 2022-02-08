@@ -39,15 +39,15 @@ Depending on how it is used, its value can either be a scalar or a color spectru
 template <typename Float, typename Spectrum>
 class ConstVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, m_to_local)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(Volume, m_to_local)
+    MI_IMPORT_TYPES(Texture)
 
     ConstVolume(const Properties &props) : Base(props) {
         m_value = props.texture<Texture>("value", 1.f);
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.t           = 0.f;
         si.uv          = Point2f(0.f, 0.f);
@@ -76,11 +76,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Texture> m_value;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
-MTS_EXPORT_PLUGIN(ConstVolume, "Constant 3D texture")
+MI_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
+MI_EXPORT_PLUGIN(ConstVolume, "Constant 3D texture")
 NAMESPACE_END(mitsuba)

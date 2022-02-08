@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "samplers")
+set(MI_PLUGIN_PREFIX "samplers")
 
 add_plugin(independent  independent.cpp)
 add_plugin(stratified   stratified.cpp)

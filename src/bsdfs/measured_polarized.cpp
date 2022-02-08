@@ -93,8 +93,8 @@ will result in a correct rendering but the level of noise can vary significantly
 template <typename Float, typename Spectrum>
 class MeasuredPolarized final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     using Interpolator = Marginal2D<Float, 4, true>;
 
@@ -168,7 +168,7 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
@@ -203,7 +203,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -311,7 +311,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return 0.f;
@@ -352,7 +352,7 @@ private:
     }
 
     template <typename Vector3, typename Value = dr::value_t<Vector3>>
-    MTS_INLINE
+    MI_INLINE
     Vector3 rotate_vector(const Vector3 &v, const Vector3 &axis_, Value angle) const {
         Vector3 axis = dr::normalize(axis_);
         auto [sin_angle, cos_angle] = dr::sincos(angle);
@@ -360,7 +360,7 @@ private:
     }
 
     template <typename Vector3, typename Value = dr::value_t<Vector3>>
-    MTS_INLINE
+    MI_INLINE
     std::tuple<Value, Value, Value> directions_to_rusinkiewicz(const Vector3 &i, const Vector3 &o) const {
         Vector3 h = dr::normalize(i + o);
 
@@ -380,7 +380,7 @@ private:
         return std::make_tuple(pd, th, td);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     std::string m_name;
     ScalarFloat m_wavelength;
@@ -388,6 +388,6 @@ private:
     Interpolator  m_interpolator;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MeasuredPolarized, BSDF)
-MTS_EXPORT_PLUGIN(MeasuredPolarized, "Measured polarized material")
+MI_IMPLEMENT_CLASS_VARIANT(MeasuredPolarized, BSDF)
+MI_EXPORT_PLUGIN(MeasuredPolarized, "Measured polarized material")
 NAMESPACE_END(mitsuba)

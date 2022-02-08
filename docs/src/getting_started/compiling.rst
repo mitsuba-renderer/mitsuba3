@@ -227,7 +227,7 @@ compiler. E.g.
     cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 
 By default, Mitsuba is able to resolve the OptiX API itself, and therefore does not rely on
-the ``optix.h`` header file. The ``MTS_USE_OPTIX_HEADERS`` CMake flag can be used to turn off
+the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake flag can be used to turn off
 this feature if a developer wants to experiment with parts of the OptiX API not yet exposed
 to the framework.
 
@@ -237,7 +237,7 @@ Embree
 
 Mitsuba's ``scalar`` and ``packet`` backends can optionally use Intel's Embree
 library for ray tracing instead of the builtin kd-tree in Mitsuba 2. To do so,
-invoke CMake with the ``-DMTS_ENABLE_EMBREE=1`` parameter or use a visual CMake
+invoke CMake with the ``-DMI_ENABLE_EMBREE=1`` parameter or use a visual CMake
 tool like ``cmake-gui`` or ``ccmake`` to flip the value of this parameter.
 Embree tends to be faster but lacks some features such as support for double
 precision ray intersection.

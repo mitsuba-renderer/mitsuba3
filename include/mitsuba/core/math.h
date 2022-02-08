@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(math)
 //! @{ \name Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-#if (MTS_ENABLE_EMBREE)
+#if (MI_ENABLE_EMBREE)
 template <typename T> constexpr auto RayEpsilon = dr::Epsilon<dr::float32_array_t<T>> * 1500;
 #else
 template <typename T> constexpr auto RayEpsilon = dr::Epsilon<T> * 1500;
@@ -230,7 +230,7 @@ template <typename T> T log2i_ceil(T value) {
  * \endcode
  */
 template <typename Index, typename Predicate>
-MTS_INLINE Index find_interval(dr::scalar_t<Index> size,
+MI_INLINE Index find_interval(dr::scalar_t<Index> size,
                                const Predicate &pred) {
     return dr::binary_search<Index>(1, size - 1, pred) - 1;
 }
@@ -331,7 +331,7 @@ chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
  * \return \c true if a solution could be found
  */
 template <typename Value>
-MTS_INLINE std::tuple<dr::mask_t<Value>, Value, Value>
+MI_INLINE std::tuple<dr::mask_t<Value>, Value, Value>
 solve_quadratic(const Value &a, const Value &b, const Value &c) {
     using Scalar = dr::scalar_t<Value>;
     using Mask = dr::mask_t<Value>;

@@ -61,9 +61,9 @@ NAMESPACE_BEGIN(mitsuba)
  *
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Sampler : public Object {
+class MI_EXPORT_LIB Sampler : public Object {
 public:
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     /**
      * \brief Create a fork of this sampler.
@@ -131,7 +131,7 @@ public:
     /// Register internal state of this sampler with a symbolic loop
     virtual void loop_put(dr::Loop<Mask> &loop);
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Sampler(const Properties &props);
     /// Copy state to a new sampler object
@@ -160,10 +160,10 @@ protected:
 
 /// Interface for sampler plugins based on the PCG32 random number generator
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB PCG32Sampler : public Sampler<Float, Spectrum> {
+class MI_EXPORT_LIB PCG32Sampler : public Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sampler, m_base_seed, m_wavefront_size)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(Sampler, m_base_seed, m_wavefront_size)
+    MI_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
     virtual void seed(uint32_t seed,
@@ -171,7 +171,7 @@ public:
     virtual void schedule_state() override;
     virtual void loop_put(dr::Loop<Mask> &loop) override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     PCG32Sampler(const Properties &props);
 
@@ -181,6 +181,6 @@ protected:
     PCG32 m_rng;
 };
 
-MTS_EXTERN_CLASS(Sampler)
-MTS_EXTERN_CLASS(PCG32Sampler)
+MI_EXTERN_CLASS(Sampler)
+MI_EXTERN_CLASS(PCG32Sampler)
 NAMESPACE_END(mitsuba)

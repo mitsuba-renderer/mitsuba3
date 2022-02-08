@@ -51,8 +51,8 @@ void dr_bind_vp(py::module_ &m, const std::string &prefix = "") {
     dr_bind_vp_impl<Type, 4>(m, prefix);
 }
 
-MTS_PY_EXPORT(DrJit) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(DrJit) {
+    MI_PY_IMPORT_TYPES()
 
     // Import the right variant of Dr.Jit
     const char *backend = "scalar";

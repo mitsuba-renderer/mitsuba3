@@ -63,8 +63,8 @@ transformation from sRGB to linear encoding:
 template <typename Float, typename Spectrum>
 class NormalMap final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     NormalMap(const Properties &props) : Base(props) {
         for (auto &[name, obj] : props.objects(false)) {
@@ -150,7 +150,7 @@ public:
                                         const SurfaceInteraction3f &si,
                                         const Vector3f &wo,
                                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
         SurfaceInteraction3f perturbed_si(si);
@@ -192,12 +192,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Base> m_nested_bsdf;
     ref<Texture> m_normalmap;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(NormalMap, BSDF)
-MTS_EXPORT_PLUGIN(NormalMap, "Normal map material adapter");
+MI_IMPLEMENT_CLASS_VARIANT(NormalMap, BSDF)
+MI_EXPORT_PLUGIN(NormalMap, "Normal map material adapter");
 NAMESPACE_END(mitsuba)

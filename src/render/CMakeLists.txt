@@ -2,7 +2,7 @@ set(INC_DIR "../../include/mitsuba/render")
 
 set(LIBRENDER_EXTRA_SRC "")
 
-if (MTS_ENABLE_CUDA)
+if (MI_ENABLE_CUDA)
   # Glob up PTX files
   file(GLOB resources "${PROJECT_SOURCE_DIR}/resources/ptx/*.ptx")
 
@@ -33,7 +33,7 @@ include_directories(
   ${RGB2SPEC_INCLUDE_DIRS}
 )
 
-if (NOT MTS_ENABLE_EMBREE)
+if (NOT MI_ENABLE_EMBREE)
     set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h ${LIBRENDER_EXTRA_SRC})
 endif()
 
@@ -73,7 +73,7 @@ add_library(mitsuba-render OBJECT
 )
 
 target_compile_definitions(mitsuba-render
-  PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_LIB)
+  PRIVATE -DMI_BUILD_MODULE=MI_MODULE_LIB)
 
 set_target_properties(mitsuba-render PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON)
@@ -85,7 +85,7 @@ set_target_properties(mitsuba-render PROPERTIES
 target_link_libraries(mitsuba-render PRIVATE drjit-thread rgb2spec)
 
 # Link to Embree
-if (MTS_ENABLE_EMBREE)
+if (MI_ENABLE_EMBREE)
     target_link_libraries(mitsuba-render PRIVATE embree)
 endif()
 
@@ -96,12 +96,12 @@ endif()
 
 target_link_libraries(mitsuba-render PUBLIC drjit)
 
-if (MTS_ENABLE_JIT)
+if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-render PUBLIC drjit-core)
 endif()
 
 # Python bindings
-if (MTS_ENABLE_PYTHON)
+if (MI_ENABLE_PYTHON)
   add_subdirectory(python)
   set(RENDER_PY_V_SRC ${RENDER_PY_V_SRC} PARENT_SCOPE)
   set(RENDER_PY_SRC   ${RENDER_PY_SRC}   PARENT_SCOPE)

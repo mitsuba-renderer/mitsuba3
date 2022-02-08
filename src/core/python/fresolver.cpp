@@ -1,8 +1,8 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(FileResolver) {
-    MTS_PY_CLASS(FileResolver, Object)
+MI_PY_EXPORT(FileResolver) {
+    MI_PY_CLASS(FileResolver, Object)
         .def(py::init<>(), D(FileResolver, FileResolver))
         .def(py::init<const FileResolver &>(), D(FileResolver, FileResolver, 2))
         .def("__len__", &FileResolver::size, D(FileResolver, size))

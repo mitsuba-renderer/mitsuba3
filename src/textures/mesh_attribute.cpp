@@ -59,7 +59,7 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
 template <typename Float, typename Spectrum>
 class MeshAttribute final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     MeshAttribute(const Properties &props)
     : Texture(props) {
@@ -73,17 +73,17 @@ public:
     const std::string& name() const { return m_name; }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return si.shape->eval_attribute(m_name, si, active) * m_scale;
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return si.shape->eval_attribute_1(m_name, si, active) * m_scale;
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return si.shape->eval_attribute_3(m_name, si, active) * m_scale;
     }
 
@@ -100,13 +100,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     std::string m_name;
     float m_scale;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MeshAttribute, Texture)
-MTS_EXPORT_PLUGIN(MeshAttribute, "Mesh attribute")
+MI_IMPLEMENT_CLASS_VARIANT(MeshAttribute, Texture)
+MI_EXPORT_PLUGIN(MeshAttribute, "Mesh attribute")
 
 NAMESPACE_END(mitsuba)

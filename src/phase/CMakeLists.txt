@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "phasefunctions")
+set(MI_PLUGIN_PREFIX "phasefunctions")
 
 add_plugin(hg hg.cpp)
 add_plugin(isotropic isotropic.cpp)

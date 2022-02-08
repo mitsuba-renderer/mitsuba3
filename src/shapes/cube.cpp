@@ -23,21 +23,21 @@ Cube (:monosp:`cube`)
      the normals point outside)
 
 This shape plugin describes a cube intersection primitive, based on the triangle
-mesh class.  By default, it creates a cube between the world-space positions 
-(−1, −1, −1) and (1, 1, 1). However, an arbitrary linear transformation may be 
-specified to translate, rotate, scale or skew it as desired. The parameterization 
+mesh class.  By default, it creates a cube between the world-space positions
+(−1, −1, −1) and (1, 1, 1). However, an arbitrary linear transformation may be
+specified to translate, rotate, scale or skew it as desired. The parameterization
 of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
 */
 
-MTS_VARIANT class Cube final : public Mesh<Float, Spectrum> {
+MI_VARIANT class Cube final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, m_mesh_attributes,
                     m_face_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals,
                     initialize)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::FloatStorage;
     using typename Base::InputFloat;
@@ -110,9 +110,9 @@ public:
         initialize();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Cube, Mesh)
-MTS_EXPORT_PLUGIN(Cube, "Cube intersection primitive");
+MI_IMPLEMENT_CLASS_VARIANT(Cube, Mesh)
+MI_EXPORT_PLUGIN(Cube, "Cube intersection primitive");
 NAMESPACE_END(mitsuba)

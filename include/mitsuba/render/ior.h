@@ -102,7 +102,7 @@ ref<Texture> ior_from_file(const std::string &filename) {
     std::vector<Float> wavelengths, values;
     spectrum_from_file(filename, wavelengths, values);
 
-    Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MTS_CIE_Y_NORMALIZATION);
+    Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MI_CIE_Y_NORMALIZATION);
     for (size_t k = 0; k < wavelengths.size(); ++k)
         values[k] *= unit_conversion;
 

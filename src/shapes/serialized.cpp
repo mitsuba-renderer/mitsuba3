@@ -139,20 +139,20 @@ at the end of the file, which specifies the starting position of each sub-mesh:
 
  */
 
-#define MTS_FILEFORMAT_HEADER     0x041C
-#define MTS_FILEFORMAT_VERSION_V3 0x0003
-#define MTS_FILEFORMAT_VERSION_V4 0x0004
+#define MI_FILEFORMAT_HEADER     0x041C
+#define MI_FILEFORMAT_VERSION_V3 0x0003
+#define MI_FILEFORMAT_VERSION_V4 0x0004
 
 template <typename Float, typename Spectrum>
 class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, m_face_normals,
                     has_vertex_normals, has_vertex_texcoords,
                     recompute_vertex_normals, vertex_position, vertex_normal,
                     initialize)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
@@ -207,11 +207,11 @@ public:
         stream->read(format);
         stream->read(version);
 
-        if (format != MTS_FILEFORMAT_HEADER)
+        if (format != MI_FILEFORMAT_HEADER)
             fail("encountered an invalid file format!");
 
-        if (version != MTS_FILEFORMAT_VERSION_V3 &&
-            version != MTS_FILEFORMAT_VERSION_V4)
+        if (version != MI_FILEFORMAT_VERSION_V3 &&
+            version != MI_FILEFORMAT_VERSION_V4)
             fail("encountered an incompatible file version!");
 
         if (shape_index != 0) {
@@ -230,7 +230,7 @@ public:
                                  shape_index, count - 1));
 
             // Seek to the correct position
-            if (version == MTS_FILEFORMAT_VERSION_V4) {
+            if (version == MI_FILEFORMAT_VERSION_V4) {
                 stream->seek(file_size -
                              sizeof(uint64_t) * (count - shape_index) -
                              sizeof(uint32_t));
@@ -238,7 +238,7 @@ public:
                 stream->read(offset);
                 stream->seek(offset);
             } else {
-                Assert(version == MTS_FILEFORMAT_VERSION_V3);
+                Assert(version == MI_FILEFORMAT_VERSION_V3);
                 stream->seek(file_size -
                              sizeof(uint32_t) * (count - shape_index + 1));
                 uint32_t offset = 0;
@@ -253,7 +253,7 @@ public:
 
         uint32_t flags = 0;
         stream->read(flags);
-        if (version == MTS_FILEFORMAT_VERSION_V4) {
+        if (version == MI_FILEFORMAT_VERSION_V4) {
             char ch = 0;
             m_name = "";
             do {
@@ -375,9 +375,9 @@ public:
         }
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SerializedMesh, Mesh)
-MTS_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
+MI_IMPLEMENT_CLASS_VARIANT(SerializedMesh, Mesh)
+MI_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
 NAMESPACE_END(mitsuba)

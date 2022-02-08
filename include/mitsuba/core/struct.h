@@ -6,9 +6,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
  #if defined(DRJIT_X86_64)
- #  define MTS_STRUCTCONVERTER_USE_JIT 1
+ #  define MI_STRUCTCONVERTER_USE_JIT 1
  #else
- #  define MTS_STRUCTCONVERTER_USE_JIT 0
+ #  define MI_STRUCTCONVERTER_USE_JIT 0
  #endif
 
 /**
@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \remark The python API provides an additional ``dtype()`` method, which
  * returns the NumPy \c dtype equivalent of a given \c Struct instance.
  */
-class MTS_EXPORT_LIB Struct : public Object {
+class MI_EXPORT_LIB Struct : public Object {
 public:
 
     /// Type of a field in the \c Struct
@@ -93,7 +93,7 @@ public:
     };
 
     /// Field specifier with size and offset
-    struct MTS_EXPORT Field {
+    struct MI_EXPORT Field {
         /// Name of the field
         std::string name;
 
@@ -124,7 +124,7 @@ public:
         std::vector<std::pair<double, std::string>> blend;
 
         /// Return a hash code associated with this \c Field
-        friend MTS_EXPORT_LIB size_t hash(const Field &f);
+        friend MI_EXPORT_LIB size_t hash(const Field &f);
 
         /// Equality operator
         bool operator==(const Field &f) const {
@@ -234,7 +234,7 @@ public:
     FieldIterator end() { return m_fields.end(); }
 
     /// Return a hash code associated with this \c Struct
-    friend MTS_EXPORT_LIB size_t hash(const Struct &s);
+    friend MI_EXPORT_LIB size_t hash(const Struct &s);
 
     /// Equality operator
     bool operator==(const Struct &s) const {
@@ -279,7 +279,7 @@ public:
     /// Return the representable range of the given type
     static std::pair<double, double> range(Type type);
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
@@ -291,28 +291,28 @@ template <typename T> struct struct_type {
     static constexpr Struct::Type value = struct_type<dr::scalar_t<T>>::value;
 };
 
-#define MTS_STRUCT_TYPE(type, entry)                               \
+#define MI_STRUCT_TYPE(type, entry)                               \
     template <> struct struct_type<type> {                         \
         static constexpr Struct::Type value = Struct::Type::entry; \
     };
 
-MTS_STRUCT_TYPE(int8_t,      Int8);
-MTS_STRUCT_TYPE(uint8_t,     UInt8);
-MTS_STRUCT_TYPE(int16_t,     Int16);
-MTS_STRUCT_TYPE(uint16_t,    UInt16);
-MTS_STRUCT_TYPE(int32_t,     Int32);
-MTS_STRUCT_TYPE(uint32_t,    UInt32);
-MTS_STRUCT_TYPE(int64_t,     Int64);
-MTS_STRUCT_TYPE(uint64_t,    UInt64);
-MTS_STRUCT_TYPE(dr::half,    Float16);
-MTS_STRUCT_TYPE(float,       Float32);
-MTS_STRUCT_TYPE(double,      Float64);
-#undef MTS_STRUCT_TYPE
+MI_STRUCT_TYPE(int8_t,      Int8);
+MI_STRUCT_TYPE(uint8_t,     UInt8);
+MI_STRUCT_TYPE(int16_t,     Int16);
+MI_STRUCT_TYPE(uint16_t,    UInt16);
+MI_STRUCT_TYPE(int32_t,     Int32);
+MI_STRUCT_TYPE(uint32_t,    UInt32);
+MI_STRUCT_TYPE(int64_t,     Int64);
+MI_STRUCT_TYPE(uint64_t,    UInt64);
+MI_STRUCT_TYPE(dr::half,    Float16);
+MI_STRUCT_TYPE(float,       Float32);
+MI_STRUCT_TYPE(double,      Float64);
+#undef MI_STRUCT_TYPE
 NAMESPACE_END(detail)
 
 template <typename T> constexpr Struct::Type struct_type_v = detail::struct_type<T>::value;
 
-MTS_DECLARE_ENUM_OPERATORS(Struct::Flags)
+MI_DECLARE_ENUM_OPERATORS(Struct::Flags)
 
 /**
  * \brief This class solves the any-to-any problem: effiently converting from
@@ -363,7 +363,7 @@ MTS_DECLARE_ENUM_OPERATORS(Struct::Flags)
  * on. Note that JIT compilation only works on x86_64 processors; other
  * platforms use a slow generic fallback implementation.
  */
-class MTS_EXPORT_LIB StructConverter : public Object {
+class MI_EXPORT_LIB StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
     using Float = float;
@@ -388,7 +388,7 @@ public:
      *
      * \return \c true upon success
      */
-#if MTS_STRUCTCONVERTER_USE_JIT == 1
+#if MI_STRUCTCONVERTER_USE_JIT == 1
     bool convert_2d(size_t width, size_t height, const void *src,
                     void *dest) const {
         return m_func(width, height, src, dest);
@@ -407,10 +407,10 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
 
-#if MTS_STRUCTCONVERTER_USE_JIT == 0
+#if MI_STRUCTCONVERTER_USE_JIT == 0
     // Support data structures/functions for non-accelerated conversion backend
 
     struct Value {
@@ -433,13 +433,13 @@ protected:
 protected:
     ref<const Struct> m_source;
     ref<const Struct> m_target;
-#if MTS_STRUCTCONVERTER_USE_JIT == 1
+#if MI_STRUCTCONVERTER_USE_JIT == 1
     FuncType m_func;
 #else
     bool m_dither;
 #endif
 };
 
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Struct::Type value);
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os, Struct::Type value);
 
 NAMESPACE_END(mitsuba)

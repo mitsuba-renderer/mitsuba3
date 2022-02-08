@@ -3,8 +3,8 @@
 #include <mitsuba/python/python.h>
 #include <drjit/dynamic.h>
 
-MTS_PY_EXPORT(MicrofacetDistribution) {
-    MTS_PY_IMPORT_TYPES(MicrofacetDistribution)
+MI_PY_EXPORT(MicrofacetDistribution) {
+    MI_PY_IMPORT_TYPES(MicrofacetDistribution)
 
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def(py::init([](MicrofacetType t, ScalarFloat alpha, bool sv) {

@@ -122,8 +122,8 @@ class GridVolumeImpl;
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, m_to_local)
-    MTS_IMPORT_TYPES(VolumeGrid)
+    MI_IMPORT_BASE(Volume, m_to_local)
+    MI_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
         std::string filter_type = props.string("filter_type", "trilinear");
@@ -197,7 +197,7 @@ public:
         return { ref<Object>(expand_1()) };
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     Object* expand_1() const {
@@ -237,8 +237,8 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
+    MI_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props,
                    const TensorXf &data,
@@ -333,8 +333,8 @@ public:
         }
     }
 
-    MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+    MI_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         using StorageType = dr::Array<Float, Channels>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
@@ -373,7 +373,7 @@ public:
      * The passed `active` mask must disable lanes that are not within the
      * domain.
      */
-    MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
+    MI_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
                                 Mask active) const {
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using StorageType = std::conditional_t<uses_srgb_model, dr::Array<Float, 4>, dr::Array<Float, Channels>>;
@@ -509,7 +509,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     TensorXf m_data;
     bool m_fixed_max = false;
@@ -521,8 +521,8 @@ protected:
     WrapMode m_wrap_mode;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
-MTS_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
+MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
+MI_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
 
 NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>

@@ -32,8 +32,8 @@ geometry that uses basic (e.g. diffuse) materials.
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags)
+    MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -59,7 +59,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         return depolarizer<Spectrum>(m_radiance->eval(si, active));
     }
@@ -67,7 +67,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
         Vector3f v0 = warp::square_to_uniform_sphere(sample2);
@@ -90,7 +90,7 @@ public:
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f &sample,
                                                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         Vector3f d = warp::square_to_uniform_sphere(sample);
 
@@ -120,7 +120,7 @@ public:
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
@@ -170,7 +170,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Texture> m_radiance;
     ScalarBoundingSphere3f m_bsphere;
@@ -179,6 +179,6 @@ protected:
     ScalarFloat m_surface_area;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
-MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter")
+MI_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
+MI_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter")
 NAMESPACE_END(mitsuba)

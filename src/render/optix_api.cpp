@@ -1,4 +1,4 @@
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 
 #include <mitsuba/core/logger.h>
 
@@ -31,4 +31,4 @@ void optix_initialize() {
 
 NAMESPACE_END(mitsuba)
 
-#endif // defined(MTS_ENABLE_CUDA)
+#endif // defined(MI_ENABLE_CUDA)

@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 /** \brief This class defines an abstract destination
  * for logging-relevant information
  */
-class MTS_EXPORT_LIB Appender : public Object {
+class MI_EXPORT_LIB Appender : public Object {
 public:
     /// Append a line of text with the given log level
     virtual void append(LogLevel level, const std::string &text) = 0;
@@ -27,7 +27,7 @@ public:
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr) = 0;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Appender() = default;
@@ -36,7 +36,7 @@ protected:
 /** \brief %Appender implementation, which writes to an
  * arbitrary C++ output stream
  */
-class MTS_EXPORT_LIB StreamAppender : public Appender {
+class MI_EXPORT_LIB StreamAppender : public Appender {
 public:
     /**
      * Create a new stream appender
@@ -64,7 +64,7 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~StreamAppender();

@@ -24,7 +24,7 @@ struct PositionSample {
 
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_RENDER_BASIC_TYPES()
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
 
     //! @}
@@ -114,8 +114,8 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     using Float    = Float_;
     using Spectrum = Spectrum_;
 
-    MTS_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
-    MTS_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
+    MI_IMPORT_RENDER_BASIC_TYPES()
 
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;

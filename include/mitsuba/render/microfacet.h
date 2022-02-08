@@ -22,7 +22,7 @@ enum class MicrofacetType : uint32_t {
     GGX = 1
 };
 
-MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
+MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
     switch (tp) {
         case MicrofacetType::Beckmann:
             os << "beckmann";
@@ -63,7 +63,7 @@ MTS_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
 template <typename Float, typename Spectrum>
 class MicrofacetDistribution {
 public:
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -463,7 +463,7 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
 template <typename Float, typename MicrofaceDistributionP>
 Float eval_reflectance(const MicrofaceDistributionP &distr,
                        const Vector<Float, 3> &wi, dr::scalar_t<Float> eta) {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     if (!distr.sample_visible())
         Throw("eval_reflectance(): requires visible normal sampling!");
@@ -515,7 +515,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 template <typename Float, typename MicrofaceDistributionP>
 Float eval_transmittance(const MicrofaceDistributionP &distr,
                          Vector<Float, 3> &wi, dr::scalar_t<Float> eta) {
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     if (!distr.sample_visible())
         Throw("eval_transmittance(): requires visible normal sampling!");

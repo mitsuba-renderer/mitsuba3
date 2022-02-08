@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * This class is used to implement Halton and Hammersley sequences for QMC
  * integration in Mitsuba.
  */
-class MTS_EXPORT_LIB RadicalInverse : public Object {
+class MI_EXPORT_LIB RadicalInverse : public Object {
 public:
     /**
      * \brief Precompute data structures that are used to evaluate the radical
@@ -153,7 +153,7 @@ private:
     /// Invert one of the permutations
     void invert_permutation(uint32_t i);
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     virtual ~RadicalInverse() = default;
 

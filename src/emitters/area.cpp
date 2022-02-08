@@ -44,8 +44,8 @@ emitter shape and specify an :monosp:`area` instance as its child:
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium)
+    MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -67,7 +67,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         auto result = depolarizer<Spectrum>(m_radiance->eval(si, active)) &
                       (Frame3f::cos_theta(si.wi) > 0.f);
@@ -80,7 +80,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
         auto [ps, pos_weight] = sample_position(time, sample2, active);
@@ -104,7 +104,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         DirectionSample3f ds;
         SurfaceInteraction3f si;
@@ -153,7 +153,7 @@ public:
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         Float dp = dr::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
@@ -175,7 +175,7 @@ public:
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         Float dp = dr::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
@@ -190,7 +190,7 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f &sample,
                     Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
         Assert(m_shape, "Cannot sample from an area emitter without an associated Shape.");
 
         // Two strategies to sample the spatial component based on 'm_radiance'
@@ -249,11 +249,11 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_radiance, m_d65;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
-MTS_EXPORT_PLUGIN(AreaLight, "Area emitter")
+MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
+MI_EXPORT_PLUGIN(AreaLight, "Area emitter")
 NAMESPACE_END(mitsuba)

@@ -3,7 +3,7 @@
 
 using namespace mitsuba::filesystem;
 
-MTS_PY_EXPORT(filesystem) {
+MI_PY_EXPORT(filesystem) {
     // Create dedicated submodule
     auto fs = m.def_submodule("filesystem", "Lightweight cross-platform filesystem utilities");
 

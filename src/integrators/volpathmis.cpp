@@ -53,8 +53,8 @@ template <typename Float, typename Spectrum>
 class VolumetricMisPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
     VolumetricMisPathIntegrator(const Properties &props) : Base(props) {
@@ -73,7 +73,7 @@ public:
             result = (Object *) new Impl<false>(m_props);
         return { result };
     }
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     Properties m_props;
@@ -84,8 +84,8 @@ template <typename Float, typename Spectrum, bool SpectralMis>
 class VolpathMisIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
     using WeightMatrix =
@@ -94,7 +94,7 @@ public:
 
     VolpathMisIntegratorImpl(const Properties &props) : Base(props) {}
 
-    MTS_INLINE
+    MI_INLINE
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
@@ -112,7 +112,7 @@ public:
                                      const Medium *initial_medium,
                                      Float * /* aovs */,
                                      Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
         if constexpr (is_polarized_v<Spectrum>) {
             Throw("This integrator currently does not support polarized mode!");
         }
@@ -478,7 +478,7 @@ public:
         return { p_over_f_nee, p_over_f_uni, emitter_val, ds};
     }
 
-    MTS_INLINE
+    MI_INLINE
     void update_weights(WeightMatrix &p_over_f,
                         const UnpolarizedSpectrum &p,
                         const UnpolarizedSpectrum &f,
@@ -544,11 +544,11 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
-MTS_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
+MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
+MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
 
 NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>

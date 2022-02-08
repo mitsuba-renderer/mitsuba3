@@ -16,44 +16,44 @@
 #endif
 
 #if defined(_MSC_VER)
-#  define MTS_EXPORT   __declspec(dllexport)
-#  define MTS_IMPORT   __declspec(dllimport)
-#  define MTS_NOINLINE __declspec(noinline)
-#  define MTS_INLINE   __forceinline
+#  define MI_EXPORT   __declspec(dllexport)
+#  define MI_IMPORT   __declspec(dllimport)
+#  define MI_NOINLINE __declspec(noinline)
+#  define MI_INLINE   __forceinline
 #else
-#  define MTS_EXPORT    __attribute__ ((visibility("default")))
-#  define MTS_IMPORT
-#  define MTS_NOINLINE  __attribute__ ((noinline))
-#  define MTS_INLINE    __attribute__((always_inline)) inline
+#  define MI_EXPORT    __attribute__ ((visibility("default")))
+#  define MI_IMPORT
+#  define MI_NOINLINE  __attribute__ ((noinline))
+#  define MI_INLINE    __attribute__((always_inline)) inline
 #endif
 
-#define MTS_MODULE_LIB    1
-#define MTS_MODULE_UI     2
+#define MI_MODULE_LIB    1
+#define MI_MODULE_UI     2
 
-#if MTS_BUILD_MODULE == MTS_MODULE_LIB
-#  define MTS_EXPORT_LIB MTS_EXPORT
-#  define MTS_EXTERN_LIB extern
+#if MI_BUILD_MODULE == MI_MODULE_LIB
+#  define MI_EXPORT_LIB MI_EXPORT
+#  define MI_EXTERN_LIB extern
 #else
-#  define MTS_EXPORT_LIB MTS_IMPORT
+#  define MI_EXPORT_LIB MI_IMPORT
 #  if defined(_MSC_VER)
-#    define MTS_EXTERN_LIB
+#    define MI_EXTERN_LIB
 #  else
-#    define MTS_EXTERN_LIB extern
+#    define MI_EXTERN_LIB extern
 #  endif
 #endif
 
-#if MTS_BUILD_MODULE == MTS_MODULE_UI
-#  define MTS_EXPORT_UI MTS_EXPORT
+#if MI_BUILD_MODULE == MI_MODULE_UI
+#  define MI_EXPORT_UI MI_EXPORT
 #else
-#  define MTS_EXPORT_UI MTS_IMPORT
+#  define MI_EXPORT_UI MI_IMPORT
 #endif
 
 /* A few macro helpers to enable overloading macros based on the number of parameters */
-#define MTS_EXPAND(x)                              x
-#define MTS_COUNT(_1, _2, _3, _4, _5, COUNT, ...)  COUNT
-#define MTS_VA_SIZE(...)                           MTS_EXPAND(MTS_COUNT(__VA_ARGS__, 5, 4, 3, 2, 1))
-#define MTS_CAT_HELPER(a, b)                       a ## b
-#define MTS_CAT(a, b)                              MTS_CAT_HELPER(a, b)
+#define MI_EXPAND(x)                              x
+#define MI_COUNT(_1, _2, _3, _4, _5, COUNT, ...)  COUNT
+#define MI_VA_SIZE(...)                           MI_EXPAND(MI_COUNT(__VA_ARGS__, 5, 4, 3, 2, 1))
+#define MI_CAT_HELPER(a, b)                       a ## b
+#define MI_CAT(a, b)                              MI_CAT_HELPER(a, b)
 
 NAMESPACE_BEGIN(mitsuba)
 

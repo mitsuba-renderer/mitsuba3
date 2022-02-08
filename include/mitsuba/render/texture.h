@@ -20,9 +20,9 @@ NAMESPACE_BEGIN(mitsuba)
  * the underlying function it is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Texture : public Object {
+class MI_EXPORT_LIB Texture : public Object {
 public:
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     // =============================================================
     //! @{ \name Standard sampling interface
@@ -165,7 +165,7 @@ public:
 
     /**
      * Return the mean value of the spectrum over the support
-     * (MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
+     * (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
@@ -193,7 +193,7 @@ public:
     /**
      * \brief Returns the range of wavelengths covered by the spectrum
      *
-     * The default implementation returns <tt>(MTS_CIE_MIN, MTS_CIE_MAX)</tt>
+     * The default implementation returns <tt>(MI_CIE_MIN, MI_CIE_MAX)</tt>
      */
     virtual ScalarVector2f wavelength_range() const;
 
@@ -212,7 +212,7 @@ public:
     /// Set a string identifier
     void set_id(const std::string& id) override { m_id = id; };
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 protected:
     Texture(const Properties &);
@@ -222,5 +222,5 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS(Texture)
+MI_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)

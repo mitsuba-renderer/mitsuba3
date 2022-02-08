@@ -28,7 +28,7 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Appender) {
+MI_PY_EXPORT(Appender) {
     py::enum_<mitsuba::LogLevel>(m, "LogLevel", D(LogLevel))
         .value("Trace", Trace, D(LogLevel, Trace))
         .value("Debug", Debug, D(LogLevel, Debug))
@@ -36,13 +36,13 @@ MTS_PY_EXPORT(Appender) {
         .value("Warn", Warn, D(LogLevel, Warn))
         .value("Error", Error, D(LogLevel, Error));
 
-    MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
+    MI_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
         .def(py::init<>())
         .def_method(Appender, append, "level"_a, "text"_a)
         .def_method(Appender, log_progress, "progress"_a, "name"_a,
             "formatted"_a, "eta"_a, "ptr"_a = py::none());
 
-    MTS_PY_CLASS(StreamAppender, Appender)
+    MI_PY_CLASS(StreamAppender, Appender)
         .def(py::init<const std::string &>(), D(StreamAppender, StreamAppender))
         .def_method(StreamAppender, logs_to_file)
         .def_method(StreamAppender, read_log);

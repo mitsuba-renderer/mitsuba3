@@ -2,8 +2,8 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Spectrum) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Spectrum) {
+    MI_PY_IMPORT_TYPES()
 
     m.def("luminance", [](const UnpolarizedSpectrum &value, const UnpolarizedSpectrum &w, Mask active) {
             return luminance(value, w, active);
@@ -47,11 +47,11 @@ MTS_PY_EXPORT(Spectrum) {
                       dr::Array<Float, dr::array_size_v<Spectrum>>>),
               "sample"_a);
 
-        m.attr("MTS_WAVELENGTH_SAMPLES") = dr::array_size_v<Spectrum>;
+        m.attr("MI_WAVELENGTH_SAMPLES") = dr::array_size_v<Spectrum>;
     }
 
-    m.attr("MTS_CIE_MIN") = MTS_CIE_MIN;
-    m.attr("MTS_CIE_MAX") = MTS_CIE_MAX;
+    m.attr("MI_CIE_MIN") = MI_CIE_MIN;
+    m.attr("MI_CIE_MAX") = MI_CIE_MAX;
 
     m.def("unpolarized_spectrum", [](const Spectrum &s) { return unpolarized_spectrum(s); }, "");
     m.def("depolarizer", [](const Spectrum &s) { return depolarizer(s); }, "");

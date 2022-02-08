@@ -3,9 +3,9 @@
 #include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
+MI_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Emitter)
+    MI_IMPORT_TYPES(Emitter)
 
     PyEmitter(const Properties &props) : Emitter(props) { }
 
@@ -47,8 +47,8 @@ public:
     using Emitter::m_flags;
 };
 
-MTS_PY_EXPORT(Emitter) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(Emitter) {
+    MI_PY_IMPORT_TYPES()
     using PyEmitter = PyEmitter<Float, Spectrum>;
 
     m.def("has_flag", [](UInt32 flags, EmitterFlags f) {return has_flag(flags, f);});
@@ -118,5 +118,5 @@ MTS_PY_EXPORT(Emitter) {
         pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, EmitterFlags>>();
     }
 
-    MTS_PY_REGISTER_OBJECT("register_emitter", Emitter)
+    MI_PY_REGISTER_OBJECT("register_emitter", Emitter)
 }

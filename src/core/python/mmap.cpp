@@ -3,8 +3,8 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(MemoryMappedFile) {
-    MTS_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())
+MI_PY_EXPORT(MemoryMappedFile) {
+    MI_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())
         .def(py::init<const mitsuba::filesystem::path &, size_t>(),
             D(MemoryMappedFile, MemoryMappedFile), "filename"_a, "size"_a)
         .def(py::init<const mitsuba::filesystem::path &, bool>(),

@@ -4,9 +4,9 @@
 #include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PyPhaseFunction : public PhaseFunction<Float, Spectrum> {
+MI_VARIANT class PyPhaseFunction : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext)
+    MI_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext)
 
     PyPhaseFunction(const Properties &props) : PhaseFunction(props) {}
 
@@ -40,7 +40,7 @@ public:
 };
 
 template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
-    MTS_PY_IMPORT_TYPES(PhaseFunctionContext)
+    MI_PY_IMPORT_TYPES(PhaseFunctionContext)
 
     cls.def("sample",
             [](Ptr ptr, const PhaseFunctionContext &ctx,
@@ -71,8 +71,8 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
         bind_drjit_ptr_array(cls);
 }
 
-MTS_PY_EXPORT(PhaseFunction) {
-    MTS_PY_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext, PhaseFunctionPtr)
+MI_PY_EXPORT(PhaseFunction) {
+    MI_PY_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext, PhaseFunctionPtr)
     using PyPhaseFunction = PyPhaseFunction<Float, Spectrum>;
 
     m.def("has_flag", [](UInt32 flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
@@ -112,5 +112,5 @@ MTS_PY_EXPORT(PhaseFunction) {
         pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, PhaseFunctionFlags>>();
     }
 
-    MTS_PY_REGISTER_OBJECT("register_phasefunction", PhaseFunction)
+    MI_PY_REGISTER_OBJECT("register_phasefunction", PhaseFunction)
 }

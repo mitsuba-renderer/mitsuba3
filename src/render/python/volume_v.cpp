@@ -1,9 +1,9 @@
 #include <mitsuba/render/volume.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Volume) {
-    MTS_PY_IMPORT_TYPES(Volume)
-    MTS_PY_CLASS(Volume, Object)
+MI_PY_EXPORT(Volume) {
+    MI_PY_IMPORT_TYPES(Volume)
+    MI_PY_CLASS(Volume, Object)
         .def_method(Volume, resolution)
         .def_method(Volume, bbox)
         .def_method(Volume, max)

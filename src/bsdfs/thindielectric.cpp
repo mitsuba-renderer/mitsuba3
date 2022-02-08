@@ -72,8 +72,8 @@ which describe a borosilicate glass (BK7) ↔ air interface.
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     ThinDielectric(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
@@ -104,7 +104,7 @@ public:
                                              Float sample1,
                                              const Point2f & /* sample2 */,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
@@ -200,13 +200,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     Float m_eta;
     ref<Texture> m_specular_transmittance;
     ref<Texture> m_specular_reflectance;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)
-MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
+MI_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)
+MI_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
 NAMESPACE_END(mitsuba)

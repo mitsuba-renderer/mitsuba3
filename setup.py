@@ -15,7 +15,7 @@ except ImportError:
     raise
 
 VERSION_REGEX = re.compile(
-    r"^\s*#\s*define\s+MTS_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
+    r"^\s*#\s*define\s+MI_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 

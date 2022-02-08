@@ -189,6 +189,6 @@ ref<Object> PluginManager::create_object(const Properties &props,
    return object;
 }
 
-MTS_IMPLEMENT_CLASS(PluginManager, Object)
+MI_IMPLEMENT_CLASS(PluginManager, Object)
 
 NAMESPACE_END(mitsuba)

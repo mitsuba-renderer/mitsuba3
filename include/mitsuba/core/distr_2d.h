@@ -130,7 +130,7 @@ public:
      */
     std::tuple<Point2u, Float, Point2f> sample(const Point2f &sample_,
                                                Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         Point2f sample(sample_);
 
         // Avoid degeneracies on the domain boundary
@@ -243,7 +243,7 @@ protected:
         DRJIT_MARK_USED(param);
 
         if constexpr (Dimension > 0) {
-            MTS_MASK_ARGUMENT(active);
+            MI_MASK_ARGUMENT(active);
 
             UInt32 slice_offset = dr::zero<UInt32>();
             for (size_t dim = 0; dim < Dimension; ++dim) {
@@ -336,10 +336,10 @@ class Hierarchical2D : public Distribution2D<Float_, Dimension_> {
 public:
     using Base = Distribution2D<Float_, Dimension_>;
 
-    MTS_USING_TYPES(Float, UInt32, Mask, ScalarFloat, Point2i, Point2f, Point2u,
+    MI_USING_TYPES(Float, UInt32, Mask, ScalarFloat, Point2i, Point2f, Point2u,
                     ScalarVector2f, ScalarVector2u, FloatStorage)
 
-    MTS_USING_MEMBERS(Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
+    MI_USING_MEMBERS(Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
                       m_param_strides, m_param_values, m_slices,
                       interpolate_weights)
 
@@ -481,7 +481,7 @@ public:
     std::pair<Point2f, Float> sample(Point2f sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -570,7 +570,7 @@ public:
                                      const Float *param = nullptr,
                                      Mask active = true) const {
 
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -755,13 +755,13 @@ protected:
          * improve cache locality during hierarchical traversals
          */
         template <typename Point2u>
-        MTS_INLINE dr::value_t<Point2u> index(const Point2u &p) const {
+        MI_INLINE dr::value_t<Point2u> index(const Point2u &p) const {
             return ((p.x() & 1u) | dr::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
 
         template <size_t Dim = Dimension>
-        MTS_INLINE Float lookup(const UInt32 &i0,
+        MI_INLINE Float lookup(const UInt32 &i0,
                                 const uint32_t *param_strides,
                                 const Float *param_weight,
                                 const Mask &active) const {
@@ -830,12 +830,12 @@ class Marginal2D : public Distribution2D<Float_, Dimension_> {
 public:
     using Base = Distribution2D<Float_, Dimension_>;
 
-    MTS_USING_TYPES(
+    MI_USING_TYPES(
         Float, UInt32, Mask, ScalarFloat, Point2f, Point2i,
         Point2u, ScalarVector2f, ScalarVector2u, FloatStorage
     )
 
-    MTS_USING_MEMBERS(
+    MI_USING_MEMBERS(
         Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
         m_param_strides, m_param_values, m_slices, interpolate_weights
     )
@@ -1015,7 +1015,7 @@ public:
      */
     Float eval(Point2f pos, const Float *param = nullptr,
                Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
@@ -1076,7 +1076,7 @@ public:
 
 protected:
     template <size_t Dim = Dimension>
-    MTS_INLINE Float lookup(const FloatStorage &data,
+    MI_INLINE Float lookup(const FloatStorage &data,
                             size_t offset,
                             UInt32 i0,
                             uint32_t size,
@@ -1098,11 +1098,11 @@ protected:
         }
     }
 
-    MTS_INLINE
+    MI_INLINE
     std::pair<Point2f, Float> sample_discrete(Point2f sample,
                                               const Float *param,
                                               Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = dr::hprod(m_size - 1),
@@ -1182,11 +1182,11 @@ protected:
         return { (Point2i(Point2u(col, row)) + sample) * m_patch_size, pdf };
     }
 
-    MTS_INLINE
+    MI_INLINE
     std::pair<Point2f, Float> invert_discrete(Point2f sample,
                                               const Float *param,
                                               Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = dr::hprod(m_size - 1),
@@ -1244,11 +1244,11 @@ protected:
         return { sample, pdf };
     }
 
-    MTS_INLINE
+    MI_INLINE
     std::pair<Point2f, Float> sample_continuous(Point2f sample,
                                                 const Float *param,
                                                 Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
@@ -1339,11 +1339,11 @@ protected:
         };
     }
 
-    MTS_INLINE
+    MI_INLINE
     std::pair<Point2f, Float> invert_continuous(Point2f sample,
                                                 const Float *param,
                                                 Mask active) const {
-        MTS_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
@@ -1417,7 +1417,7 @@ protected:
         return { sample, pdf };
     }
 
-    MTS_INLINE Float sample_segment(Float sample, ScalarFloat inv_width,
+    MI_INLINE Float sample_segment(Float sample, ScalarFloat inv_width,
                                     Float v0, Float v1) const {
         Mask non_const = dr::abs(v0 - v1) > 1e-4f * (v0 + v1);
         Float divisor = dr::select(non_const, v0 - v1, v0 + v1);
@@ -1428,7 +1428,7 @@ protected:
         return sample;
     }
 
-    MTS_INLINE Float invert_segment(Float sample, ScalarFloat width,
+    MI_INLINE Float invert_segment(Float sample, ScalarFloat width,
                                     Float v0, Float v1) const {
         return sample * dr::lerp(v0, v1, .5f * sample) * width;
     }

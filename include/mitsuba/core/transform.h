@@ -63,13 +63,13 @@ template <typename Point_> struct Transform {
           inverse_transpose(inv) { }
 
     /// Concatenate transformations
-    MTS_INLINE Transform operator*(const Transform &other) const {
+    MI_INLINE Transform operator*(const Transform &other) const {
         return Transform(matrix * other.matrix,
                          inverse_transpose * other.inverse_transpose);
     }
 
     /// Compute the inverse of this transformation (involves just shuffles, no arithmetic)
-    MTS_INLINE Transform inverse() const {
+    MI_INLINE Transform inverse() const {
         return Transform(transpose(inverse_transpose), transpose(matrix));
     }
 
@@ -95,13 +95,13 @@ template <typename Point_> struct Transform {
      * is known to be an affine 3D transformation (i.e. no perspective)
      */
     template <typename T>
-    MTS_INLINE auto transform_affine(const T &input) const {
+    MI_INLINE auto transform_affine(const T &input) const {
         return operator*(input);
     }
 
     /// Transform a point (handles affine/non-perspective transformations only)
     template <typename T, typename Expr = dr::expr_t<Float, T>>
-    MTS_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
+    MI_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
         DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
@@ -115,7 +115,7 @@ template <typename Point_> struct Transform {
      * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
-    MTS_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
+    MI_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
         DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
@@ -129,7 +129,7 @@ template <typename Point_> struct Transform {
      * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
-    MTS_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
+    MI_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = matrix.entry(0);
         result *= arg.x();
 
@@ -144,7 +144,7 @@ template <typename Point_> struct Transform {
      * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
-    MTS_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
+    MI_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = inverse_transpose.entry(0);
         result *= arg.x();
 
@@ -157,7 +157,7 @@ template <typename Point_> struct Transform {
     /// Transform a ray (for perspective transformations)
     template <typename T, typename Spectrum, typename Expr = dr::expr_t<Float, T>,
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
-    MTS_INLINE Result operator*(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
+    MI_INLINE Result operator*(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(operator*(ray.o), operator*(ray.d), ray.maxt, ray.time,
                       ray.wavelengths);
     }
@@ -165,7 +165,7 @@ template <typename Point_> struct Transform {
     /// Transform a ray (for affine/non-perspective transformations)
     template <typename T, typename Spectrum, typename Expr = dr::expr_t<Float, T>,
               typename Result = Ray<Point<Expr, Size - 1>, Spectrum>>
-    MTS_INLINE Result transform_affine(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
+    MI_INLINE Result transform_affine(const Ray<Point<T, Size - 1>, Spectrum> &ray) const {
         return Result(transform_affine(ray.o), transform_affine(ray.d),
                       ray.maxt, ray.time, ray.wavelengths);
     }
@@ -339,7 +339,7 @@ template <typename Point_> struct Transform {
     /// Extract a lower-dimensional submatrix
     template <size_t ExtractedSize = Size - 1,
               typename Result = Transform<Point<Float, ExtractedSize>>>
-    MTS_INLINE Result extract() const {
+    MI_INLINE Result extract() const {
         Result result;
         for (size_t i = 0; i < ExtractedSize - 1; ++i) {
             for (size_t j = 0; j < ExtractedSize - 1; ++j) {
@@ -376,10 +376,10 @@ template <typename Point_> struct Transform {
  * scale/shear matrix, a rotation quaternion, and a translation vector. These
  * will all be interpolated independently at eval time.
  */
-class MTS_EXPORT_LIB AnimatedTransform : public Object {
+class MI_EXPORT_LIB AnimatedTransform : public Object {
 public:
     using Float = float;
-    MTS_IMPORT_CORE_TYPES()
+    MI_IMPORT_CORE_TYPES()
 
     /// Represents a single keyframe in an animated transform
     struct Keyframe {
@@ -529,7 +529,7 @@ public:
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     Transform4f m_transform;
     std::vector<Keyframe> m_keyframes;

@@ -34,9 +34,9 @@ NAMESPACE_BEGIN(mitsuba)
  */
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB ImageBlock : public Object {
+class MI_EXPORT_LIB ImageBlock : public Object {
 public:
-    MTS_IMPORT_TYPES(ReconstructionFilter)
+    MI_IMPORT_TYPES(ReconstructionFilter)
 
     /**
      * \brief Construct a zero-initialized image block with the desired shape
@@ -309,7 +309,7 @@ public:
 
     std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Virtual destructor
     virtual ~ImageBlock();
@@ -326,5 +326,5 @@ protected:
     bool m_warn_invalid;
 };
 
-MTS_EXTERN_CLASS(ImageBlock)
+MI_EXTERN_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

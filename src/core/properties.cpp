@@ -460,7 +460,7 @@ ref<AnimatedTransform> Properties::animated_transform(const std::string &name) c
               " <animated_transform> or <transform>).", name);
     }
     ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MTS_CLASS(AnimatedTransform)))
+    if (!o->class_()->derives_from(MI_CLASS(AnimatedTransform)))
         Throw("The property \"%s\" has the wrong type (expected "
               " <animated_transform> or <transform>).", name);
     it->second.queried = true;
@@ -485,7 +485,7 @@ ref<AnimatedTransform> Properties::animated_transform(
               " <animated_transform> or <transform>).", name);
     }
     ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MTS_CLASS(AnimatedTransform)))
+    if (!o->class_()->derives_from(MI_CLASS(AnimatedTransform)))
         Throw("The property \"%s\" has the wrong type (expected "
               " <animated_transform> or <transform>).", name);
     it->second.queried = true;
@@ -510,8 +510,8 @@ ref<Object> Properties::find_object(const std::string &name) const {
 }
 
 #define EXPORT_PROPERTY_ACCESSOR(T) \
-    template MTS_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
-    template MTS_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
+    template MI_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
+    template MI_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
 
 #define T(...) __VA_ARGS__
 EXPORT_PROPERTY_ACCESSOR(T(bool))

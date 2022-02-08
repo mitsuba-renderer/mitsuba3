@@ -30,7 +30,7 @@ public:
     }
 };
 
-MTS_PY_EXPORT(Object) {
+MI_PY_EXPORT(Object) {
     py::class_<Class>(m, "Class", D(Class))
         .def_method(Class, name)
         .def_method(Class, variant)

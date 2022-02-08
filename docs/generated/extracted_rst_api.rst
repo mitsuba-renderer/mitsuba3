@@ -3503,47 +3503,47 @@
         Returns → None:
             *no description available*
 
-.. py:data:: mitsuba.core.MTS_AUTHORS
+.. py:data:: mitsuba.core.MI_AUTHORS
     :type: str
     :value: Realistic Graphics Lab, EPFL
 
-.. py:data:: mitsuba.core.MTS_CIE_MAX
+.. py:data:: mitsuba.core.MI_CIE_MAX
     :type: float
     :value: 830.0
 
-.. py:data:: mitsuba.core.MTS_CIE_MIN
+.. py:data:: mitsuba.core.MI_CIE_MIN
     :type: float
     :value: 360.0
 
-.. py:data:: mitsuba.core.MTS_ENABLE_CUDA
+.. py:data:: mitsuba.core.MI_ENABLE_CUDA
     :type: bool
     :value: True
 
-.. py:data:: mitsuba.core.MTS_ENABLE_EMBREE
+.. py:data:: mitsuba.core.MI_ENABLE_EMBREE
     :type: bool
     :value: True
 
-.. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
+.. py:data:: mitsuba.core.MI_FILTER_RESOLUTION
     :type: int
     :value: 31
 
-.. py:data:: mitsuba.core.MTS_VERSION
+.. py:data:: mitsuba.core.MI_VERSION
     :type: str
     :value: 2.2.1
 
-.. py:data:: mitsuba.core.MTS_VERSION_MAJOR
+.. py:data:: mitsuba.core.MI_VERSION_MAJOR
     :type: int
     :value: 2
 
-.. py:data:: mitsuba.core.MTS_VERSION_MINOR
+.. py:data:: mitsuba.core.MI_VERSION_MINOR
     :type: int
     :value: 2
 
-.. py:data:: mitsuba.core.MTS_VERSION_PATCH
+.. py:data:: mitsuba.core.MI_VERSION_PATCH
     :type: int
     :value: 1
 
-.. py:data:: mitsuba.core.MTS_YEAR
+.. py:data:: mitsuba.core.MI_YEAR
     :type: str
     :value: 2021
 
@@ -5553,7 +5553,7 @@
     Because image filters are generally too expensive to evaluate for each
     sample, the implementation of this class internally precomputes an
     discrete representation, whose resolution given by
-    MTS_FILTER_RESOLUTION.
+    MI_FILTER_RESOLUTION.
 
     .. py:method:: mitsuba.core.ReconstructionFilter.border_size(self)
 
@@ -14205,7 +14205,7 @@
     .. py:method:: mitsuba.render.Texture.mean(self)
 
         Return the mean value of the spectrum over the support
-        (MTS_WAVELENGTH_MIN..MTS_WAVELENGTH_MAX)
+        (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
 
         Not every implementation necessarily provides this function. The
         default implementation throws an exception.
@@ -14308,7 +14308,7 @@
 
         Returns the range of wavelengths covered by the spectrum
 
-        The default implementation returns ``(MTS_CIE_MIN, MTS_CIE_MAX)``
+        The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``
 
         Returns → :py:obj:`mitsuba.core.Vector2f`:
             *no description available*

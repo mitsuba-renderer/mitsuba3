@@ -35,7 +35,7 @@ This plugin provides a simple procedural checkerboard texture with customizable 
 template <typename Float, typename Spectrum>
 class Checkerboard final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture)
 
     Checkerboard(const Properties &props) : Texture(props) {
         m_color0 = props.texture<Texture>("color0", .4f);
@@ -44,7 +44,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
         dr::mask_t<Point2f> mask = uv - dr::floor(uv) > .5f;
@@ -65,7 +65,7 @@ public:
     }
 
     Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
         dr::mask_t<Point2f> mask = (uv - dr::floor(uv)) > .5f;
@@ -107,13 +107,13 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
     ScalarTransform3f m_transform;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
-MTS_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
+MI_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
+MI_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
 NAMESPACE_END(mitsuba)

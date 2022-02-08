@@ -3,8 +3,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(BSDFSample) {
-    MTS_PY_IMPORT_TYPES()
+MI_PY_EXPORT(BSDFSample) {
+    MI_PY_IMPORT_TYPES()
 
     m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
 
@@ -19,13 +19,13 @@ MTS_PY_EXPORT(BSDFSample) {
         .def_readwrite("sampled_component", &BSDFSample3f::sampled_component, D(BSDFSample3, sampled_component))
         .def_repr(BSDFSample3f);
 
-    MTS_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
+    MI_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
 }
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
+MI_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(BSDF)
+    MI_IMPORT_TYPES(BSDF)
 
     PyBSDF(const Properties &props) : BSDF(props) { }
 
@@ -68,7 +68,7 @@ public:
 };
 
 template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
-    MTS_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES()
 
     cls.def("sample",
             [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -104,8 +104,8 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
         bind_drjit_ptr_array(cls);
 }
 
-MTS_PY_EXPORT(BSDF) {
-    MTS_PY_IMPORT_TYPES(BSDF, BSDFPtr)
+MI_PY_EXPORT(BSDF) {
+    MI_PY_IMPORT_TYPES(BSDF, BSDFPtr)
     using PyBSDF = PyBSDF<Float, Spectrum>;
 
     auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
@@ -135,5 +135,5 @@ MTS_PY_EXPORT(BSDF) {
         pybind11_type_alias<UInt32, dr::replace_scalar_t<UInt32, BSDFFlags>>();
     }
 
-    MTS_PY_REGISTER_OBJECT("register_bsdf", BSDF)
+    MI_PY_REGISTER_OBJECT("register_bsdf", BSDF)
 }

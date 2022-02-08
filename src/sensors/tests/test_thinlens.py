@@ -232,7 +232,7 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
 
 def test05_spectrum_sampling(variants_vec_spectral):
     from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.core import Float, MTS_CIE_MIN, MTS_CIE_MAX, load_dict
+    from mitsuba.core import Float, MI_CIE_MIN, MI_CIE_MAX, load_dict
 
     # Check RGB wavelength sampling
     camera = load_dict({
@@ -240,7 +240,7 @@ def test05_spectrum_sampling(variants_vec_spectral):
         "aperture_radius": 1.0,
     })
     wavelengths, _ =  camera.sample_wavelengths(dr.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
-    assert (dr.all_nested((wavelengths >= MTS_CIE_MIN) & (wavelengths <= MTS_CIE_MAX)))
+    assert (dr.all_nested((wavelengths >= MI_CIE_MIN) & (wavelengths <= MI_CIE_MAX)))
 
     # Check custom SRF wavelength sampling
     camera = load_dict({

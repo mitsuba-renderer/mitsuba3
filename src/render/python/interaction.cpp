@@ -1,7 +1,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(RayFlags) {
+MI_PY_EXPORT(RayFlags) {
     auto e = py::enum_<RayFlags>(m, "RayFlags", py::arithmetic())
         .def_value(RayFlags, None)
         .def_value(RayFlags, Minimal)
@@ -16,5 +16,5 @@ MTS_PY_EXPORT(RayFlags) {
         .def_value(RayFlags, All)
         .def_value(RayFlags, AllNonDifferentiable);
 
-        MTS_PY_DECLARE_ENUM_OPERATORS(RayFlags, e)
+        MI_PY_DECLARE_ENUM_OPERATORS(RayFlags, e)
 }

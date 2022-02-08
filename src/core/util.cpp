@@ -200,7 +200,7 @@ std::string mem_string(size_t size, bool precise) {
 }
 
 #if defined(_WIN32) || defined(__linux__)
-    void MTS_EXPORT __dummySymbol() { }
+    void MI_EXPORT __dummySymbol() { }
 #endif
 
 fs::path library_path() {
@@ -275,8 +275,8 @@ std::string info_build(int thread_count) {
     constexpr size_t PacketSize = dr::Packet<float>::Size;
 
     std::ostringstream oss;
-    oss << "Mitsuba version " << MTS_VERSION << " (";
-    oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
+    oss << "Mitsuba version " << MI_VERSION << " (";
+    oss << MI_BRANCH << "[" << MI_HASH << "], ";
 #if defined(_WIN32)
     oss << "Windows, ";
 #elif defined(__linux__)
@@ -296,7 +296,7 @@ std::string info_build(int thread_count) {
 
 std::string info_copyright() {
     std::ostringstream oss;
-    oss << "Copyright " << MTS_YEAR << ", " << MTS_AUTHORS;
+    oss << "Copyright " << MI_YEAR << ", " << MI_AUTHORS;
     return oss.str();
 }
 
@@ -305,11 +305,11 @@ std::string info_features() {
 
     oss << "Enabled processor features:";
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     oss << " cuda";
 #endif
 
-#if defined(MTS_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM)
     oss << " llvm";
 #endif
 

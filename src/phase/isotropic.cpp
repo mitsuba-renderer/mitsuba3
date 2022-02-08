@@ -20,8 +20,8 @@ interaction. It does not have any parameters.
 template <typename Float, typename Spectrum>
 class IsotropicPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
-    MTS_IMPORT_TYPES(PhaseFunctionContext)
+    MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
+    MI_IMPORT_TYPES(PhaseFunctionContext)
 
     IsotropicPhaseFunction(const Properties & props) : Base(props) {
         m_flags = +PhaseFunctionFlags::Isotropic;
@@ -34,7 +34,7 @@ public:
                                       Float /* sample1 */,
                                       const Point2f &sample2,
                                       Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         auto wo  = warp::square_to_uniform_sphere(sample2);
         auto pdf = warp::square_to_uniform_sphere_pdf(wo);
@@ -43,16 +43,16 @@ public:
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,
                const Vector3f &wo, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return warp::square_to_uniform_sphere_pdf(wo);
     }
 
     std::string to_string() const override { return "IsotropicPhaseFunction[]"; }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(IsotropicPhaseFunction, PhaseFunction)
-MTS_EXPORT_PLUGIN(IsotropicPhaseFunction, "Isotropic phase function")
+MI_IMPLEMENT_CLASS_VARIANT(IsotropicPhaseFunction, PhaseFunction)
+MI_EXPORT_PLUGIN(IsotropicPhaseFunction, "Isotropic phase function")
 NAMESPACE_END(mitsuba)

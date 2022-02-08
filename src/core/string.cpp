@@ -87,10 +87,10 @@ template <typename T> T stof(const std::string &s) {
     return result;
 }
 
-template MTS_EXPORT_LIB float  stof<float>(const std::string &);
-template MTS_EXPORT_LIB double stof<double>(const std::string &);
-template MTS_EXPORT_LIB float  strtof<float>(const char *, char **);
-template MTS_EXPORT_LIB double strtof<double>(const char *, char **);
+template MI_EXPORT_LIB float  stof<float>(const std::string &);
+template MI_EXPORT_LIB double stof<double>(const std::string &);
+template MI_EXPORT_LIB float  strtof<float>(const char *, char **);
+template MI_EXPORT_LIB double strtof<double>(const char *, char **);
 
 std::vector<std::string> tokenize(const std::string &string,
                                   const std::string &delim,

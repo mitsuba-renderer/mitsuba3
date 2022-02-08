@@ -8,7 +8,7 @@
 #include <mitsuba/core/field.h>
 #include <drjit/packet.h>
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
 #endif
 
@@ -22,9 +22,9 @@ NAMESPACE_BEGIN(mitsuba)
  * acceleration data structures.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Shape : public Object {
+class MI_EXPORT_LIB Shape : public Object {
 public:
-    MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
+    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -222,7 +222,7 @@ public:
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
     /// Macro to declare packet versions of the scalar routine above
-    #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                            \
+    #define MI_DECLARE_RAY_INTERSECT_PACKET(N)                            \
         using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;            \
         using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                 \
         using MaskP##N    = dr::mask_t<FloatP##N>;                         \
@@ -235,9 +235,9 @@ public:
         virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,             \
                                          MaskP##N active = true) const;
 
-    MTS_DECLARE_RAY_INTERSECT_PACKET(4)
-    MTS_DECLARE_RAY_INTERSECT_PACKET(8)
-    MTS_DECLARE_RAY_INTERSECT_PACKET(16)
+    MI_DECLARE_RAY_INTERSECT_PACKET(4)
+    MI_DECLARE_RAY_INTERSECT_PACKET(8)
+    MI_DECLARE_RAY_INTERSECT_PACKET(16)
 
     //! @}
     // =============================================================
@@ -434,12 +434,12 @@ public:
     virtual ScalarSize effective_primitive_count() const;
 
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device);
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     /**
      * \brief Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
      *
@@ -543,7 +543,7 @@ public:
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Shape)
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Shape(const Properties &props);
     inline Shape() { }
@@ -562,7 +562,7 @@ protected:
     field<Transform4f, ScalarTransform4f> m_to_world;
     field<Transform4f, ScalarTransform4f> m_to_object;
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     /// OptiX hitgroup data buffer
     void* m_optix_data_ptr = nullptr;
 #endif
@@ -572,10 +572,10 @@ private:
     bool m_dirty = true;
 };
 
-MTS_EXTERN_CLASS(Shape)
+MI_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)
 
-#define MTS_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \
+#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \
     using typename Base::FloatP##N;                                            \
     using typename Base::UInt32P##N;                                           \
     using typename Base::MaskP##N;                                             \
@@ -601,10 +601,10 @@ NAMESPACE_END(mitsuba)
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
-#define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                               \
+#define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                               \
     PreliminaryIntersection3f ray_intersect_preliminary(                       \
         const Ray3f &ray, Mask active) const override {                        \
-        MTS_MASK_ARGUMENT(active);                                             \
+        MI_MASK_ARGUMENT(active);                                             \
         PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();  \
         std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
             ray_intersect_preliminary_impl<Float>(ray, active);                \
@@ -612,7 +612,7 @@ NAMESPACE_END(mitsuba)
         return pi;                                                             \
     }                                                                          \
     Mask ray_test(const Ray3f &ray, Mask active) const override {              \
-        MTS_MASK_ARGUMENT(active);                                             \
+        MI_MASK_ARGUMENT(active);                                             \
         return ray_test_impl<Float>(ray, active);                              \
     }                                                                          \
     using typename Base::ScalarRay3f;                                          \
@@ -623,9 +623,9 @@ NAMESPACE_END(mitsuba)
     ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {        \
         return ray_test_impl<ScalarFloat>(ray, true);                          \
     }                                                                          \
-    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                      \
-    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                      \
-    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(16)
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                      \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                      \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
 //! @{ \name Dr.Jit support for vectorized function calls

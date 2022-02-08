@@ -116,7 +116,7 @@ enum class BSDFFlags : uint32_t {
     All          = Diffuse | Glossy | Delta | Delta1D
 };
 
-MTS_DECLARE_ENUM_OPERATORS(BSDFFlags)
+MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
 
 /**
  * \brief Context data structure for BSDF evaluation and sampling
@@ -129,7 +129,7 @@ MTS_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * The \ref BSDFContext data structure encodes these preferences and is
  * supplied to most \ref BSDF methods.
  */
-struct MTS_EXPORT_LIB BSDFContext {
+struct MI_EXPORT_LIB BSDFContext {
     // =============================================================
     //! @{ \name Fields
     // =============================================================
@@ -263,9 +263,9 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * \sa mitsuba.render.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB BSDF : public Object {
+class MI_EXPORT_LIB BSDF : public Object {
 public:
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_TYPES()
 
     /**
      * \brief Importance sample the BSDF model
@@ -470,7 +470,7 @@ public:
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::BSDF)
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     BSDF(const Properties &props);
     virtual ~BSDF();
@@ -490,10 +490,10 @@ protected:
 //! @{ \name Misc implementations
 // -----------------------------------------------------------------------
 
-extern MTS_EXPORT_LIB std::ostream &operator<<(
+extern MI_EXPORT_LIB std::ostream &operator<<(
     std::ostream &os, const TransportMode &mode);
 
-extern MTS_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
                                                   const BSDFContext& ctx);
 
 template <typename Float, typename Spectrum>
@@ -528,7 +528,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 //! @}
 // -----------------------------------------------------------------------
 
-MTS_EXTERN_CLASS(BSDF)
+MI_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

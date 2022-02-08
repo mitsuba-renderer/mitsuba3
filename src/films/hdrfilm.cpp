@@ -95,9 +95,9 @@ The following XML snippet describes a film that writes a full-HD RGBA OpenEXR fi
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
+    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
                     m_sample_border, m_filter, m_flags)
-    MTS_IMPORT_TYPES(ImageBlock)
+    MI_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
         std::string file_format = string::to_lower(
@@ -544,7 +544,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
@@ -554,6 +554,6 @@ protected:
     std::vector<std::string> m_channels;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(HDRFilm, Film)
-MTS_EXPORT_PLUGIN(HDRFilm, "HDR Film")
+MI_IMPLEMENT_CLASS_VARIANT(HDRFilm, Film)
+MI_EXPORT_PLUGIN(HDRFilm, "HDR Film")
 NAMESPACE_END(mitsuba)

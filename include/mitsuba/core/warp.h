@@ -24,7 +24,7 @@ Value circ(Value x) { return dr::safe_sqrt(dr::fnmadd(x, x, 1.f)); }
 
 /// Uniformly sample a vector on a 2D disk
 template <typename Value>
-MTS_INLINE Point<Value, 2> square_to_uniform_disk(const Point<Value, 2> &sample) {
+MI_INLINE Point<Value, 2> square_to_uniform_disk(const Point<Value, 2> &sample) {
     Value r = dr::sqrt(sample.y());
     auto [s, c] = dr::sincos(dr::TwoPi<Value> * sample.x());
     return { c * r, s * r };
@@ -32,14 +32,14 @@ MTS_INLINE Point<Value, 2> square_to_uniform_disk(const Point<Value, 2> &sample)
 
 /// Inverse of the mapping \ref square_to_uniform_disk
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_disk_to_square(const Point<Value, 2> &p) {
+MI_INLINE Point<Value, 2> uniform_disk_to_square(const Point<Value, 2> &p) {
     Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>;
     return { dr::select(phi < 0.f, phi + 1.f, phi), dr::squared_norm(p) };
 }
 
 /// Density of \ref square_to_uniform_disk per unit area
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_disk_pdf(const Point<Value, 2> &p) {
+MI_INLINE Value square_to_uniform_disk_pdf(const Point<Value, 2> &p) {
     DRJIT_MARK_USED(p);
     if constexpr (TestDomain)
         return dr::select(dr::squared_norm(p) > 1.f, 0.f, dr::InvPi<Value>);
@@ -51,7 +51,7 @@ MTS_INLINE Value square_to_uniform_disk_pdf(const Point<Value, 2> &p) {
 
 /// Low-distortion concentric square to disk mapping by Peter Shirley
 template <typename Value>
-MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2> &sample) {
+MI_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2> &sample) {
     using Mask   = dr::mask_t<Value>;
 
     Value x = dr::fmsub(2.f, sample.x(), 1.f),
@@ -91,7 +91,7 @@ MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 
 
 /// Inverse of the mapping \ref square_to_uniform_disk_concentric
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2> &p) {
+MI_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2> &p) {
     using Mask = dr::mask_t<Value>;
 
     Mask quadrant_0_or_2 = dr::abs(p.x()) > dr::abs(p.y());
@@ -112,7 +112,7 @@ MTS_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 
 
 /// Density of \ref square_to_uniform_disk per unit area
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) {
+MI_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) {
     DRJIT_MARK_USED(p);
     if constexpr (TestDomain)
         return dr::select(dr::squared_norm(p) > 1.f, 0.f, dr::InvPi<Value>);
@@ -126,7 +126,7 @@ MTS_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p)
  * \brief Low-distortion concentric square to square mapping (meant to be used
  * in conjunction with another warping method that maps to the sphere)
  */
-template <typename Value> MTS_INLINE Point<Value, 2>
+template <typename Value> MI_INLINE Point<Value, 2>
 square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
     using Mask = dr::mask_t<Value>;
 
@@ -150,21 +150,21 @@ square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
 
 /// Convert an uniformly distributed square sample into barycentric coordinates
 template <typename Value>
-MTS_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &sample) {
+MI_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &sample) {
     Value t = dr::safe_sqrt(1.f - sample.x());
     return { 1.f - t, t * sample.y() };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_triangle
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
+MI_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
     Value t = 1.f - p.x();
     return Point<Value, 2>(1.f - t * t, p.y() / t);
 }
 
 /// Density of \ref square_to_uniform_triangle per unit area.
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
+MI_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
     if constexpr (TestDomain) {
         return dr::select(p.x() < 0.f || p.y() < 0.f || (p.x() + p.y() > 1.f),
                           0.f, 2.f);
@@ -177,7 +177,7 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
 
 /// Sample a point on a 2D standard normal distribution. Internally uses the Box-Muller transformation
 template <typename Value>
-MTS_INLINE Point<Value, 2> square_to_std_normal(const Point<Value, 2> &sample) {
+MI_INLINE Point<Value, 2> square_to_std_normal(const Point<Value, 2> &sample) {
     Value r   = dr::sqrt(-2.f * dr::log(1.f - sample.x())),
           phi = 2.f * dr::Pi<Value> * sample.y();
 
@@ -186,7 +186,7 @@ MTS_INLINE Point<Value, 2> square_to_std_normal(const Point<Value, 2> &sample) {
 }
 
 template <typename Value>
-MTS_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
+MI_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
     return dr::InvTwoPi<Value> * dr::exp(-.5f * dr::squared_norm(p));
 }
 
@@ -247,7 +247,7 @@ Value square_to_tent_pdf(const Point<Value, 2> &p_) {
 
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &sample) {
+MI_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &sample) {
     Value z = dr::fnmadd(2.f, sample.y(), 1.f),
           r = circ(z);
     auto [s, c] = dr::sincos(2.f * dr::Pi<Value> * sample.x());
@@ -256,7 +256,7 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &samp
 
 /// Inverse of the mapping \ref square_to_uniform_sphere
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
+MI_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
     Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>;
     return {
         dr::select(phi < 0.f, phi + 1.f, phi),
@@ -266,7 +266,7 @@ MTS_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
 
 /// Density of \ref square_to_uniform_sphere() with respect to solid angles
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
+MI_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
     DRJIT_MARK_USED(v);
     if constexpr (TestDomain)
         return dr::select(dr::abs(dr::squared_norm(v) - 1.f) > math::RayEpsilon<Value>,
@@ -279,7 +279,7 @@ MTS_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
 
 /// Uniformly sample a vector on the unit hemisphere with respect to solid angles
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &sample) {
+MI_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &sample) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
     Value z   = sample.y(),
@@ -297,14 +297,14 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &
 
 /// Inverse of the mapping \ref square_to_uniform_hemisphere
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_hemisphere_to_square(const Vector<Value, 3> &v) {
+MI_INLINE Point<Value, 2> uniform_hemisphere_to_square(const Vector<Value, 3> &v) {
     Point<Value, 2> p(v.x(), v.y());
     return uniform_disk_to_square_concentric(p * dr::rsqrt(v.z() + 1.f));
 }
 
 /// Density of \ref square_to_uniform_hemisphere() with respect to solid angles
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
+MI_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
     DRJIT_MARK_USED(v);
     if constexpr (TestDomain)
         return dr::select(dr::abs(dr::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
@@ -317,7 +317,7 @@ MTS_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
 
 /// Sample a cosine-weighted vector on the unit hemisphere with respect to solid angles
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_cosine_hemisphere(const Point<Value, 2> &sample) {
+MI_INLINE Vector<Value, 3> square_to_cosine_hemisphere(const Point<Value, 2> &sample) {
     // Low-distortion warping technique based on concentric disk mapping
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
 
@@ -329,13 +329,13 @@ MTS_INLINE Vector<Value, 3> square_to_cosine_hemisphere(const Point<Value, 2> &s
 
 /// Inverse of the mapping \ref square_to_cosine_hemisphere
 template <typename Value>
-MTS_INLINE Point<Value, 2> cosine_hemisphere_to_square(const Vector<Value, 3> &v) {
+MI_INLINE Point<Value, 2> cosine_hemisphere_to_square(const Vector<Value, 3> &v) {
     return uniform_disk_to_square_concentric(Point<Value, 2>(v.x(), v.y()));
 }
 
 /// Density of \ref square_to_cosine_hemisphere() with respect to solid angles
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
+MI_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
     if constexpr (TestDomain)
         return dr::select(dr::abs(dr::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
                           v.z() < 0.f, 0.f, dr::InvPi<Value> * v.z());
@@ -352,7 +352,7 @@ MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
  * distribution matches the linear interpolant.
  */
 template <typename Value>
-MTS_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
+MI_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
     return dr::select(
         dr::abs(v0 - v1) > 1e-4f * (v0 + v1),
         (v0 - dr::safe_sqrt(dr::lerp(dr::sqr(v0), dr::sqr(v1), sample))) / (v0 - v1),
@@ -362,7 +362,7 @@ MTS_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
 
 /// Inverse of \ref interval_to_linear
 template <typename Value>
-MTS_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
+MI_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
     return dr::select(
         dr::abs(v0 - v1) > 1e-4f * (v0 + v1),
         sample * ((2.f - sample) * v0 + sample * v1) / (v0 + v1),
@@ -384,7 +384,7 @@ MTS_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
  * Returns the sampled point and PDF for convenience.
  */
 template <typename Value>
-MTS_INLINE std::pair<Point<Value, 2>, Value>
+MI_INLINE std::pair<Point<Value, 2>, Value>
 square_to_bilinear(Value v00, Value v10, Value v01, Value v11,
                    Point<Value, 2> sample) {
     using Mask = dr::mask_t<Value>;
@@ -403,7 +403,7 @@ square_to_bilinear(Value v00, Value v10, Value v01, Value v11,
 
 /// Inverse of \ref square_to_bilinear
 template <typename Value>
-MTS_INLINE std::pair<Point<Value, 2>, Value>
+MI_INLINE std::pair<Point<Value, 2>, Value>
 bilinear_to_square(Value v00, Value v10, Value v01, Value v11,
                    Point<Value, 2> sample) {
     using Mask = dr::mask_t<Value>;
@@ -420,7 +420,7 @@ bilinear_to_square(Value v00, Value v10, Value v01, Value v11,
     return { sample, pdf };
 }
 
-template <typename Value> MTS_INLINE Value
+template <typename Value> MI_INLINE Value
 square_to_bilinear_pdf(Value v00, Value v10, Value v01, Value v11,
                        const Point<Value, 2> &sample) {
     return dr::lerp(dr::lerp(v00, v10, sample.x()),
@@ -438,7 +438,7 @@ square_to_bilinear_pdf(Value v00, Value v10, Value v01, Value v11,
  * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
  */
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample,
+MI_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample,
                                                    const Value &cos_cutoff) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
@@ -460,7 +460,7 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample
 
 /// Inverse of the mapping \ref square_to_uniform_cone
 template <typename Value>
-MTS_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
+MI_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
                                                   const Value &cos_cutoff) {
     Point<Value, 2> p = Point<Value, 2>(v.x(), v.y());
     p *= dr::sqrt((1.f - v.z()) / (dr::squared_norm(p) * (1.f - cos_cutoff)));
@@ -473,7 +473,7 @@ MTS_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
  * \param cos_cutoff Cosine of the cutoff angle
  */
 template <bool TestDomain = false, typename Value>
-MTS_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
+MI_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
                                             const Value &cos_cutoff) {
     DRJIT_MARK_USED(v);
     if constexpr (TestDomain)
@@ -488,7 +488,7 @@ MTS_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
 
 /// Warp a uniformly distributed square sample to a Beckmann distribution
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
+MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
                                                const Value &alpha) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
@@ -514,7 +514,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 
 /// Inverse of the mapping \ref square_to_uniform_cone
 template <typename Value>
-MTS_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
+MI_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
     Point<Value, 2> p(v.x(), v.y());
     Value tan_theta_m_sqr = dr::rcp(dr::sqr(v.z())) - 1.f;
 
@@ -527,7 +527,7 @@ MTS_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const V
 
 /// Probability density of \ref square_to_beckmann()
 template <typename Value>
-MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
+MI_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
                                         const Value &alpha) {
     using Frame = Frame<Value>;
 
@@ -543,7 +543,7 @@ MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
 
 /// Warp a uniformly distributed square sample to a von Mises Fisher distribution
 template <typename Value>
-MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sample,
+MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sample,
                                                        const Value &kappa) {
 #if 1
     // Approach 1: warping method based on standard disk mapping
@@ -584,7 +584,7 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
 
 /// Inverse of the mapping \ref von_mises_fisher_to_square
 template <typename Value>
-MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
+MI_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
                                                       Value kappa) {
     Value expm2k = dr::exp(-2.f * kappa),
           t      = dr::exp((v.z() - 1.f) * kappa);
@@ -605,7 +605,7 @@ MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
 
 /// Probability density of \ref square_to_von_mises_fisher()
 template <typename Value>
-MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
+MI_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
     /* Stable algorithm for evaluating the von Mises Fisher distribution
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 

@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
+MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
@@ -50,9 +50,9 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
                 Properties("gaussian"));
 }
 
-MTS_VARIANT Film<Float, Spectrum>::~Film() { }
+MI_VARIANT Film<Float, Spectrum>::~Film() { }
 
-MTS_VARIANT void
+MI_VARIANT void
 Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
                                       const Wavelength & /* wavelengths */,
                                       Float * /* aovs */,
@@ -60,12 +60,12 @@ Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
     NotImplementedError("prepare_sample");
 }
 
-MTS_VARIANT const typename Film<Float, Spectrum>::Texture *
+MI_VARIANT const typename Film<Float, Spectrum>::Texture *
 Film<Float, Spectrum>::sensor_response_function() {
     return m_srf.get();
 }
 
-MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
+MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
                                                         const ScalarVector2u &crop_size) {
     if (dr::any(crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification: crop_offset(%u, %u) + "
@@ -76,7 +76,7 @@ MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &cro
     m_crop_offset = crop_offset;
 }
 
-MTS_VARIANT std::string Film<Float, Spectrum>::to_string() const {
+MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Film[" << std::endl
         << "  size = "        << m_size        << "," << std::endl
@@ -89,6 +89,6 @@ MTS_VARIANT std::string Film<Float, Spectrum>::to_string() const {
 }
 
 
-MTS_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
-MTS_INSTANTIATE_CLASS(Film)
+MI_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
+MI_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

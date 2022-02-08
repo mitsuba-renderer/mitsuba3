@@ -8,18 +8,18 @@
 #include <cmath>
 
 /// Set to 1 to fall back to cosine-weighted sampling (for debugging)
-#define MTS_SAMPLE_DIFFUSE     0
+#define MI_SAMPLE_DIFFUSE     0
 
 /// Sample the luminance map before warping by the NDF/VNDF?
-#define MTS_SAMPLE_LUMINANCE   1
+#define MI_SAMPLE_LUMINANCE   1
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 class Measured final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES()
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES()
 
     using Warp2D0 = Marginal2D<Float, 0, true>;
     using Warp2D2 = Marginal2D<Float, 2, true>;
@@ -175,7 +175,7 @@ public:
                                              Float /*sample1*/,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         BSDFSample3f bs = dr::zero<BSDFSample3f>();
         Vector3f wi = si.wi;
@@ -201,11 +201,11 @@ public:
 
         Vector2f sample;
 
-#if MTS_SAMPLE_DIFFUSE == 0
+#if MI_SAMPLE_DIFFUSE == 0
         sample = Vector2f(sample2.y(), sample2.x());
         Float pdf = 1.f;
 
-        #if MTS_SAMPLE_LUMINANCE == 1
+        #if MI_SAMPLE_LUMINANCE == 1
         std::tie(sample, pdf) = m_luminance.sample(sample, params, active);
         #endif
 
@@ -232,7 +232,7 @@ public:
 
         bs.wo = dr::fmsub(m, 2.f * dr::dot(m, wi), wi);
         bs.pdf = ndf_pdf * pdf / jacobian;
-#else // MTS_SAMPLE_DIFFUSE
+#else // MI_SAMPLE_DIFFUSE
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
@@ -248,7 +248,7 @@ public:
         u_m[1] = u_m[1] - dr::floor(u_m[1]);
 
     std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
-#endif // MTS_SAMPLE_DIFFUSE
+#endif // MI_SAMPLE_DIFFUSE
 
         bs.eta               = 1.f;
         bs.sampled_type      = +BSDFFlags::GlossyReflection;
@@ -274,7 +274,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo_, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Vector3f wi = si.wi, wo = wo_;
 
@@ -327,7 +327,7 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo_, Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         Vector3f wi = si.wi, wo = wo_;
 
@@ -347,9 +347,9 @@ public:
             wo.y() = dr::mulsign_neg(wo.y(), sy);
         }
 
-#if MTS_SAMPLE_DIFFUSE == 1
+#if MI_SAMPLE_DIFFUSE == 1
         return dr::select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
-#else // MTS_SAMPLE_DIFFUSE
+#else // MI_SAMPLE_DIFFUSE
         Vector3f m = dr::normalize(wo + wi);
 
         // Cartesian -> spherical coordinates
@@ -369,7 +369,7 @@ public:
         auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
 
         Float pdf = 1.f;
-        #if MTS_SAMPLE_LUMINANCE == 1
+        #if MI_SAMPLE_LUMINANCE == 1
         pdf = m_luminance.eval(sample, params, active);
         #endif
 
@@ -380,7 +380,7 @@ public:
         pdf = vndf_pdf * pdf / jacobian;
 
         return dr::select(active, pdf, 0.f);
-#endif // MTS_SAMPLE_DIFFUSE
+#endif // MI_SAMPLE_DIFFUSE
     }
 
     std::string to_string() const override {
@@ -396,7 +396,7 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     template <typename Value> Value u2theta(Value u) const {
         return dr::sqr(u) * (dr::Pi<Float> / 2.f);
@@ -426,6 +426,6 @@ private:
     int m_reduction;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)
-MTS_EXPORT_PLUGIN(Measured, "Measured material")
+MI_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)
+MI_EXPORT_PLUGIN(Measured, "Measured material")
 NAMESPACE_END(mitsuba)

@@ -194,8 +194,8 @@ the computation of Fresnel reflectances and produces an idealized
 template <typename Float, typename Spectrum>
 class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    MI_IMPORT_TYPES(Texture)
 
     SmoothConductor(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
@@ -220,7 +220,7 @@ public:
                                              Float /* sample1 */,
                                              const Point2f &/* sample2 */,
                                              Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
@@ -296,12 +296,12 @@ public:
         return oss.str();
     }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_eta, m_k;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SmoothConductor, BSDF)
-MTS_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
+MI_IMPLEMENT_CLASS_VARIANT(SmoothConductor, BSDF)
+MI_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
 NAMESPACE_END(mitsuba)

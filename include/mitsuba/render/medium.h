@@ -9,9 +9,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Medium : public Object {
+class MI_EXPORT_LIB Medium : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
     /// Intersets a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -70,18 +70,18 @@ public:
                     const SurfaceInteraction3f &si, Mask active) const;
 
     /// Return the phase function of this medium
-    MTS_INLINE const PhaseFunction *phase_function() const {
+    MI_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();
     }
 
     /// Returns whether this specific medium instance uses emitter sampling
-    MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
+    MI_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
     /// Returns whether this medium is homogeneous
-    MTS_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
+    MI_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
 
     /// Returns whether this medium has a spectrally varying extinction
-    MTS_INLINE bool has_spectral_extinction() const {
+    MI_INLINE bool has_spectral_extinction() const {
         return m_has_spectral_extinction;
     }
 
@@ -96,7 +96,7 @@ public:
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Medium)
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     Medium();
     Medium(const Properties &props);
@@ -110,7 +110,7 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS(Medium)
+MI_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

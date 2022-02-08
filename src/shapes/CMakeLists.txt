@@ -1,4 +1,4 @@
-set(MTS_PLUGIN_PREFIX "shapes")
+set(MI_PLUGIN_PREFIX "shapes")
 
 add_plugin(obj         obj.cpp)
 add_plugin(ply         ply.cpp)
@@ -15,7 +15,7 @@ add_plugin(shapegroup  shapegroup.cpp)
 add_plugin(instance    instance.cpp)
 add_plugin(merge       merge.cpp)
 
-if (MTS_ENABLE_EMBREE)
+if (MI_ENABLE_EMBREE)
     target_link_libraries(sphere   PRIVATE embree)
     target_link_libraries(instance PRIVATE embree)
 endif()

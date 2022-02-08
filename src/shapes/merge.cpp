@@ -7,8 +7,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MergeShape final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape)
-    MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, Mesh)
+    MI_IMPORT_BASE(Shape)
+    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, Mesh)
 
     MergeShape(const Properties &props) {
         std::unordered_map<Key, ref<Mesh>, key_hasher> tbl;
@@ -57,7 +57,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 
 private:
     struct Key {
@@ -103,6 +103,6 @@ private:
     std::vector<ref<Object>> m_objects;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(MergeShape, Shape)
-MTS_EXPORT_PLUGIN(MergeShape, "MergeShape intersection primitive");
+MI_IMPLEMENT_CLASS_VARIANT(MergeShape, Shape)
+MI_EXPORT_PLUGIN(MergeShape, "MergeShape intersection primitive");
 NAMESPACE_END(mitsuba)

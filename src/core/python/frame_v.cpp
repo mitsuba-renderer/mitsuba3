@@ -1,9 +1,9 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(Frame) {
-    MTS_PY_IMPORT_TYPES()
-    MTS_PY_CHECK_ALIAS(Frame3f, "Frame3f") {
+MI_PY_EXPORT(Frame) {
+    MI_PY_IMPORT_TYPES()
+    MI_PY_CHECK_ALIAS(Frame3f, "Frame3f") {
         auto f = py::class_<Frame3f>(m, "Frame3f", D(Frame))
             .def(py::init<>(), D(Frame, Frame))
             .def(py::init<const Frame3f &>(), "Copy constructor")
@@ -31,6 +31,6 @@ MTS_PY_EXPORT(Frame) {
             .def_field(Frame3f, n)
             .def_repr(Frame3f);
 
-        MTS_PY_DRJIT_STRUCT(f, Frame3f, s, t, n)
+        MI_PY_DRJIT_STRUCT(f, Frame3f, s, t, n)
     }
 }

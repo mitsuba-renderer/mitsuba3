@@ -6,17 +6,17 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
 
-#if !defined(MTS_ENABLE_EMBREE)
+#if !defined(MI_ENABLE_EMBREE)
 #  include <mitsuba/render/kdtree.h>
 #endif
 
 #include "signal.h"
 
-MTS_PY_EXPORT(ShapeKDTree) {
-    MTS_PY_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)
+MI_PY_EXPORT(ShapeKDTree) {
+    MI_PY_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)
 
-#if !defined(MTS_ENABLE_EMBREE)
-    MTS_PY_CLASS(ShapeKDTree, Object)
+#if !defined(MI_ENABLE_EMBREE)
+    MI_PY_CLASS(ShapeKDTree, Object)
         .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
         .def_method(ShapeKDTree, add_shape)
         .def_method(ShapeKDTree, primitive_count)
@@ -40,9 +40,9 @@ MTS_PY_EXPORT(ShapeKDTree) {
 #endif
 }
 
-MTS_PY_EXPORT(Scene) {
-    MTS_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
-    MTS_PY_CLASS(Scene, Object)
+MI_PY_EXPORT(Scene) {
+    MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
+    MI_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
         .def("render",
             [&](Scene *scene, uint32_t sensor_index, uint32_t seed, uint32_t spp) {
@@ -66,7 +66,7 @@ MTS_PY_EXPORT(Scene) {
         .def("ray_test",
              py::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_test, py::const_),
              "ray"_a, "coherent"_a, "active"_a = true, D(Scene, ray_test, 2))
-#if !defined(MTS_ENABLE_EMBREE)
+#if !defined(MI_ENABLE_EMBREE)
         .def("ray_intersect_naive",
             &Scene::ray_intersect_naive,
             "ray"_a, "active"_a = true)

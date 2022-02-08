@@ -16,16 +16,16 @@ project(mitsuba
 
 # A number of Mitsuba 2 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
-option(MTS_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
+option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
 
 # Mitsuba 2 ships with its own ray tracing acceleration data structure. If
 # desired, Embree (which tends to be quite a bit faster) can be used instead.
 # Embree lacks some features provided by Mitsuba 2, like support for double
 # precision arithmetic.
-option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
+option(MI_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 
 # Build the graphical user interface? (Note that this feature remains incomplete)
-option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
+option(MI_ENABLE_GUI     "Build the graphical user interface?" OFF)
 
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
@@ -34,16 +34,16 @@ option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
 # On Linux:
 #   export LD_LIBRARY_PATH=<path to libasan.so>
 
-option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
-option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
+option(MI_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
+option(MI_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
 
-option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
-if(MTS_THROW_TRAPS_DEBUGGER)
-  add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
+option(MI_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
+if(MI_THROW_TRAPS_DEBUGGER)
+  add_definitions(-DMI_THROW_TRAPS_DEBUGGER)
 endif()
 
-option(MTS_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
-option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
+option(MI_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
+option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
@@ -73,8 +73,8 @@ endif()
 #  Build defaults for projects by the Realistic Graphics Lab
 # ----------------------------------------------------------
 
-set(P "MTS") # <-- prefix for CMake variables, used by the following script
-set(MTS_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/mitsuba.h")
+set(P "MI") # <-- prefix for CMake variables, used by the following script
+set(MI_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/mitsuba.h")
 include(ext/drjit/ext/drjit-core/ext/drjit-thread/ext/cmake-defaults/CMakeLists.txt)
 
 # ----------------------------------------------------------
@@ -98,16 +98,16 @@ endif()
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
   # Default: only scalar modes (RGB, Spectral)
-  set(MTS_DEFAULT_VARIANTS "scalar_rgb;scalar_spectral;cuda_ad_rgb;llvm_ad_rgb" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
-  mark_as_advanced(MTS_DEFAULT_VARIANTS)
-  foreach(TMP ${MTS_DEFAULT_VARIANTS})
+  set(MI_DEFAULT_VARIANTS "scalar_rgb;scalar_spectral;cuda_ad_rgb;llvm_ad_rgb" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  mark_as_advanced(MI_DEFAULT_VARIANTS)
+  foreach(TMP ${MI_DEFAULT_VARIANTS})
     string(APPEND INSERT_CONFIGURATIONS_HERE "\"${TMP}\", ")
   endforeach()
   string(REGEX REPLACE ", $" "" INSERT_CONFIGURATIONS_HERE "${INSERT_CONFIGURATIONS_HERE}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
                  ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf @ONLY)
   unset(INSERT_CONFIGURATIONS_HERE)
-  set(MTS_COPIED_CONFIG_FILE 1)
+  set(MI_COPIED_CONFIG_FILE 1)
 endif()
 
 # ----------------------------------------------------------
@@ -125,46 +125,46 @@ execute_process(
   COMMAND ${Python_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py ${CMAKE_CXX_COMPILER_ID}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  OUTPUT_VARIABLE MTS_VARIANTS
-  ERROR_VARIABLE MTS_VARIANTS_ERR
+  OUTPUT_VARIABLE MI_VARIANTS
+  ERROR_VARIABLE MI_VARIANTS_ERR
 )
 
-if (MTS_VARIANTS_ERR)
-  message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
+if (MI_VARIANTS_ERR)
+  message(FATAL_ERROR "Could not run resources/configure.py script: ${MI_VARIANTS_ERR}")
 endif()
 
 # ----------------------------------------------------------
 #  Check desired variants and set relevant feature flags
 # ----------------------------------------------------------
 
-list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
+list(LENGTH MI_VARIANTS MI_VARIANTS_COUNT)
 
 message(STATUS "Mitsuba: building the following variants:")
-foreach (MTS_VARIANT ${MTS_VARIANTS})
-  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
-  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
-  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
-  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
-  set(MTS_VARIANT_NAMES ${MTS_VARIANT_NAMES} ${MTS_VARIANT_NAME})
-  message(STATUS " * ${MTS_VARIANT_NAME}")
+foreach (MI_VARIANT ${MI_VARIANTS})
+  string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+  list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+  list(GET MI_VARIANT 1 MI_VARIANT_FLOAT)
+  list(GET MI_VARIANT 2 MI_VARIANT_SPECTRUM)
+  set(MI_VARIANT_NAMES ${MI_VARIANT_NAMES} ${MI_VARIANT_NAME})
+  message(STATUS " * ${MI_VARIANT_NAME}")
 endforeach()
 
-string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
+string(REPLACE ";" " " MI_VARIANT_NAMES_STR "${MI_VARIANT_NAMES}")
 
-if (MTS_VARIANTS MATCHES "cuda_")
-  set(MTS_ENABLE_CUDA ON)
+if (MI_VARIANTS MATCHES "cuda_")
+  set(MI_ENABLE_CUDA ON)
 endif()
 
-if (MTS_VARIANTS MATCHES "llvm_")
-  set(MTS_ENABLE_LLVM ON)
+if (MI_VARIANTS MATCHES "llvm_")
+  set(MI_ENABLE_LLVM ON)
 endif()
 
-if (MTS_ENABLE_LLVM OR MTS_ENABLE_CUDA)
-  set(MTS_ENABLE_JIT ON)
+if (MI_ENABLE_LLVM OR MI_ENABLE_CUDA)
+  set(MI_ENABLE_JIT ON)
 endif()
 
-if (MTS_VARIANTS MATCHES "ad_")
-  set(MTS_ENABLE_AUTODIFF ON)
+if (MI_VARIANTS MATCHES "ad_")
+  set(MI_ENABLE_AUTODIFF ON)
 endif()
 
 # ----------------------------------------------------------
@@ -184,22 +184,22 @@ configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
 # Directory for build products
 if (MSVC)
   # MSVC: .. with generator expression for build type
-  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+  set(MI_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 else()
-  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  set(MI_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-set(MTS_COPY_FILES "")
+set(MI_COPY_FILES "")
 
 # Function to make a read-only copy of a file
 macro (ro_copy IN_FILE OUT_FILE)
   set(OUT_FILE_1 "${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE}")
-  set(OUT_FILE_2 "${MTS_BINARY_DIR}/${OUT_FILE}")
+  set(OUT_FILE_2 "${MI_BINARY_DIR}/${OUT_FILE}")
   if (UNIX)
     add_custom_command(
       OUTPUT ${OUT_FILE_2} DEPENDS ${IN_FILE} ${ARGN}
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_2} && chmod a=r ${OUT_FILE_2})
-    list(APPEND MTS_COPY_FILES ${OUT_FILE_2})
+    list(APPEND MI_COPY_FILES ${OUT_FILE_2})
   else()
     # add_custom_command does not support generator expressions in OUTPUT argument (grr..)
     # make a dummy copy and then depend on that
@@ -208,7 +208,7 @@ macro (ro_copy IN_FILE OUT_FILE)
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_1}
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_2}
     )
-    list(APPEND MTS_COPY_FILES ${OUT_FILE_1})
+    list(APPEND MI_COPY_FILES ${OUT_FILE_1})
   endif()
 endmacro()
 
@@ -238,7 +238,7 @@ endif()
 # ----------------------------------
 
 # Clang/GCC address sanitizer
-if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
+if ((MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY) AND
     (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)"))
   # Don't optimize too heavily
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
@@ -249,7 +249,7 @@ if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
 
   add_compile_options(-fno-omit-frame-pointer)
 
-  if (MTS_SANITIZE_ADDRESS)
+  if (MI_SANITIZE_ADDRESS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
@@ -257,7 +257,7 @@ if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
     message(STATUS "Mitsuba: enabling the address sanitizer.")
   endif()
 
-  if (MTS_SANITIZE_MEMORY)
+  if (MI_SANITIZE_MEMORY)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
@@ -268,12 +268,12 @@ endif()
 
 # Adapt to variations in rpath handling on Linux and macOS
 if (APPLE)
-  set(MTS_ORIGIN "@loader_path")
+  set(MI_ORIGIN "@loader_path")
 elseif(UNIX)
-  set(MTS_ORIGIN "$ORIGIN")
+  set(MI_ORIGIN "$ORIGIN")
 endif()
 
-set(CMAKE_INSTALL_RPATH "${MTS_ORIGIN};${MTS_ORIGIN}/../drjit")
+set(CMAKE_INSTALL_RPATH "${MI_ORIGIN};${MI_ORIGIN}/../drjit")
 
 # Build the dependencies
 add_subdirectory(ext)
@@ -284,25 +284,25 @@ include_directories(include
   ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-if (MTS_ENABLE_CUDA)
+if (MI_ENABLE_CUDA)
   message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
-  add_definitions(-DMTS_ENABLE_CUDA=1)
+  add_definitions(-DMI_ENABLE_CUDA=1)
 endif()
 
-if (MTS_ENABLE_LLVM)
-  add_definitions(-DMTS_ENABLE_LLVM=1)
+if (MI_ENABLE_LLVM)
+  add_definitions(-DMI_ENABLE_LLVM=1)
 endif()
 
-if (MTS_ENABLE_EMBREE)
+if (MI_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
-  add_definitions(-DMTS_ENABLE_EMBREE=1)
+  add_definitions(-DMI_ENABLE_EMBREE=1)
   message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
 else()
   message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
-if (MTS_ENABLE_AUTODIFF)
-  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+if (MI_ENABLE_AUTODIFF)
+  add_definitions(-DMI_ENABLE_AUTODIFF=1)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -379,9 +379,9 @@ function(add_plugin)
   target_link_libraries(${TARGET} PRIVATE mitsuba)
   set_target_properties(${TARGET} PROPERTIES
     PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
-    RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
-    FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET}
+    LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/plugins
+    RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/plugins
+    FOLDER plugins/${MI_PLUGIN_PREFIX}/${TARGET}
   )
   install(
     TARGETS ${TARGET}
@@ -390,24 +390,24 @@ function(add_plugin)
 endfunction(add_plugin)
 
 # Be extra noisy about unintended float->double conversions
-if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
+if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MI_VARIANTS MATCHES "double")
   add_compile_options("-Wdouble-promotion")
 endif()
 
 # Forwarding of profiler events to external tools
-if (MTS_ENABLE_PROFILER)
-  if (MTS_PROFILER_ITTNOTIFY)
+if (MI_ENABLE_PROFILER)
+  if (MI_PROFILER_ITTNOTIFY)
     include_directories(${ITT_INCLUDE_DIRS})
-    add_definitions(-DMTS_ENABLE_ITTNOTIFY=1)
+    add_definitions(-DMI_ENABLE_ITTNOTIFY=1)
   endif()
 
-  if (MTS_PROFILER_NVTX)
+  if (MI_PROFILER_NVTX)
     set(CUDA_TOOLKIT_ROOT_DIR "" CACHE STRING "Path to the CUDA installation root directory.")
     if (NOT CUDA_TOOLKIT_ROOT_DIR)
       message(FATAL_ERROR "Specify CUDA_TOOLKIT_ROOT_DIR.")
     endif()
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-    add_definitions(-DMTS_ENABLE_NVTX=1)
+    add_definitions(-DMI_ENABLE_NVTX=1)
   endif()
 endif()
 
@@ -443,62 +443,62 @@ if (MSVC)
 endif()
 
 # Warn if a mitsuba.conf file was newly created
-if (MTS_COPIED_CONFIG_FILE AND NOT SKBUILD)
+if (MI_COPIED_CONFIG_FILE AND NOT SKBUILD)
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
 endif()
 
 # Installation targets
-set(MTS_DEPEND
+set(MI_DEPEND
   IlmImf IlmThread Imath Iex IexMath Half pugixml
 )
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
-  set(MTS_DEPEND ${MTS_DEPEND} asmjit)
+  set(MI_DEPEND ${MI_DEPEND} asmjit)
 endif()
 
 if (WIN32 OR APPLE)
-  list(APPEND MTS_DEPEND png jpeg)
+  list(APPEND MI_DEPEND png jpeg)
 
   if (WIN32)
-    list(APPEND MTS_DEPEND zlib)
+    list(APPEND MI_DEPEND zlib)
   endif()
 endif()
 
-if (MTS_ENABLE_EMBREE)
-  list(APPEND MTS_DEPEND embree)
+if (MI_ENABLE_EMBREE)
+  list(APPEND MI_DEPEND embree)
 endif()
 
 if (NOT SKBUILD)
-  list(APPEND MTS_DEPEND drjit-thread)
+  list(APPEND MI_DEPEND drjit-thread)
 
-  if (MTS_ENABLE_JIT)
-    list(APPEND MTS_DEPEND drjit-core)
+  if (MI_ENABLE_JIT)
+    list(APPEND MI_DEPEND drjit-core)
   endif()
 
-  if (MTS_ENABLE_AUTODIFF)
-    list(APPEND MTS_DEPEND drjit-autodiff)
+  if (MI_ENABLE_AUTODIFF)
+    list(APPEND MI_DEPEND drjit-autodiff)
   endif()
 endif()
 
 # Set up location for build products
-set_target_properties(mitsuba-bin mitsuba ${MTS_DEPEND}
+set_target_properties(mitsuba-bin mitsuba ${MI_DEPEND}
   PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY_RELEASE ${MTS_BINARY_DIR}
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY_DEBUG ${MTS_BINARY_DIR}
-  RUNTIME_OUTPUT_DIRECTORY_RELNODEBINFO ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY_RELNODEBINFO ${MTS_BINARY_DIR}
-  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${MTS_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${MI_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_RELEASE ${MI_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MI_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_DEBUG ${MI_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_RELNODEBINFO ${MI_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_RELNODEBINFO ${MI_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${MI_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${MI_BINARY_DIR}
 )
 
 install(
-  TARGETS mitsuba-bin mitsuba ${MTS_DEPEND}
+  TARGETS mitsuba-bin mitsuba ${MI_DEPEND}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
@@ -524,14 +524,14 @@ install(
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )
 
-add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
+add_custom_target(copy-resources ALL DEPENDS ${MI_COPY_FILES})
 
 file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
 add_custom_command(
     TARGET copy-resources DEPENDS IOR_FILES
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
-    "${MTS_BINARY_DIR}/data/ior"
+    "${MI_BINARY_DIR}/data/ior"
 )
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/ior

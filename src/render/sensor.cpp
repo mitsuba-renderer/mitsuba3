@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 // Sensor interface
 // =============================================================================
 
-MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
+MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
 
@@ -73,12 +73,12 @@ MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(prop
     }
 }
 
-MTS_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
+MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 
-MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
+MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                                                  const Point2f &sample3, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+    MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
     auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
 
@@ -103,7 +103,7 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     return { result_ray, result_spec };
 }
 
-MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::Wavelength, Spectrum>
+MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::Wavelength, Spectrum>
 Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, Float sample,
                                             Mask active) const {
     if constexpr (is_spectral_v<Spectrum>) {
@@ -124,7 +124,7 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
 // ProjectiveCamera interface
 // =============================================================================
 
-MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props)
+MI_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props)
     : Base(props) {
     /* Distance to the near clipping plane */
     m_near_clip = props.get<ScalarFloat>("near_clip", 1e-2f);
@@ -140,7 +140,7 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties
 
 }
 
-MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
+MI_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 
 // =============================================================================
 // Helper functions
@@ -202,9 +202,9 @@ double parse_fov(const Properties &props, double aspect) {
     return result;
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
-MTS_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
+MI_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
+MI_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
 
-MTS_INSTANTIATE_CLASS(Sensor)
-MTS_INSTANTIATE_CLASS(ProjectiveCamera)
+MI_INSTANTIATE_CLASS(Sensor)
+MI_INSTANTIATE_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

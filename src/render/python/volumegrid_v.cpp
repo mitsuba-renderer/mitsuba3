@@ -4,9 +4,9 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(VolumeGrid) {
-    MTS_PY_IMPORT_TYPES(VolumeGrid)
-    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array_t<ScalarFloat> obj,
+MI_PY_EXPORT(VolumeGrid) {
+    MI_PY_IMPORT_TYPES(VolumeGrid)
+    MI_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array_t<ScalarFloat> obj,
                                                      bool compute_max = true) {
             if (obj.ndim() != 3 && obj.ndim() != 4)
                 throw py::type_error("Expected an array of size 3 or 4");

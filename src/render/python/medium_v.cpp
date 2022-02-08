@@ -5,9 +5,9 @@
 #include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PyMedium : public Medium<Float, Spectrum> {
+MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Medium, Sampler, Scene)
+    MI_IMPORT_TYPES(Medium, Sampler, Scene)
 
     PyMedium(const Properties &props) : Medium(props) {}
 
@@ -36,7 +36,7 @@ public:
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
-    MTS_PY_IMPORT_TYPES(PhaseFunctionContext)
+    MI_PY_IMPORT_TYPES(PhaseFunctionContext)
 
     cls.def("phase_function",
             [](Ptr ptr) { return ptr->phase_function(); },
@@ -81,8 +81,8 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
         bind_drjit_ptr_array(cls);
 }
 
-MTS_PY_EXPORT(Medium) {
-    MTS_PY_IMPORT_TYPES(Medium, MediumPtr, Scene, Sampler)
+MI_PY_EXPORT(Medium) {
+    MI_PY_IMPORT_TYPES(Medium, MediumPtr, Scene, Sampler)
     using PyMedium = PyMedium<Float, Spectrum>;
 
     auto medium = py::class_<Medium, PyMedium, Object, ref<Medium>>(m, "Medium", D(Medium))
@@ -122,5 +122,5 @@ MTS_PY_EXPORT(Medium) {
     }
 
 
-    MTS_PY_REGISTER_OBJECT("register_medium", Medium)
+    MI_PY_REGISTER_OBJECT("register_medium", Medium)
 }

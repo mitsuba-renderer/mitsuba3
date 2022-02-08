@@ -1,7 +1,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/python/python.h>
 
-MTS_PY_EXPORT(util) {
+MI_PY_EXPORT(util) {
     auto util = m.def_submodule("util", "Miscellaneous utility routines");
 
     util.def_method(util, core_count)

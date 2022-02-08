@@ -9,12 +9,12 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
-#if defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
-# if defined(MTS_USE_OPTIX_HEADERS)
+#if defined(MI_ENABLE_CUDA)
+# if defined(MI_USE_OPTIX_HEADERS)
     #include <optix_function_table_definition.h>
 # endif
     #include "../shapes/optix/mesh.cuh"
@@ -22,7 +22,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
+MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
@@ -31,7 +31,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_flip_normals = props.get<bool>("flip_normals", false);
 }
 
-MTS_VARIANT
+MI_VARIANT
 Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
                             ScalarSize face_count, const Properties &props,
                             bool has_vertex_normals, bool has_vertex_texcoords) : Mesh(props) {
@@ -50,9 +50,9 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     initialize();
 }
 
-MTS_VARIANT
+MI_VARIANT
 void Mesh<Float, Spectrum>::initialize() {
-#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     m_vertex_positions_ptr = m_vertex_positions.data();
     m_faces_ptr = m_faces.data();
 #endif
@@ -62,14 +62,14 @@ void Mesh<Float, Spectrum>::initialize() {
     Base::initialize();
 }
 
-MTS_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
+MI_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox() const {
     return m_bbox;
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
     if constexpr (dr::is_cuda_array_v<Float>)
         Throw("bbox(ScalarIndex) is not available in CUDA mode!");
@@ -90,7 +90,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                                                                dr::max(dr::max(v0, v1), v2));
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
+MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
     auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
     auto&& vertex_normals   = dr::migrate(m_vertex_normals, AllocType::Host);
     auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
@@ -217,7 +217,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         util::time_string((float) timer.value()));
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
+MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     if (!has_vertex_normals())
         Throw("Storing new normals in a Mesh that didn't have normals at "
               "construction time is not implemented yet.");
@@ -308,7 +308,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     }
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
+MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
     if constexpr (dr::is_jit_array_v<Float>)
         dr::sync_thread();
@@ -321,7 +321,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
             ScalarPoint3f(ptr[3 * i + 0], ptr[3 * i + 1], ptr[3 * i + 2]));
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
+MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if (!m_area_pmf.empty())
@@ -355,7 +355,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     );
 }
 
-MTS_VARIANT
+MI_VARIANT
 ref<Mesh<Float, Spectrum>>
 Mesh<Float, Spectrum>::merge(const Mesh *other) const {
     if (other->emitter() != m_emitter || other->sensor() != m_sensor ||
@@ -424,7 +424,7 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
     return result;
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
+MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_parameterization)
         return; // already built!
@@ -463,17 +463,17 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarSize
+MI_VARIANT typename Mesh<Float, Spectrum>::ScalarSize
 Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
 }
 
-MTS_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
+MI_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
     ensure_pmf_built();
     return m_area_pmf.sum();
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
+MI_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
     ensure_pmf_built();
 
@@ -529,7 +529,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     return ps;
 }
 
-MTS_VARIANT
+MI_VARIANT
 
 typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
@@ -552,12 +552,12 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
-MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
+MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
     ensure_pmf_built();
     return m_area_pmf.normalization();
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::Point3f
+MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
 Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
                                                Mask active) const {
     Vector3u fi = face_indices(si.prim_index, active);
@@ -585,13 +585,13 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
 }
 
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
                                                    uint32_t ray_flags,
                                                    uint32_t /*recursion_depth*/,
                                                    Mask active) const {
-    MTS_MASK_ARGUMENT(active);
+    MI_MASK_ARGUMENT(active);
 
     constexpr bool IsDiff = dr::is_diff_array_v<Float>;
 
@@ -802,7 +802,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     return si;
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
+MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
                                                       size_t dim,
                                                       const std::vector<InputFloat>& data) {
     auto attribute = m_mesh_attributes.find(name);
@@ -832,7 +832,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
     m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::UnpolarizedSpectrum
+MI_VARIANT typename Mesh<Float, Spectrum>::UnpolarizedSpectrum
 Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
                                       const SurfaceInteraction3f &si,
                                       Mask active) const {
@@ -854,7 +854,7 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
     }
 }
 
-MTS_VARIANT Float
+MI_VARIANT Float
 Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
@@ -869,7 +869,7 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
         Throw("eval_attribute_1(): Attribute \"%s\" requested but had size %u.", name, attr.size);
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::Color3f
+MI_VARIANT typename Mesh<Float, Spectrum>::Color3f
 Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
@@ -937,7 +937,7 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output, int 
 }
 }  // end namespace
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
     using ScalarPoint3d = mitsuba::Point<double, 3>;
 
@@ -985,7 +985,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     return result;
 }
 
-MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
+MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
@@ -1016,7 +1016,7 @@ MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_VARIANT size_t Mesh<Float, Spectrum>::vertex_data_bytes() const {
+MI_VARIANT size_t Mesh<Float, Spectrum>::vertex_data_bytes() const {
     size_t vertex_data_bytes = 3 * sizeof(InputFloat);
 
     if (has_vertex_normals())
@@ -1031,7 +1031,7 @@ MTS_VARIANT size_t Mesh<Float, Spectrum>::vertex_data_bytes() const {
     return vertex_data_bytes;
 }
 
-MTS_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
+MI_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
     size_t face_data_bytes = 3 * sizeof(ScalarIndex);
 
     for (const auto&[name, attribute]: m_mesh_attributes)
@@ -1041,8 +1041,8 @@ MTS_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
     return face_data_bytes;
 }
 
-#if defined(MTS_ENABLE_EMBREE)
-MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) {
+#if defined(MI_ENABLE_EMBREE)
+MI_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
@@ -1057,12 +1057,12 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 }
 #endif
 
-#if defined(MTS_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
 static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
 
-MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
+MI_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
+MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
     m_vertex_buffer_ptr = (void*) m_vertex_positions.data(); // triggers dr::eval()
     build_input.type                           = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
@@ -1076,7 +1076,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
 }
 #endif
 
-MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     Base::traverse(callback);
 
     callback->put_parameter("vertex_count",     m_vertex_count);
@@ -1090,7 +1090,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_parameter(name, attribute.buf);
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions")) {
         recompute_bbox();
 
@@ -1103,7 +1103,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         if (m_parameterization)
             m_parameterization = nullptr;
 
-#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
         m_vertex_positions_ptr = m_vertex_positions.data();
         m_faces_ptr = m_faces.data();
 #endif
@@ -1112,7 +1112,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
     Base::parameters_changed();
 }
 
-MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
+MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     bool result = false;
     for (auto &[name, attribute]: m_mesh_attributes)
         result |= dr::grad_enabled(attribute.buf);
@@ -1122,6 +1122,6 @@ MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return result;
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
-MTS_INSTANTIATE_CLASS(Mesh)
+MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
+MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

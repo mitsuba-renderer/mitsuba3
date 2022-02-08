@@ -36,7 +36,7 @@ enum class FilmFlags : uint32_t {
     Special              = 0x4,
 };
 
-MTS_DECLARE_ENUM_OPERATORS(FilmFlags)
+MI_DECLARE_ENUM_OPERATORS(FilmFlags)
 
 
 /** \brief Abstract film base class - used to store samples
@@ -47,9 +47,9 @@ MTS_DECLARE_ENUM_OPERATORS(FilmFlags)
  * is then committed to the film using the \ref put() method.
  */
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_LIB Film : public Object {
+class MI_EXPORT_LIB Film : public Object {
 public:
-    MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
+    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
 
     /**
      * Configure the film for rendering a specified set of extra channels (AOVS).
@@ -139,7 +139,7 @@ public:
 
     virtual std::string to_string() const override;
 
-    MTS_DECLARE_CLASS()
+    MI_DECLARE_CLASS()
 protected:
     /// Create a film
     Film(const Properties &props);
@@ -159,5 +159,5 @@ protected:
     ref<Texture> m_srf;
 };
 
-MTS_EXTERN_CLASS(Film)
+MI_EXTERN_CLASS(Film)
 NAMESPACE_END(mitsuba)

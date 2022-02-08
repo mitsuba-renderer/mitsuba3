@@ -11,9 +11,9 @@
 
 
 /// Trampoline for derived types implemented in Python
-MTS_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
+MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(Mesh)
+    MI_IMPORT_TYPES(Mesh)
     PyMesh(const Properties &props) : Mesh(props) { }
     PyMesh(const std::string &name, uint32_t vertex_count, uint32_t face_count,
            const Properties &props = Properties(),
@@ -26,7 +26,7 @@ public:
 };
 
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
-    MTS_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES()
 
     cls.def("is_emitter", [](Ptr shape) { return shape->is_emitter(); },
             D(Shape, is_emitter))
@@ -99,10 +99,10 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
         bind_drjit_ptr_array(cls);
 }
 
-MTS_PY_EXPORT(Shape) {
-    MTS_PY_IMPORT_TYPES(Shape, Mesh)
+MI_PY_EXPORT(Shape) {
+    MI_PY_IMPORT_TYPES(Shape, Mesh)
 
-    auto shape = MTS_PY_CLASS(Shape, Object)
+    auto shape = MI_PY_CLASS(Shape, Object)
         .def("sample_position", &Shape::sample_position,
             "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
         .def("pdf_position", &Shape::pdf_position,
@@ -189,5 +189,5 @@ MTS_PY_EXPORT(Shape) {
              "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
              D(Mesh, eval_parameterization));
 
-    MTS_PY_REGISTER_OBJECT("register_mesh", Mesh)
+    MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }
