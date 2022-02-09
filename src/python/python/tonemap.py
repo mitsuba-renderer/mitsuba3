@@ -1,35 +1,26 @@
-import mitsuba
-import numpy as np
-import argparse
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import Bitmap, ThreadEnvironment, \
-    ScopedSetThreadEnvironment, Thread, LogLevel, Struct, Log
-
-from concurrent.futures import ThreadPoolExecutor
-
-import sys
-import os
-
-te = ThreadEnvironment()
-Thread.thread().logger().set_log_level(LogLevel.Info)
-
 def tonemap(fname, scale):
-    with ScopedSetThreadEnvironment(te):
+    import mitsuba.scalar_rgb as mi
+
+    mi.set_log_level(mi.LogLevel.Info)
+    te = mi.ThreadEnvironment()
+
+    with mi.ScopedSetThreadEnvironment(te):
         try:
-            img_in = Bitmap(fname)
-            img_py = np.array(img_in, copy=False)
-            img_py *= scale
-            img_out = img_in.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True)
+            img_in = mi.Bitmap(mi.TensorXf(mi.Bitmap(fname)) * scale)
+            img_out = img_in.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True)
             fname_out = fname.replace('.exr', '.png')
             img_out.write(fname_out)
-            Log(LogLevel.Info, 'Wrote "%s".' % fname_out)
+            mi.Log(mi.LogLevel.Info, 'Wrote "%s".' % fname_out)
         except Exception as e:
             sys.stderr.write('Could not tonemap image "%s": %s!\n' %
                 (fname, str(e)))
 
 
 if __name__ == '__main__':
+    import sys, os
+    import argparse
+    from concurrent.futures import ThreadPoolExecutor
+
     class MyParser(argparse.ArgumentParser):
         def error(self, message):
             sys.stderr.write('error: %s\n' % message)

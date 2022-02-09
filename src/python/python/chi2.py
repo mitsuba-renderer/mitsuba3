@@ -1,8 +1,6 @@
 import mitsuba
 import drjit as dr
-import numpy as np
 import time
-
 
 class ChiSquareTest:
     """
@@ -77,7 +75,7 @@ class ChiSquareTest:
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
                  sample_count=1000000, res=101, ires=4, seed=0):
-        from mitsuba.core import ScalarVector2u
+        from mitsuba.current import ScalarVector2u
 
         assert res > 0
         assert ires >= 2, "The 'ires' parameter must be >= 2!"
@@ -112,17 +110,17 @@ class ChiSquareTest:
         self.pdf_start = time.time()
 
         # Generate a table of uniform variates
-        from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
+        from mitsuba.current import Float, Vector2f, Vector2u, Float32, \
             UInt64, PCG32, sample_tea_32
 
         idx = dr.arange(UInt64, self.sample_count)
         v0, v1 = sample_tea_32(idx, self.seed)
 
-        # Scramble seed and stream index using TEA, a linearly increasing sequence 
+        # Scramble seed and stream index using TEA, a linearly increasing sequence
         # does not produce a sufficiently statistically independent set of streams
         rng = PCG32(initstate=v0, initseq=v1)
 
-        samples_in = getattr(mitsuba.core, 'Vector%if' % self.sample_dim)()
+        samples_in = getattr(mitsuba.current, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):
             samples_in[i] = rng.next_float32() if Float is Float32 \
                 else rng.next_float64()
@@ -186,7 +184,7 @@ class ChiSquareTest:
         intervals discretized into ``self.ires`` separate function evaluations.
         """
 
-        from mitsuba.core import Float, Vector2f, Vector2u, ScalarVector2f, UInt32
+        from mitsuba.current import Vector2u, UInt32
 
         self.histogram_start = time.time()
 
@@ -227,7 +225,7 @@ class ChiSquareTest:
         self.pdf = dr.block_sum(pdf * weights, sample_count)
 
         if len(self.pdf) == 1:
-            dr.resize(self.pdf, dr.width(xy))
+            dr.resize(self.pdf, dr.width(p))
 
         # A few sanity checks
         pdf_min = dr.hmin(self.pdf) / self.sample_count
@@ -264,9 +262,9 @@ class ChiSquareTest:
 
         """
 
-        from mitsuba.core import UInt32, Float, Float64
-        from mitsuba.core.math import chi2
-        from mitsuba.python.math import rlgamma
+        import numpy as np
+        from mitsuba.current import UInt32, Float, Float64
+        from mitsuba.current.math import rlgamma, chi2
 
         if self.histogram is None:
             self.tabulate_histogram()
@@ -282,8 +280,7 @@ class ChiSquareTest:
         histogram = Float64(dr.gather(Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
-        chi2val, dof, pooled_in, pooled_out = \
-            chi2(histogram, pdf, 5)
+        chi2val, dof, pooled_in, pooled_out = chi2(histogram, pdf, 5)
 
         if dof < 1:
             self._log('Failure: The number of degrees of freedom is too low!')
@@ -385,7 +382,7 @@ class LineDomain:
     ' The identity map on the line.'
 
     def __init__(self, bounds=[-1.0, 1.0]):
-        from mitsuba.core import ScalarBoundingBox2f
+        from mitsuba.current import ScalarBoundingBox2f
 
         self._bounds = ScalarBoundingBox2f(
             min=(bounds[0], -0.5),
@@ -402,7 +399,7 @@ class LineDomain:
         return p.x
 
     def map_backward(self, p):
-        from mitsuba.core import Vector2f, Float
+        from mitsuba.current import Vector2f, Float
         return Vector2f(p.x, dr.zero(Float, len(p.x)))
 
 
@@ -410,7 +407,7 @@ class PlanarDomain:
     'The identity map on the plane'
 
     def __init__(self, bounds=None):
-        from mitsuba.core import ScalarBoundingBox2f
+        from mitsuba.current import ScalarBoundingBox2f
 
         if bounds is None:
             bounds = ScalarBoundingBox2f(-1, 1)
@@ -435,14 +432,14 @@ class SphericalDomain:
     'Maps between the unit sphere and a [cos(theta), phi] parameterization.'
 
     def bounds(self):
-        from mitsuba.core import ScalarBoundingBox2f
+        from mitsuba.current import ScalarBoundingBox2f
         return ScalarBoundingBox2f([-dr.Pi, -1], [dr.Pi, 1])
 
     def aspect(self):
         return 2
 
     def map_forward(self, p):
-        from mitsuba.core import Vector3f
+        from mitsuba.current import Vector3f
 
         cos_theta = -p.y
         sin_theta = dr.safe_sqrt(dr.fnmadd(cos_theta, cos_theta, 1))
@@ -455,7 +452,7 @@ class SphericalDomain:
         )
 
     def map_backward(self, p):
-        from mitsuba.core import Vector2f
+        from mitsuba.current import Vector2f
         return Vector2f(dr.atan2(p.y, p.x), -p.z)
 
 
@@ -469,15 +466,13 @@ def SpectrumAdapter(value):
     Adapter which permits testing 1D spectral power distributions using the
     Chi^2 test.
     """
-
-    from mitsuba.core import load_string, sample_shifted, Vector1f
-    from mitsuba.render import SurfaceInteraction3f
+    import mitsuba.current as mi
 
     def instantiate(args):
         if hasattr(value, 'sample'):
             return value
         else:
-            obj = load_string(value % args)
+            obj = mi.load_string(value % args)
             expanded = obj.expand()
             if len(expanded) == 1:
                 return expanded[0]
@@ -486,13 +481,13 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        si = dr.zero(SurfaceInteraction3f, dr.width(sample))
-        wavelength, weight = plugin.sample_spectrum(si, sample_shifted(sample[0]))
-        return Vector1f(wavelength[0])
+        si = dr.zero(mi.SurfaceInteraction3f, dr.width(sample))
+        wavelength, weight = plugin.sample_spectrum(si, mi.sample_shifted(sample[0]))
+        return mi.Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
-        si = dr.zero(SurfaceInteraction3f, dr.width(w))
+        si = dr.zero(mi.SurfaceInteraction3f, dr.width(w))
         si.wavelengths = w
         return plugin.pdf_spectrum(si)[0]
 
@@ -512,15 +507,13 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
-
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core import load_string, Float
+    import mitsuba.current as mi
 
     if ctx is None:
-        ctx = BSDFContext()
+        ctx = mi.BSDFContext()
 
     def make_context(n):
-        si = dr.zero(SurfaceInteraction3f, n)
+        si = dr.zero(mi.SurfaceInteraction3f, n)
         si.wi = wi
         return (si, ctx)
 
@@ -528,7 +521,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         xml = """<bsdf version="2.0.0" type="%s">
             %s
         </bsdf>""" % (bsdf_type, extra)
-        return load_string(xml % args)
+        return mi.load_string(xml % args)
 
     def sample_functor(sample, *args):
         n = dr.width(sample)
@@ -536,7 +529,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         (si, ctx) = make_context(n)
         bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
 
-        w = dr.full(Float, 1.0, dr.width(weight))
+        w = dr.full(mi.Float, 1.0, dr.width(weight))
         w[dr.all(dr.eq(weight, 0))] = 0
         return bs.wo, w
 
@@ -560,28 +553,26 @@ def EmitterAdapter(emitter_type, extra):
         Additional XML used to specify the emitter's parameters.
 
     """
-
-    from mitsuba.render import Interaction3f, DirectionSample3f
-    from mitsuba.core import load_string
+    import mitsuba.current as mi
 
     def instantiate(args):
         xml = """<emitter version="2.0.0" type="%s">
             %s
         </emitter>""" % (emitter_type, extra)
-        return load_string(xml % args)
+        return mi.load_string(xml % args)
 
     def sample_functor(sample, *args):
         n = dr.width(sample)
         plugin = instantiate(args)
-        si = dr.zero(Interaction3f)
+        si = dr.zero(mi.Interaction3f)
         ds, w = plugin.sample_direction(si, sample)
         return ds.d
 
     def pdf_functor(wo, *args):
         n = dr.width(wo)
         plugin = instantiate(args)
-        si = dr.zero(Interaction3f)
-        ds = dr.zero(DirectionSample3f)
+        si = dr.zero(mi.Interaction3f)
+        ds = dr.zero(mi.DirectionSample3f)
         ds.d = wo
         return plugin.pdf_direction(si, ds)
 
@@ -593,8 +584,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     Adapter for testing microfacet distribution sampling techniques
     (separately from BSDF models, which are also tested)
     """
-
-    from mitsuba.render import MicrofacetDistribution
+    from mitsuba.current import MicrofacetDistribution
 
     def instantiate(args):
         wi = [0, 0, 1]
@@ -628,31 +618,30 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
-    from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
-    from mitsuba.core import load_string, Float, Frame3f
+    import mitsuba.current as mi
 
     if ctx is None:
-        ctx = PhaseFunctionContext(None)
+        ctx = mi.PhaseFunctionContext(None)
 
     def make_context(n):
-        mi = dr.zero(MediumInteraction3f, n)
+        mi = dr.zero(mi.MediumInteraction3f, n)
         mi.wi = wi
-        mi.sh_frame = Frame3f(mi.wi)
-        mi.p = mitsuba.core.Point3f(0, 0, 0)
+        mi.sh_frame = mi.Frame3f(mi.wi)
+        mi.p = mi.Point3f(0, 0, 0)
         return mi, ctx
 
     def instantiate(args):
         xml = """<phase version="2.0.0" type="%s">
             %s
         </phase>""" % (phase_type, extra)
-        return load_string(xml % args)
+        return mi.load_string(xml % args)
 
     def sample_functor(sample, *args):
         n = dr.width(sample)
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         wo, pdf = plugin.sample(ctx, mi, sample[0], [sample[1], sample[2]])
-        w = dr.full(Float, 1.0, dr.width(pdf))
+        w = dr.full(mi.Float, 1.0, dr.width(pdf))
         w[dr.eq(pdf, 0)] = 0
         return wo, w
 
@@ -666,16 +655,13 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
 
 
 if __name__ == '__main__':
-    mitsuba.set_variant('llvm_rgb')
-
-    from mitsuba.core.warp import square_to_cosine_hemisphere
-    from mitsuba.core.warp import square_to_cosine_hemisphere_pdf
+    import mitsuba.llvm_ad_rgb as mi
 
     def my_sample(sample):
-        return square_to_cosine_hemisphere(sample)
+        return mi.warp.square_to_cosine_hemisphere(sample)
 
     def my_pdf(p):
-        return square_to_cosine_hemisphere_pdf(p)
+        return mi.warp.square_to_cosine_hemisphere_pdf(p)
 
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
