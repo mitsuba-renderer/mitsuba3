@@ -35,6 +35,7 @@ MI_PY_EXPORT(Appender) {
         .value("Info", Info, D(LogLevel, Info))
         .value("Warn", Warn, D(LogLevel, Warn))
         .value("Error", Error, D(LogLevel, Error));
+    py::implicitly_convertible<unsigned, mitsuba::LogLevel>();
 
     MI_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
         .def(py::init<>())
