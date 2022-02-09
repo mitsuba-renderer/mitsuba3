@@ -72,6 +72,10 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     m.attr("MI_ENABLE_EMBREE") = false;
 #endif
 
+    m.def("set_log_level", [](mitsuba::LogLevel level) {
+        Thread::thread()->logger()->set_log_level(level);
+    });
+
     Jit::static_initialization();
     Class::static_initialization();
     Thread::static_initialization();
