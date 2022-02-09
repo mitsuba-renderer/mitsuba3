@@ -1,20 +1,11 @@
-import mitsuba
-import numpy as np
-import argparse
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import Bitmap, ThreadEnvironment, \
-    ScopedSetThreadEnvironment, Thread, LogLevel, Struct, Log
-
-from concurrent.futures import ThreadPoolExecutor
-
-import sys
-import os
-
-te = ThreadEnvironment()
-Thread.thread().logger().set_log_level(LogLevel.Info)
-
 def polvis(fname, args):
+    import numpy as np
+    from mitsuba.scalar_rgb import Bitmap, ThreadEnvironment, \
+        ScopedSetThreadEnvironment, Thread, LogLevel, Struct
+
+    Thread.thread().logger().set_log_level(LogLevel.Info)
+
+    te = ThreadEnvironment()
     with ScopedSetThreadEnvironment(te):
         mitsuba.set_variant('scalar_rgb')
         try:
@@ -179,6 +170,9 @@ def polvis(fname, args):
                 (fname, str(e)))
 
 if __name__ == '__main__':
+    import sys, os, argparse
+    from concurrent.futures import ThreadPoolExecutor
+
     class MyParser(argparse.ArgumentParser):
         def error(self, message):
             sys.stderr.write('error: %s\n' % message)

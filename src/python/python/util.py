@@ -3,9 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 from collections.abc import Mapping
 from contextlib import contextmanager
 
-import mitsuba
 import drjit as dr
-
 
 class SceneParameters(Mapping):
     """
@@ -26,7 +24,7 @@ class SceneParameters(Mapping):
         self.hierarchy  = hierarchy  if hierarchy  is not None else {}
         self.update_list = {}
 
-        from mitsuba.core import set_property, get_property
+        from mitsuba.current import set_property, get_property
         self.set_property = set_property
         self.get_property = get_property
 
@@ -155,14 +153,14 @@ class SceneParameters(Mapping):
         }
 
 
-def traverse(node: mitsuba.core.Object) -> SceneParameters:
+def traverse(node: mitsuba.current.Object) -> SceneParameters:
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
     See also :py:class:`mitsuba.python.util.SceneParameters`.
     """
-    from mitsuba.core import TraversalCallback
+    from mitsuba.current import TraversalCallback
 
     class SceneTraversal(TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
@@ -214,7 +212,7 @@ def convert_to_bitmap(data, uint8_srgb=True):
     Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
     the resulting bitmap should be translated to a uint8 sRGB bitmap.
     """
-    from mitsuba.core import Bitmap, Struct
+    from mitsuba.current import Bitmap, Struct
 
     if isinstance(data, Bitmap):
         bitmap = data

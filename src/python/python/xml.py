@@ -1,7 +1,3 @@
-import numpy as np
-import os
-from shutil import copy2
-
 class Files:
     '''
     Enum for different files or dicts containing specific info
@@ -27,10 +23,10 @@ class WriteXML:
     }
 
     def __init__(self, path, subfolders=None, split_files=False):
-        from mitsuba import variant
-        if not variant():
+        import mitsuba
+        if not mitsuba.variant():
             mitsuba.set_variant('scalar_rgb')
-        from mitsuba.core import PluginManager
+        from mitsuba.current import PluginManager
         self.pmgr = PluginManager.instance()
         self.split_files = split_files
         self.scene_data = [{'type': 'scene'}, #MAIN
@@ -131,6 +127,8 @@ class WriteXML:
 
         name: path to the scene.xml file to write.
         '''
+        import os
+
         # If any files happen to be open, close them and start again
         for f in self.files:
             if f is not None:
@@ -460,7 +458,8 @@ class WriteXML:
         entry: the dict containing the spectrum
         entry_type: either 'spectrum' or 'rgb'
         '''
-        from mitsuba.core import Color3f
+        import numpy as np
+        from mitsuba.current import Color3f
         if entry_type == 'rgb':
             if len(entry.keys()) != 2 or 'value' not in entry:
                 raise ValueError("Invalid entry of type rgb: %s" % entry)
@@ -507,6 +506,8 @@ class WriteXML:
         filepath: the path to the given file
         tag: the tag this path property belongs to in (shape, texture, spectrum)
         '''
+        import os
+        from shutil import copy2
 
         if tag not in self.subfolders:
             raise ValueError("Unsupported tag for a filename: %s" % tag)
@@ -545,7 +546,9 @@ class WriteXML:
 
         data: The dictionary to write to file.
         '''
-        from mitsuba.core import ScalarTransform4f, ScalarPoint3f
+        import numpy as np
+        import os
+        from mitsuba.current import ScalarTransform4f, ScalarPoint3f
 
         if 'type' in data: # Scene tag
             self.open_element(data.pop('type'), {'version': '2.1.0'})
@@ -688,27 +691,27 @@ class WriteXML:
         transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
         '''
-        from drjit import transform_decompose, quat_to_euler
-        scale, quat, trans = transform_decompose(transform.matrix)
-        rot = quat_to_euler(quat)
+        import drjit as dr
+        scale, quat, trans = dr.transform_decompose(transform.matrix)
+        rot = dr.quat_to_euler(quat)
         params = {}
         if rot[0] != 0.0:
             params['rotate_x'] = {
                 'type': 'rotate',
                 'x': '1',
-                'angle': rot[0] * 180 / np.pi
+                'angle': rot[0] * 180 / dr.Pi
             }
         if rot[1] != 0.0:
             params['rotate_y'] = {
                 'type': 'rotate',
                 'y': '1',
-                'angle': rot[1] * 180 / np.pi
+                'angle': rot[1] * 180 / dr.Pi
             }
         if rot[2] != 0.0:
             params['rotate_z'] = {
                 'type': 'rotate',
                 'z': '1',
-                'angle': rot[2] * 180 / np.pi
+                'angle': rot[2] * 180 / dr.Pi
             }
         if export_scale and scale != 1.0:
             params['scale'] = {
