@@ -1,7 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 from .common import ADIntegrator, mis_weight
 
@@ -40,51 +40,47 @@ class PRBIntegrator(ADIntegrator):
     """
 
     def sample(self,
-               mode: drjit.ADMode,
-               scene: mitsuba.render.Scene,
-               sampler: mitsuba.render.Sampler,
-               ray: mitsuba.core.Ray3f,
-               δL: Optional[mitsuba.core.Spectrum],
-               state_in: Optional[mitsuba.core.Spectrum],
-               active: mitsuba.core.Bool,
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.Ray3f,
+               δL: Optional[mi.Spectrum],
+               state_in: Optional[mi.Spectrum],
+               active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mitsuba.core.Spectrum,
-               mitsuba.core.Bool, mitsuba.core.Spectrum]:
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
         """
 
-        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
-        from mitsuba.render import SurfaceInteraction3f, DirectionSample3f, \
-            BSDFContext, BSDFFlags, RayFlags, has_flag
-
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == dr.ADMode.Primal
 
         # Standard BSDF evaluation context for path tracing
-        bsdf_ctx = BSDFContext()
+        bsdf_ctx = mi.BSDFContext()
 
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
-        ray = Ray3f(ray)
-        depth = UInt32(0)                          # Depth of current vertex
-        L = Spectrum(0 if primal else state_in)    # Radiance accumulator
-        δL = Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
-        β = Spectrum(1)                            # Path throughput weight
-        η = Float(1)                               # Index of refraction
-        active = Bool(active)                      # Active SIMD lanes
+        ray = mi.Ray3f(ray)
+        depth = mi.UInt32(0)                          # Depth of current vertex
+        L = mi.Spectrum(0 if primal else state_in)    # Radiance accumulator
+        δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
+        β = mi.Spectrum(1)                            # Path throughput weight
+        η = mi.Float(1)                               # Index of refraction
+        active = mi.Bool(active)                      # Active SIMD lanes
 
         # Variables caching information from the previous bounce
-        prev_si         = dr.zero(SurfaceInteraction3f)
-        prev_bsdf_pdf   = Float(1.0)
-        prev_bsdf_delta = Bool(True)
+        prev_si         = dr.zero(mi.SurfaceInteraction3f)
+        prev_bsdf_pdf   = mi.Float(1.0)
+        prev_bsdf_delta = mi.Bool(True)
 
         # Record the following loop in its entirety
-        loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                    state=lambda: (sampler, ray, depth, L, δL, β, η, active,
-                                   prev_si, prev_bsdf_pdf, prev_bsdf_delta))
+        loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
+                       state=lambda: (sampler, ray, depth, L, δL, β, η, active,
+                                      prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
         # Specify the max. number of loop iterations (this can help avoid
         # costly synchronization when when wavefront-style loops are generated)
@@ -97,7 +93,7 @@ class PRBIntegrator(ADIntegrator):
 
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray,
-                                         ray_flags=RayFlags.All,
+                                         ray_flags=mi.RayFlags.All,
                                          coherent=dr.eq(depth, 0))
 
             # Get the BSDF, potentially computes texture-space differentials
@@ -106,7 +102,7 @@ class PRBIntegrator(ADIntegrator):
             # ---------------------- Direct emission ----------------------
 
             # Compute MIS weight for emitter sample from previous bounce
-            ds = DirectionSample3f(scene, si=si, ref=prev_si)
+            ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
 
             mis = mis_weight(
                 prev_bsdf_pdf,
@@ -122,7 +118,7 @@ class PRBIntegrator(ADIntegrator):
             active_next = (depth + 1 < self.max_depth) & si.is_valid()
 
             # Is emitter sampling even possible on the current vertex?
-            active_em = active_next & has_flag(bsdf.flags(), BSDFFlags.Smooth)
+            active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
             # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
@@ -162,7 +158,7 @@ class PRBIntegrator(ADIntegrator):
 
             prev_si = dr.detach(si, True)
             prev_bsdf_pdf = bsdf_sample.pdf
-            prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags.Delta)
+            prev_bsdf_delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
 
             # -------------------- Stopping criterion ---------------------
 
@@ -238,5 +234,4 @@ class PRBIntegrator(ADIntegrator):
             L                    # State for the differential phase
         )
 
-mitsuba.render.register_integrator("prb", lambda props:
-                                   PRBIntegrator(props))
+mi.register_integrator("prb", lambda props: PRBIntegrator(props))

@@ -200,7 +200,19 @@ class MitsubaModule(types.ModuleType):
                                 args if len(args) > 1 else args[0],
                                 ", ".join(self.variants())))
 
+        if self.variant() == value:
+            return
+
         _tls.variant = value
+
+          # Automatically load/reload and register Python integrators for AD variants
+        if value.startswith(('llvm_', 'cuda_')):
+            import sys
+            if 'mitsuba.ad.integrators' in sys.modules:
+                _reload(sys.modules['mitsuba.ad.integrators'])
+            else:
+                _import('mitsuba.ad.integrators')
+            del sys
 
 
 submodules = ['', '.warp', '.math', '.spline', '.quad', '.mueller']

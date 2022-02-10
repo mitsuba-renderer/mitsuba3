@@ -60,3 +60,14 @@ def test04_check_all_variants():
     import mitsuba as mi
     for v in mi.variants():
         mi.set_variant(v)
+
+
+def test05_register_ad_integrators():
+    import mitsuba as mi
+
+    for variant in mi.variants():
+        if not '_ad_' in variant:
+            continue
+        mi.set_variant(variant)
+        integrator = mi.load_dict({'type': 'prb'})
+        assert integrator.class_().variant() == variant
