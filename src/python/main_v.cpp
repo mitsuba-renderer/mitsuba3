@@ -117,7 +117,7 @@ Caster cast_object = nullptr;
 
 PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
-    m.attr("__name__") = "mitsuba";
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 
     MI_PY_IMPORT_TYPES()
 
