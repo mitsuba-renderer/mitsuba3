@@ -490,11 +490,11 @@ protected:
 //! @{ \name Misc implementations
 // -----------------------------------------------------------------------
 
-extern MI_EXPORT_LIB std::ostream &operator<<(
-    std::ostream &os, const TransportMode &mode);
+extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
+                                              const TransportMode &mode);
 
 extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
-                                                  const BSDFContext& ctx);
+                                              const BSDFContext& ctx);
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& bs) {
