@@ -1,7 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 from .common import ADIntegrator
 
@@ -22,43 +22,40 @@ class BasicPRBIntegrator(ADIntegrator):
     """
 
     def sample(self,
-               mode: drjit.ADMode,
-               scene: mitsuba.render.Scene,
-               sampler: mitsuba.render.Sampler,
-               ray: mitsuba.core.Ray3f,
-               δL: Optional[mitsuba.core.Spectrum],
-               state_in: Optional[mitsuba.core.Spectrum],
-               active: mitsuba.core.Bool,
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.Ray3f,
+               δL: Optional[mi.Spectrum],
+               state_in: Optional[mi.Spectrum],
+               active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mitsuba.core.Spectrum,
-               mitsuba.core.Bool, mitsuba.core.Spectrum]:
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
         """
 
-        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
-        from mitsuba.render import BSDFContext
-
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == dr.ADMode.Primal
 
         # Standard BSDF evaluation context for path tracing
-        bsdf_ctx = BSDFContext()
+        bsdf_ctx = mi.BSDFContext()
 
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
-        ray = Ray3f(ray)
-        depth = UInt32(0)                          # Depth of current vertex
-        L = Spectrum(0 if primal else state_in)    # Radiance accumulator
-        δL = Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
-        β = Spectrum(1)                            # Path throughput weight
-        active = Bool(active)                      # Active SIMD lanes
+        ray = mi.Ray3f(ray)
+        depth = mi.UInt32(0)                          # Depth of current vertex
+        L = mi.Spectrum(0 if primal else state_in)    # Radiance accumulator
+        δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
+        β = mi.Spectrum(1)                            # Path throughput weight
+        active = mi.Bool(active)                      # Active SIMD lanes
 
         # Record the following loop in its entirety
-        loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                    state=lambda: (sampler, ray, depth, L, δL, β, active))
+        loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
+                       state=lambda: (sampler, ray, depth, L, δL, β, active))
 
         while loop(active):
             # ---------------------- Direct emission ----------------------
@@ -139,5 +136,4 @@ class BasicPRBIntegrator(ADIntegrator):
             L                    # State the for differential phase
         )
 
-mitsuba.render.register_integrator("prb_basic", lambda props:
-                                   BasicPRBIntegrator(props))
+mi.register_integrator("prb_basic", lambda props: BasicPRBIntegrator(props))

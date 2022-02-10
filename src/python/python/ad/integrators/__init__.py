@@ -5,7 +5,7 @@ import importlib
 import glob
 
 # Make sure mitsuba.python.util is imported before the integrators
-import mitsuba.python.util
+import mitsuba.util
 
 do_reload = 'common' in globals()
 
@@ -16,11 +16,15 @@ if do_reload:
 for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
     if not os.path.isfile(f) or f.endswith('__init__.py'):
         continue
+
+    if f.endswith('prbvolpath.py'):
+        continue
+
     name = os.path.basename(f)[:-3]
     if do_reload and not name == 'common':
         importlib.reload(globals()[name])
     else:
-        importlib.import_module('mitsuba.python.ad.integrators.' + name)
+        importlib.import_module('mitsuba.ad.integrators.' + name)
 
 from .common import render
 

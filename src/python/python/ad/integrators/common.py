@@ -1,11 +1,11 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
-import mitsuba
+import mitsuba as mi
 import drjit as dr
 import gc
 
 
-class ADIntegrator(mitsuba.render.SamplingIntegrator):
+class ADIntegrator(mi.SamplingIntegrator):
     """
     Abstract base class of numerous differentiable integrators in Mitsuba
 
@@ -25,7 +25,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
          visible surfaces. (Default: |5|)
     """
 
-    def __init__(self, props = mitsuba.core.Properties()):
+    def __init__(self, props = mi.Properties()):
         super().__init__(props)
 
         max_depth = props.get('max_depth', 4)
@@ -49,15 +49,13 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         return f'{type(self).__name__}[max_depth = {self.max_depth},' \
                f' rr_depth = { self.rr_depth }]'
 
-    def render(self: mitsuba.render.SamplingIntegrator,
-               scene: mitsuba.render.Scene,
-               sensor: Union[int, mitsuba.render.Sensor] = 0,
+    def render(self: mi.SamplingIntegrator,
+               scene: mi.Scene,
+               sensor: Union[int, mi.Sensor] = 0,
                seed: int = 0,
                spp: int = 0,
                develop: bool = True,
-               evaluate: bool = True) -> mitsuba.core.TensorXf:
-
-        from mitsuba.core import Bool, UInt32, Float
+               evaluate: bool = True) -> mi.TensorXf:
 
         if not develop:
             raise Exception("develop=True must be specified when "
@@ -85,11 +83,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
-                depth=UInt32(0),
+                depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
                 reparam=None,
-                active=Bool(True)
+                active=mi.Bool(True)
             )
 
             # Prepare an ImageBlock as specified by the film
@@ -99,7 +97,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            alpha = dr.select(valid, Float(1), Float(0))
+            alpha = dr.select(valid, mi.Float(1), mi.Float(0))
             block.put(pos, ray.wavelengths, L * weight, alpha)
 
             # Explicitly delete any remaining unused variables
@@ -116,12 +114,12 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             return self.primal_image
 
-    def render_forward(self: mitsuba.render.SamplingIntegrator,
-                       scene: mitsuba.render.Scene,
+    def render_forward(self: mi.SamplingIntegrator,
+                       scene: mi.Scene,
                        params: Any,
-                       sensor: Union[int, mitsuba.render.Sensor] = 0,
+                       sensor: Union[int, mi.Sensor] = 0,
                        seed: int = 0,
-                       spp: int = 0) -> mitsuba.core.TensorXf:
+                       spp: int = 0) -> mi.TensorXf:
         """
         Evaluates the forward-mode derivative of the rendering step.
 
@@ -134,7 +132,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         since multiple differentiation passes are needed to obtain separate
         derivatives for each scene parameter. See ``Integrator.render_backward()``
         for an efficient way of obtaining all parameter derivatives at once, or
-        simply use the ``mitsuba.python.ad.render()`` abstraction that hides both
+        simply use the ``mi.render()`` abstraction that hides both
         ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
         a unified interface.
 
@@ -144,16 +142,16 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         This is typically done by invoking ``dr.enable_grad()`` and
         ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
         that can be obtained obtained via a call to
-        ``mitsuba.python.util.traverse()``.
+        ``mi.util.traverse()``.
 
-        Parameter ``scene`` (``mitsuba.render.Scene``):
+        Parameter ``scene`` (``mi.Scene``):
             The scene to be rendered differentially.
 
         Parameter ``params``:
            An arbitrary container of scene parameters that should receive
            gradients. Typically this will be an instance of type
-           ``mitsuba.python.utils.SceneParameters`` obtained via
-           ``mitsuba.python.util.traverse()``. However, it could also be a Python
+           ``mi.util.SceneParameters`` obtained via
+           ``mi.util.traverse()``. However, it could also be a Python
            list/dict/object tree (DrJit will traverse it to find all parameters).
            Gradient tracking must be explicitly enabled for each of these
            parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
@@ -161,7 +159,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
            ``dr.set_grad(...)`` must be used to associate specific gradient values
            with each parameter.
 
-        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
             Specify a sensor or a (sensor index) to render the scene from a
             different viewpoint. By default, the first sensor within the scene
             description (index 0) will take precedence.
@@ -178,8 +176,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             differential rendering step. The value provided within the original
             scene specification takes precedence if ``spp=0``.
         """
-
-        from mitsuba.core import Bool, UInt32, Float
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -217,11 +213,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
-                depth=UInt32(0),
+                depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
                 reparam=None,
-                active=Bool(True)
+                active=mi.Bool(True)
             )
 
             # Differentiable camera pose parameters or a reparameterization
@@ -250,7 +246,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                         wavelengths=ray.wavelengths,
                         value=L * weight * det,
                         weight=det,
-                        alpha=dr.select(valid, Float(1), Float(0))
+                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
                     )
 
                     # Compute the derivative of the reparameterized image ..
@@ -281,11 +277,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
-                depth=UInt32(0),
+                depth=mi.UInt32(0),
                 δL=None,
                 state_in=state_out,
                 reparam=reparam,
-                active=Bool(True)
+                active=mi.Bool(True)
             )
 
             # Prepare an ImageBlock as specified by the film
@@ -299,7 +295,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 pos=pos,
                 wavelengths=ray.wavelengths,
                 value=δL * weight,
-                alpha=dr.select(valid_2, Float(1), Float(0))
+                alpha=dr.select(valid_2, mi.Float(1), mi.Float(0))
             )
 
             # Perform the weight division and return an image tensor
@@ -327,11 +323,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         return result_grad
 
-    def render_backward(self: mitsuba.render.SamplingIntegrator,
-                        scene: mitsuba.render.Scene,
+    def render_backward(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
                         params: Any,
-                        grad_in: mitsuba.core.TensorXf,
-                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        grad_in: mi.TensorXf,
+                        sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
         """
@@ -348,26 +344,26 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         one or more scene parameters, or the function will not do anything. This is
         typically done by invoking ``dr.enable_grad()`` on elements of the
         ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mitsuba.python.util.traverse()``. Use ``dr.grad()`` to query the
+        to ``mi.util.traverse()``. Use ``dr.grad()`` to query the
         resulting gradients of these parameters once ``render_backward()`` returns.
 
-        Parameter ``scene`` (``mitsuba.render.Scene``):
+        Parameter ``scene`` (``mi.Scene``):
             The scene to be rendered differentially.
 
         Parameter ``params``:
            An arbitrary container of scene parameters that should receive
            gradients. Typically this will be an instance of type
-           ``mitsuba.python.utils.SceneParameters`` obtained via
-           ``mitsuba.python.util.traverse()``. However, it could also be a Python
+           ``mi.util.SceneParameters`` obtained via
+           ``mi.util.traverse()``. However, it could also be a Python
            list/dict/object tree (DrJit will traverse it to find all parameters).
            Gradient tracking must be explicitly enabled for each of these
            parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
            ``render_backward()`` will not do this for you).
 
-        Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
+        Parameter ``grad_in`` (``mi.TensorXf``):
             Gradient image that should be back-propagated.
 
-        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
             Specify a sensor or a (sensor index) to render the scene from a
             different viewpoint. By default, the first sensor within the scene
             description (index 0) will take precedence.
@@ -384,8 +380,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             differential rendering step. The value provided within the original
             scene specification takes precedence if ``spp=0``.
         """
-
-        from mitsuba.core import Bool, UInt32, Float
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -423,11 +417,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
-                depth=UInt32(0),
+                depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
                 reparam=None,
-                active=Bool(True)
+                active=mi.Bool(True)
             )
 
             # Prepare an ImageBlock as specified by the film
@@ -445,7 +439,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                     wavelengths=ray.wavelengths,
                     value=L * weight * det,
                     weight=det,
-                    alpha=dr.select(valid, Float(1), Float(0))
+                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
                 )
 
                 sensor.film().put_block(block)
@@ -464,7 +458,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 # retrieve the adjoint radiance
                 dr.set_grad(image, grad_in)
                 dr.enqueue(dr.ADMode.Backward, image)
-                dr.traverse(Float, dr.ADMode.Backward)
+                dr.traverse(mi.Float, dr.ADMode.Backward)
                 δL = dr.grad(L)
 
             # Launch Monte Carlo sampling in backward AD mode (2)
@@ -473,11 +467,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
-                depth=UInt32(0),
+                depth=mi.UInt32(0),
                 δL=δL,
                 state_in=state_out,
                 reparam=reparam,
-                active=Bool(True)
+                active=mi.Bool(True)
             )
 
             # We don't need any of the outputs here
@@ -494,12 +488,12 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
     def sample_rays(
         self,
-        scene: mitsuba.render.Scene,
-        sensor: mitsuba.render.Sensor,
-        sampler: mitsuba.render.Sampler,
-        reparam: Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
-                          Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]] = None
-    ) -> Tuple[mitsuba.render.RayDifferential3f, mitsuba.core.Spectrum, mitsuba.core.Vector2f]:
+        scene: mi.Scene,
+        sensor: mi.Sensor,
+        sampler: mi.Sampler,
+        reparam: Callable[[mi.Ray3f, mi.Bool],
+                          Tuple[mi.Ray3f, mi.Float]] = None
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
         """
         Sample a 2D grid of primary rays for a given sensor
 
@@ -516,11 +510,6 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         remain detached.
         """
 
-        from mitsuba.core import Float, UInt32, Vector2f, \
-            ScalarVector2f, Vector2u, Log, LogLevel
-
-        from mitsuba.render import Interaction3f
-
         film = sensor.film()
         film_size = film.crop_size()
         rfilter = film.rfilter()
@@ -532,17 +521,17 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         spp = sampler.sample_count()
 
         # Compute discrete sample position
-        idx = dr.arange(UInt32, dr.hprod(film_size) * spp)
+        idx = dr.arange(mi.UInt32, dr.hprod(film_size) * spp)
 
         # Try to avoid a division by an unknown constant if we can help it
         log_spp = dr.log2i(spp)
         if 1 << log_spp == spp:
-            idx >>= dr.opaque(UInt32, log_spp)
+            idx >>= dr.opaque(mi.UInt32, log_spp)
         else:
-            idx //= dr.opaque(UInt32, spp)
+            idx //= dr.opaque(mi.UInt32, spp)
 
         # Compute the position on the image plane
-        pos = Vector2u()
+        pos = mi.Vector2u()
         pos.y = idx // film_size[0]
         pos.x = dr.fnmadd(film_size[0], pos.y, idx)
 
@@ -552,14 +541,14 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         pos += film.crop_offset()
 
         # Cast to floating point and add random offset
-        pos_f = Vector2f(pos) + sampler.next_2d()
+        pos_f = mi.Vector2f(pos) + sampler.next_2d()
 
         # Re-scale the position to [0, 1]^2
-        scale = dr.rcp(ScalarVector2f(film.crop_size()))
-        offset = -ScalarVector2f(film.crop_offset()) * scale
+        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
+        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
         pos_adjusted = dr.fmadd(pos_f, scale, offset)
 
-        aperture_sample = Vector2f(0.0)
+        aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
             aperture_sample = sampler.next_2d()
 
@@ -568,7 +557,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             time += sampler.next_1d() * sensor.shutter_open_time()
 
         wavelength_sample = 0
-        if mitsuba.core.is_spectral:
+        if mi.is_spectral:
             wavelength_sample = sampler.next_1d()
 
         ray, weight = sensor.sample_ray_differential(
@@ -595,7 +584,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             if not film.sample_border() and self.sample_border_warning:
                 self.sample_border_warning = True
 
-                Log(LogLevel.Warn,
+                mi.Log(mi.LogLevel.Warn,
                     "ADIntegrator detected the potential for image-space "
                     "motion due to differentiable shape or camera pose "
                     "parameters. To correctly account for shapes entering "
@@ -604,11 +593,11 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
             with dr.resume_grad():
                 # Reparameterize the camera ray
-                reparam_d, reparam_det = reparam(ray=ray, depth=UInt32(0))
+                reparam_d, reparam_det = reparam(ray=ray, depth=mi.UInt32(0))
 
                 # Create a fake interaction along the sampled ray and use it to the
                 # position with derivative tracking
-                it = dr.zero(Interaction3f)
+                it = dr.zero(mi.Interaction3f)
                 it.p = ray.o + reparam_d
                 ds, _ = sensor.sample_direction(it, aperture_sample)
 
@@ -618,7 +607,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         return ray, weight, pos_f, reparam_det
 
     def prepare(self,
-                sensor: mitsuba.render.Sensor,
+                sensor: mi.Sensor,
                 seed: int = 0,
                 spp: int = 0,
                 aovs: list = []):
@@ -631,7 +620,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         (which may differ from the requested amount depending on the type of
         ``Sampler`` being used)
 
-        Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
             Specify a sensor to render the scene from a different viewpoint.
 
         Parameter ``seed` (``int``)
@@ -663,7 +652,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 
         wavefront_size = dr.hprod(film_size) * spp
 
-        is_llvm = dr.is_llvm_array_v(mitsuba.core.Float)
+        is_llvm = dr.is_llvm_array_v(mi.Float)
         wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
 
         if wavefront_size >  wavefront_size_limit:
@@ -681,18 +670,18 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         return sampler, spp
 
     def sample(self,
-               mode: drjit.ADMode,
-               scene: mitsuba.render.Scene,
-               sampler: mitsuba.render.Sampler,
-               ray: mitsuba.core.Ray3f,
-               depth: mitsuba.core.UInt32,
-               δL: Optional[mitsuba.core.Spectrum],
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.Ray3f,
+               depth: mi.UInt32,
+               δL: Optional[mi.Spectrum],
                state_in: Any,
                reparam: Optional[
-                   Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
-                            Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]]],
-               active: mitsuba.core.Bool) -> Tuple[mitsuba.core.Spectrum,
-                                                   mitsuba.core.Bool, Any]:
+                   Callable[[mi.Ray3f, mi.Bool],
+                            Tuple[mi.Ray3f, mi.Float]]],
+               active: mi.Bool) -> Tuple[mi.Spectrum,
+                                         mi.Bool, Any]:
         """
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -713,7 +702,7 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
         radiance ``δL`` and accumulates it into differentiable scene parameters.
 
         You are normally *not* expected to directly call this function. Instead,
-        use ``mitsuba.python.ad.render()`` , which performs various necessary
+        use ``mi.render()`` , which performs various necessary
         setup steps to correctly use the functionality provided here.
 
         The parameters of this function are as follows:
@@ -722,20 +711,20 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             Specifies whether the rendering algorithm should run in primal or
             forward/backward derivative propagation mode
 
-        Parameter ``scene`` (``mitsuba.render.Scene``):
+        Parameter ``scene`` (``mi.Scene``):
             Reference to the scene being rendered in a differentiable manner.
 
-        Parameter ``sampler`` (``mitsuba.render.Sampler``):
+        Parameter ``sampler`` (``mi.Sampler``):
             A pre-seeded sample generator
 
-        Parameter ``depth`` (``mitsuba.core.UInt32``):
+        Parameter ``depth`` (``mi.UInt32``):
             Path depth of `ray` (typically set to zero). This is mainly useful
             for forward/backward differentiable rendering phases that need to
             obtain an incident radiance estimate. In this case, they may
             recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
             depth.
 
-        Parameter ``δL`` (``mitsuba.core.Spectrum``):
+        Parameter ``δL`` (``mi.Spectrum``):
             When back-propagating gradients (``mode == drjit.ADMode.Backward``)
             the ``δL`` parameter should specify the adjoint radiance associated
             with each ray. Otherwise, it must be set to ``None``.
@@ -753,17 +742,17 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
             correctly account for visibility-induced discontinuities during
             differentiation.
 
-        Parameter ``active`` (``mitsuba.core.Bool``):
+        Parameter ``active`` (``mi.Bool``):
             This mask array can optionally be used to indicate that some of
             the rays are disabled.
 
         The function returns a tuple ``(spec, valid, state_out)`` where
 
-        Output ``spec`` (``mitsuba.core.Spectrum``):
+        Output ``spec`` (``mi.Spectrum``):
             Specifies the estimated radiance and differential radiance in
             primal and forward mode, respectively.
 
-        Output ``valid`` (``mitsuba.core.Bool``):
+        Output ``valid`` (``mi.Bool``):
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
 
@@ -781,12 +770,12 @@ class ADIntegrator(mitsuba.render.SamplingIntegrator):
 # Default implementation of Integrator.render_forward/backward
 # ---------------------------------------------------------------------------
 
-def render_forward(self: mitsuba.render.Integrator,
-                   scene: mitsuba.render.Scene,
+def render_forward(self: mi.Integrator,
+                   scene: mi.Scene,
                    params: Any,
-                   sensor: Union[int, mitsuba.render.Sensor] = 0,
+                   sensor: Union[int, mi.Sensor] = 0,
                    seed: int = 0,
-                   spp: int = 0) -> mitsuba.core.TensorXf:
+                   spp: int = 0) -> mi.TensorXf:
     """
     Evaluates the forward-mode derivative of the rendering step.
 
@@ -799,7 +788,7 @@ def render_forward(self: mitsuba.render.Integrator,
     since multiple differentiation passes are needed to obtain separate
     derivatives for each scene parameter. See ``Integrator.render_backward()``
     for an efficient way of obtaining all parameter derivatives at once, or
-    simply use the ``mitsuba.python.ad.render()`` abstraction that hides both
+    simply use the ``mi.render()`` abstraction that hides both
     ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
     a unified interface.
 
@@ -809,7 +798,7 @@ def render_forward(self: mitsuba.render.Integrator,
     This is typically done by invoking ``dr.enable_grad()`` and
     ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
     that can be obtained obtained via a call to
-    ``mitsuba.python.util.traverse()``.
+    ``mi.util.traverse()``.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -821,14 +810,14 @@ def render_forward(self: mitsuba.render.Integrator,
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
-    Parameter ``scene`` (``mitsuba.render.Scene``):
+    Parameter ``scene`` (``mi.Scene``):
         The scene to be rendered differentially.
 
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mitsuba.python.utils.SceneParameters`` obtained via
-       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       ``mi.util.SceneParameters`` obtained via
+       ``mi.util.traverse()``. However, it could also be a Python
        list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
        parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
@@ -836,7 +825,7 @@ def render_forward(self: mitsuba.render.Integrator,
        ``dr.set_grad(...)`` must be used to associate specific gradient values
        with each parameter.
 
-    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+    Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
         different viewpoint. By default, the first sensor within the scene
         description (index 0) will take precedence.
@@ -871,11 +860,11 @@ def render_forward(self: mitsuba.render.Integrator,
 
         return dr.grad(image)
 
-def render_backward(self: mitsuba.render.Integrator,
-                    scene: mitsuba.render.Scene,
+def render_backward(self: mi.Integrator,
+                    scene: mi.Scene,
                     params: Any,
-                    grad_in: mitsuba.core.TensorXf,
-                    sensor: Union[int, mitsuba.render.Sensor] = 0,
+                    grad_in: mi.TensorXf,
+                    sensor: Union[int, mi.Sensor] = 0,
                     seed: int = 0,
                     spp: int = 0) -> None:
     """
@@ -892,7 +881,7 @@ def render_backward(self: mitsuba.render.Integrator,
     one or more scene parameters, or the function will not do anything. This is
     typically done by invoking ``dr.enable_grad()`` on elements of the
     ``SceneParameters`` data structure that can be obtained obtained via a call
-    to ``mitsuba.python.util.traverse()``. Use ``dr.grad()`` to query the
+    to ``mi.util.traverse()``. Use ``dr.grad()`` to query the
     resulting gradients of these parameters once ``render_backward()`` returns.
 
     Note the default implementation of this functionality relies on naive
@@ -905,23 +894,23 @@ def render_backward(self: mitsuba.render.Integrator,
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
-    Parameter ``scene`` (``mitsuba.render.Scene``):
+    Parameter ``scene`` (``mi.Scene``):
         The scene to be rendered differentially.
 
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mitsuba.python.utils.SceneParameters`` obtained via
-       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       ``mi.util.SceneParameters`` obtained via
+       ``mi.util.traverse()``. However, it could also be a Python
        list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
        parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render_backward()`` will not do this for you).
 
-    Parameter ``grad_in`` (``mitsuba.core.TensorXf``):
+    Parameter ``grad_in`` (``mi.TensorXf``):
         Gradient image that should be back-propagated.
 
-    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+    Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
         different viewpoint. By default, the first sensor within the scene
         description (index 0) will take precedence.
@@ -954,8 +943,8 @@ def render_backward(self: mitsuba.render.Integrator,
         dr.backward_from(image * grad_in)
 
 # Monkey-patch render_forward/backward into the Integrator base class
-mitsuba.render.Integrator.render_backward = render_backward
-mitsuba.render.Integrator.render_forward = render_forward
+mi.Integrator.render_backward = render_backward
+mi.Integrator.render_forward = render_forward
 
 del render_backward
 del render_forward
@@ -1002,17 +991,17 @@ class _RenderOp(dr.CustomOp):
     def name(self):
         return "RenderOp"
 
-def render(scene: mitsuba.render.Scene,
+def render(scene: mi.Scene,
            params: Any = None,
-           sensor: Union[int, mitsuba.render.Sensor] = 0,
-           integrator: mitsuba.render.Integrator = None,
+           sensor: Union[int, mi.Sensor] = 0,
+           integrator: mi.Integrator = None,
            seed: int = 0,
            seed_grad: int = 0,
            spp: int = 0,
-           spp_grad: int = 0) -> mitsuba.core.TensorXf:
+           spp_grad: int = 0) -> mi.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Mitsuba. The function returns a rendered image that
+    rendering algorithms in Mi. The function returns a rendered image that
     can be used in subsequent differentiable computation steps. At any later
     point, the entire computation graph can be differentiated end-to-end in
     either forward or reverse mode (i.e., using ``dr.forward()`` and
@@ -1033,14 +1022,14 @@ def render(scene: mitsuba.render.Scene,
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
-    Parameter ``scene`` (``mitsuba.render.Scene``):
+    Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mitsuba.python.utils.SceneParameters`` obtained via
-       ``mitsuba.python.util.traverse()``. However, it could also be a Python
+       ``mi.util.SceneParameters`` obtained via
+       ``mi.util.traverse()``. However, it could also be a Python
        list/dict/object tree (DrJit will traverse it to find all parameters).
        Gradient tracking must be explicitly enabled for each of these
        parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
@@ -1048,12 +1037,12 @@ def render(scene: mitsuba.render.Scene,
        ``dr.set_grad(...)`` must be used to associate specific gradient values
        with parameters if forward mode derivatives are desired.
 
-    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
+    Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
         different viewpoint. By default, the first sensor within the scene
         description (index 0) will take precedence.
 
-    Parameter ``integrator`` (``mitsuba.render.Integrator``):
+    Parameter ``integrator`` (``mi.Integrator``):
         Optional parameter to override the rendering technique to be used. By
         default, the integrator specified in the original scene description
         will be used.
@@ -1081,7 +1070,7 @@ def render(scene: mitsuba.render.Scene,
         will copy the value from ``spp``.
     """
 
-    assert isinstance(scene, mitsuba.render.Scene)
+    assert isinstance(scene, mi.Scene)
 
     if integrator is None:
         integrator = scene.integrator()
@@ -1089,15 +1078,15 @@ def render(scene: mitsuba.render.Scene,
     if isinstance(sensor, int):
         sensor = scene.sensors()[sensor]
 
-    assert isinstance(integrator, mitsuba.render.Integrator)
-    assert isinstance(sensor, mitsuba.render.Sensor)
+    assert isinstance(integrator, mi.Integrator)
+    assert isinstance(sensor, mi.Sensor)
 
     if spp_grad == 0:
         spp_grad = spp
 
     if seed_grad == 0:
         # Compute a seed that de-correlates the primal and differential phase
-        seed_grad = mitsuba.core.sample_tea_32(seed, 1)[0]
+        seed_grad = mi.sample_tea_32(seed, 1)[0]
     elif seed_grad == seed:
         raise Exception('The primal and differential seed should be different '
                         'to ensure unbiased gradient computation!')
@@ -1121,19 +1110,19 @@ class _ReparamWrapper:
 
     # ReparamWrapper instances can be provided as dr.Loop state
     # variables. For this to work we must declare relevant fields
-    DRJIT_STRUCT = { 'rng' : mitsuba.core.PCG32 }
+    DRJIT_STRUCT = { 'rng' : mi.PCG32 }
 
     def __init__(self,
-                 scene : mitsuba.render.Scene,
+                 scene : mi.Scene,
                  params: Any,
                  reparam: Callable[
-                     [mitsuba.render.Scene, mitsuba.core.PCG32, Any,
-                      mitsuba.core.Ray3f, mitsuba.core.Bool],
-                     Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]],
+                     [mi.Scene, mi.PCG32, Any,
+                      mi.Ray3f, mi.Bool],
+                     Tuple[mi.Ray3f, mi.Float]],
                  wavefront_size : int,
                  seed : int):
 
-        from mitsuba.core import UInt32, sample_tea_32, PCG32, Bool
+        from mi.current import UInt32, sample_tea_32, PCG32, Bool
 
         self.scene = scene
         self.params = params
@@ -1142,7 +1131,7 @@ class _ReparamWrapper:
         # Only link the reparameterization CustomOp to differentiable scene
         # parameters with the AD computation graph if they control shape
         # information (vertex positions, etc.)
-        if isinstance(params, mitsuba.python.util.SceneParameters):
+        if isinstance(params, mi.util.SceneParameters):
             params = params.copy()
             params.keep_shape()
 
@@ -1156,10 +1145,10 @@ class _ReparamWrapper:
         self.rng = PCG32(initstate=v0, initseq=v1)
 
     def __call__(self,
-                 ray: mitsuba.core.Ray3f,
-                 depth: mitsuba.core.UInt32,
-                 active: Union[mitsuba.core.Bool, bool] = True
-    ) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
+                 ray: mi.Ray3f,
+                 depth: mi.UInt32,
+                 active: Union[mi.Bool, bool] = True
+    ) -> Tuple[mi.Vector3f, mi.Float]:
         """
         This function takes a ray, a path depth value (to potentially disable
         reparameterizations after a certain number of bounces) and a boolean

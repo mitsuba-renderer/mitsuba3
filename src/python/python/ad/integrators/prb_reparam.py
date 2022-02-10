@@ -1,7 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 from .common import ADIntegrator, mis_weight
 
@@ -194,84 +194,77 @@ class PRBReparamIntegrator(ADIntegrator):
         self.reparam_unroll = props.get('reparam_unroll', False)
 
     def reparam(self,
-                scene: mitsuba.render.Scene,
-                rng: mitsuba.core.PCG32,
+                scene: mi.Scene,
+                rng: mi.PCG32,
                 params: Any,
-                ray: mitsuba.core.Ray3f,
-                depth: mitsuba.core.UInt32,
-                active: mitsuba.core.Bool):
+                ray: mi.Ray3f,
+                depth: mi.UInt32,
+                active: mi.Bool):
         """
         Helper function to reparameterize rays internally and within ADIntegrator
         """
 
-        from mitsuba.python.ad import reparameterize_ray
-        from mitsuba.core import Float, RayDifferential3f
-
         # Potentially disable the reparameterization completely
         if self.reparam_max_depth == 0:
-            return dr.detach(ray.d, True), Float(1)
+            return dr.detach(ray.d, True), mi.Float(1)
 
         active = active & (depth < self.reparam_max_depth)
 
-        return reparameterize_ray(scene, rng, params, ray,
-                                  num_rays=self.reparam_rays,
-                                  kappa=self.reparam_kappa,
-                                  exponent=self.reparam_exp,
-                                  antithetic=self.reparam_antithetic,
-                                  unroll=self.reparam_unroll,
-                                  active=active)
+        return mi.ad.reparameterize_ray(scene, rng, params, ray,
+                                        num_rays=self.reparam_rays,
+                                        kappa=self.reparam_kappa,
+                                        exponent=self.reparam_exp,
+                                        antithetic=self.reparam_antithetic,
+                                        unroll=self.reparam_unroll,
+                                        active=active)
 
     def sample(self,
-               mode: drjit.ADMode,
-               scene: mitsuba.render.Scene,
-               sampler: mitsuba.render.Sampler,
-               ray: mitsuba.core.Ray3f,
-               δL: Optional[mitsuba.core.Spectrum],
-               state_in: Optional[mitsuba.core.Spectrum],
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.Ray3f,
+               δL: Optional[mi.Spectrum],
+               state_in: Optional[mi.Spectrum],
                reparam: Optional[
-                   Callable[[mitsuba.core.Ray3f, mitsuba.core.Bool],
-                            Tuple[mitsuba.core.Ray3f, mitsuba.core.Float]]],
-               active: mitsuba.core.Bool,
+                   Callable[[mi.Ray3f, mi.Bool],
+                            Tuple[mi.Ray3f, mi.Float]]],
+               active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mitsuba.core.Spectrum, mitsuba.core.Bool, mitsuba.core.Spectrum]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
         """
 
-        from mitsuba.core import Loop, Spectrum, Float, Bool, UInt32, Ray3f
-        from mitsuba.render import PreliminaryIntersection3f, DirectionSample3f, \
-             BSDFContext, BSDFFlags, RayFlags, has_flag
-
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == dr.ADMode.Primal
 
         # Standard BSDF evaluation context for path tracing
-        bsdf_ctx = BSDFContext()
+        bsdf_ctx = mi.BSDFContext()
 
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
-        depth = UInt32(0)                          # Depth of current vertex
-        L = Spectrum(0 if primal else state_in)    # Radiance accumulator
-        δL = Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
-        β = Spectrum(1)                            # Path throughput weight
-        η = Float(1)                               # Index of refraction
-        mis_em = Float(1)                          # Emitter MIS weight
-        active = Bool(active)                      # Active SIMD lanes
+        depth = mi.UInt32(0)                          # Depth of current vertex
+        L = mi.Spectrum(0 if primal else state_in)    # Radiance accumulator
+        δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
+        β = mi.Spectrum(1)                            # Path throughput weight
+        η = mi.Float(1)                               # Index of refraction
+        mis_em = mi.Float(1)                          # Emitter MIS weight
+        active = mi.Bool(active)                      # Active SIMD lanes
 
         # Initialize loop state variables caching the rays and preliminary
         # intersections of the previous (zero-initialized) and current vertex
-        ray_prev = dr.zero(Ray3f)
-        ray_cur  = Ray3f(ray)
-        pi_prev  = dr.zero(PreliminaryIntersection3f)
+        ray_prev = dr.zero(mi.Ray3f)
+        ray_cur  = mi.Ray3f(ray)
+        pi_prev  = dr.zero(mi.PreliminaryIntersection3f)
         pi_cur   = scene.ray_intersect_preliminary(ray_cur, coherent=True,
                                                    active=active)
 
         # Record the following loop in its entirety
-        loop = Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                    state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
-                                   ray_prev, ray_cur, pi_prev, pi_cur, reparam))
+        loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
+                       state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
+                                      ray_prev, ray_cur, pi_prev, pi_cur, reparam))
 
         # Specify the max. number of loop iterations (this can help avoid
         # costly synchronization when when wavefront-style loops are generated)
@@ -282,7 +275,7 @@ class PRBReparamIntegrator(ADIntegrator):
             first_vertex = dr.eq(depth, 0)
 
             # Reparameterized ray (a copy of 'ray_cur' in primal mode)
-            ray_reparam = Ray3f(ray_cur)
+            ray_reparam = mi.Ray3f(ray_cur)
 
             # Jacobian determinant of the parameterization (1 in primal mode)
             ray_reparam_det = 1
@@ -294,7 +287,7 @@ class PRBReparamIntegrator(ADIntegrator):
                     # Compute a surface interaction of the previous vertex with
                     # derivative tracking (no-op if there is no prev. vertex)
                     si_prev = pi_prev.compute_surface_interaction(
-                        ray_prev, RayFlags.All | RayFlags.FollowShape)
+                        ray_prev, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
                     # Adjust the ray origin of 'ray_cur' so that it follows the
                     # previous shape, then pass this information to 'reparam'
@@ -332,7 +325,7 @@ class PRBReparamIntegrator(ADIntegrator):
             bsdf_cur = si_cur.bsdf(ray_cur)
 
             # Is emitter sampling even possible on the current vertex?
-            active_em = active_next & has_flag(bsdf_cur.flags(), BSDFFlags.Smooth)
+            active_em = active_next & mi.has_flag(bsdf_cur.flags(), mi.BSDFFlags.Smooth)
 
             # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
@@ -348,7 +341,7 @@ class PRBReparamIntegrator(ADIntegrator):
                     # previous ray. This ensures the subsequent reparameterization
                     # accounts for occluder's motion relatively to the current shape.
                     si_cur_follow = pi_cur.compute_surface_interaction(
-                        ray_cur, RayFlags.All | RayFlags.FollowShape)
+                        ray_cur, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
                     # Reparameterize the ray towards the emitter
                     em_ray = si_cur_follow.spawn_ray_to(ds.p)
@@ -376,8 +369,8 @@ class PRBReparamIntegrator(ADIntegrator):
                                                        sampler.next_2d(),
                                                        active_next)
 
-            bsdf_sample_delta = has_flag(bsdf_sample.sampled_type,
-                                         BSDFFlags.Delta)
+            bsdf_sample_delta = mi.has_flag(bsdf_sample.sampled_type,
+                                            mi.BSDFFlags.Delta)
 
             # ---- Update loop variables based on current interaction -----
 
@@ -413,7 +406,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
             # ---------- Compute MIS weight for the next vertex -----------
 
-            ds = DirectionSample3f(scene, si=si_next, ref=si_cur)
+            ds = mi.DirectionSample3f(scene, si=si_next, ref=si_cur)
 
             # Probability of sampling 'si_next' using emitter sampling
             # (set to zero if the BSDF doesn't have any smooth components)
@@ -439,8 +432,8 @@ class PRBReparamIntegrator(ADIntegrator):
                 bsdf_prev = si_prev.bsdf(ray_prev)
 
                 # Check if emitter sampling is possible at the next vertex
-                active_em_next = active_next_next & has_flag(bsdf_next.flags(),
-                                                             BSDFFlags.Smooth)
+                active_em_next = active_next_next & mi.has_flag(bsdf_next.flags(),
+                                                                mi.BSDFFlags.Smooth)
 
                 # If so, randomly sample an emitter without derivative tracking.
                 ds_next, em_weight_next = scene.sample_emitter_direction(
@@ -467,7 +460,7 @@ class PRBReparamIntegrator(ADIntegrator):
                     # Compute a surface interaction that only tracks derivatives
                     # that arise from the reparameterization.
                     si_cur_reparam_only = pi_cur.compute_surface_interaction(
-                        ray_reparam, RayFlags.All | RayFlags.DetachShape)
+                        ray_reparam, mi.RayFlags.All | mi.RayFlags.DetachShape)
 
                     # Differentiably recompute the outgoing direction at 'prev'
                     # and the incident direction at 'next'
@@ -488,7 +481,7 @@ class PRBReparamIntegrator(ADIntegrator):
                     bsdf_val_next = bsdf_next.eval(bsdf_ctx, si_next,
                                                    bsdf_sample_next.wo)
 
-                    extra = Spectrum(Le_next)
+                    extra = mi.Spectrum(Le_next)
                     extra[~first_vertex]      += L_prev * bsdf_val_prev / dr.max(1e-8, dr.detach(bsdf_val_prev))
                     extra[si_next.is_valid()] += L_next * bsdf_val_next / dr.max(1e-8, dr.detach(bsdf_val_next))
 
@@ -557,5 +550,4 @@ class PRBReparamIntegrator(ADIntegrator):
             L                    # State for the differential phase
         )
 
-mitsuba.render.register_integrator("prb_reparam", lambda props:
-                                   PRBReparamIntegrator(props))
+mi.register_integrator("prb_reparam", lambda props: PRBReparamIntegrator(props))
