@@ -46,7 +46,7 @@ except (ImportError, ModuleNotFoundError) as e:
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')
 
-class MitsubaModule(types.ModuleType):
+class MitsubaVariantModule(types.ModuleType):
     '''
     This class extends Python's builtin 'module' type to dynamically resolve
     elements from multiple sources. We use this to stitch multiple separate
@@ -82,10 +82,6 @@ class MitsubaModule(types.ModuleType):
                 else:
                     raise
 
-        # Set the variant when importing the first time
-        if not hasattr(_tls, 'variant'):
-            set_variant(variant)
-
         # Try default lookup first
         try:
             if not key == '__dict__':
@@ -93,7 +89,7 @@ class MitsubaModule(types.ModuleType):
         except Exception:
             pass
 
-        # Try Mitsuba libraries
+        # Try C++ libraries (Python bindings)
         try:
             name = super().__getattribute__('__name__')
             submodule = super().__getattribute__('_submodule')
@@ -132,10 +128,11 @@ class MitsubaModule(types.ModuleType):
         return super().__getattribute__('_variant')
 
 
-class MitsubaCurrentModule(types.ModuleType):
+class MitsubaModule(types.ModuleType):
     '''
     This class extends Python's builtin 'module' type to dynamically route
-    mitsuba imports to the current variant via a virtual mitsuba.current module.
+    mitsuba imports to the virtual module corresponding to currently enabled
+    variant.
     '''
     def __init__(self, name, submodule, doc=None):
         super().__init__(name=name, doc=doc)
@@ -156,113 +153,78 @@ class MitsubaCurrentModule(types.ModuleType):
         except Exception:
             pass
 
+        if not hasattr(_tls, 'variant'):
+            # The variant wasn't set explicitly, we first check if a default
+            # variant is set in the config.py file.
+            from .config import MI_DEFAULT_VARIANT
+            if MI_DEFAULT_VARIANT != '':
+                self.set_variant(MI_DEFAULT_VARIANT)
+            else:
+                raise ImportError('Before importing any packages, you must '
+                                  'specify the desired variant of Mitsuba '
+                                  'using \"mitsuba.set_variant(..)\".\nThe '
+                                  'following variants are available: %s.' % (
+                                  ", ".join(self.variants())))
+
+        # Redirect all other imports to the currently enabled variant module.
         submodule = super().__getattribute__('_submodule')
-        module = sys.modules['mitsuba.' + variant() + submodule]
+        module = sys.modules['mitsuba.' + self.variant() + submodule]
         return module.__getattribute__(key)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
 
     def variant(self):
-        if not hasattr(_tls, 'variant'):
-            from .config import MI_VARIANTS
-            return MI_VARIANTS[0]
-        return _tls.variant
+        return getattr(_tls, 'variant', None)
+
+    def variants(self):
+        'Returns a list of all variants that have been compiled'
+        from .config import MI_VARIANTS
+        return MI_VARIANTS
+
+    def set_variant(self, *args):
+        '''
+        Set the variant to be used by the `mitsuba.current` module. Multiple variant
+        names can be passed to this function and the first one that is supported
+        will be set as current variant.
+       '''
+        value = None
+        for v in args:
+            if v in self.variants():
+                value = v
+                break
+
+        if value is None:
+            raise ImportError('Requested an unsupported variant "%s". The '
+                              'following variants are available: %s.' % (
+                                args if len(args) > 1 else args[0],
+                                ", ".join(self.variants())))
+
+        _tls.variant = value
 
 
 submodules = ['', '.warp', '.math', '.spline', '.quad', '.mueller']
 
-# Register the modules
+# Register the variant modules (and submodules)
 from .config import MI_VARIANTS
 for variant in MI_VARIANTS:
     for submodule in submodules:
         name = 'mitsuba.' + variant + submodule
-        module = MitsubaModule(name, variant, submodule[1:])
+        module = MitsubaVariantModule(name, variant, submodule[1:])
         sys.modules[name] = module
         locals()[variant + submodule] = module
 
-# Register the virtual mitsuba.current modules
+# Register the virtual mitsuba module and submodules. This will overwrite the
+# real mitsuba module in order to redirect future imports.
 for submodule in submodules:
-    name = 'mitsuba.current' + submodule
-    module = MitsubaCurrentModule(name, submodule)
+    name = 'mitsuba' + submodule
+    module = MitsubaModule(name, submodule)
     sys.modules[name] = module
-    locals()['current' + submodule] = module
-
-
-def set_variant(*args):
-    '''
-    Set the variant to be used by the `mitsuba.current` module. Multiple variant
-    names can be passed to this function and the first one that is supported
-    will be set as current variant.
-
-    Mitsuba 3 can be compiled to a great variety of different variants (e.g.
-    'scalar_rgb', 'cuda_ad_spectral_polarized', etc.) that each have their
-    own Python bindings in addition to generic/non-templated code that lives in
-    yet another module.
-
-    Writing various different prefixes many times in import statements such as
-
-       from mitsuba.mitsuba_cuda_ad_spectral_ext import Integrator
-       from mitsuba.mitsuba_ext import FileStream
-
-    can get rather tiring. For this reason, Mitsuba uses /virtual/ Python
-    modules that dynamically resolve import statements to the right
-    destination. The desired Mitsuba variant can be specified via this
-    function and then elements can be imported via the mitsuba.current virtual
-    module. The above example then simplifies to
-
-        import mitsuba
-        mitsuba.set_variant('cuda_ad_spectral_polarized')
-        ... = mitsuba.current.Integrator(...)
-        ... = mitsuba.current.FileStream(...)
-
-    The variant name can be changed at any time and will only apply to future
-    imports. The variant name is a per-thread property, hence multiple
-    independent threads can execute code in separate variants.
-    '''
-
-    value = None
-    for v in args:
-        if v in variants():
-            value = v
-            break
-
-    if value is None:
-        raise ImportError('Requested an unsupported variant "%s". The '
-                          'following variants are available: %s.' % (
-                              args if len(args) > 1 else args[0],
-                              ", ".join(variants())))
-
-    if variant() == value:
-        return
-
-    _tls.variant = value
-
-    # Automatically load/reload and register Python integrators for AD variants
-    if False: # TODO resume this when scripts are updated
-        if value.startswith(('llvm_', 'cuda_')):
-            import sys
-            if 'mitsuba.python.ad.integrators' in sys.modules:
-                _reload(sys.modules['mitsuba.python.ad.integrators'])
-            else:
-                _import('mitsuba.python.ad.integrators')
-            del sys
-
-
-def variant():
-    'Returns the currently active variant'
-    return getattr(_tls, 'variant', None)
-
-
-def variants():
-    'Returns a list of all variants that have been compiled'
-    from .config import MI_VARIANTS
-    return MI_VARIANTS
 
 
 # Cleanup
 del MitsubaModule
-del MitsubaCurrentModule
+del MitsubaVariantModule
 del types
 del threading
 del os
