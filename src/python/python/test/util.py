@@ -8,9 +8,7 @@ from functools import wraps
 from inspect import getframeinfo, stack, signature, _empty
 
 import pytest
-import mitsuba
 import drjit as dr
-import numpy as np
 
 def fresolver_append_path(func):
     """Function decorator that adds the mitsuba project root
@@ -20,10 +18,7 @@ def fresolver_append_path(func):
     The file resolver is restored to its previous state once the test's
     execution has finished.
     """
-    if mitsuba.variant() == None:
-        mitsuba.set_variant('scalar_rgb')
-
-    from mitsuba.core import Thread, FileResolver
+    from mitsuba.current import Thread, FileResolver
     par = os.path.dirname
 
     # Get the path to the source file from which this function is
@@ -104,6 +99,8 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     Parameter ``atol`` (float):
        Absolute tolerance for the comparison of the returned values.
     """
+    import numpy as np
+    import mitsuba
 
     # Ensure scalar variant is enabled when calling this kernel
     assert mitsuba.variant().startswith('scalar_')
@@ -128,7 +125,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     args_np = [rng.random(width) if d == 1 else rng.random((width, d)) for d in arg_dims]
 
     # Evaluate non-vectorized kernel
-    from mitsuba.core import Float, Vector2f, Vector3f
+    from mitsuba.current import Float, Vector2f, Vector3f
     types = [Float, Vector2f, Vector3f]
     results_scalar = []
     for i in range(width):
@@ -150,7 +147,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     for variant in variants:
         # Set variant
         mitsuba.set_variant(variant)
-        from mitsuba.core import Float, Vector2f, Vector3f
+        from mitsuba.current import Float, Vector2f, Vector3f
         types = [Float, Vector2f, Vector3f]
 
         # Cast arguments

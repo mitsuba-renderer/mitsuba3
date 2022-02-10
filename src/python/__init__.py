@@ -43,6 +43,8 @@ except (ImportError, ModuleNotFoundError) as e:
 
     raise exc
 
+# Inform the meta path finder of the python folder
+__path__.append(__path__[0] + '/python')
 
 class MitsubaModule(types.ModuleType):
     '''
@@ -72,18 +74,16 @@ class MitsubaModule(types.ModuleType):
                 modules = (
                     _import('mitsuba.mitsuba_ext'),
                     _import('mitsuba.mitsuba_' + variant + '_ext'),
-                    _import('mitsuba.python')
                 )
+                super().__setattr__('_modules', modules)
             except ImportError as e:
-                if not str(e).startswith('No module named'):
+                if str(e).startswith('No module named'):
+                    raise ImportError('Mitsuba variant "%s" not found.' % variant)
+                else:
                     raise
-                pass
 
-            if modules is None:
-                raise ImportError('Mitsuba variant "%s" not found.' % variant)
-
-        # Set the variant of this module as current if necessary
-        if variant != getattr(_tls, 'variant', None):
+        # Set the variant when importing the first time
+        if not hasattr(_tls, 'variant'):
             set_variant(variant)
 
         # Try default lookup first
@@ -93,6 +93,7 @@ class MitsubaModule(types.ModuleType):
         except Exception:
             pass
 
+        # Try Mitsuba libraries
         try:
             name = super().__getattribute__('__name__')
             submodule = super().__getattribute__('_submodule')
@@ -111,11 +112,24 @@ class MitsubaModule(types.ModuleType):
                     result.update(getattr(m, '__dict__'))
                 return result
         except Exception:
-            raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
-                                 (name, key))
+            pass
+
+        # Try Python extension
+        try:
+            return _import('mitsuba.python.' + key)
+            print(f"m.__name__: {m.__name__}")
+            return m
+        except Exception:
+            pass
+
+        raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
+                             (name, key))
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
+
+    def variant(self):
+        return super().__getattribute__('_variant')
 
 
 class MitsubaCurrentModule(types.ModuleType):
@@ -134,12 +148,26 @@ class MitsubaCurrentModule(types.ModuleType):
 
     def __getattribute__(self, key):
         global _tls
+
+        # Try default lookup first
+        try:
+            if not key == '__dict__':
+                return super().__getattribute__(key)
+        except Exception:
+            pass
+
         submodule = super().__getattribute__('_submodule')
-        module = sys.modules['mitsuba.' + _tls.variant + submodule]
+        module = sys.modules['mitsuba.' + variant() + submodule]
         return module.__getattribute__(key)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
+
+    def variant(self):
+        if not hasattr(_tls, 'variant'):
+            from .config import MI_VARIANTS
+            return MI_VARIANTS[0]
+        return _tls.variant
 
 
 submodules = ['', '.warp', '.math', '.spline', '.quad', '.mueller']
@@ -161,9 +189,13 @@ for submodule in submodules:
     locals()['current' + submodule] = module
 
 
-def set_variant(value):
+def set_variant(*args):
     '''
-    Mitsuba 2 can be compiled to a great variety of different variants (e.g.
+    Set the variant to be used by the `mitsuba.current` module. Multiple variant
+    names can be passed to this function and the first one that is supported
+    will be set as current variant.
+
+    Mitsuba 3 can be compiled to a great variety of different variants (e.g.
     'scalar_rgb', 'cuda_ad_spectral_polarized', etc.) that each have their
     own Python bindings in addition to generic/non-templated code that lives in
     yet another module.
@@ -189,13 +221,20 @@ def set_variant(value):
     independent threads can execute code in separate variants.
     '''
 
-    if variant() == value:
-        return
+    value = None
+    for v in args:
+        if v in variants():
+            value = v
+            break
 
-    if value not in variants():
+    if value is None:
         raise ImportError('Requested an unsupported variant "%s". The '
                           'following variants are available: %s.' % (
-                              value, ", ".join(variants())))
+                              args if len(args) > 1 else args[0],
+                              ", ".join(variants())))
+
+    if variant() == value:
+        return
 
     _tls.variant = value
 
