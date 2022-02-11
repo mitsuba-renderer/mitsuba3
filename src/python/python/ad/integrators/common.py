@@ -1122,8 +1122,6 @@ class _ReparamWrapper:
                  wavefront_size : int,
                  seed : int):
 
-        from mi.current import UInt32, sample_tea_32, PCG32, Bool
-
         self.scene = scene
         self.params = params
         self.reparam = reparam
@@ -1139,10 +1137,10 @@ class _ReparamWrapper:
         # correlation with the main sampler. PCG32Sampler.seed() uses
         # the same logic except for the XOR with -1
 
-        idx = dr.arange(UInt32, wavefront_size)
-        tmp = dr.opaque(UInt32, 0xffffffff ^ seed)
-        v0, v1 = sample_tea_32(tmp, idx)
-        self.rng = PCG32(initstate=v0, initseq=v1)
+        idx = dr.arange(mi.UInt32, wavefront_size)
+        tmp = dr.opaque(mi.UInt32, 0xffffffff ^ seed)
+        v0, v1 = mi.sample_tea_32(tmp, idx)
+        self.rng = mi.PCG32(initstate=v0, initseq=v1)
 
     def __call__(self,
                  ray: mi.Ray3f,
