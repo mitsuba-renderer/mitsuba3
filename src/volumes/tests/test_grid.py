@@ -17,7 +17,7 @@ def test01_grid_construct(variant_scalar_rgb, tmpdir):
     VolumeGrid(grid).write(tmp_file)
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
-                          </volume>""").expand()[0]
+                          </volume>""")
     it = dr.zero(Interaction3f, 1)
 
     assert vol is not None
@@ -36,7 +36,7 @@ def test02_nearest_interpolation(variants_all, tmpdir):
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
                               <string name="filter_type" value="nearest"/>
-                          </volume>""").expand()[0]
+                          </volume>""")
     assert vol is not None
     it = dr.zero(Interaction3f, 1)
     assert np.allclose(vol.eval(it), 0.0)
@@ -55,7 +55,7 @@ def test03_trilinear_interpolation(variants_all, tmpdir):
     VolumeGrid(grid).write(tmp_file)
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
-                          </volume>""").expand()[0]
+                          </volume>""")
     it = dr.zero(Interaction3f, 1)
     assert vol is not None
     assert np.allclose(vol.eval(it), 0.0)
@@ -77,7 +77,7 @@ def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
     VolumeGrid(grid).write(tmp_file)
     vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
                               <string name="filename" value="{tmp_file}"/>
-                          </volume>""").expand()[0]
+                          </volume>""")
     it = dr.zero(Interaction3f, 1)
     assert vol is not None
     it.p = Point3f(0.2, 1.0, 0.7)
@@ -85,3 +85,22 @@ def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
 
     it.p = Point3f(0.5, 0.5, 0.0)
     assert np.allclose(vol.eval(it), 0.32)
+
+
+def test05_trilinear_interpolation_6_channels(variants_all_rgb, tmpdir):
+    from mitsuba.core import load_string, Point3f
+    from mitsuba.render import VolumeGrid, Interaction3f
+
+    tmp_file = os.path.join(str(tmpdir), "out.vol")
+    grid = np.ones((3, 3, 3, 6)).astype(np.float32)
+    grid[0, 0, 0, : ] = 0.0
+    grid[1, 1, 1, : ] = 0.5
+    VolumeGrid(grid).write(tmp_file)
+    vol = load_string(f"""<volume type="gridvolume" version="2.0.0">
+                              <string name="filename" value="{tmp_file}"/>
+                          </volume>""")
+    it = dr.zero(Interaction3f, 1)
+    assert vol is not None
+    assert np.allclose(vol.eval_6(it), 0.0)
+    it.p = Point3f(1.0) / 3
+    assert np.allclose(vol.eval_6(it), (6 * 1 + 1 * 0.5 + 1 * 0.0) / 8)
