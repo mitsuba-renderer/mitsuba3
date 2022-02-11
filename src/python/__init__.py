@@ -43,6 +43,9 @@ except (ImportError, ModuleNotFoundError) as e:
 
     raise exc
 
+# Known submodules that will be directly accessible from the mitsuba package
+submodules = ['warp', 'math', 'spline', 'quad', 'mueller']
+
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')
 
@@ -53,7 +56,7 @@ class MitsubaVariantModule(types.ModuleType):
     Mitsuba modules (variants, non-templated parts, python parts) into one
     coherent user-facing module.
     '''
-    def __init__(self, name, variant, submodule, doc=None):
+    def __init__(self, name, variant, submodule=None, doc=None):
         super().__init__(name=name, doc=doc)
 
         from importlib.machinery import ModuleSpec
@@ -89,14 +92,14 @@ class MitsubaVariantModule(types.ModuleType):
         except Exception:
             pass
 
+        submodule = super().__getattribute__('_submodule')
+
         # Try C++ libraries (Python bindings)
         try:
-            name = super().__getattribute__('__name__')
-            submodule = super().__getattribute__('_submodule')
             if key != '__dict__':
                 # Walk through loaded extension modules
                 for m in modules:
-                    if submodule != '':
+                    if not submodule is None:
                         m = getattr(m, submodule, None)
                     result = getattr(m, key, None)
                     if result is not None:
@@ -110,16 +113,22 @@ class MitsubaVariantModule(types.ModuleType):
         except Exception:
             pass
 
-        # Try Python extension
+        # Try Python extension (objects)
         try:
-            return _import('mitsuba.python.' + key)
-            print(f"m.__name__: {m.__name__}")
-            return m
+            sub_suffix = '' if submodule is None else f'.{submodule}'
+            return getattr(_import(f'mitsuba.python{sub_suffix}'), key)
         except Exception:
             pass
 
+        # Try Python extension (modules)
+        if submodule is None:
+            try:
+                return _import(f'mitsuba.python.{key}')
+            except Exception:
+                pass
+
         raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
-                             (name, key))
+                             (super().__getattribute__('__name__'), key))
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -134,7 +143,7 @@ class MitsubaModule(types.ModuleType):
     mitsuba imports to the virtual module corresponding to currently enabled
     variant.
     '''
-    def __init__(self, name, submodule, doc=None):
+    def __init__(self, name, submodule=None, doc=None):
         super().__init__(name=name, doc=doc)
 
         from importlib.machinery import ModuleSpec
@@ -145,13 +154,17 @@ class MitsubaModule(types.ModuleType):
 
     def __getattribute__(self, key):
         global _tls
-
         # Try default lookup first
         try:
             if not key == '__dict__':
                 return super().__getattribute__(key)
         except Exception:
             pass
+
+        # Check whether we are trying to directly import a variant
+        from .config import MI_VARIANTS
+        if key in MI_VARIANTS:
+            return sys.modules[f'mitsuba.{key}']
 
         if not hasattr(_tls, 'variant'):
             # The variant wasn't set explicitly, we first check if a default
@@ -167,8 +180,15 @@ class MitsubaModule(types.ModuleType):
                                   ", ".join(self.variants())))
 
         # Redirect all other imports to the currently enabled variant module.
+        variant = getattr(_tls, 'variant', None)
         submodule = super().__getattribute__('_submodule')
-        module = sys.modules['mitsuba.' + self.variant() + submodule]
+
+        # Check whether we are importing a known submodule
+        if submodule is None and key in submodules:
+            return sys.modules[f'mitsuba.{variant}.{key}']
+
+        sub_suffix = '' if submodule is None else f'.{submodule}'
+        module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
         return module.__getattribute__(key)
 
     def __setattr__(self, key, value):
@@ -200,12 +220,12 @@ class MitsubaModule(types.ModuleType):
                                 args if len(args) > 1 else args[0],
                                 ", ".join(self.variants())))
 
-        if self.variant() == value:
+        if getattr(_tls, 'variant', None) == value:
             return
 
         _tls.variant = value
 
-          # Automatically load/reload and register Python integrators for AD variants
+        # Automatically load/reload and register Python integrators for AD variants
         if value.startswith(('llvm_', 'cuda_')):
             import sys
             if 'mitsuba.ad.integrators' in sys.modules:
@@ -214,22 +234,25 @@ class MitsubaModule(types.ModuleType):
                 _import('mitsuba.ad.integrators')
             del sys
 
-
-submodules = ['', '.warp', '.math', '.spline', '.quad', '.mueller']
-
-# Register the variant modules (and submodules)
+# Register the variant modules
 from .config import MI_VARIANTS
 for variant in MI_VARIANTS:
+    name = f'mitsuba.{variant}'
+    module = MitsubaVariantModule(name, variant)
+    sys.modules[name] = module
+
+# Register variant submodules
+for variant in MI_VARIANTS:
     for submodule in submodules:
-        name = 'mitsuba.' + variant + submodule
-        module = MitsubaVariantModule(name, variant, submodule[1:])
+        name = f'mitsuba.{variant}.{submodule}'
+        module = MitsubaVariantModule(name, variant, submodule)
         sys.modules[name] = module
-        locals()[variant + submodule] = module
 
 # Register the virtual mitsuba module and submodules. This will overwrite the
 # real mitsuba module in order to redirect future imports.
+sys.modules['mitsuba'] = MitsubaModule('mitsuba')
 for submodule in submodules:
-    name = 'mitsuba' + submodule
+    name = f'mitsuba.{submodule}'
     module = MitsubaModule(name, submodule)
     sys.modules[name] = module
 
@@ -240,4 +263,3 @@ del MitsubaVariantModule
 del types
 del threading
 del os
-del submodules
