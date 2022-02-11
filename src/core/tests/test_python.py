@@ -13,9 +13,13 @@ def test01_import_mitsuba_variants():
     mi.set_variant(variant)
     assert mi.variant() == variant
 
-    # Importing specific variant for the first time should change the current variant
+    # Importing specific variant
     mi_var = _import(f'mitsuba.{variant}')
     assert mi_var.variant() == variant
+
+    # Should be able to access the variants from mitsuba itself
+    mi_var2 = getattr(mi, variant)
+    assert mi_var2.variant() == variant
 
     # Change the current variant
     mi.set_variant('scalar_rgb')
@@ -32,6 +36,7 @@ def test02_import_submodules():
     assert mi.warp.square_to_uniform_disk is not None
 
     # Check Python submodules
+    assert mi.math.rlgamma is not None
     assert mi.chi2.ChiSquareTest is not None
 
     # Import nested submodules
@@ -56,13 +61,26 @@ def test03_import_from_submodules():
     assert fresolver_append_path is not None
 
 
-def test04_check_all_variants():
+def test04_python_extensions():
+    import mitsuba as mi
+    mi.set_variant('scalar_rgb')
+
+    # Check that python/python/__init__.py is executed properly
+    assert mi.traverse is not None
+    assert mi.SceneParameters is not None
+
+
+def test05_check_all_variants():
     import mitsuba as mi
     for v in mi.variants():
         mi.set_variant(v)
 
+    # Test set_variant when passing multiple variant names
+    mi.set_variant('foo', 'scalar_rgb')
+    assert mi.variant() == 'scalar_rgb'
 
-def test05_register_ad_integrators():
+
+def test06_register_ad_integrators():
     import mitsuba as mi
 
     for variant in mi.variants():
