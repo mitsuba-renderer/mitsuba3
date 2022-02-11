@@ -1,6 +1,7 @@
+import drjit as dr
+
 def rlgamma(a, x):
     'Regularized lower incomplete gamma function based on CEPHES'
-    import drjit as dr
 
     eps = 1e-15
     big = 4.503599627370496e15

@@ -1,19 +1,17 @@
+import numpy as np
+
 def polvis(fname, args):
-    import numpy as np
-    from mitsuba.scalar_rgb import Bitmap, ThreadEnvironment, \
-        ScopedSetThreadEnvironment, Thread, LogLevel, Struct
+    import mitsuba.scalar_rgb as mi
+    mi.set_log_level(mi.LogLevel.Info)
 
-    Thread.thread().logger().set_log_level(LogLevel.Info)
-
-    te = ThreadEnvironment()
-    with ScopedSetThreadEnvironment(te):
-        mitsuba.set_variant('scalar_rgb')
+    te = mi.ThreadEnvironment()
+    with mi.ScopedSetThreadEnvironment(te):
         try:
             assert fname[-4:] == '.exr', "Needs to be a EXR image."
             name = fname[:-4]
 
             # Load image and convert to NumPy array
-            img_in = Bitmap(fname)
+            img_in = mi.Bitmap(fname)
             img_py = np.array(img_in, copy=False)
             assert img_py.shape[2] == 16, "Needs to be a 16-channel image output by the `stokes` integrator."
 
@@ -24,15 +22,15 @@ def polvis(fname, args):
             if args.intensity:
                 # Write out just the S0 (intensity) channels
                 s0 = img_py[:, :, 4:7]
-                Bitmap(s0).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_intensity.png" % name)
+                mi.Bitmap(s0).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_intensity.png" % name)
 
             if not args.polarizer is None:
                 # Write out intensity after applying a linear polarizer at a given angle to the image
 
                 # Create linear polarizer at right rotation
-                LP = mitsuba.render.mueller.linear_polarizer(1.0)
+                LP = mi.mueller.linear_polarizer(1.0)
                 angle = args.polarizer
-                LP = mitsuba.render.mueller.rotated_element(np.radians(angle), LP)
+                LP = mi.mueller.rotated_element(np.radians(angle), LP)
                 LP = np.array(LP)
 
                 # Extract Stokes vector for all channels
@@ -40,7 +38,7 @@ def polvis(fname, args):
                 # Apply Mueller matrix to all pixels and extract intensity (S0) component
                 out = np.dstack([(img @ LP.T)[:, :, 0] for img in stokes_rgb])
 
-                Bitmap(out).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_polarizer_%.02f.png" % (name, angle))
+                mi.Bitmap(out).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_polarizer_%.02f.png" % (name, angle))
 
             # Extract Stokes vectors. Either one channel only (if `--channel` is specified), or else average all.
             stokes = None
@@ -86,7 +84,7 @@ def polvis(fname, args):
                     out_list.append(out)
 
                 for idx, img in enumerate(out_list):
-                    Bitmap(img).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_s%d.png" % (name, idx))
+                    mi.Bitmap(img).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_s%d.png" % (name, idx))
 
             if args.dop:
                 # Write out false-color image of degree of polarization.
@@ -101,7 +99,7 @@ def polvis(fname, args):
                         out *= s0[:, :, np.newaxis]
                     out = out*alpha + black_white*(1 - alpha)
 
-                Bitmap(out).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_dop.png" % (name))
+                mi.Bitmap(out).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_dop.png" % (name))
 
             if args.top:
                 # Write out false-color image of the type of polarization (linear vs. circular)
@@ -117,7 +115,7 @@ def polvis(fname, args):
                         out *= s0[:, :, np.newaxis]
                     out = out*alpha + black_white*(1 - alpha)
 
-                Bitmap(out).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_top.png" % (name))
+                mi.Bitmap(out).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_top.png" % (name))
 
             if args.lin:
                 # Write out false-color image for the oscillation plane of linear polarization.
@@ -143,7 +141,7 @@ def polvis(fname, args):
                         out *= s0[:, :, np.newaxis]
                     out = out*alpha + black_white*(1 - alpha)
 
-                Bitmap(out).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_lin.png" % (name))
+                mi.Bitmap(out).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_lin.png" % (name))
 
             if args.cir:
                 # Write out false-color image for the chirality of circular polarization.
@@ -163,7 +161,7 @@ def polvis(fname, args):
                         out *= s0[:, :, np.newaxis]
                     out = out*alpha + black_white*(1 - alpha)
 
-                Bitmap(out).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True).write("%s_cir.png" % (name))
+                mi.Bitmap(out).convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True).write("%s_cir.png" % (name))
 
         except Exception as e:
             sys.stderr.write('Could not apply polarization visualization to image "%s": %s!\n' %

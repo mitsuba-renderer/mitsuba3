@@ -1,5 +1,6 @@
-import mitsuba
+import mitsuba as mi
 import drjit as dr
+import numpy as np
 import time
 
 class ChiSquareTest:
@@ -75,7 +76,6 @@ class ChiSquareTest:
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
                  sample_count=1000000, res=101, ires=4, seed=0):
-        from mitsuba.current import ScalarVector2u
 
         assert res > 0
         assert ires >= 2, "The 'ires' parameter must be >= 2!"
@@ -86,9 +86,9 @@ class ChiSquareTest:
         self.sample_dim = sample_dim
         self.sample_count = sample_count
         if domain.aspect() is None:
-            self.res = ScalarVector2u(res, 1)
+            self.res = mi.ScalarVector2u(res, 1)
         else:
-            self.res = dr.max(ScalarVector2u(
+            self.res = dr.max(mi.ScalarVector2u(
                 int(res / domain.aspect()), res), 1)
         self.ires = ires
         self.seed = seed
@@ -110,19 +110,16 @@ class ChiSquareTest:
         self.pdf_start = time.time()
 
         # Generate a table of uniform variates
-        from mitsuba.current import Float, Vector2f, Vector2u, Float32, \
-            UInt64, PCG32, sample_tea_32
-
-        idx = dr.arange(UInt64, self.sample_count)
-        v0, v1 = sample_tea_32(idx, self.seed)
+        idx = dr.arange(mi.UInt64, self.sample_count)
+        v0, v1 = mi.sample_tea_32(idx, self.seed)
 
         # Scramble seed and stream index using TEA, a linearly increasing sequence
         # does not produce a sufficiently statistically independent set of streams
-        rng = PCG32(initstate=v0, initseq=v1)
+        rng = mi.PCG32(initstate=v0, initseq=v1)
 
-        samples_in = getattr(mitsuba.current, 'Vector%if' % self.sample_dim)()
+        samples_in = getattr(mi, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):
-            samples_in[i] = rng.next_float32() if Float is Float32 \
+            samples_in[i] = rng.next_float32() if mi.Float is mi.Float32 \
                 else rng.next_float64()
 
         # Invoke sampling strategy
@@ -133,7 +130,7 @@ class ChiSquareTest:
             samples_out = samples_out[0]
             assert dr.array_depth_v(weights_out) == 1
         else:
-            weights_out = Float(1.0)
+            weights_out = mi.Float(1.0)
 
         # Map samples into the parameter domain
         xy = self.domain.map_backward(samples_out)
@@ -149,11 +146,11 @@ class ChiSquareTest:
 
         # Normalize position values
         xy = (xy - self.bounds.min) / self.bounds.extents()
-        xy = Vector2u(dr.clamp(xy * Vector2f(self.res), 0,
-                               Vector2f(self.res - 1)))
+        xy = mi.Vector2u(dr.clamp(xy * mi.Vector2f(self.res), 0,
+                                  mi.Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
-        self.histogram = dr.zero(Float, dr.hprod(self.res))
+        self.histogram = dr.zero(mi.Float, dr.hprod(self.res))
 
         dr.scatter_reduce(
             dr.ReduceOp.Add,
@@ -184,14 +181,12 @@ class ChiSquareTest:
         intervals discretized into ``self.ires`` separate function evaluations.
         """
 
-        from mitsuba.current import Vector2u, UInt32
-
         self.histogram_start = time.time()
 
         # Determine total number of samples and construct an initial index
         sample_count    = self.ires**2
         cell_count      = self.res.x * self.res.y
-        index           = dr.arange(UInt32, cell_count * sample_count)
+        index           = dr.arange(mi.UInt32, cell_count * sample_count)
         extents         = self.bounds.extents()
         cell_size       = extents / self.res
         sample_spacing  = cell_size / (self.ires - 1)
@@ -203,8 +198,8 @@ class ChiSquareTest:
         cell_x          = cell_index - cell_y * self.res.x
         sample_y        = sample_index // self.ires
         sample_x        = sample_index - sample_y * self.ires
-        cell_index_2d   = Vector2u(cell_x, cell_y)
-        sample_index_2d = Vector2u(sample_x, sample_y)
+        cell_index_2d   = mi.Vector2u(cell_x, cell_y)
+        sample_index_2d = mi.Vector2u(sample_x, sample_y)
 
         # Compute the position of each sample
         p = self.bounds.min + cell_index_2d * cell_size
@@ -262,25 +257,21 @@ class ChiSquareTest:
 
         """
 
-        import numpy as np
-        from mitsuba.current import UInt32, Float, Float64
-        from mitsuba.current.math import rlgamma, chi2
-
         if self.histogram is None:
             self.tabulate_histogram()
 
         if self.pdf is None:
             self.tabulate_pdf()
 
-        index = UInt32(np.array([i[0] for i in sorted(enumerate(self.pdf.numpy()),
-                                                      key=lambda x: x[1])]))
+        index = mi.UInt32(np.array([i[0] for i in sorted(enumerate(self.pdf.numpy()),
+                                                         key=lambda x: x[1])]))
 
         # Sort entries by expected frequency (increasing)
-        pdf = Float64(dr.gather(Float, self.pdf, index))
-        histogram = Float64(dr.gather(Float, self.histogram, index))
+        pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
+        histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
-        chi2val, dof, pooled_in, pooled_out = chi2(histogram, pdf, 5)
+        chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
 
         if dof < 1:
             self._log('Failure: The number of degrees of freedom is too low!')
@@ -306,7 +297,7 @@ class ChiSquareTest:
 
         # Probability of observing a test statistic at least as
         # extreme as the one here assuming that the distributions match
-        self.p_value = 1 - rlgamma(dof / 2, chi2val / 2)
+        self.p_value = 1 - mi.math.rlgamma(dof / 2, chi2val / 2)
 
         # Apply the Šidák correction term, since we'll be conducting multiple
         # independent hypothesis tests. This accounts for the fact that the
@@ -382,9 +373,7 @@ class LineDomain:
     ' The identity map on the line.'
 
     def __init__(self, bounds=[-1.0, 1.0]):
-        from mitsuba.current import ScalarBoundingBox2f
-
-        self._bounds = ScalarBoundingBox2f(
+        self._bounds = mi.ScalarBoundingBox2f(
             min=(bounds[0], -0.5),
             max=(bounds[1], 0.5)
         )
@@ -399,18 +388,15 @@ class LineDomain:
         return p.x
 
     def map_backward(self, p):
-        from mitsuba.current import Vector2f, Float
-        return Vector2f(p.x, dr.zero(Float, len(p.x)))
+        return mi.Vector2f(p.x, dr.zero(mi.Float, len(p.x)))
 
 
 class PlanarDomain:
     'The identity map on the plane'
 
     def __init__(self, bounds=None):
-        from mitsuba.current import ScalarBoundingBox2f
-
         if bounds is None:
-            bounds = ScalarBoundingBox2f(-1, 1)
+            bounds = mi.ScalarBoundingBox2f(-1, 1)
 
         self._bounds = bounds
 
@@ -432,28 +418,24 @@ class SphericalDomain:
     'Maps between the unit sphere and a [cos(theta), phi] parameterization.'
 
     def bounds(self):
-        from mitsuba.current import ScalarBoundingBox2f
-        return ScalarBoundingBox2f([-dr.Pi, -1], [dr.Pi, 1])
+        return mi.ScalarBoundingBox2f([-dr.Pi, -1], [dr.Pi, 1])
 
     def aspect(self):
         return 2
 
     def map_forward(self, p):
-        from mitsuba.current import Vector3f
-
         cos_theta = -p.y
         sin_theta = dr.safe_sqrt(dr.fnmadd(cos_theta, cos_theta, 1))
         sin_phi, cos_phi = dr.sincos(p.x)
 
-        return Vector3f(
+        return mi.Vector3f(
             cos_phi * sin_theta,
             sin_phi * sin_theta,
             cos_theta
         )
 
     def map_backward(self, p):
-        from mitsuba.current import Vector2f
-        return Vector2f(dr.atan2(p.y, p.x), -p.z)
+        return mi.Vector2f(dr.atan2(p.y, p.x), -p.z)
 
 
 # --------------------------------------
@@ -466,7 +448,6 @@ def SpectrumAdapter(value):
     Adapter which permits testing 1D spectral power distributions using the
     Chi^2 test.
     """
-    import mitsuba.current as mi
 
     def instantiate(args):
         if hasattr(value, 'sample'):
@@ -507,7 +488,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
-    import mitsuba.current as mi
 
     if ctx is None:
         ctx = mi.BSDFContext()
@@ -551,9 +531,7 @@ def EmitterAdapter(emitter_type, extra):
 
     Parameter ``extra`` (string):
         Additional XML used to specify the emitter's parameters.
-
     """
-    import mitsuba.current as mi
 
     def instantiate(args):
         xml = """<emitter version="2.0.0" type="%s">
@@ -584,14 +562,13 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     Adapter for testing microfacet distribution sampling techniques
     (separately from BSDF models, which are also tested)
     """
-    from mitsuba.current import MicrofacetDistribution
 
     def instantiate(args):
         wi = [0, 0, 1]
         if len(args) == 1:
             angle = args[0] * dr.Pi / 180
             wi = [dr.sin(angle), 0, dr.cos(angle)]
-        return MicrofacetDistribution(md_type, alpha, sample_visible), wi
+        return mi.MicrofacetDistribution(md_type, alpha, sample_visible), wi
 
     def sample_functor(sample, *args):
         dist, wi = instantiate(args)
@@ -618,7 +595,6 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
-    import mitsuba.current as mi
 
     if ctx is None:
         ctx = mi.PhaseFunctionContext(None)
@@ -655,7 +631,8 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
 
 
 if __name__ == '__main__':
-    import mitsuba.llvm_ad_rgb as mi
+    import mitsuba as mi
+    mi.set_variant('llvm_ad_rgb')
 
     def my_sample(sample):
         return mi.warp.square_to_cosine_hemisphere(sample)

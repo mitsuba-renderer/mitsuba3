@@ -1,3 +1,9 @@
+import os
+from shutil import copy2
+import numpy as np
+import mitsuba.scalar_rgb as mi
+import drjit as dr
+
 class Files:
     '''
     Enum for different files or dicts containing specific info
@@ -23,11 +29,7 @@ class WriteXML:
     }
 
     def __init__(self, path, subfolders=None, split_files=False):
-        import mitsuba
-        if not mitsuba.variant():
-            mitsuba.set_variant('scalar_rgb')
-        from mitsuba.current import PluginManager
-        self.pmgr = PluginManager.instance()
+        self.pmgr = mi.PluginManager.instance()
         self.split_files = split_files
         self.scene_data = [{'type': 'scene'}, #MAIN
                            {}, #MATS
@@ -127,7 +129,6 @@ class WriteXML:
 
         name: path to the scene.xml file to write.
         '''
-        import os
 
         # If any files happen to be open, close them and start again
         for f in self.files:
@@ -312,8 +313,7 @@ class WriteXML:
 
         plugin_type: Name of the type (e.g. 'diffuse', 'ply'...)
         '''
-        from mitsuba import variant
-        class_ =  self.pmgr.get_plugin_class(plugin_type, variant())
+        class_ =  self.pmgr.get_plugin_class(plugin_type, mi.variant())
         if not class_: # If get_plugin_class returns None, there is not corresponding plugin
             return None
         class_ = class_.parent()
@@ -458,14 +458,12 @@ class WriteXML:
         entry: the dict containing the spectrum
         entry_type: either 'spectrum' or 'rgb'
         '''
-        import numpy as np
-        from mitsuba.current import Color3f
         if entry_type == 'rgb':
             if len(entry.keys()) != 2 or 'value' not in entry:
                 raise ValueError("Invalid entry of type rgb: %s" % entry)
             elif isinstance(entry['value'], (float, int)):
                 entry['value'] = "%f" % entry['value']
-            elif isinstance(entry['value'], (list, Color3f, np.ndarray)) and len(entry['value']) == 3:
+            elif isinstance(entry['value'], (list, mi.Color3f, np.ndarray)) and len(entry['value']) == 3:
                 entry['value'] = "%f %f %f" % tuple(entry['value'])
             else:
                 raise ValueError("Invalid value for type rgb: %s" % entry)
@@ -506,9 +504,6 @@ class WriteXML:
         filepath: the path to the given file
         tag: the tag this path property belongs to in (shape, texture, spectrum)
         '''
-        import os
-        from shutil import copy2
-
         if tag not in self.subfolders:
             raise ValueError("Unsupported tag for a filename: %s" % tag)
         abs_path = os.path.join(self.directory, self.subfolders[tag])
@@ -546,9 +541,6 @@ class WriteXML:
 
         data: The dictionary to write to file.
         '''
-        import numpy as np
-        import os
-        from mitsuba.current import ScalarTransform4f, ScalarPoint3f
 
         if 'type' in data: # Scene tag
             self.open_element(data.pop('type'), {'version': '2.1.0'})
@@ -603,14 +595,14 @@ class WriteXML:
                 self.element('integer', {'name':key, 'value': '%d' % value})
             elif isinstance(value, float):
                 self.element('float', {'name':key, 'value': '%f' % value})
-            elif any(isinstance(value, x) for x in [list, ScalarPoint3f, np.ndarray]):
+            elif any(isinstance(value, x) for x in [list, mi.Point3f, np.ndarray]):
                 # Cast to point
                 if len(value) == 3:
                     args = {'name': key, 'x' : value[0] , 'y' :  value[1] , 'z' :  value[2]}
                     self.element('point', args)
                 else:
                     raise ValueError("Expected 3 values for a point. Got %d instead." % len(value))
-            elif isinstance(value, ScalarTransform4f):
+            elif isinstance(value, mi.Transform4f):
                 # In which plugin are we adding a transform?
                 parent_plugin = self.current_tag()
                 if parent_plugin == 'sensor':
@@ -691,7 +683,7 @@ class WriteXML:
         transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
         '''
-        import drjit as dr
+
         scale, quat, trans = dr.transform_decompose(transform.matrix)
         rot = dr.quat_to_euler(quat)
         params = {}

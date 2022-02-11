@@ -4,29 +4,29 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 
 import drjit as dr
+import mitsuba as mi
 
 class SceneParameters(Mapping):
     """
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.python.util.SceneParameters.torch()`,
-    :py:meth:`~mitsuba.python.util.SceneParameters.update()`, and
-    :py:meth:`~mitsuba.python.util.SceneParameters.keep()`.
+    specifically :py:meth:`~mitsuba.SceneParameters.torch()`,
+    :py:meth:`~mitsuba.SceneParameters.update()`, and
+    :py:meth:`~mitsuba.SceneParameters.keep()`.
     """
 
     def __init__(self, properties=None, hierarchy=None):
         """
         Private constructor (use
-        :py:func:`mitsuba.python.util.traverse()` instead)
+        :py:func:`mitsuba.traverse()` instead)
         """
         self.properties = properties if properties is not None else {}
         self.hierarchy  = hierarchy  if hierarchy  is not None else {}
         self.update_list = {}
 
-        from mitsuba.current import set_property, get_property
-        self.set_property = set_property
-        self.get_property = get_property
+        self.set_property = mi.set_property
+        self.get_property = mi.get_property
 
     def copy(self):
         return SceneParameters(
@@ -100,9 +100,9 @@ class SceneParameters(Mapping):
     def set_dirty(self, key: str):
         """
         Marks a specific parameter and its parent objects as dirty. A subsequent call
-        to :py:meth:`~mitsuba.python.util.SceneParameters.update()` will refresh their internal
+        to :py:meth:`~mitsuba.SceneParameters.update()` will refresh their internal
         state. This function is automatically called when overwriting a parameter using
-        :py:meth:`~mitsuba.python.util.SceneParameters.__setitem__()`.
+        :py:meth:`~mitsuba.SceneParameters.__setitem__()`.
         """
         item = self.properties[key]
         node = item[2]
@@ -153,19 +153,18 @@ class SceneParameters(Mapping):
         }
 
 
-def traverse(node: mitsuba.current.Object) -> SceneParameters:
+def traverse(node: mi.Object) -> SceneParameters:
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-    See also :py:class:`mitsuba.python.util.SceneParameters`.
+    See also :py:class:`mitsuba.SceneParameters`.
     """
-    from mitsuba.current import TraversalCallback
 
-    class SceneTraversal(TraversalCallback):
+    class SceneTraversal(mi.TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
                      hierarchy=None, prefixes=None, name=None, depth=0):
-            TraversalCallback.__init__(self)
+            mi.TraversalCallback.__init__(self)
             self.properties = dict() if properties is None else properties
             self.hierarchy = dict() if hierarchy is None else hierarchy
             self.prefixes = set() if prefixes is None else prefixes
@@ -212,17 +211,17 @@ def convert_to_bitmap(data, uint8_srgb=True):
     Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
     the resulting bitmap should be translated to a uint8 sRGB bitmap.
     """
-    from mitsuba.current import Bitmap, Struct
 
-    if isinstance(data, Bitmap):
+    if isinstance(data, mi.Bitmap):
         bitmap = data
     else:
         if type(data).__name__ == 'Tensor':
             data = data.detach().cpu().numpy()
-        bitmap = Bitmap(data)
+        bitmap = mi.Bitmap(data)
 
     if uint8_srgb:
-        bitmap = bitmap.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True)
+        bitmap = bitmap.convert(mi.Bitmap.PixelFormat.RGB,
+                                mi.Struct.Type.UInt8, True)
 
     return bitmap
 
