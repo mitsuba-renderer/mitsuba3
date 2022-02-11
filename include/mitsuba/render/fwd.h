@@ -127,13 +127,13 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
  *     using Base::m_components;
  * \endcode
  */
-#define MI_IMPORT_BASE(Name, ...)                                                                 \
+#define MI_IMPORT_BASE(Name, ...)                                                                  \
     using Base = Name<Float, Spectrum>;                                                            \
     MI_USING_MEMBERS(__VA_ARGS__)
 
 
-#define MI_IMPORT_RENDER_BASIC_TYPES()                                                            \
-    MI_IMPORT_CORE_TYPES()                                                                        \
+#define MI_IMPORT_RENDER_BASIC_TYPES()                                                             \
+    MI_IMPORT_CORE_TYPES()                                                                         \
     using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
     using Wavelength           = typename RenderAliases::Wavelength;                               \
     using UnpolarizedSpectrum  = typename RenderAliases::UnpolarizedSpectrum;                      \
@@ -144,8 +144,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
 #define MI_IMPORT_TYPES_MACRO(x) using x = typename RenderAliases::x;
 
-#define MI_IMPORT_TYPES(...)                                                                      \
-    MI_IMPORT_RENDER_BASIC_TYPES()                                                                \
+#define MI_IMPORT_TYPES(...)                                                                       \
+    MI_IMPORT_RENDER_BASIC_TYPES()                                                                 \
     using PositionSample3f          = typename RenderAliases::PositionSample3f;                    \
     using DirectionSample3f         = typename RenderAliases::DirectionSample3f;                   \
     using Interaction3f             = typename RenderAliases::Interaction3f;                       \
@@ -155,7 +155,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
     DRJIT_MAP(MI_IMPORT_TYPES_MACRO, __VA_ARGS__)
 
-#define MI_IMPORT_OBJECT_TYPES()                                                                  \
+#define MI_IMPORT_OBJECT_TYPES()                                                                   \
     using Scene                  = typename RenderAliases::Scene;                                  \
     using Sampler                = typename RenderAliases::Sampler;                                \
     using MicrofacetDistribution = typename RenderAliases::MicrofacetDistribution;                 \
