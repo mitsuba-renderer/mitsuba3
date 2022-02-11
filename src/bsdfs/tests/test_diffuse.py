@@ -1,32 +1,25 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.render import BSDFFlags
-    from mitsuba.core import load_string
-
-    b = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
+    b = mi.load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
     assert b is not None
     assert b.component_count() == 1
-    assert b.flags(0) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
+    assert b.flags(0) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
     assert b.flags() == b.flags(0)
 
 
 def test02_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core import load_string
+    bsdf = mi.load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
 
-    bsdf = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
-
-    si    = SurfaceInteraction3f()
+    si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     for i in range(20):
         theta = i / 19.0 * (dr.Pi / 2)
@@ -43,7 +36,7 @@ def test02_eval_pdf(variant_scalar_rgb):
 
 
 def test03_chi2(variants_vec_backends_once_rgb):
-    from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("diffuse", '')
 

@@ -5,9 +5,9 @@
 
 import pytest
 import re
-import mitsuba
 import gc
 import drjit as dr
+import mitsuba as mi
 
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
@@ -68,8 +68,7 @@ def generate_fixture(variant):
     def fixture():
         try:
             clean_up()
-            import mitsuba
-            mitsuba.set_variant(variant)
+            mi.set_variant(variant)
         except Exception:
             pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
     globals()['variant_' + variant] = fixture
@@ -91,38 +90,41 @@ def generate_fixture_group(name, variants):
         variant = request.param
         try:
             clean_up()
-            import mitsuba
-            mitsuba.set_variant(variant)
+            mi.set_variant(variant)
         except Exception:
             pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
         return variant
     globals()['variants_' + name] = fixture
 
-any_scalar = next((x for x in mitsuba.variants() if x.startswith('scalar')), 'scalar_rgb')
-any_llvm   = next((x for x in mitsuba.variants() if x.startswith('llvm')),   'llvm_rgb')
-any_cuda   = next((x for x in mitsuba.variants() if x.startswith('cuda')),   'cuda_rgb')
-any_llvm_rgb = 'llvm_rgb' if 'llvm_rgb' in mitsuba.variants() else 'llvm_ad_rgb'
-any_cuda_rgb = 'cuda_rgb' if 'cuda_rgb' in mitsuba.variants() else 'cuda_ad_rgb'
-any_llvm_spectral = 'llvm_spectral' if 'llvm_spectral' in mitsuba.variants() else 'llvm_ad_spectral'
-any_cuda_spectral = 'cuda_spectral' if 'cuda_spectral' in mitsuba.variants() else 'cuda_ad_spectral'
+variants = mi.variants()
+
+any_scalar = next((x for x in variants if x.startswith('scalar')), 'scalar_rgb')
+any_llvm   = next((x for x in variants if x.startswith('llvm')),   'llvm_rgb')
+any_cuda   = next((x for x in variants if x.startswith('cuda')),   'cuda_rgb')
+any_llvm_rgb = 'llvm_rgb' if 'llvm_rgb' in variants else 'llvm_ad_rgb'
+any_cuda_rgb = 'cuda_rgb' if 'cuda_rgb' in variants else 'cuda_ad_rgb'
+any_llvm_spectral = 'llvm_spectral' if 'llvm_spectral' in variants else 'llvm_ad_spectral'
+any_cuda_spectral = 'cuda_spectral' if 'cuda_spectral' in variants else 'cuda_ad_spectral'
 
 variant_groups = {
     'any_scalar' : [any_scalar],
     'any_llvm' : [any_llvm],
     'any_cuda' : [any_cuda],
-    'all' : mitsuba.variants(),
-    'all_scalar' : [x for x in mitsuba.variants() if x.startswith('scalar')],
-    'all_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb')],
-    'all_spectral' : [x for x in mitsuba.variants() if x.endswith('spectral')],
+    'all' : variants,
+    'all_scalar' : [x for x in variants if x.startswith('scalar')],
+    'all_rgb' : [x for x in variants if x.endswith('rgb')],
+    'all_spectral' : [x for x in variants if x.endswith('spectral')],
     'all_backends_once' : [any_scalar, any_llvm, any_cuda],
     'vec_backends_once' : [any_llvm, any_cuda],
     'vec_backends_once_rgb' : [any_llvm_rgb, any_cuda_rgb],
     'vec_backends_once_spectral' : [any_llvm_spectral, any_cuda_spectral],
-    'vec_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb') and not x.startswith('scalar')],
-    'vec_spectral' : [x for x in mitsuba.variants() if x.endswith('spectral') and not x.startswith('scalar')],
-    'all_ad_rgb' : [x for x in mitsuba.variants() if x.endswith('ad_rgb')],
-    'all_ad_spectral' : [x for x in mitsuba.variants() if x.endswith('ad_spectral')],
+    'vec_rgb' : [x for x in variants if x.endswith('rgb') and not x.startswith('scalar')],
+    'vec_spectral' : [x for x in variants if x.endswith('spectral') and not x.startswith('scalar')],
+    'all_ad_rgb' : [x for x in variants if x.endswith('ad_rgb')],
+    'all_ad_spectral' : [x for x in variants if x.endswith('ad_spectral')],
 }
+
+del variants
 
 for name, variants in variant_groups.items():
     generate_fixture_group(name, variants)
