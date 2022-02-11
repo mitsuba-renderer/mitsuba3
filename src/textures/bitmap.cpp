@@ -8,6 +8,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <drjit/tensor.h>
+#include <drjit/texture.h>
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -64,6 +65,12 @@ Bitmap texture (:monosp:`bitmap`)
      values. A 4x4 matrix can also be provided, in which case the extra row and
      column are ignored.
 
+ * - use_hw_acceleration
+   - |bool|
+   - Hardware acceleration features can be used in CUDA mode. These features can
+     cause small differences as hardware interpolation methods typically have a
+     loss of precision (not exaclty 32-bit arithmethic). (Default: true)
+
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
 
@@ -82,21 +89,16 @@ at all.
 
 */
 
-enum class FilterType { Nearest, Bilinear };
-enum class WrapMode { Repeat, Mirror, Clamp };
-
-// Forward declaration of specialized bitmap texture
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-class BitmapTextureImpl;
-
-/// Bilinearly interpolated bitmap texture.
 template <typename Float, typename Spectrum>
 class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
-        m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
+        m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f())
+                          .extract();
+        if (m_transform != ScalarTransform3f())
+            dr::make_opaque(m_transform);
 
         if (props.has_property("bitmap")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
@@ -118,26 +120,27 @@ public:
             m_bitmap = new Bitmap(file_path);
         }
 
-        std::string filter_type = props.string("filter_type", "bilinear");
-        if (filter_type == "nearest")
-            m_filter_type = FilterType::Nearest;
-        else if (filter_type == "bilinear")
-            m_filter_type = FilterType::Bilinear;
+        std::string filter_mode_str = props.string("filter_type", "bilinear");
+        dr::FilterMode filter_mode;
+        if (filter_mode_str == "nearest")
+            filter_mode = dr::FilterMode::Nearest;
+        else if (filter_mode_str == "bilinear")
+            filter_mode = dr::FilterMode::Linear;
         else
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                  "\"bilinear\"!", filter_type);
+                  "\"bilinear\"!", filter_mode_str);
 
-        std::string wrap_mode = props.string("wrap_mode", "repeat");
-        if (wrap_mode == "repeat")
-            m_wrap_mode = WrapMode::Repeat;
-        else if (wrap_mode == "mirror")
-            m_wrap_mode = WrapMode::Mirror;
-        else if (wrap_mode == "clamp")
-            m_wrap_mode = WrapMode::Clamp;
+        std::string wrap_mode_str = props.string("wrap_mode", "repeat");
+        typename dr::WrapMode wrap_mode;
+        if (wrap_mode_str == "repeat")
+            wrap_mode = dr::WrapMode::Repeat;
+        else if (wrap_mode_str == "mirror")
+            wrap_mode = dr::WrapMode::Mirror;
+        else if (wrap_mode_str == "clamp")
+            wrap_mode = dr::WrapMode::Clamp;
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
-                  "\"mirror\", or \"clamp\"!", wrap_mode);
-
+                  "\"mirror\", or \"clamp\"!", wrap_mode_str);
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below (in place) */
@@ -169,15 +172,21 @@ public:
             m_bitmap->set_srgb_gamma(false);
         }
 
+        m_hw_acceleration = props.get<bool>("use_hw_acceleration", true);
+
         // Convert the image into the working floating point representation
-        m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
+        m_bitmap =
+            m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
         if (dr::any(m_bitmap->size() < 2)) {
-            Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
+            Log(Warn,
+                "Image must be at least 2x2 pixels in size, up-sampling..");
             using ReconstructionFilter = Bitmap::ReconstructionFilter;
             ref<ReconstructionFilter> rfilter =
-                PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
-            m_bitmap = m_bitmap->resample(dr::max(m_bitmap->size(), 2), rfilter);
+                PluginManager::instance()->create_object<ReconstructionFilter>(
+                    Properties("tent"));
+            m_bitmap =
+                m_bitmap->resample(dr::max(m_bitmap->size(), 2), rfilter);
         }
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
@@ -220,166 +229,146 @@ public:
         if (exceed_unit_range && !m_raw)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
-                "exceed the [0, 1] range!", m_name);
+                "exceed the [0, 1] range!",
+                m_name);
 
-        m_mean = ScalarFloat(mean / pixel_count);
+        m_mean = Float(mean / pixel_count);
+
+        size_t channels = m_bitmap->channel_count();
+        ScalarVector2i res = ScalarVector2i(m_bitmap->size());
+        size_t shape[3] = { (size_t) res.x(), (size_t) res.y(), channels };
+        m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape),
+                              m_hw_acceleration, filter_mode, wrap_mode);
     }
 
-    /**
-     * Recursively expand into an implementation specialized to the
-     * actual loaded image.
-     */
-    std::vector<ref<Object>> expand() const override {
-        Properties props;
-        props.set_id(this->id());
-        return { ref<Object>(expand_1()) };
-    }
-
-    MTS_DECLARE_CLASS()
-
-protected:
-    Object* expand_1() const {
-        return m_bitmap->channel_count() == 1 ? expand_2<1>() : expand_2<3>();
-    }
-
-    template <uint32_t Channels> Object* expand_2() const {
-        return m_raw ? expand_3<Channels, true>() : expand_3<Channels, false>();
-    }
-
-    template <uint32_t Channels, bool Raw> Object* expand_3() const {
-        Properties props;
-        return new BitmapTextureImpl<Float, Spectrum, Channels, Raw>(
-            props, m_bitmap, m_name, m_transform, m_mean, m_filter_type, m_wrap_mode);
-    }
-
-protected:
-    ref<Bitmap> m_bitmap;
-    std::string m_name;
-    ScalarTransform3f m_transform;
-    bool m_raw;
-    ScalarFloat m_mean;
-    FilterType m_filter_type;
-    WrapMode m_wrap_mode;
-};
-
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-class BitmapTextureImpl final : public Texture<Float, Spectrum> {
-public:
-    MTS_IMPORT_TYPES(Texture)
-
-    BitmapTextureImpl(const Properties &props,
-                      const Bitmap *bitmap,
-                      const std::string &name,
-                      const ScalarTransform3f &transform,
-                      Float mean,
-                      FilterType filter_type,
-                      WrapMode wrap_mode)
-        : Texture(props),
-          m_inv_resolution_x((int) bitmap->width()),
-          m_inv_resolution_y((int) bitmap->height()),
-          m_name(name), m_transform(transform), m_mean(mean),
-          m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
-        ScalarVector2i res = ScalarVector2i(bitmap->size());
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), Channels };
-        m_data = TensorXf(bitmap->data(), 3, shape);
-        dr::make_opaque(m_transform, m_mean);
-    }
-
-    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
+                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
+        const size_t channels = m_texture.shape()[2];
+        if (channels == 3 && is_spectral_v<Spectrum> && m_raw) {
             DRJIT_MARK_USED(si);
-            Throw("The bitmap texture %s was queried for a spectrum, but texture conversion "
-                  "into spectra was explicitly disabled! (raw=true)",
+            Throw("The bitmap texture %s was queried for a spectrum, but "
+                  "texture conversion into spectra was explicitly disabled! "
+                  "(raw=true)",
                   to_string());
         } else {
-            auto result = interpolate(si, active);
+            if (dr::none_or<false>(active))
+                return dr::zero<UnpolarizedSpectrum>();
 
-            if constexpr (Channels == 3 && is_monochromatic_v<Spectrum>)
-                return luminance(result);
-            else
-                return result;
+            if constexpr (is_monochromatic_v<Spectrum>) {
+                if (channels == 1)
+                    return interpolate_1(si, active);
+                else // 3 channels
+                    return luminance(interpolate_3(si, active));
+            }
+            else{
+                if (channels == 1)
+                    return interpolate_1(si, active);
+                else { // 3 channels
+                    if constexpr (is_spectral_v<Spectrum>)
+                        return interpolate_spectral(si, active);
+                    else
+                        return interpolate_3(si, active);
+                }
+            }
         }
     }
 
-    Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
+    Float eval_1(const SurfaceInteraction3f &si,
+                 Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+        const size_t channels = m_texture.shape()[2];
+        if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {
             DRJIT_MARK_USED(si);
             Throw("eval_1(): The bitmap texture %s was queried for a "
                   "monochromatic value, but texture conversion to color "
                   "spectra had previously been requested! (raw=false)",
                   to_string());
         } else {
-            auto result = interpolate(si, active);
+            if (dr::none_or<false>(active))
+                return dr::zero<Float>();
 
-            if constexpr (Channels == 3)
-                return luminance(result);
-            else
-                return result;
+            if (channels == 1)
+                return interpolate_1(si, active);
+            else // 3 channels
+                return luminance(interpolate_3(si, active));
         }
     }
 
-    Vector2f eval_1_grad(const SurfaceInteraction3f& si, Mask active = true) const override {
+    Vector2f eval_1_grad(const SurfaceInteraction3f &si,
+                         Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+        const size_t channels = m_texture.shape()[2];
+        if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {
             DRJIT_MARK_USED(si);
-            Throw("eval_1_grad(): The bitmap texture %s was queried for a "
-                  "monochromatic gradient value, but texture conversion to color "
-                  "spectra had previously been requested! (raw=false)",
-                  to_string());
-        }
-        else {
-            ScalarVector2i res = resolution();
-            if (m_filter_type == FilterType::Bilinear) {
-                // Storage representation underlying this texture
-                using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
-                using Int4 = dr::Array<Int32, 4>;
-                using Int24 = dr::Array<Int4, 2>;
+            Throw(
+                "eval_1_grad(): The bitmap texture %s was queried for a "
+                "monochromatic gradient value, but texture conversion to color "
+                "spectra had previously been requested! (raw=false)",
+                to_string());
+        } else {
+            if (dr::none_or<false>(active))
+                return dr::zero<Vector2f>();
 
+            if (m_texture.filter_mode() == dr::FilterMode::Linear) {
                 if constexpr (!dr::is_array_v<Mask>)
                     active = true;
 
                 Point2f uv = m_transform.transform_affine(si.uv);
 
-                // Scale to bitmap resolution and apply shift
-                uv = dr::fmadd(uv, res, -0.5f);
+                Float f00, f10, f01, f11;
+                if (channels == 1) {
+                    dr::Array<Float *, 4> fetch_values;
+                    fetch_values[0] = &f00;
+                    fetch_values[1] = &f10;
+                    fetch_values[2] = &f01;
+                    fetch_values[3] = &f11;
 
-                // Integer pixel positions for bilinear interpolation
-                Vector2i uv_i = dr::floor2int<Vector2i>(uv);
-
-                // Interpolation weights
-                Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
-
-                // Apply wrap mode
-                Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
-                                          Int4(0, 0, 1, 1) + uv_i.y()));
-
-                Int4 index = uv_i_w.x() + uv_i_w.y() * res.x();
-
-                auto convert_to_monochrome = [](const auto& a) {
-                    if constexpr (Channels == 3)
-                        return luminance(a);
+                    if (m_hw_acceleration)
+                        m_texture.eval_fetch(uv, fetch_values, active);
                     else
-                        return a;
-                };
+                        m_texture.eval_fetch_drjit(uv, fetch_values, active);
+                } else { // 3 channels
+                    Color3f v00, v10, v01, v11;
+                    dr::Array<Float *, 4> fetch_values;
+                    fetch_values[0] = v00.data();
+                    fetch_values[1] = v10.data();
+                    fetch_values[2] = v01.data();
+                    fetch_values[3] = v11.data();
 
-                Float f00 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.x(), active));
-                Float f10 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.y(), active));
-                Float f01 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.z(), active));
-                Float f11 = convert_to_monochrome(dr::gather<StorageType>(m_data.array(), index.w(), active));
+                    if (m_hw_acceleration)
+                        m_texture.eval_fetch(uv, fetch_values, active);
+                    else
+                        m_texture.eval_fetch_drjit(uv, fetch_values, active);
+
+                    f00 = luminance(v00);
+                    f10 = luminance(v10);
+                    f01 = luminance(v01);
+                    f11 = luminance(v11);
+                }
+
+                ScalarVector2i res = resolution();
+                uv = dr::fmadd(uv, res, -0.5f);
+                Vector2i uv_i = dr::floor2int<Vector2i>(uv);
+                Point2f w1 = uv - Point2f(uv_i),
+                        w0 = 1.f - w1;
 
                 // Partials w.r.t. pixel coordinate x and y
-                Vector2f df_xy{ dr::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
-                                dr::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
+                Vector2f df_xy{
+                    dr::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
+                    dr::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10))
+                };
 
-                // Partials w.r.t. u and v (include uv transform by transpose multiply)
+                // Partials w.r.t. u and v (include uv transform by transpose
+                // multiply)
                 Matrix3f uv_tm = m_transform.matrix;
-                Vector2f df_uv{ uv_tm.entry(0, 0) * df_xy.x() + uv_tm.entry(1, 0) * df_xy.y(),
-                                uv_tm.entry(0, 1) * df_xy.x() + uv_tm.entry(1, 1) * df_xy.y() };
+                Vector2f df_uv{ uv_tm.entry(0, 0) * df_xy.x() +
+                                    uv_tm.entry(1, 0) * df_xy.y(),
+                                uv_tm.entry(0, 1) * df_xy.x() +
+                                    uv_tm.entry(1, 1) * df_xy.y() };
                 return res * df_uv;
             }
             // else if (m_filter_type == FilterType::Nearest)
@@ -387,144 +376,51 @@ public:
         }
     }
 
-    Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
+    Color3f eval_3(const SurfaceInteraction3f &si,
+                   Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if constexpr (Channels != 3) {
+        const size_t channels = m_texture.shape()[2];
+        if (channels != 3) {
             DRJIT_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB "
-                  "value, but it is monochromatic!", to_string());
-        } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
+                  "value, but it is monochromatic!",
+                  to_string());
+        } else if (is_spectral_v<Spectrum> && !m_raw) {
             DRJIT_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB "
                   "value, but texture conversion to color spectra had "
                   "previously been requested! (raw=false)",
                   to_string());
         } else {
-            return interpolate(si, active);
+            if (dr::none_or<false>(active))
+                return dr::zero<Color3f>();
+
+            return interpolate_3(si, active);
         }
     }
 
-    template <typename T> T wrap(const T &value) const {
-        ScalarVector2i res = resolution();
-        if (m_wrap_mode == WrapMode::Clamp) {
-            return clamp(value, 0, res - 1);
-        } else {
-            // In a N-wide texture, pixel positions from -N to -1 should have
-            // div == 0, however at pixel -N we have -1. This also appears at
-            // -2N,-3N,.. all negative positions are therefore shifted by 1.
-            T value_shift_neg = dr::select(value < 0, value + 1, value);
-            T div = T(m_inv_resolution_x(value_shift_neg.x()),
-                      m_inv_resolution_y(value_shift_neg.y()));
+    std::pair<Point2f, Float>
+    sample_position(const Point2f &sample, Mask active = true) const override {
+        if (dr::none_or<false>(active))
+            return { dr::zero<Point2f>(), dr::zero<Float>() };
 
-            T mod = value - div * res;
-
-            dr::masked(mod, mod < 0) += T(res);
-
-            if (m_wrap_mode == WrapMode::Mirror)
-                mod = dr::select(dr::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
-
-            return mod;
-        }
-    }
-
-    MTS_INLINE auto interpolate(const SurfaceInteraction3f &si, Mask active) const {
-        // Storage representation underlying this texture
-        using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
-
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
-
-        Point2f uv = m_transform.transform_affine(si.uv);
-
-        ScalarVector2i res = resolution();
-        if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = dr::Array<Int32, 4>;
-            using Int24 = dr::Array<Int4, 2>;
-
-            // Scale to bitmap resolution and apply shift
-            uv = dr::fmadd(uv, res, -.5f);
-
-            // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
-
-            // Interpolation weights
-            Point2f w1 = uv - Point2f(uv_i),
-                    w0 = 1.f - w1;
-
-            // Apply wrap mode
-            Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
-                                      Int4(0, 0, 1, 1) + uv_i.y()));
-
-            Int4 index = uv_i_w.x() + uv_i_w.y() * res.x();
-
-            StorageType v00 = dr::gather<StorageType>(m_data.array(), index.x(), active),
-                        v10 = dr::gather<StorageType>(m_data.array(), index.y(), active),
-                        v01 = dr::gather<StorageType>(m_data.array(), index.z(), active),
-                        v11 = dr::gather<StorageType>(m_data.array(), index.w(), active);
-
-            // Bilinear interpolation
-            if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
-                // Evaluate spectral upsampling model from stored coefficients
-                UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
-
-                c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
-                c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
-                c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
-                c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
-
-                c0 = dr::fmadd(w0.x(), c00, w1.x() * c10);
-                c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
-
-                return dr::fmadd(w0.y(), c0, w1.y() * c1);
-            } else {
-                StorageType v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
-                            v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
-
-                return dr::fmadd(w0.y(), v0, w1.y() * v1);
-            }
-        } else {
-            // Scale to bitmap resolution, no shift
-            uv *= res;
-
-            // Integer pixel positions for nearest-neighbor interpolation
-            Vector2i uv_i   = dr::floor2int<Vector2i>(uv),
-                     uv_i_w = wrap(uv_i);
-
-            Int32 index = uv_i_w.x() + uv_i_w.y() * res.x();
-
-            StorageType v = dr::gather<StorageType>(m_data.array(), index, active);
-            if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3)
-                return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
-            else
-                return v;
-        }
-    }
-
-    std::pair<Point2f, Float> sample_position(const Point2f &sample,
-                                              Mask active = true) const override {
-        if (!m_distr2d) {
-            // Construct 2D distribution upon first access, avoid races
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (!m_distr2d) {
-                auto self = const_cast<BitmapTextureImpl *>(this);
-                self->rebuild_internals(false, true);
-            }
-        }
+        if (!m_distr2d)
+            init_distr();
 
         auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
 
         ScalarVector2i res = resolution();
         ScalarVector2f inv_resolution = dr::rcp(ScalarVector2f(res));
 
-        if (m_filter_type == FilterType::Nearest) {
+        if (m_texture.filter_mode() == dr::FilterMode::Nearest) {
             sample2 = (Point2f(pos) + sample2) * inv_resolution;
         } else {
             sample2 = (Point2f(pos) + 0.5f + warp::square_to_tent(sample2)) *
                       inv_resolution;
 
-            switch (m_wrap_mode) {
-                case WrapMode::Repeat:
+            switch (m_texture.wrap_mode()) {
+                case dr::WrapMode::Repeat:
                     sample2[sample2 < 0.f] += 1.f;
                     sample2[sample2 > 1.f] -= 1.f;
                     break;
@@ -533,8 +429,8 @@ public:
                    with one row/column of pixels beyond that is considered, so
                    both clamp/mirror effectively use the same strategy. No such
                    distinction is needed for the pdf() method. */
-                case WrapMode::Clamp:
-                case WrapMode::Mirror:
+                case dr::WrapMode::Clamp:
+                case dr::WrapMode::Mirror:
                     sample2[sample2 < 0.f] = -sample2;
                     sample2[sample2 > 1.f] = 2.f - sample2;
                     break;
@@ -545,20 +441,14 @@ public:
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
-        if (!m_distr2d) {
-            // Construct 2D distribution upon first access, avoid races
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (!m_distr2d) {
-                auto self = const_cast<BitmapTextureImpl *>(this);
-                self->rebuild_internals(false, true);
-            }
-        }
+        if (dr::none_or<false>(active))
+            return dr::zero<Float>();
+
+        if (!m_distr2d)
+            init_distr();
 
         ScalarVector2i res = resolution();
-        if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = dr::Array<Int32, 4>;
-            using Int24 = dr::Array<Int4, 2>;
-
+        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             // Scale to bitmap resolution and apply shift
             Point2f uv = dr::fmadd(pos_, res, -.5f);
 
@@ -569,10 +459,14 @@ public:
             Point2f w1 = uv - Point2f(uv_i),
                     w0 = 1.f - w1;
 
-            Float v00 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 0)), active),
-                  v10 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 0)), active),
-                  v01 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 1)), active),
-                  v11 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 1)), active);
+            Float v00 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 0)),
+                                       active),
+                  v10 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 0)),
+                                       active),
+                  v01 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 1)),
+                                       active),
+                  v11 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 1)),
+                                       active);
 
             Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
                   v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
@@ -583,7 +477,7 @@ public:
             Point2f uv = pos_ * res;
 
             // Integer pixel positions for nearest-neighbor interpolation
-            Vector2i uv_i = wrap(dr::floor2int<Vector2i>(uv));
+            Vector2i uv_i = m_texture.wrap(dr::floor2int<Vector2i>(uv));
 
             return m_distr2d->pdf(uv_i, active) * dr::hprod(res);
         }
@@ -594,11 +488,14 @@ public:
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
+        if (dr::none_or<false>(active))
+            return { dr::zero<Wavelength>(), dr::zero<UnpolarizedSpectrum>() };
+
         if constexpr (is_spectral_v<Spectrum>) {
             SurfaceInteraction3f si(_si);
             si.wavelengths = MTS_CIE_MIN + (MTS_CIE_MAX - MTS_CIE_MIN) * sample;
-            return { si.wavelengths, eval(si, active) * (MTS_CIE_MAX -
-                                                         MTS_CIE_MIN) };
+            return { si.wavelengths,
+                     eval(si, active) * (MTS_CIE_MAX - MTS_CIE_MIN) };
         } else {
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
@@ -607,36 +504,44 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_data);
+        callback->put_parameter("data", m_texture.tensor());
         callback->put_parameter("transform", m_transform);
     }
 
-    void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        m_inv_resolution_x = dr::divisor<int32_t>(resolution().x());
-        m_inv_resolution_y = dr::divisor<int32_t>(resolution().y());
-
+    void
+    parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            /// Convert m_data into a managed array (available in CPU/GPU address space)
+            const size_t channels = m_texture.shape()[2];
+            if (channels != 1 && channels != 3)
+                Throw("parameters_changed(): The bitmap texture %s was changed "
+                      "to have %d channels, only textures with 1 or 3 channels "
+                      "are supported!",
+                      to_string(), channels);
+            else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
+                Throw("parameters_changed(): The bitmap texture %s was changed,"
+                      " it must be at least 2x2 pixels in size!",
+                      to_string());
+
+            m_texture.set_tensor(m_texture.tensor());
             rebuild_internals(true, m_distr2d != nullptr);
         }
     }
 
     ScalarVector2i resolution() const override {
-        return { m_data.shape()[1], m_data.shape()[0] };
+        const size_t *shape = m_texture.shape();
+        return { (int) shape[0], (int) shape[1] };
     }
 
-    Float mean() const override {
-        return m_mean;
-    }
+    Float mean() const override { return m_mean; }
 
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "BitmapTextureImpl[" << std::endl
+        oss << "BitmapTexture[" << std::endl
             << "  name = \"" << m_name << "\"," << std::endl
             << "  resolution = \"" << resolution() << "\"," << std::endl
-            << "  raw = " << (int) Raw << "," << std::endl
+            << "  raw = " << (int) m_raw << "," << std::endl
             << "  mean = " << m_mean << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
             << "]";
@@ -647,16 +552,111 @@ public:
 
 protected:
     /**
+     * \brief Evaluates the texture at the given surface interaction using
+     * spectral upsampling
+     */
+    MTS_INLINE UnpolarizedSpectrum
+    interpolate_spectral(const SurfaceInteraction3f &si, Mask active) const {
+        if constexpr (!dr::is_array_v<Mask>)
+            active = true;
+
+        Point2f uv = m_transform.transform_affine(si.uv);
+
+        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
+            Color3f v00, v10, v01, v11;
+            dr::Array<Float *, 4> fetch_values;
+            fetch_values[0] = v00.data();
+            fetch_values[1] = v10.data();
+            fetch_values[2] = v01.data();
+            fetch_values[3] = v11.data();
+
+            if (m_hw_acceleration)
+                m_texture.eval_fetch(uv, fetch_values, active);
+            else
+                m_texture.eval_fetch_drjit(uv, fetch_values, active);
+
+            UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
+            c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
+            c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
+            c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
+            c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
+
+            ScalarVector2i res = resolution();
+            uv = dr::fmadd(uv, res, -.5f);
+            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
+
+            // Interpolation weights
+            Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
+
+            c0 = dr::fmadd(w0.x(), c00, w1.x() * c10);
+            c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
+
+            return dr::fmadd(w0.y(), c0, w1.y() * c1);
+        } else {
+            Color3f out;
+            if (m_hw_acceleration)
+                m_texture.eval(uv, out.data(), active);
+            else
+                m_texture.eval_drjit(uv, out.data(), active);
+
+            return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
+        }
+    }
+
+    /**
+     * \brief Evaluates the texture at the given surface interaction
+     *
+     * Should only be used when the texture has exactly 1 channel.
+     */
+    MTS_INLINE Float interpolate_1(const SurfaceInteraction3f &si,
+                                   Mask active) const {
+        if constexpr (!dr::is_array_v<Mask>)
+            active = true;
+
+        Point2f uv = m_transform.transform_affine(si.uv);
+
+        Float out;
+        if (m_hw_acceleration)
+            m_texture.eval(uv, &out, active);
+        else
+            m_texture.eval_drjit(uv, &out, active);
+
+        return out;
+    }
+
+    /**
+     * \brief Evaluates the texture at the given surface interaction
+     *
+     * Should only be used when the texture has exactly 3 channels.
+     */
+    MTS_INLINE Color3f interpolate_3(const SurfaceInteraction3f &si,
+                                     Mask active) const {
+        if constexpr (!dr::is_array_v<Mask>)
+            active = true;
+
+        Point2f uv = m_transform.transform_affine(si.uv);
+
+        Color3f out;
+        if (m_hw_acceleration)
+            m_texture.eval(uv, out.data(), active);
+        else
+            m_texture.eval_drjit(uv, out.data(), active);
+
+        return out;
+    }
+
+    /**
      * \brief Recompute mean and 2D sampling distribution (if requested)
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        auto&& data = dr::migrate(m_data.array(), AllocType::Host);
+        auto&& data = dr::migrate(m_texture.value(), AllocType::Host);
 
         if constexpr (dr::is_jit_array_v<Float>)
             dr::sync_thread();
 
-        dr::make_opaque(m_transform);
+        if (m_transform != ScalarTransform3f())
+            dr::make_opaque(m_transform);
 
         const ScalarFloat *ptr = data.data();
 
@@ -664,14 +664,15 @@ protected:
         size_t pixel_count = (size_t) dr::hprod(resolution());
         bool exceed_unit_range = false;
 
-        if (Channels == 3) {
+        const size_t channels = m_texture.shape()[2];
+        if (channels == 3) {
             std::unique_ptr<ScalarFloat[]> importance_map(
                 init_distr ? new ScalarFloat[pixel_count] : nullptr);
 
             for (size_t i = 0; i < pixel_count; ++i) {
                 ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
                 ScalarFloat tmp;
-                if constexpr (is_spectral_v<Spectrum> && !Raw) {
+                if (is_spectral_v<Spectrum> && !m_raw ) {
                     tmp = srgb_model_mean(value);
                 } else {
                     if (!all(value >= 0 && value <= 1))
@@ -703,22 +704,30 @@ protected:
         if (init_mean)
             m_mean = dr::opaque<Float>(ScalarFloat(mean / pixel_count));
 
-        if (exceed_unit_range && !Raw)
+        if (exceed_unit_range && !m_raw)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
-                "exceed the [0, 1] range!", m_name);
+                "exceed the [0, 1] range!",
+                m_name);
+    }
+
+    /// Construct 2D distribution upon first access, avoid races
+    MTS_INLINE void init_distr() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_distr2d) {
+            auto self = const_cast<BitmapTexture *>(this);
+            self->rebuild_internals(false, true);
+        }
     }
 
 protected:
-    TensorXf m_data;
-    dr::divisor<int32_t> m_inv_resolution_x;
-    dr::divisor<int32_t> m_inv_resolution_y;
-    std::string m_name;
-    Transform3f m_transform;
-    Float m_mean;
-    FilterType m_filter_type;
-    WrapMode m_wrap_mode;
+    Texture2f m_texture;
+    ScalarTransform3f m_transform;
+    bool m_hw_acceleration;
     bool m_raw;
+    Float m_mean;
+    ref<Bitmap> m_bitmap;
+    std::string m_name;
 
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;
@@ -727,32 +736,5 @@ protected:
 
 MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
 MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
-
-
-/* This class has a name that depends on extra template parameters, so
-   the standard MTS_IMPLEMENT_CLASS_VARIANT macro cannot be used */
-
-NAMESPACE_BEGIN(detail)
-template <uint32_t Channels, bool Raw>
-constexpr const char * bitmap_class_name() {
-    if constexpr (!Raw) {
-        return (Channels == 1) ? "BitmapTextureImpl_1_0"
-                               : "BitmapTextureImpl_3_0";
-    } else {
-        return (Channels == 1) ? "BitmapTextureImpl_1_1"
-                               : "BitmapTextureImpl_3_1";
-    }
-}
-NAMESPACE_END(detail)
-
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class
-    = new Class(detail::bitmap_class_name<Channels, Raw>(), "Texture",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

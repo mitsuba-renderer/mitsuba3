@@ -178,6 +178,10 @@ template <typename Float_> struct CoreAliases {
 
     using TensorXf = dr::Tensor<mitsuba::DynamicBuffer<Float>>;
 
+    using Texture1f = dr::Texture<Float, 1>;
+    using Texture2f = dr::Texture<Float, 2>;
+    using Texture3f = dr::Texture<Float, 3>;
+
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
@@ -263,7 +267,10 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
     using prefix ## Color1d              = typename prefix ## CoreAliases::Color1d;                \
     using prefix ## Color3d              = typename prefix ## CoreAliases::Color3d;                \
-    using prefix ## TensorXf             = typename prefix ## CoreAliases::TensorXf;
+    using prefix ## TensorXf             = typename prefix ## CoreAliases::TensorXf;               \
+    using prefix ## Texture1f            = typename prefix ## CoreAliases::Texture1f;              \
+    using prefix ## Texture2f            = typename prefix ## CoreAliases::Texture2f;              \
+    using prefix ## Texture3f            = typename prefix ## CoreAliases::Texture3f;
 
 // Variadic macro to import a set of types from the base class
 #define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;
