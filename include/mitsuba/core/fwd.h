@@ -197,7 +197,7 @@ template <typename Float_> struct CoreAliases {
 
 #define MI_VARIANT template <typename Float, typename Spectrum>
 
-#define MI_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
+#define MI_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                                \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
     using prefix ## Bool                 = typename prefix ## CoreAliases::Bool;                   \
@@ -280,20 +280,20 @@ template <typename Float_> struct CoreAliases {
 #define __MI_USING_MEMBERS_MACRO__(x) using Base::x;
 #define MI_USING_MEMBERS(...) DRJIT_MAP(__MI_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
-#define MI_IMPORT_CORE_TYPES()                                                                    \
-    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
-    using ScalarFloat = dr::scalar_t<Float>;                                                       \
+#define MI_IMPORT_CORE_TYPES()                                                 \
+    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                       \
+    using ScalarFloat = dr::scalar_t<Float>;                                   \
     MI_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
-#define MI_MASK_ARGUMENT(mask)                                                                    \
-    (void) mask;                                                                                   \
-    if constexpr (!dr::is_array_v<Float>)                                                          \
+#define MI_MASK_ARGUMENT(mask)                                                 \
+    (void) mask;                                                               \
+    if constexpr (!dr::is_array_v<Float>)                                      \
         mask = true;
 
-#define MI_MASKED_FUNCTION(profiler_phase, mask)                                                  \
-    ScopedPhase scope_phase(profiler_phase);                                                       \
-    (void) mask;                                                                                   \
-    if constexpr (!dr::is_array_v<Float>)                                                          \
+#define MI_MASKED_FUNCTION(profiler_phase, mask)                               \
+    ScopedPhase scope_phase(profiler_phase);                                   \
+    (void) mask;                                                               \
+    if constexpr (!dr::is_array_v<Float>)                                      \
         mask = true;
 
 NAMESPACE_BEGIN(filesystem)
@@ -316,7 +316,7 @@ extern "C" {
 //! @{ \name Helper macros
 // =============================================================
 
-#define MI_DECLARE_ENUM_OPERATORS(name)                                       \
+#define MI_DECLARE_ENUM_OPERATORS(name)                                        \
     constexpr uint32_t operator|(name f1, name f2) {                           \
         return (uint32_t) f1 | (uint32_t) f2;                                  \
     }                                                                          \
