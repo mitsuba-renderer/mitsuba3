@@ -1,10 +1,9 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.1, focus_dist=15, near_clip=1.0):
-    from mitsuba.core import load_dict, ScalarTransform4f
     t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
 
     camera_dict = {
@@ -17,7 +16,7 @@ def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.
         "fov_axis": fov_axis,
         "shutter_open": s_open,
         "shutter_close": s_close,
-        "to_world": ScalarTransform4f.look_at(
+        "to_world": mi.ScalarTransform4f.look_at(
             origin=o,
             target=t,
             up=[0, 1, 0]
@@ -29,7 +28,7 @@ def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.
         }
     }
 
-    return load_dict(camera_dict)
+    return mi.load_dict(camera_dict)
 
 
 origins = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
@@ -41,8 +40,6 @@ directions = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]
 @pytest.mark.parametrize("s_open", [0.0, 1.5])
 @pytest.mark.parametrize("s_time", [0.0, 3.0])
 def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
-    from mitsuba.core import BoundingBox3f, Vector3f, Transform4f
-
     camera = create_camera(
         origin, direction, s_open=s_open, s_close=s_open + s_time)
 
@@ -52,9 +49,9 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open(), s_open)
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert camera.needs_aperture_sample()
-    assert camera.bbox() == BoundingBox3f(origin, origin)
+    assert camera.bbox() == mi.BoundingBox3f(origin, origin)
     assert dr.allclose(camera.world_transform().matrix,
-                       Transform4f.look_at(origin, Vector3f(origin) + direction, [0, 1, 0]).matrix)
+                       mi.Transform4f.look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
 @pytest.mark.parametrize("origin", origins)
@@ -62,9 +59,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 @pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
 @pytest.mark.parametrize("focus_dist", [15, 25])
 def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
-    # Check the correctness of the sample_ray() method
-
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f, Point3f
+    """Check the correctness of the sample_ray() method"""
 
     near_clip = 1.0
     cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist, near_clip=near_clip)
@@ -78,14 +73,14 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
         time, wav_sample, pos_sample, aperture_sample)
 
     # Importance sample wavelength and weight
-    wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
+    wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
 
     assert dr.allclose(ray.wavelengths, wav)
     assert dr.allclose(spec_weight, spec)
     assert dr.allclose(ray.time, time)
 
     inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
-    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
 
@@ -104,14 +99,14 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 
     ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
 
-    trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
-    tmp = aperture_rad * warp.square_to_uniform_disk_concentric(aperture_sample)
-    aperture_v = trafo @ Vector3f(tmp.x, tmp.y, 0)
+    trafo = mi.Transform4f.look_at(origin, mi.Vector3f(origin) + mi.Vector3f(direction), [0, 1, 0])
+    tmp = aperture_rad * mi.warp.square_to_uniform_disk_concentric(aperture_sample)
+    aperture_v = trafo @ mi.Vector3f(tmp.x, tmp.y, 0)
 
     inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
-    o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
+    o_centered = ray_centered.o - near_clip * inv_z_centered * mi.Vector3f(ray_centered.d)
     inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
-    o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
+    o = o_centered + aperture_v + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
     assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
@@ -121,9 +116,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 @pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
 @pytest.mark.parametrize("focus_dist", [15, 25])
 def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
-    # Check the correctness of the sample_ray_differential() method
-
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f, Point3f
+    """Check the correctness of the sample_ray_differential() method"""
 
     near_clip = 1.0
     cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist, near_clip=near_clip)
@@ -137,14 +130,14 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
         time, wav_sample, pos_sample, aperture_sample)
 
     # Importance sample wavelength and weight
-    wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
+    wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
 
     assert dr.allclose(ray.wavelengths, wav)
     assert dr.allclose(spec_weight, spec)
     assert dr.allclose(ray.time, time)
 
     inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
-    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
     # ----------------------------------------_
@@ -184,14 +177,14 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
 
     ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
 
-    trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
-    tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
-    aperture_v = trafo @ (aperture_rad * Vector3f(tmp.x, tmp.y, 0))
+    trafo = mi.Transform4f.look_at(origin, mi.Vector3f(origin) + mi.Vector3f(direction), [0, 1, 0])
+    tmp = mi.warp.square_to_uniform_disk_concentric(aperture_sample)
+    aperture_v = trafo @ (aperture_rad * mi.Vector3f(tmp.x, tmp.y, 0))
 
     inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
-    o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
+    o_centered = ray_centered.o - near_clip * inv_z_centered * mi.Vector3f(ray_centered.d)
     inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
-    o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
+    o = o_centered + aperture_v + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
     assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
@@ -200,11 +193,11 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
 @pytest.mark.parametrize("fov", [34, 80])
 def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
-    # Check that sampling position_sample at the extremities of the unit square
-    # along the fov_axis should generate a ray direction that make angle of fov/2
-    # with the camera direction.
-
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum
+    """
+    Check that sampling position_sample at the extremities of the unit square
+    along the fov_axis should generate a ray direction that make angle of fov/2
+    with the camera direction.
+    """
 
     def check_fov(camera, sample):
         # aperture position at the center
@@ -231,19 +224,16 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
 
 
 def test05_spectrum_sampling(variants_vec_spectral):
-    from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.core import Float, MI_CIE_MIN, MI_CIE_MAX, load_dict
-
     # Check RGB wavelength sampling
-    camera = load_dict({
+    camera = mi.load_dict({
         "type": "thinlens",
         "aperture_radius": 1.0,
     })
-    wavelengths, _ =  camera.sample_wavelengths(dr.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
-    assert (dr.all_nested((wavelengths >= MI_CIE_MIN) & (wavelengths <= MI_CIE_MAX)))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zero(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
+    assert (dr.all_nested((wavelengths >= mi.MI_CIE_MIN) & (wavelengths <= mi.MI_CIE_MAX)))
 
     # Check custom SRF wavelength sampling
-    camera = load_dict({
+    camera = mi.load_dict({
         "type": "thinlens",
         "aperture_radius": 1.0,
         "srf": {
@@ -251,23 +241,23 @@ def test05_spectrum_sampling(variants_vec_spectral):
             "value": [(1200,1.0), (1400,1.0)]
         }
     })
-    wavelengths, _ =  camera.sample_wavelengths(dr.zero(SurfaceInteraction3f), Float([0.1, 0.4, 0.9]))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zero(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
     assert (dr.all_nested((wavelengths >= 1200) & (wavelengths <= 1400)))
 
     # Check error if double SRF is defined
     with pytest.raises(RuntimeError, match=r'Sensor\(\)'):
-        camera = load_dict({
-            "type": "thinlens",
-            "aperture_radius": 1.0,
-            "srf": {
-                "type": 'spectrum',
-                "value": [(1200,1.0), (1400,1.0)]
+        camera = mi.load_dict({
+            'type': 'thinlens',
+            'aperture_radius': 1.0,
+            'srf': {
+                'type': 'spectrum',
+                'value': [(1200,1.0), (1400,1.0)]
             },
-            "film": {
-                "type": 'specfilm',
-                "srf_test": {
-                    "type": 'spectrum',
-                    "value": [(34,1.0),(79,1.0),(120,1.0)]
+            'film': {
+                'type': 'specfilm',
+                'srf_test': {
+                    'type': 'spectrum',
+                    'value': [(34,1.0),(79,1.0),(120,1.0)]
                 }
             }
         })

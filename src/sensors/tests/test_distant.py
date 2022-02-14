@@ -1,7 +1,6 @@
-import numpy as np
 import pytest
-
 import drjit as dr
+import mitsuba as mi
 
 
 def sensor_dict(target=None, direction=None):
@@ -33,9 +32,7 @@ def sensor_dict(target=None, direction=None):
 
 
 def make_sensor(d):
-    from mitsuba.core import load_dict
-
-    return load_dict(d).expand()[0]
+    return mi.load_dict(d).expand()[0]
 
 
 def test_construct(variant_scalar_rgb):
@@ -103,8 +100,6 @@ def test_construct(variant_scalar_rgb):
 @pytest.mark.parametrize(
     "direction", [[0.0, 0.0, -1.0], [-1.0, -1.0, 0.0], [-2.0, 0.0, 0.0]])
 def test_sample_ray_direction(variant_scalar_rgb, direction):
-    from mitsuba.core import ScalarVector3f
-
     sensor = make_sensor(sensor_dict(direction=direction))
 
     # Check that directions are appropriately set
@@ -117,7 +112,7 @@ def test_sample_ray_direction(variant_scalar_rgb, direction):
         ray, _ = sensor.sample_ray(1.0, 1.0, sample1, sample2, True)
 
         # Check that ray direction is what is expected
-        assert dr.allclose(ray.d, dr.normalize(ScalarVector3f(direction)))
+        assert dr.allclose(ray.d, dr.normalize(mi.ScalarVector3f(direction)))
 
 
 @pytest.mark.parametrize(
@@ -135,15 +130,16 @@ def test_sample_ray_direction(variant_scalar_rgb, direction):
 @pytest.mark.parametrize("w_o", [[0, 0, -1], [0, -1, -1]])
 @pytest.mark.slow
 def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
-    # This test checks if targeting works as intended by rendering a basic scene
-    from mitsuba.core import load_dict, ScalarTransform4f, Struct, Bitmap
+    '''
+    This test checks if targeting works as intended by rendering a basic scene
+    '''
 
     # Basic illumination and sensing parameters
     l_e = 1.0  # Emitted radiance
-    w_e = list(w_e / np.linalg.norm(w_e))  # Emitter direction
-    w_o = list(w_o / np.linalg.norm(w_o))  # Sensor direction
-    cos_theta_e = abs(np.dot(w_e, [0, 0, 1]))
-    cos_theta_o = abs(np.dot(w_o, [0, 0, 1]))
+    w_e = dr.normalize(mi.Vector3f(w_e)) # Emitter direction
+    w_o = dr.normalize(mi.Vector3f(w_o)) # Sensor direction
+    cos_theta_e = abs(dr.dot(w_e, [0, 0, 1]))
+    cos_theta_o = abs(dr.dot(w_o, [0, 0, 1]))
 
     # Reflecting surface specification
     surface_scale = 1.0
@@ -171,7 +167,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             "direction": w_o,
             "target": {
                 "type": "rectangle",
-                "to_world": ScalarTransform4f.scale(surface_scale),
+                "to_world": mi.ScalarTransform4f.scale(surface_scale),
             },
             "sampler": {
                 "type": "independent",
@@ -190,7 +186,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             "direction": w_o,
             "target": {
                 "type": "rectangle",
-                "to_world": ScalarTransform4f.scale(0.5 * surface_scale),
+                "to_world": mi.ScalarTransform4f.scale(0.5 * surface_scale),
             },
             "sampler": {
                 "type": "independent",
@@ -209,7 +205,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             "direction": w_o,
             "target": {
                 "type": "rectangle",
-                "to_world": ScalarTransform4f.scale(2.0 * surface_scale),
+                "to_world": mi.ScalarTransform4f.scale(2.0 * surface_scale),
             },
             "sampler": {
                 "type": "independent",
@@ -244,7 +240,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             "direction": w_o,
             "target": {
                 "type": "disk",
-                "to_world": ScalarTransform4f.scale(surface_scale),
+                "to_world": mi.ScalarTransform4f.scale(surface_scale),
             },
             "sampler": {
                 "type": "independent",
@@ -265,7 +261,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
         "type": "scene",
         "shape": {
             "type": "rectangle",
-            "to_world": ScalarTransform4f.scale(surface_scale),
+            "to_world": mi.ScalarTransform4f.scale(surface_scale),
             "bsdf": {
                 "type": "diffuse",
                 "reflectance": rho,
@@ -281,22 +277,22 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
         },
     }
 
-    scene = load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
+    scene = mi.load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
 
     # Run simulation
     scene.integrator().render(scene, seed=0)
 
     # Check result
-    result = np.array(
+    result = mi.TensorXf(
         scene.sensors()[0].film().bitmap().convert(
-            Bitmap.PixelFormat.RGB, Struct.Type.Float32, False
+            mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, False
         )
-    ).squeeze()
+    )
 
     surface_area = 4.0 * surface_scale**2  # Area of square surface
-    l_o = l_e * cos_theta_e * rho / np.pi
+    l_o = l_e * cos_theta_e * rho / dr.Pi
     expected = {  # Special expected values for some cases (when rays are "lost")
-        "default": l_o * (2.0 / np.pi) * cos_theta_o,
+        "default": l_o * (2.0 / dr.Pi) * cos_theta_o,
         "target_square_large": l_o * 0.25,
     }
     expected_value = expected.get(sensor_setup, l_o)
@@ -306,14 +302,13 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     }
     rtol_value = rtol.get(sensor_setup, 5e-3)
 
-    assert np.allclose(result, expected_value, rtol=rtol_value)
+    assert dr.allclose(result, expected_value, rtol=rtol_value)
 
 
 def test_checkerboard(variants_all_rgb):
     """
     Very basic render test with checkerboard texture and square target.
     """
-    from mitsuba.core import load_dict, ScalarTransform4f
 
     l_o = 1.0
     rho0 = 0.5
@@ -330,7 +325,7 @@ def test_checkerboard(variants_all_rgb):
                     "type": "checkerboard",
                     "color0": rho0,
                     "color1": rho1,
-                    "to_uv": ScalarTransform4f.scale(2),
+                    "to_uv": mi.ScalarTransform4f.scale(2),
                 },
             },
         },
@@ -362,7 +357,7 @@ def test_checkerboard(variants_all_rgb):
         },
         # "sensor1": {  # In case one would like to check what the scene looks like
         #     "type": "perspective",
-        #     "to_world": ScalarTransform4f.look_at(origin=[0, 0, 5], target=[0, 0, 0], up=[0, 1, 0]),
+        #     "to_world": mi.ScalarTransform4f.look_at(origin=[0, 0, 5], target=[0, 0, 0], up=[0, 1, 0]),
         #     "sampler": {
         #         "type": "independent",
         #         "sample_count": 10000,
@@ -381,8 +376,8 @@ def test_checkerboard(variants_all_rgb):
         },
     }
 
-    scene = load_dict(scene_dict)
-    data = np.array(scene.render())
+    scene = mi.load_dict(scene_dict)
+    data = mi.TensorXf(scene.render())
 
     expected = l_o * 0.5 * (rho0 + rho1) / dr.Pi
-    assert np.allclose(data, expected, atol=1e-3)
+    assert dr.allclose(data, expected, atol=1e-3)

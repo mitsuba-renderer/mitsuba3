@@ -1,40 +1,36 @@
-import numpy as np
 import pytest
-
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 
 def sensor_shape_dict(radius, center):
-    from mitsuba.core import ScalarTransform4f
-
     return {
-        "type": "sphere",
-        "radius": radius,
-        "to_world": ScalarTransform4f.translate(center),
-        "sensor": {
-            "type": "irradiancemeter",
-            "film": {
-                "type": "hdrfilm",
-                "width": 1,
-                "height": 1,
-                "rfilter": {"type": "box"}
+        'type': 'sphere',
+        'radius': radius,
+        'to_world': mi.ScalarTransform4f.translate(center),
+        'sensor': {
+            'type': 'irradiancemeter',
+            'film': {
+                'type': 'hdrfilm',
+                'width': 1,
+                'height': 1,
+                'rfilter': {'type': 'box'}
             },
         }
     }
 
 
 def test_construct(variant_scalar_rgb):
-    """We construct an irradiance meter attached to a sphere and assert that the
+    """
+    We construct an irradiance meter attached to a sphere and assert that the
     following parameters get set correctly:
     - associated shape
     - film
     """
-    from mitsuba.core import load_dict, ScalarVector3f
 
-    center_v = ScalarVector3f(0.0)
+    center_v = mi.ScalarVector3f(0.0)
     radius = 1.0
-    sphere = load_dict(sensor_shape_dict(radius, center_v))
+    sphere = mi.load_dict(sensor_shape_dict(radius, center_v))
     sensor = sphere.sensor()
 
     assert sensor.shape() == sphere
@@ -46,13 +42,13 @@ def test_construct(variant_scalar_rgb):
     [([2.0, 5.0, 8.3], 2.0), ([0.0, 0.0, 0.0], 1.0), ([1.0, 4.0, 0.0], 5.0)]
 )
 def test_sampling(variant_scalar_rgb, center, radius, np_rng):
-    """We construct an irradiance meter attached to a sphere and assert that
+    """
+    We construct an irradiance meter attached to a sphere and assert that
     sampled rays originate at the sphere's surface
     """
-    from mitsuba.core import load_dict, ScalarVector3f
 
-    center_v = ScalarVector3f(center)
-    sphere = load_dict(sensor_shape_dict(radius, center_v))
+    center_v = mi.ScalarVector3f(center)
+    sphere = mi.load_dict(sensor_shape_dict(radius, center_v))
     sensor = sphere.sensor()
     num_samples = 100
 
@@ -88,15 +84,14 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
     We expect the average value to be \\pi * L with L the radiance of the constant
     emitter.
     """
-    from mitsuba.core import load_dict, Spectrum, ScalarVector3f
 
     scene_dict = {
-        "type": "scene",
-        "sensor": sensor_shape_dict(1, ScalarVector3f(0, 0, 0)),
-        "emitter": constant_emitter_dict(radiance)
+        'type': 'scene',
+        'sensor': sensor_shape_dict(1, mi.ScalarVector3f(0, 0, 0)),
+        'emitter': constant_emitter_dict(radiance)
     }
 
-    scene = load_dict(scene_dict)
+    scene = mi.load_dict(scene_dict)
     sensor = scene.sensors()[0]
 
     power_density_cum = 0.0
@@ -115,7 +110,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
             intersection.emitter(scene).eval(intersection)
     power_density_avg = power_density_cum / float(num_samples)
 
-    assert dr.allclose(power_density_avg, Spectrum(dr.Pi * radiance))
+    assert dr.allclose(power_density_avg, mi.Spectrum(dr.Pi * radiance))
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
@@ -130,21 +125,18 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     emitter.
     """
 
-    from mitsuba.core import load_dict, Bitmap, Struct, ScalarVector3f
-
     scene_dict = {
-        "type": "scene",
-        "sensor": sensor_shape_dict(1, ScalarVector3f(0, 0, 0)),
-        "emitter": constant_emitter_dict(radiance),
-        "integrator": {"type": "path"}
+        'type': 'scene',
+        'sensor': sensor_shape_dict(1, mi.ScalarVector3f(0, 0, 0)),
+        'emitter': constant_emitter_dict(radiance),
+        'integrator': {'type': 'path'}
     }
 
-    scene = load_dict(scene_dict)
+    scene = mi.load_dict(scene_dict)
     scene.integrator().render(scene, seed=0)
     film = scene.sensors()[0].film()
 
-    img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.Y,
-                                        Struct.Type.Float32, srgb_gamma=False)
-    image_np = np.array(img)
+    img = film.bitmap(raw=True).convert(mi.Bitmap.PixelFormat.Y,
+                                        mi.Struct.Type.Float32, srgb_gamma=False)
 
-    assert dr.allclose(image_np, (radiance * dr.Pi))
+    assert dr.allclose(mi.TensorXf(img), (radiance * dr.Pi))
