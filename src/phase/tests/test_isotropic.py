@@ -1,40 +1,31 @@
-import numpy as np
-
-import mitsuba
 import pytest
 import drjit as dr
-from drjit.scalar import ArrayXf as Float
+import mitsuba as mi
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-
-    p = load_dict({"type": "isotropic"})
+    p = mi.load_dict({"type": "isotropic"})
     assert p is not None
 
 
 def test02_eval(variant_scalar_rgb):
-    from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core import load_dict
+    p = mi.load_dict({"type": "isotropic"})
+    ctx = mi.PhaseFunctionContext(None)
+    mei = mi.MediumInteraction3f()
 
-    p = load_dict({"type": "isotropic"})
-    ctx = PhaseFunctionContext(None)
-    mi = MediumInteraction3f()
-    for theta in np.linspace(0, np.pi / 2, 4):
-        for ph in np.linspace(0, np.pi, 4):
-            wo = [np.sin(theta), 0, np.cos(theta)]
-            v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * dr.Pi))
+    theta  = dr.linspace(mi.Float, dr.Pi / 2, 4)
+    ph  = dr.linspace(mi.Float, 0, dr.Pi, 4)
+    wo = [dr.sin(theta), 0, dr.cos(theta)]
+    v_eval = p.eval(ctx, mei, wo)
+
+    assert dr.allclose(v_eval, 1.0 / (4 * dr.Pi))
 
 
 def test03_chi2(variants_vec_backends_once_rgb):
-    from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
-    from mitsuba.core import ScalarBoundingBox2f
+    sample_func, pdf_func = mi.chi2.PhaseFunctionAdapter("isotropic", "")
 
-    sample_func, pdf_func = PhaseFunctionAdapter("isotropic", "")
-
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,

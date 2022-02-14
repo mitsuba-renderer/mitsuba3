@@ -1,40 +1,35 @@
-import drjit as dr
-import numpy as np
 import pytest
+import drjit as dr
+import mitsuba as mi
 
-import mitsuba
-mitsuba.set_variant("scalar_rgb")
-from mitsuba.core import load_string, warp, Struct
-from mitsuba.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
-                            MediumInteraction3f, register_phasefunction, has_flag)
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 @pytest.fixture(scope='module')
 def create_phasefunction():
-    class MyIsotropicPhaseFunction(PhaseFunction):
+    class MyIsotropicPhaseFunction(mi.scalar_rgb.PhaseFunction):
         def __init__(self, props):
-            PhaseFunction.__init__(self, props)
-            self.m_flags = PhaseFunctionFlags.Isotropic
+            mi.PhaseFunction.__init__(self, props)
+            self.m_flags = mi.PhaseFunctionFlags.Isotropic
 
-        def sample(self, ctx, mi, sample1, sample2, active=True):
-            wo = warp.square_to_uniform_sphere(sample2)
-            pdf = warp.square_to_uniform_sphere_pdf(wo)
+        def sample(self, ctx, mei, sample1, sample2, active=True):
+            wo = mi.warp.square_to_uniform_sphere(sample2)
+            pdf = mi.warp.square_to_uniform_sphere_pdf(wo)
             return (wo, pdf)
 
-        def eval(self, ctx, mi, wo, active=True):
-            return warp.square_to_uniform_sphere_pdf(wo)
+        def eval(self, ctx, mei, wo, active=True):
+            return mi.warp.square_to_uniform_sphere_pdf(wo)
 
         def to_string(self):
             return "MyIsotropicPhaseFunction[]"
 
-    register_phasefunction("myisotropic", lambda props: MyIsotropicPhaseFunction(props))
+    mi.scalar_rgb.register_phasefunction("myisotropic", lambda props: MyIsotropicPhaseFunction(props))
 
 
 @fresolver_append_path
 def create_medium_scene(phase_function='isotropic', spp=8):
-    scene = load_string(f"""
-        <scene version='2.0.0'>
+    scene = mi.load_string(f"""
+        <scene version='3.0.0'>
             <integrator type="volpathmis"/>
             <sensor type="perspective">
                 <transform name="to_world">
@@ -68,24 +63,28 @@ def create_medium_scene(phase_function='isotropic', spp=8):
     return scene
 
 
-def test01_create_and_eval(create_phasefunction):
-    p = load_string("<phase version='2.0.0' type='myisotropic'/>")
+def test01_create_and_eval(variant_scalar_rgb, create_phasefunction):
+    p = mi.load_string("<phase version='3.0.0' type='myisotropic'/>")
     assert p is not None
 
-    assert has_flag(p.m_flags, PhaseFunctionFlags.Isotropic)
-    assert not has_flag(p.m_flags, PhaseFunctionFlags.Anisotropic)
-    assert not has_flag(p.m_flags, PhaseFunctionFlags.Microflake)
+    assert mi.has_flag(p.m_flags, mi.PhaseFunctionFlags.Isotropic)
+    assert not mi.has_flag(p.m_flags, mi.PhaseFunctionFlags.Anisotropic)
+    assert not mi.has_flag(p.m_flags, mi.PhaseFunctionFlags.Microflake)
 
-    ctx = PhaseFunctionContext(None)
-    mi = MediumInteraction3f()
-    for theta in np.linspace(0, np.pi / 2, 4):
-        for ph in np.linspace(0, np.pi, 4):
-            wo = [np.sin(theta), 0, np.cos(theta)]
-            v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * dr.Pi))
+    ctx = mi.PhaseFunctionContext(None)
+    mei = mi.MediumInteraction3f()
+    theta = dr.linspace(mi.Float, 0, dr.Pi / 2, 4)
+    ph = dr.linspace(mi.Float, 0, dr.Pi, 4)
+
+    wo = [dr.sin(theta), 0, dr.cos(theta)]
+    v_eval = p.eval(ctx, mei, wo)
+
+    dr.allclose(v_eval, 1.0 / (4 * dr.Pi))
 
 
-def test02_render_scene(create_phasefunction):
+def test02_render_scene(variant_scalar_rgb, create_phasefunction):
+    import numpy as np
+
     scene = create_medium_scene('myisotropic')
     bitmap = scene.render()
     trampoline_np = np.array(bitmap, copy=False)

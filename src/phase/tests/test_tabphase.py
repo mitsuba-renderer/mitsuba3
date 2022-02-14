@@ -1,13 +1,12 @@
-from itertools import product
-
+import pytest
 import drjit as dr
-import numpy as np
+import mitsuba as mi
+
+from itertools import product
 
 
 def test_create(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-
-    p = load_dict({"type": "tabphase", "values": "0.5, 1.0, 1.5"})
+    p = mi.load_dict({"type": "tabphase", "values": "0.5, 1.0, 1.5"})
     assert p is not None
 
 
@@ -17,8 +16,7 @@ def test_eval(variant_scalar_rgb):
     We make sure that the values we use to initialize the plugin are such that
     the phase function has an asymmetric lobe.
     """
-    from mitsuba.core import load_dict
-    from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
+    import numpy as np
 
     # Phase function table definition
     ref_y = np.array([0.5, 1.0, 1.5])
@@ -44,7 +42,7 @@ def test_eval(variant_scalar_rgb):
     wos = np.array(
         [
             (
-                np.sin(theta) * np.cos(phi),
+                dr.sin(theta) * np.cos(phi),
                 np.sin(theta) * np.sin(phi),
                 np.cos(theta),
             )
@@ -54,27 +52,25 @@ def test_eval(variant_scalar_rgb):
     ref_eval = eval(wi, wos)
 
     # Evaluate Mitsuba implementation
-    tab = load_dict({"type": "tabphase", "values": ", ".join([str(x) for x in ref_y])})
-    ctx = PhaseFunctionContext(None)
-    mi = MediumInteraction3f()
-    mi.wi = wi
+    tab = mi.load_dict({"type": "tabphase", "values": ", ".join([str(x) for x in ref_y])})
+    ctx = mi.PhaseFunctionContext(None)
+    mei = mi.MediumInteraction3f()
+    mei.wi = wi
     tab_eval = np.zeros_like(ref_eval)
     for i, wo in enumerate(wos):
-        tab_eval[i] = tab.eval(ctx, mi, wo)
+        tab_eval[i] = tab.eval(ctx, mei, wo)
 
     # Compare reference and plugin outputs
     assert np.allclose(ref_eval, tab_eval)
 
 
 def test_chi2(variants_vec_backends_once_rgb):
-    from mitsuba.python.chi2 import ChiSquareTest, PhaseFunctionAdapter, SphericalDomain
-
-    sample_func, pdf_func = PhaseFunctionAdapter(
+    sample_func, pdf_func = mi.chi2.PhaseFunctionAdapter(
         "tabphase", "<string name='values' value='0.5, 1.0, 1.5'/>"
     )
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -86,28 +82,26 @@ def test_chi2(variants_vec_backends_once_rgb):
 
 
 def test_traverse(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-    from mitsuba.python.util import traverse
-    from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
-
     # Phase function table definition
+    import numpy as np
+
     ref_y = np.array([0.5, 1.0, 1.5])
     ref_x = np.linspace(-1, 1, len(ref_y))
     ref_integral = np.trapz(ref_y, ref_x)
 
     # Initialise as isotropic and update with parameters
-    phase = load_dict({"type": "tabphase", "values": "1, 1, 1"})
-    params = traverse(phase)
+    phase = mi.load_dict({"type": "tabphase", "values": "1, 1, 1"})
+    params = mi.traverse(phase)
     params["values"] = [0.5, 1.0, 1.5]
     params.update()
 
     # Distribution parameters are updated
-    params = traverse(phase)
+    params = mi.traverse(phase)
     assert dr.allclose(params["values"], [0.5, 1.0, 1.5])
 
     # The plugin itself evaluates consistently
-    ctx = PhaseFunctionContext(None)
-    mi = MediumInteraction3f()
-    mi.wi = np.array([0, 0, -1])
+    ctx = mi.PhaseFunctionContext(None)
+    mei = mi.MediumInteraction3f()
+    mei.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
-    assert dr.allclose(phase.eval(ctx, mi, wo), dr.InvTwoPi * 1.5 / ref_integral)
+    assert dr.allclose(phase.eval(ctx, mei, wo), dr.InvTwoPi * 1.5 / ref_integral)

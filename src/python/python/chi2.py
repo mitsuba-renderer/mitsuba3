@@ -600,11 +600,11 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = mi.PhaseFunctionContext(None)
 
     def make_context(n):
-        mi = dr.zero(mi.MediumInteraction3f, n)
-        mi.wi = wi
-        mi.sh_frame = mi.Frame3f(mi.wi)
-        mi.p = mi.Point3f(0, 0, 0)
-        return mi, ctx
+        mei = dr.zero(mi.MediumInteraction3f, n)
+        mei.wi = wi
+        mei.sh_frame = mi.Frame3f(mei.wi)
+        mei.p = mi.Point3f(0, 0, 0)
+        return mei, ctx
 
     def instantiate(args):
         xml = """<phase version="2.0.0" type="%s">
@@ -615,8 +615,8 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     def sample_functor(sample, *args):
         n = dr.width(sample)
         plugin = instantiate(args)
-        mi, ctx = make_context(n)
-        wo, pdf = plugin.sample(ctx, mi, sample[0], [sample[1], sample[2]])
+        mei, ctx = make_context(n)
+        wo, pdf = plugin.sample(ctx, mei, sample[0], [sample[1], sample[2]])
         w = dr.full(mi.Float, 1.0, dr.width(pdf))
         w[dr.eq(pdf, 0)] = 0
         return wo, w
@@ -624,8 +624,8 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     def pdf_functor(wo, *args):
         n = dr.width(wo)
         plugin = instantiate(args)
-        mi, ctx = make_context(n)
-        return plugin.eval(ctx, mi, wo)
+        mei, ctx = make_context(n)
+        return plugin.eval(ctx, mei, wo)
 
     return sample_functor, pdf_functor
 
