@@ -11,6 +11,8 @@ MI_PY_EXPORT(rfilter) {
         .value("One", FilterBoundaryCondition::One, D(FilterBoundaryCondition, One));
 
     using Resampler = mitsuba::Resampler<float>;
+    using NumPyArray = py::array_t<float, py::array::c_style | py::array::forcecast>;
+
     py::class_<Resampler>(m, "Resampler", D(Resampler))
         .def(py::init<const ReconstructionFilter<float, Color<float, 3>> *, uint32_t, uint32_t>(),
             "rfilter"_a, "source_res"_a, "target_res"_a,
@@ -24,8 +26,8 @@ MI_PY_EXPORT(rfilter) {
         .def_method(Resampler, clamp)
         .def("__repr__", &Resampler::to_string)
         .def("resample",
-            [](Resampler &resampler, const py::array &source,
-                uint32_t source_stride, py::array &target,
+            [](Resampler &resampler, const NumPyArray &source,
+                uint32_t source_stride, NumPyArray &target,
                 uint32_t target_stride, uint32_t channels) {
                 if (!source.dtype().is(py::dtype::of<float>()))
                     throw std::runtime_error(
