@@ -4,7 +4,7 @@ import drjit as dr
 
 from .mesh_generation import create_stairs
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 def make_synthetic_scene(n_steps):

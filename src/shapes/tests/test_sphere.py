@@ -2,7 +2,7 @@ import mitsuba
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 def test01_create(variant_scalar_rgb):

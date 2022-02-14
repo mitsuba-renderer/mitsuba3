@@ -7,7 +7,7 @@ mitsuba.set_variant("scalar_rgb")
 from mitsuba.core import load_string, warp, Struct
 from mitsuba.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
                             MediumInteraction3f, register_phasefunction, has_flag)
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 @pytest.fixture(scope='module')
