@@ -142,7 +142,7 @@ class ADIntegrator(mi.SamplingIntegrator):
         This is typically done by invoking ``dr.enable_grad()`` and
         ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
         that can be obtained obtained via a call to
-        ``mi.util.traverse()``.
+        ``mi.traverse()``.
 
         Parameter ``scene`` (``mi.Scene``):
             The scene to be rendered differentially.
@@ -150,12 +150,11 @@ class ADIntegrator(mi.SamplingIntegrator):
         Parameter ``params``:
            An arbitrary container of scene parameters that should receive
            gradients. Typically this will be an instance of type
-           ``mi.util.SceneParameters`` obtained via
-           ``mi.util.traverse()``. However, it could also be a Python
-           list/dict/object tree (DrJit will traverse it to find all parameters).
-           Gradient tracking must be explicitly enabled for each of these
-           parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_forward()`` will not do this for you). Furthermore,
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_forward()`` will not do this for you). Furthermore,
            ``dr.set_grad(...)`` must be used to associate specific gradient values
            with each parameter.
 
@@ -344,7 +343,7 @@ class ADIntegrator(mi.SamplingIntegrator):
         one or more scene parameters, or the function will not do anything. This is
         typically done by invoking ``dr.enable_grad()`` on elements of the
         ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mi.util.traverse()``. Use ``dr.grad()`` to query the
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
         resulting gradients of these parameters once ``render_backward()`` returns.
 
         Parameter ``scene`` (``mi.Scene``):
@@ -353,12 +352,11 @@ class ADIntegrator(mi.SamplingIntegrator):
         Parameter ``params``:
            An arbitrary container of scene parameters that should receive
            gradients. Typically this will be an instance of type
-           ``mi.util.SceneParameters`` obtained via
-           ``mi.util.traverse()``. However, it could also be a Python
-           list/dict/object tree (DrJit will traverse it to find all parameters).
-           Gradient tracking must be explicitly enabled for each of these
-           parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_backward()`` will not do this for you).
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
 
         Parameter ``grad_in`` (``mi.TensorXf``):
             Gradient image that should be back-propagated.
@@ -797,8 +795,7 @@ def render_forward(self: mi.Integrator,
     parameters, or the function will just return a zero-valued gradient image.
     This is typically done by invoking ``dr.enable_grad()`` and
     ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-    that can be obtained obtained via a call to
-    ``mi.util.traverse()``.
+    that can be obtained obtained via a call to ``mi.traverse()``.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -816,11 +813,10 @@ def render_forward(self: mi.Integrator,
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mi.util.SceneParameters`` obtained via
-       ``mi.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (DrJit will traverse it to find all parameters).
-       Gradient tracking must be explicitly enabled for each of these
-       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+       also be a Python list/dict/object tree (DrJit will traverse it to find
+       all parameters). Gradient tracking must be explicitly enabled for each of
+       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render_forward()`` will not do this for you). Furthermore,
        ``dr.set_grad(...)`` must be used to associate specific gradient values
        with each parameter.
@@ -881,8 +877,8 @@ def render_backward(self: mi.Integrator,
     one or more scene parameters, or the function will not do anything. This is
     typically done by invoking ``dr.enable_grad()`` on elements of the
     ``SceneParameters`` data structure that can be obtained obtained via a call
-    to ``mi.util.traverse()``. Use ``dr.grad()`` to query the
-    resulting gradients of these parameters once ``render_backward()`` returns.
+    to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
+    these parameters once ``render_backward()`` returns.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -900,11 +896,10 @@ def render_backward(self: mi.Integrator,
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mi.util.SceneParameters`` obtained via
-       ``mi.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (DrJit will traverse it to find all parameters).
-       Gradient tracking must be explicitly enabled for each of these
-       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+       also be a Python list/dict/object tree (DrJit will traverse it to find
+       all parameters). Gradient tracking must be explicitly enabled for each of
+       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render_backward()`` will not do this for you).
 
     Parameter ``grad_in`` (``mi.TensorXf``):
@@ -1028,14 +1023,13 @@ def render(scene: mi.Scene,
     Parameter ``params``:
        An arbitrary container of scene parameters that should receive
        gradients. Typically this will be an instance of type
-       ``mi.util.SceneParameters`` obtained via
-       ``mi.util.traverse()``. However, it could also be a Python
-       list/dict/object tree (DrJit will traverse it to find all parameters).
-       Gradient tracking must be explicitly enabled for each of these
-       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render()`` will not do this for you). Furthermore,
-       ``dr.set_grad(...)`` must be used to associate specific gradient values
-       with parameters if forward mode derivatives are desired.
+       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+       also be a Python list/dict/object tree (DrJit will traverse it to find
+       all parameters). Gradient tracking must be explicitly enabled for each of
+       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
+       must be used to associate specific gradient values with parameters if
+       forward mode derivatives are desired.
 
     Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -1129,7 +1123,7 @@ class _ReparamWrapper:
         # Only link the reparameterization CustomOp to differentiable scene
         # parameters with the AD computation graph if they control shape
         # information (vertex positions, etc.)
-        if isinstance(params, mi.util.SceneParameters):
+        if isinstance(params, mi.SceneParameters):
             params = params.copy()
             params.keep_shape()
 

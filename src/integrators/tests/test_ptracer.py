@@ -1,13 +1,12 @@
-import drjit as dr
-import mitsuba
 import pytest
+import drjit as dr
+import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',
                       shape=None, hide_emitters=False, crop_window=None):
-    from mitsuba.core import load_dict, ScalarTransform4f
 
     integrator = {
         'type': 'ptracer',
@@ -21,7 +20,7 @@ def create_test_scene(max_depth=4, emitter='area',
         'integrator': integrator,
         'sensor': {
             'type': 'perspective',
-            'to_world': ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f.look_at(
                 origin=(2, 0, 0),
                 target=(0, 0, 0),
                 up=(0, 1, 0),
@@ -47,7 +46,7 @@ def create_test_scene(max_depth=4, emitter='area',
     if emitter in ('area', 'texturedarea'):
         emitter = {
             'type': 'rectangle',
-            'to_world': ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f.look_at(
                 origin=(0, 0, 0),
                 target=(1, 0, 0),
                 up=(0, 1, 0),
@@ -66,7 +65,7 @@ def create_test_scene(max_depth=4, emitter='area',
     elif emitter == 'directionalarea':
         emitter = {
             'type': 'rectangle',
-            'to_world': ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f.look_at(
                 origin=(4, 1, 0),
                 target=(0, 0, 0),
                 up=(0, 1, 0),
@@ -83,7 +82,7 @@ def create_test_scene(max_depth=4, emitter='area',
     elif emitter == 'directional':
         emitter = {
             'type': 'directional',
-            'to_world': ScalarTransform4f.rotate(axis=(0, 1, 0), angle=240)
+            'to_world': mi.ScalarTransform4f.rotate(axis=(0, 1, 0), angle=240)
         }
         # Need a receiver plane to bounce light from that emitter
         shape = 'receiver'
@@ -98,7 +97,7 @@ def create_test_scene(max_depth=4, emitter='area',
     if shape == 'receiver':
         scene['receiver'] = {
             'type': 'rectangle',
-            'to_world': ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f.look_at(
                 origin=(0, 0, 0),
                 target=(1, 0, 0),
                 up=(0, 1, 0),
@@ -106,16 +105,14 @@ def create_test_scene(max_depth=4, emitter='area',
             'bsdf': {'type': 'diffuse'},
         }
 
-    scene = load_dict(scene)
+    scene = mi.load_dict(scene)
     return scene, scene.integrator()
 
 
 @pytest.mark.parametrize('emitter', ['area', 'directionalarea', 'texturedarea'])
 def test01_render_simple(variants_all, emitter):
-    from mitsuba.render import AdjointIntegrator
-
     scene, integrator = create_test_scene(emitter=emitter)
-    assert isinstance(integrator, AdjointIntegrator)
+    assert isinstance(integrator, mi.AdjointIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop=True)
     assert dr.count(dr.ravel(image) > 0) >= 0.2 * dr.hprod(dr.shape(image))
 
@@ -135,8 +132,10 @@ def test02_render_infinite_emitter(variants_all, emitter, shape):
 
 @pytest.mark.parametrize('emitter', ['constant', 'envmap', 'area', 'texturedarea'])
 def test03_render_hide_emitters(variants_all, emitter):
-    """Infinite emitters and directly visible emitters should not
-    be visible when hide_emitters is enabled."""
+    """
+    Infinite emitters and directly visible emitters should not
+    be visible when hide_emitters is enabled.
+    """
     scene, integrator = create_test_scene(emitter=emitter, shape=None, hide_emitters=True)
     image = integrator.render(scene, seed=0, spp=4, develop=True)
     assert dr.all(dr.ravel(image) == 0)
@@ -144,7 +143,9 @@ def test03_render_hide_emitters(variants_all, emitter):
 @pytest.mark.slow
 @pytest.mark.parametrize('develop', [False, True])
 def test04_render_no_emitters(variants_all, develop):
-    """It should be possible to render a scene with no emitter to get a black image."""
+    """
+    It should be possible to render a scene with no emitter to get a black image.
+    """
     scene, integrator = create_test_scene(emitter=None, shape='receiver')
 
     image = integrator.render(scene, seed=0, spp=2, develop=develop)
@@ -155,8 +156,10 @@ def test04_render_no_emitters(variants_all, develop):
 
 
 def test05_render_crop_film(variants_all):
-    """Infinite emitters and directly visible emitters should not
-    be visible when hide_emitters is enabled."""
+    """
+    Infinite emitters and directly visible emitters should not
+    be visible when hide_emitters is enabled.
+    """
     offset, size = (2, 3), (6, 4)
     # offset, size = (16, 8), (64, 24)
 
@@ -197,16 +200,13 @@ def test05_render_crop_film(variants_all):
 
 @pytest.mark.slow
 def test06_ptracer_gradients(variants_all_ad_rgb):
-    from mitsuba.python.util import traverse
-    from mitsuba.python.ad import SGD
-
     scene, integrator = create_test_scene(emitter='area')
-    params = traverse(scene)
+    params = mi.traverse(scene)
     key = 'emitter.emitter.radiance.value'
     params.keep([key])
     params[key] = type(params[key])(1.0)
     params.update()
-    opt = SGD(lr=1e-2, params=params)
+    opt = mi.ad.SGD(lr=1e-2, params=params)
     opt.load()
     opt.update()
 

@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from collections import defaultdict
 import drjit as dr
+import mitsuba as mi
 
 class Optimizer:
     """
@@ -11,7 +12,7 @@ class Optimizer:
         Parameter ``lr``:
             learning rate
 
-        Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
+        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
             Scene parameters dictionary containing the parameters to optimize.
         """
         self.lr = defaultdict(lambda: self.lr_default)
@@ -111,7 +112,7 @@ class Optimizer:
         """
         Propagate updates of the parameters being optimized back to the scene state.
 
-        Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
+        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
             Scene parameters dictionary
 
         Parameter ``keys`` (``None``, ``str``, ``[str]``):
@@ -142,16 +143,15 @@ class Optimizer:
             If set to ``None``, the default learning rate is updated.
         """
 
-        from mitsuba.core import Float
         # We use `dr.opaque` so the that the JIT compiler does not include
-        # the learning rate as a scalar literal into genereated code, which
+        # the learning rate as a scalar literal into generated code, which
         # would defeat kernel caching when updating learning rates.
         if key is None:
             self.lr_default = lr
-            self.lr_default_v = dr.opaque(dr.detached_t(Float), lr, shape=1)
+            self.lr_default_v = dr.opaque(dr.detached_t(mi.Float), lr, shape=1)
         else:
             self.lr[key] = lr
-            self.lr_v[key] = dr.opaque(dr.detached_t(Float), lr, shape=1)
+            self.lr_v[key] = dr.opaque(dr.detached_t(mi.Float), lr, shape=1)
 
     def reset(self, key):
         """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
@@ -189,7 +189,7 @@ class SGD(Optimizer):
             if enabled, parameters and state variables will only be updated
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
-            See :py:class:`mitsuba.python.optimizers.Adam`'s documentation for more details.
+            See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
         """
         assert momentum >= 0 and momentum < 1
         assert lr > 0
