@@ -2,7 +2,7 @@ import mitsuba
 import pytest
 import drjit as dr
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):

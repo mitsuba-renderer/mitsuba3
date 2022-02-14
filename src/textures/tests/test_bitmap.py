@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 @fresolver_append_path

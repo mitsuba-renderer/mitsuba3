@@ -2,7 +2,7 @@ import drjit as dr
 import mitsuba
 import pytest
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',

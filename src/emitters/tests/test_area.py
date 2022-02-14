@@ -3,7 +3,7 @@ import pytest
 import drjit as dr
 
 import mitsuba
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 spectrum_strings = {

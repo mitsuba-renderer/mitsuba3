@@ -30,7 +30,7 @@ import importlib
 import pytest, sys, inspect, os, argparse
 from os.path import join, realpath, exists
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 output_dir = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/integrators'))
 
