@@ -297,12 +297,11 @@ class Adam(Optimizer):
 
     def step(self):
         """Take a gradient step"""
-        from mitsuba.core import Float
 
         for k, p in self.variables.items():
             self.t[k] += 1
             lr_scale = dr.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
-            lr_scale = dr.opaque(dr.detached_t(Float), lr_scale, shape=1)
+            lr_scale = dr.opaque(dr.detached_t(mi.Float), lr_scale, shape=1)
 
             lr_t = self.lr_v[k] * lr_scale
             g_p = dr.grad(p)
