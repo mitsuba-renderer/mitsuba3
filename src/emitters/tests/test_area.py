@@ -1,36 +1,32 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
-import mitsuba
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
-spectrum_strings = {
-    'd65':
-    """<spectrum version='2.0.0' name="radiance" type='d65'/>""",
-    'regular':
-    """<spectrum version='2.0.0' name="radiance" type='regular'>
-           <float name="lambda_min" value="500"/>
-           <float name="lambda_max" value="600"/>
-           <string name="values" value="1, 2"/>
-       </spectrum>""",
+spectrum_dicts = {
+    'd65': {
+        "type": "d65",
+    },
+    'regular': {
+        "type": "regular",
+        "lambda_min": 500,
+        "lambda_max": 600,
+        "values": "1, 2"
+    }
 }
 
 
 @fresolver_append_path
 def create_emitter_and_spectrum(s_key='d65'):
-    from mitsuba.core import load_string
-    emitter = load_string("""<shape version='2.0.0' type='ply'>
-                                 <string name='filename' value='data/triangle.ply'/>
-                                 <emitter type='area'>
-                                     {s}
-                                 </emitter>
-                                 <transform name='to_world'>
-                                     <translate x='10' y='-1' z='2'/>
-                                 </transform>
-                             </shape>""".format(s=spectrum_strings[s_key]))
-    spectrum = load_string(spectrum_strings[s_key])
+    emitter = mi.load_dict({
+        "type": "ply",
+        "filename": "data/triangle.ply",
+        "emitter" : { "type": "area", "radiance" : spectrum_dicts[s_key] },
+        "to_world" : mi.ScalarTransform4f.translate([10, -1, 2])
+    })
+    spectrum = mi.load_dict(spectrum_dicts[s_key])
     expanded = spectrum.expand()
     if len(expanded) == 1:
         spectrum = expanded[0]
@@ -40,45 +36,36 @@ def create_emitter_and_spectrum(s_key='d65'):
 
 def test01_constructor(variant_scalar_rgb):
     # Check that the shape is properly bound to the emitter
-
-    from mitsuba.core import load_string
-
     shape, spectrum = create_emitter_and_spectrum()
     assert shape.emitter().bbox() == shape.bbox()
 
     # Check that we are not allowed to specify a to_world transform directly in the emitter.
     with pytest.raises(RuntimeError):
-        e = load_string("""<emitter version="2.0.0" type="area">
-                               <transform name="to_world">
-                                   <translate x="5"/>
-                               </transform>
-                           </emitter>""")
+        e = mi.load_dict({
+            "type" : "area",
+            "to_world" : mi.ScalarTransform4f.translate([5, 0, 0])
+        })
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test02_eval(variants_vec_spectral, spectrum_key):
     # Check that eval() return the same values as the 'radiance' spectrum
-    from mitsuba.core import ScalarVector3f
-    from mitsuba.render import SurfaceInteraction3f
 
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
-    it = dr.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
     assert dr.allclose(emitter.eval(it), spectrum.eval(it))
 
     # Check that eval returns 0.0 when the direction points into the shape
 
-    it.wi = dr.normalize(ScalarVector3f(0.2, 0.2, -0.5))
+    it.wi = dr.normalize(mi.ScalarVector3f(0.2, 0.2, -0.5))
     assert dr.allclose(emitter.eval(it), 0.0)
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test03_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
-
-    from mitsuba.core import warp, Frame3f, sample_shifted
-    from mitsuba.render import SurfaceInteraction3f
 
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
@@ -93,8 +80,8 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
         time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(SurfaceInteraction3f, 3)
-    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
 
     # Sample a position on the shape
     ps = shape.sample_position(time, pos_sample)
@@ -104,20 +91,18 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
     assert dr.allclose(ray.wavelengths, wav)
     assert dr.allclose(ray.o, ps.p, atol=1e-3)
     assert dr.allclose(
-        ray.d, Frame3f(ps.n).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
+        ray.d, mi.Frame3f(ps.n).to_world(mi.warp.square_to_cosine_hemisphere(dir_sample)))
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test04_sample_direction(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_direction(), pdf_direction(), and eval_direction() methods
-
-    from mitsuba.render import SurfaceInteraction3f
 
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
     # Direction sampling is conditioned on a sampled position
-    it = dr.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
     it.p = [[0.2, 0.1, 0.2], [0.6, -0.9, 0.2],
             [0.4, 0.9, -0.2]]  # Some positions
     it.time = 1.0

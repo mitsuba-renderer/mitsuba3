@@ -1,27 +1,27 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
-spectrum_strings = {
-    'd65':
-    """<spectrum version='2.0.0' name="radiance" type='d65'/>""",
-    'regular':
-    """<spectrum version='2.0.0' name="radiance" type='regular'>
-           <float name="lambda_min" value="500"/>
-           <float name="lambda_max" value="600"/>
-           <string name="values" value="1, 2"/>
-       </spectrum>""",
+spectrum_dicts = {
+    'd65': {
+        "type": "d65",
+    },
+    'regular': {
+        "type": "regular",
+        "lambda_min": 500,
+        "lambda_max": 600,
+        "values": "1, 2"
+    }
 }
 
 
 def create_emitter_and_spectrum(s_key='d65'):
-    from mitsuba.core import load_string
-
-    emitter = load_string("""<emitter version='2.0.0' type='constant'>
-                                {s}
-                             </emitter>""".format(s=spectrum_strings[s_key]))
-    spectrum = load_string(spectrum_strings[s_key])
+    emitter = mi.load_dict({
+        "type" : "constant",
+        "radiance" : spectrum_dicts[s_key]
+    })
+    spectrum = mi.load_dict(spectrum_dicts[s_key])
     expanded = spectrum.expand()
     if len(expanded) == 1:
         spectrum = expanded[0]
@@ -29,24 +29,19 @@ def create_emitter_and_spectrum(s_key='d65'):
     return emitter, spectrum
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test01_eval(variants_vec_spectral, spectrum_key):
     # Check the correctness of the eval() method
 
-    from mitsuba.render import SurfaceInteraction3f
-
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
 
-    it = dr.zero(SurfaceInteraction3f)
+    it = dr.zero(mi.SurfaceInteraction3f)
     assert dr.allclose(emitter.eval(it), spectrum.eval(it))
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test02_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
-
-    from mitsuba.core import Frame3f, warp, sample_shifted
-    from mitsuba.render import SurfaceInteraction3f
 
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
 
@@ -59,26 +54,23 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(SurfaceInteraction3f, 3)
-    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
 
     assert dr.allclose(res, spec * 4 * dr.Pi * dr.Pi)
     assert dr.allclose(ray.time, time)
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample))
+    assert dr.allclose(ray.o, mi.warp.square_to_uniform_sphere(pos_sample))
     assert dr.allclose(
-        ray.d, Frame3f(-ray.o).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
+        ray.d, mi.Frame3f(-ray.o).to_world(mi.warp.square_to_cosine_hemisphere(dir_sample)))
 
 
 def test03_sample_direction(variants_vec_spectral):
     # Check the correctness of the sample_direction() and pdf_direction() methods
 
-    from mitsuba.core import warp
-    from mitsuba.render import SurfaceInteraction3f
-
     emitter, spectrum = create_emitter_and_spectrum()
 
-    it = dr.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
     # Some positions inside the unit sphere
     it.p = [[-0.5, 0.3, -0.1], [0.8, -0.3, -0.2], [-0.2, 0.6, -0.6]]
     it.time = 1.0
@@ -88,10 +80,10 @@ def test03_sample_direction(variants_vec_spectral):
     ds, res = emitter.sample_direction(it, samples)
 
     assert dr.allclose(ds.pdf, dr.InvFourPi)
-    assert dr.allclose(ds.d, warp.square_to_uniform_sphere(samples))
+    assert dr.allclose(ds.d, mi.warp.square_to_uniform_sphere(samples))
     assert dr.allclose(emitter.pdf_direction(it, ds), dr.InvFourPi)
     assert dr.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)
-    spec = spectrum.eval(it) / warp.square_to_uniform_sphere_pdf(ds.d)
+    spec = spectrum.eval(it) / mi.warp.square_to_uniform_sphere_pdf(ds.d)
     assert dr.allclose(res, spec)

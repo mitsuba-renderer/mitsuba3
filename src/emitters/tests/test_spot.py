@@ -1,10 +1,9 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
-mitsuba.set_variant("scalar_rgb")
 
-spectrum_strings = {
+spectrum_dicts = {
     'd65': { 'type' : 'd65' },
     'regular': {
         'type' : 'regular',
@@ -15,19 +14,18 @@ spectrum_strings = {
 }
 
 lookat_transforms = [
-    mitsuba.core.ScalarTransform4f.look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
-    mitsuba.core.ScalarTransform4f.look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
+    mi.scalar_rgb.ScalarTransform4f.look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
+    mi.scalar_rgb.ScalarTransform4f.look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
 ]
 
-def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
-    from mitsuba.core import load_dict
 
-    spectrum = load_dict(spectrum_strings[s_key])
+def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
+    spectrum = mi.load_dict(spectrum_dicts[s_key])
     expanded = spectrum.expand()
     if len(expanded) == 1:
         spectrum = expanded[0]
 
-    emitter = load_dict({
+    emitter = mi.load_dict({
         'type' : 'spot',
         'cutoff_angle' : cutoff_angle,
         'to_world' : lookat,
@@ -37,7 +35,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
     return emitter, spectrum
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0]])
 @pytest.mark.parametrize("wavelength_sample", [0.7])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
@@ -45,27 +43,24 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
-    from mitsuba.core import sample_shifted, Transform4f, Vector3f
-    from mitsuba.render import SurfaceInteraction3f
-
     cutoff_angle_rad = cutoff_angle / 180 * dr.Pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
     emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
     eval_t = 0.3
-    trafo = Transform4f(emitter.world_transform())
+    trafo = mi.Transform4f(emitter.world_transform())
 
     # Create a surface iteration
-    it = dr.zero(SurfaceInteraction3f)
+    it = dr.zero(mi.SurfaceInteraction3f)
     it.p = it_pos
     it.time = eval_t
 
     # Sample a wavelength from spectrum
-    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
     it.wavelengths = wav
 
     # Direction from the position to the point emitter
-    d = Vector3f(-it.p + lookat.translation())
+    d = mi.Vector3f(-it.p + lookat.translation())
     dist = dr.norm(d)
     d /= dist
 
@@ -92,16 +87,13 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     assert dr.allclose(res, spec / (dist**2))
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("wavelength_sample", [0.7])
 @pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
-
-    from mitsuba.core import warp, sample_shifted, Transform4f
-    from mitsuba.render import SurfaceInteraction3f
 
     cutoff_angle_rad = cutoff_angle / 180 * dr.Pi
     cos_cutoff_angle_rad = dr.cos(cutoff_angle_rad)
@@ -110,11 +102,11 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     emitter, spectrum = create_emitter_and_spectrum(
         lookat, cutoff_angle, spectrum_key)
     eval_t = 0.3
-    trafo = Transform4f(emitter.world_transform())
+    trafo = mi.Transform4f(emitter.world_transform())
 
     # Sample a local direction and calculate local angle
     dir_sample = pos_sample  # not being used anyway
-    local_dir = warp.square_to_uniform_cone(pos_sample, cos_cutoff_angle_rad)
+    local_dir = mi.warp.square_to_uniform_cone(pos_sample, cos_cutoff_angle_rad)
     angle = dr.acos(local_dir[2])
     angle = dr.select(dr.abs(angle - beam_width_rad)
                       < 1e-3, beam_width_rad, angle)
@@ -126,8 +118,8 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
         eval_t, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(SurfaceInteraction3f)
-    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
+    it = dr.zero(mi.SurfaceInteraction3f)
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
     it.wavelengths = wav
     spec = spec * dr.select(angle <= beam_width_rad,
                             1,
@@ -135,7 +127,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     spec = dr.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert dr.allclose(
-        res, spec / warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
+        res, spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
     assert dr.allclose(ray.time, eval_t)
     assert dr.all(local_dir.z >= cos_cutoff_angle_rad)
     assert dr.allclose(ray.wavelengths, wav)
@@ -143,17 +135,16 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     assert dr.allclose(ray.o, lookat.translation())
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("cutoff_angle", [20, 60])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     # Check the correctness of the eval() method
 
-    from mitsuba.render import SurfaceInteraction3f
     emitter, spectrum = create_emitter_and_spectrum(
         lookat, cutoff_angle, spectrum_key)
 
     # Check that incident direction in the illuminated direction is zero (because hitting a delta light is impossible)
-    it = dr.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
     it.wi = [0, 1, 0]
     assert dr.allclose(emitter.eval(it), 0.)

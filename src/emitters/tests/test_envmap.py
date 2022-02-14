@@ -1,37 +1,34 @@
-import mitsuba
 import pytest
 import drjit as dr
-import numpy as np
+import mitsuba as mi
 import tempfile
 import os
 
+
 @pytest.mark.parametrize("iteration", [0, 1, 2])
 def test01_chi2(variants_vec_backends_once_rgb, iteration):
-    from mitsuba.python.chi2 import ChiSquareTest, EmitterAdapter, SphericalDomain
-    from mitsuba.core import Bitmap
-
     tempdir = tempfile.TemporaryDirectory()
     fname = os.path.join(tempdir.name, 'out.exr')
 
     if iteration == 0:
         # Sparse image with 1 pixel turned on
-        img = np.zeros((100, 10), dtype=np.float32)
+        img = dr.zero(mi.TensorXf, [100, 10])
         img[40, 5] = 1
     elif iteration == 1:
         # High res constant image
-        img = np.full((100, 100), 1, dtype=np.float32)
+        img = dr.full(mi.TensorXf, 1, [100, 100])
     elif iteration == 2:
         # Low res constant image
-        img = np.full((3, 2), 1, dtype=np.float32)
+        img = dr.full(mi.TensorXf, 1, [3, 2])
 
-    Bitmap(img).write(fname)
+    mi.Bitmap(img).write(fname)
 
     xml = f'<string name="filename" value="{fname}"/>' \
            '<boolean name="mis_compensation" value="false"/>'
-    sample_func, pdf_func = EmitterAdapter("envmap", xml)
+    sample_func, pdf_func = mi.chi2.EmitterAdapter("envmap", xml)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=2,
@@ -43,14 +40,11 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 # Ensure that sampling weights remain bounded even in an extremely
 # challenging case (envmap zero, with one pixel turned on)
 def test02_sampling_weights(variants_vec_backends_once_rgb):
-    from mitsuba.core import load_string, PCG32, Point2f, Bitmap
-    from mitsuba.render import SurfaceInteraction3f
-
-    rng = PCG32(size=102400)
-    sample = Point2f(
+    rng = mi.PCG32(size=102400)
+    sample = mi.Point2f(
         rng.next_float32(),
         rng.next_float32())
-    sample_2 = Point2f(
+    sample_2 = mi.Point2f(
         rng.next_float32(),
         rng.next_float32())
 
@@ -58,16 +52,17 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     fname = os.path.join(tempdir.name, 'out.exr')
 
     # Sparse image with 1 pixel turned on
-    img = np.zeros((100, 10), dtype=np.float32)
+    img = dr.zero(mi.TensorXf, [100, 10])
     img[40, 5] = 1
-    Bitmap(img).write(fname)
+    mi.Bitmap(img).write(fname)
 
-    emitter = load_string(f'<emitter version="2.0.0" type="envmap">'
-                          f'<string name="filename" value="{fname}"/>'
-                          f'</emitter>')
+    emitter = mi.load_dict({
+        "type" : "envmap",
+        "filename" : fname
+    })
 
     # Test the sample_direction() interface
-    si = dr.zero(SurfaceInteraction3f)
+    si = dr.zero(mi.SurfaceInteraction3f)
     ds, w = emitter.sample_direction(si, sample)
     si.wi = -ds.d
     w2 = emitter.eval(si) / emitter.pdf_direction(si, ds)

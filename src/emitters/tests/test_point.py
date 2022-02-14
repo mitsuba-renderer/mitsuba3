@@ -1,28 +1,28 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
-spectrum_strings = {
-    'd65':
-    """<spectrum version='2.0.0' name="intensity" type='d65'/>""",
-    'regular':
-    """<spectrum version='2.0.0' name="intensity" type='regular'>
-           <float name="lambda_min" value="500"/>
-           <float name="lambda_max" value="600"/>
-           <string name="values" value="1, 2"/>
-       </spectrum>""",
+spectrum_dicts = {
+    'd65': {
+        "type": "d65",
+    },
+    'regular': {
+        "type": "regular",
+        "lambda_min": 500,
+        "lambda_max": 600,
+        "values": "1, 2"
+    }
 }
 
 
 def create_emitter_and_spectrum(pos, s_key='d65'):
-    from mitsuba.core import load_string
-    emitter = load_string("""<emitter version='2.0.0' type='point'>
-                                <point name='position' x='{x}' y='{y}' z='{z}'/>
-                                {s}
-                             </emitter>""".format(x=pos[0], y=pos[1], z=pos[2],
-                                                  s=spectrum_strings[s_key]))
-    spectrum = load_string(spectrum_strings[s_key])
+    emitter = mi.load_dict({
+        "type" : "point",
+        "position" : mi.ScalarPoint3f(pos),
+        "intensity" : spectrum_dicts[s_key]
+    })
+    spectrum = mi.load_dict(spectrum_dicts[s_key])
     expanded = spectrum.expand()
     if len(expanded) == 1:
         spectrum = expanded[0]
@@ -30,12 +30,9 @@ def create_emitter_and_spectrum(pos, s_key='d65'):
     return emitter, spectrum
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
-
-    from mitsuba.core import Vector3f, warp, sample_shifted
-    from mitsuba.render import SurfaceInteraction3f
 
     emitter_pos = [10, -1, 2]
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
@@ -49,27 +46,25 @@ def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(SurfaceInteraction3f, 3)
-    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
 
     assert dr.allclose(res, spec * 4 * dr.Pi)
     assert dr.allclose(ray.time, time)
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(ray.d, warp.square_to_uniform_sphere(dir_sample))
-    assert dr.allclose(ray.o, Vector3f(emitter_pos))
+    assert dr.allclose(ray.d, mi.warp.square_to_uniform_sphere(dir_sample))
+    assert dr.allclose(ray.o, mi.Vector3f(emitter_pos))
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     # Check the correctness of the sample_direction() method
-
-    from mitsuba.render import SurfaceInteraction3f
 
     emitter_pos = [10, -1, 2]
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = dr.zero(SurfaceInteraction3f)
+    it = dr.zero(mi.SurfaceInteraction3f)
     it.p = [0.0, -2.0, 4.5]  # Some position
     it.time = 0.3
 
@@ -92,15 +87,13 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     assert dr.allclose(res, spec)
 
 
-@pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
-    from mitsuba.render import SurfaceInteraction3f
-
     emitter_pos = [50, -1, 2]
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = dr.zero(SurfaceInteraction3f, 3)
+    it = dr.zero(mi.SurfaceInteraction3f, 3)
     it.p = [[0.0, 0.0, 0.0], [-2.0, 0.0, -2.0],
             [4.5, 4.5, 0.0]]  # Some positions
     it.time = [0.3, 0.3, 0.3]

@@ -1,28 +1,23 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
-xml_spectrum = {
-    "d65": """
-        <spectrum version="2.0.0" name="irradiance" type="d65"/>
-        """,
-    "regular": """
-        <spectrum version="2.0.0" name="irradiance" type="regular">
-           <float name="lambda_min" value="500"/>
-           <float name="lambda_max" value="600"/>
-           <string name="values" value="1, 2"/>
-        </spectrum>
-        """,
+spectrum_dicts = {
+    'd65': {
+        "type": "d65",
+    },
+    'regular': {
+        "type": "regular",
+        "lambda_min": 500,
+        "lambda_max": 600,
+        "values": "1, 2"
+    }
 }
-
-xml_spectrum_keys = sorted(list(set(xml_spectrum.keys()) - {"null"}))
 
 
 def make_spectrum(spectrum_key="d65"):
-    from mitsuba.core import load_string
-
-    spectrum = load_string(xml_spectrum[spectrum_key])
+    spectrum = mi.load_dict(spectrum_dicts[spectrum_key])
     expanded = spectrum.expand()
 
     if len(expanded) == 1:
@@ -32,22 +27,15 @@ def make_spectrum(spectrum_key="d65"):
 
 
 def make_emitter(direction=None, spectrum_key="d65"):
-    from mitsuba.core import load_string
+    emitter_dict = {
+        "type" : "directional",
+        "irradiance" : spectrum_dicts[spectrum_key]
+    }
 
-    if direction is None:
-        xml_direction = ""
-    else:
-        if type(direction) is not str:
-            direction = ",".join([str(x) for x in direction])
-        xml_direction = \
-            """<vector name="direction" value="{}"/>""".format(direction)
+    if direction is not None:
+        emitter_dict["direction"] = direction
 
-    return load_string("""
-        <emitter version="2.0.0" type="directional">
-            {d}
-            {s}
-        </emitter>
-    """.format(d=xml_direction, s=xml_spectrum[spectrum_key]))
+    return mi.load_dict(emitter_dict)
 
 
 def test_construct(variant_scalar_rgb):
@@ -73,43 +61,38 @@ def test_construct(variant_scalar_rgb):
     )
 
 
-@pytest.mark.parametrize("spectrum_key", xml_spectrum_keys)
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test_eval(variant_scalar_spectral, spectrum_key):
     # Check correctness of the eval() method
-    from mitsuba.core import Vector3f
-    from mitsuba.render import SurfaceInteraction3f
 
-    direction = Vector3f([0, 0, -1])
+    direction = mi.Vector3f([0, 0, -1])
     emitter = make_emitter(direction, spectrum_key)
 
     # Incident direction in the illuminated direction
     wi = [0, 0, 1]
-    it = SurfaceInteraction3f()
+    it = mi.SurfaceInteraction3f()
     it.p = [0, 0, 0]
     it.wi = wi
     assert dr.allclose(emitter.eval(it), 0.)
 
     # Incident direction off the illuminated direction
     wi = [0, 0, 1.1]
-    it = SurfaceInteraction3f()
+    it = mi.SurfaceInteraction3f()
     it.p = [0, 0, 0]
     it.wi = wi
     assert dr.allclose(emitter.eval(it), 0.)
 
 
-@pytest.mark.parametrize("spectrum_key", xml_spectrum_keys)
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
 def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     # Check correctness of sample_direction() and pdf_direction() methods
 
-    from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.core import Vector3f
-
-    direction = Vector3f(direction)
+    direction = mi.Vector3f(direction)
     emitter = make_emitter(direction, spectrum_key)
     spectrum = make_spectrum(spectrum_key)
 
-    it = dr.zero(SurfaceInteraction3f)
+    it = dr.zero(mi.SurfaceInteraction3f)
     # Some position inside the unit sphere (i.e. within the emitter's default bounding sphere)
     it.p = [-0.5, 0.3, -0.1]
     it.time = 1.0
@@ -131,11 +114,8 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
 
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
 def test_sample_ray(variant_scalar_spectral, direction):
-    import drjit as dr
-    from mitsuba.core import Vector3f
-
     emitter = make_emitter(direction=direction)
-    direction = Vector3f(direction)
+    direction = mi.Vector3f(direction)
     direction = direction / dr.norm(direction)
 
     time = 1.0
