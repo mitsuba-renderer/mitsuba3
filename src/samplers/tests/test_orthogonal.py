@@ -1,13 +1,12 @@
-import mitsuba
 import pytest
 import drjit as dr
-import numpy as np
+import mitsuba as mi
 
 from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler,
                      check_deep_copy_sampler_scalar, check_deep_copy_sampler_wavefront )
 
 def test01_orthogonal_scalar(variant_scalar_rgb):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "orthogonal",
         "sample_count" : 1369,
     })
@@ -16,7 +15,7 @@ def test01_orthogonal_scalar(variant_scalar_rgb):
 
 
 def test02_orthogonal_wavefront(variants_vec_backends_once):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "orthogonal",
         "sample_count" : 1369,
     })
@@ -25,7 +24,7 @@ def test02_orthogonal_wavefront(variants_vec_backends_once):
 
 
 def test03_copy_sampler_scalar(variants_any_scalar):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "orthogonal",
         "sample_count" : 1369,
     })
@@ -33,7 +32,7 @@ def test03_copy_sampler_scalar(variants_any_scalar):
     check_deep_copy_sampler_scalar(sampler)
 
 def test04_copy_sampler_wavefront(variants_vec_backends_once):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "orthogonal",
         "sample_count" : 1369,
     })
