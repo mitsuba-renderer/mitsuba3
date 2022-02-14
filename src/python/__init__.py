@@ -44,7 +44,7 @@ except (ImportError, ModuleNotFoundError) as e:
     raise exc
 
 # Known submodules that will be directly accessible from the mitsuba package
-submodules = ['warp', 'math', 'spline', 'quad', 'mueller']
+submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util']
 
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')
@@ -109,6 +109,8 @@ class MitsubaVariantModule(types.ModuleType):
                 # Stitch together a dictionary, needed for pydoc
                 result = super().__getattribute__('__dict__')
                 for m in modules:
+                    if not submodule is None:
+                        m = getattr(m, submodule, None)
                     result.update(getattr(m, '__dict__'))
                 return result
         except Exception:

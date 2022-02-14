@@ -23,8 +23,8 @@ reference data (e.g. for a new configurations). Please see the following command
 
 """
 
-import mitsuba
 import drjit as dr
+import mitsuba as mi
 import importlib
 
 import pytest, sys, inspect, os, argparse
@@ -38,8 +38,7 @@ output_dir = realpath(join(os.path.dirname(__file__), '../../../resources/data/t
 #                          Test configs
 # -------------------------------------------------------------------
 
-mitsuba.set_variant('scalar_rgb')
-from mitsuba.core import ScalarTransform4f as T
+from mitsuba.scalar_rgb import ScalarTransform4f as T
 
 class ConfigBase:
     """
@@ -81,8 +80,6 @@ class ConfigBase:
         Initialize the configuration, loading the Mitsuba scene and storing a
         copy of the scene parameters to compute gradients for.
         """
-        from mitsuba.core import load_dict
-        from mitsuba.python.util import traverse
 
         self.sensor_dict['film']['width'] = self.res
         self.sensor_dict['film']['height'] = self.res
@@ -90,9 +87,9 @@ class ConfigBase:
 
         @fresolver_append_path
         def create_scene():
-            return load_dict(self.scene_dict)
+            return mi.load_dict(self.scene_dict)
         self.scene = create_scene()
-        self.params = traverse(self.scene)
+        self.params = mi.traverse(self.scene)
 
         if hasattr(self, 'key'):
             self.params.keep([self.key])
@@ -283,13 +280,11 @@ class TranslateShapeConfigBase(ConfigBase):
         super().__init__()
 
     def initialize(self):
-        from mitsuba.core import Vector3f
         super().initialize()
-        self.initial_state = dr.unravel(Vector3f, self.params[self.key])
+        self.initial_state = dr.unravel(mi.Vector3f, self.params[self.key])
 
     def update(self, theta):
-        from mitsuba.core import Vector3f
-        self.params[self.key] = dr.ravel(self.initial_state + Vector3f(theta, 0.0, 0.0))
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(theta, 0.0, 0.0))
         self.params.update()
         dr.eval()
 
@@ -302,12 +297,10 @@ class ScaleShapeConfigBase(ConfigBase):
         super().__init__()
 
     def initialize(self):
-        from mitsuba.core import Vector3f
         super().initialize()
-        self.initial_state = dr.unravel(Vector3f, self.params[self.key])
+        self.initial_state = dr.unravel(mi.Vector3f, self.params[self.key])
 
     def update(self, theta):
-        from mitsuba.core import Vector3f
         self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
         self.params.update()
         dr.eval()
@@ -583,16 +576,14 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         }
 
     def initialize(self):
-        from mitsuba.core import Vector3f
         super().initialize()
         self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
-        self.initial_state_0 = dr.unravel(Vector3f, self.params['plane.vertex_positions'])
-        self.initial_state_1 = dr.unravel(Vector3f, self.params['occluder.vertex_positions'])
+        self.initial_state_0 = dr.unravel(mi.Vector3f, self.params['plane.vertex_positions'])
+        self.initial_state_1 = dr.unravel(mi.Vector3f, self.params['occluder.vertex_positions'])
 
     def update(self, theta):
-        from mitsuba.core import Vector3f
-        self.params['plane.vertex_positions']    = dr.ravel(self.initial_state_0 + Vector3f(theta, 0.0, 0.0))
-        self.params['occluder.vertex_positions'] = dr.ravel(self.initial_state_1 + Vector3f(theta, 0.0, 0.0))
+        self.params['plane.vertex_positions']    = dr.ravel(self.initial_state_0 + mi.Vector3f(theta, 0.0, 0.0))
+        self.params['occluder.vertex_positions'] = dr.ravel(self.initial_state_1 + mi.Vector3f(theta, 0.0, 0.0))
         self.params.update()
         dr.eval()
 
@@ -683,21 +674,19 @@ for integrator_name, reparam in INTEGRATORS:
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import load_dict, TensorXf, Bitmap
-    from mitsuba.python.util import write_bitmap
-
     config = config()
     config.initialize()
 
     # dr.set_flag(dr.JitFlag.VCallRecord, False)
     # dr.set_flag(dr.JitFlag.LoopRecord, False)
 
-    importlib.reload(mitsuba.python.ad.integrators)
+    import mitsuba
+    importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-    integrator = load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = TensorXf(Bitmap(filename))
+    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
     error = dr.abs(image - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
@@ -706,7 +695,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
     # print(f'-> write current image: {filename}')
-    # write_bitmap(filename, image)
+    # mi.util.write_bitmap(filename, image)
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -715,7 +704,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
         print(f'-> reference image: {filename}')
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
         print(f'-> write current image: {filename}')
-        write_bitmap(filename, image)
+        mi.util.write_bitmap(filename, image)
         assert False
 
 
@@ -723,9 +712,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
-    from mitsuba.python.util import write_bitmap
-
     # dr.set_flag(dr.JitFlag.PrintIR, True)
 
     # dr.set_flag(dr.JitFlag.LoopRecord, False)
@@ -740,14 +726,15 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    importlib.reload(mitsuba.python.ad.integrators)
+    import mitsuba
+    importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-    integrator = load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = TensorXf(Bitmap(filename))
+    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     dr.set_label(theta, 'theta')
     config.update(theta)
@@ -764,7 +751,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
     # print(f'-> write current image: {filename}')
-    # write_bitmap(filename, image_fwd)
+    # mi.util.write_bitmap(filename, image_fwd)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -773,10 +760,10 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         print(f'-> reference image: {filename}')
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
         print(f'-> write current image: {filename}')
-        write_bitmap(filename, image_fwd)
+        mi.util.write_bitmap(filename, image_fwd)
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         print(f'-> write error image: {filename}')
-        write_bitmap(filename, error)
+        mi.util.write_bitmap(filename, error)
 
         # print(f"dr.hmean(image_fwd_ref): {dr.hmean(image_fwd_ref)}")
         # print(f"dr.hmean(image_fwd):     {dr.hmean(image_fwd)}")
@@ -787,24 +774,23 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
-
     # dr.set_flag(dr.JitFlag.LoopRecord, False)
     # dr.set_flag(dr.JitFlag.VCallRecord, False)
 
     config = config()
     config.initialize()
 
-    importlib.reload(mitsuba.python.ad.integrators)
+    import mitsuba
+    importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-    integrator = load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict)
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = TensorXf(Bitmap(filename))
+    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
-    image_adj = TensorXf(1.0, image_fwd_ref.shape)
+    image_adj = mi.TensorXf(1.0, image_fwd_ref.shape)
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
 
@@ -830,30 +816,27 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 def test04_render_custom_op(variants_all_ad_rgb):
-    from mitsuba.core import load_dict, Float, TensorXf, Bitmap
-    from mitsuba.python.util import write_bitmap
-    from mitsuba.python.ad import render
-
     config = DiffuseAlbedoConfig()
     config.initialize()
 
-    importlib.reload(mitsuba.python.ad.integrators)
-    integrator = load_dict({
+    import mitsuba
+    importlib.reload(mitsuba.ad.integrators)
+    integrator = mi.load_dict({
         'type': 'prb',
         'max_depth': config.integrator_dict['max_depth']
     })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = TensorXf(Bitmap(filename))
+    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = TensorXf(Bitmap(filename))
+    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
 
-    image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
+    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
     error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.hmean(error)
@@ -866,11 +849,11 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f'-> reference image: {filename}')
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
         print(f'-> write current image: {filename}')
-        write_bitmap(filename, image_primal)
+        mi.util.write_bitmap(filename, image_primal)
         assert False
 
     filename = f"test_render_custom_op_image_primal.exr"
-    write_bitmap(filename, image_primal)
+    mi.util.write_bitmap(filename, image_primal)
 
     obj = dr.hmean_async(image_primal)
     dr.backward(obj)
@@ -887,11 +870,11 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"-> ratio: {grad / grad_ref}")
         assert False
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
 
-    image_primal = render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
+    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
     dr.forward(theta)
 
@@ -906,9 +889,9 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-        write_bitmap(filename, image_fwd)
+        mi.util.write_bitmap(filename, image_fwd)
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
-        write_bitmap(filename, error)
+        mi.util.write_bitmap(filename, error)
         assert False
 
 # -------------------------------------------------------------------
@@ -924,13 +907,10 @@ if __name__ == "__main__":
                         help='Samples per pixel. Default value: 12000')
     args = parser.parse_args()
 
-    mitsuba.set_variant('cuda_ad_rgb')
+    mi.set_variant('cuda_ad_rgb')
 
     if not exists(output_dir):
         os.makedirs(output_dir)
-
-    from mitsuba.core import load_dict, Float, Bitmap
-    from mitsuba.python.util import write_bitmap
 
     for config in BASIC_CONFIGS_LIST + REPARAM_CONFIGS_LIST:
         config = config()
@@ -939,7 +919,7 @@ if __name__ == "__main__":
         config.initialize()
 
         if False:
-            boundary_test_integrator = load_dict({
+            boundary_test_integrator = mi.load_dict({
                 'type': 'aov',
                 'aovs': 'X:boundary_test',
             })
@@ -947,9 +927,9 @@ if __name__ == "__main__":
             print(f"image_boundary_test: {image_boundary_test}")
 
             filename = join(output_dir, f"test_{config.name}_image_boundary_test.exr")
-            Bitmap(image_boundary_test[:, :, 3]).write(filename)
+            mi.Bitmap(image_boundary_test[:, :, 3]).write(filename)
 
-        integrator = load_dict({
+        integrator = mi.load_dict({
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
         })
@@ -957,13 +937,13 @@ if __name__ == "__main__":
         image_ref = integrator.render(config.scene, seed=0, spp=args.spp)
 
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-        write_bitmap(filename, image_ref)
+        mi.util.write_bitmap(filename, image_ref)
 
-        theta = Float(config.ref_fd_epsilon)
+        theta = mi.Float(config.ref_fd_epsilon)
         config.update(theta)
 
         image_2 = integrator.render(config.scene, seed=0, spp=args.spp)
         image_fd = (image_2 - image_ref) / config.ref_fd_epsilon
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-        write_bitmap(filename, image_fd)
+        mi.util.write_bitmap(filename, image_fd)

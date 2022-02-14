@@ -1,15 +1,15 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 from typing import Tuple
 
-def _sample_warp_field(scene: mitsuba.render.Scene,
-                       sample: mitsuba.core.Point2f,
-                       ray: mitsuba.core.Ray3f,
-                       ray_frame: mitsuba.core.Frame3f,
-                       flip: mitsuba.core.Bool,
+def _sample_warp_field(scene: mi.Scene,
+                       sample: mi.Point2f,
+                       ray: mi.Ray3f,
+                       ray_frame: mi.Frame3f,
+                       flip: mi.Bool,
                        kappa: float,
                        exponent: float):
     """
@@ -32,16 +32,16 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     It has the following inputs:
 
-    Parameter ``scene`` (``mitsuba.render.Scene``):
+    Parameter ``scene`` (``mitsuba.Scene``):
         The scene being rendered differentially.
 
-    Parameter ``rng`` (``mitsuba.core.Point2f``):
+    Parameter ``rng`` (``mitsuba.Point2f``):
         A uniformly distributed random variate on the domain [0, 1]^2.
 
-    Parameter ``ray`` (``mitsuba.core.Ray3f``):
+    Parameter ``ray`` (``mitsuba.Ray3f``):
         The input ray that should be reparameterized.
 
-    Parameter ``ray_frame`` (``mitsuba.core.Frame3f``):
+    Parameter ``ray_frame`` (``mitsuba.Frame3f``):
         A precomputed orthonormal basis with `ray_frame.n = ray.d`.
 
     Parameter ``kappa`` (``float``):
@@ -53,33 +53,30 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
     The function returns a tuple ``(Z, dZ, V, div)`` containing
 
-    Return value ``Z`` (``mitsuba.core.Float``)
+    Return value ``Z`` (``mitsuba.Float``)
         The harmonic weight of the generated sample (detached).
 
-    Return value ``dZ`` (``mitsuba.core.Vector3f``)
+    Return value ``dZ`` (``mitsuba.Vector3f``)
         The gradient of ``Z`` with respect to tangential changes
         in ``ray.d`` (detached).
 
-    Return value ``V`` (``mitsuba.core.Vector3f``)
-        The weighted warp field value (attached).
+    Return value ``V`` (``mitsuba.Vector3f``)
+        The weighted mi.warp field value (attached).
 
-    Return value ``div`` (``mitsuba.core.Vector3f``)
-        Dot product between dZ and the unweighted warp field, which
-        is used to compute the divergence of the warp field/jacobian
+    Return value ``div`` (``mitsuba.Vector3f``)
+        Dot product between dZ and the unweighted mi.warp field, which
+        is used to compute the divergence of the mi.warp field/jacobian
         determinant of the parameterization.
     """
 
-    from mitsuba.core import Ray3f, Vector3f, warp
-    from mitsuba.render import RayFlags
-
     # Sample an auxiliary ray from a von Mises Fisher distribution
-    omega_local = warp.square_to_von_mises_fisher(sample, kappa)
+    omega_local = mi.warp.square_to_von_mises_fisher(sample, kappa)
 
     # Antithetic sampling (optional)
     omega_local.x[flip] = -omega_local.x
     omega_local.y[flip] = -omega_local.y
 
-    aux_ray = Ray3f(
+    aux_ray = mi.Ray3f(
         o = ray.o,
         d = ray_frame.to_world(omega_local),
         time = ray.time)
@@ -87,7 +84,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
     si = scene.ray_intersect(aux_ray,
-                             ray_flags=RayFlags.All | RayFlags.FollowShape | RayFlags.BoundaryTest,
+                             ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape | mi.RayFlags.BoundaryTest,
                              coherent=False)
 
     # Convert into a direction at 'ray.o'. When no surface was intersected,
@@ -103,7 +100,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
         # inv_vmf_density = dr.exp(dr.fnmadd(omega_local.z, kappa, kappa))
 
         # Better version (here, dr.exp() is constant). However, assumes a
-        # specific implementation in warp.square_to_von_mises_fisher() (TODO)
+        # specific implementation in mi.warp.square_to_von_mises_fisher() (TODO)
         inv_vmf_density = dr.rcp(dr.fmadd(sample.y, dr.exp(-2 * kappa), 1 - sample.y))
 
         # Compute harmonic weight, being wary of division by near-zero values
@@ -113,7 +110,7 @@ def _sample_warp_field(scene: mitsuba.render.Scene,
 
         # Analytic weight gradient w.r.t. `ray.d`
         tmp1 = inv_vmf_density * w * w_denom_rcp * kappa * exponent
-        tmp2 = ray_frame.to_world(Vector3f(omega_local.x, omega_local.y, 0))
+        tmp2 = ray_frame.to_world(mi.Vector3f(omega_local.x, omega_local.y, 0))
         d_w_omega = dr.clamp(tmp1, -1e10, 1e10) * tmp2
 
     return w, d_w_omega, w * V_direct, dr.dot(d_w_omega, V_direct)
@@ -145,25 +142,22 @@ class _ReparameterizeOp(dr.CustomOp):
         self.unroll = unroll
 
         # The reparameterization is simply the identity in primal mode
-        return self.ray.d, dr.full(mitsuba.core.Float, 1, dr.width(ray))
+        return self.ray.d, dr.full(mi.Float, 1, dr.width(ray))
 
 
     def forward(self):
-        from mitsuba.core import (Bool, Float, UInt32, Loop, Point2f,
-                                  Vector3f, Ray3f, Frame3f)
-
         # Initialize some accumulators
-        Z = Float(0.0)
-        dZ = Vector3f(0.0)
-        grad_V = Vector3f(0.0)
-        grad_div_lhs = Float(0.0)
-        it = UInt32(0)
+        Z = mi.Float(0.0)
+        dZ = mi.Vector3f(0.0)
+        grad_V = mi.Vector3f(0.0)
+        grad_div_lhs = mi.Float(0.0)
+        it = mi.UInt32(0)
         rng = self.rng
         ray_grad_o = self.grad_in('ray').o
-        ray_frame = Frame3f(self.ray.d)
+        ray_frame = mi.Frame3f(self.ray.d)
 
-        loop = Loop(name="reparameterize_ray(): forward propagation",
-                    state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
+        loop = mi.Loop(name="reparameterize_ray(): forward propagation",
+                       state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
 
         # Unroll the entire loop in wavefront mode
         # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
@@ -171,19 +165,19 @@ class _ReparameterizeOp(dr.CustomOp):
         loop.set_eval_stride(self.num_rays)
 
         while loop(self.active & (it < self.num_rays)):
-            ray = Ray3f(self.ray)
+            ray = mi.Ray3f(self.ray)
             dr.enable_grad(ray.o)
             dr.set_grad(ray.o, ray_grad_o)
 
             rng_state_backup = rng.state
-            sample = Point2f(rng.next_float32(),
+            sample = mi.Point2f(rng.next_float32(),
                              rng.next_float32())
 
             if self.antithetic:
                 repeat = dr.eq(it & 1, 0)
                 rng.state[repeat] = rng_state_backup
             else:
-                repeat = Bool(False)
+                repeat = mi.Bool(False)
 
             Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sample,
                                                            ray, ray_frame,
@@ -211,27 +205,24 @@ class _ReparameterizeOp(dr.CustomOp):
 
 
     def backward_symbolic(self):
-        from mitsuba.core import Bool, Float, UInt32, Point2f, \
-            Point3f, Vector3f, Ray3f, Frame3f, Loop, PCG32
-
         grad_direction, grad_divergence = self.grad_out()
 
         # Ignore inactive lanes
         grad_direction  = dr.select(self.active, grad_direction, 0.0)
         grad_divergence = dr.select(self.active, grad_divergence, 0.0)
-        ray_frame = Frame3f(self.ray.d)
+        ray_frame = mi.Frame3f(self.ray.d)
         rng = self.rng
-        rng_clone = PCG32(rng)
+        rng_clone = mi.PCG32(rng)
 
         with dr.suspend_grad():
             # We need to trace the auxiliary rays a first time to compute the
             # constants Z and dZ in order to properly weight the incoming gradients
-            Z = Float(0.0)
-            dZ = Vector3f(0.0)
-            it = UInt32(0)
+            Z = mi.Float(0.0)
+            dZ = mi.Vector3f(0.0)
+            it = mi.UInt32(0)
 
-            loop = Loop(name="reparameterize_ray(): weight normalization",
-                        state=lambda: (it, Z, dZ, rng_clone.state))
+            loop = mi.Loop(name="reparameterize_ray(): weight normalization",
+                           state=lambda: (it, Z, dZ, rng_clone.state))
 
             # Unroll the entire loop in wavefront mode
             # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
@@ -241,14 +232,14 @@ class _ReparameterizeOp(dr.CustomOp):
             while loop(self.active & (it < self.num_rays)):
                 rng_state_backup = rng_clone.state
 
-                sample = Point2f(rng_clone.next_float32(),
-                                 rng_clone.next_float32())
+                sample = mi.Point2f(rng_clone.next_float32(),
+                                    rng_clone.next_float32())
 
                 if self.antithetic:
                     repeat = dr.eq(it & 1, 0)
                     rng_clone.state[repeat] = rng_state_backup
                 else:
-                    repeat = Bool(False)
+                    repeat = mi.Bool(False)
 
                 Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sample,
                                                      self.ray, ray_frame,
@@ -259,8 +250,8 @@ class _ReparameterizeOp(dr.CustomOp):
                 it += 1
 
         # Un-normalized values
-        V = dr.zero(Vector3f, dr.width(Z))
-        div_V_1 = dr.zero(Float, dr.width(Z))
+        V = dr.zero(mi.Vector3f, dr.width(Z))
+        div_V_1 = dr.zero(mi.Float, dr.width(Z))
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
@@ -272,16 +263,16 @@ class _ReparameterizeOp(dr.CustomOp):
         dr.set_grad(direction, grad_direction)
         dr.set_grad(divergence, grad_divergence)
         dr.enqueue(dr.ADMode.Backward, direction, divergence)
-        dr.traverse(Float, dr.ADMode.Backward)
+        dr.traverse(mi.Float, dr.ADMode.Backward)
 
         grad_V = dr.grad(V)
         grad_div_V_1 = dr.grad(div_V_1)
 
-        it = UInt32(0)
-        ray_grad_o = Point3f(0)
+        it = mi.UInt32(0)
+        ray_grad_o = mi.Point3f(0)
 
-        loop = Loop(name="reparameterize_ray(): backpropagation",
-                    state=lambda: (it, rng.state, ray_grad_o))
+        loop = mi.Loop(name="reparameterize_ray(): backpropagation",
+                       state=lambda: (it, rng.state, ray_grad_o))
 
         # Unroll the entire loop in wavefront mode
         # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condiction)
@@ -289,19 +280,19 @@ class _ReparameterizeOp(dr.CustomOp):
         loop.set_eval_stride(self.num_rays)
 
         while loop(self.active & (it < self.num_rays)):
-            ray = Ray3f(self.ray)
+            ray = mi.Ray3f(self.ray)
             dr.enable_grad(ray.o)
 
             rng_state_backup = rng.state
 
-            sample = Point2f(rng.next_float32(),
-                             rng.next_float32())
+            sample = mi.Point2f(rng.next_float32(),
+                                rng.next_float32())
 
             if self.antithetic:
                 repeat = dr.eq(it & 1, 0)
                 rng.state[repeat] = rng_state_backup
             else:
-                repeat = Bool(False)
+                repeat = mi.Bool(False)
 
             _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sample,
                                                       ray, ray_frame,
@@ -311,7 +302,7 @@ class _ReparameterizeOp(dr.CustomOp):
             dr.set_grad(V_i, grad_V)
             dr.set_grad(div_V_1_i, grad_div_V_1)
             dr.enqueue(dr.ADMode.Backward, V_i, div_V_1_i)
-            dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+            dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
             ray_grad_o += dr.grad(ray.o)
             it += 1
 
@@ -321,9 +312,6 @@ class _ReparameterizeOp(dr.CustomOp):
 
 
     def backward_unroll(self):
-        from mitsuba.core import Bool, Float, Point2f, Vector3f, Ray3f, \
-                                 Frame3f, PCG32
-
         assert not self.antithetic
 
         grad_direction, grad_divergence = self.grad_out()
@@ -331,31 +319,31 @@ class _ReparameterizeOp(dr.CustomOp):
         # Ignore inactive lanes
         grad_direction  = dr.select(self.active, grad_direction, 0.0)
         grad_divergence = dr.select(self.active, grad_divergence, 0.0)
-        ray_frame = Frame3f(self.ray.d)
+        ray_frame = mi.Frame3f(self.ray.d)
         rng = self.rng
-        rng_clone = PCG32(rng)
+        rng_clone = mi.PCG32(rng)
 
-        ray = Ray3f(self.ray)
+        ray = mi.Ray3f(self.ray)
         dr.enable_grad(ray.o)
 
         warp_fields = []
         for i in range(self.num_rays):
-            sample = Point2f(rng_clone.next_float32(),
-                             rng_clone.next_float32())
+            sample = mi.Point2f(rng_clone.next_float32(),
+                                rng_clone.next_float32())
             warp_fields.append(_sample_warp_field(self.scene, sample,
                                                   ray, ray_frame,
-                                                  Bool(False), self.kappa,
+                                                  mi.Bool(False), self.kappa,
                                                   self.exponent))
 
-        Z = Float(0.0)
-        dZ = Vector3f(0.0)
+        Z = mi.Float(0.0)
+        dZ = mi.Vector3f(0.0)
         for Z_i, dZ_i, _, _ in warp_fields:
             Z += Z_i
             dZ += dZ_i
 
         # Un-normalized values
-        V = dr.zero(Vector3f, dr.width(Z))
-        div_V_1 = dr.zero(Float, dr.width(Z))
+        V = dr.zero(mi.Vector3f, dr.width(Z))
+        div_V_1 = dr.zero(mi.Float, dr.width(Z))
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
@@ -367,7 +355,7 @@ class _ReparameterizeOp(dr.CustomOp):
         dr.set_grad(direction, grad_direction)
         dr.set_grad(divergence, grad_divergence)
         dr.enqueue(dr.ADMode.Backward, direction, divergence)
-        dr.traverse(Float, dr.ADMode.Backward)
+        dr.traverse(mi.Float, dr.ADMode.Backward)
 
         grad_V = dr.grad(V)
         grad_div_V_1 = dr.grad(div_V_1)
@@ -377,7 +365,7 @@ class _ReparameterizeOp(dr.CustomOp):
             dr.set_grad(div_V_1_i, grad_div_V_1)
             dr.enqueue(dr.ADMode.Backward, V_i, div_V_1_i)
 
-        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+        dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
         ray_grad = dr.detach(dr.zero(type(self.ray)))
         ray_grad.o = dr.grad(ray.o)
@@ -395,28 +383,28 @@ class _ReparameterizeOp(dr.CustomOp):
         return "reparameterize_ray()"
 
 
-def reparameterize_ray(scene: mitsuba.render.Scene,
-                       rng: mitsuba.core.PCG32,
+def reparameterize_ray(scene: mi.Scene,
+                       rng: mi.PCG32,
                        params: Any,
-                       ray: mitsuba.core.Ray3f,
+                       ray: mi.Ray3f,
                        num_rays: int=4,
                        kappa: float=1e5,
                        exponent: float=3.0,
                        antithetic: bool=False,
                        unroll: bool=False,
-                       active: Any[bool, mitsuba.core.Bool] = True
-) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
+                       active: Any[bool, mi.Bool] = True
+) -> Tuple[mi.Vector3f, mi.Float]:
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to
     moving geometry in the scene.
 
-    Parameter ``scene`` (``mitsuba.render.Scene``):
+    Parameter ``scene`` (``mitsuba.Scene``):
         Scene containing all shapes.
 
-    Parameter ``rng`` (``mitsuba.core.PCG32``):
+    Parameter ``rng`` (``mitsuba.PCG32``):
         Random number generator used to sample auxiliary ray directions.
 
-    Parameter ``ray`` (``mitsuba.core.RayDifferential3f``):
+    Parameter ``ray`` (``mitsuba.RayDifferential3f``):
         Ray to be reparameterized
 
     Parameter ``params`` (``mitsuba.python.util.SceneParameters``):
@@ -439,10 +427,10 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     Parameter ``unroll`` (``bool``):
         Should the loop tracing auxiliary rays be unrolled? (Default: False)
 
-    Parameter ``active`` (``mitsuba.core.Bool``):
+    Parameter ``active`` (``mitsuba.Bool``):
         Boolean array specifying the active lanes
 
-    Returns → (mitsuba.core.Vector3f, mitsuba.core.Float):
+    Returns → (mitsuba.Vector3f, mitsuba.Float):
         Returns the reparameterized ray direction and the Jacobian
         determinant of the change of variables.
     """
