@@ -1,39 +1,34 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 import numpy as np
 
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
-    md = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, True)
-    assert md.type() == MicrofacetType.Beckmann
+    md = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, True)
+    assert md.type() == mi.MicrofacetType.Beckmann
     assert dr.allclose(md.alpha_u(), 0.1)
     assert dr.allclose(md.alpha_v(), 0.1)
     assert md.sample_visible()
 
 
 def test02_eval_pdf_beckmann(variants_vec_backends_once):
-    from mitsuba.core import Float, Vector3f
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, False)
     assert not mdf.is_isotropic()
     assert mdf.is_anisotropic()
     assert mdf_i.is_isotropic()
     assert not mdf_i.is_anisotropic()
 
     steps = 20
-    theta = dr.linspace(Float, 0, dr.Pi, steps)
-    phi = dr.full(Float, dr.Pi / 2, steps)
+    theta = dr.linspace(mi.Float, 0, dr.Pi, steps)
+    phi = dr.full(mi.Float, dr.Pi / 2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    wi = Vector3f(0, 0, 1)
+    wi = mi.Vector3f(0, 0, 1)
 
     assert dr.allclose(mdf.eval(v),
               [  1.06103287e+01,   8.22650051e+00,   3.57923722e+00,
@@ -71,8 +66,8 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00])
 
-    theta = dr.full(Float, 0.1, steps)
-    phi = dr.linspace(Float, 0, 2*dr.Pi, steps)
+    theta = dr.full(mi.Float, 0.1, steps)
+    phi = dr.linspace(mi.Float, 0, 2*dr.Pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -84,30 +79,27 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                 9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706])
 
     assert dr.allclose(mdf.pdf(wi, v),
-               Float([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
+               mi.Float([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
                 9.62056446,  8.37803268,  6.42071199,  4.84459257,  4.05276537,
                 4.05276537,  4.84459257,  6.42071199,  8.37803268,  9.62056446,
                 9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]) * dr.cos(0.1))
 
-    assert dr.allclose(mdf_i.eval(v), dr.full(Float, 11.86709118, steps))
-    assert dr.allclose(mdf_i.pdf(wi, v), dr.full(Float, 11.86709118 * dr.cos(0.1), steps))
+    assert dr.allclose(mdf_i.eval(v), dr.full(mi.Float, 11.86709118, steps))
+    assert dr.allclose(mdf_i.pdf(wi, v), dr.full(mi.Float, 11.86709118 * dr.cos(0.1), steps))
 
 
 def test03_smith_g1_beckmann(variants_vec_backends_once):
-    from mitsuba.core import Float, Vector3f
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, False)
     steps = 20
-    theta = dr.linspace(Float, dr.Pi/3, dr.Pi/2, steps)
+    theta = dr.linspace(mi.Float, dr.Pi/3, dr.Pi/2, steps)
 
-    phi = dr.full(Float, dr.Pi/2, steps)
+    phi = dr.full(mi.Float, dr.Pi/2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
-    wi = Vector3f(0, 0, 1)
+    wi = mi.Vector3f(0, 0, 1)
 
     assert dr.allclose(mdf.smith_g1(v, wi),
                        [1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000523e+00, 9.9941480e-01,
@@ -122,8 +114,8 @@ def test03_smith_g1_beckmann(variants_vec_backends_once):
                 9.8627287e-01, 9.5088160e-01, 8.5989666e-01, 6.2535185e-01, 5.7592310e-06], atol=1e-5)
 
     steps = 20
-    theta = dr.full(Float, dr.Pi / 2 * 0.98, steps)
-    phi = dr.linspace(Float, 0, 2 * dr.Pi, steps)
+    theta = dr.full(mi.Float, dr.Pi / 2 * 0.98, steps)
+    phi = dr.linspace(mi.Float, 0, 2 * dr.Pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -134,21 +126,18 @@ def test03_smith_g1_beckmann(variants_vec_backends_once):
                  0.63746351,  0.48717275,  0.38421196,  0.33166203,  0.31201753,
                  0.31838724,  0.35298213,  0.42798978,  0.56164336,  0.67333597])
 
-    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(Float, 0.67333597, steps))
+    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(mi.Float, 0.67333597, steps))
 
 
 def test04_sample_beckmann(variants_vec_backends_once):
-    from mitsuba.core import Float, Vector3f
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
-    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = dr.linspace(Float, 0, 1, steps)
+    u = dr.linspace(mi.Float, 0, 1, steps)
     u1, u2 = dr.meshgrid(u, u)
     u = [u1, u2]
-    wi = Vector3f(0, 0, 1)
+    wi = mi.Vector3f(0, 0, 1)
 
     result = mdf.sample(wi, u)
 
@@ -203,15 +192,12 @@ def test04_sample_beckmann(variants_vec_backends_once):
 
 
 def test03_smith_g1_ggx(variants_vec_backends_once):
-    from mitsuba.core import Float
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.GGX, 0.1, False)
+    mdf   = mi.MicrofacetDistribution(mi.MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf_i = mi.MicrofacetDistribution(mi.MicrofacetType.GGX, 0.1, False)
     steps = 20
-    theta = dr.linspace(Float, dr.Pi/3, dr.Pi/2, steps)
-    phi = dr.full(Float, dr.Pi/2, steps)
+    theta = dr.linspace(mi.Float, dr.Pi/3, dr.Pi/2, steps)
+    phi = dr.full(mi.Float, dr.Pi/2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -229,8 +215,8 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
                         9.6378750e-01, 9.5463598e-01, 9.4187391e-01, 9.2344058e-01, 8.9569420e-01,
                         8.5189372e-01, 7.7902949e-01, 6.5144652e-01, 4.1989169e-01, 3.2584082e-06], atol=1e-5)
 
-    theta = dr.full(Float, dr.Pi / 2 * 0.98, steps)
-    phi = dr.linspace(Float, 0, 2 * dr.Pi, steps)
+    theta = dr.full(mi.Float, dr.Pi / 2 * 0.98, steps)
+    phi = dr.linspace(mi.Float, 0, 2 * dr.Pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -241,18 +227,15 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
                  0.43013984,  0.31108665,  0.23769052,  0.20219423,  0.18922243,
                  0.19341162,  0.21645154,  0.26822716,  0.36801264,  0.46130955])
 
-    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(Float, 0.46130955, steps))
+    assert dr.allclose(mdf_i.smith_g1(v, wi), dr.full(mi.Float, 0.46130955, steps))
 
 
 def test05_sample_ggx(variants_vec_backends_once):
-    from mitsuba.core import Float
-    from mitsuba.render import MicrofacetDistribution, MicrofacetType
-
-    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf = mi.MicrofacetDistribution(mi.MicrofacetType.GGX, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = dr.linspace(Float, 0, 1, steps)
+    u = dr.linspace(mi.Float, 0, 1, steps)
     u1, u2 = dr.meshgrid(u, u)
     u = [u1, u2]
     wi = np.tile([0, 0, 1], (steps * steps, 1))
@@ -312,18 +295,15 @@ def test05_sample_ggx(variants_vec_backends_once):
 @pytest.mark.parametrize("md_type_name", ['GGX', 'Beckmann'])
 @pytest.mark.parametrize("angle", [15, 80, 30])
 def test06_chi2(variants_vec_backends_once, md_type_name, alpha, sample_visible, angle):
-    from mitsuba.python.chi2 import MicrofacetAdapter, ChiSquareTest, SphericalDomain
-    from mitsuba.render import MicrofacetType
-
     if md_type_name == "GGX":
-        md_type = MicrofacetType.GGX
+        md_type = mi.MicrofacetType.GGX
     else:
-        md_type = MicrofacetType.Beckmann
+        md_type = mi.MicrofacetType.Beckmann
 
-    sample_func, pdf_func = MicrofacetAdapter(md_type, alpha, sample_visible)
+    sample_func, pdf_func = mi.chi2.MicrofacetAdapter(md_type, alpha, sample_visible)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=lambda *args: sample_func(*(list(args) + [angle])),
         pdf_func=lambda *args: pdf_func(*(list(args) + [angle])),
         sample_dim=2,

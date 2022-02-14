@@ -1,6 +1,6 @@
-import drjit as dr
-import mitsuba
 import pytest
+import drjit as dr
+import mitsuba as mi
 
 def find_resource(fname):
     import os
@@ -16,7 +16,7 @@ def find_resource(fname):
 def write_kernels(*args, output_dir='kernels', scene_fname=None):
     import os
     import json
-    assert mitsuba.variant() == 'cuda_rgb'
+    assert mi.variant() == 'cuda_rgb'
 
     os.makedirs(output_dir, exist_ok=True)
     for i, h in enumerate(args):
@@ -31,7 +31,7 @@ def write_kernels(*args, output_dir='kernels', scene_fname=None):
                 f.write(f'// Run {i}, kernel {j} ({len(h)} kernels total)\n')
                 if scene_fname:
                     f.write(f'// Scene: {scene_fname}\n')
-                f.write(f'// Variant: {mitsuba.variant()}\n')
+                f.write(f'// Variant: {mi.variant()}\n')
                 f.write('// Hash: {}\n'.format(hex(safe_entries['hash'])[2:]))
                 f.write(f'// Kernel: {meta}\n\n\n')
                 f.write(ptx)
@@ -46,13 +46,11 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """
     Tests that forward rendering launches the correct number of kernels
     """
-    from mitsuba.core import load_file, load_dict
-
-    scene = load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
-    integrator = load_dict({
+    integrator = mi.load_dict({
         'type': integrator_name,
         'max_depth': 3
     })
@@ -75,7 +73,7 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
         # print(history_2[0]['ir'].read())
 
         # Only the rendering kernel should use OptiX
-        if mitsuba.variant().startswith('cuda'):
+        if mi.variant().startswith('cuda'):
             assert [e['uses_optix'] for e in history_1] == [True, False]
             assert [e['uses_optix'] for e in history_2] == [True, False]
             assert [e['uses_optix'] for e in history_3] == [True, False]
@@ -107,13 +105,11 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     Tests that forward rendering launches the correct number of kernels
     for the particle tracer integrator
     """
-    from mitsuba.core import load_file, load_dict
-
-    scene = load_file(find_resource(scene_fname))
+    scene = mi.load_file(find_resource(scene_fname))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
-    integrator = load_dict({
+    integrator = mi.load_dict({
         'type': 'ptracer',
         'max_depth': 5
     })
@@ -141,7 +137,7 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
             assert history_3[i]['hash'] == history_2[i]['hash']
 
         # Only the rendering kernels should use optix
-        if mitsuba.variant().startswith('cuda'):
+        if mi.variant().startswith('cuda'):
             assert [e['uses_optix'] for e in history_1] == [True, False]
             assert [e['uses_optix'] for e in history_2] == [True, False]
             assert [e['uses_optix'] for e in history_3] == [True, False]
@@ -165,17 +161,14 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     Check the history of kernel launches during a simple optimization loop
     using render_adjoint.
     """
-    from mitsuba.core import load_file, load_dict, Color3f
-    from mitsuba.python.util import traverse
-
-    scene = load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 4
 
     film_wavefront_size = dr.hprod(film_size) * 3 #(RGB)
     wavefront_size = dr.hprod(film_size) * spp
 
-    integrator = load_dict({
+    integrator = mi.load_dict({
         'type': 'prb',
         'max_depth': 3
     })
@@ -186,16 +179,16 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
         # dr.set_log_level(3)
 
-        params = traverse(scene)
+        params = mi.traverse(scene)
         key = 'red.reflectance.value'
         params.keep([key])
-        params[key] = Color3f(0.1, 0.1, 0.1)
+        params[key] = mi.Color3f(0.1, 0.1, 0.1)
         params.update()
 
         # Updating the scene here shouldn't produce any kernel launch
         assert len(dr.kernel_history([dr.KernelType.JIT])) == 0
 
-        opt = mitsuba.python.ad.SGD(lr=0.05, params=params)
+        opt = mi.ad.SGD(lr=0.05, params=params)
         opt.load(key)
         opt.update()
 

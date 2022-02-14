@@ -1,12 +1,12 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def make_sphere_mesh_scene():
-    return mitsuba.core.load_dict({
+    return mi.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -16,7 +16,7 @@ def make_sphere_mesh_scene():
 
 @fresolver_append_path
 def make_rectangle_mesh_scene():
-    return mitsuba.core.load_dict({
+    return mi.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -32,33 +32,29 @@ def make_rectangle_mesh_scene():
     ('rectangle', [0.99, -0.99, -5], [0, 0, 1]) # Target one corner of the rectangle
 ])
 def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
-    from mitsuba.core import load_dict, Float, Point3f, Vector3f, Ray3f, Transform4f
-    from mitsuba.python.util import traverse
-    from mitsuba.python.ad import reparameterize_ray
-
     num_rays = 32
     exponent = 3.0
     kappa = 1e6
 
-    ray = Ray3f(ray_o, ray_d, 0.0, [])
+    ray = mi.Ray3f(ray_o, ray_d, 0.0, [])
 
     if shape == 'rectangle':
         scene = make_rectangle_mesh_scene()
     else:
         scene = make_sphere_mesh_scene()
 
-    rng = mitsuba.core.PCG32()
+    rng = mi.PCG32()
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    init_vertex_pos = dr.unravel(Point3f, params[key])
+    init_vertex_pos = dr.unravel(mi.Point3f, params[key])
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    trans = Vector3f([1.0, 0.0, 0.0])
-    transform = Transform4f.translate(theta * trans)
+    trans = mi.Vector3f([1.0, 0.0, 0.0])
+    transform = mi.Transform4f.translate(theta * trans)
     positions_new = transform @ init_vertex_pos
     params[key] = dr.ravel(positions_new)
     params.update()
@@ -67,7 +63,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     dr.set_label(theta, 'theta')
     dr.set_label(params, 'params')
 
-    d, det = reparameterize_ray(
+    d, det = mi.ad.reparameterize_ray(
         scene=scene,
         rng=rng,
         ray=ray,
@@ -87,7 +83,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     # print(dr.graphviz_str(Float(1)))
 
     dr.enqueue(dr.ADMode.Forward, params)
-    dr.traverse(mitsuba.core.Float, dr.ADMode.Forward)
+    dr.traverse(mi.Float, dr.ADMode.Forward)
 
     grad_d = dr.grad(d)
 
@@ -112,13 +108,9 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
 ])
 @pytest.mark.parametrize("unroll", [False, True])
 def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, ray_o, ray_d, ref, atol, unroll):
-    from mitsuba.core import Float, Ray3f, Vector3f
-    from mitsuba.python.util import traverse
-    from mitsuba.python.ad import reparameterize_ray
-
     # dr.set_flag(dr.JitFlag.LoopRecord, False)
 
-    grad_direction = Vector3f(1, 0, 0)
+    grad_direction = mi.Vector3f(1, 0, 0)
     grad_detergence = 0.0
     n_passes = 4
     num_rays = 16
@@ -127,13 +119,13 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
 
     scene = make_rectangle_mesh_scene()
 
-    rng = mitsuba.core.PCG32()
+    rng = mi.PCG32()
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    ray = Ray3f(ray_o, ray_d, 0.0, [])
+    ray = mi.Ray3f(ray_o, ray_d, 0.0, [])
     dr.set_label(ray, 'ray')
 
     res_grad = 0.0
@@ -145,7 +137,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         params.update()
         dr.eval()
 
-        d, det = reparameterize_ray(
+        d, det = mi.ad.reparameterize_ray(
             scene=scene,
             rng=rng,
             ray=ray,
@@ -165,9 +157,9 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         dr.set_grad(d, grad_direction)
         dr.set_grad(det, grad_detergence)
         dr.enqueue(dr.ADMode.Backward, d, det)
-        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+        dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
-        res_grad += dr.unravel(Vector3f, dr.grad(params[key]))
+        res_grad += dr.unravel(mi.Vector3f, dr.grad(params[key]))
 
     assert dr.allclose(res_grad / float(n_passes), ref, atol=atol)
 
@@ -177,12 +169,9 @@ if __name__ == '__main__':
     Helper script to plot shape parameter gradients
     """
 
-    mitsuba.set_variant('llvm_ad_rgb')
+    mi.set_variant('llvm_ad_rgb')
 
-    from mitsuba.core import load_dict, Float,  Point3f, Vector3f, Transform4f, ScalarTransform4f, Bitmap, Struct, Color3f
-    from mitsuba.python.util import traverse
-    from mitsuba.python.ad import reparameterize_ray
-    from mitsuba.python.ad.integrators.integrator import sample_sensor_rays
+    from mitsuba.ad.integrators.integrator import sample_sensor_rays
 
     dr.set_flag(dr.JitFlag.LoopRecord, False)
 
@@ -191,11 +180,11 @@ if __name__ == '__main__':
     # scene = make_sphere_mesh_scene()
     scene = make_rectangle_mesh_scene()
 
-    camera = load_dict({
+    camera = mi.load_dict({
         "type" : "perspective",
         "near_clip": 0.1,
         "far_clip": 1000.0,
-        "to_world" : ScalarTransform4f.look_at(origin=[0, 0, -5],
+        "to_world" : mi.ScalarTransform4f.look_at(origin=[0, 0, -5],
                                                target=[0, 0, 0],
                                                up=[0, 1, 0]),
         "film" : {
@@ -205,22 +194,22 @@ if __name__ == '__main__':
             "height" : res,
         }
     })
-    rng = mitsuba.core.PCG32(size=res*res*spp)
+    rng = mi.PCG32(size=res*res*spp)
 
     rays, weight, pos, pos_idx, _ = sample_sensor_rays(camera)
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    trans = Vector3f([1.0, 0.0, 0.0])
-    init_vertex_pos = dr.unravel(Point3f, params[key])
+    trans = mi.Vector3f([1.0, 0.0, 0.0])
+    init_vertex_pos = dr.unravel(mi.Point3f, params[key])
 
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     dr.set_label(theta, 'theta')
 
-    transform = Transform4f.translate(theta * trans)
+    transform = mi.Transform4f.translate(theta * trans)
     positions_new = transform @ init_vertex_pos
     params[key] = dr.ravel(positions_new)
     params.update()
@@ -232,7 +221,7 @@ if __name__ == '__main__':
     exponent = 3.0
     kappa = 1e5
 
-    d, det = reparameterize_ray(
+    d, det = mi.ad.reparameterize_ray(
         scene=scene,
         rng=rng,
         ray=ray,
@@ -249,12 +238,12 @@ if __name__ == '__main__':
     # print(dr.graphviz_str(Float(1)))
 
     dr.enqueue(dr.ADMode.Forward, params)
-    dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
+    dr.traverse(mi.Float, dr.ADMode.Forward, dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
 
     grad_d = dr.grad(d)
     grad_det = dr.grad(det)
 
-    block = mitsuba.render.ImageBlock(
+    block = mi.ImageBlock(
         [res, res],
         [0, 0],
         channel_count=5,
@@ -262,12 +251,12 @@ if __name__ == '__main__':
         border=False
     )
     block.put(pos, rays.wavelengths, grad_d, 1)
-    bmp_grad_d = Bitmap(block.data(), Bitmap.PixelFormat.RGBAW)
-    bmp_grad_d = bmp_grad_d.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)
+    bmp_grad_d = mi.Bitmap(block.data(), mi.Bitmap.PixelFormat.RGBAW)
+    bmp_grad_d = bmp_grad_d.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, srgb_gamma=False)
     bmp_grad_d.write('output_grad_d.exr')
 
     block.clear()
-    block.put(pos, rays.wavelengths, Color3f(grad_det), 1)
-    bmp_grad_det = Bitmap(block.data(), Bitmap.PixelFormat.RGBAW)
-    bmp_grad_det = bmp_grad_det.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False)
+    block.put(pos, rays.wavelengths, mi.Color3f(grad_det), 1)
+    bmp_grad_det = mi.Bitmap(block.data(), mi.Bitmap.PixelFormat.RGBAW)
+    bmp_grad_det = bmp_grad_det.convert(mi.Bitmap.PixelFormat.Y, mi.Struct.Type.Float32, srgb_gamma=False)
     bmp_grad_det.write('output_grad_det.exr')

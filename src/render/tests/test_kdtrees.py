@@ -1,6 +1,6 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 from .mesh_generation import create_stairs
 
@@ -8,12 +8,9 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 def make_synthetic_scene(n_steps):
-    from mitsuba.core import Properties
-    from mitsuba.render import Scene
-
-    props = Properties("scene")
+    props = mi.Properties("scene")
     props["_unnamed_0"] = create_stairs(n_steps)
-    return Scene(props)
+    return mi.Scene(props)
 
 
 def compare_results(res_a, res_b, atol=0.0):
@@ -21,13 +18,9 @@ def compare_results(res_a, res_b, atol=0.0):
     if dr.any(res_a.is_valid()):
         assert dr.allclose(res_a.t, res_b.t, atol=atol), "\n%s\n\n%s" % (res_a.t, res_b.t)
 
-# ------------------------------------------------------------------------------
 
 def test01_depth_scalar_stairs(variant_scalar_rgb):
-    from mitsuba.core import Ray3f
-    from mitsuba.render import SurfaceInteraction3f
-
-    if mitsuba.core.MI_ENABLE_EMBREE:
+    if mi.MI_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
     n_steps = 20
@@ -41,7 +34,7 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
         for y in range(n - 1):
             o = [x * inv_n,  y * inv_n,  2]
             d = [0,  0,  -1]
-            r = Ray3f(o, d, 0.5, wavelengths)
+            r = mi.Ray3f(o, d, 0.5, wavelengths)
             r.maxt = 100
 
             res_naive   = scene.ray_intersect_naive(r)
@@ -52,7 +45,7 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
 
             assert dr.all(res_shadow)
             assert dr.all(res_shadow == res_naive.is_valid())
-            expected = SurfaceInteraction3f()
+            expected = mi.SurfaceInteraction3f()
             expected.t = 2.0 - (step_idx / n_steps)
             compare_results(res_naive, expected, atol=1e-9)
             compare_results(res_naive, res)
@@ -60,18 +53,13 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_depth_scalar_bunny(variant_scalar_rgb):
-    from mitsuba.core import load_string, Ray3f
-
-    if mitsuba.core.MI_ENABLE_EMBREE:
+    if mi.MI_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
-    scene = load_string("""
-        <scene version="0.5.0">
-            <shape type="ply">
-                <string name="filename" value="resources/data/common/meshes/bunny_lowres.ply"/>
-            </shape>
-        </scene>
-    """)
+    scene = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+    })
     b = scene.bbox()
 
     n = 100
@@ -84,7 +72,7 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
                  b.min[1] * (1 - y * inv_n) + b.max[1] * y * inv_n,
                  b.min[2]]
             d = [0, 0, 1]
-            r = Ray3f(o, d, 0.5, wavelengths)
+            r = mi.Ray3f(o, d, 0.5, wavelengths)
             r.maxt = 100
 
             res_naive  = scene.ray_intersect_naive(r)

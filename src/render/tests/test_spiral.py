@@ -1,17 +1,17 @@
-import mitsuba
 import pytest
 import drjit as dr
-from drjit.scalar import ArrayXf as Float
+import mitsuba as mi
 import numpy as np
+
+from drjit.scalar import ArrayXf as Float
 
 
 def make_film(width = 156, height = 232):
-    from mitsuba.core import load_string
-
-    f = load_string("""<film type="hdrfilm" version="2.0.0">
-            <integer name="width" value="{}"/>
-            <integer name="height" value="{}"/>
-        </film>""".format(width, height))
+    f = mi.load_dict({
+        "type" : "hdrfilm",
+        "width" : width,
+        "height" : height
+    })
     assert f is not None
     assert dr.all(f.size() == [width, height])
     return f
@@ -39,18 +39,15 @@ def check_first_blocks(blocks, expected, n_total = None):
 
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.render import Spiral
     film = make_film()
-    s = Spiral(film.size(), film.crop_offset())
+    s = mi.Spiral(film.size(), film.crop_offset())
     assert s is not None
     assert s.max_block_size() == 32
 
 
 def test02_small_film(variant_scalar_rgb):
-    from mitsuba.render import Spiral
-
     f = make_film(15, 12)
-    s = Spiral(f.size(), f.crop_offset())
+    s = mi.Spiral(f.size(), f.crop_offset())
 
     (bo, bs, bi) = s.next_block()
     assert dr.all(bo == [0, 0])
@@ -61,8 +58,6 @@ def test02_small_film(variant_scalar_rgb):
 
 
 def test03_normal_film(variant_scalar_rgb):
-    from mitsuba.render import Spiral
-
     # Check the first few blocks' size and location
     center = np.array([160, 160])
     w = 32
@@ -76,7 +71,7 @@ def test03_normal_film(variant_scalar_rgb):
     ]
 
     f = make_film(318, 322)
-    s = Spiral(f.size(), f.crop_offset())
+    s = mi.Spiral(f.size(), f.crop_offset())
 
     check_first_blocks(extract_blocks(s), expected, n_total=110)
     # Resetting and re-querying the blocks should yield the exact same results.

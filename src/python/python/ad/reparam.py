@@ -383,17 +383,17 @@ class _ReparameterizeOp(dr.CustomOp):
         return "reparameterize_ray()"
 
 
-def reparameterize_ray(scene: mi.Scene,
-                       rng: mi.PCG32,
+def reparameterize_ray(scene: mitsuba.Scene,
+                       rng: mitsuba.PCG32,
                        params: Any,
-                       ray: mi.Ray3f,
+                       ray: mitsuba.Ray3f,
                        num_rays: int=4,
                        kappa: float=1e5,
                        exponent: float=3.0,
                        antithetic: bool=False,
                        unroll: bool=False,
-                       active: Any[bool, mi.Bool] = True
-) -> Tuple[mi.Vector3f, mi.Float]:
+                       active: Any[bool, mitsuba.Bool] = True
+) -> Tuple[mitsuba.Vector3f, mitsuba.Float]:
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to
     moving geometry in the scene.
@@ -407,7 +407,7 @@ def reparameterize_ray(scene: mi.Scene,
     Parameter ``ray`` (``mitsuba.RayDifferential3f``):
         Ray to be reparameterized
 
-    Parameter ``params`` (``mitsuba.python.util.SceneParameters``):
+    Parameter ``params`` (``mitsuba.util.SceneParameters``):
         Scene parameters
 
     Parameter ``num_rays`` (``int``):

@@ -1,22 +1,17 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 def test01_interaction_invalid_init(variants_all_backends_once):
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = dr.zero(SurfaceInteraction3f)
+    si = dr.zero(mi.SurfaceInteraction3f)
     assert dr.none(si.is_valid())
 
-    si = dr.zero(SurfaceInteraction3f, 4)
+    si = dr.zero(mi.SurfaceInteraction3f, 4)
     assert dr.none(si.is_valid())
 
 
 def test02_intersection_construction(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = dr.zero(SurfaceInteraction3f)
+    si = dr.zero(mi.SurfaceInteraction3f)
     assert not si.is_valid()
 
     si.shape = None
@@ -26,7 +21,7 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.p = [1, 2, 3]
     si.n = [4, 5, 6]
     si.uv = [7, 8]
-    si.sh_frame = Frame3f(
+    si.sh_frame = mi.Frame3f(
         [9, 10, 11],
         [12, 13, 14],
         [15, 16, 17]
@@ -40,7 +35,7 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance = None
-    assert si.sh_frame == Frame3f([9, 10, 11], [12, 13, 14], [15, 16, 17])
+    assert si.sh_frame == mi.Frame3f([9, 10, 11], [12, 13, 14], [15, 16, 17])
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
@@ -67,23 +62,20 @@ def test02_intersection_construction(variant_scalar_rgb):
 
 
 def test03_intersection_partials(variant_scalar_rgb):
-    from mitsuba.core import Frame3f, Ray3f, RayDifferential3f
-    from mitsuba.render import SurfaceInteraction3f
-
     # Test the texture partial computation with some random data
 
     o = [0.44650541, 0.16336525, 0.74225088]
     d = [0.2956123, 0.67325977, 0.67774232]
     time = 0.5
     w = []
-    r = RayDifferential3f(o, d, time, w)
+    r = mi.RayDifferential3f(o, d, time, w)
     r.o_x = r.o + [0.1, 0, 0]
     r.o_y = r.o + [0, 0.1, 0]
     r.d_x = r.d
     r.d_y = r.d
     r.has_differentials = True
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.p = r(10)
     si.dp_du = [0.5514372, 0.84608955, 0.41559092]
     si.dp_dv = [0.14551054, 0.54917541, 0.39286475]
@@ -132,18 +124,14 @@ def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     for some arbitrary incident/outgoing directions in world coordinates and
     compute the round trip going to local frame and back again.
     """
-    from mitsuba.core import Frame3f, UnpolarizedSpectrum, Vector3f
-    from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.render.mueller import linear_polarizer
+    si = mi.SurfaceInteraction3f()
+    si.sh_frame = mi.Frame3f(dr.normalize(mi.Vector3f(1.0, 1.0, 1.0)))
 
-    si = SurfaceInteraction3f()
-    si.sh_frame = Frame3f(dr.normalize(Vector3f(1.0, 1.0, 1.0)))
-
-    M = linear_polarizer(UnpolarizedSpectrum(1.0))
+    M = mi.mueller.linear_polarizer(mi.UnpolarizedSpectrum(1.0))
 
     # Random incident and outgoing directions
-    wi_world = dr.normalize(Vector3f(0.2, 0.0, 1.0))
-    wo_world = dr.normalize(Vector3f(0.0, -0.8, 1.0))
+    wi_world = dr.normalize(mi.Vector3f(0.2, 0.0, 1.0))
+    wo_world = dr.normalize(mi.Vector3f(0.0, -0.8, 1.0))
 
     wi_local = si.to_local(wi_world)
     wo_local = si.to_local(wo_world)

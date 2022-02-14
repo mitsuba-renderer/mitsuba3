@@ -1,21 +1,19 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 def make_simple_scene(res=1, integrator="path"):
-    from mitsuba.core import load_dict, ScalarTransform4f
-
-    return load_dict({
+    return mi.load_dict({
         'type' : 'scene',
         "integrator" : { "type" : integrator },
         "mysensor" : {
             "type" : "perspective",
             "near_clip": 0.1,
             "far_clip": 1000.0,
-            "to_world" : ScalarTransform4f.look_at(origin=[0, 0, 4],
-                                                   target=[0, 0, 0],
-                                                   up=[0, 1, 0]),
+            "to_world" : mi.ScalarTransform4f.look_at(origin=[0, 0, 4],
+                                                      target=[0, 0, 0],
+                                                      up=[0, 1, 0]),
             "myfilm" : {
                 "type" : "hdrfilm",
                 "rfilter" : { "type" : "box"},
@@ -62,15 +60,13 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
         dr.set_flag(k, v)
 
     # Test correctness of the gradients taking one step of gradient descent on linear function
-    from mitsuba.python.util import traverse
-
     scene = make_simple_scene()
 
     # Parameter to differentiate
     key = 'rect.bsdf.reflectance.value'
 
     # Enable gradients
-    params = traverse(scene)
+    params = mi.traverse(scene)
     dr.enable_grad(params[key])
 
     # Forward rendering - first time
@@ -103,19 +99,16 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
         dr.set_flag(k, v)
 
     # Test correctness of the gradients taking one step of gradient descent on linear function
-    from mitsuba.core import Float
-    from mitsuba.python.util import traverse
-
     scene = make_simple_scene()
 
     # Parameter to differentiate
     key = 'rect.bsdf.reflectance.value'
 
     # Enable gradients
-    params = traverse(scene)
+    params = mi.traverse(scene)
 
     # Add differential value to the BSDF reflectance
-    X = Float(0.1)
+    X = mi.Float(0.1)
     dr.enable_grad(X)
     params[key] += X
     params.update()
@@ -142,26 +135,23 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
 @pytest.mark.parametrize("res", [3])
 @pytest.mark.parametrize("opt_conf", [('SGD', [250.0, 0.8])])
 def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
-    from mitsuba.core import Float, Color3f
-    from mitsuba.python.util import traverse
-
     scene = make_simple_scene(res=res, integrator="direct")
 
     key = 'rect.bsdf.reflectance.value'
 
-    params = traverse(scene)
-    param_ref = Color3f(params[key])
+    params = mi.traverse(scene)
+    param_ref = mi.Color3f(params[key])
 
     image_ref = scene.integrator().render(scene, seed=0, spp=spp)
 
     opt_type, opt_args = opt_conf
-    opt = getattr(mitsuba.python.ad, opt_type)(*opt_args, params=params)
+    opt = getattr(mi.ad, opt_type)(*opt_args, params=params)
 
-    opt[key] = Color3f(0.1)
+    opt[key] = mi.Color3f(0.1)
     dr.set_label(opt[key], key)
     opt.update()
 
-    avrg_params = Color3f(0)
+    avrg_params = mi.Color3f(0)
 
     # Total iteration count
     N = 100
@@ -207,11 +197,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
-    from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
-    from mitsuba.python.util import traverse
-
-    bsdf = load_dict({
+    bsdf = mi.load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',
@@ -220,23 +206,23 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     })
 
     # Enable gradients
-    bsdf_params = traverse(bsdf)
+    bsdf_params = mi.traverse(bsdf)
     p = bsdf_params['reflectance.value']
     dr.enable_grad(p)
     dr.set_label(p, "albedo_1")
     bsdf_params.update()
 
-    mask = dr.eq(dr.arange(UInt32, N) & 1, 0)
-    bsdf_ptr = dr.select(mask, BSDFPtr(bsdf), dr.zero(BSDFPtr))
+    mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
+    bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf), dr.zero(mi.BSDFPtr))
 
-    si    = dr.zero(SurfaceInteraction3f, N)
+    si    = dr.zero(mi.SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     theta = 0.5 * (dr.Pi / 2)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
@@ -248,22 +234,22 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     dr.set_label(v_eval, "v_eval")
 
     # Check against reference value
-    v = Float(dr.cos(theta) * dr.InvPi)
-    v_ref = dr.select(mask, Color3f(v, 0, 0), Color3f(0))
+    v = mi.Float(dr.cos(theta) * dr.InvPi)
+    v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0))
     assert dr.allclose(v_eval, v_ref)
 
     loss = dr.hsum(v_eval)
 
     # Backpropagate through vcall
     if eval_grad:
-        loss_grad = dr.arange(Float, N)
+        loss_grad = dr.arange(mi.Float, N)
         dr.eval(loss_grad)
     else:
-        loss_grad = Float(1)
+        loss_grad = mi.Float(1)
 
     dr.set_grad(loss, loss_grad)
     dr.enqueue(dr.ADMode.Backward, loss)
-    dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+    dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
     # Check gradients
     grad = dr.grad(bsdf_params['reflectance.value'])
@@ -285,11 +271,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    from mitsuba.core import load_dict, Float, UInt32, Color3f, Frame3f
-    from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
-    from mitsuba.python.util import traverse
-
-    bsdf1 = load_dict({
+    bsdf1 = mi.load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',
@@ -297,7 +279,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         }
     })
 
-    bsdf2 = load_dict({
+    bsdf2 = mi.load_dict({
         'type' : 'diffuse',
         'reflectance': {
             'type': 'rgb',
@@ -306,18 +288,18 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     })
 
     # Enable gradients
-    bsdf1_params = traverse(bsdf1)
+    bsdf1_params = mi.traverse(bsdf1)
     p1 = bsdf1_params['reflectance.value']
     dr.enable_grad(p1)
     dr.set_label(p1, "albedo_1")
     bsdf1_params.update()
 
-    bsdf2_params = traverse(bsdf2)
+    bsdf2_params = mi.traverse(bsdf2)
     if indirect:
-        p2 = Color3f(1e-10, 1e-10, 1)
+        p2 = mi.Color3f(1e-10, 1e-10, 1)
         dr.enable_grad(p2)
         dr.set_label(p2, "albedo_2_indirect")
-        p2_2 = dr.min(p2, Color3f(100))
+        p2_2 = dr.min(p2, mi.Color3f(100))
         bsdf2_params['reflectance.value'] = p2_2
     else:
         p2 = bsdf2_params['reflectance.value']
@@ -325,17 +307,17 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         dr.set_label(p2, "albedo_2")
     bsdf2_params.update()
 
-    mask = dr.eq(dr.arange(UInt32, N) & 1, 0)
-    bsdf_ptr = dr.select(mask, BSDFPtr(bsdf1), BSDFPtr(bsdf2))
+    mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
+    bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf1), mi.BSDFPtr(bsdf2))
 
-    si    = dr.zero(SurfaceInteraction3f, N)
+    si    = dr.zero(mi.SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     theta = 0.5 * (dr.Pi / 2)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
@@ -348,12 +330,12 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
     # Check against reference value
     v = dr.cos(theta) * dr.InvPi
-    v_ref = dr.select(mask, Color3f(v, 0, 0), Color3f(0, 0, v))
+    v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0, 0, v))
     assert dr.allclose(v_eval, v_ref)
 
     # Make their gradients a bit different
-    mult1 = Float(0.5)
-    mult2 = Float(4.0)
+    mult1 = mi.Float(0.5)
+    mult2 = mi.Float(4.0)
     v_eval *= dr.select(mask, mult1, mult2)
 
     loss = dr.hsum(v_eval)
@@ -361,14 +343,14 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
     if mode == "backward":
         if eval_grad:
-            loss_grad = dr.arange(Float, N)
+            loss_grad = dr.arange(mi.Float, N)
             dr.eval(loss_grad)
         else:
-            loss_grad = Float(1)
+            loss_grad = mi.Float(1)
 
         dr.set_grad(loss, loss_grad)
         dr.enqueue(dr.ADMode.Backward, loss)
-        dr.traverse(Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+        dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
         # Check gradients
         grad1 = dr.grad(p1)
@@ -383,39 +365,36 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         dr.set_grad(p2, 0)
         dr.enqueue(dr.ADMode.Forward, p1)
         dr.enqueue(dr.ADMode.Forward, p2)
-        dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
+        dr.traverse(mi.Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
         dr.set_grad(p1, 0)
         dr.set_grad(p2, 1)
         dr.enqueue(dr.ADMode.Forward, p1)
         dr.enqueue(dr.ADMode.Forward, p2)
-        dr.traverse(Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
+        dr.traverse(mi.Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
         assert dr.allclose(dr.grad(loss), 3 * v * dr.select(mask, mult1, mult2))
 
 
 def test06_optimizer_state(variants_all_ad_rgb):
-    from mitsuba.core import Float
-    from mitsuba.python.ad import SGD, Adam
-
     def ensure_iterable(x):
         if not isinstance(x, (tuple, list)):
             return (x,)
         return x
 
     key = 'some_param'
-    init = Float([1.0, 2.0, 3.0])
+    init = mi.Float([1.0, 2.0, 3.0])
 
-    for cls in [(lambda: SGD(lr=2e-2, momentum=0.1)),
-                (lambda: Adam(lr=2e-2))]:
+    for cls in [(lambda: mi.ad.SGD(lr=2e-2, momentum=0.1)),
+                (lambda: mi.ad.Adam(lr=2e-2))]:
         opt = cls()
         assert key not in opt.variables
         assert key not in opt.state
-        opt[key] = Float(init)
+        opt[key] = mi.Float(init)
         assert key in opt.variables
 
         for _ in range(3):
-            dr.set_grad(opt[key], Float([-1, 1, 2]))
+            dr.set_grad(opt[key], mi.Float([-1, 1, 2]))
             opt.step()
 
         assert key in opt.state
@@ -430,7 +409,7 @@ def test06_optimizer_state(variants_all_ad_rgb):
             assert dr.allclose(a, b)
 
         # A size change should reset the state
-        opt[key] = Float([1.0, 2.0])
+        opt[key] = mi.Float([1.0, 2.0])
         state_after = ensure_iterable(opt.state[key])
         for s in state_after:
             assert dr.all(dr.eq(s, 0))
@@ -438,9 +417,6 @@ def test06_optimizer_state(variants_all_ad_rgb):
 
 @pytest.mark.parametrize('opt', ['SGD', 'Adam'])
 def test07_masked_updates(variants_all_ad_rgb, opt):
-    from mitsuba.core import Float, UInt32
-    from mitsuba.python.ad.optimizers import Adam, SGD
-
     def ensure_iterable(v):
         if isinstance(v, (tuple, list)):
             return v
@@ -448,18 +424,18 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
             return [v]
 
     n = 5
-    x = dr.full(Float, 1.0, n)
+    x = dr.full(mi.Float, 1.0, n)
     params = {'x': x}
 
     if opt == 'SGD':
-        opt = SGD(lr=1.0, momentum=0.8, params=params, mask_updates=True)
+        opt = mi.ad.SGD(lr=1.0, momentum=0.8, params=params, mask_updates=True)
     else:
         assert opt == 'Adam'
-        opt = Adam(lr=1.0, params=params, mask_updates=True)
+        opt = mi.ad.Adam(lr=1.0, params=params, mask_updates=True)
     opt.load()
 
     # Build momentum for a few iterations
-    g1 = dr.full(Float, -1.0, n)
+    g1 = dr.full(mi.Float, -1.0, n)
     for _ in range(5):
         dr.set_grad(params['x'], g1)
         opt.step()
@@ -468,11 +444,11 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
 
     # Masked updates: parameters and state should only
     # be updated where gradients are nonzero.
-    prev_x = Float(params['x'])
-    prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]
+    prev_x = mi.Float(params['x'])
+    prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]
     for zero_i in range(n):
-        is_zero = dr.eq(dr.arange(UInt32, n), zero_i)
-        g2 = dr.select(is_zero, 0, Float(g1))
+        is_zero = dr.eq(dr.arange(mi.UInt32, n), zero_i)
+        g2 = dr.select(is_zero, 0, mi.Float(g1))
 
         dr.set_grad(params['x'], g2)
         opt.step()
@@ -484,5 +460,5 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
             assert dr.all(dr.eq(v1, v2) | ~is_zero), 'State should not be updated where grad == 0'
             assert dr.all(dr.neq(v1, v2) | is_zero), 'State should be updated where grad != 0'
 
-        prev_x = Float(params['x'])
-        prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]
+        prev_x = mi.Float(params['x'])
+        prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]

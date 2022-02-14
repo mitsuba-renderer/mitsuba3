@@ -1,16 +1,12 @@
+import pytest
+import drjit as dr
+import mitsuba as mi
 import math
 import os
 
-import pytest
-import drjit as dr
-import mitsuba
-
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.core import load_string
-    from mitsuba.render import ImageBlock
-
-    im = ImageBlock([33, 12], [2, 3], 4)
+    im = mi.ImageBlock([33, 12], [2, 3], 4)
     assert im is not None
     assert dr.all(im.offset() == [2, 3])
     im.set_offset([10, 20])
@@ -22,10 +18,11 @@ def test01_construct(variant_scalar_rgb):
     assert im.channel_count() == 4
     assert im.tensor() is not None
 
-    rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
-            <float name="stddev" value="15"/>
-        </rfilter>""")
-    im = ImageBlock([10, 11], [0, 0], 2, rfilter=rfilter, warn_invalid=False)
+    rfilter = mi.load_dict({
+        "type" : "gaussian",
+        "stddev" : 15
+    })
+    im = mi.ImageBlock([10, 11], [0, 0], 2, rfilter=rfilter, warn_invalid=False)
     assert im.border_size() == rfilter.border_size()
     assert im.channel_count() == 2
     assert not im.warn_invalid()
@@ -39,24 +36,19 @@ def test01_construct(variant_scalar_rgb):
 def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
     # Checks the result of the ImageBlock::put() method
     # against a brute force reference
+    scalar = 'scalar' in mi.variant()
 
-    from mitsuba.core import load_dict, TensorXf, \
-        ScalarVector2u, Float, Point2f
-    from mitsuba.render import ImageBlock
-
-    scalar = 'scalar' in mitsuba.variant()
-
-    rfilter = load_dict({ 'type' : filter_name })
+    rfilter = mi.load_dict({ 'type' : filter_name })
 
     for j in range(5):
         for i in range(5):
             # Intentional: one of the points is exactly on a boundary
-            pos = Point2f(3.3+0.25*i, 3+0.25*j)
+            pos = mi.Point2f(3.3+0.25*i, 3+0.25*j)
             dr.make_opaque(pos)
 
-            size = ScalarVector2u(6, 6)
+            size = mi.ScalarVector2u(6, 6)
 
-            block = ImageBlock(size=size,
+            block = mi.ImageBlock(size=size,
                                offset=offset,
                                channel_count=1,
                                rfilter=rfilter,
@@ -67,7 +59,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
             block.put(pos=pos, values=[1])
 
             size += 2 * block.border_size()
-            Array1f = Float if not scalar else dr.scalar.ArrayXf
+            Array1f = mi.Float if not scalar else dr.scalar.ArrayXf
 
             shift = 0.5 - pos - block.border_size() + block.offset()
             p = dr.meshgrid(
@@ -77,7 +69,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
 
             import numpy as np
             if scalar:
-                ref = dr.zero(TensorXf, block.tensor().shape)
+                ref = dr.zero(mi.TensorXf, block.tensor().shape)
                 if filter_name == 'box':
                     eval_method = rfilter.eval
                 else:
@@ -88,9 +80,9 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
                     out[i] = eval_method(-p[0][i]) * \
                              eval_method(-p[1][i])
             else:
-                ref = TensorXf(rfilter.eval(-p[0]) *
-                               rfilter.eval(-p[1]),
-                               block.tensor().shape)
+                ref = mi.TensorXf(rfilter.eval(-p[0]) *
+                                  rfilter.eval(-p[1]),
+                                  block.tensor().shape)
 
             if normalize:
                 value = dr.hsum(ref)
@@ -111,14 +103,11 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
 
 @pytest.mark.parametrize("filter_name", ['gaussian', 'box'])
 def test03_put_boundary(variants_all_rgb, filter_name):
-    from mitsuba.core import load_dict, Float
-    from mitsuba.render import ImageBlock
-
-    rfilter = load_dict({'type': filter_name})
-    im = ImageBlock([3, 3], [0, 0], 1, rfilter=rfilter, warn_negative=False, border=False)
+    rfilter = mi.load_dict({'type': filter_name})
+    im = mi.ImageBlock([3, 3], [0, 0], 1, rfilter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
-    if dr.is_jit_array_v(Float):
+    if dr.is_jit_array_v(mi.Float):
         a = dr.slice(rfilter.eval(0))
         b = dr.slice(rfilter.eval(1))
         c = b**2
@@ -141,31 +130,27 @@ def test03_put_boundary(variants_all_rgb, filter_name):
 def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad):
     # Checks the result of the ImageBlock::fetch() method
     # (reading random data) against a brute force reference
-
-    from mitsuba.core import load_dict, TensorXf, \
-        ScalarVector2u, Float, Point2f, PCG32
-    from mitsuba.render import ImageBlock
     import numpy as np
 
-    scalar = 'scalar' in mitsuba.variant()
+    scalar = 'scalar' in mi.variant()
 
-    rfilter = load_dict({ 'type' : filter_name })
-    size = ScalarVector2u(6, 6)
+    rfilter = mi.load_dict({ 'type' : filter_name })
+    size = mi.ScalarVector2u(6, 6)
     size_b = size
 
     if border:
         size_b += rfilter.border_size() * 2
 
-    Array1f = Float if not scalar else dr.scalar.ArrayXf
+    Array1f = mi.Float if not scalar else dr.scalar.ArrayXf
 
     src = Array1f(np.float32(np.random.rand(size_b[0]*size_b[1])))
 
-    if dr.is_diff_array_v(Float) and enable_ad:
+    if dr.is_diff_array_v(mi.Float) and enable_ad:
         dr.enable_grad(src)
 
-    source_tensor = TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
+    source_tensor = mi.TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
 
-    block = ImageBlock(source_tensor, offset,
+    block = mi.ImageBlock(source_tensor, offset,
                        rfilter=rfilter,
                        border=border,
                        normalize=normalize)
@@ -173,7 +158,7 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
     for j in range(5):
         for i in range(5):
             # Intentional: one of the points is exactly on a boundary
-            pos = Point2f(3.3+0.25*i, 3+0.25*j)
+            pos = mi.Point2f(3.3+0.25*i, 3+0.25*j)
             dr.make_opaque(pos)
 
             shift = 0.5 - pos - block.border_size() + block.offset()

@@ -1,11 +1,13 @@
 # Script based on https://www.blog.pythonlibrary.org/2018/10/16/testing-jupyter-notebooks/
 
-import os
-from os.path import join, realpath, dirname, basename, splitext, exists
-import glob
 import pytest
+import drjit as dr
+import mitsuba as mi
+import glob
 import re
-import mitsuba
+import os
+
+from os.path import join, realpath, dirname, basename, splitext, exists
 
 
 def run_notebook(notebook_path, tmp_dir=None):
@@ -26,7 +28,7 @@ def run_notebook(notebook_path, tmp_dir=None):
     regex = re.compile(r'mitsuba.set_variant\(\'([a-zA-Z_]+)\'\)', re.MULTILINE)
     for c in filter(lambda c: c['cell_type'] == 'code', nb['cells']):
         for v in re.findall(regex, c['source']):
-            if v not in mitsuba.variants():
+            if v not in mi.variants():
                 pytest.skip(f'variant {v} is not enabled')
 
     proc = ExecutePreprocessor(timeout=600, kernel_name='python3')

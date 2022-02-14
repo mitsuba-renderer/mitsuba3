@@ -1,24 +1,22 @@
 import pytest
-
 import drjit as dr
-import mitsuba
+import mitsuba as mi
+
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 @fresolver_append_path
 def test01_emitter_checks(variant_scalar_rgb):
-    from mitsuba.core import load_string
-
     def check_scene(xml, count, error=None):
-        xml = """<scene version="2.0.0">
+        xml = """<scene version="3.0.0">
             {}
         </scene>""".format(xml)
         if error is None:
-            scene = load_string(xml)
+            scene = mi.load_string(xml)
             assert len(scene.emitters()) == count
         else:
             with pytest.raises(RuntimeError, match='.*{}.*'.format(error)):
-                load_string(xml)
+                mi.load_string(xml)
 
     shape_xml = """<shape type="obj">
         <string name="filename" value="resources/data/tests/obj/rectangle_uv.obj"/>
@@ -52,43 +50,42 @@ def test01_emitter_checks(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_shapes(variant_scalar_rgb):
-    from mitsuba.core import load_string
-
     """Tests that a Shape is downcasted to a Mesh in the Scene::shapes method if possible"""
-    scene = load_string("""
-        <scene version="2.0.0">
-            <shape type="obj" >
-                <string name="filename" value="resources/data/tests/obj/cbox_smallbox.obj"/>
-            </shape>
-            <shape type="sphere"/>
-        </scene>
-    """)
+    scene = mi.load_dict({
+        "type" : "scene",
+        "box" :  {
+            "type" : "obj",
+            "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
+        },
+        "sphere" : { 
+            "type" : "sphere"
+        }
+    })
 
     shapes = scene.shapes()
     assert len(shapes) == 2
-    assert sum(type(s) == mitsuba.render.Mesh  for s in shapes) == 1
-    assert sum(type(s) == mitsuba.render.Shape for s in shapes) == 1
+    assert sum(type(s) == mi.Mesh  for s in shapes) == 1
+    assert sum(type(s) == mi.Shape for s in shapes) == 1
 
 
 @fresolver_append_path
 def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
-    from mitsuba.core import load_string
-    from mitsuba.python.util import traverse
-
-    scene = load_string("""
-        <scene version="2.0.0">
-            <shape type="obj" id="box">
-                <string name="filename" value="resources/data/tests/obj/cbox_smallbox.obj"/>
-            </shape>
-            <shape type="sphere"/>
-        </scene>
-    """)
+    scene = mi.load_dict({
+        "type" : "scene",
+        "box" :  {
+            "type" : "obj",
+            "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
+        },
+        "sphere" : { 
+            "type" : "sphere"
+        }
+    })
 
     # Initial scene should always return False
     assert scene.shapes_grad_enabled() == False
 
     # Get scene parameters
-    params = traverse(scene)
+    params = mi.traverse(scene)
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'box.bsdf.reflectance.value'
@@ -108,12 +105,12 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
 @fresolver_append_path
 @pytest.mark.parametrize("shadow", [True, False])
 def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
-    from mitsuba.core import load_dict, ScalarTransform4f as T, Ray3f, Point3f, Vector3f
+    from mitsuba import ScalarTransform4f as T
 
     # Create and raytrace scene in a function, so that the scene object gets
     # destroyed (attempt) when leaving the function call
     def render():
-        scene = load_dict({
+        scene = mi.load_dict({
             'type': 'scene',
             'integrator': { 'type': 'path' },
             'mysensor': {
@@ -142,7 +139,7 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
             }
         })
 
-        ray = Ray3f(Point3f(1, 2, 3), Vector3f(4, 5, 6))
+        ray = mi.Ray3f(mi.Point3f(1, 2, 3), mi.Vector3f(4, 5, 6))
         if shadow:
             return scene.ray_test(ray)
         else:

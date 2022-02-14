@@ -1,16 +1,12 @@
-import mitsuba
 import pytest
 import drjit as dr
-from drjit.scalar import ArrayXf as Float
+import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
-from mitsuba.python.util import traverse
 
 
 def test01_create_mesh(variant_scalar_rgb):
-    from mitsuba.render import Mesh
-
-    m = Mesh("MyMesh", 3, 2)
+    m = mi.Mesh("MyMesh", 3, 2)
     m.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
     m.faces_buffer()[:] = [0, 1, 2, 1, 2, 0]
     m.parameters_changed()
@@ -33,14 +29,11 @@ def test01_create_mesh(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_ply_triangle(variant_scalar_rgb):
-    from mitsuba.core import UInt32, load_string
-
-    m = load_string("""
-        <shape type="ply" version="0.5.0">
-            <string name="filename" value="data/triangle.ply"/>
-            <boolean name="face_normals" value="true"/>
-        </shape>
-    """)
+    m = mi.load_dict({
+        "type" : "ply",
+        "filename" : "data/triangle.ply",
+        "face_normals" : True
+    })
 
     positions = m.vertex_positions_buffer()
     faces = m.faces_buffer()
@@ -51,22 +44,19 @@ def test02_ply_triangle(variant_scalar_rgb):
     assert dr.allclose(positions[3:6], [0, 0, 1])
     assert dr.allclose(positions[6:9], [0, 1, 0])
     assert dr.width(faces) == 3
-    assert faces[0] == UInt32(0)
-    assert faces[1] == UInt32(1)
-    assert faces[2] == UInt32(2)
+    assert faces[0] == mi.UInt32(0)
+    assert faces[1] == mi.UInt32(1)
+    assert faces[2] == mi.UInt32(2)
 
 
 @fresolver_append_path
 def test03_ply_computed_normals(variant_scalar_rgb):
-    from mitsuba.core import load_string
-
     """Checks(automatic) vertex normal computation for a PLY file that
     doesn't have them."""
-    shape = load_string("""
-        <shape type="ply" version="0.5.0">
-            <string name="filename" value="data/triangle.ply"/>
-        </shape>
-    """)
+    shape = mi.load_dict({
+        "type" : "ply",
+        "filename" : "data/triangle.ply",
+    })
     normals = shape.vertex_normals_buffer()
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
@@ -76,12 +66,10 @@ def test03_ply_computed_normals(variant_scalar_rgb):
 
 
 def test04_normal_weighting_scheme(variant_scalar_rgb):
-    from mitsuba.core import Vector3f
-    from mitsuba.render import Mesh
     import numpy as np
 
     """Tests the weighting scheme that is used to compute surface normals."""
-    m = Mesh("MyMesh", 5, 2, has_vertex_normals=True)
+    m = mi.Mesh("MyMesh", 5, 2, has_vertex_normals=True)
 
     vertices = m.vertex_positions_buffer()
     normals = m.vertex_normals_buffer()
@@ -89,8 +77,8 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
     a, b = 1.0, 0.5
     vertices[:] = [0, 0, 0, -a, 1, 0, a, 1, 0, -b, 0, 1, b, 0, 1]
 
-    n0 = Vector3f(0.0, 0.0, -1.0)
-    n1 = Vector3f(0.0, 1.0, 0.0)
+    n0 = mi.Vector3f(0.0, 0.0, -1.0)
+    n1 = mi.Vector3f(0.0, 1.0, 0.0)
     angle_0 = dr.Pi / 2.0
     angle_1 = dr.acos(3.0 / 5.0)
     n2 = n0 * angle_0 + n1 * angle_1
@@ -106,15 +94,12 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
 @fresolver_append_path
 def test05_load_simple_mesh(variant_scalar_rgb):
-    from mitsuba.core import load_string
-
     """Tests the OBJ and PLY loaders on a simple example."""
     for mesh_format in ["obj", "ply"]:
-        shape = load_string("""
-            <shape type="{0}" version="2.0.0">
-                <string name="filename" value="resources/data/tests/{0}/cbox_smallbox.{0}"/>
-            </shape>
-        """.format(mesh_format))
+        shape = mi.load_dict({
+            "type" : mesh_format,
+            "filename" : f"resources/data/tests/{mesh_format}/cbox_smallbox.{mesh_format}",
+        })
 
         positions = shape.vertex_positions_buffer()
         faces = shape.faces_buffer()
@@ -133,15 +118,12 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc.
     """
-    from mitsuba.core import load_string
-
     def test():
-        shape = load_string("""
-            <shape type="{0}" version="2.0.0">
-                <string name="filename" value="resources/data/tests/{0}/rectangle_{1}.{0}" />
-                <boolean name="face_normals" value="{2}" />
-            </shape>
-        """.format(mesh_format, features, str(face_normals).lower()))
+        shape = mi.load_dict({
+            "type" : mesh_format,
+            "filename" : f"resources/data/tests/{mesh_format}/rectangle_{features}.{mesh_format}",
+            "face_normals" : face_normals,
+        })
         assert shape.has_vertex_normals() == (not face_normals)
 
         positions = shape.vertex_positions_buffer()
@@ -177,13 +159,10 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
 
 @fresolver_append_path
 def test07_ply_stored_attribute(variant_scalar_rgb):
-    from mitsuba.core import load_string
-
-    m = load_string("""
-        <shape type="ply" version="0.5.0">
-            <string name="filename" value="data/triangle_face_colors.ply"/>
-        </shape>
-    """)
+    m = mi.load_dict({
+        "type" : "ply",
+        "filename" : "data/triangle_face_colors.ply",
+    })
 
     assert str(m) == """PLYMesh[
   name = "triangle_face_colors.ply",
@@ -203,10 +182,7 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
 
 
 def test08_mesh_add_attribute(variant_scalar_rgb):
-    from mitsuba.core import Struct, float_dtype
-    from mitsuba.render import Mesh
-
-    m = Mesh("MyMesh", 3, 2)
+    m = mi.Mesh("MyMesh", 3, 2)
     m.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
     m.faces_buffer()[:] = [0, 1, 2, 1, 2, 0]
     m.parameters_changed()
@@ -232,13 +208,10 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
 
 @fresolver_append_path
 def test09_eval_parameterization(variants_all_rgb):
-    from mitsuba.core import load_string
-
-    shape = load_string('''
-        <shape type="obj" version="2.0.0">
-            <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-        </shape>
-    ''')
+    shape = mi.load_dict({
+        "type" : "obj",
+        "filename" : "resources/data/common/meshes/rectangle.obj",
+    })
 
     si = shape.eval_parameterization([-0.01, 0.5])
     assert not dr.any(si.is_valid())
@@ -255,17 +228,16 @@ def test09_eval_parameterization(variants_all_rgb):
 
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
-    from mitsuba.core import load_string, Ray3f, Vector3f
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
-
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.3, -0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     assert dr.allclose(pi.t, 10)
@@ -279,7 +251,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     assert dr.allclose(si.dp_du, [2.0, 0.0, 0.0])
     assert dr.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
-    ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(0.3, 0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
     assert dr.allclose(pi.t, 10)
     assert pi.prim_index == 1
@@ -295,17 +267,15 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
 
 @fresolver_append_path
 def test11_parameters_grad_enabled(variants_all_ad_rgb):
-    from mitsuba.core import load_string
-    shape = load_string('''
-        <shape type="obj" version="2.0.0">
-            <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-        </shape>
-    ''')
+    shape = mi.load_dict({
+        "type" : "obj",
+        "filename" : "resources/data/common/meshes/rectangle.obj",
+    })
 
     assert shape.parameters_grad_enabled() == False
 
     # Get the shape's parameters
-    params = traverse(shape)
+    params = mi.traverse(shape)
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'bsdf.reflectance.value'
@@ -332,20 +302,18 @@ else:
 
 @fresolver_append_path
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
-    from mitsuba.core import load_string, Ray3f, Vector3f
-    from mitsuba.render import RayFlags
-
     dr.set_flag(dr.JitFlag.VCallRecord, False)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.3, -0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # si should not be attached if not necessary
@@ -362,13 +330,13 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 
     # si should be attached if ray is attached (even when we pass RayFlags.DetachShape)
     dr.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, RayFlags.DetachShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.DetachShape)
     assert dr.grad_enabled(si.p)
     assert dr.grad_enabled(si.uv)
     assert not dr.grad_enabled(si.n) # Face normal doesn't depend on ray
 
     # si should be attached if shape parameters are attached
-    params = traverse(scene)
+    params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     dr.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
@@ -383,21 +351,20 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import load_string, Ray3f, Vector3f
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.3, -0.4, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     dr.enable_grad(ray.o)
@@ -405,7 +372,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
-    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(ray.o.x)
     assert dr.allclose(dr.grad(p), [1, 0, 0])
 
@@ -421,7 +388,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
-    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(ray.d.x)
     assert dr.allclose(dr.grad(p), [10, 0, 0])
 
@@ -429,21 +396,20 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import load_string, Ray3f, Vector3f
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.3, -0.4, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     dr.enable_grad(ray.o)
@@ -463,27 +429,26 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, positions_buf)
 
     # Create differential parameter to be optimized
-    diff_vector = Vector3f(0.0)
+    diff_vector = mi.Vector3f(0.0)
     dr.enable_grad(diff_vector)
 
     # Apply the transformation to mesh vertex position and update scene
@@ -497,30 +462,30 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.2, -0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # # If the vertices are shifted along z-axis, so does si.t
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.z)
     assert dr.allclose(dr.grad(si.t), 1)
 
     # If the vertices are shifted along z-axis, so does si.p
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(diff_vector.z)
     assert dr.allclose(dr.grad(p), [0.0, 0.0, 1.0])
 
     # If the vertices are shifted along x-axis, so does si.uv (times 0.5)
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(si.uv), [-0.5, 0.0])
 
     # If the vertices are shifted along y-axis, so does si.uv (times 0.5)
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.y)
     assert dr.allclose(dr.grad(si.uv), [0.0, -0.5])
@@ -528,11 +493,11 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test rotation
 
-    ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(-0.99999, -0.99999, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # If the vertices are rotated around the center, so does si.uv (times 0.5)
-    apply_transformation(lambda v : Transform4f.rotate([0, 0, 1], v.x))
+    apply_transformation(lambda v : mi.Transform4f.rotate([0, 0, 1], v.x))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.x)
     du = 0.5 * dr.sin(2 * dr.Pi / 360.0)
@@ -542,21 +507,20 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import load_string, Ray3f, Vector3f
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     vertex_pos_key       = 'rect.vertex_positions'
     vertex_normals_key   = 'rect.vertex_normals'
     vertex_texcoords_key = 'rect.vertex_texcoords'
@@ -569,7 +533,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     params.update()
 
     # Hit the upper right corner of the rectangle (the 4th vertex)
-    ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(0.99999, 0.99999, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # ---------------------------------------
@@ -681,28 +645,26 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
-    from mitsuba.render import RayFlags
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
 
-    scene = load_string('''
-        <scene version="2.0.0">
-            <shape type="obj" id="rect">
-                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
-            </shape>
-        </scene>
-    ''')
+    scene = mi.load_dict({
+        "type" : "scene", 
+        "meshes": {
+            "type" : "obj",
+            "id" : "rect",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+        }
+    })
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, positions_buf)
 
     # Create differential parameter to be optimized
-    diff_vector = Vector3f(0.0)
+    diff_vector = mi.Vector3f(0.0)
     dr.enable_grad(diff_vector)
 
     # Apply the transformation to mesh vertex position and update scene
@@ -716,32 +678,32 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(0.2, 0.3, -5.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # If the vertices are shifted along x-axis, si.p won't move
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
-    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(p), [0.0, 0.0, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
-    apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
-    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, si.uv should move
-    apply_transformation(lambda v : Transform4f.translate(v))
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(si.uv), [-0.5, 0.0], atol=1e-5)
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
-    apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
+    apply_transformation(lambda v : mi.Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
@@ -760,10 +722,6 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
-    from mitsuba.core import load_dict, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
-    from mitsuba.render import RayFlags
-    from mitsuba.python.util import traverse
-
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
@@ -783,21 +741,21 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
             'id' : 'wall',
             'filename' : 'resources/data/common/meshes/cbox/back.obj'
         }
-    scene = load_dict(scene_dict)
+    scene = mi.load_dict(scene_dict)
 
     # Get scene parameters
-    params = traverse(scene)
+    params = mi.traverse(scene)
     key = 'sphere.vertex_positions'
 
     # Create differential parameter
-    theta = Float(0.0)
+    theta = mi.Float(0.0)
     dr.enable_grad(theta)
     dr.set_label(theta, 'theta')
 
     # Attach object vertices to differential parameter
     with dr.Scope("Attach object vertices"):
-        positions_initial = dr.unravel(Point3f, params[key])
-        transform = Transform4f.translate(Vector3f(0.0, theta, 0.0))
+        positions_initial = dr.unravel(mi.Point3f, params[key])
+        transform = mi.Transform4f.translate(mi.Vector3f(0.0, theta, 0.0))
         positions_new = transform @ positions_initial
         positions_new = dr.ravel(positions_new)
         dr.set_label(positions_new, 'positions_new')
@@ -810,22 +768,22 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
         # print(dr.graphviz_str(Float(1)))
 
     spp = 1
-    film_size = ScalarVector2i(res)
+    film_size = mi.ScalarVector2i(res)
 
     # Sample a wavefront of rays (one per pixel and spp)
     total_sample_count = dr.hprod(film_size) * spp
-    pos = dr.arange(UInt32, total_sample_count)
+    pos = dr.arange(mi.UInt32, total_sample_count)
     pos //= spp
-    scale = dr.rcp(Vector2f(film_size))
-    pos = Vector2f(Float(pos %  int(film_size[0])),
-                   Float(pos // int(film_size[0])))
+    scale = dr.rcp(mi.Vector2f(film_size))
+    pos = mi.Vector2f(mi.Float(pos %  int(film_size[0])),
+                   mi.Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1])
+    ray = mi.Ray3f([pos[0], pos[1], -5], [0, 0, 1])
     dr.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
-    si = scene.ray_intersect(ray, RayFlags.FollowShape, True)
+    si = scene.ray_intersect(ray, mi.RayFlags.FollowShape, True)
     dr.set_label(si, 'si')
 
     # print(dr.graphviz_str(Float(1)))
@@ -833,15 +791,12 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     dr.forward(theta)
 
     hit_sphere = si.t < 6.0
-    assert dr.allclose(dr.grad(si.p), dr.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0, 0, 0)))
+    assert dr.allclose(dr.grad(si.p), dr.select(hit_sphere, mi.Vector3f(0, 1, 0), mi.Vector3f(0, 0, 0)))
 
 
 @fresolver_append_path
 def test19_update_geometry(variants_vec_rgb):
-    from mitsuba.core import load_dict, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
-    from mitsuba.python.util import traverse
-
-    scene = load_dict({
+    scene = mi.load_dict({
         'type': 'scene',
         'rect': {
             'type': 'ply',
@@ -850,25 +805,25 @@ def test19_update_geometry(variants_vec_rgb):
         }
     })
 
-    params = traverse(scene)
+    params = mi.traverse(scene)
 
-    init_vertex_pos = dr.unravel(Point3f, params['rect.vertex_positions'])
+    init_vertex_pos = dr.unravel(mi.Point3f, params['rect.vertex_positions'])
 
     def translate(v):
-        transform = Transform4f.translate(mitsuba.core.Vector3f(v))
+        transform = mi.Transform4f.translate(mi.Vector3f(v))
         positions_new = transform @ init_vertex_pos
         params['rect.vertex_positions'] = dr.ravel(positions_new)
         params.update()
 
-    film_size = ScalarVector2i([4, 4])
+    film_size = mi.ScalarVector2i([4, 4])
     total_sample_count = dr.hprod(film_size)
-    pos = dr.arange(UInt32, total_sample_count)
-    scale = dr.rcp(Vector2f(film_size))
-    pos = Vector2f(Float(pos %  int(film_size[0])),
-                   Float(pos // int(film_size[0])))
+    pos = dr.arange(mi.UInt32, total_sample_count)
+    scale = dr.rcp(mi.Vector2f(film_size))
+    pos = mi.Vector2f(mi.Float(pos %  int(film_size[0])),
+                      mi.Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
+    ray = mi.Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
     init_t = scene.ray_intersect_preliminary(ray, coherent=True).t
     dr.eval(init_t)
 
@@ -889,17 +844,14 @@ def test19_update_geometry(variants_vec_rgb):
 
 @fresolver_append_path
 def test20_write_xml(variants_all_rgb, tmp_path):
-    from mitsuba.core import load_dict
-    from mitsuba.python.util import traverse
-
     filepath = str(tmp_path / 'test_mesh-test20_write_xml.ply')
     print(f"Output temporary file: {filepath}")
 
-    mesh = load_dict({
+    mesh = mi.load_dict({
         'type': 'ply',
         'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
     })
-    params = traverse(mesh)
+    params = mi.traverse(mesh)
     positions = params['vertex_positions'].copy_()
 
     # Modify one buffer, to check if JIT modes are properly evaluated when saving
@@ -909,11 +861,11 @@ def test20_write_xml(variants_all_rgb, tmp_path):
     mesh.add_attribute(buf_name, 1, [1,2,3,4])
 
     mesh.write_ply(filepath)
-    mesh_saved = load_dict({
+    mesh_saved = mi.load_dict({
         'type': 'ply',
         'filename': filepath
     })
-    params_saved = traverse(mesh_saved)
+    params_saved = mi.traverse(mesh_saved)
 
     assert dr.allclose(params_saved['vertex_positions'], positions + 10.0)
     assert buf_name in params_saved and dr.allclose(params_saved[buf_name], [1, 2, 3, 4])
@@ -921,10 +873,7 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 
 @fresolver_append_path
 def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
-    from mitsuba.core import load_dict, Ray3f
-    from mitsuba.render import RayFlags
-
-    scene = load_dict({
+    scene = mi.load_dict({
         'type': 'scene',
         'mesh': {
             'type' : 'obj',
@@ -933,8 +882,8 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     })
 
     # Check boundary test value at silhouette
-    ray = Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+    ray = mi.Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
 
     assert dr.all(B < 1e-6)
 
@@ -942,18 +891,15 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
     N = 10
     prev = 0.0
     for x in range(N):
-        ray = Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
-        B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+        ray = mi.Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
+        B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
         assert dr.all(prev < B)
         prev = B
 
 
 @fresolver_append_path
 def test22_boundary_test_face_normal(variants_all_ad_rgb):
-    from mitsuba.core import load_dict, Ray3f
-    from mitsuba.render import RayFlags
-
-    scene = load_dict({
+    scene = mi.load_dict({
         'type': 'scene',
         'mesh': {
             'type' : 'obj',
@@ -963,23 +909,23 @@ def test22_boundary_test_face_normal(variants_all_ad_rgb):
     })
 
     # Check boundary test value when no intersection
-    ray = Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
-    si = scene.ray_intersect(ray, RayFlags.BoundaryTest, True)
+    ray = mi.Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
+    si = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True)
     assert dr.all(~si.is_valid())
     B = si.boundary_test
     assert dr.all(B > 1e6)
 
     # Check boundary test value close to silhouette
-    ray = Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+    ray = mi.Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
     assert dr.all(B < 1e-3)
 
     # Check boundary test value close to silhouette
-    ray = Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+    ray = mi.Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
     assert dr.all(B < 1e-4)
 
     # Check boundary test value close far from silhouette
-    ray = Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, RayFlags.BoundaryTest, True).boundary_test
+    ray = mi.Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
+    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
     assert dr.all(B > 1e-1)
