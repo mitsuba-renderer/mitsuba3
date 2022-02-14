@@ -1,34 +1,33 @@
-import numpy as np
-
-import mitsuba
+import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 def test01_constant_construct(variant_scalar_rgb):
-    from mitsuba.core import load_string, BoundingBox3f
-
-    vol = load_string("""
-        <volume type="constvolume" version="2.0.0">
-            <transform name="to_world">
-                <scale x="2" y="0.2" z="1"/>
-            </transform>
-            <spectrum name="value" value="500:3.0 600:3.0"/>
-        </volume>
-    """)
+    vol = mi.load_dict({
+        "type": "constvolume",
+        "to_world": mi.ScalarTransform4f.scale([2, 0.2, 1]),
+        "value": {
+            "type": "regular",
+            "lambda_min": 500,
+            "lambda_max": 600,
+            "values": "3.0, 3.0"
+        }
+    })
 
     assert vol is not None
-    assert vol.bbox() == BoundingBox3f([0, 0, 0], [2, 0.2, 1])
+    assert vol.bbox() == mi.BoundingBox3f([0, 0, 0], [2, 0.2, 1])
 
 
 def test02_constant_eval(variant_scalar_rgb):
-    from mitsuba.core import load_string, BoundingBox3f, Color3f
-    from mitsuba.render import Interaction3f
+    vol = mi.load_dict({
+        "type": "constvolume",
+        "value": {
+            "type" : "srgb",
+            "color" : mi.Color3f([0.5, 1.0, 0.3])
+        }
+    })
 
-    vol = load_string("""
-        <volume type="constvolume" version="2.0.0">
-             <rgb name="value" value="0.5, 1.0, 0.3" version="2.0.0" />
-        </volume>""")
-
-    it = dr.zero(Interaction3f, 1)
-    assert np.allclose(vol.eval(it), Color3f(0.5, 1.0, 0.3))
-    assert vol.bbox() == BoundingBox3f([0, 0, 0], [1, 1, 1])
+    it = dr.zero(mi.Interaction3f, 1)
+    assert dr.allclose(vol.eval(it), mi.Color3f(0.5, 1.0, 0.3))
+    assert vol.bbox() == mi.BoundingBox3f([0, 0, 0], [1, 1, 1])
