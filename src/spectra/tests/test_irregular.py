@@ -1,24 +1,22 @@
 # Only superficial testing here, main coverage achieved
 # via 'src/libcore/tests/test_distr.py'
 
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 @pytest.fixture()
 def obj():
-    return mitsuba.core.load_string('''
-        <spectrum version='2.0.0' type='irregular'>
-            <string name="wavelengths" value="500, 600, 650"/>
-            <string name="values" value="1, 2, .5"/>
-        </spectrum>''')
+    return mi.load_dict({
+        "type" : "irregular",
+        "wavelengths" : "500, 600, 650",
+        "values" : "1, 2, .5"
+    })
 
 
 def test01_eval(variant_scalar_spectral, obj):
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
 
     values = [0, 1, 1.5, 2, .5, 0]
     for i in range(6):
@@ -36,9 +34,7 @@ def test01_eval(variant_scalar_spectral, obj):
 
 
 def test02_sample_spectrum(variant_scalar_spectral, obj):
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     assert dr.allclose(obj.sample_spectrum(si, 0), [500, 212.5])
     assert dr.allclose(obj.sample_spectrum(si, 1), [650, 212.5])
     assert dr.allclose(

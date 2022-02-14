@@ -1,25 +1,23 @@
 # Only superficial testing here, main coverage achieved
 # via 'src/libcore/tests/test_distr.py'
 
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 @pytest.fixture()
 def obj():
-    return mitsuba.core.load_string('''
-        <spectrum version='2.0.0' type='regular'>
-            <float name="lambda_min" value="500"/>
-            <float name="lambda_max" value="600"/>
-            <string name="values" value="1, 2"/>
-        </spectrum>''')
+    return mi.load_dict({
+        "type" : "regular",
+        "lambda_min" : 500,
+        "lambda_max" : 600,
+        "values" : "1, 2"
+    })
 
 
 def test01_eval(variant_scalar_spectral, obj):
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
 
     values = [0, 1, 1.5, 2, 0]
     for i in range(5):
@@ -37,9 +35,7 @@ def test01_eval(variant_scalar_spectral, obj):
 
 
 def test02_sample_spectrum(variant_scalar_spectral, obj):
-    from mitsuba.render import SurfaceInteraction3f
-
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     assert dr.allclose(obj.sample_spectrum(si, 0), [500, 150])
     assert dr.allclose(obj.sample_spectrum(si, 1), [600, 150])
     assert dr.allclose(
