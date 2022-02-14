@@ -63,6 +63,7 @@ class MitsubaVariantModule(types.ModuleType):
         self.__spec__ = ModuleSpec(name, None)
         self.__package__ = name
         self.__path__ = __path__
+        self.__file__ = __file__
         self._variant = variant
         self._modules = None
         self._submodule = submodule
@@ -150,6 +151,7 @@ class MitsubaModule(types.ModuleType):
         self.__spec__ = ModuleSpec(name, None)
         self.__package__ = name
         self.__path__ = __path__
+        self.__file__ = __file__
         self._submodule = submodule
 
     def __getattribute__(self, key):

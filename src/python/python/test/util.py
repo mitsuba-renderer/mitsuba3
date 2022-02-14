@@ -11,14 +11,17 @@ import pytest
 import drjit as dr
 
 def fresolver_append_path(func):
-    """Function decorator that adds the mitsuba project root
-    to the FileResolver's search path. This is useful in particular
+    """
+    Function decorator that adds the mitsuba project root
+    to the mitsuba.FileResolver's search path. This is useful in particular
     for tests that e.g. load scenes, and need to specify paths to resources.
 
     The file resolver is restored to its previous state once the test's
     execution has finished.
     """
-    from mitsuba.current import Thread, FileResolver
+
+    import mitsuba.scalar_rgb as mi
+
     par = os.path.dirname
 
     # Get the path to the source file from which this function is
@@ -38,15 +41,14 @@ def fresolver_append_path(func):
     while not is_root(root_path) and (par(root_path) != root_path):
         root_path = par(root_path)
 
-
     # The @wraps decorator properly sets __name__ and other properties, so that
     # pytest-xdist can keep track of the original test function.
     @wraps(func)
     def f(*args, **kwargs):
         # New file resolver
-        thread = Thread.thread()
+        thread = mi.Thread.thread()
         fres_old = thread.file_resolver()
-        fres = FileResolver(fres_old)
+        fres = mi.FileResolver(fres_old)
 
         # Append current test directory and project root to the
         # search path.
@@ -90,8 +92,8 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
         types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
 
     Parameter ``arg_dims`` (list(int)):
-        Dimentionalities of the function arguments. If not specified, those will be
-        deduced from the function arguemetn annotations (if available).
+        Dimensionalities of the function arguments. If not specified, those will be
+        deduced from the function argument annotations (if available).
 
     Parameter ``width`` (int):
        Number of elements to be evaluated at a time for the vectorized call.
@@ -100,14 +102,14 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
        Absolute tolerance for the comparison of the returned values.
     """
     import numpy as np
-    import mitsuba
+    import mitsuba as mi
 
     # Ensure scalar variant is enabled when calling this kernel
-    assert mitsuba.variant().startswith('scalar_')
+    assert mi.variant().startswith('scalar_')
 
     # List available variants with similar spectral variant
-    spectral_variant = mitsuba.variant().replace("scalar", "")
-    variants = list(set(mitsuba.variants()) & set([m + spectral_variant for m in modes]))
+    spectral_variant = mi.variant().replace("scalar", "")
+    variants = list(set(mi.variants()) & set([m + spectral_variant for m in modes]))
 
     if not variants:
         pytest.skip(f"No vectorized variants available")
@@ -125,7 +127,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     args_np = [rng.random(width) if d == 1 else rng.random((width, d)) for d in arg_dims]
 
     # Evaluate non-vectorized kernel
-    from mitsuba.current import Float, Vector2f, Vector3f
+    from mitsuba import Float, Vector2f, Vector3f
     types = [Float, Vector2f, Vector3f]
     results_scalar = []
     for i in range(width):
@@ -146,8 +148,9 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     # Evaluate and compate vectorized kernel
     for variant in variants:
         # Set variant
-        mitsuba.set_variant(variant)
-        from mitsuba.current import Float, Vector2f, Vector3f
+        import mitsuba
+        m = getattr(mitsuba, 'variant')
+        from m import Float, Vector2f, Vector3f
         types = [Float, Vector2f, Vector3f]
 
         # Cast arguments
