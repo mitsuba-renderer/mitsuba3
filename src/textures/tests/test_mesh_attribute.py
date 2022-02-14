@@ -1,13 +1,10 @@
-import mitsuba
 import pytest
 import drjit as dr
-import numpy as np
+import mitsuba as mi
 
 
 def create_rectangle():
-    from mitsuba.render import Mesh
-
-    mesh = Mesh("rectangle", 4, 2, has_vertex_texcoords = True)
+    mesh = mi.Mesh("rectangle", 4, 2, has_vertex_texcoords = True)
     mesh.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0,
                                          1.0, 0.0, 0.0,
                                          0.0, 1.0, 0.0,
@@ -33,13 +30,11 @@ def create_rectangle():
 
 
 def test01_eval(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-
     mesh = create_rectangle()
 
     # Check vertex color attribute
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_color",
     })
@@ -57,7 +52,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check vertex mono attribute
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_mono",
     })
@@ -70,7 +65,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check face color attribute
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "face_color",
     })
@@ -81,7 +76,7 @@ def test01_eval(variant_scalar_rgb):
 
     # Check face mono attribute
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "face_mono",
     })
@@ -92,30 +87,25 @@ def test01_eval(variant_scalar_rgb):
 
 
 def test02_eval_spectrum(variant_scalar_spectral):
-    from mitsuba.core import load_dict, MI_CIE_MIN, MI_CIE_MAX, MI_WAVELENGTH_SAMPLES
-    from mitsuba.render import srgb_model_fetch, srgb_model_eval
-
     mesh = create_rectangle()
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_color",
     })
 
-    wavelengths = np.linspace(MI_CIE_MIN, MI_CIE_MAX, MI_WAVELENGTH_SAMPLES)
+    wavelengths = dr.linspace(mi.Spectrum, mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
         si.wavelengths = wavelengths
-        dr.allclose(texture.eval(si), srgb_model_eval(srgb_model_fetch([u, v, 0]), wavelengths))
+        dr.allclose(texture.eval(si), mi.srgb_model_eval(mi.srgb_model_fetch([u, v, 0]), wavelengths))
 
 
 def test03_invalid_attribute(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-
     mesh = create_rectangle()
 
-    texture = load_dict({
+    texture = mi.load_dict({
         "type" : "mesh_attribute",
         "name" : "vertex_colorr",
     })
