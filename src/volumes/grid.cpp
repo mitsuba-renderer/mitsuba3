@@ -276,14 +276,14 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = nchannels();
-        if (channels != 3)
+        if (channels != 3) {
             Throw("eval_3(): The GridVolume texture %s was queried for a 3D "
                   "vector, but it has %s channel(s)", to_string(), channels);
-        else if (is_spectral_v<Spectrum> && !m_raw)
+        } else if (is_spectral_v<Spectrum> && !m_raw) {
             Throw("eval_3(): The GridVolume texture %s was queried for a 3D "
                   "vector, but texture conversion into spectra was requested! "
                   "(raw=false)", to_string());
-        else {
+        } else {
             if (dr::none_or<false>(active))
                 return dr::zero<Vector3f>();
 
@@ -357,9 +357,10 @@ protected:
      */
     MTS_INLINE size_t nchannels() const {
         const size_t channels = m_texture.shape()[3];
-        if (is_spectral_v<Spectrum> && channels == 4 && !m_raw) {
+        // When spectral upsampling is requested, a fourth channel is added to
+        // the internal texture data to handle scaling coefficients.
+        if (is_spectral_v<Spectrum> && channels == 4 && !m_raw)
             return 3;
-        }
 
         return channels;
     }
@@ -370,8 +371,7 @@ protected:
      */
     MTS_INLINE UnpolarizedSpectrum interpolate_spectral(const Interaction3f &it,
                                                         Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
+        MTS_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
 
@@ -446,8 +446,7 @@ protected:
      * Should only be used when the volume data has exactly 1 channel.
      */
     MTS_INLINE Float interpolate_1(const Interaction3f &it, Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
+        MTS_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         Float result;
@@ -466,8 +465,7 @@ protected:
      */
     MTS_INLINE Color3f interpolate_3(const Interaction3f &it,
                                      Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
+        MTS_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         Color3f result;
@@ -486,8 +484,7 @@ protected:
      */
     MTS_INLINE dr::Array<Float, 6> interpolate_6(const Interaction3f &it,
                                                  Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
+        MTS_MASK_ARGUMENT(active);
 
         Point3f p = m_to_local * it.p;
         dr::Array<Float, 6> result;
