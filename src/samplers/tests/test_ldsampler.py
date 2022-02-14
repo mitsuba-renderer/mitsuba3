@@ -1,31 +1,32 @@
-import mitsuba
 import pytest
 import drjit as dr
-import numpy as np
+import mitsuba as mi
 
 from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler,
                      check_deep_copy_sampler_scalar, check_deep_copy_sampler_wavefront )
 
 def test01_ldsampler_scalar(variant_scalar_rgb):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "ldsampler",
         "sample_count" : 1024,
     })
+    sampler.seed(0)
 
     check_uniform_scalar_sampler(sampler)
 
 
 def test02_ldsampler_wavefront(variants_vec_backends_once):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "ldsampler",
         "sample_count" : 1024,
     })
+    sampler.seed(0, 1024)
 
     check_uniform_wavefront_sampler(sampler)
 
 
 def test03_ldsampler_deterministic_values(variant_scalar_rgb):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "ldsampler",
         "sample_count" : 1024,
     })
@@ -72,18 +73,20 @@ def test03_ldsampler_deterministic_values(variant_scalar_rgb):
 
 
 def test04_copy_sampler_scalar(variants_any_scalar):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "ldsampler",
         "sample_count" : 1024,
     })
+    sampler.seed(0)
 
     check_deep_copy_sampler_scalar(sampler)
 
 
 def test05_copy_sampler_wavefront(variants_vec_backends_once):
-    sampler = mitsuba.core.load_dict({
+    sampler = mi.load_dict({
         "type" : "ldsampler",
         "sample_count" : 1024,
     })
+    sampler.seed(0, 1024)
 
     check_deep_copy_sampler_wavefront(sampler)

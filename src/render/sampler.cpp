@@ -113,7 +113,7 @@ MI_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
     : Base(props) { }
 
 MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
-                                                     uint32_t wavefront_size) {
+                                                    uint32_t wavefront_size) {
     Base::seed(seed, wavefront_size);
 
     uint32_t seed_value = m_base_seed + seed;
