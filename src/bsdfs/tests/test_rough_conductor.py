@@ -1,16 +1,13 @@
 import drjit as dr
-
-from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
-
+import mitsuba as mi
 
 def test01_chi2_smooth(variants_vec_backends_once_rgb):
-    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.05"/>"""
-    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
-    sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
+    wi = dr.normalize(mi.ScalarVector3f(1.0, 1.0, 1.0))
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughconductor", xml, wi=wi)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -22,16 +19,15 @@ def test01_chi2_smooth(variants_vec_backends_once_rgb):
 
 
 def test02_chi2_aniso_beckmann_all(variants_vec_backends_once_rgb):
-    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
-    sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
+    wi = dr.normalize(mi.ScalarVector3f(1.0, 1.0, 1.0))
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughconductor", xml, wi=wi)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -42,16 +38,15 @@ def test02_chi2_aniso_beckmann_all(variants_vec_backends_once_rgb):
 
 
 def test03_chi2_aniso_beckmann_visible(variants_vec_backends_once_rgb):
-    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
-    sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
+    wi = dr.normalize(mi.ScalarVector3f(1.0, 1.0, 1.0))
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughconductor", xml, wi=wi)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -63,16 +58,15 @@ def test03_chi2_aniso_beckmann_visible(variants_vec_backends_once_rgb):
 
 
 def test04_chi2_aniso_ggx_all(variants_vec_backends_once_rgb):
-    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
-    sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
+    wi = dr.normalize(mi.ScalarVector3f(1.0, 1.0, 1.0))
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughconductor", xml, wi=wi)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -83,16 +77,15 @@ def test04_chi2_aniso_ggx_all(variants_vec_backends_once_rgb):
 
 
 def test05_chi2_aniso_ggx_visible(variants_vec_backends_once_rgb):
-    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = dr.normalize(ScalarVector3f(1.0, 1.0, 1.0))
-    sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
+    wi = dr.normalize(mi.ScalarVector3f(1.0, 1.0, 1.0))
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughconductor", xml, wi=wi)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -103,18 +96,15 @@ def test05_chi2_aniso_ggx_visible(variants_vec_backends_once_rgb):
 
 
 def test06_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import load_string, Frame3f
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
+    bsdf = mi.load_dict({'type': 'roughconductor'})
 
-    bsdf = load_string("<bsdf version='2.0.0' type='roughconductor'></bsdf>")
-
-    si    = SurfaceInteraction3f()
+    si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     for i in range(20):
         theta = i / 19.0 * (dr.Pi / 2)

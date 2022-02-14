@@ -1,49 +1,43 @@
-import mitsuba
+
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXu as UInt32
+import mitsuba as mi
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.render import BSDFFlags
-    from mitsuba.core import load_string
-
-    bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
+    bsdf = mi.load_string("""<bsdf version="3.0.0" type="twosided">
         <bsdf type="diffuse"/>
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
-    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.BackSide
+    assert bsdf.flags(0) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
+    assert bsdf.flags(1) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.BackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
+    bsdf = mi.load_string("""<bsdf version="3.0.0" type="twosided">
         <bsdf type="roughconductor"/>
         <bsdf type="diffuse"/>
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDFFlags.GlossyReflection  | BSDFFlags.FrontSide
-    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.BackSide
+    assert bsdf.flags(0) == mi.BSDFFlags.GlossyReflection  | mi.BSDFFlags.FrontSide
+    assert bsdf.flags(1) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.BackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 
 def test02_pdf(variant_scalar_rgb):
-    from mitsuba.core import load_string, Frame3f
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
-
-
-    bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
+    bsdf = mi.load_string("""<bsdf version="3.0.0" type="twosided">
         <bsdf type="diffuse"/>
     </bsdf>""")
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
     si.wi = [0, 0, 1]
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
     p_pdf = bsdf.pdf(ctx, si, [0, 0, 1])
     assert dr.allclose(p_pdf, dr.InvPi)
 
@@ -52,11 +46,7 @@ def test02_pdf(variant_scalar_rgb):
 
 
 def test03_sample_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import load_string, Frame3f
-    from mitsuba.core.warp import square_to_uniform_sphere
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
-
-    bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
+    bsdf = mi.load_string("""<bsdf version="3.0.0" type="twosided">
         <bsdf type="diffuse">
             <rgb name="reflectance" value="0.1, 0.1, 0.1"/>
         </bsdf>
@@ -65,18 +55,18 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
         </bsdf>
     </bsdf>""")
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
     n = 5
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
     for u in dr.arange(UInt32, n):
         for v in dr.arange(UInt32, n):
-            si.wi = square_to_uniform_sphere([u / float(n-1),
-                                                       v / float(n-1)])
+            si.wi = mi.warp.square_to_uniform_sphere([u / float(n-1),
+                                                      v / float(n-1)])
             up = dr.dot(si.wi, [0, 0, 1]) > 0
 
             for x in dr.arange(UInt32, n):
@@ -96,8 +86,8 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
                         assert dr.allclose(s_value, e_value, atol=1e-2)
                         assert dr.allclose(bs.pdf, p_pdf)
                         assert not dr.any(dr.isnan(e_value) | dr.isnan(s_value))
-                    # Otherwise, sampling failed and we can't rely on bs.wo.
 
+                        # Otherwise, sampling failed and we can't rely on bs.wo.
                         v_eval_pdf = bsdf.eval_pdf(ctx, si, bs.wo)
                         assert dr.allclose(e_value, v_eval_pdf[0])
                         assert dr.allclose(p_pdf, v_eval_pdf[1])

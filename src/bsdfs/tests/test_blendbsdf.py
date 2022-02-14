@@ -1,60 +1,59 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.render import BSDFFlags
-    from mitsuba.core import load_string
-
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="diffuse"/>
-        <bsdf type="diffuse"/>
-        <spectrum name="weight" value="0.2"/>
-    </bsdf>""")
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': { 'type' : 'diffuse' },
+        'nested2': { 'type' : 'diffuse' },
+        'weight': 0.2,
+    })
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
-    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
+    assert bsdf.flags(0) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
+    assert bsdf.flags(1) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="roughconductor"/>
-        <bsdf type="diffuse"/>
-        <spectrum name="weight" value="0.2"/>
-    </bsdf>""")
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': { 'type' : 'roughconductor' },
+        'nested2': { 'type' : 'diffuse' },
+        'weight': 0.2,
+    })
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDFFlags.GlossyReflection | BSDFFlags.FrontSide
-    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
+    assert bsdf.flags(0) == mi.BSDFFlags.GlossyReflection | mi.BSDFFlags.FrontSide
+    assert bsdf.flags(1) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 
 def test02_eval_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f, load_string
-    from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-
     weight = 0.2
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="0.0"/>
-        </bsdf>
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="1.0"/>
-        </bsdf>
-        <spectrum name="weight" value="{}"/>
-    </bsdf>""".format(weight))
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 1.0}
+        },
+        'weight': weight,
+    })
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
     si.wi = [0, 0, 1]
 
     wo = [0, 0, 1]
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     # Evaluate the blend of both components
     expected = (1 - weight) * 0.0 * dr.InvPi + weight * 1.0 * dr.InvPi
@@ -63,30 +62,30 @@ def test02_eval_all(variant_scalar_rgb):
 
 
 def test03_eval_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f, load_string
-    from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-
     weight = 0.2
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="0.0"/>
-        </bsdf>
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="1.0"/>
-        </bsdf>
-        <spectrum name="weight" value="{}"/>
-    </bsdf>""".format(weight))
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 1.0}
+        },
+        'weight': weight,
+    })
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
     si.wi = [0, 0, 1]
 
     wo = [0, 0, 1]
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     # Evaluate the two components separately
 
@@ -102,29 +101,29 @@ def test03_eval_components(variant_scalar_rgb):
 
 
 def test04_sample_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f, load_string
-    from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-
     weight = 0.2
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="0.0"/>
-        </bsdf>
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="1.0"/>
-        </bsdf>
-        <spectrum name="weight" value="{}"/>
-    </bsdf>""".format(weight))
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 1.0}
+        },
+        'weight': weight,
+    })
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
     si.wi = [0, 0, 1]
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     # Sample using two different values of 'sample1' and make sure correct
     # components are chosen.
@@ -139,29 +138,29 @@ def test04_sample_all(variant_scalar_rgb):
 
 
 def test05_sample_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f, load_string
-    from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-
     weight = 0.2
 
-    bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="0.0"/>
-        </bsdf>
-        <bsdf type="diffuse">
-            <spectrum name="reflectance" value="1.0"/>
-        </bsdf>
-        <spectrum name="weight" value="{}"/>
-    </bsdf>""".format(weight))
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'rgb', 'value': 1.0}
+        },
+        'weight': weight,
+    })
 
-    si = SurfaceInteraction3f()
+    si = mi.SurfaceInteraction3f()
     si.t = 0.1
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
     si.wi = [0, 0, 1]
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     # Sample specific components separately using two different values of 'sample1'
     # and make sure the desired component is chosen always.
