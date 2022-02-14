@@ -1,13 +1,12 @@
 import platform
 import re
-import drjit as dr
+
 import pytest
-import mitsuba
+import drjit as dr
+import mitsuba as mi
 
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import filesystem as fs
-from mitsuba.core.filesystem import preferred_separator as sep
+from mitsuba.scalar_rgb import filesystem as fs
+from mitsuba.scalar_rgb.filesystem import preferred_separator as sep
 
 path_here_relative = fs.path("." + sep)
 path_here = fs.current_path()
@@ -19,14 +18,14 @@ empty_path = fs.path()
 empty_path.clear()
 
 
-def test00_empty_path():
+def test00_empty_path(variant_scalar_rgb):
     assert empty_path.empty()
     assert empty_path.is_relative()
     assert empty_path.parent_path() == fs.path("..")
     assert not path_here_relative.empty()
 
 
-def test01_path_status():
+def test01_path_status(variant_scalar_rgb):
     assert not fs.exists(fs.path("some random" + sep + "path"))
 
     assert fs.is_directory(path_here_relative)
@@ -37,12 +36,12 @@ def test01_path_status():
     assert not fs.is_regular_file(path_here)
 
 
-def test02_path_to_string():
+def test02_path_to_string(variant_scalar_rgb):
     assert path1.__str__() == \
         path_here.__str__() + sep + "dir 1" + sep + "dir 2"
 
 
-def test03_create_and_remove_directory():
+def test03_create_and_remove_directory(variant_scalar_rgb):
     new_dir = path_here / fs.path("my_shiny_new_directory")
     assert fs.create_directory(new_dir)
     assert fs.exists(new_dir)
@@ -56,7 +55,7 @@ def test03_create_and_remove_directory():
     assert not fs.exists(new_dir)
 
 
-def test04_navigation():
+def test04_navigation(variant_scalar_rgb):
     assert fs.path("dir 1" + sep + "dir 2") / path2 == \
         fs.path("dir 1" + sep + "dir 2" + sep + "dir 3")
     assert (path1 / path2).parent_path() == path1
@@ -67,12 +66,12 @@ def test04_navigation():
     assert path2.parent_path().empty()
 
 
-def test05_comparison():
+def test05_comparison(variant_scalar_rgb):
     assert fs.path("file1.ext") == fs.path("file1.ext")
     assert not (fs.path("file1.ext") == fs.path("another.ext"))
 
 
-def test06_filename():
+def test06_filename(variant_scalar_rgb):
     assert fs.path("weird 'file'.ext").filename() == "weird 'file'.ext"
     assert fs.path("dir" + sep + "file.ext").filename() == "file.ext"
     assert fs.path("dir" + sep).filename() == "dir"
@@ -85,7 +84,7 @@ def test06_filename():
     assert fs.path("foo" + sep + "..").filename() == ".."
 
 
-def test07_extension():
+def test07_extension(variant_scalar_rgb):
     assert fs.path("dir" + sep + "file.ext").extension() == ".ext"
     assert fs.path("dir" + sep).extension() == ""
     assert (path_here / fs.path(".hidden")).extension() == ".hidden"
@@ -109,12 +108,12 @@ def test07_extension():
         fs.path(sep + "foo" + sep + "bar.jpg")
 
 
-def test08_make_absolute():
+def test08_make_absolute(variant_scalar_rgb):
     assert fs.absolute(path_here_relative) == path_here
 
 
 # Assumes either Windows or a POSIX system
-def test09_system_specific_tests():
+def test09_system_specific_tests(variant_scalar_rgb):
     if platform_system == 'Windows':
         drive_letter_regexp = re.compile('^[A-Z]:')
         assert drive_letter_regexp.match(str(path_here))
@@ -132,7 +131,7 @@ def test09_system_specific_tests():
         assert fs.path('./hello').is_relative()
 
 
-def test10_equivalence():
+def test10_equivalence(variant_scalar_rgb):
     p1 = fs.path('../my_directory')
     assert fs.create_directory(p1)
 
@@ -143,11 +142,11 @@ def test10_equivalence():
     assert fs.remove(p1)
 
 
-def test11_implicit_string_cast():
+def test11_implicit_string_cast(variant_scalar_rgb):
     assert not fs.exists("some random" + sep + "path")
 
 
-def test12_truncate_and_file_size():
+def test12_truncate_and_file_size(variant_scalar_rgb):
     p = path_here / 'test_file_for_resize.txt'
     open(str(p), 'a').close()
     assert fs.resize_file(p, 42)

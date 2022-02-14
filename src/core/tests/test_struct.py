@@ -4,13 +4,8 @@ import pytest
 import itertools
 import sys
 
-import mitsuba
 import pytest
-import drjit as dr
-
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import Struct, StructConverter
+from mitsuba.scalar_rgb import Struct, StructConverter
 
 
 # List of supported conversions
@@ -59,8 +54,7 @@ def check_conversion(conv, src_fmt, dst_fmt, data_in,
         assert np.abs(abs_err / (ref[i] + 1e-6)) < err_thresh
 
 
-def test01_basics(variant_scalar_rgb):
-    from mitsuba.core import Struct, StructConverter
+def test01_basics():
     s = Struct()
     assert s.field_count() == 0
     assert s.alignment() == 1
@@ -99,8 +93,7 @@ def test01_basics(variant_scalar_rgb):
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test02_passthrough(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test02_passthrough(param):
     s = Struct().append('val', param[1])
     ss = StructConverter(s, s)
     values = list(range(10))
@@ -112,8 +105,7 @@ def test02_passthrough(variant_scalar_rgb, param):
 
 
 @pytest.mark.parametrize('param', itertools.product(supported_types, repeat=2))
-def test03_convert(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test03_convert(param):
     p1, p2 = param
     s1 = Struct().append('val', p1[1])
     s2 = Struct().append('val', p2[1])
@@ -145,8 +137,7 @@ def test03_convert(variant_scalar_rgb, param):
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test03_missing_field(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test03_missing_field(param):
     s1 = Struct().append('val1', param[1]) \
                  .append('val3', param[1])
     s2 = Struct().append('val1', param[1]) \
@@ -194,8 +185,7 @@ def test06_round_and_saturation_normalized():
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test07_roundtrip_normalization(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test07_roundtrip_normalization(param):
     s1 = Struct().append('val', param[1], Struct.Flags.Normalized)
     s2 = Struct().append('val', Struct.Type.Float32)
     s = StructConverter(s1, s2)
@@ -213,8 +203,7 @@ def test07_roundtrip_normalization(variant_scalar_rgb, param):
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test08_roundtrip_normalization_int2int(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test08_roundtrip_normalization_int2int(param):
     if Struct.is_float(param[1]):
         return
     s1_type = Struct.Type.Int8 if Struct.is_signed(param[1]) else Struct.Type.UInt8
@@ -265,8 +254,7 @@ def test10_gamma_2():
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test11_assert_value(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test11_assert_value(param):
     s = StructConverter(
         Struct().append('v', param[1], default=10,
                         flags=Struct.Flags.Assert),
@@ -351,8 +339,7 @@ def test13_blend_gamma():
 
 
 @pytest.mark.parametrize('param', supported_types)
-def test14_weight(variant_scalar_rgb, param):
-    from mitsuba.core import Struct, StructConverter
+def test14_weight(param):
     src = Struct() \
         .append('value1', param[1], Struct.Flags.Normalized) \
         .append('value2', param[1], Struct.Flags.Normalized) \
@@ -373,7 +360,7 @@ def test14_weight(variant_scalar_rgb, param):
 
 
 def test15_test_dither():
-    from mitsuba.core import Bitmap
+    from mitsuba.scalar_rgb import Bitmap
     import numpy.linalg as la
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.Float32, [10, 256])

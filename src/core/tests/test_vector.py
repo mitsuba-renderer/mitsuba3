@@ -1,12 +1,10 @@
+import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import pytest
-import mitsuba
+import mitsuba as mi
 
 
 def test01_coordinate_system(variant_scalar_rgb):
-    from mitsuba.core import coordinate_system, warp
-
     def branchless_onb(n):
         """
         Building an Orthonormal Basis, Revisited
@@ -26,23 +24,22 @@ def test01_coordinate_system(variant_scalar_rgb):
     assert dr.allclose(
         branchless_onb([dr.sqrt(0.5), 0, dr.sqrt(0.5)]), (a, b), atol=1e-6)
     assert dr.allclose(
-        coordinate_system([dr.sqrt(0.5), 0, dr.sqrt(0.5)]), (a, b), atol=1e-6)
+        mi.coordinate_system([dr.sqrt(0.5), 0, dr.sqrt(0.5)]), (a, b), atol=1e-6)
 
     for u in dr.linspace(Float, 0, 1, 10):
         for v in dr.linspace(Float, 0, 1, 10):
-            n = warp.square_to_uniform_sphere([u, v])
+            n = mi.warp.square_to_uniform_sphere([u, v])
             s1, t1 = branchless_onb(n)
-            s2, t2 = coordinate_system(n)
+            s2, t2 = mi.coordinate_system(n)
             assert dr.allclose(s1, s2, atol=1e-6)
             assert dr.allclose(t1, t2, atol=1e-6)
 
 
 def test02_coordinate_system_vec(variant_scalar_rgb):
-    from mitsuba.python.test.util import check_vectorization
 
     def kernel(u : float, v : float):
-        from mitsuba.core import coordinate_system, warp
-        n = warp.square_to_uniform_sphere([u, v])
-        return coordinate_system(n)
+        n = mi.warp.square_to_uniform_sphere([u, v])
+        return mi.coordinate_system(n)
 
+    from mitsuba.test.util import check_vectorization
     check_vectorization(kernel)

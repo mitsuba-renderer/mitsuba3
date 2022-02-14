@@ -1,6 +1,6 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 import numpy as np
 
 
@@ -19,7 +19,7 @@ def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
     # Normalized discrete PDF corresponding to the two patches
     intg = np.array([19, 16]) / 35
 
-    warp = getattr(mitsuba.core, warp)
+    warp = getattr(mi, warp)
     distr = warp(ref, normalize=normalize)
 
     s = 35 / 8.0 if not normalize else 1
@@ -31,17 +31,15 @@ def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
     assert allclose(distr.invert([1, 1]), [[1, 1], s * 16.0 / 35.0])
     assert allclose(distr.invert([0.5, 0]), [[intg[0], 0], s * 16.0 / 35.0])
 
-    from mitsuba.core.warp import bilinear_to_square
-
     # Check if we can sample a specific position in each patch
-    sample, pdf = bilinear_to_square(1, 2, 9, 7, [0.4, 0.3])
+    sample, pdf = mi.warp.bilinear_to_square(1, 2, 9, 7, [0.4, 0.3])
     sample.x *= intg[0]
     pdf *= 8.0 / 35.0 * s
     assert allclose(distr.sample(sample), [[0.2, 0.3], pdf])
     assert allclose(distr.invert([0.2, 0.3]), [sample, pdf])
     assert allclose(distr.eval([0.2, 0.3]), pdf)
 
-    sample, pdf = bilinear_to_square(2, 5, 7, 2, [0.4, 0.3])
+    sample, pdf = mi.warp.bilinear_to_square(2, 5, 7, 2, [0.4, 0.3])
     sample.x = sample.x * intg[1] + intg[0]
     pdf *= 8.0 / 35.0 * s
     assert allclose(distr.sample(sample), [[0.7, 0.3], pdf])
@@ -53,14 +51,12 @@ def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
 def test02_sample_inverse_continuous(variants_all_backends_once, normalize):
     # Spot checks of MarginalContinuous2D0 vs Mathematica
 
-    from mitsuba.core import MarginalContinuous2D0
-
     # Nonuniform case
     ref = np.array([[1, 2, 5],
                     [9, 7, 2],
                     [1, 0, 5]])
 
-    distr = MarginalContinuous2D0(ref, normalize=normalize)
+    distr = mi.MarginalContinuous2D0(ref, normalize=normalize)
     s = 1 if normalize else 4.125
     assert dr.allclose(distr.eval([0, 0]), s / 4.125)
     ref = [[.162433, .330829], s * 1.44807]
@@ -75,7 +71,7 @@ def test02_sample_inverse_continuous(variants_all_backends_once, normalize):
                     [1, 1, 1],
                     [1, 1, 1]])
 
-    distr = MarginalContinuous2D0(ref)
+    distr = mi.MarginalContinuous2D0(ref)
     assert dr.allclose(distr.eval([0, 0]), 1.0)
     assert dr.allclose(distr.sample([0.2, 0.3]),
                        [[.2, .3], 1.0])
@@ -95,11 +91,10 @@ all_warps = [w + str(i) for w in
 @pytest.mark.parametrize("normalize", [True, False])
 @pytest.mark.parametrize("warp", all_warps)
 def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
-    from mitsuba.core import Vector2f
     # Check that forward + inverse give the identity. Test for
     # all supported variants of N-dimensional warps (N = 0..3)
 
-    cls = getattr(mitsuba.core, warp)
+    cls = getattr(mi, warp)
     ndim = int(warp[-1]) + 2
     rng = np.random.default_rng(seed=all_warps.index(warp))
 
@@ -114,7 +109,7 @@ def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
         instance = cls(values, param_res, normalize=normalize)
 
         for j in range(10):
-            p_i = Vector2f(rng.random(2))
+            p_i = mi.Vector2f(rng.random(2))
             p_o, pdf = instance.sample(p_i)
             assert dr.allclose(pdf, instance.eval(p_o), atol=1e-4)
             p_i_2, pdf2 = instance.invert(p_o)
@@ -129,10 +124,7 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
     # the right distribution. Test for all supported variants of
     # N-dimensional warps (N = 0..3)
 
-    from mitsuba.core import ScalarBoundingBox2f
-    from mitsuba.python.chi2 import ChiSquareTest, PlanarDomain
-
-    cls = getattr(mitsuba.core, warp)
+    cls = getattr(mi, warp)
     ndim = int(warp[-1]) + 2
     rng = np.random.default_rng(seed=all_warps.index(warp) * 10 + attempt)
 
@@ -157,8 +149,8 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
             ) for i in range(0, ndim - 2)
         ]
 
-        chi2 = ChiSquareTest(
-            domain=PlanarDomain(ScalarBoundingBox2f(0, 1)),
+        chi2 = mi.chi2.ChiSquareTest(
+            domain=mi.chi2.PlanarDomain(mi.ScalarBoundingBox2f(0, 1)),
             sample_func=lambda p: instance.sample(p, param=param)[0],
             pdf_func=lambda p: instance.eval(p, param=param),
             sample_dim=2,
@@ -172,11 +164,9 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
 
 
 def test05_discrete_distribution_2d(variants_all_backends_once):
-    from mitsuba.core import DiscreteDistribution2D
     import numpy as np
 
-    d = DiscreteDistribution2D(np.array([[1, 2, 3], [0, 1, 3]],
-                                        dtype=np.float32))
+    d = mi.DiscreteDistribution2D(np.array([[1, 2, 3], [0, 1, 3]], dtype=np.float32))
 
     def allclose(a, b):
         return dr.allclose(a, b, atol=1e-6)

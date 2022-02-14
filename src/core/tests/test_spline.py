@@ -1,11 +1,11 @@
+import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import pytest
-import mitsuba
+import mitsuba as mi
 
 
 def test_eval_spline(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     assert dr.allclose(spline.eval_spline(0, 0, 0, 0, 0), 0)
     assert dr.allclose(spline.eval_spline(0, 0, 0, 0, 0.5), 0)
@@ -16,7 +16,7 @@ def test_eval_spline(variant_scalar_rgb):
 
 
 def test_eval_spline_d(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     assert dr.allclose(spline.eval_spline_d(0, 0, 0, 0, 0),   (0.0, 0.0))
     assert dr.allclose(spline.eval_spline_d(0, 0, 0, 0, 0.5), (0.0, 0.0))
@@ -28,7 +28,7 @@ def test_eval_spline_d(variant_scalar_rgb):
 
 
 def test_eval_spline_i(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     assert dr.allclose(spline.eval_spline_i(0, 0, 0, 0, 0),   (0.0, 0.0))
     assert dr.allclose(spline.eval_spline_i(0, 0, 0, 0, 0.5), (0.0, 0.0))
@@ -43,7 +43,7 @@ values3 = Float([1.0, 2.0,  3.0, 2.0,  1.0])
 
 
 def test_eval_1d_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     assert dr.allclose(spline.eval_1d(0, 1, values1, 0), 0)
     assert dr.allclose(spline.eval_1d(0, 1, values1, 0.5), 0.5)
@@ -59,7 +59,7 @@ nodes2 = Float([0.0, 0.5,  1.0, 1.5,  2])
 
 
 def test_eval_1d_non_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     assert dr.allclose(spline.eval_1d(nodes1, values2, 0), 0)
     assert dr.allclose(spline.eval_1d(nodes1, values2, 0.5), 0.5)
@@ -71,7 +71,7 @@ def test_eval_1d_non_uniform(variant_scalar_rgb):
 
 
 def test_integrate_1d_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     values = Float([0.0, 0.5, 1])
     res = Float([0.0, 0.125, 0.5])
@@ -82,7 +82,7 @@ def test_integrate_1d_uniform(variant_scalar_rgb):
 
 
 def test_integrate_1d_non_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     values = Float([0.0, 0.5, 1])
     nodes = Float([0.0, 0.5, 1])
@@ -91,7 +91,7 @@ def test_integrate_1d_non_uniform(variant_scalar_rgb):
 
 
 def test_invert_1d(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     values = Float([0.0, 0.25, 0.5, 0.75, 1.0])
     assert dr.allclose(spline.invert_1d(0, 1, values, spline.eval_1d(0, 1, values, 0.6)), 0.6)
@@ -102,7 +102,7 @@ def test_invert_1d(variant_scalar_rgb):
 
 
 def test_sample_1d_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     values = Float([0.0, 0.25, 0.5, 0.75, 1.0])
 
@@ -118,7 +118,7 @@ def test_sample_1d_uniform(variant_scalar_rgb):
 
 
 def test_sample_1d_non_uniform(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     nodes = Float([0.0, 0.25, 0.5, 0.75, 1.0])
     values = Float([0.0, 0.25, 0.5, 0.75, 1.0])
@@ -135,7 +135,7 @@ def test_sample_1d_non_uniform(variant_scalar_rgb):
 
 
 def test_eval_2d(variant_scalar_rgb):
-    from mitsuba.core import spline
+    from mitsuba import spline
 
     nodes_x = Float([0.0, 0.25, 0.5, 0.75, 1.0])
     nodes_y = Float([0.0, 0.25, 0.5, 0.75, 1.0])

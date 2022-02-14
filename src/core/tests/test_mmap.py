@@ -1,13 +1,12 @@
 import numpy as np
 import os
-import mitsuba
+import mitsuba as mi
 
 def test01_open_read_only(variant_scalar_rgb, tmpdir):
-    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
     with open(tmp_file, "w") as f:
         f.write('hello!')
-    mmap = MemoryMappedFile(tmp_file)
+    mmap = mi.MemoryMappedFile(tmp_file)
     assert mmap.size() == 6
     assert not mmap.can_write()
     array_view = np.array(mmap, copy=False)
@@ -18,11 +17,10 @@ def test01_open_read_only(variant_scalar_rgb, tmpdir):
 
 
 def test02_open_read_write(variant_scalar_rgb, tmpdir):
-    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
     with open(tmp_file, "w") as f:
         f.write('hello!')
-    mmap = MemoryMappedFile(tmp_file, write=True)
+    mmap = mi.MemoryMappedFile(tmp_file, write=True)
     assert mmap.size() == 6
     assert mmap.can_write()
     array_view = np.array(mmap, copy=False)
@@ -35,16 +33,15 @@ def test02_open_read_write(variant_scalar_rgb, tmpdir):
 
 
 def test03_create_resize(variant_scalar_rgb, tmpdir):
-    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
-    mmap = MemoryMappedFile(tmp_file, 8192)
+    mmap = mi.MemoryMappedFile(tmp_file, 8192)
     assert mmap.size() == 8192
     assert mmap.can_write()
     array_view = np.array(mmap, copy=False).view(np.uint32)
     array_view[:] = np.arange(2048, dtype=np.uint32)
     del array_view
     del mmap
-    mmap = MemoryMappedFile(tmp_file, write=True)
+    mmap = mi.MemoryMappedFile(tmp_file, write=True)
     array_view = np.array(mmap, copy=False).view(np.uint32)
     assert np.all(array_view == np.arange(2048, dtype=np.uint32))
     del array_view
@@ -60,8 +57,7 @@ def test03_create_resize(variant_scalar_rgb, tmpdir):
 
 
 def test04_create_temp(variant_scalar_rgb):
-    from mitsuba.core import MemoryMappedFile
-    mmap = MemoryMappedFile.create_temporary(123)
+    mmap = mi.MemoryMappedFile.create_temporary(123)
     fname = str(mmap.filename())
     assert os.path.exists(fname)
     assert mmap.size() == 123

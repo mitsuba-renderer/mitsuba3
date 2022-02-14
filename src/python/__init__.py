@@ -44,7 +44,7 @@ except (ImportError, ModuleNotFoundError) as e:
     raise exc
 
 # Known submodules that will be directly accessible from the mitsuba package
-submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util']
+submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
 
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')

@@ -1,13 +1,11 @@
 from threading import Thread
 
 import pytest
-import mitsuba
+import mitsuba as mi
 
 
 def test01_add(variant_scalar_rgb):
-    from mitsuba.core import AtomicFloat
-
-    f = AtomicFloat(5)
+    f = mi.AtomicFloat(5)
     threads = []
 
     def increment(f):
