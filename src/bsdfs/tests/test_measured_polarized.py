@@ -1,44 +1,44 @@
 import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 import numpy as np
 
-from mitsuba.python.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_evaluation(variant_scalar_spectral_polarized):
-    from mitsuba.core import Vector3f, Frame3f, load_dict
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
-
     # Here we load a small example pBSDF file and evaluate the BSDF for a fixed
     # incident and outgoing position. Any future changes to polarization frames
     # or table interpolation should keep the values below unchanged.
     #
     # For convenience, we use a file where the usual resolution of parameters
-    # (phi_d x theta_d x theta_h x wavlengths x Mueller mat. ) was significantly
+    # (phi_d x theta_d x theta_h x wavelengths x Mueller mat. ) was significantly
     # downsampled from (361 x 91 x 91 x 5 x 4 x 4) to (22 x 9 x 9 x 5 x 4 x 4).
 
-    bsdf = load_dict({'type': 'measured_polarized',
-                      'filename': 'resources/data/tests/pbsdf/spectralon_lowres.pbsdf'})
+    bsdf = mi.load_dict({
+        'type': 'measured_polarized',
+        'filename': 'resources/data/tests/pbsdf/spectralon_lowres.pbsdf'
+    })
 
-    phi_i   = 30 * dr.Pi/180
-    theta_i = 10 * dr.Pi/180
-    wi = Vector3f([dr.sin(theta_i)*dr.cos(phi_i),
-                   dr.sin(theta_i)*dr.sin(phi_i),
-                   dr.cos(theta_i)])
+    phi_i   = 30 * dr.Pi / 180.0
+    theta_i = 10 * dr.Pi / 180.0
+    wi = mi.Vector3f([dr.sin(theta_i) * dr.cos(phi_i),
+                      dr.sin(theta_i) * dr.sin(phi_i),
+                      dr.cos(theta_i)])
 
-    ctx = BSDFContext()
-    si = SurfaceInteraction3f()
+    ctx = mi.BSDFContext()
+    si = mi.SurfaceInteraction3f()
     si.p = [0, 0, 0]
     si.wi = wi
-    si.sh_frame = Frame3f([0, 0, 1])
+    si.sh_frame = mi.Frame3f([0, 0, 1])
     si.wavelengths = [500, 500, 500, 500]
 
-    phi_o   = 200 * dr.Pi/180
-    theta_o =  3 * dr.Pi/180
-    wi = Vector3f([dr.sin(theta_o)*dr.cos(phi_o),
-                   dr.sin(theta_o)*dr.sin(phi_o),
-                   dr.cos(theta_o)])
+    phi_o   = 200 * dr.Pi / 180.0
+    theta_o = 3 * dr.Pi / 180.0
+    wi = mi.Vector3f([dr.sin(theta_o) * dr.cos(phi_o),
+                      dr.sin(theta_o) * dr.sin(phi_o),
+                      dr.cos(theta_o)])
 
     value = bsdf.eval(ctx, si, wi)
     value = np.array(value)[0,:,:]  # Extract Mueller matrix for one wavelength

@@ -1,18 +1,17 @@
 import pytest
-import mitsuba
 import drjit as dr
+import mitsuba as mi
 
-from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 @pytest.mark.slow
 def test01_chi2_smooth(variants_vec_backends_once_rgb):
     xml = """<float name="alpha" value="0.05"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""
-    sample_func, pdf_func = BSDFAdapter("roughplastic", xml)
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughplastic", xml)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -28,10 +27,10 @@ def test02_chi2_rough(variants_vec_backends_once_rgb):
     xml = """<float name="alpha" value="0.25"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""
-    sample_func, pdf_func = BSDFAdapter("roughplastic", xml)
+    sample_func, pdf_func = mi.chi2.BSDFAdapter("roughplastic", xml)
 
-    chi2 = ChiSquareTest(
-        domain=SphericalDomain(),
+    chi2 = mi.chi2.ChiSquareTest(
+        domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
@@ -41,18 +40,15 @@ def test02_chi2_rough(variants_vec_backends_once_rgb):
 
 
 def test03_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import load_string, Frame3f
-    from mitsuba.render import BSDFContext, SurfaceInteraction3f
+    bsdf = mi.load_dict({'type': 'roughplastic'})
 
-    bsdf = load_string("<bsdf version='2.0.0' type='roughplastic'></bsdf>")
-
-    si    = SurfaceInteraction3f()
+    si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
-    ctx = BSDFContext()
+    ctx = mi.BSDFContext()
 
     for i in range(20):
         theta = i / 19.0 * (dr.Pi / 2)

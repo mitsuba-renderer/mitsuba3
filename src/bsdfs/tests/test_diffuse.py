@@ -3,7 +3,7 @@ import drjit as dr
 import mitsuba as mi
 
 def test01_create(variant_scalar_rgb):
-    b = mi.load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
+    b = mi.load_dict({'type': 'diffuse'})
     assert b is not None
     assert b.component_count() == 1
     assert b.flags(0) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
@@ -11,7 +11,7 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_eval_pdf(variant_scalar_rgb):
-    bsdf = mi.load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
+    bsdf = mi.load_dict({'type': 'diffuse'})
 
     si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]

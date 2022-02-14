@@ -1,25 +1,20 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
 
 
 def test01_create(variant_scalar_mono_polarized):
-    from mitsuba.render import BSDFFlags
-    from mitsuba.core import load_string
-
-    b = load_string("<bsdf version='2.0.0' type='retarder'></bsdf>")
+    b = mi.load_dict({'type': 'retarder'})
     assert b is not None
     assert b.component_count() == 1
-    assert b.flags(0) == BSDFFlags.Null | BSDFFlags.FrontSide | BSDFFlags.BackSide
+    assert b.flags(0) == mi.BSDFFlags.Null | mi.BSDFFlags.FrontSide | mi.BSDFFlags.BackSide
     assert b.flags() == b.flags(0)
 
 
 def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Frame3f, Spectrum
-    from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -47,22 +42,23 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
     circular_right = spectrum_from_stokes([1, 0, 0, +1])
     circular_left  = spectrum_from_stokes([1, 0, 0, -1])
 
-    bsdf = load_string("""<bsdf version='2.0.0' type='retarder'>
-                          <spectrum name="theta" value="0"/>
-                          <spectrum name="delta" value="90.0"/>
-                      </bsdf>""")
+    bsdf = mi.load_dict({
+        'type': 'retarder',
+        'theta': 0.0,
+        'delta': 90.0,
+    })
 
     # Incident direction
     wi = [0, 0, 1]
 
-    ctx = BSDFContext()
-    ctx.mode = TransportMode.Importance
-    si = SurfaceInteraction3f()
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+    si = mi.SurfaceInteraction3f()
     si.p = [0, 0, 0]
     si.wi = wi
     n = [0, 0, 1]
     si.n = n
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
     bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
@@ -77,11 +73,9 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
 
 
 def test03_sample_half_wave_local(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Frame3f, Spectrum
-    from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -100,22 +94,23 @@ def test03_sample_half_wave_local(variant_scalar_mono_polarized):
     circular_right = spectrum_from_stokes([1, 0, 0, +1])
     circular_left  = spectrum_from_stokes([1, 0, 0, -1])
 
-    bsdf = load_string("""<bsdf version='2.0.0' type='retarder'>
-                          <spectrum name="theta" value="0"/>
-                          <spectrum name="delta" value="180.0"/>
-                      </bsdf>""")
+    bsdf = mi.load_dict({
+        'type': 'retarder',
+        'theta': 0.0,
+        'delta': 180.0,
+    })
 
     # Incident direction
     wi = [0, 0, 1]
 
-    ctx = BSDFContext()
-    ctx.mode = TransportMode.Importance
-    si = SurfaceInteraction3f()
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+    si = mi.SurfaceInteraction3f()
     si.p = [0, 0, 0]
     si.wi = wi
     n = [0, 0, 1]
     si.n = n
-    si.sh_frame = Frame3f(si.n)
+    si.sh_frame = mi.Frame3f(si.n)
 
     bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
@@ -131,12 +126,9 @@ def test03_sample_half_wave_local(variant_scalar_mono_polarized):
 
 
 def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Ray3f, Spectrum, Color0f
-    from mitsuba.render import BSDFContext, TransportMode
-    from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -167,9 +159,9 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
     # Incident direction
     forward = [0, -1, 0]
 
-    ctx = BSDFContext()
-    ctx.mode = TransportMode.Importance
-    ray = Ray3f([0, 100, 0], forward, 0.0, Color0f())
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+    ray = mi.Ray3f([0, 100, 0], forward, 0.0, mi.Color0f())
 
     # Build scene with given polarizer rotation angle
     scene_str = """<scene version='2.0.0'>
@@ -183,7 +175,7 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
                            </transform>
                        </shape>
                    </scene>"""
-    scene = load_string(scene_str)
+    scene = mi.load_string(scene_str)
 
     # Intersect ray against geometry
     si = scene.ray_intersect(ray)
@@ -192,9 +184,9 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
     M_world = si.to_world_mueller(M_local, -si.wi, bs.wo)
 
     # Make sure we are measuring w.r.t. to the optical table
-    M = rotate_mueller_basis_collinear(M_world,
+    M = mi.mueller.rotate_mueller_basis_collinear(M_world,
                                        forward,
-                                       stokes_basis(forward), [-1, 0, 0])
+                                       mi.mueller.stokes_basis(forward), [-1, 0, 0])
 
     # Case 1)
     assert dr.allclose(M @ linear_pos, circular_left, atol=1e-3)
@@ -207,12 +199,9 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
 
 
 def test05_sample_half_wave_world(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Ray3f, Spectrum, Color0f
-    from mitsuba.render import BSDFContext, TransportMode
-    from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -234,9 +223,9 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
     # Incident direction
     forward = [0, -1, 0]
 
-    ctx = BSDFContext()
-    ctx.mode = TransportMode.Importance
-    ray = Ray3f([0, 100, 0], forward, 0.0, Color0f())
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+    ray = mi.Ray3f([0, 100, 0], forward, 0.0, mi.Color0f())
 
     # Build scene with given polarizer rotation angle
     scene_str = """<scene version='2.0.0'>
@@ -250,7 +239,7 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
                            </transform>
                        </shape>
                    </scene>"""
-    scene = load_string(scene_str)
+    scene = mi.load_string(scene_str)
 
     # Intersect ray against geometry
     si = scene.ray_intersect(ray)
@@ -259,9 +248,9 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
     M_world = si.to_world_mueller(M_local, -si.wi, bs.wo)
 
     # Make sure we are measuring w.r.t. to the optical table
-    M = rotate_mueller_basis_collinear(M_world,
+    M = mi.mueller.rotate_mueller_basis_collinear(M_world,
                                        forward,
-                                       stokes_basis(forward), [-1, 0, 0])
+                                       mi.mueller.stokes_basis(forward), [-1, 0, 0])
 
     # Case 1)
     assert dr.allclose(M @ linear_pos, linear_neg, atol=1e-3)
@@ -274,11 +263,9 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
 
 
 def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Spectrum
-    from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -366,10 +353,11 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
                            </shape>
                        </scene>""".format(angle)
 
-        scene = load_string(scene_str)
+        scene = mi.load_string(scene_str)
         integrator = scene.integrator()
         sensor     = scene.sensors()[0]
         sampler    = sensor.sampler()
+        sampler.seed(0)
 
         # Sample ray from sensor
         ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
@@ -382,10 +370,10 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
-        basis_cur = stokes_basis(forward)
+        basis_cur = mi.mueller.stokes_basis(forward)
         basis_tar = [-1, 0, 0]
 
-        R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
+        R = mi.mueller.rotate_stokes_basis_m(forward, basis_cur, basis_tar)
         value = R @ value
 
         observed.append(value)
@@ -396,11 +384,9 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
 
 
 def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
-    from mitsuba.core import load_string, Spectrum
-    from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
-        res = Spectrum(0.0)
+        res = mi.Spectrum(0.0)
         for i in range(4):
             res[i,0] = v[i]
         return res
@@ -483,10 +469,11 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
                            </shape>
                        </scene>""".format(angle)
 
-        scene = load_string(scene_str)
+        scene = mi.load_string(scene_str)
         integrator = scene.integrator()
         sensor     = scene.sensors()[0]
         sampler    = sensor.sampler()
+        sampler.seed(0)
 
         # Sample ray from sensor
         ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
@@ -499,10 +486,10 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
-        basis_cur = stokes_basis(forward)
+        basis_cur = mi.mueller.stokes_basis(forward)
         basis_tar = [-1, 0, 0]
 
-        R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
+        R = mi.mueller.rotate_stokes_basis_m(forward, basis_cur, basis_tar)
         value = R @ value
 
         observed.append(value)
