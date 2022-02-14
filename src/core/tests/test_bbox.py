@@ -1,10 +1,10 @@
-import drjit as dr
 import pytest
-import mitsuba
+import drjit as dr
+import mitsuba as mi
 
 
 def test01_basics(variant_scalar_rgb):
-    from mitsuba.core import BoundingBox3f as BBox
+    from mitsuba import BoundingBox3f as BBox
 
     bbox1 = BBox()
     bbox2 = BBox([0, 1, 2])
@@ -58,7 +58,7 @@ def test01_basics(variant_scalar_rgb):
 
 
 def test02_contains_variants(variant_scalar_rgb):
-    from mitsuba.core import BoundingBox3f as BBox
+    from mitsuba import BoundingBox3f as BBox
 
     bbox = BBox([1, 2, 3], [2, 3, 5])
     assert bbox.contains([1.5, 2.5, 3.5])
@@ -80,7 +80,7 @@ def test02_contains_variants(variant_scalar_rgb):
 
 
 def test03_distance(variant_scalar_rgb):
-    from mitsuba.core import BoundingBox3f as BBox
+    from mitsuba import BoundingBox3f as BBox
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([4, 2, 3], [5, 3, 5])) == 2
@@ -97,47 +97,37 @@ def test03_distance(variant_scalar_rgb):
 
 
 def test04_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import BoundingBox3f as BBox, Vector3f
-    from mitsuba.core import Ray3f
+    bbox = mi.BoundingBox3f([-1, -1, -1], [1, 1, 1])
 
-    bbox = BBox([-1, -1, -1], [1, 1, 1])
-
-    hit, mint, maxt = bbox.ray_intersect(Ray3f([-5, 0, 0], [1, 0, 0]))
+    hit, mint, maxt = bbox.ray_intersect(mi.Ray3f([-5, 0, 0], [1, 0, 0]))
     assert hit and dr.allclose(mint, 4.0) and dr.allclose(maxt, 6.0)
 
-    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, -2, -2], dr.normalize(Vector3f(1))))
+    hit, mint, maxt = bbox.ray_intersect(mi.Ray3f([-2, -2, -2], dr.normalize(mi.Vector3f(1))))
     assert hit and dr.allclose(mint, dr.sqrt(3)) and dr.allclose(maxt, 3 * dr.sqrt(3))
 
-    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, 0, 0], [0, 1, 0]))
+    hit, mint, maxt = bbox.ray_intersect(mi.Ray3f([-2, 0, 0], [0, 1, 0]))
     assert not hit
 
 
 def test05_surface_area_vec(variant_scalar_rgb):
-    from mitsuba.python.test.util import check_vectorization
-
     def kernel(min, max, p):
-        from mitsuba.core import BoundingBox3f as BBox
-
-        bbox = BBox(-min, max)
+        bbox = mi.BoundingBox3f(-min, max)
         bbox.expand(p)
         return bbox.surface_area()
 
+    from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])
 
 
 def test06_ray_intersect_vec(variant_scalar_rgb):
-    from mitsuba.python.test.util import check_vectorization
-
     def kernel(o, min, max):
-        from mitsuba.core import BoundingBox3f as BBox
-        from mitsuba.core import Ray3f
-
-        bbox = BBox(-min, max)
-        hit, mint, maxt = bbox.ray_intersect(Ray3f(o, dr.normalize(-o)))
+        bbox = mi.BoundingBox3f(-min, max)
+        hit, mint, maxt = bbox.ray_intersect(mi.Ray3f(o, dr.normalize(-o)))
 
         mint = dr.select(hit, mint, -1.0)
         maxt = dr.select(hit, maxt, -1.0)
 
         return mint, maxt
 
+    from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])

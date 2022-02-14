@@ -1,11 +1,11 @@
+import pytest
+import mitsuba as mi
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import pytest
-import mitsuba
 
 
 def test01_gauss_lobatto(variant_scalar_rgb):
-    from mitsuba.core.quad import gauss_lobatto
+    from mitsuba.quad import gauss_lobatto
 
     assert dr.allclose(gauss_lobatto(2), [[-1, 1], [1.0, 1.0]])
     assert dr.allclose(gauss_lobatto(3), [[-1, 0, 1], [1.0/3.0, 4.0/3.0, 1.0/3.0]])
@@ -14,7 +14,7 @@ def test01_gauss_lobatto(variant_scalar_rgb):
 
 
 def test02_gauss_legendre(variant_scalar_rgb):
-    from mitsuba.core.quad import gauss_legendre
+    from mitsuba.quad import gauss_legendre
 
     assert dr.allclose(gauss_legendre(1), [[0], [2]])
     assert dr.allclose(gauss_legendre(2), [[-dr.sqrt(1.0/3.0), dr.sqrt(1.0/3.0)], [1, 1]])
@@ -23,14 +23,14 @@ def test02_gauss_legendre(variant_scalar_rgb):
 
 
 def test03_composite_simpson(variant_scalar_rgb):
-    from mitsuba.core.quad import composite_simpson
+    from mitsuba.quad import composite_simpson
 
     assert dr.allclose(composite_simpson(3), [dr.linspace(Float, -1, 1, 3), [1.0/3.0, 4.0/3.0, 1.0/3.0]])
     assert dr.allclose(composite_simpson(5), [dr.linspace(Float, -1, 1, 5), [.5/3.0, 2/3.0, 1/3.0, 2/3.0, .5/3.0]])
 
 
 def test04_composite_simpson_38(variant_scalar_rgb):
-    from mitsuba.core.quad import composite_simpson_38
+    from mitsuba.quad import composite_simpson_38
 
     assert dr.allclose(composite_simpson_38(4), [dr.linspace(Float, -1, 1, 4), [0.25, 0.75, 0.75, 0.25]])
     assert dr.allclose(composite_simpson_38(7), [dr.linspace(Float, -1, 1, 7), [0.125, 0.375, 0.375, 0.25 , 0.375, 0.375, 0.125]], atol=1e-6)

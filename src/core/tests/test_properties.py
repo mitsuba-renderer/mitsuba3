@@ -1,11 +1,10 @@
-import drjit as dr
 import pytest
-import mitsuba
+import drjit as dr
+import mitsuba as mi
 
 
 def fill_properties(p):
     """Sets up some properties with various types"""
-    from mitsuba.core import ScalarColor3f
     from drjit.scalar import Array3f
 
     p['prop_1'] = 1
@@ -13,27 +12,24 @@ def fill_properties(p):
     p['prop_3'] = False
     p['prop_4'] = 1.25
     p['prop_5'] = Array3f(1, 2, 3)
-    p['prop_6'] = ScalarColor3f(1, 2, 3)
+    p['prop_6'] = mi.ScalarColor3f(1, 2, 3)
 
 
 def test01_name_and_id(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     p.set_id("magic")
     p.set_plugin_name("unicorn")
     assert p.id() == "magic"
     assert p.plugin_name() == "unicorn"
 
-    p2 = Prop(p.plugin_name())
+    p2 = mi.Properties(p.plugin_name())
     assert p.plugin_name() == p2.plugin_name()
 
 
 def test02_type_is_preserved(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop, ScalarColor3f, ScalarColor3d
     from drjit.scalar import Array3f, Array3f64
 
-    p = Prop()
+    p = mi.Properties()
     fill_properties(p)
 
     assert isinstance(p['prop_1'], int)
@@ -41,14 +37,14 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert isinstance(p['prop_3'], bool)
     assert isinstance(p['prop_4'], float)
     assert type(p['prop_5']) is Array3f64
-    assert type(p['prop_6']) is ScalarColor3d
+    assert type(p['prop_6']) is mi.ScalarColor3d
 
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
     assert p['prop_3'] == False
     assert p['prop_4'] == 1.25
     assert p['prop_5'] == Array3f(1, 2, 3)
-    assert p['prop_6'] == ScalarColor3f(1, 2, 3)
+    assert p['prop_6'] == mi.ScalarColor3f(1, 2, 3)
 
     # Updating an existing property but using a different type
     p['prop_2'] = 2
@@ -60,9 +56,7 @@ def test02_type_is_preserved(variant_scalar_rgb):
 
 
 def test03_management_of_properties(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     fill_properties(p)
     # Existence
     assert 'prop_1' in p
@@ -81,9 +75,7 @@ def test03_management_of_properties(variant_scalar_rgb):
 
 
 def test04_queried_properties(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     fill_properties(p)
     # Make some queries
     _ = p['prop_1']
@@ -101,13 +93,11 @@ def test04_queried_properties(variant_scalar_rgb):
 
 
 def test05_copy_and_merge(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     fill_properties(p)
 
     # Merge with dinstinct sets
-    p2 = Prop()
+    p2 = mi.Properties()
     p2['hello'] = 42
     p.merge(p2)
     assert p['hello'] == 42
@@ -115,7 +105,7 @@ def test05_copy_and_merge(variant_scalar_rgb):
     assert p2['hello'] == 42 # p2 unchanged
 
     # Merge with override (and different type)
-    p3 = Prop()
+    p3 = mi.Properties()
     p3['hello'] = 'world'
     p2.merge(p3)
     assert p2['hello'] == 'world'
@@ -123,16 +113,14 @@ def test05_copy_and_merge(variant_scalar_rgb):
 
 
 def test06_equality(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     fill_properties(p)
     del p['prop_5']
     del p['prop_6']
 
     # Equality should encompass properties, their type,
     # the instance's plugin_name and id properties
-    p2 = Prop()
+    p2 = mi.Properties()
     p2['prop_1'] = 1
     p2['prop_2'] = '1'
     p2['prop_3'] = False
@@ -150,9 +138,7 @@ def test06_equality(variant_scalar_rgb):
 
 
 def test07_printing(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     p.set_plugin_name('some_plugin')
     p.set_id('some_id')
     p['prop_1'] = 1
@@ -171,9 +157,7 @@ def test07_printing(variant_scalar_rgb):
 
 
 def test08_get_default(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop
-
-    p = Prop()
+    p = mi.Properties()
     assert p.get('foo') == None
     assert p.get('foo', 4.0) == 4.0
     assert p.get('foo', 4) == 4
@@ -187,16 +171,14 @@ def test08_get_default(variant_scalar_rgb):
 @pytest.mark.skip("TODO fix AnimatedTransform")
 def test09_animated_transforms(variant_scalar_rgb):
     """An AnimatedTransform can be built from a given Transform."""
-    from mitsuba.core import Properties as Prop, Transform4f, Transform4d, AnimatedTransform
+    p = mi.Properties()
+    p["trafo"] = mi.Transform4f.translate([1, 2, 3])
 
-    p = Prop()
-    p["trafo"] = Transform4f.translate([1, 2, 3])
-
-    atrafo = AnimatedTransform()
-    atrafo.append(0, Transform4f.translate([-1, -1, -2]))
-    atrafo.append(1, Transform4f.translate([4, 3, 2]))
+    atrafo = mi.AnimatedTransform()
+    atrafo.append(0, mi.Transform4f.translate([-1, -1, -2]))
+    atrafo.append(1, mi.Transform4f.translate([4, 3, 2]))
     p["atrafo"] = atrafo
 
-    assert type(p["trafo"]) is Transform4d
-    assert type(p["atrafo"]) is AnimatedTransform
+    assert type(p["trafo"]) is mi.Transform4d
+    assert type(p["atrafo"]) is mi.AnimatedTransform
 

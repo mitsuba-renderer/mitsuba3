@@ -1,6 +1,6 @@
-import drjit as dr
 import pytest
-import mitsuba
+import drjit as dr
+import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
@@ -12,14 +12,14 @@ def test01_dict_plugins(variants_all):
                ('rfilter', 'box'), ('spectrum', 'd65')]
 
     for p_name, p_type in plugins:
-        o1 = mitsuba.core.load_dict({ "type": p_type })
-        o2 = mitsuba.core.load_string("""<%s type="%s" version="2.0.0"/>""" % (p_name, p_type))
+        o1 = mi.load_dict({ "type": p_type })
+        o2 = mi.load_string("""<%s type="%s" version="2.0.0"/>""" % (p_name, p_type))
         assert str(o1) == str(o2)
 
 
 def test02_dict_missing_type(variants_all):
     with pytest.raises(Exception) as e:
-        mitsuba.core.load_dict({
+        mi.load_dict({
             "center" : [0, 0, -10],
             "radius" : 10.0,
         })
@@ -27,38 +27,37 @@ def test02_dict_missing_type(variants_all):
 
 
 def test03_dict_simple_field(variants_all):
-    from mitsuba.core import ScalarPoint3f
     import numpy as np
 
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "sphere",
-        "center" : ScalarPoint3f(0, 0, -10),
+        "center" : mi.ScalarPoint3f(0, 0, -10),
         "radius" : 10.0,
         "flip_normals" : False,
     })
 
-    s2 = mitsuba.core.load_dict({
+    s2 = mi.load_dict({
         "type" : "sphere",
-        "center" : [0, 0, -10], # list -> ScalarPoint3f
+        "center" : [0, 0, -10], # list -> mi.ScalarPoint3f
         "radius" : 10, # int -> float
         "flip_normals" : False,
     })
 
-    s3 = mitsuba.core.load_dict({
+    s3 = mi.load_dict({
         "type" : "sphere",
-        "center" : np.array([0, 0, -10]), # numpy array -> ScalarPoint3f
+        "center" : np.array([0, 0, -10]), # numpy array -> mi.ScalarPoint3f
         "radius" : 10.0,
         "flip_normals" : False,
     })
 
-    s4 = mitsuba.core.load_dict({
+    s4 = mi.load_dict({
         "type" : "sphere",
-        "center" : (0, 0, -10), # tuple -> ScalarPoint3f
+        "center" : (0, 0, -10), # tuple -> mi.ScalarPoint3f
         "radius" : 10.0,
         "flip_normals" : False,
     })
 
-    s5 = mitsuba.core.load_string("""
+    s5 = mi.load_string("""
         <shape type="sphere" version="2.0.0">
             <point name="center" value="0.0 0.0 -10.0"/>
             <float name="radius" value="10.0"/>
@@ -73,14 +72,14 @@ def test03_dict_simple_field(variants_all):
 
 
 def test04_dict_nested(variants_all):
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "sphere",
         "emitter" : {
             "type" : "area",
         }
     })
 
-    s2 = mitsuba.core.load_string("""
+    s2 = mi.load_string("""
         <shape type="sphere" version="2.0.0">
             <emitter type="area"/>
         </shape>
@@ -89,7 +88,7 @@ def test04_dict_nested(variants_all):
     assert str(s1) == str(s2)
 
 
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "sphere",
         "bsdf" : {
             "type" : "roughdielectric",
@@ -118,7 +117,7 @@ def test04_dict_nested(variants_all):
         }
     })
 
-    s2 = mitsuba.core.load_string("""
+    s2 = mi.load_string("""
         <shape type="sphere" version="2.0.0">
             <bsdf type="roughdielectric">
                 <texture type="checkerboard" name="specular_reflectance">
@@ -137,14 +136,14 @@ def test04_dict_nested(variants_all):
 
 
 def test05_dict_nested_object(variants_all):
-    bsdf = mitsuba.core.load_dict({"type" : "diffuse"})
+    bsdf = mi.load_dict({"type" : "diffuse"})
 
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "sphere",
         "bsdf" : bsdf
     })
 
-    s2 = mitsuba.core.load_string("""
+    s2 = mi.load_string("""
         <shape type="sphere" version="2.0.0">
             <bsdf type="diffuse"/>
         </shape>
@@ -154,25 +153,23 @@ def test05_dict_nested_object(variants_all):
 
 
 def test06_dict_rgb(variants_all_scalar):
-    from mitsuba.core import ScalarColor3f
-
-    e1 = mitsuba.core.load_dict({
+    e1 = mi.load_dict({
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : ScalarColor3f(0.5, 0.2, 0.5)
+            "value" : mi.ScalarColor3f(0.5, 0.2, 0.5)
         }
     })
 
-    e2 = mitsuba.core.load_dict({
+    e2 = mi.load_dict({
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : [0.5, 0.2, 0.5] # list -> ScalarColor3f
+            "value" : [0.5, 0.2, 0.5] # list -> mi.ScalarColor3f
         }
     })
 
-    e3 = mitsuba.core.load_string("""
+    e3 = mi.load_string("""
         <emitter type="point" version="2.0.0">
             <rgb name="intensity" value="0.5, 0.2, 0.5"/>
         </emitter>
@@ -181,15 +178,15 @@ def test06_dict_rgb(variants_all_scalar):
     assert str(e1) == str(e2)
     assert str(e1) == str(e3)
 
-    e1 = mitsuba.core.load_dict({
+    e1 = mi.load_dict({
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : 0.5 # float -> ScalarColor3f
+            "value" : 0.5 # float -> mi.ScalarColor3f
         }
     })
 
-    e2 = mitsuba.core.load_string("""
+    e2 = mi.load_string("""
         <emitter type="point" version="2.0.0">
             <rgb name="intensity" value="0.5"/>
         </emitter>
@@ -199,7 +196,7 @@ def test06_dict_rgb(variants_all_scalar):
 
 
 def test07_dict_spectrum(variants_all_scalar):
-    e1 = mitsuba.core.load_dict({
+    e1 = mi.load_dict({
         "type" : "point",
         "intensity" : {
             "type" : "spectrum",
@@ -207,7 +204,7 @@ def test07_dict_spectrum(variants_all_scalar):
         }
     })
 
-    e2 = mitsuba.core.load_string("""
+    e2 = mi.load_string("""
         <emitter type="point" version="2.0.0">
             <spectrum name="intensity" value="400:0.1 500:0.2 600:0.4 700:0.1"/>
         </emitter>
@@ -215,7 +212,7 @@ def test07_dict_spectrum(variants_all_scalar):
 
     assert str(e1) == str(e2)
 
-    e1 = mitsuba.core.load_dict({
+    e1 = mi.load_dict({
         "type" : "point",
         "intensity" : {
             "type" : "spectrum",
@@ -223,7 +220,7 @@ def test07_dict_spectrum(variants_all_scalar):
         }
     })
 
-    e2 = mitsuba.core.load_string("""
+    e2 = mi.load_string("""
         <emitter type="point" version="2.0.0">
             <spectrum name="intensity" value="0.44"/>
         </emitter>
@@ -232,7 +229,7 @@ def test07_dict_spectrum(variants_all_scalar):
     assert str(e1) == str(e2)
 
     with pytest.raises(Exception) as e:
-        mitsuba.core.load_dict({
+        mi.load_dict({
             "type" : "point",
             "intensity" : {
                 "type" : "spectrum",
@@ -243,9 +240,7 @@ def test07_dict_spectrum(variants_all_scalar):
 
 
 def test07_dict_scene(variant_scalar_rgb):
-    from mitsuba.core import ScalarTransform4f
-
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "scene",
         "myintegrator" : {
             "type" : "path",
@@ -254,9 +249,9 @@ def test07_dict_scene(variant_scalar_rgb):
             "type" : "perspective",
             "near_clip": 1.0,
             "far_clip": 1000.0,
-            "to_world" : ScalarTransform4f.look_at(origin=[1, 1, 1],
-                                                target=[0, 0, 0],
-                                                up=[0, 0, 1]),
+            "to_world" : mi.ScalarTransform4f.look_at(origin=[1, 1, 1],
+                                                      target=[0, 0, 0],
+                                                      up=[0, 0, 1]),
             "myfilm" : {
                 "type" : "hdrfilm",
                 "rfilter" : { "type" : "box"},
@@ -272,7 +267,7 @@ def test07_dict_scene(variant_scalar_rgb):
         "myshape" : {"type" : "sphere"}
     })
 
-    s2 = mitsuba.core.load_string("""
+    s2 = mi.load_string("""
         <scene version='2.0.0'>
             <emitter type="constant"/>
 
@@ -306,7 +301,7 @@ def test07_dict_scene(variant_scalar_rgb):
 
     assert str(s1) == str(s2)
 
-    scene = mitsuba.core.load_dict({
+    scene = mi.load_dict({
         "type" : "scene",
         "mysensor0" : { "type" : "perspective" },
         "mysensor1" : { "type" : "perspective" },
@@ -326,7 +321,7 @@ def test07_dict_scene(variant_scalar_rgb):
 
 def test08_dict_unreferenced_attribute_error(variants_all):
     with pytest.raises(Exception) as e:
-        mitsuba.core.load_dict({
+        mi.load_dict({
             "type" : "point",
             "foo": 0.44
         })
@@ -335,7 +330,7 @@ def test08_dict_unreferenced_attribute_error(variants_all):
 
 
 def test09_dict_scene_reference(variant_scalar_rgb):
-    scene = mitsuba.core.load_dict({
+    scene = mi.load_dict({
         "type" : "scene",
         # reference using its key
         "bsdf1_key" : { "type" : "conductor" },
@@ -382,13 +377,13 @@ def test09_dict_scene_reference(variant_scalar_rgb):
         },
     })
 
-    bsdf1 = mitsuba.core.load_dict({ "type" : "conductor" })
-    bsdf2 = mitsuba.core.load_dict({
+    bsdf1 = mi.load_dict({ "type" : "conductor" })
+    bsdf2 = mi.load_dict({
         "type" : "roughdielectric",
         "id" : "bsdf2_id"
     })
-    texture = mitsuba.core.load_dict({ "type" : "checkerboard"})
-    bsdf3 = mitsuba.core.load_dict({
+    texture = mi.load_dict({ "type" : "checkerboard"})
+    bsdf3 = mi.load_dict({
         "type" : "diffuse",
         "reflectance" : texture
     })
@@ -399,7 +394,7 @@ def test09_dict_scene_reference(variant_scalar_rgb):
     assert str(scene.shapes()[3].bsdf()) == str(bsdf3)
 
     with pytest.raises(Exception) as e:
-        scene = mitsuba.core.load_dict({
+        scene = mi.load_dict({
             "type" : "scene",
             "shape0" : {
                 "type" : "sphere",
@@ -413,7 +408,7 @@ def test09_dict_scene_reference(variant_scalar_rgb):
     e.match("has duplicate id")
 
     with pytest.raises(Exception) as e:
-        scene = mitsuba.core.load_dict({
+        scene = mi.load_dict({
             "type" : "scene",
             "bsdf1_id" : { "type" : "conductor" },
             "shape1" : {
@@ -430,7 +425,7 @@ def test09_dict_scene_reference(variant_scalar_rgb):
 @fresolver_append_path
 def test10_dict_expand_nested_object(variant_scalar_rgb):
     # Nested dictionary objects should be expanded
-    b0 = mitsuba.core.load_dict({
+    b0 = mi.load_dict({
         "type" : "diffuse",
         "reflectance" : {
             "type" : "bitmap",
@@ -438,7 +433,7 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
         }
     })
 
-    b1 = mitsuba.core.load_string("""
+    b1 = mi.load_string("""
         <bsdf type="diffuse" version="2.0.0">
             <texture type="bitmap" name="reflectance">
                 <string name="filename" value="resources/data/common/textures/museum.exr"/>
@@ -449,21 +444,21 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
     assert str(b0) == str(b1)
 
     # Check that root object isn't expanded
-    texture = mitsuba.core.load_dict({
+    texture = mi.load_dict({
             "type" : "bitmap",
             "filename" : "resources/data/common/textures/museum.exr"
     })
     assert len(texture.expand()) == 1
 
     # But we should be able to use this object in another dict, and it will be expanded
-    b3 = mitsuba.core.load_dict({
+    b3 = mi.load_dict({
         "type" : "diffuse",
         "reflectance" : texture
     })
     assert str(b0) == str(b3)
 
     # Object should be expanded when used through a reference
-    scene = mitsuba.core.load_dict({
+    scene = mi.load_dict({
         "type" : "scene",
         "mytexture" : {
             "type" : "bitmap",
@@ -484,22 +479,20 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
 
 
 def test11_dict_spectrum_srgb(variant_scalar_rgb):
-    from mitsuba.core import spectrum_list_to_srgb
-
     CIE_Y_NORMALIZATION = 1.0 / 106.7502593994140625
     spectrum = [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
 
     w = [s[0] for s in spectrum]
     v = [s[1] * CIE_Y_NORMALIZATION for s in spectrum]
-    rgb = spectrum_list_to_srgb(w, v)
+    rgb = mi.spectrum_list_to_srgb(w, v)
     assert dr.allclose(rgb, [0.442717, 0.278474, 0.118373])
 
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "spectrum",
         "value" : spectrum
     })
 
-    s2 = mitsuba.core.load_string(f"""
+    s2 = mi.load_string(f"""
         <spectrum  type='srgb' version='2.0.0'>
             <rgb name="color" value="0.442717, 0.278474, 0.118373"/>
         </spectrum>
@@ -509,12 +502,12 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
 
 
 def test12_dict_spectrum(variant_scalar_spectral):
-    s1 = mitsuba.core.load_dict({
+    s1 = mi.load_dict({
         "type" : "spectrum",
         "value" : [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
     })
 
-    s2 = mitsuba.core.load_string(f"""
+    s2 = mi.load_string(f"""
         <spectrum  type='regular' version='2.0.0'>
            <float name="lambda_min" value="400"/>
            <float name="lambda_max" value="700"/>

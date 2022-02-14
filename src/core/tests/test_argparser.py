@@ -1,10 +1,9 @@
 import pytest
-import mitsuba
+import mitsuba as mi
 
 
 def test01_short_args(variant_scalar_rgb):
-    from mitsuba.core import ArgParser
-    ap = ArgParser()
+    ap = mi.ArgParser()
     a = ap.add("-a")
     b = ap.add("-b")
     c = ap.add("-c")
@@ -23,8 +22,7 @@ def test01_short_args(variant_scalar_rgb):
 
 
 def test02_parameter_value(variant_scalar_rgb):
-    from mitsuba.core import ArgParser
-    ap = ArgParser()
+    ap = mi.ArgParser()
     a = ap.add("-a", True)
     ap.parse(['mitsuba', '-a', 'abc', '-axyz'])
     assert bool(a)
@@ -36,16 +34,14 @@ def test02_parameter_value(variant_scalar_rgb):
 
 
 def test03_parameter_missing(variant_scalar_rgb):
-    from mitsuba.core import ArgParser
-    ap = ArgParser()
+    ap = mi.ArgParser()
     ap.add("-a", True)
     with pytest.raises(RuntimeError):
         ap.parse(['mitsuba', '-a'])
 
 
 def test04_parameter_float_and_extra_args(variant_scalar_rgb):
-    from mitsuba.core import ArgParser
-    ap = ArgParser()
+    ap = mi.ArgParser()
     f = ap.add("-f", True)
     other = ap.add("", True)
     ap.parse(['mitsuba', 'other', '-f0.25', 'arguments'])
@@ -56,8 +52,7 @@ def test04_parameter_float_and_extra_args(variant_scalar_rgb):
 
 
 def test05_long_parameters_failure(variant_scalar_rgb):
-    from mitsuba.core import ArgParser
-    ap = ArgParser()
+    ap = mi.ArgParser()
     i = ap.add("--int", True)
     with pytest.raises(RuntimeError):
         ap.parse(['mitsuba', '--int1'])

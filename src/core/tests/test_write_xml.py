@@ -1,6 +1,7 @@
-import drjit as dr
 import pytest
-import mitsuba
+import drjit as dr
+import mitsuba as mi
+import numpy as np
 import os
 from shutil import copy
 
@@ -8,7 +9,6 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_xml_save_plugin(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test01_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -17,8 +17,8 @@ def test01_xml_save_plugin(variants_all_rgb, tmp_path):
             "center" : [0, 0, -10],
             "radius" : 10.0,
         }
-    dict_to_xml(scene_dict, filepath)
-    s1 = mitsuba.core.load_dict({
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s1 = mi.load_dict({
         'type': 'scene',
         'sphere':{
             "type": "sphere",
@@ -26,14 +26,13 @@ def test01_xml_save_plugin(variants_all_rgb, tmp_path):
             "radius" : 10.0,
             }
         })
-    s2 = mitsuba.core.load_file(filepath)
+    s2 = mi.load_file(filepath)
 
     assert str(s1) == str(s2)
 
 
 @fresolver_append_path
 def test02_xml_missing_type(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test02_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -43,13 +42,12 @@ def test02_xml_missing_type(variants_all_rgb, tmp_path):
         }
     }
     with pytest.raises(ValueError) as e:
-        dict_to_xml(scene_dict, filepath)
+        mi.xml.dict_to_xml(scene_dict, filepath)
     e.match("Missing key: 'type'!")
 
 
 @fresolver_append_path
 def test03_xml_references(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test03_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -89,18 +87,15 @@ def test03_xml_references(variants_all_rgb, tmp_path):
         }
     }
 
-    s1 = mitsuba.core.load_dict(scene_dict)
-    dict_to_xml(scene_dict, filepath)
-    s2 = mitsuba.core.load_file(filepath)
+    s1 = mi.load_dict(scene_dict)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s2 = mi.load_file(filepath)
 
     assert str(s1.shapes()[0].bsdf()) == str(s2.shapes()[0].bsdf())
 
 
 @fresolver_append_path
 def test04_xml_point(variants_all_rgb, tmp_path):
-    from mitsuba.core import ScalarPoint3f
-    from mitsuba.python.xml import dict_to_xml
-    import numpy as np
     filepath = str(tmp_path / 'test_write_xml-test04_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -111,17 +106,17 @@ def test04_xml_point(variants_all_rgb, tmp_path):
             'position': [0.0, 1.0, 2.0]
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    s1 = mitsuba.core.load_file(filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s1 = mi.load_file(filepath)
     scene_dict = {
         'type': 'scene',
         'light':{
             'type': 'point',
-            'position': ScalarPoint3f(0, 1, 2)
+            'position': mi.ScalarPoint3f(0, 1, 2)
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    s2 = mitsuba.core.load_file(filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s2 = mi.load_file(filepath)
     scene_dict = {
         'type': 'scene',
         'light':{
@@ -129,8 +124,8 @@ def test04_xml_point(variants_all_rgb, tmp_path):
             'position': np.array([0, 1, 2])
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    s3 = mitsuba.core.load_file(filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s3 = mi.load_file(filepath)
 
     assert str(s1) == str(s2)
     assert str(s1) == str(s3)
@@ -138,7 +133,6 @@ def test04_xml_point(variants_all_rgb, tmp_path):
 
 @fresolver_append_path
 def test05_xml_split(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     import numpy as np
     filepath = str(tmp_path / 'test_write_xml-test05_output.xml')
     print(f"Output temporary file: {filepath}")
@@ -160,17 +154,16 @@ def test05_xml_split(variants_all_rgb, tmp_path):
             }
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    dict_to_xml(scene_dict, filepath, split_files=True)
-    s2 = mitsuba.core.load_file(filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s1 = mi.load_file(filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath, split_files=True)
+    s2 = mi.load_file(filepath)
 
     assert str(s1) == str(s2)
 
 
 @fresolver_append_path
 def test06_xml_duplicate_id(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test06_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -186,13 +179,12 @@ def test06_xml_duplicate_id(variants_all_rgb, tmp_path):
     }
 
     with pytest.raises(ValueError) as e:
-        dict_to_xml(scene_dict, filepath)
+        mi.xml.dict_to_xml(scene_dict, filepath)
     e.match("Id: my-bsdf is already used!")
 
 
 @fresolver_append_path
 def test07_xml_invalid_ref(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test07_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -211,13 +203,12 @@ def test07_xml_invalid_ref(variants_all_rgb, tmp_path):
     }
 
     with pytest.raises(ValueError) as e:
-        dict_to_xml(scene_dict, filepath)
+        mi.xml.dict_to_xml(scene_dict, filepath)
     e.match("Id: my-bsdf referenced before export.")
 
 
 @fresolver_append_path
 def test08_xml_defaults(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test08_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -241,10 +232,10 @@ def test08_xml_defaults(variants_all_rgb, tmp_path):
             }
         }
     }
-    dict_to_xml(scene_dict, filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
     # Load a file using default values
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(scene_dict)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(scene_dict)
     assert str(s1.sensors()[0].film()) == str(s2.sensors()[0].film())
     assert str(s1.sensors()[0].sampler()) == str(s2.sensors()[0].sampler())
 
@@ -253,19 +244,17 @@ def test08_xml_defaults(variants_all_rgb, tmp_path):
     resx = 2048
     resy = 485
     # Load a file with options for the rendering parameters
-    s3 = mitsuba.core.load_file(filepath, spp=spp, resx=resx, resy=resy)
+    s3 = mi.load_file(filepath, spp=spp, resx=resx, resy=resy)
     scene_dict['cam']['sampler']['sample_count'] = spp
     scene_dict['cam']['film']['width'] = resx
     scene_dict['cam']['film']['height'] = resy
-    s4 = mitsuba.core.load_dict(scene_dict)
+    s4 = mi.load_dict(scene_dict)
     assert str(s3.sensors()[0].film()) == str(s4.sensors()[0].film())
     assert str(s3.sensors()[0].sampler()) == str(s4.sensors()[0].sampler())
 
 
 @fresolver_append_path
 def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import ScalarTransform4f, ScalarVector3f, ScalarPoint3f
     filepath = str(tmp_path / 'test_write_xml-test09_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -275,16 +264,16 @@ def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
             'type': 'perspective',
             'fov_axis': 'x',
             'fov': 35,
-            'to_world': ScalarTransform4f.look_at(ScalarVector3f(15,42.3,25), ScalarVector3f(1.0,0.0,0.5), ScalarVector3f(1.0,0.0,0.0))
+            'to_world': mi.ScalarTransform4f.look_at([15,42.3,25], [1.0,0.0,0.5], [1.0,0.0,0.0])
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(scene_dict)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(scene_dict)
     points = [
-        ScalarPoint3f(0,0,1),
-        ScalarPoint3f(0,1,0),
-        ScalarPoint3f(1,0,0)
+        mi.ScalarPoint3f(0,0,1),
+        mi.ScalarPoint3f(0,1,0),
+        mi.ScalarPoint3f(1,0,0)
     ]
     tr1 = s1.sensors()[0].world_transform()
     tr2 = s2.sensors()[0].world_transform()
@@ -294,8 +283,6 @@ def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
 
 @fresolver_append_path
 def test10_xml_rgb(variants_all_scalar, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import ScalarColor3f
     filepath = str(tmp_path / 'test_write_xml-test10_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -305,7 +292,7 @@ def test10_xml_rgb(variants_all_scalar, tmp_path):
             "type" : "point",
             "intensity" : {
                 "type": "rgb",
-                "value" : ScalarColor3f(0.5, 0.2, 0.5)
+                "value" : mi.ScalarColor3f(0.5, 0.2, 0.5)
             }
         }
     }
@@ -316,16 +303,16 @@ def test10_xml_rgb(variants_all_scalar, tmp_path):
             "type" : "point",
             "intensity" : {
                 "type": "rgb",
-                "value" : [0.5, 0.2, 0.5] # list -> ScalarColor3f
+                "value" : [0.5, 0.2, 0.5] # list -> mi.ScalarColor3f
             }
         }
     }
 
-    dict_to_xml(d1, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    dict_to_xml(d2, filepath)
-    s2 = mitsuba.core.load_file(filepath)
-    s3 = mitsuba.core.load_dict(d1)
+    mi.xml.dict_to_xml(d1, filepath)
+    s1 = mi.load_file(filepath)
+    mi.xml.dict_to_xml(d2, filepath)
+    s2 = mi.load_file(filepath)
+    s3 = mi.load_dict(d1)
     assert str(s1) == str(s2)
     assert str(s1) == str(s3)
 
@@ -335,23 +322,21 @@ def test10_xml_rgb(variants_all_scalar, tmp_path):
             "type" : "point",
             "intensity" : {
                 "type": "rgb",
-                "value" : 0.5 # float -> ScalarColor3f
+                "value" : 0.5 # float -> mi.ScalarColor3f
             }
         }
     }
 
-    dict_to_xml(d1, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(d1)
+    mi.xml.dict_to_xml(d1, filepath)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(d1)
     assert str(s1) == str(s2)
 
 
 @fresolver_append_path
 def test11_xml_spectrum(variants_all_scalar, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     from re import escape
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
+    fr = mi.Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
 
     filepath = str(tmp_path / 'test_write_xml-test11_output.xml')
@@ -367,9 +352,9 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
             }
         }
     }
-    dict_to_xml(d1, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(d1)
+    mi.xml.dict_to_xml(d1, filepath)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(d1)
 
     assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
@@ -384,9 +369,9 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
         }
     }
 
-    dict_to_xml(d2, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(d2)
+    mi.xml.dict_to_xml(d2, filepath)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(d2)
     assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
     d3 = {
@@ -400,7 +385,7 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
         }
     }
     with pytest.raises(ValueError) as e:
-        dict_to_xml(d3, filepath)
+        mi.xml.dict_to_xml(d3, filepath)
     e.match("Wavelengths must be sorted in strictly increasing order!")
 
     #wavelengths file
@@ -415,9 +400,9 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
         }
     }
 
-    dict_to_xml(d4, filepath)
-    s1 = mitsuba.core.load_file(filepath)
-    s2 = mitsuba.core.load_dict(d4)
+    mi.xml.dict_to_xml(d4, filepath)
+    s1 = mi.load_file(filepath)
+    s2 = mi.load_dict(d4)
     assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
     d5 = {
@@ -431,16 +416,14 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
         }
     }
     with pytest.raises(ValueError) as e:
-        dict_to_xml(d5, filepath)
+        mi.xml.dict_to_xml(d5, filepath)
     e.match(escape(f"File '{os.path.abspath(d5['light']['intensity']['filename'])}' not found!"))
 
 
 
 @fresolver_append_path
 def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
+    fr = mi.Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
 
     filepath = str(tmp_path / 'test_write_xml-test12_output.xml')
@@ -466,7 +449,7 @@ def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
             }
         }
     }
-    dict_to_xml(scene_dict, filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
 
     assert len(spectra_files) == 1 and spectra_files[0] == "Al.eta.spd"
@@ -491,7 +474,7 @@ def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
             }
         }
     }
-    dict_to_xml(scene_dict, filepath)
+    mi.xml.dict_to_xml(scene_dict, filepath)
 
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
 
@@ -502,7 +485,6 @@ def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
 
 @fresolver_append_path
 def test13_xml_multiple_defaults(variants_all_rgb, tmp_path):
-    from mitsuba.python.xml import dict_to_xml
     filepath = str(tmp_path / 'test_write_xml-test13_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -523,8 +505,8 @@ def test13_xml_multiple_defaults(variants_all_rgb, tmp_path):
             }
         }
     }
-    dict_to_xml(scene_dict, filepath)
-    scene = mitsuba.core.load_file(filepath, spp=45)
+    mi.xml.dict_to_xml(scene_dict, filepath)
+    scene = mi.load_file(filepath, spp=45)
 
     assert scene.sensors()[0].sampler().sample_count() == scene.sensors()[1].sampler().sample_count()
     assert scene.sensors()[1].sampler().sample_count() == 45

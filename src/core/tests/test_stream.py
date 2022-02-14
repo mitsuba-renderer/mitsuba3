@@ -1,12 +1,9 @@
 import os
-import drjit as dr
 import pytest
-import mitsuba
+import drjit as dr
 
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import Stream, DummyStream, FileStream, MemoryStream, ZStream
-from mitsuba.python.test.util import tmpfile, make_tmpfile
+from mitsuba.scalar_rgb import Stream, DummyStream, FileStream, MemoryStream, ZStream
+from mitsuba.scalar_rgb.test.util import tmpfile, make_tmpfile
 
 parameters = [
     'class_,args',

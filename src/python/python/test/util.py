@@ -81,7 +81,8 @@ def make_tmpfile(request, tmpdir_factory):
     return path_value
 
 
-def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['llvm', 'cuda']):
+def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
+                        modes=['llvm', 'cuda', 'llvm_ad', 'cuda_ad']):
     """
     Helper routine which compares evaluations of the vectorized and
     non-vectorized version of a kernel using available variants (e.g. LLVM, CUDA).
@@ -148,10 +149,8 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     # Evaluate and compate vectorized kernel
     for variant in variants:
         # Set variant
-        import mitsuba
-        m = getattr(mitsuba, 'variant')
-        from m import Float, Vector2f, Vector3f
-        types = [Float, Vector2f, Vector3f]
+        mi.set_variant(variant)
+        types = [mi.Float, mi.Vector2f, mi.Vector3f]
 
         # Cast arguments
         args = [types[arg_dims[i]-1](args_np[i]) for i in range(len(args_np))]
