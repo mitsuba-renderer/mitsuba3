@@ -1,12 +1,9 @@
 import pytest
-
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 
 def make_sensor(origin=None, direction=None, to_world=None, pixels=1):
-    from mitsuba.core import load_dict
-
     d = {
         "type": "radiancemeter",
         "film": {
@@ -24,14 +21,12 @@ def make_sensor(origin=None, direction=None, to_world=None, pixels=1):
     if to_world is not None:
         d["to_world"] = to_world
 
-    return load_dict(d)
+    return mi.load_dict(d)
 
 
 def test_construct(variant_scalar_rgb):
-    from mitsuba.core import ScalarTransform4f
-
     # Test construct from to_world
-    sensor = make_sensor(to_world=ScalarTransform4f.look_at(
+    sensor = make_sensor(to_world=mi.ScalarTransform4f.look_at(
         origin=[0, 0, 0],
         target=[0, 1, 0],
         up=[0, 0, 1]
@@ -58,7 +53,7 @@ def test_construct(variant_scalar_rgb):
 
     # Test to_world overriding direction + origin
     sensor = make_sensor(
-        to_world=ScalarTransform4f.look_at(
+        to_world=mi.ScalarTransform4f.look_at(
             origin=[0, 0, 0],
             target=[0, 1, 0],
             up=[0, 0, 1]
@@ -90,9 +85,8 @@ def test_construct(variant_scalar_rgb):
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [-1.0, -1.0, 0.0], [2.0, 0.0, 0.0]])
 @pytest.mark.parametrize("origin", [[0.0, 0.0, 0.0], [-1.0, -1.0, 0.5], [4.0, 1.0, 0.0]])
 def test_sample_ray(variant_scalar_rgb, direction, origin):
-    from mitsuba.core import Vector3f
-    origin    = Vector3f(origin)
-    direction = Vector3f(direction)
+    origin    = mi.Vector3f(origin)
+    direction = mi.Vector3f(direction)
     sample1 = [0.32, 0.87]
     sample2 = [0.16, 0.44]
 
@@ -112,42 +106,39 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
 
 @pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])
 def test_render(variant_scalar_rgb, radiance):
-    # Test render results with a simple scene
-    from mitsuba.core import load_dict
-    import numpy as np
-
+    """Test render results with a simple scene"""
     spp = 1
 
     scene_dict = {
-        "type": "scene",
-        "integrator": {
-            "type": "path"
+        'type': 'scene',
+        'integrator': {
+            'type': 'path'
         },
-        "sensor": {
-            "type": "radiancemeter",
-            "film": {
-                "type": "hdrfilm",
-                "width": 1,
-                "height": 1,
-                "pixel_format": "rgb",
-                "rfilter": {
-                    "type": "box"
+        'sensor': {
+            'type': 'radiancemeter',
+            'film': {
+                'type': 'hdrfilm',
+                'width': 1,
+                'height': 1,
+                'pixel_format': 'rgb',
+                'rfilter': {
+                    'type': 'box'
                 }
             },
-            "sampler": {
-                "type": "independent",
-                "sample_count": spp
+            'sampler': {
+                'type': 'independent',
+                'sample_count': spp
             }
         },
-        "emitter": {
-            "type": "constant",
-            "radiance": {
-                "type": "uniform",
-                "value": radiance
+        'emitter': {
+            'type': 'constant',
+            'radiance': {
+                'type': 'uniform',
+                'value': radiance
             }
         }
     }
 
-    scene = load_dict(scene_dict)
+    scene = mi.load_dict(scene_dict)
     img = scene.render()
-    assert np.allclose(np.array(img), radiance)
+    assert dr.allclose(mi.TensorXf(img), radiance)
