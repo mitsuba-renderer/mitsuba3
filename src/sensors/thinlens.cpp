@@ -255,12 +255,18 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
+        callback->put_parameter("to_world", *m_to_world.ptr());
         // TODO aperture_radius, x_fov
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            if (m_to_world.scalar().has_scale())
+                Throw("Scale factors in the camera-to-world transformation are not allowed!");
+        }
         Base::parameters_changed(keys);
-        // TODO
     }
 
     std::string to_string() const override {

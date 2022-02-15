@@ -180,6 +180,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_object("irradiance", m_irradiance.get());
+        callback->put_parameter("to_world", *m_to_world.ptr());
     }
 
     std::string to_string() const override {
