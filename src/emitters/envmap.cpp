@@ -363,6 +363,7 @@ public:
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("scale", m_scale);
         callback->put_parameter("data", m_data);
+        callback->put_parameter("to_world", *m_to_world.ptr());
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
