@@ -9,28 +9,35 @@ class PyTraversalCallback : public TraversalCallback {
 public:
     void put_parameter_impl(const std::string &name, void *ptr,
                             const std::type_info &type,
-                            bool shape_parameter) override {
+                            uint32_t flags) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "put_parameter");
 
         if (overload)
-            overload(name, ptr, (void *) &type, shape_parameter);
+            overload(name, ptr, (void *) &type, flags);
         else
             Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
     }
 
-    void put_object(const std::string &name, Object *obj) override {
+    void put_object(const std::string &name, Object *obj,
+                    uint32_t flags) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "put_object");
 
         if (overload)
-            overload(name, cast_object(obj));
+            overload(name, cast_object(obj), flags);
         else
             Throw("TraversalCallback doesn't overload the method \"put_object\"");
     }
 };
 
 MI_PY_EXPORT(Object) {
+    auto e = py::enum_<ParamFlags>(m, "ParamFlags", D(ParamFlags))
+        .def_value(ParamFlags, Empty);
+        .def_value(ParamFlags, NonDifferentiable)
+        .def_value(ParamFlags, Discontinuous)
+    MI_PY_DECLARE_ENUM_OPERATORS(ParamFlags, e)
+
     py::class_<Class>(m, "Class", D(Class))
         .def_method(Class, name)
         .def_method(Class, variant)

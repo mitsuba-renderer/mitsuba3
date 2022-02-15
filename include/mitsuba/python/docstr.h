@@ -8895,6 +8895,15 @@ static const char *__doc_mitsuba_TransportMode_Radiance = R"doc(Radiance transpo
 
 static const char *__doc_mitsuba_TransportMode_TransportModes = R"doc(Specifies the number of supported transport modes)doc";
 
+static const char *__doc_mitsuba_ParamFlags =
+R"doc(This list of flags is used to classify the different types of parameters exposed by the plugins.)doc";
+
+static const char *__doc_mitsuba_ParamFlags_Empty = R"doc(No flags set (default value))doc";
+
+static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
+
+static const char *__doc_mitsuba_ParamFlags_Discontinuous = R"doc(Tracking gradients w.r.t. this parameter will introduce discontinuties)doc";
+
 static const char *__doc_mitsuba_TraversalCallback =
 R"doc(Abstract class providing an interface for traversing scene graphs
 

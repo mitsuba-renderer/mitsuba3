@@ -89,13 +89,9 @@ class SceneParameters(Mapping):
     def keys(self):
         return self.properties.keys()
 
-    def torch(self) -> dict:
-        """
-        Converts all DrJit arrays into PyTorch arrays and return them as a
-        dictionary. This is mainly useful when using PyTorch to optimize a
-        Mitsuba scene.
-        """
-        return {k: v.torch().requires_grad_() for k, v in self.items()}
+    def flags(self, key: str):
+        """Return parameter flags"""
+        return self.properties[key][3]
 
     def set_dirty(self, key: str):
         """
@@ -147,11 +143,6 @@ class SceneParameters(Mapping):
             k: v for k, v in self.properties.items() if k in keys
         }
 
-    def keep_shape(self) -> None:
-        self.properties = {
-            k: v for k, v in self.properties.items() if v[3] == True
-        }
-
 
 def traverse(node: mi.Object) -> SceneParameters:
     """
@@ -163,7 +154,8 @@ def traverse(node: mi.Object) -> SceneParameters:
 
     class SceneTraversal(mi.TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
-                     hierarchy=None, prefixes=None, name=None, depth=0):
+                     hierarchy=None, prefixes=None, name=None, depth=0,
+                     flags=+mi.ParamFlags.Default):
             mi.TraversalCallback.__init__(self)
             self.properties = dict() if properties is None else properties
             self.hierarchy = dict() if hierarchy is None else hierarchy
@@ -180,13 +172,13 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.node = node
             self.depth = depth
             self.hierarchy[node] = (parent, depth)
+            self.flags = flags
 
-        def put_parameter(self, name, ptr, cpptype=None, shape_parameter=False):
+        def put_parameter(self, name, ptr, cpptype=None, flags=+mi.ParamFlags.Empty):
             name = name if self.name is None else self.name + '.' + name
-            self.properties[name] = (ptr, cpptype, self.node,
-                                     shape_parameter)
+            self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
-        def put_object(self, name, node):
+        def put_object(self, name, node, flags):
             if node in self.hierarchy:
                 return
             cb = SceneTraversal(
@@ -196,7 +188,8 @@ def traverse(node: mi.Object) -> SceneParameters:
                 hierarchy=self.hierarchy,
                 prefixes=self.prefixes,
                 name=name if self.name is None else self.name + '.' + name,
-                depth=self.depth + 1
+                depth=self.depth + 1,
+                flags=self.flags | flags
             )
             node.traverse(cb)
 

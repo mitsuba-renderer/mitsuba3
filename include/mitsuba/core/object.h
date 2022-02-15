@@ -262,6 +262,29 @@ private:
     T *m_ptr = nullptr;
 };
 
+// -----------------------------------------------------------------------------
+
+/**
+ * \brief This list of flags is used to classify the different types of
+ * parameters exposed by the plugins.
+ *
+ * For instance, in the context of differentiable rendering, it is important to
+ * know which parameters can be differentiated, and which of those might
+ * introduce discontinuities in the Monte Carlo simulation.
+ */
+enum class ParamFlags : uint32_t {
+    /// No flags set (default value)
+    Empty = 0x0,
+
+    /// Tracking gradients w.r.t. this parameter is not allowed
+    NonDifferentiable = 0x1,
+
+    /// Tracking gradients w.r.t. this parameter will introduce discontinuties
+    Discontinuous = 0x2,
+};
+
+MI_DECLARE_ENUM_OPERATORS(ParamFlags)
+
 /**
  * \brief Abstract class providing an interface for traversing scene graphs
  *
@@ -275,12 +298,15 @@ public:
     /// Inform the traversal callback about an attribute of an instance
     template <typename T>
     void put_parameter(const std::string &name, T &v,
-                       bool shape_parameter = false) {
-        put_parameter_impl(name, &v, typeid(T), shape_parameter);
+                       uint32_t flags = +ParamFlags::Empty) {
+        if constexpr (!(dr::is_diff_array_v<T> && dr::is_floating_point_v<T>))
+            flags = flags & ParamFlags::NonDifferentiable;
+        put_parameter_impl(name, &v, typeid(T), flags);
     }
 
     /// Inform the tranversal callback that the instance references another Mitsuba object
-    virtual void put_object(const std::string &name, Object *obj) = 0;
+    virtual void put_object(const std::string &name, Object *obj,
+                            uint32_t flags = +ParamFlags::Empty) = 0;
 
     virtual ~TraversalCallback() = default;
 protected:
@@ -288,7 +314,7 @@ protected:
     virtual void put_parameter_impl(const std::string &name,
                                     void *ptr,
                                     const std::type_info &type,
-                                    bool shape_parameter) = 0;
+                                    uint32_t flags = +ParamFlags::Empty) = 0;
 };
 
 /// Prints the canonical string representation of an object instance

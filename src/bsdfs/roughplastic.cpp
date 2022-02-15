@@ -432,8 +432,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("alpha", m_alpha);
-        callback->put_parameter("eta", m_eta);
+        callback->put_parameter("alpha", m_alpha, +ParamFlags::Discontinuous);
+        callback->put_parameter("eta", m_eta, +ParamFlags::Discontinuous);
         callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
         if (m_specular_reflectance)
             callback->put_object("specular_reflectance", m_specular_reflectance.get());
