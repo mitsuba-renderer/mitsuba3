@@ -3,7 +3,8 @@ import pytest
 import drjit as dr
 
 def test01_create(variant_scalar_mono_polarized):
-    from mitsuba.render import load_string, BSDFFlags
+    from mitsuba.core import load_string
+    from mitsuba.render import BSDFFlags
 
     b = load_string("<bsdf version='2.0.0' type='polarizer'></bsdf>")
     assert b is not None
