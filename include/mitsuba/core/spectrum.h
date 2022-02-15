@@ -405,15 +405,36 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     }
 }
 
+/**
+ * \brief Read a file containing information about the spectra.
+ *
+ * Depending on the extension of the file, it will read it in text format
+ * or in binary format.
+ *
+ * \param filename
+ *     Path of the file to be read
+ * \param wavelengths
+ *     Array that will be loaded with the wavelengths stored in the file
+ * \param values
+ *     Array that will be loaded with the values stored in the file
+ */
 template <typename Scalar>
 MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
                                         std::vector<Scalar> &wavelengths,
                                         std::vector<Scalar> &values);
 
-/*
- * Write a file containing the information of the spectra.
+/**
+ * \brief Write a file containing information about the spectra.
+ *
  * Depending on the extension of the file, it will write it in text format
  * or in binary format.
+ *
+ * \param filename
+ *     Path to the file to be written to
+ * \param wavelengths
+ *     Array with the wavelengths to be stored in the file
+ * \param values
+ *     Array with the values to be stored in the file
  */
 template <typename Scalar>
 MTS_EXPORT_CORE void spectrum_to_file(const std::string &filename,
