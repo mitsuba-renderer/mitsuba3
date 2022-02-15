@@ -194,7 +194,7 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
     m_struct = new Struct();
     for (auto ch: channels) {
         bool is_alpha = ch == "A" && m_pixel_format != PixelFormat::MultiChannel;
-        uint32_t flags = +Struct::Flags::None;
+        uint32_t flags = +Struct::Flags::Empty;
         if (!is_alpha && ch != "W" && m_srgb_gamma)
             flags |= +Struct::Flags::Gamma;
         if (!is_alpha && ch != "W" && m_premultiplied_alpha)
@@ -384,7 +384,7 @@ ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
         m_pixel_format == PixelFormat::MultiChannel ? m_struct->field_count() : 0);
 
     switch (alpha_transform) {
-        case Bitmap::AlphaTransform::None:
+        case Bitmap::AlphaTransform::Empty:
             result->set_premultiplied_alpha(m_premultiplied_alpha);
             break;
         case Bitmap::AlphaTransform::Premultiply:
@@ -1035,7 +1035,7 @@ void Bitmap::read_exr(Stream *stream) {
 
     // Order channel names based on RGB/XYZ[A] suffix
     for (auto const &name: channels_sorted) {
-        uint32_t flags = +Struct::Flags::None;
+        uint32_t flags = +Struct::Flags::Empty;
         // Tag alpha channels to be able to perform operations depending on alpha
         auto c_class = channel_class(name);
         if (c_class == A)
@@ -2486,7 +2486,7 @@ std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value) {
 
 std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value) {
     switch (value) {
-        case Bitmap::AlphaTransform::None:    os << "none";    break;
+        case Bitmap::AlphaTransform::Empty:    os << "none";    break;
         case Bitmap::AlphaTransform::Premultiply:   os << "premultiply";   break;
         case Bitmap::AlphaTransform::Unpremultiply: os << "unpremultiply"; break;
         default: Throw("Unknown alpha transform!");

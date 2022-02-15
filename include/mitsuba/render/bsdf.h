@@ -34,7 +34,7 @@ enum class BSDFFlags : uint32_t {
     // =============================================================
 
     /// No flags set (default value)
-    None                 = 0x00000,
+    Empty                = 0x00000,
 
     /// 'null' scattering event, i.e. particles do not undergo deflection
     Null                 = 0x00001,

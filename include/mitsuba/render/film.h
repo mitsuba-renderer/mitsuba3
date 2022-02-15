@@ -21,7 +21,7 @@ enum class FilmFlags : uint32_t {
     // =============================================================
 
     /// No flags set (default value)
-    None                 = 0x0,
+    Empty                = 0x0,
 
     /// The film stores an alpha channel
     Alpha                = 0x1,

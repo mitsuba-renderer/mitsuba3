@@ -122,7 +122,7 @@ public:
 
         if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
             m_pixel_format = Bitmap::PixelFormat::Y;
-            m_flags = +FilmFlags::None;
+            m_flags = +FilmFlags::Empty;
             if (pixel_format != "luminance")
                 Log(Warn,
                     "Monochrome mode enabled, setting film output pixel format "
@@ -133,13 +133,13 @@ public:
             m_flags = +FilmFlags::Alpha;
         } else if (pixel_format == "rgb") {
             m_pixel_format = Bitmap::PixelFormat::RGB;
-            m_flags = +FilmFlags::None;
+            m_flags = +FilmFlags::Empty;
         } else if (pixel_format == "rgba") {
             m_pixel_format = Bitmap::PixelFormat::RGBA;
             m_flags = +FilmFlags::Alpha;
         } else if (pixel_format == "xyz") {
             m_pixel_format = Bitmap::PixelFormat::XYZ;
-            m_flags = +FilmFlags::None;
+            m_flags = +FilmFlags::Empty;
         } else if (pixel_format == "xyza") {
             m_pixel_format = Bitmap::PixelFormat::XYZA;
             m_flags = +FilmFlags::Alpha;

@@ -485,7 +485,7 @@ enum class RayFlags : uint32_t {
     // =============================================================
 
     /// No flags set
-    None = 0x0,
+    Empty = 0x0,
 
     /// Compute position and geometric normal
     Minimal = 0x1,

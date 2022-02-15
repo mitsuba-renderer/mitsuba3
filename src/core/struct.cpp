@@ -672,7 +672,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, struct_type_v<Float>, +Struct::Flags::None };
+        Key key { field.name, struct_type_v<Float>, +Struct::Flags::Empty };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -1808,7 +1808,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     if (!m_source->has_field(f.name) && has_flag(f.flags, Struct::Flags::Default)) {
                         value.d = f.default_;
                         value.type = Struct::Type::Float64;
-                        value.flags = +Struct::Flags::None;
+                        value.flags = +Struct::Flags::Empty;
                     } else {
                         if (!load(src, m_source->field(f.name), value))
                             return false;
@@ -1816,7 +1816,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 } else {
                     value.type = struct_type_v<Float>;
                     value.f = 0;
-                    value.flags = +Struct::Flags::None;
+                    value.flags = +Struct::Flags::Empty;
                     for (auto kv : f.blend) {
                         Value value2;
                         if (!load(src, m_source->field(kv.second), value2))

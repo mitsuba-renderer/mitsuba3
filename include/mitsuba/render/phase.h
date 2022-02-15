@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * if the phase function is not a microflake phase function.
  */
 enum class PhaseFunctionFlags : uint32_t {
-    None        = 0x00,
+    Empty       = 0x00,
     Isotropic   = 0x01,
     Anisotropic = 0x02,
     Microflake  = 0x04

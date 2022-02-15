@@ -170,7 +170,7 @@ public:
     /// Type of alpha transformation
     enum class AlphaTransform : uint32_t {
         /// No transformation (default)
-        None,
+        Empty,
 
         // Premultiply channels by alpha
         Premultiply,
@@ -511,7 +511,7 @@ public:
     ref<Bitmap> convert(PixelFormat pixel_format,
                         Struct::Type component_format,
                         bool srgb_gamma,
-                        Bitmap::AlphaTransform alpha_transform = Bitmap::AlphaTransform::None) const;
+                        Bitmap::AlphaTransform alpha_transform = Bitmap::AlphaTransform::Empty) const;
 
     void convert(Bitmap *target) const;
 

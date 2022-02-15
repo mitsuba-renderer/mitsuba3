@@ -626,7 +626,7 @@ static const char *__doc_mitsuba_BSDFFlags_NeedsDifferentials = R"doc(Does the i
 
 static const char *__doc_mitsuba_BSDFFlags_NonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
 
-static const char *__doc_mitsuba_BSDFFlags_None = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_BSDFFlags_Empty = R"doc(No flags set (default value))doc";
 
 static const char *__doc_mitsuba_BSDFFlags_Null = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
 
@@ -881,7 +881,7 @@ class methods and enumerations for further detail.)doc";
 
 static const char *__doc_mitsuba_Bitmap_AlphaTransform = R"doc(Type of alpha transformation)doc";
 
-static const char *__doc_mitsuba_Bitmap_AlphaTransform_None = R"doc(No transformation (default))doc";
+static const char *__doc_mitsuba_Bitmap_AlphaTransform_Empty = R"doc(No transformation (default))doc";
 
 static const char *__doc_mitsuba_Bitmap_AlphaTransform_Premultiply = R"doc(No transformation (default))doc";
 
@@ -2226,7 +2226,7 @@ static const char *__doc_mitsuba_EmitterFlags_DeltaPosition = R"doc(The emitter 
 
 static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is placed at infinity (e.g. environment maps))doc";
 
-static const char *__doc_mitsuba_EmitterFlags_None = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_EmitterFlags_Empty = R"doc(No flags set (default value))doc";
 
 static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
 
@@ -2725,7 +2725,7 @@ static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to
 
 static const char *__doc_mitsuba_FilmFlags_Alpha = R"doc(The film stores an alpha channel)doc";
 
-static const char *__doc_mitsuba_FilmFlags_None = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_FilmFlags_Empty = R"doc(No flags set (default value))doc";
 
 static const char *__doc_mitsuba_FilmFlags_Special =
 R"doc(The film provides a customized prepare_sample() routine that
@@ -4768,7 +4768,7 @@ static const char *__doc_mitsuba_PhaseFunctionFlags_Isotropic = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionFlags_Microflake = R"doc()doc";
 
-static const char *__doc_mitsuba_PhaseFunctionFlags_None = R"doc()doc";
+static const char *__doc_mitsuba_PhaseFunctionFlags_Empty = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_PhaseFunction = R"doc(//! @})doc";
 
@@ -5576,7 +5576,7 @@ static const char *__doc_mitsuba_RayFlags_FollowShape = R"doc(Derivatives of the
 
 static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute position and geometric normal)doc";
 
-static const char *__doc_mitsuba_RayFlags_None = R"doc(No flags set)doc";
+static const char *__doc_mitsuba_RayFlags_Empty = R"doc(No flags set)doc";
 
 static const char *__doc_mitsuba_RayFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
 
@@ -7634,7 +7634,7 @@ static const char *__doc_mitsuba_Struct_Flags_Gamma =
 R"doc(Specifies whether the field encodes a sRGB gamma-corrected value.
 Assumes ``Normalized`` is also specified.)doc";
 
-static const char *__doc_mitsuba_Struct_Flags_None = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_Struct_Flags_Empty = R"doc(No flags set (default value))doc";
 
 static const char *__doc_mitsuba_Struct_Flags_Normalized =
 R"doc(Specifies whether an integer field encodes a normalized value in the

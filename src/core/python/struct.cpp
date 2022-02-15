@@ -107,7 +107,7 @@ MI_PY_EXPORT(Struct) {
             D(Struct, Struct))
         .def("append",
             (Struct &(Struct::*)(const std::string&, Struct::Type, uint32_t, double)) &Struct::append,
-            "name"_a, "type"_a, "flags"_a = Struct::Flags::None, "default"_a = 0.0,
+            "name"_a, "type"_a, "flags"_a = Struct::Flags::Empty, "default"_a = 0.0,
             D(Struct, append), py::return_value_policy::reference)
         .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
             py::return_value_policy::reference_internal)

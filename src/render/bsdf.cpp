@@ -4,7 +4,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
-    : m_flags(+BSDFFlags::None), m_id(props.id()) { }
+    : m_flags(+BSDFFlags::Empty), m_id(props.id()) { }
 
 MI_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
 

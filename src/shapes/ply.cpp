@@ -503,7 +503,7 @@ private:
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property\"");
-                    uint32_t flags = +Struct::Flags::None;
+                    uint32_t flags = +Struct::Flags::Empty;
                     if (it->second >= Struct::Type::Int8 &&
                         it->second <= Struct::Type::UInt64)
                         flags = Struct::Flags::Normalized | Struct::Flags::Gamma;

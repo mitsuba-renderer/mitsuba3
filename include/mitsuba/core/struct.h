@@ -46,7 +46,7 @@ public:
     /// Field-specific flags
     enum class Flags : uint32_t {
         /// No flags set (default value)
-        None = 0x00,
+        Empty = 0x00,
 
         /**
          * Specifies whether an integer field encodes a normalized value in the
@@ -171,7 +171,7 @@ public:
     /// Append a new field to the \c Struct; determines size and offset automatically
     Struct &append(const std::string &name,
                    Type type,
-                   uint32_t flags = (uint32_t) Flags::None,
+                   uint32_t flags = (uint32_t) Flags::Empty,
                    double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)

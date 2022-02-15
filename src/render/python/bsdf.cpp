@@ -9,7 +9,7 @@ MI_PY_EXPORT(BSDFContext) {
         .def_value(TransportMode, Importance);
 
     auto e = py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
-        .def_value(BSDFFlags, None)
+        .def_value(BSDFFlags, Empty)
         .def_value(BSDFFlags, Null)
         .def_value(BSDFFlags, DiffuseReflection)
         .def_value(BSDFFlags, DiffuseTransmission)

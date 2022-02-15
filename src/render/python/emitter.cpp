@@ -4,7 +4,7 @@
 
 MI_PY_EXPORT(EmitterExtras) {
     auto e = py::enum_<EmitterFlags>(m, "EmitterFlags", D(EmitterFlags))
-        .def_value(EmitterFlags, None)
+        .def_value(EmitterFlags, Empty)
         .def_value(EmitterFlags, DeltaPosition)
         .def_value(EmitterFlags, DeltaDirection)
         .def_value(EmitterFlags, Infinite)

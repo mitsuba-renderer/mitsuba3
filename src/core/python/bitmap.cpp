@@ -35,8 +35,8 @@ MI_PY_EXPORT(Bitmap) {
         .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
     py::enum_<Bitmap::AlphaTransform>(bitmap, "AlphaTransform")
-        .value("None",          Bitmap::AlphaTransform::None,
-                D(Bitmap, AlphaTransform, None))
+        .value("None",          Bitmap::AlphaTransform::Empty,
+                D(Bitmap, AlphaTransform, Empty))
         .value("Premultiply",   Bitmap::AlphaTransform::Premultiply,
                 D(Bitmap, AlphaTransform, Premultiply))
         .value("Unpremultiply", Bitmap::AlphaTransform::Unpremultiply,
@@ -89,7 +89,7 @@ MI_PY_EXPORT(Bitmap) {
                                Bitmap::AlphaTransform>(&Bitmap::convert, py::const_),
              D(Bitmap, convert),
              "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
-             "alpha_transform"_a = Bitmap::AlphaTransform::None,
+             "alpha_transform"_a = Bitmap::AlphaTransform::Empty,
              py::call_guard<py::gil_scoped_release>())
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
              D(Bitmap, convert, 2), "target"_a,

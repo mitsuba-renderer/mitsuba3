@@ -18,7 +18,7 @@ enum class EmitterFlags : uint32_t {
     // =============================================================
 
     /// No flags set (default value)
-    None                 = 0x00000,
+    Empty                = 0x00000,
 
     /// The emitter lies at a single point in space
     DeltaPosition        = 0x00001,
