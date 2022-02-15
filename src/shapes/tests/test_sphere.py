@@ -1,42 +1,39 @@
-import mitsuba
 import pytest
 import drjit as dr
+import mitsuba as mi
+
 from drjit.scalar import ArrayXf as Float
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import load_dict, ScalarTransform4f
-
-    s = load_dict({"type" : "sphere"})
+    s = mi.load_dict({"type" : "sphere"})
     assert s is not None
     assert s.primitive_count() == 1
     assert dr.allclose(s.surface_area(), 4 * dr.Pi)
 
     # Test transforms order in constructor
 
-    rot = ScalarTransform4f.rotate([1.0, 0.0, 0.0], 35)
+    rot = mi.ScalarTransform4f.rotate([1.0, 0.0, 0.0], 35)
 
-    s1 = load_dict({
+    s1 = mi.load_dict({
         "type" : "sphere",
         "radius" : 2.0,
         "center" : [1, 0, 0],
         "to_world" : rot
     })
 
-    s2 = load_dict({
+    s2 = mi.load_dict({
         "type" : "sphere",
-        "to_world" : rot * ScalarTransform4f.translate([1, 0, 0]) * ScalarTransform4f.scale(2)
+        "to_world" : rot * mi.ScalarTransform4f.translate([1, 0, 0]) * mi.ScalarTransform4f.scale(2)
     })
 
     assert str(s1) == str(s2)
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import load_dict
-
     for r in [1, 2, 4]:
-        s = load_dict({
+        s = mi.load_dict({
             "type" : "sphere",
             "radius" : r
         })
@@ -50,13 +47,11 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect_transform(variant_scalar_rgb):
-    from mitsuba.core import load_dict, Ray3f, Transform4f
-
     for r in [1, 3]:
-        s = load_dict({
+        s = mi.load_dict({
             "type" : "sphere",
             "radius" : r,
-            "to_world": Transform4f.translate([0, 1, 0]) * Transform4f.rotate([0, 1, 0], 30.0)
+            "to_world": mi.Transform4f.translate([0, 1, 0]) * mi.Transform4f.rotate([0, 1, 0], 30.0)
         })
 
         # grid size
@@ -68,8 +63,8 @@ def test03_ray_intersect_transform(variant_scalar_rgb):
                 x_coord = r * (2 * (x * inv_n) - 1)
                 y_coord = r * (2 * (y * inv_n) - 1)
 
-                ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
-                            time=0.0, wavelengths=[])
+                ray = mi.Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
+                               time=0.0, wavelengths=[])
                 si_found = s.ray_test(ray)
 
                 assert si_found == (x_coord ** 2 + y_coord ** 2 <= r * r) \
@@ -77,8 +72,8 @@ def test03_ray_intersect_transform(variant_scalar_rgb):
 
                 if si_found:
                     si = s.ray_intersect(ray)
-                    ray_u = Ray3f(ray)
-                    ray_v = Ray3f(ray)
+                    ray_u = mi.Ray3f(ray)
+                    ray_v = mi.Ray3f(ray)
                     eps = 1e-4
                     ray_u.o += si.dp_du * eps
                     ray_v.o += si.dp_dv * eps
@@ -93,23 +88,21 @@ def test03_ray_intersect_transform(variant_scalar_rgb):
 
 
 def test04_ray_intersect_vec(variant_scalar_rgb):
-    from mitsuba.python.test.util import check_vectorization
+    from mitsuba.scalar_rgb.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
-
-        scene = load_dict({
+        scene = mi.load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "sphere",
-                "to_world" : ScalarTransform4f.scale((0.5, 0.5, 0.5))
+                "to_world" : mi.ScalarTransform4f.scale((0.5, 0.5, 0.5))
             }
         })
 
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
+        t = scene.ray_intersect(mi.Ray3f(o, [0, 0, -1])).t
         dr.eval(t)
         return t
 
@@ -117,10 +110,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_sample_direct(variant_scalar_rgb):
-    from mitsuba.core import load_dict, Ray3f
-    from mitsuba.render import Interaction3f
-
-    sphere = load_dict({"type" : "sphere"})
+    sphere = mi.load_dict({"type" : "sphere"})
 
     def sample_cone(sample, cos_theta_max):
         cos_theta = (1 - sample[1]) + sample[1] * cos_theta_max
@@ -129,7 +119,7 @@ def test05_sample_direct(variant_scalar_rgb):
         s, c = dr.sin(phi), dr.cos(phi)
         return [c * sin_theta, s * sin_theta, cos_theta]
 
-    it = dr.zero(Interaction3f)
+    it = dr.zero(mi.Interaction3f)
     it.p = [0, 0, -3]
     it.t = 0
     sin_cone_angle = 1.0 / it.p[2]
@@ -139,18 +129,16 @@ def test05_sample_direct(variant_scalar_rgb):
         for xi_2 in dr.linspace(Float, 1e-3, 1 - 1e-3, 10):
             sample = sphere.sample_direction(it, [xi_2, 1 - xi_1])
             d = sample_cone([xi_1, xi_2], cos_cone_angle)
-            its = sphere.ray_intersect(Ray3f(it.p, d))
+            its = sphere.ray_intersect(mi.Ray3f(it.p, d))
             assert dr.allclose(d, sample.d, atol=1e-5, rtol=1e-5)
             assert dr.allclose(its.t, sample.dist, atol=1e-5, rtol=1e-5)
             assert dr.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import load_dict, Ray3f, Vector3f
+    shape = mi.load_dict({'type' : 'sphere'})
 
-    shape = load_dict({'type' : 'sphere'})
-
-    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
+    ray = mi.Ray3f(mi.Vector3f(0.0, -10.0, 0.0), mi.Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     dr.enable_grad(ray.o)
@@ -210,11 +198,9 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
-    from mitsuba.core import load_dict, Ray3f, Vector3f
+    shape = mi.load_dict({'type' : 'sphere'})
 
-    shape = load_dict({'type' : 'sphere'})
-
-    ray = Ray3f(Vector3f(0.0, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0))
+    ray = mi.Ray3f(mi.Vector3f(0.0, 0.0, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     dr.enable_grad(ray.o)
@@ -232,10 +218,8 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
 
 def test08_si_singularity(variants_all_rgb):
-    from mitsuba.core import load_dict, Ray3f
-
-    scene = load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
-    ray = Ray3f([0, 0, -1], [0, 0, 1])
+    scene = mi.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
+    ray = mi.Ray3f([0, 0, -1], [0, 0, 1])
 
     si = scene.ray_intersect(ray)
 
