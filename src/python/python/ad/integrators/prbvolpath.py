@@ -176,61 +176,61 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Handle medium sampling and potential medium escape
             u = sampler.next_1d(active_medium)
-            mi = medium.sample_interaction(ray, u, channel, active_medium)
-            mi.t = dr.detach(mi.t)
+            mei = medium.sample_interaction(ray, u, channel, active_medium)
+            mei.t = dr.detach(mei.t)
 
-            ray.maxt[active_medium & medium.is_homogeneous() & mi.is_valid()] = mi.t
+            ray.maxt[active_medium & medium.is_homogeneous() & mei.is_valid()] = mei.t
             intersect = needs_intersection & active_medium
             si_new = scene.ray_intersect(ray, intersect)
             si[intersect] = si_new
 
             needs_intersection &= ~active_medium
-            mi.t[active_medium & (si.t < mi.t)] = dr.Infinity
+            mei.t[active_medium & (si.t < mei.t)] = dr.Infinity
 
             weight = Spectrum(1.0)
 
             # Evaluate ratio of transmittance and free-flight PDF
-            tr, free_flight_pdf = medium.eval_tr_and_pdf(mi, si, active_medium)
+            tr, free_flight_pdf = medium.eval_tr_and_pdf(mei, si, active_medium)
             tr_pdf = index_spectrum(free_flight_pdf, channel)
             weight[active_medium] = weight * dr.select(tr_pdf > 0.0, tr / dr.detach(tr_pdf), 0.0)
 
-            escaped_medium = active_medium & ~mi.is_valid()
-            active_medium &= mi.is_valid()
+            escaped_medium = active_medium & ~mei.is_valid()
+            active_medium &= mei.is_valid()
 
             # Handle null and real scatter events
             if self.handle_null_scattering:
-                scatter_prob = index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel)
+                scatter_prob = index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel)
                 act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                 act_medium_scatter = ~act_null_scatter & active_medium
-                weight[act_null_scatter] = weight * mi.sigma_n / dr.detach(1 - scatter_prob)
+                weight[act_null_scatter] = weight * mei.sigma_n / dr.detach(1 - scatter_prob)
             else:
                 act_medium_scatter = active_medium
 
             depth[act_medium_scatter] = depth + 1
-            last_scatter_event[act_medium_scatter] = dr.detach(mi)
+            last_scatter_event[act_medium_scatter] = dr.detach(mei)
 
             # Dont estimate lighting if we exceeded number of bounces
             active &= depth < self.max_depth
             act_medium_scatter &= active
             if self.handle_null_scattering:
-                ray.o[act_null_scatter] = dr.detach(mi.p)
-                si.t[act_null_scatter] = si.t - dr.detach(mi.t)
+                ray.o[act_null_scatter] = dr.detach(mei.p)
+                si.t[act_null_scatter] = si.t - dr.detach(mei.t)
 
-            weight[act_medium_scatter] = weight * mi.sigma_s * dr.detach(index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel))
+            weight[act_medium_scatter] = weight * mei.sigma_s * dr.detach(index_spectrum(mei.combined_extinction, channel) / index_spectrum(mei.sigma_t, channel))
             throughput[active_medium] = throughput * dr.detach(weight)
 
-            mi = dr.detach(mi)
+            mei = dr.detach(mei)
             if not is_primal and dr.grad_enabled(weight):
                 dr.backward(weight * dr.detach(dr.select(active_medium | escaped_medium, grad * result / dr.max(1e-8, weight), 0.0)))
 
             phase_ctx = PhaseFunctionContext(sampler)
-            phase = mi.medium.phase_function()
+            phase = mei.medium.phase_function()
             phase[~act_medium_scatter] = dr.zero(mitsuba.render.PhaseFunctionPtr, 1)
 
             valid_ray |= act_medium_scatter
             with dr.suspend_grad():
-                wo, phase_pdf = phase.sample(phase_ctx, mi, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
-            new_ray = mi.spawn_ray(wo)
+                wo, phase_pdf = phase.sample(phase_ctx, mei, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
+            new_ray = mei.spawn_ray(wo)
             ray[act_medium_scatter] = new_ray
             needs_intersection |= act_medium_scatter
             last_scatter_direction_pdf[act_medium_scatter] = phase_pdf
@@ -265,19 +265,19 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             # --------------------- Emitter sampling ---------------------
             if self.use_nee:
                 active_e_surface = active_surface & has_flag(bsdf.flags(), BSDFFlags.Smooth) & (depth + 1 < self.max_depth)
-                sample_emitters = mi.medium.use_emitter_sampling()
+                sample_emitters = mei.medium.use_emitter_sampling()
                 specular_chain &= ~act_medium_scatter
                 specular_chain |= act_medium_scatter & ~sample_emitters
                 active_e_medium = act_medium_scatter & sample_emitters
                 active_e = active_e_surface | active_e_medium
                 ref_interaction = dr.zero(mitsuba.render.Interaction3f, wavefront_size)
-                ref_interaction[act_medium_scatter] = mi
+                ref_interaction[act_medium_scatter] = mei
                 ref_interaction[active_surface] = si
                 nee_sampler = sampler if is_primal else sampler.clone()
                 emitted, ds = self.sample_emitter(ref_interaction, scene, sampler, medium, channel, active_e)
                 # Query the BSDF for that emitter-sampled direction
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, si.to_local(ds.d), active_e_surface)
-                phase_val = phase.eval(phase_ctx, mi, ds.d, active_e_medium)
+                phase_val = phase.eval(phase_ctx, mei, ds.d, active_e_medium)
                 nee_weight = dr.select(active_e_surface, bsdf_val, phase_val)
                 nee_directional_pdf = dr.select(ds.delta, 0.0, dr.select(active_e_surface, bsdf_pdf, phase_val))
 
@@ -366,25 +366,25 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             active_surface = active & ~active_medium
 
             # Handle medium interactions / transmittance
-            mi = medium.sample_interaction(ray, sampler.next_1d(active_medium), channel, active_medium)
-            mi.t[active_medium & (si.t < mi.t)] = dr.Infinity
-            mi.t = dr.detach(mi.t)
+            mei = medium.sample_interaction(ray, sampler.next_1d(active_medium), channel, active_medium)
+            mei.t[active_medium & (si.t < mei.t)] = dr.Infinity
+            mei.t = dr.detach(mei.t)
 
             tr_multiplier = Spectrum(1.0)
             # Special case for homogeneous media: directly jump to the next surface / end of the segment
             if self.nee_handle_homogeneous:
                 active_homogeneous = active_medium & medium.is_homogeneous()
-                mi.t[active_homogeneous] = dr.min(remaining_dist, si.t)
-                tr_multiplier[active_homogeneous] = medium.eval_tr_and_pdf(mi, si, active_homogeneous)[0]
-                mi.t[active_homogeneous] = dr.Infinity
+                mei.t[active_homogeneous] = dr.min(remaining_dist, si.t)
+                tr_multiplier[active_homogeneous] = medium.eval_tr_and_pdf(mei, si, active_homogeneous)[0]
+                mei.t[active_homogeneous] = dr.Infinity
 
-            escaped_medium = active_medium & ~mi.is_valid()
+            escaped_medium = active_medium & ~mei.is_valid()
 
             # Ratio tracking transmittance computation
-            active_medium &= mi.is_valid()
-            ray.o[active_medium] = dr.detach(mi.p)
-            si.t[active_medium] = dr.detach(si.t - mi.t)
-            tr_multiplier[active_medium] = tr_multiplier * mi.sigma_n / mi.combined_extinction
+            active_medium &= mei.is_valid()
+            ray.o[active_medium] = dr.detach(mei.p)
+            si.t[active_medium] = dr.detach(si.t - mei.t)
+            tr_multiplier[active_medium] = tr_multiplier * mei.sigma_n / mei.combined_extinction
 
             # Handle interactions with surfaces
             active_surface |= escaped_medium
@@ -407,7 +407,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Continue tracing through scene if non-zero weights exist
             active &= (active_medium | active_surface) & dr.any(dr.neq(transmittance, 0.0))
-            total_dist[active] = total_dist + dr.select(active_medium, mi.t, si.t)
+            total_dist[active] = total_dist + dr.select(active_medium, mei.t, si.t)
 
             # If a medium transition is taking place: Update the medium pointer
             has_medium_trans = active_surface & si.is_medium_transition()

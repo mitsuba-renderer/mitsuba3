@@ -95,7 +95,7 @@ public:
 
         Spectrum throughput(1.f), result(0.f);
         MediumPtr medium = initial_medium;
-        MediumInteraction3f mi = dr::zero<MediumInteraction3f>();
+        MediumInteraction3f mei = dr::zero<MediumInteraction3f>();
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
 
@@ -115,7 +115,7 @@ public:
            Register everything that changes as part of the loop here */
         dr::Loop<Mask> loop("Volpath integrator",
                             /* loop state: */ active, depth, ray, throughput,
-                            result, si, mi, medium, eta, last_scatter_event,
+                            result, si, mei, medium, eta, last_scatter_event,
                             last_scatter_direction_pdf, needs_intersection,
                             specular_chain, valid_ray);
 
@@ -150,36 +150,36 @@ public:
             }
 
             if (dr::any_or<true>(active_medium)) {
-                mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = mei.t;
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !active_medium;
 
-                dr::masked(mi.t, active_medium && (si.t < mi.t)) = dr::Infinity<Float>;
+                dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mei, si, is_spectral);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);
                     dr::masked(throughput, is_spectral) *= dr::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
                 }
 
-                escaped_medium = active_medium && !mi.is_valid();
-                active_medium &= mi.is_valid();
+                escaped_medium = active_medium && !mei.is_valid();
+                active_medium &= mei.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel);
+                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
 
                 if (dr::any_or<true>(is_spectral && act_null_scatter))
                     dr::masked(throughput, is_spectral && act_null_scatter) *=
-                        mi.sigma_n * index_spectrum(mi.combined_extinction, channel) /
-                        index_spectrum(mi.sigma_n, channel);
+                        mei.sigma_n * index_spectrum(mei.combined_extinction, channel) /
+                        index_spectrum(mei.sigma_n, channel);
 
                 dr::masked(depth, act_medium_scatter) += 1;
-                dr::masked(last_scatter_event, act_medium_scatter) = mi;
+                dr::masked(last_scatter_event, act_medium_scatter) = mei;
             }
 
             // Dont estimate lighting if we exceeded number of bounces
@@ -187,41 +187,41 @@ public:
             act_medium_scatter &= active;
 
             if (dr::any_or<true>(act_null_scatter)) {
-                dr::masked(ray.o, act_null_scatter) = mi.p;
-                dr::masked(si.t, act_null_scatter) = si.t - mi.t;
+                dr::masked(ray.o, act_null_scatter) = mei.p;
+                dr::masked(si.t, act_null_scatter) = si.t - mei.t;
             }
 
             if (dr::any_or<true>(act_medium_scatter)) {
                 if (dr::any_or<true>(is_spectral))
                     dr::masked(throughput, is_spectral && act_medium_scatter) *=
-                        mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel);
+                        mei.sigma_s * index_spectrum(mei.combined_extinction, channel) / index_spectrum(mei.sigma_t, channel);
                 if (dr::any_or<true>(not_spectral))
-                    dr::masked(throughput, not_spectral && act_medium_scatter) *= mi.sigma_s / mi.sigma_t;
+                    dr::masked(throughput, not_spectral && act_medium_scatter) *= mei.sigma_s / mei.sigma_t;
 
                 PhaseFunctionContext phase_ctx(sampler);
-                auto phase = mi.medium->phase_function();
+                auto phase = mei.medium->phase_function();
 
                 // --------------------- Emitter sampling ---------------------
-                Mask sample_emitters = mi.medium->use_emitter_sampling();
+                Mask sample_emitters = mei.medium->use_emitter_sampling();
                 valid_ray |= act_medium_scatter;
                 specular_chain &= !act_medium_scatter;
                 specular_chain |= act_medium_scatter && !sample_emitters;
 
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (dr::any_or<true>(active_e)) {
-                    auto [emitted, ds] = sample_emitter(mi, scene, sampler, medium, channel, active_e);
-                    Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
+                    auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
+                    Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
                     dr::masked(result, active_e) += throughput * phase_val * emitted *
                                                     mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_val));
                 }
 
                 // ------------------ Phase function sampling -----------------
                 dr::masked(phase, !act_medium_scatter) = nullptr;
-                auto [wo, phase_pdf] = phase->sample(phase_ctx, mi,
+                auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
                     sampler->next_1d(act_medium_scatter),
                     sampler->next_2d(act_medium_scatter),
                     act_medium_scatter);
-                Ray3f new_ray  = mi.spawn_ray(wo);
+                Ray3f new_ray  = mei.spawn_ray(wo);
                 dr::masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
                 dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
@@ -344,44 +344,44 @@ public:
             Mask active_surface = active && !active_medium;
 
             if (dr::any_or<true>(active_medium)) {
-                auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = dr::min(mi.t, remaining_dist);
+                auto mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = dr::min(mei.t, remaining_dist);
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
-                dr::masked(mi.t, active_medium && (si.t < mi.t)) = dr::Infinity<Float>;
+                dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
                 needs_intersection &= !active_medium;
 
                 Mask is_spectral = medium->has_spectral_extinction() && active_medium;
                 Mask not_spectral = !is_spectral && active_medium;
                 if (dr::any_or<true>(is_spectral)) {
-                    Float t      = dr::min(remaining_dist, dr::min(mi.t, si.t)) - mi.mint;
-                    UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
-                    UnpolarizedSpectrum free_flight_pdf = dr::select(si.t < mi.t || mi.t > remaining_dist, tr, tr * mi.combined_extinction);
+                    Float t      = dr::min(remaining_dist, dr::min(mei.t, si.t)) - mei.mint;
+                    UnpolarizedSpectrum tr  = dr::exp(-t * mei.combined_extinction);
+                    UnpolarizedSpectrum free_flight_pdf = dr::select(si.t < mei.t || mei.t > remaining_dist, tr, tr * mei.combined_extinction);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);
                     dr::masked(transmittance, is_spectral) *= dr::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
                 }
 
                 // Handle exceeding the maximum distance by medium sampling
-                dr::masked(total_dist, active_medium && (mi.t > remaining_dist) && mi.is_valid()) = ds.dist;
-                dr::masked(mi.t, active_medium && (mi.t > remaining_dist)) = dr::Infinity<Float>;
+                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = ds.dist;
+                dr::masked(mei.t, active_medium && (mei.t > remaining_dist)) = dr::Infinity<Float>;
 
-                escaped_medium = active_medium && !mi.is_valid();
-                active_medium &= mi.is_valid();
+                escaped_medium = active_medium && !mei.is_valid();
+                active_medium &= mei.is_valid();
                 is_spectral &= active_medium;
                 not_spectral &= active_medium;
 
-                dr::masked(total_dist, active_medium) += mi.t;
+                dr::masked(total_dist, active_medium) += mei.t;
 
                 if (dr::any_or<true>(active_medium)) {
-                    dr::masked(ray.o, active_medium)    = mi.p;
-                    dr::masked(si.t, active_medium) = si.t - mi.t;
+                    dr::masked(ray.o, active_medium)    = mei.p;
+                    dr::masked(si.t, active_medium) = si.t - mei.t;
 
                     if (dr::any_or<true>(is_spectral))
-                        dr::masked(transmittance, is_spectral) *= mi.sigma_n;
+                        dr::masked(transmittance, is_spectral) *= mei.sigma_n;
                     if (dr::any_or<true>(not_spectral))
-                        dr::masked(transmittance, not_spectral) *= mi.sigma_n / mi.combined_extinction;
+                        dr::masked(transmittance, not_spectral) *= mei.sigma_n / mei.combined_extinction;
                 }
             }
 

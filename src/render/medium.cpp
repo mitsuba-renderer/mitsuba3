@@ -40,11 +40,11 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     MI_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
 
     // initialize basic medium interaction fields
-    MediumInteraction3f mi = dr::zero<MediumInteraction3f>();
-    mi.wi          = -ray.d;
-    mi.sh_frame    = Frame3f(mi.wi);
-    mi.time        = ray.time;
-    mi.wavelengths = ray.wavelengths;
+    MediumInteraction3f mei = dr::zero<MediumInteraction3f>();
+    mei.wi          = -ray.d;
+    mei.sh_frame    = Frame3f(mei.wi);
+    mei.time        = ray.time;
+    mei.wavelengths = ray.wavelengths;
 
     auto [aabb_its, mint, maxt] = intersect_aabb(ray);
     aabb_its &= (dr::isfinite(mint) || dr::isfinite(maxt));
@@ -55,7 +55,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mint = dr::max(0.f, mint);
     maxt = dr::min(ray.maxt, maxt);
 
-    auto combined_extinction = get_combined_extinction(mi, active);
+    auto combined_extinction = get_combined_extinction(mei, active);
     Float m                  = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
         dr::masked(m, dr::eq(channel, 1u)) = combined_extinction[1];
@@ -66,15 +66,15 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 
     Float sampled_t = mint + (-dr::log(1 - sample) / m);
     Mask valid_mi   = active && (sampled_t <= maxt);
-    mi.t            = dr::select(valid_mi, sampled_t, dr::Infinity<Float>);
-    mi.p            = ray(sampled_t);
-    mi.medium       = this;
-    mi.mint         = mint;
+    mei.t           = dr::select(valid_mi, sampled_t, dr::Infinity<Float>);
+    mei.p           = ray(sampled_t);
+    mei.medium      = this;
+    mei.mint        = mint;
 
-    std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
-        get_scattering_coefficients(mi, valid_mi);
-    mi.combined_extinction = combined_extinction;
-    return mi;
+    std::tie(mei.sigma_s, mei.sigma_n, mei.sigma_t) =
+        get_scattering_coefficients(mei, valid_mi);
+    mei.combined_extinction = combined_extinction;
+    return mei;
 }
 
 MI_VARIANT

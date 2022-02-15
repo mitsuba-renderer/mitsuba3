@@ -130,7 +130,7 @@ public:
         Spectrum result(0.f);
 
         MediumPtr medium = initial_medium;
-        MediumInteraction3f mi = dr::zero<MediumInteraction3f>();
+        MediumInteraction3f mei = dr::zero<MediumInteraction3f>();
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
@@ -154,7 +154,7 @@ public:
         dr::Loop<Mask> loop("Volpath MIS integrator",
                             /* loop state: */
                             active, depth, ray, p_over_f, p_over_f_nee, result,
-                            si, mi, medium, eta, last_scatter_event,
+                            si, mei, medium, eta, last_scatter_event,
                             needs_intersection, specular_chain, valid_ray);
 
         while (loop(active)) {
@@ -192,35 +192,35 @@ public:
             }
 
             if (dr::any_or<true>(active_medium)) {
-                mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = mei.t;
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !active_medium;
-                dr::masked(mi.t, active_medium && (si.t < mi.t)) = dr::Infinity<Float>;
+                dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
 
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mei, si, is_spectral);
                     update_weights(p_over_f, free_flight_pdf, tr, channel, is_spectral);
                     update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
                 }
-                escaped_medium = active_medium && !mi.is_valid();
-                active_medium &= mi.is_valid();
+                escaped_medium = active_medium && !mei.is_valid();
+                active_medium &= mei.is_valid();
                 is_spectral &= active_medium;
                 not_spectral &= active_medium;
             }
 
             if (dr::any_or<true>(active_medium)) {
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel);
+                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
                 last_event_was_null = act_null_scatter;
 
                 // Count this as a bounce
                 dr::masked(depth, act_medium_scatter) += 1;
-                dr::masked(last_scatter_event, act_medium_scatter) = mi;
-                Mask sample_emitters = mi.medium->use_emitter_sampling();
+                dr::masked(last_scatter_event, act_medium_scatter) = mei;
+                Mask sample_emitters = mei.medium->use_emitter_sampling();
 
                 active &= depth < (uint32_t) m_max_depth;
                 act_medium_scatter &= active;
@@ -229,35 +229,35 @@ public:
 
                 if (dr::any_or<true>(act_null_scatter)) {
                     if (dr::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral && act_null_scatter);
-                        update_weights(p_over_f_nee, 1.0f, mi.sigma_n, channel, is_spectral && act_null_scatter);
+                        update_weights(p_over_f, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral && act_null_scatter);
+                        update_weights(p_over_f_nee, 1.0f, mei.sigma_n, channel, is_spectral && act_null_scatter);
                     }
                     if (dr::any_or<true>(not_spectral)) {
-                       update_weights(p_over_f, mi.sigma_n, mi.sigma_n, channel, not_spectral && act_null_scatter);
-                       update_weights(p_over_f_nee, 1.0f, mi.sigma_n / mi.combined_extinction, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f, mei.sigma_n, mei.sigma_n, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f_nee, 1.0f, mei.sigma_n / mei.combined_extinction, channel, not_spectral && act_null_scatter);
                     }
 
-                    dr::masked(ray.o, act_null_scatter) = mi.p;
-                    dr::masked(si.t, act_null_scatter) = si.t - mi.t;
+                    dr::masked(ray.o, act_null_scatter) = mei.p;
+                    dr::masked(si.t, act_null_scatter) = si.t - mei.t;
                 }
 
                 if (dr::any_or<true>(act_medium_scatter)) {
                     if (dr::any_or<true>(is_spectral))
-                        update_weights(p_over_f, mi.sigma_t / mi.combined_extinction, mi.sigma_s, channel, is_spectral && act_medium_scatter);
+                        update_weights(p_over_f, mei.sigma_t / mei.combined_extinction, mei.sigma_s, channel, is_spectral && act_medium_scatter);
                     if (dr::any_or<true>(not_spectral))
-                        update_weights(p_over_f, mi.sigma_t, mi.sigma_s, channel, not_spectral && act_medium_scatter);
+                        update_weights(p_over_f, mei.sigma_t, mei.sigma_s, channel, not_spectral && act_medium_scatter);
 
                     PhaseFunctionContext phase_ctx(sampler);
-                    auto phase = mi.medium->phase_function();
+                    auto phase = mei.medium->phase_function();
 
                     // --------------------- Emitter sampling ---------------------
                     valid_ray |= act_medium_scatter;
                     Mask active_e = act_medium_scatter && sample_emitters;
                     if (dr::any_or<true>(active_e)) {
                         auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
-                            sample_emitter(mi, scene, sampler, medium, p_over_f,
+                            sample_emitter(mei, scene, sampler, medium, p_over_f,
                                            channel, active_e);
-                        Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
+                        Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
                         update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
                         update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_val), phase_val, channel, active_e);
                         dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
@@ -268,11 +268,11 @@ public:
 
                     // ------------------ Phase function sampling -----------------
                     dr::masked(phase, !act_medium_scatter) = nullptr;
-                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mi,
+                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
                         sampler->next_1d(act_medium_scatter),
                         sampler->next_2d(act_medium_scatter),
                         act_medium_scatter);
-                    Ray3f new_ray  = mi.spawn_ray(wo);
+                    Ray3f new_ray  = mei.spawn_ray(wo);
                     dr::masked(ray, act_medium_scatter) = new_ray;
                     needs_intersection |= act_medium_scatter;
 
@@ -399,45 +399,45 @@ public:
             Mask active_surface = active && !active_medium;
 
             if (dr::any_or<true>(active_medium)) {
-                auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = dr::min(mi.t, remaining_dist);
+                auto mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = dr::min(mei.t, remaining_dist);
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
-                dr::masked(mi.t, active_medium && (si.t < mi.t)) = dr::Infinity<Float>;
+                dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
                 needs_intersection &= !active_medium;
 
                 Mask is_spectral = medium->has_spectral_extinction() && active_medium;
                 Mask not_spectral = !is_spectral && active_medium;
                 if (dr::any_or<true>(is_spectral)) {
-                    Float t      = dr::min(remaining_dist, dr::min(mi.t, si.t)) - mi.mint;
-                    UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
-                    UnpolarizedSpectrum free_flight_pdf = dr::select(si.t < mi.t || mi.t > remaining_dist, tr, tr * mi.combined_extinction);
+                    Float t      = dr::min(remaining_dist, dr::min(mei.t, si.t)) - mei.mint;
+                    UnpolarizedSpectrum tr  = dr::exp(-t * mei.combined_extinction);
+                    UnpolarizedSpectrum free_flight_pdf = dr::select(si.t < mei.t || mei.t > remaining_dist, tr, tr * mei.combined_extinction);
                     update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
                     update_weights(p_over_f_uni, free_flight_pdf, tr, channel, is_spectral);
                 }
                 // Handle exceeding the maximum distance by medium sampling
-                dr::masked(total_dist, active_medium && (mi.t > remaining_dist) && mi.is_valid()) = ds.dist;
-                dr::masked(mi.t, active_medium && (mi.t > remaining_dist)) = dr::Infinity<Float>;
+                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = ds.dist;
+                dr::masked(mei.t, active_medium && (mei.t > remaining_dist)) = dr::Infinity<Float>;
 
-                escaped_medium = active_medium && !mi.is_valid();
-                active_medium &= mi.is_valid();
+                escaped_medium = active_medium && !mei.is_valid();
+                active_medium &= mei.is_valid();
                 is_spectral &= active_medium;
                 not_spectral &= active_medium;
 
-                dr::masked(total_dist, active_medium) += mi.t;
+                dr::masked(total_dist, active_medium) += mei.t;
 
                 if (dr::any_or<true>(active_medium)) {
-                    dr::masked(ray.o, active_medium) = mi.p;
+                    dr::masked(ray.o, active_medium) = mei.p;
                     // Update si.t since we continue the ray into the same direction
-                    dr::masked(si.t, active_medium) = si.t - mi.t;
+                    dr::masked(si.t, active_medium) = si.t - mei.t;
                     if (dr::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f_nee, 1.f, mi.sigma_n, channel, is_spectral);
-                        update_weights(p_over_f_uni, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral);
+                        update_weights(p_over_f_nee, 1.f, mei.sigma_n, channel, is_spectral);
+                        update_weights(p_over_f_uni, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral);
                     }
                     if (dr::any_or<true>(not_spectral)) {
-                        update_weights(p_over_f_nee, 1.f, mi.sigma_n / mi.combined_extinction, channel, not_spectral);
-                        update_weights(p_over_f_uni, mi.sigma_n, mi.sigma_n, channel, not_spectral);
+                        update_weights(p_over_f_nee, 1.f, mei.sigma_n / mei.combined_extinction, channel, not_spectral);
+                        update_weights(p_over_f_uni, mei.sigma_n, mei.sigma_n, channel, not_spectral);
                     }
                 }
             }
