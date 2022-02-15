@@ -87,7 +87,8 @@ INTEGRATOR_ORDERING = [
     'volpathmis'
 ]
 
-FILM_ORDERING = ['hdrfilm']
+FILM_ORDERING = ['hdrfilm',
+                 'specfilm']
 
 RFILTER_ORDERING = [
     'box',
@@ -100,7 +101,8 @@ RFILTER_ORDERING = [
 
 MEDIUM_ORDERING = [
     'homogeneous',
-    'heterogeneous'
+    'heterogeneous',
+    'specmedium'
 ]
 
 PHASE_ORDERING = [

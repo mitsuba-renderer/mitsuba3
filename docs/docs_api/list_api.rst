@@ -304,6 +304,8 @@
 
 .. autoclass:: mitsuba.core.ThreadEnvironment
 
+.. autoclass:: mitsuba.core.Timer
+
 .. autoclass:: mitsuba.core.Transform3f
 
 .. autoclass:: mitsuba.core.Transform4f
@@ -400,6 +402,12 @@
 
 .. autofunction:: mitsuba.core.linear_rgb_rec
 
+.. autofunction:: mitsuba.core.load_dict
+
+.. autofunction:: mitsuba.core.load_file
+
+.. autofunction:: mitsuba.core.load_string
+
 .. autofunction:: mitsuba.core.luminance
 
 .. autofunction:: mitsuba.core.math.RayEpsilon
@@ -470,7 +478,11 @@
 
 .. autofunction:: mitsuba.core.sobol_2
 
+.. autofunction:: mitsuba.core.spectrum_from_file
+
 .. autofunction:: mitsuba.core.spectrum_list_to_srgb
+
+.. autofunction:: mitsuba.core.spectrum_to_file
 
 .. autofunction:: mitsuba.core.spline.eval_1d
 
@@ -588,13 +600,9 @@
 
 .. autofunction:: mitsuba.core.warp.von_mises_fisher_to_square
 
-.. autofunction:: mitsuba.core.load_dict
-
-.. autofunction:: mitsuba.core.load_file
-
-.. autofunction:: mitsuba.core.load_string
-
 .. autofunction:: mitsuba.core.xyz_to_srgb
+
+.. autoclass:: mitsuba.render.AdjointIntegrator
 
 .. autoclass:: mitsuba.render.BSDF
 
@@ -614,7 +622,7 @@
 
 .. autoclass:: mitsuba.render.Film
 
-.. autoclass:: mitsuba.render.RayFlags
+.. autoclass:: mitsuba.render.FilmFlags
 
 .. autoclass:: mitsuba.render.ImageBlock
 
@@ -646,11 +654,11 @@
 
 .. autoclass:: mitsuba.render.ProjectiveCamera
 
+.. autoclass:: mitsuba.render.RayFlags
+
 .. autoclass:: mitsuba.render.Sampler
 
 .. autoclass:: mitsuba.render.SamplingIntegrator
-
-.. autoclass:: mitsuba.render.AdjointIntegrator
 
 .. autoclass:: mitsuba.render.Scene
 
@@ -725,6 +733,8 @@
 .. autofunction:: mitsuba.render.register_integrator
 
 .. autofunction:: mitsuba.render.register_medium
+
+.. autofunction:: mitsuba.render.register_mesh
 
 .. autofunction:: mitsuba.render.register_phasefunction
 
@@ -808,6 +818,8 @@
 
 .. autoclass:: mitsuba.python.util.SceneParameters
 
+.. autofunction:: mitsuba.python.util.annotations
+
 .. autofunction:: mitsuba.python.util.contextmanager
 
 .. autofunction:: mitsuba.python.util.convert_to_bitmap
@@ -828,33 +840,57 @@
 
 .. autofunction:: mitsuba.python.ad.torch.render_torch
 
-.. autofunction:: mitsuba.python.ad.integrators.integrator.mis_weight
+.. autofunction:: mitsuba.python.ad.reparam.Tuple
 
-.. autofunction:: mitsuba.python.ad.integrators.integrator.render_backward_impl
+.. autoclass:: mitsuba.python.ad.reparam._ReparameterizeOp
 
-.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_adjoint_impl
+.. autofunction:: mitsuba.python.ad.reparam._sample_warp_field
 
-.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_sensor_rays
+.. autofunction:: mitsuba.python.ad.reparam.annotations
 
-.. autoclass:: mitsuba.python.ad.integrators.rb.RBIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.rb.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.rb.sample_sensor_rays
+.. autofunction:: mitsuba.python.ad.reparam.reparameterize_ray
 
 .. autoclass:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator
 
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.Union
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.annotations
+
 .. autofunction:: mitsuba.python.ad.integrators.prbvolpath.index_spectrum
 
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.sample_sensor_rays
+.. autoclass:: mitsuba.python.ad.integrators.prb.ADIntegrator
 
 .. autoclass:: mitsuba.python.ad.integrators.prb.PRBIntegrator
 
+.. autofunction:: mitsuba.python.ad.integrators.prb.annotations
+
 .. autofunction:: mitsuba.python.ad.integrators.prb.mis_weight
 
-.. autofunction:: mitsuba.python.ad.integrators.prb.sample_sensor_rays
+.. autoclass:: mitsuba.python.ad.integrators.prb_basic.ADIntegrator
+
+.. autoclass:: mitsuba.python.ad.integrators.prb_basic.BasicPRBIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prb_basic.annotations
+
+.. autoclass:: mitsuba.python.ad.integrators.prb_reparam.ADIntegrator
+
+.. autoclass:: mitsuba.python.ad.integrators.prb_reparam.PRBReparamIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prb_reparam.annotations
+
+.. autofunction:: mitsuba.python.ad.integrators.prb_reparam.mis_weight
+
+.. autoclass:: mitsuba.python.ad.integrators.common.ADIntegrator
+
+.. autoclass:: mitsuba.python.ad.integrators.common._RenderOp
+
+.. autoclass:: mitsuba.python.ad.integrators.common._ReparamWrapper
+
+.. autofunction:: mitsuba.python.ad.integrators.common.annotations
+
+.. autofunction:: mitsuba.python.ad.integrators.common.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.common.render
 
 .. autoclass:: mitsuba.python.test.util._empty
 
