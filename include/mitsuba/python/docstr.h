@@ -2811,7 +2811,16 @@ Parameter ``wavelengths``:
 Parameter ``aovs``:
     Points to an array of length equal to the number of spectral
     sensitivities of the film, which specifies the sample value for
-    each channel.)doc";
+    each channel.
+
+Parameter ``weight``:
+    Value to be added to the weight channel of the sample
+
+Parameter ``alpha``:
+    Alpha value of the sample
+
+Parameter ``active``:
+    Mask indicating if the lanes are active)doc";
 
 static const char *__doc_mitsuba_Film_put_block =
 R"doc(Merge an image block into the film. This methods should be thread-
@@ -10705,11 +10714,37 @@ static const char *__doc_mitsuba_sggx_sample_vndf_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
-static const char *__doc_mitsuba_spectrum_from_file = R"doc()doc";
+static const char *__doc_mitsuba_spectrum_from_file =
+R"doc(Read a file containing information about the spectra.
+
+Depending on the extension of the file, it will read it in text format
+or in binary format.
+
+Parameter ``filename``:
+    Path of the file to be read
+
+Parameter ``wavelengths``:
+    Array that will be loaded with the wavelengths stored in the file
+
+Parameter ``values``:
+    Array that will be loaded with the values stored in the file)doc";
 
 static const char *__doc_mitsuba_spectrum_list_to_srgb = R"doc()doc";
 
-static const char *__doc_mitsuba_spectrum_to_file = R"doc()doc";
+static const char *__doc_mitsuba_spectrum_to_file =
+R"doc(Write a file containing information about the spectra.
+
+Depending on the extension of the file, it will write it in text
+format or in binary format.
+
+Parameter ``filename``:
+    Path to the file to be written to
+
+Parameter ``wavelengths``:
+    Array with the wavelengths to be stored in the file
+
+Parameter ``values``:
+    Array with the values to be stored in the file)doc";
 
 static const char *__doc_mitsuba_spectrum_to_srgb = R"doc(Spectral responses to sRGB.)doc";
 

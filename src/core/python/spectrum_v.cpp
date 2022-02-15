@@ -59,8 +59,6 @@ MI_PY_EXPORT(Spectrum) {
     m.def("spectrum_list_to_srgb", &spectrum_list_to_srgb<ScalarFloat>,
           "wavelengths"_a, "values"_a, "bounded"_a=true);
 
-    // m.def("spectrum_from_file", &spectrum_from_file<ScalarFloat>,
-    //       "filename"_a, "wavelengths"_a, "values"_a, D(spectrum_from_file));
     m.def("spectrum_from_file",
     [] (const std::string &filename) {
         std::vector<ScalarFloat> wavelengths, values;

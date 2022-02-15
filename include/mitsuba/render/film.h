@@ -84,6 +84,15 @@ public:
       * \param aovs
       *    Points to an array of length equal to the number of spectral sensitivities
       *    of the film, which specifies the sample value for each channel.
+      *
+      * \param weight
+      *    Value to be added to the weight channel of the sample
+      *
+      * \param alpha
+      *    Alpha value of the sample
+      *
+      * \param active
+      *    Mask indicating if the lanes are active
       */
     virtual void prepare_sample(const UnpolarizedSpectrum &spec,
                                 const Wavelength &wavelengths,
