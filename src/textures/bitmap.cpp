@@ -65,11 +65,11 @@ Bitmap texture (:monosp:`bitmap`)
      values. A 4x4 matrix can also be provided, in which case the extra row and
      column are ignored.
 
- * - use_hw_acceleration
+ * - accel
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
-     loss of precision (not exaclty 32-bit arithmethic). (Default: true)
+     loss of precision (not exactly 32-bit arithmethic). (Default: true)
 
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
@@ -172,7 +172,7 @@ public:
             m_bitmap->set_srgb_gamma(false);
         }
 
-        m_hw_acceleration = props.get<bool>("use_hw_acceleration", true);
+        m_accel = props.get<bool>("accel", true);
 
         // Convert the image into the working floating point representation
         m_bitmap =
@@ -237,8 +237,8 @@ public:
         size_t channels = m_bitmap->channel_count();
         ScalarVector2i res = ScalarVector2i(m_bitmap->size());
         size_t shape[3] = { (size_t) res.x(), (size_t) res.y(), channels };
-        m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape),
-                              m_hw_acceleration, filter_mode, wrap_mode);
+        m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
+                              filter_mode, wrap_mode);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
@@ -327,7 +327,7 @@ public:
                     fetch_values[2] = &f01;
                     fetch_values[3] = &f11;
 
-                    if (m_hw_acceleration)
+                    if (m_accel)
                         m_texture.eval_fetch(uv, fetch_values, active);
                     else
                         m_texture.eval_fetch_drjit(uv, fetch_values, active);
@@ -339,7 +339,7 @@ public:
                     fetch_values[2] = v01.data();
                     fetch_values[3] = v11.data();
 
-                    if (m_hw_acceleration)
+                    if (m_accel)
                         m_texture.eval_fetch(uv, fetch_values, active);
                     else
                         m_texture.eval_fetch_drjit(uv, fetch_values, active);
@@ -570,7 +570,7 @@ protected:
             fetch_values[2] = v01.data();
             fetch_values[3] = v11.data();
 
-            if (m_hw_acceleration)
+            if (m_accel)
                 m_texture.eval_fetch(uv, fetch_values, active);
             else
                 m_texture.eval_fetch_drjit(uv, fetch_values, active);
@@ -594,7 +594,7 @@ protected:
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
             Color3f out;
-            if (m_hw_acceleration)
+            if (m_accel)
                 m_texture.eval(uv, out.data(), active);
             else
                 m_texture.eval_drjit(uv, out.data(), active);
@@ -616,7 +616,7 @@ protected:
         Point2f uv = m_transform.transform_affine(si.uv);
 
         Float out;
-        if (m_hw_acceleration)
+        if (m_accel)
             m_texture.eval(uv, &out, active);
         else
             m_texture.eval_drjit(uv, &out, active);
@@ -637,7 +637,7 @@ protected:
         Point2f uv = m_transform.transform_affine(si.uv);
 
         Color3f out;
-        if (m_hw_acceleration)
+        if (m_accel)
             m_texture.eval(uv, out.data(), active);
         else
             m_texture.eval_drjit(uv, out.data(), active);
@@ -723,7 +723,7 @@ protected:
 protected:
     Texture2f m_texture;
     ScalarTransform3f m_transform;
-    bool m_hw_acceleration;
+    bool m_accel;
     bool m_raw;
     Float m_mean;
     ref<Bitmap> m_bitmap;

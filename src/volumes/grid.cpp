@@ -55,11 +55,11 @@ Grid-based volume data source (:monosp:`gridvolume`)
    - |transform|
    - Specifies an optional 4x4 transformation matrix that will be applied to volume coordinates.
 
- * - use_hw_acceleration
+ * - accel
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
-     loss of precision (not exaclty 32-bit arithmethic). (Default: true)
+     loss of precision (not exactly 32-bit arithmethic). (Default: true)
 
 This class implements access to volume data stored on a 3D grid using a
 simple binary exchange format (compatible with Mitsuba 0.6). When appropriate,
@@ -151,7 +151,7 @@ public:
 
         m_raw = props.get<bool>("raw", false);
 
-        m_hw_acceleration = props.get<bool>("use_hw_acceleration", true);
+        m_accel = props.get<bool>("accel", true);
 
         ScalarVector3i res = m_volume_grid->size();
         ScalarUInt32 size = dr::hprod(res);
@@ -188,7 +188,7 @@ public:
                 4
             };
             m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
-                                  m_hw_acceleration, filter_mode, wrap_mode);
+                                  m_accel, filter_mode, wrap_mode);
         } else {
             size_t shape[4] = {
                 (size_t) res.x(),
@@ -197,7 +197,7 @@ public:
                 m_volume_grid->channel_count()
             };
             m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
-                                  m_hw_acceleration, filter_mode, wrap_mode);
+                                  m_accel, filter_mode, wrap_mode);
             m_max = m_volume_grid->max();
         }
 
@@ -387,7 +387,7 @@ protected:
             fetch_values[6] = d011.data();
             fetch_values[7] = d111.data();
 
-            if (m_hw_acceleration)
+            if (m_accel)
                 m_texture.eval_fetch(p, fetch_values, active);
             else
                 m_texture.eval_fetch_drjit(p, fetch_values, active);
@@ -431,7 +431,7 @@ protected:
             return result;
         } else {
             dr::Array<Float, 4> v;
-            if (m_hw_acceleration)
+            if (m_accel)
                 m_texture.eval(p, v.data(), active);
             else
                 m_texture.eval_drjit(p, v.data(), active);
@@ -450,7 +450,7 @@ protected:
 
         Point3f p = m_to_local * it.p;
         Float result;
-        if (m_hw_acceleration)
+        if (m_accel)
             m_texture.eval(p, &result, active);
         else
             m_texture.eval_drjit(p, &result, active);
@@ -469,7 +469,7 @@ protected:
 
         Point3f p = m_to_local * it.p;
         Color3f result;
-        if (m_hw_acceleration)
+        if (m_accel)
             m_texture.eval(p, result.data(), active);
         else
             m_texture.eval_drjit(p, result.data(), active);
@@ -488,7 +488,7 @@ protected:
 
         Point3f p = m_to_local * it.p;
         dr::Array<Float, 6> result;
-        if (m_hw_acceleration)
+        if (m_accel)
             m_texture.eval(p, result.data(), active);
         else
             m_texture.eval_drjit(p, result.data(), active);
@@ -498,7 +498,7 @@ protected:
 
 protected:
     Texture3f m_texture;
-    bool m_hw_acceleration;
+    bool m_accel;
     bool m_raw;
     ref<VolumeGrid> m_volume_grid;
     bool m_fixed_max = false;

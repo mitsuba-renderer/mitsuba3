@@ -15,7 +15,7 @@ MTS_PY_EXPORT(Volume) {
         .def("eval_6",
                 [](const Volume &volume, const Interaction3f &it, const Mask active) {
                     dr::Array<Float, 6> result = volume.eval_6(it, active);
-                    std::vector<Float> output(6);
+                    std::array<Float, 6> output;
                     for (size_t i = 0; i < 6; ++i)
                         output[i] = std::move(result[i]);
                     return output;
