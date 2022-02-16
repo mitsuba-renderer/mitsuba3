@@ -24,6 +24,7 @@ if os.name == 'nt':
 try:
     _import('mitsuba.mitsuba_ext')
     _tls = threading.local()
+    _tls.cache = {}
 except (ImportError, ModuleNotFoundError) as e:
     from .config import PYTHON_EXECUTABLE
 
@@ -158,7 +159,19 @@ class MitsubaModule(types.ModuleType):
 
     def __getattribute__(self, key):
         global _tls
-        # Try default lookup first
+
+        submodule = super().__getattribute__('_submodule')
+        variant = getattr(_tls, 'variant', None)
+
+        # Try lookup the cache first
+        try:
+            result = _tls.cache.get((variant, submodule, key))
+            if result is not None:
+                return result
+        except Exception:
+            pass
+
+        # Try default lookup
         try:
             if not key == '__dict__':
                 return super().__getattribute__(key)
@@ -183,17 +196,16 @@ class MitsubaModule(types.ModuleType):
                                   'following variants are available: %s.' % (
                                   ", ".join(self.variants())))
 
-        # Redirect all other imports to the currently enabled variant module.
-        variant = getattr(_tls, 'variant', None)
-        submodule = super().__getattribute__('_submodule')
-
         # Check whether we are importing a known submodule
         if submodule is None and key in submodules:
             return sys.modules[f'mitsuba.{variant}.{key}']
 
+        # Redirect all other imports to the currently enabled variant module.
         sub_suffix = '' if submodule is None else f'.{submodule}'
         module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
-        return module.__getattribute__(key)
+        result = module.__getattribute__(key)
+        _tls.cache[(variant, submodule, key)] = result
+        return result
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)

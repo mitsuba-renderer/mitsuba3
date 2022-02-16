@@ -155,7 +155,7 @@ def traverse(node: mi.Object) -> SceneParameters:
     class SceneTraversal(mi.TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
                      hierarchy=None, prefixes=None, name=None, depth=0,
-                     flags=+mi.ParamFlags.Default):
+                     flags=+mi.ParamFlags.Empty):
             mi.TraversalCallback.__init__(self)
             self.properties = dict() if properties is None else properties
             self.hierarchy = dict() if hierarchy is None else hierarchy
