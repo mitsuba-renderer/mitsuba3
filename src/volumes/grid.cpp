@@ -390,7 +390,7 @@ protected:
             if (m_accel)
                 m_texture.eval_fetch(p, fetch_values, active);
             else
-                m_texture.eval_fetch_drjit(p, fetch_values, active);
+                m_texture.eval_fetch_nonaccel(p, fetch_values, active);
 
             UnpolarizedSpectrum v000, v001, v010, v011, v100, v101, v110, v111;
             v000 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d000), it.wavelengths);
@@ -434,7 +434,7 @@ protected:
             if (m_accel)
                 m_texture.eval(p, v.data(), active);
             else
-                m_texture.eval_drjit(p, v.data(), active);
+                m_texture.eval_nonaccel(p, v.data(), active);
 
             return v.w() * srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v), it.wavelengths);
         }
@@ -453,7 +453,7 @@ protected:
         if (m_accel)
             m_texture.eval(p, &result, active);
         else
-            m_texture.eval_drjit(p, &result, active);
+            m_texture.eval_nonaccel(p, &result, active);
 
         return result;
     }
@@ -472,7 +472,7 @@ protected:
         if (m_accel)
             m_texture.eval(p, result.data(), active);
         else
-            m_texture.eval_drjit(p, result.data(), active);
+            m_texture.eval_nonaccel(p, result.data(), active);
 
         return result;
     }
@@ -491,7 +491,7 @@ protected:
         if (m_accel)
             m_texture.eval(p, result.data(), active);
         else
-            m_texture.eval_drjit(p, result.data(), active);
+            m_texture.eval_nonaccel(p, result.data(), active);
 
         return result;
     }
