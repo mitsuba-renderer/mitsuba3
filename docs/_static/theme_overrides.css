@@ -17,11 +17,11 @@ table.docutils th {
 }
 
 .toggle .header:after {
-    content: " ▼";
+    content: " ▶";
 }
 
 .toggle .header.open:after {
-    content: " ▲";
+    content: " ▼";
 }
 
 .MathJax .mo { color: inherit }
@@ -58,6 +58,12 @@ div.sidebar-wrapper {
 
 .paramstable .row-even {
     background-color: #f9f9f9;
+}
+
+abbr[title], abbr[data-original-title] {
+    cursor: help;
+    border-bottom: unset;
+    text-decoration: unset;
 }
 
 /* The following CSS is adapted from sphinxtr, Copyright (c) 2012, Jeff Terrace  */

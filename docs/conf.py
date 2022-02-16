@@ -66,12 +66,18 @@ rst_prolog = r"""
 .. |vector| replace:: :paramtype:`vector`
 .. |transform| replace:: :paramtype:`transform`
 .. |volume| replace:: :paramtype:`volume`
+.. |tensor| replace:: :paramtype:`tensor`
 
 .. |enoki| replace:: :monosp:`enoki`
+.. |drjit| replace:: :monosp:`drjit`
 .. |numpy| replace:: :monosp:`numpy`
 
 .. |nbsp| unicode:: 0xA0
    :trim:
+
+.. |exposed| replace:: :abbr:`P (This parameters will be exposed as a scene parameter)`
+.. |differentiable| replace:: :abbr:`∂ (This parameter is differentiable)`
+.. |discontinuous| replace:: :abbr:`D (This parameter might introduce discontinuities. Therefore it requires special handling during differentiation to prevent bias (e.g. prb-reparam)))`
 
 """
 
@@ -162,6 +168,8 @@ html_static_path = ['_static']
 extensions = []
 extensions.append("guzzle_sphinx_theme")
 extensions.append("sphinx.ext.mathjax")
+extensions.append("sphinx_tabs.tabs")
+extensions.append("hoverxref.extension")
 
 sys.path.append(os.path.abspath('exts/sphinxtr'))
 extensions.append('subfig')

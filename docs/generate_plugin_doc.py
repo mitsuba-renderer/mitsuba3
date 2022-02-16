@@ -7,88 +7,112 @@
 import os
 import re
 
-SHAPE_ORDERING = ['obj',
-                  'ply',
-                  'serialized',
-                  'sphere',
-                  'cylinder',
-                  'disk',
-                  'rectangle',
-                  'shapegroup',
-                  'instance']
+SHAPE_ORDERING = [
+    'obj',
+    'ply',
+    'serialized',
+    'sphere',
+    'cylinder',
+    'disk',
+    'rectangle',
+    'shapegroup',
+    'instance'
+]
 
-BSDF_ORDERING = ['diffuse',
-                 'dielectric',
-                 'thindielectric',
-                 'roughdielectric',
-                 'conductor',
-                 'roughconductor',
-                 'plastic',
-                 'roughplastic',
-                 'measured',
-                 'bumpmap',
-                 'normalmap',
-                 'blendbsdf',
-                 'mask',
-                 'twosided',
-                 'null',
-                 'polarizer',
-                 'retarder',
-                 'circular',
-                 'measured_polarized',
-                 'pplastic']
+BSDF_ORDERING = [
+    'diffuse',
+    'dielectric',
+    'thindielectric',
+    'roughdielectric',
+    'conductor',
+    'roughconductor',
+    'plastic',
+    'roughplastic',
+    'measured',
+    'bumpmap',
+    'normalmap',
+    'blendbsdf',
+    'mask',
+    'twosided',
+    'null',
+    'polarizer',
+    'retarder',
+    'circular',
+    'measured_polarized',
+    'pplastic'
+]
 
-EMITTER_ORDERING = ['area',
-                    'point',
-                    'constant',
-                    'envmap',
-                    'spot',
-                    'projector']
+EMITTER_ORDERING = [
+    'area',
+    'point',
+    'constant',
+    'envmap',
+    'spot',
+    'projector'
+]
 
-SENSOR_ORDERING = ['perspective',
-                   'thinlens']
+SENSOR_ORDERING = [
+    'perspective',
+    'thinlens'
+]
 
-TEXTURE_ORDERING = ['bitmap',
-                    'checkerboard']
+TEXTURE_ORDERING = [
+    'bitmap',
+    'checkerboard'
+]
 
-SPECTRUM_ORDERING = ['uniform',
-                     'regular',
-                     'irregular',
-                     'srgb',
-                     'd65',
-                     'srgb_d65',
-                     'blackbody']
+SPECTRUM_ORDERING = [
+    'uniform',
+    'regular',
+    'irregular',
+    'srgb',
+    'd65',
+    'srgb_d65',
+    'blackbody'
+]
 
-SAMPLER_ORDERING = ['independent',
-                    'stratified',
-                    'multijitter',
-                    'orthogonal',
-                    'ldsampler']
+SAMPLER_ORDERING = [
+    'independent',
+    'stratified',
+    'multijitter',
+    'orthogonal',
+    'ldsampler'
+]
 
-INTEGRATOR_ORDERING = ['direct',
-                       'path',
-                       'aov',
-                       'volpath',
-                       'volpathmis']
+INTEGRATOR_ORDERING = [
+    'direct',
+    'path',
+    'aov',
+    'volpath',
+    'volpathmis'
+]
 
 FILM_ORDERING = ['hdrfilm']
 
-RFILTER_ORDERING = ['box',
-                    'tent',
-                    'gaussian',
-                    'mitchell',
-                    'catmullrom',
-                    'lanczos']
+RFILTER_ORDERING = [
+    'box',
+    'tent',
+    'gaussian',
+    'mitchell',
+    'catmullrom',
+    'lanczos'
+]
 
-MEDIUM_ORDERING = ['homogeneous',
-                   'heterogeneous']
+MEDIUM_ORDERING = [
+    'homogeneous',
+    'heterogeneous'
+]
 
-PHASE_ORDERING = ['isotropic',
-                  'hg',
-                  'sggx']
+PHASE_ORDERING = [
+    'isotropic',
+    'hg',
+    'sggx'
+]
 
-VOLUME_ORDERING = ['constant3d',
-                   'grid3d']
+VOLUME_ORDERING = [
+    'constant3d',
+    'grid3d'
+]
 
 
 def find_order_id(filename, ordering):
@@ -156,22 +180,23 @@ def generate(build_dir):
     original_wd = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    sections = [('shapes',      SHAPE_ORDERING),
-                ('bsdfs',       BSDF_ORDERING),
-                ('media',       MEDIUM_ORDERING),
-                ('phase',       PHASE_ORDERING),
-                ('emitters',    EMITTER_ORDERING),
-                ('sensors',     SENSOR_ORDERING),
-                ('textures',    TEXTURE_ORDERING),
-                ('spectra',     SPECTRUM_ORDERING),
-                ('integrators', INTEGRATOR_ORDERING),
-                ('samplers',    SAMPLER_ORDERING),
-                ('films',       FILM_ORDERING),
-                ('rfilters',    RFILTER_ORDERING),
-                ('volumes',     VOLUME_ORDERING)]
+    sections = [
+        ('shapes',      SHAPE_ORDERING),
+        ('bsdfs',       BSDF_ORDERING),
+        ('media',       MEDIUM_ORDERING),
+        ('phase',       PHASE_ORDERING),
+        ('emitters',    EMITTER_ORDERING),
+        ('sensors',     SENSOR_ORDERING),
+        ('textures',    TEXTURE_ORDERING),
+        ('spectra',     SPECTRUM_ORDERING),
+        ('integrators', INTEGRATOR_ORDERING),
+        ('samplers',    SAMPLER_ORDERING),
+        ('films',       FILM_ORDERING),
+        ('rfilters',    RFILTER_ORDERING),
+        ('volumes',     VOLUME_ORDERING)
+    ]
 
     for section, ordering in sections:
-
         with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w') as f:
             process_src(f, section, ordering)
 

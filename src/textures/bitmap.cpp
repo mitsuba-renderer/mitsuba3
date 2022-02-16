@@ -21,6 +21,7 @@ Bitmap texture (:monosp:`bitmap`)
 ---------------------------------
 
 .. pluginparameters::
+ :extra-rows: 6
 
  * - filename
    - |string|
@@ -64,6 +65,13 @@ Bitmap texture (:monosp:`bitmap`)
    - Specifies an optional 3x3 transformation matrix that will be applied to UV
      values. A 4x4 matrix can also be provided, in which case the extra row and
      column are ignored.
+   - |exposed|, |differentiable|
+
+ * - data
+   - |tensor|
+   - Tensor array containing the texture data.
+   - |exposed|, |differentiable|, |discontinuous|
+
 
  * - accel
    - |bool|

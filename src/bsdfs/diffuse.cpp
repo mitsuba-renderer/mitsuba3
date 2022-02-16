@@ -18,6 +18,7 @@ Smooth diffuse material (:monosp:`diffuse`)
  * - reflectance
    - |spectrum| or |texture|
    - Specifies the diffuse albedo of the material (Default: 0.5)
+   - |exposed|, |differentiable|
 
 The smooth diffuse material (also referred to as *Lambertian*)
 represents an ideally diffuse material with a user-specified amount of
@@ -44,24 +45,51 @@ consider using the :ref:`twosided <bsdf-twosided>` BRDF adapter plugin.
 The following XML snippet describes a diffuse material,
 whose reflectance is specified as an sRGB color:
 
-.. code-block:: xml
-    :name: diffuse-srgb
+.. tabs::
 
-    <bsdf type="diffuse">
-        <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
-    </bsdf>
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: diffuse-srgb
+
+            <bsdf type="diffuse">
+                <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
+            </bsdf>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: diffuse-srgb
+
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'rgb',
+                'value': [0.2, 0.25, 0.7]
+            }
 
 Alternatively, the reflectance can be textured:
 
-.. code-block:: xml
-    :name: diffuse-texture
+.. tabs::
+    .. tab:: XML
 
-    <bsdf type="diffuse">
-        <texture type="bitmap" name="reflectance">
-            <string name="filename" value="wood.jpg"/>
-        </texture>
-    </bsdf>
+        .. code-block:: xml
+            :name: diffuse-texture
 
+            <bsdf type="diffuse">
+                <texture type="bitmap" name="reflectance">
+                    <string name="filename" value="wood.jpg"/>
+                </texture>
+            </bsdf>
+
+    .. tab:: dict
+
+        .. code-block:: python
+
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'bitmap',
+                'filename': "wood.jpg"
+            }
 */
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
