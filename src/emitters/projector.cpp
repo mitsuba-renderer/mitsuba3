@@ -24,16 +24,19 @@ Projection light source (:monosp:`projector`)
      sensitivity profile (a.k.a. importance) of a perspective camera. This
      ensures that a projection of a constant texture onto a plane is truly
      constant.
+   - |exposed|, |differentiable|
 
  * - scale
    - |Float|
    - A scale factor that is applied to the radiance values stored in the above
      parameter. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - to_world
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
+   - |exposed|
 
  * - fov
    - |float|
@@ -82,6 +85,39 @@ operation remains efficient even if only a single pixel is turned on.
 .. subfigend::
    :label: fig-projector-light
 
+.. tabs::
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: projector-light
+
+            <emitter type="projector">
+                <spectrum name="irradiance" value="1.0"/>
+                <float name="fov" value="45"/>
+                <transform name="to_world">
+                    <lookat origin="1, 1, 1"
+                            target="1, 2, 1"
+                            up="0, 0, 1"/>
+                </transform>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: projector-light
+
+            'type'='projector',
+            'irradiance': {
+                'type': 'spectrum',
+                'value': 1.0,
+            },
+            'fov': 45,
+            'to_world': mi.ScalarTransform4f.lookat(
+                origin=[1, 1, 1],
+                target=[1, 2, 1],
+                up=[0, 0, 1]
+            )
+
 */
 
 MI_VARIANT class Projector final : public Emitter<Float, Spectrum> {
@@ -90,27 +126,41 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
-        m_intensity = Texture::D65(props.get<ScalarFloat>("scale", 1));
+        m_intensity_scale = Texture::D65(props.get<ScalarFloat>("scale", 1));
 
         m_irradiance = props.texture<Texture>("irradiance");
+
         ScalarVector2i size = m_irradiance->resolution();
         m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
-        m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
-                                                    (ScalarFloat) 1e-4f,
-                                                    (ScalarFloat) 1e4f);
-
-        m_sample_to_camera = m_camera_to_sample.inverse();
-
-        // Compute
-        ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
-                      pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
-        ScalarBoundingBox2f image_rect(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
-        image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
-        m_sensor_area = image_rect.volume();
+        parameters_changed();
 
         m_flags = +EmitterFlags::DeltaPosition;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("scale", m_intensity_scale.get(), +ParamFlags::Differentiable);
+        callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "irradiance")) {
+            ScalarVector2i size = m_irradiance->resolution();
+
+            m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
+                                                        (ScalarFloat) 1e-4f,
+                                                        (ScalarFloat) 1e4f);
+            m_sample_to_camera = m_camera_to_sample.inverse();
+
+            // Compute
+            ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
+                        pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
+            ScalarBoundingBox2f image_rect(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
+            image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
+            m_sensor_area = image_rect.volume();
+        }
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -187,7 +237,7 @@ public:
          * Note that:
          *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
          */
-        spec *= dr::Pi<Float> * m_intensity->eval(it_query, active) /
+        spec *= dr::Pi<Float> * m_intensity_scale->eval(it_query, active) /
                 (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
 
         return { ds, depolarizer<Spectrum>(spec & active) };
@@ -213,7 +263,7 @@ public:
         auto [wav, weight] = m_irradiance->sample_spectrum(
             si, math::sample_shifted<Wavelength>(sample), active);
         si.wavelengths = wav;
-        weight *= m_intensity->eval(si, active);
+        weight *= m_intensity_scale->eval(si, active);
         return { wav, weight };
     }
 
@@ -233,11 +283,6 @@ public:
         return ScalarBoundingBox3f();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("irradiance", m_irradiance.get());
-        callback->put_parameter("to_world", *m_to_world.ptr());
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Projector[" << std::endl
@@ -252,7 +297,7 @@ public:
 
 protected:
     ref<Texture> m_irradiance;
-    ref<Texture> m_intensity;
+    ref<Texture> m_intensity_scale;
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;

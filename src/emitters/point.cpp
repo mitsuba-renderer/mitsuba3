@@ -19,12 +19,14 @@ Point light source (:monosp:`point`)
  * - intensity
    - |spectrum|
    - Specifies the radiant intensity in units of power per unit steradian.
+   - |exposed|, |differentiable|
 
  * - position
    - |point|
    - Alternative parameter for specifying the light source position.
      Note that only one of the parameters :monosp:`to_world` and
      :monosp:`position` can be used at a time.
+   - |exposed|
 
  * - to_world
    - |transform|
@@ -33,6 +35,29 @@ Point light source (:monosp:`point`)
 
 This emitter plugin implements a simple point light source, which
 uniformly radiates illumination into all directions.
+
+.. tabs::
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: point-light
+
+            <emitter type="point">
+                <point name="position" value="0.0, 5.0, 0.0"/>
+                <spectrum name="intensity" value="1.0"/>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: point-light
+
+            'type'='point',
+            'position': [0.0, 5.0, 0.0],
+            'intensity': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
 
  */
 
@@ -59,6 +84,18 @@ public:
         m_needs_sample_3 = false;
         m_flags = +EmitterFlags::DeltaPosition;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("position", (Point3f &) m_position.value(), +ParamFlags::NonDifferentiable);
+        callback->put_object("intensity", m_intensity.get(), +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "position")) {
+            m_position = m_position.value(); // update scalar part as well
+            dr::make_opaque(m_position);
+        }
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -153,18 +190,6 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         return ScalarBoundingBox3f(m_position.scalar());
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("position", (Point3f &) m_position.value());
-        callback->put_object("intensity", m_intensity.get());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "position")) {
-            m_position = m_position.value(); // update scalar part as well
-            dr::make_opaque(m_position);
-        }
     }
 
     std::string to_string() const override {

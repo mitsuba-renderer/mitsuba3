@@ -21,6 +21,7 @@ Environment emitter (:monosp:`envmap`)
 --------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 4
 
  * - filename
    - |string|
@@ -29,16 +30,23 @@ Environment emitter (:monosp:`envmap`)
  * - scale
    - |Float|
    - A scale factor that is applied to the radiance values stored in the input image. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |exposed|
 
  * - mis_compensation
    - |bool|
    - Compensate sampling for the presence of other Monte Carlo techniques that
      will be combined using multiple importance sampling (MIS)? This is
      extremely cheap to do and can slightly reduce variance. (Default: true)
+
+ * - data
+   - |tensor|
+   - Tensor array containing the radiance-valued data.
+   - |exposed|, |differentiable|
 
 This plugin provides a HDRI (high dynamic range imaging) environment map,
 which is a type of light source that is well-suited for representing "natural"
@@ -64,6 +72,24 @@ OpenEXR or RGBE file formats.
 High quality free light probes are available on
 `Paul Debevec's <http://gl.ict.usc.edu/Data/HighResProbes>`_ and
 `Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
+
+.. tabs::
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: envmap-light
+
+            <emitter type="envmap">
+                <string name="filename" value="textures/museum.exr"/>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: envmap-light
+
+            'type'='envmap',
+            'filename': 'textures/museum.exr'
 
  */
 
@@ -184,6 +210,65 @@ public:
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale",    m_scale,           +ParamFlags::Differentiable);
+        callback->put_parameter("data",     m_data,            +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "data")) {
+            ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
+            auto&& data = dr::migrate(m_data.array(), AllocType::Host);
+
+            if constexpr (dr::is_jit_array_v<Float>)
+                dr::sync_thread();
+
+            std::unique_ptr<ScalarFloat[]> luminance(
+                new ScalarFloat[dr::hprod(res)]);
+
+            ScalarFloat *ptr     = (ScalarFloat *) data.data(),
+                        *lum_ptr = (ScalarFloat *) luminance.get();
+
+            ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
+            for (size_t y = 0; y < res.y(); ++y) {
+                ScalarFloat sin_theta = dr::sin(y * theta_scale);
+
+                // Enforce horizontal continuity
+                ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
+                ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
+                               v1  = dr::load_aligned<ScalarVector4f>(ptr2),
+                               v01 = .5f * (v0 + v1);
+                dr::store_aligned(ptr, v01),
+                dr::store_aligned(ptr2, v01);
+
+                for (size_t x = 0; x < res.x(); ++x) {
+                    ScalarVector4f coeff = dr::load_aligned<ScalarVector4f>(ptr);
+                    ScalarFloat lum;
+
+                    if constexpr (is_monochromatic_v<Spectrum>) {
+                        lum = coeff.x();
+                    } else if constexpr (is_rgb_v<Spectrum>) {
+                        lum = mitsuba::luminance(ScalarColor3f(dr::head<3>(coeff)));
+                    } else {
+                        static_assert(is_spectral_v<Spectrum>);
+                        lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
+                    }
+
+                    *lum_ptr++ = lum * sin_theta;
+                    ptr += 4;
+                }
+            }
+
+            m_warp = Warp(luminance.get(), res);
+
+            if constexpr (dr::is_jit_array_v<Float>)
+                m_data.array() = dr::migrate(data, dr::is_cuda_array_v<Float>
+                                                       ? AllocType::Device
+                                                       : AllocType::HostAsync);
+        }
     }
 
     void set_scene(const Scene *scene) override {
@@ -360,65 +445,6 @@ public:
         return ScalarBoundingBox3f();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
-        callback->put_parameter("data", m_data);
-        callback->put_parameter("to_world", *m_to_world.ptr());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (keys.empty() || string::contains(keys, "data")) {
-            ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
-            auto&& data = dr::migrate(m_data.array(), AllocType::Host);
-
-            if constexpr (dr::is_jit_array_v<Float>)
-                dr::sync_thread();
-
-            std::unique_ptr<ScalarFloat[]> luminance(
-                new ScalarFloat[dr::hprod(res)]);
-
-            ScalarFloat *ptr     = (ScalarFloat *) data.data(),
-                        *lum_ptr = (ScalarFloat *) luminance.get();
-
-            ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
-            for (size_t y = 0; y < res.y(); ++y) {
-                ScalarFloat sin_theta = dr::sin(y * theta_scale);
-
-                // Enforce horizontal continuity
-                ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
-                ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
-                               v1  = dr::load_aligned<ScalarVector4f>(ptr2),
-                               v01 = .5f * (v0 + v1);
-                dr::store_aligned(ptr, v01),
-                dr::store_aligned(ptr2, v01);
-
-                for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarVector4f coeff = dr::load_aligned<ScalarVector4f>(ptr);
-                    ScalarFloat lum;
-
-                    if constexpr (is_monochromatic_v<Spectrum>) {
-                        lum = coeff.x();
-                    } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = mitsuba::luminance(ScalarColor3f(dr::head<3>(coeff)));
-                    } else {
-                        static_assert(is_spectral_v<Spectrum>);
-                        lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
-                    }
-
-                    *lum_ptr++ = lum * sin_theta;
-                    ptr += 4;
-                }
-            }
-
-            m_warp = Warp(luminance.get(), res);
-
-            if constexpr (dr::is_jit_array_v<Float>)
-                m_data.array() = dr::migrate(data, dr::is_cuda_array_v<Float>
-                                                       ? AllocType::Device
-                                                       : AllocType::HostAsync);
-        }
-    }
-
     std::string to_string() const override {
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
         std::ostringstream oss;
@@ -498,7 +524,7 @@ protected:
     TensorXf m_data;
     Warp m_warp;
     ref<Texture> m_d65;
-    ScalarFloat m_scale;
+    Float m_scale;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)

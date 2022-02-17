@@ -7,6 +7,7 @@
 #include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
 /**!
 
 .. _emitter-area:
@@ -19,6 +20,7 @@ Area light (:monosp:`area`)
  * - radiance
    - |spectrum|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
+   - |exposed|, |differentiable|
 
 This plugin implements an area light, i.e. a light source that emits
 diffuse illumination from the exterior of an arbitrary shape.
@@ -30,14 +32,31 @@ area light generally causes scene objects to cast soft shadows.
 To create an area light source, simply instantiate the desired
 emitter shape and specify an :monosp:`area` instance as its child:
 
-.. code-block:: xml
-    :name: sphere-light
+.. tabs::
+    .. tab:: XML
 
-    <shape type="sphere">
-        <emitter type="area">
-            <spectrum name="radiance" value="1.0"/>
-        </emitter>
-    </shape>
+        .. code-block:: xml
+            :name: sphere-light
+
+            <shape type="sphere">
+                <emitter type="area">
+                    <spectrum name="radiance" value="1.0"/>
+                </emitter>
+            </shape>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: sphere-light
+
+            'type'='sphere',
+            'emitter': {
+                'type'='area',
+                'radiance': {
+                    'type': 'spectrum',
+                    'value': 1.0,
+                }
+            }
 
  */
 
@@ -64,6 +83,10 @@ public:
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -230,10 +253,6 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("radiance", m_radiance.get());
-    }
 
     std::string to_string() const override {
         std::ostringstream oss;

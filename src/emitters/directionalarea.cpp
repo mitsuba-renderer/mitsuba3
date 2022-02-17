@@ -8,13 +8,55 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Similar to an area light, but emitting only in the normal direction.
- *
- * Note: this can only be rendered correctly with a particle tracer, since
- * rays traced from the camera and surfaces have zero probability of connecting
- * with this emitter at exactly the correct angle.
+/**!
+
+.. _emitter-directionalarea:
+
+Directional area light (:monosp:`directionalarea`)
+--------------------------------------------------
+
+.. pluginparameters::
+
+ * - radiance
+   - |spectrum|
+   - Specifies the emitted radiance in units of power per unit area per unit steradian.
+   - |exposed|, |differentiable|
+
+Similar to an area light, but emitting only in the normal direction.
+
+.. note::
+    This can only be rendered correctly with a particle tracer, since rays
+    traced from the camera and surfaces have zero probability of connecting
+    with this emitter at exactly the correct angle.
+
+.. tabs::
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: sphere-light
+
+            <shape type="sphere">
+                <emitter type="directionalarea">
+                    <spectrum name="radiance" value="1.0"/>
+                </emitter>
+            </shape>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: sphere-light
+
+            'type'='sphere',
+            'emitter': {
+                'type'='directionalarea',
+                'radiance': {
+                    'type': 'spectrum',
+                    'value': 1.0,
+                }
+            }
+
  */
+
 template <typename Float, typename Spectrum>
 class DirectionalArea final : public Emitter<Float, Spectrum> {
 public:
@@ -35,6 +77,10 @@ public:
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
     }
 
     void set_shape(Shape *shape) override {

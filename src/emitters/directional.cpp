@@ -9,31 +9,56 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _emitter-distant:
+.. _emitter-directional:
 
 Distant directional emitter (:monosp:`directional`)
 ---------------------------------------------------
 
 .. pluginparameters::
 
-    * - irradiance
-      - |spectrum|
-      - Spectral irradiance, which corresponds to the amount of spectral power
-        per unit area received by a hypothetical surface normal to the specified
-        direction.
+ * - irradiance
+   - |spectrum|
+   - Spectral irradiance, which corresponds to the amount of spectral power
+     per unit area received by a hypothetical surface normal to the specified
+     direction.
+   - |exposed|, |differentiable|
 
-    * - to_world
-      - |transform|
-      - Emitter-to-world transformation matrix.
+ * - to_world
+   - |transform|
+   - Emitter-to-world transformation matrix.
+   - |exposed|
 
-    * - direction
-      - |vector|
-      - Alternative (and exclusive) to `to_world`. Direction towards which the
-        emitter is radiating in world coordinates.
+ * - direction
+   - |vector|
+   - Alternative (and exclusive) to `to_world`. Direction towards which the
+     emitter is radiating in world coordinates.
 
 This emitter plugin implements a distant directional source which radiates a
 specified power per unit area along a fixed direction. By default, the emitter
 radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
+
+.. tabs::
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: directional-light
+
+            <emitter type="directional">
+                <vector name="direction" value="1.0, 0.0, 0.0"/>
+                <spectrum name="irradiance" value="1.0"/>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: directional-light
+
+            'type'='directional',
+            'direction': [1.0, 0.0, 0.0],
+            'irradiance': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
 
 */
 
@@ -64,6 +89,11 @@ public:
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
     void set_scene(const Scene *scene) override {
@@ -176,11 +206,6 @@ public:
         /* This emitter does not occupy any particular region
            of space, return an invalid bounding box */
         return ScalarBoundingBox3f();
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("irradiance", m_irradiance.get());
-        callback->put_parameter("to_world", *m_to_world.ptr());
     }
 
     std::string to_string() const override {

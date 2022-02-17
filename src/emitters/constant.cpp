@@ -21,11 +21,34 @@ Constant environment emitter (:monosp:`constant`)
  * - radiance
    - |spectrum|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
+   - |exposed|, |differentiable|
 
 This plugin implements a constant environment emitter, which surrounds
 the scene and radiates diffuse illumination towards it. This is often
 a good default light source when the goal is to visualize some loaded
 geometry that uses basic (e.g. diffuse) materials.
+
+.. tabs::
+
+    .. tab:: XML
+
+        .. code-block:: xml
+            :name: constant-light
+
+            <emitter type="constant">
+                <spectrum name="radiance" value="1.0"/>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: constant-light
+
+            'type'='constant',
+            'radiance': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
 
  */
 
@@ -44,6 +67,10 @@ public:
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
         m_flags = +EmitterFlags::Infinite;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
     }
 
     void set_scene(const Scene *scene) override {
@@ -155,10 +182,6 @@ public:
     /// This emitter does not occupy any particular region of space, return an invalid bounding box
     ScalarBoundingBox3f bbox() const override {
         return ScalarBoundingBox3f();
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("radiance", m_radiance.get());
     }
 
     std::string to_string() const override {

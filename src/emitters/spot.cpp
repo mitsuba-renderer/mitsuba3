@@ -19,6 +19,7 @@ Spot light source (:monosp:`spot`)
    - |spectrum|
    - Specifies the maximum radiant intensity at the center in units of power per unit steradian. (Default: 1).
      This cannot be spatially varying (e.g. have bitmap as type).
+   - |exposed|, |differentiable|
 
  * - cutoff_angle
    - |float|
@@ -31,24 +32,46 @@ Spot light source (:monosp:`spot`)
  * - texture
    - |texture|
    - An optional texture to be projected along the spot light. This must be spatially varying (e.g. have bitmap as type).
+   - |exposed|, |differentiable|
 
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |exposed|
 
 This plugin provides a spot light with a linear falloff. In its local coordinate system, the spot light is
 positioned at the origin and points along the positive Z direction. It can be conveniently reoriented
 using the lookat tag, e.g.:
 
-.. code-block:: xml
-    :name: spot-light
+.. tabs::
+    .. tab:: XML
 
-    <emitter type="spot">
-        <transform name="to_world">
-            <!-- Orient the light so that points from (1, 1, 1) towards (1, 2, 1) -->
-            <lookat origin="1, 1, 1" target="1, 2, 1"/>
-        </transform>
-    </emitter>
+        .. code-block:: xml
+            :name: spot-light
+
+            <emitter type="spot">
+                <transform name="to_world">
+                    <!-- Orient the light so that points from (1, 1, 1) towards (1, 2, 1) -->
+                    <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+                </transform>
+                <spectrum name="intensity" value="1.0"/>
+            </emitter>
+
+    .. tab:: dict
+
+        .. code-block:: python
+            :name: spot-light
+
+            'type'='spot',
+            'to_world': mi.ScalarTransform4f.lookat(
+                origin=[1, 1, 1],
+                target=[1, 2, 1],
+                up=[0, 0, 1]
+            ),
+            'intensity': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
 
 The intensity linearly ramps up from cutoff_angle to beam_width (both specified in degrees),
 after which it remains at the maximum value. A projection texture may optionally be supplied.
@@ -95,13 +118,28 @@ public:
         m_uv_factor = dr::tan(m_cutoff_angle);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("intensity",   m_intensity.get(), +ParamFlags::Differentiable);
+        callback->put_object("texture",     m_texture.get(),   +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+        }
+        Base::parameters_changed();
+    }
+
     /**
      * Computes the UV coordinates corresponding to a direction in the local frame.
      */
     Point2f direction_to_uv(const Vector3f &local_dir) const {
         return Point2f(
             0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
-            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor));
+            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor)
+        );
     }
 
     /**
@@ -181,7 +219,8 @@ public:
         return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist)) };
     }
 
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {
+    Float pdf_direction(const Interaction3f &,
+                        const DirectionSample3f &, Mask) const override {
         return 0.f;
     }
 
@@ -219,25 +258,13 @@ public:
         return { wav, weight };
     }
 
-    Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
+    Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
+        return 0.f;
+    }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("intensity", m_intensity.get());
-        callback->put_object("texture", m_texture.get());
-        callback->put_parameter("to_world", *m_to_world.ptr());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-        }
-        Base::parameters_changed();
     }
 
     std::string to_string() const override {
