@@ -12,4 +12,4 @@ on a trade-off between sharpness, ringing, and aliasing, and computational effic
 Desireable properties of a reconstruction filter are that it sharply captures all of the details
 that are displayable at the requested image resolution, while avoiding aliasing and ringing.
 Aliasing is the incorrect leakage of high-frequency into low-frequency detail, and ringing denotes
-oscillation artifacts near discontinuities, such as a light-shadow transiton.
+oscillation artifacts near discontinuities, such as a light-shadow transition.

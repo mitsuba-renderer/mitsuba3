@@ -13,22 +13,45 @@ create an object that emits light on its own.
 
 Shapes are usually declared along with a surface scattering model named *BSDF* (see the :ref:`respective section <sec-bsdfs>`). This BSDF characterizes what happens at the surface. In the XML scene description language, this might look like the following:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version=2.0.0>
-        <shape type=".. shape type ..">
-            .. shape parameters ..
+        <scene version=3.0.0>
+            <!-- .. scene contents .. -->
 
-            <bsdf type=".. BSDF type ..">
-                .. bsdf parameters ..
-            </bsdf>
+            <shape type=".. shape type ..">
+                .. shape parameters ..
 
-            <!-- Alternatively: reference a named BSDF that
-                 has been declared previously
+                <bsdf type=".. BSDF type ..">
+                    .. bsdf parameters ..
+                </bsdf>
 
-                 <ref id="my_bsdf"/>
-            -->
-        </shape>
-    </scene>
+                <!-- Alternatively: reference a named BSDF that
+                    has been declared previously
+
+                    <ref id="my_bsdf"/>
+                -->
+            </shape>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+
+        # .. scene contents ..
+
+        'shape_id': {
+            'type': '<shape_type>',
+            'bsdf_id': {
+                'type': '<bsdf_type>',
+                # .. bsdf parameters ..
+            }
+
+            # Alternatively, reference a named BSDF that had been declared previously
+            'bsdf_id' : {
+                'type' : 'ref',
+                'id' : 'some_bsdf_id'
+            }
+        }
 
 The following subsections discuss the available shape types in greater detail.

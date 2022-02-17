@@ -39,26 +39,52 @@ either be performed by nesting BSDFs within shapes, or they can
 be named and then later referenced by their name.
 The following fragment shows an example of both kinds of usages:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version=2.0.0>
-        <!-- Creating a named BSDF for later use -->
-        <bsdf type=".. BSDF type .." id="my_named_material">
-            <!-- BSDF parameters go here -->
-        </bsdf>
-
-        <shape type="sphere">
-            <!-- Example of referencing a named material -->
-            <ref id="my_named_material"/>
-        </shape>
-
-        <shape type="sphere">
-            <!-- Example of instantiating an unnamed material -->
-            <bsdf type=".. BSDF type ..">
+        <scene version=3.0.0>
+            <!-- Creating a named BSDF for later use -->
+            <bsdf type=".. BSDF type .." id="my_named_material">
                 <!-- BSDF parameters go here -->
             </bsdf>
-        </shape>
-    </scene>
+
+            <shape type="sphere">
+                <!-- Example of referencing a named material -->
+                <ref id="my_named_material"/>
+            </shape>
+
+            <shape type="sphere">
+                <!-- Example of instantiating an unnamed material -->
+                <bsdf type=".. BSDF type ..">
+                    <!-- BSDF parameters go here -->
+                </bsdf>
+            </shape>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+        # Create a named BSDF for later use
+        'my_named_material': {
+            'type': '<bsdf_type>',
+            # ...
+        },
+
+        'shape_id_0': {
+            # Example of instantiating a named material
+            'bsdf' : {
+                'type' : 'ref',
+                'id' : 'my_named_material'
+            }
+        },
+
+        'shape_id_1': {
+            # Example of instantiating an unnamed material
+            'bsdf' : {
+               'type': '<bsdf_type>',
+               # ...
+            }
+        }
 
 It is generally more economical to use named BSDFs when they
 are used in several places, since this reduces the internal memory usage.

@@ -14,20 +14,40 @@ properties of the scene to be rendered.
 In the XML description language, a single integrator is usually instantiated by
 declaring it at the top level within the scene, e.g.
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version=2.0.0>
-        <!-- Instantiate a unidirectional path tracer,
-             which renders paths up to a depth of 5 -->
-        <integrator type="path">
-            <integer name="max_depth" value="5"/>
-        </integrator>
+        <scene version=3.0.0>
+            <!-- Instantiate a unidirectional path tracer,
+                which renders paths up to a depth of 5 -->
+            <integrator type="path">
+                <integer name="max_depth" value="5"/>
+            </integrator>
 
-        <!-- Some geometry to be rendered -->
-        <shape type="sphere">
-            <bsdf type="diffuse"/>
-        </shape>
-    </scene>
+            <!-- Some geometry to be rendered -->
+            <shape type="sphere">
+                <bsdf type="diffuse"/>
+            </shape>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+        # Instantiate a unidirectional path tracer, which renders
+        # paths up to a depth of 5
+        'integrator_id': {
+            'type': 'path',
+            'max_depth': 5
+        },
+
+        # Some geometry to be rendered
+        'shape_id': {
+            'type': 'sphere',
+            'bsdf': {
+                'type': 'diffuse'
+            }
+        }
+
 
 This section gives an overview of the available choices along with their parameters.
 

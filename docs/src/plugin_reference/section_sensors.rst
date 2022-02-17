@@ -8,23 +8,43 @@ radiance measurements in some usable format.
 
 In the XML scene description language, a sensor declaration looks as follows:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version=2.0.0>
-        <!-- .. scene contents .. -->
+        <scene version=3.0.0>
+            <!-- .. scene contents .. -->
 
-        <sensor type=".. sensor type ..">
-            <!-- .. sensor parameters .. -->
+            <sensor type=".. sensor type ..">
+                <!-- .. sensor parameters .. -->
 
-            <sampler type=".. sampler type ..">
-                <!-- .. sampler parameters .. -->
-            </samplers>
+                <sampler type=".. sampler type ..">
+                    <!-- .. sampler parameters .. -->
+                </samplers>
 
-            <film type=".. film type ..">
-                <!-- .. film parameters .. -->
-            </film>
-        </sensor>
-    </scene>
+                <film type=".. film type ..">
+                    <!-- .. film parameters .. -->
+                </film>
+            </sensor>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+
+        # .. scene contents ..
+
+        'sensor_id': {
+            'type': '<sensor_type>',
+
+            'film_id': {
+                'type': '<film_type>',
+                # ...
+            },
+            'sampler_id': {
+                'type': '<sampler_type>',
+                # ...
+            }
+        }
 
 In other words, the ``sensor`` declaration is a child element of the ``<scene>``
 (the particular position in the scene file does not play a role). Nested within

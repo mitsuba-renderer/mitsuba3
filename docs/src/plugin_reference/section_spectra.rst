@@ -9,16 +9,29 @@ in Mitsuba 2. On an implementation level, these behave very similarly to the
 spatially varying property) and can thus be used similarly as either BSDF or
 emitter parameters:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version=2.0.0>
-        <bsdf type=".. BSDF type ..">
-            <!-- Explicitly add a uniform spectrum plugin -->
-            <spectrum type=".. spectrum type .." name=".. parameter name ..">
-                <!-- Spectrum parameters go here -->
-            </spectrum>
-        </bsdf>
-    </scene>
+        <scene version=3.0.0>
+            <bsdf type=".. BSDF type ..">
+                <!-- Explicitly add a uniform spectrum plugin -->
+                <spectrum type=".. spectrum type .." name=".. parameter name ..">
+                    <!-- Spectrum parameters go here -->
+                </spectrum>
+            </bsdf>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+        'bsdf_id': {
+            'type': '<bsdf_type>',
+
+            '<parameter name>': {
+                'type': '<spectrum type>',
+                # .. spectrum parameters ..
+            }
+        }
 
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)

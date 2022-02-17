@@ -16,26 +16,67 @@ classified into two main categories: emitters which are located somewhere within
 Generally, light sources are specified as children of the ``<scene>`` element; for instance,
 the following snippet instantiates a point light emitter that illuminates a sphere:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version="2.0.0">
-        <emitter type="point">
-            <spectrum name="intensity" value="1"/>
-            <point name="position" x="0" y="0" z="-2"/>
-        </emitter>
+        <scene version=3.0.0>
+            <!-- .. scene contents .. -->
 
-        <shape type="sphere"/>
-    </scene>
+            <emitter type="point">
+                <spectrum name="intensity" value="1"/>
+                <point name="position" x="0" y="0" z="-2"/>
+            </emitter>
+
+            <shape type="sphere"/>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+
+        # .. scene contents ..
+
+        'emitter_id': {
+            'type': 'point'
+            'position': [0, 0, -2],
+            'intensity': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
+        },
+
+        'shape_id': {
+            'type': 'sphere'
+        }
 
 An exception to this are area lights, which turn a geometric object into a light source.
 These are specified as children of the corresponding ``<shape>`` element:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <scene version="2.0.0">
-        <shape type="sphere">
-            <emitter type="area">
-                <spectrum name="radiance" value="1"/>
-            </emitter>
-        </shape>
-    </scene>
+        <scene version=3.0.0>
+            <!-- .. scene contents .. -->
+
+            <shape type="sphere">
+                <emitter type="area">
+                    <spectrum name="radiance" value="1"/>
+                </emitter>
+            </shape>
+        </scene>
+
+    .. code-tab:: python
+
+        'type': 'scene',
+
+        # .. scene contents ..
+
+        'type'='sphere',
+        'emitter': {
+            'type'='area',
+            'radiance': {
+                'type': 'spectrum',
+                'value': 1.0,
+            }
+        }
+
