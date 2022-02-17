@@ -29,26 +29,20 @@ a good default light source when the goal is to visualize some loaded
 geometry that uses basic (e.g. diffuse) materials.
 
 .. tabs::
+    .. code-tab:: xml
+        :name: constant-light
 
-    .. tab:: XML
+        <emitter type="constant">
+            <spectrum name="radiance" value="1.0"/>
+        </emitter>
 
-        .. code-block:: xml
-            :name: constant-light
+    .. code-tab:: python
 
-            <emitter type="constant">
-                <spectrum name="radiance" value="1.0"/>
-            </emitter>
-
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: constant-light
-
-            'type'='constant',
-            'radiance': {
-                'type': 'spectrum',
-                'value': 1.0,
-            }
+        'type'='constant',
+        'radiance': {
+            'type': 'spectrum',
+            'value': 1.0,
+        }
 
  */
 

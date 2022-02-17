@@ -74,22 +74,17 @@ High quality free light probes are available on
 `Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: envmap-light
 
-        .. code-block:: xml
-            :name: envmap-light
+        <emitter type="envmap">
+            <string name="filename" value="textures/museum.exr"/>
+        </emitter>
 
-            <emitter type="envmap">
-                <string name="filename" value="textures/museum.exr"/>
-            </emitter>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: envmap-light
-
-            'type'='envmap',
-            'filename': 'textures/museum.exr'
+        'type'='envmap',
+        'filename': 'textures/museum.exr'
 
  */
 

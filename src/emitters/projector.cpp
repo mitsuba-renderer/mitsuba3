@@ -86,37 +86,32 @@ operation remains efficient even if only a single pixel is turned on.
    :label: fig-projector-light
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: projector-light
 
-        .. code-block:: xml
-            :name: projector-light
+        <emitter type="projector">
+            <spectrum name="irradiance" value="1.0"/>
+            <float name="fov" value="45"/>
+            <transform name="to_world">
+                <lookat origin="1, 1, 1"
+                        target="1, 2, 1"
+                        up="0, 0, 1"/>
+            </transform>
+        </emitter>
 
-            <emitter type="projector">
-                <spectrum name="irradiance" value="1.0"/>
-                <float name="fov" value="45"/>
-                <transform name="to_world">
-                    <lookat origin="1, 1, 1"
-                            target="1, 2, 1"
-                            up="0, 0, 1"/>
-                </transform>
-            </emitter>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: projector-light
-
-            'type'='projector',
-            'irradiance': {
-                'type': 'spectrum',
-                'value': 1.0,
-            },
-            'fov': 45,
-            'to_world': mi.ScalarTransform4f.lookat(
-                origin=[1, 1, 1],
-                target=[1, 2, 1],
-                up=[0, 0, 1]
-            )
+        'type'='projector',
+        'irradiance': {
+            'type': 'spectrum',
+            'value': 1.0,
+        },
+        'fov': 45,
+        'to_world': mi.ScalarTransform4f.lookat(
+            origin=[1, 1, 1],
+            target=[1, 2, 1],
+            up=[0, 0, 1]
+        )
 
 */
 

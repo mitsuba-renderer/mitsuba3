@@ -37,27 +37,22 @@ This emitter plugin implements a simple point light source, which
 uniformly radiates illumination into all directions.
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: point-light
 
-        .. code-block:: xml
-            :name: point-light
+        <emitter type="point">
+            <point name="position" value="0.0, 5.0, 0.0"/>
+            <spectrum name="intensity" value="1.0"/>
+        </emitter>
 
-            <emitter type="point">
-                <point name="position" value="0.0, 5.0, 0.0"/>
-                <spectrum name="intensity" value="1.0"/>
-            </emitter>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: point-light
-
-            'type'='point',
-            'position': [0.0, 5.0, 0.0],
-            'intensity': {
-                'type': 'spectrum',
-                'value': 1.0,
-            }
+        'type'='point',
+        'position': [0.0, 5.0, 0.0],
+        'intensity': {
+            'type': 'spectrum',
+            'value': 1.0,
+        }
 
  */
 

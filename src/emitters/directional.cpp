@@ -38,27 +38,22 @@ specified power per unit area along a fixed direction. By default, the emitter
 radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: directional-light
 
-        .. code-block:: xml
-            :name: directional-light
+        <emitter type="directional">
+            <vector name="direction" value="1.0, 0.0, 0.0"/>
+            <spectrum name="irradiance" value="1.0"/>
+        </emitter>
 
-            <emitter type="directional">
-                <vector name="direction" value="1.0, 0.0, 0.0"/>
-                <spectrum name="irradiance" value="1.0"/>
-            </emitter>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: directional-light
-
-            'type'='directional',
-            'direction': [1.0, 0.0, 0.0],
-            'irradiance': {
-                'type': 'spectrum',
-                'value': 1.0,
-            }
+        'type'='directional',
+        'direction': [1.0, 0.0, 0.0],
+        'irradiance': {
+            'type': 'spectrum',
+            'value': 1.0,
+        }
 
 */
 

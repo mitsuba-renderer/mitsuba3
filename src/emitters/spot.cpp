@@ -44,34 +44,29 @@ positioned at the origin and points along the positive Z direction. It can be co
 using the lookat tag, e.g.:
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: spot-light
 
-        .. code-block:: xml
-            :name: spot-light
+        <emitter type="spot">
+            <transform name="to_world">
+                <!-- Orient the light so that points from (1, 1, 1) towards (1, 2, 1) -->
+                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+            </transform>
+            <spectrum name="intensity" value="1.0"/>
+        </emitter>
 
-            <emitter type="spot">
-                <transform name="to_world">
-                    <!-- Orient the light so that points from (1, 1, 1) towards (1, 2, 1) -->
-                    <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
-                </transform>
-                <spectrum name="intensity" value="1.0"/>
-            </emitter>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: spot-light
-
-            'type'='spot',
-            'to_world': mi.ScalarTransform4f.lookat(
-                origin=[1, 1, 1],
-                target=[1, 2, 1],
-                up=[0, 0, 1]
-            ),
-            'intensity': {
-                'type': 'spectrum',
-                'value': 1.0,
-            }
+        'type'='spot',
+        'to_world': mi.ScalarTransform4f.lookat(
+            origin=[1, 1, 1],
+            target=[1, 2, 1],
+            up=[0, 0, 1]
+        ),
+        'intensity': {
+            'type': 'spectrum',
+            'value': 1.0,
+        }
 
 The intensity linearly ramps up from cutoff_angle to beam_width (both specified in degrees),
 after which it remains at the maximum value. A projection texture may optionally be supplied.

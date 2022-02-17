@@ -30,30 +30,25 @@ Similar to an area light, but emitting only in the normal direction.
     with this emitter at exactly the correct angle.
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: sphere-directional-light
 
-        .. code-block:: xml
-            :name: sphere-light
+        <shape type="sphere">
+            <emitter type="directionalarea">
+                <spectrum name="radiance" value="1.0"/>
+            </emitter>
+        </shape>
 
-            <shape type="sphere">
-                <emitter type="directionalarea">
-                    <spectrum name="radiance" value="1.0"/>
-                </emitter>
-            </shape>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: sphere-light
-
-            'type'='sphere',
-            'emitter': {
-                'type'='directionalarea',
-                'radiance': {
-                    'type': 'spectrum',
-                    'value': 1.0,
-                }
+        'type'='sphere',
+        'emitter': {
+            'type'='directionalarea',
+            'radiance': {
+                'type': 'spectrum',
+                'value': 1.0,
             }
+        }
 
  */
 
