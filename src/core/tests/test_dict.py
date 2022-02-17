@@ -441,7 +441,7 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
     assert str(b0) == str(b1)
 
     # Check that root object isn't expanded
-    spectrum = mi.core.load_dict({
+    spectrum = mi.load_dict({
             "type" : "d65",
     })
     assert len(spectrum.expand()) == 1
