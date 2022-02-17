@@ -12,8 +12,14 @@ MTS_PY_EXPORT(Volume) {
              D(Volume, eval_1))
         .def("eval_3", &Volume::eval_3, "it"_a, "active"_a = true,
              D(Volume, eval_3))
-        .def("eval_6", &Volume::eval_6, "it"_a, "active"_a = true,
-             D(Volume, eval_6))
+        .def("eval_6",
+                [](const Volume &volume, const Interaction3f &it, const Mask active) {
+                    dr::Array<Float, 6> result = volume.eval_6(it, active);
+                    std::array<Float, 6> output;
+                    for (size_t i = 0; i < 6; ++i)
+                        output[i] = std::move(result[i]);
+                    return output;
+                }, "it"_a, "active"_a = true, D(Volume, eval_6))
         .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,
              D(Volume, eval_gradient));
 }

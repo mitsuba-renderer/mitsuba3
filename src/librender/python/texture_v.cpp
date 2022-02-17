@@ -24,6 +24,7 @@ MTS_PY_EXPORT(Texture) {
         .def("sample_spectrum",
             &Texture::sample_spectrum,
             "si"_a, "sample"_a, "active"_a = true, D(Texture, sample_spectrum))
+        .def("resolution", &Texture::resolution, D(Texture, resolution))
         .def("pdf_spectrum", &Texture::pdf_spectrum,
             "si"_a, "active"_a = true, D(Texture, pdf_spectrum))
         .def("sample_position",

@@ -428,37 +428,33 @@ def test09_dict_scene_reference(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test10_dict_expand_nested_object(variant_scalar_rgb):
+def test10_dict_expand_nested_object(variant_scalar_spectral):
     # Nested dictionary objects should be expanded
     b0 = mitsuba.core.load_dict({
         "type" : "diffuse",
         "reflectance" : {
-            "type" : "bitmap",
-            "filename" : "resources/data/common/textures/museum.exr"
+            "type" : "d65",
         }
     })
 
     b1 = mitsuba.core.load_string("""
         <bsdf type="diffuse" version="2.0.0">
-            <texture type="bitmap" name="reflectance">
-                <string name="filename" value="resources/data/common/textures/museum.exr"/>
-            </texture>
+            <spectrum version='2.0.0' type='d65' name="reflectance"/>
         </bsdf>
     """)
 
     assert str(b0) == str(b1)
 
     # Check that root object isn't expanded
-    texture = mitsuba.core.load_dict({
-            "type" : "bitmap",
-            "filename" : "resources/data/common/textures/museum.exr"
+    spectrum = mitsuba.core.load_dict({
+            "type" : "d65",
     })
-    assert len(texture.expand()) == 1
+    assert len(spectrum.expand()) == 1
 
     # But we should be able to use this object in another dict, and it will be expanded
     b3 = mitsuba.core.load_dict({
         "type" : "diffuse",
-        "reflectance" : texture
+        "reflectance" : spectrum
     })
     assert str(b0) == str(b3)
 
@@ -466,8 +462,7 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
     scene = mitsuba.core.load_dict({
         "type" : "scene",
         "mytexture" : {
-            "type" : "bitmap",
-            "filename" : "resources/data/common/textures/museum.exr"
+            "type" : "d65",
         },
         "shape1" : {
             "type" : "sphere",

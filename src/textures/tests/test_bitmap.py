@@ -16,7 +16,7 @@ def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
         <string name="filename" value="resources/data/common/textures/carrot.png"/>
         <string name="filter_type" value="%s"/>
         <string name="wrap_mode" value="%s"/>
-    </texture>""" % (filter_type, wrap_mode)).expand()[0]
+    </texture>""" % (filter_type, wrap_mode))
 
     chi2 = ChiSquareTest(
         domain=PlanarDomain(ScalarBoundingBox2f([0, 0], [1, 1])),
@@ -47,7 +47,7 @@ def test02_eval_grad(variant_scalar_rgb, np_rng):
             <transform name="to_uv">
                 <rotate angle="%f"/>
             </transform>
-        </texture>""" % angle).expand()[0]
+        </texture>""" % angle)
         for uv in np_rng.random((10, 2)):
             si.uv = Vector2f(uv)
             f = bitmap.eval_1(si)
@@ -72,7 +72,7 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
     <texture type="bitmap" version="2.0.0">
         <string name="filename" value="resources/data/common/textures/noise_8x8.png"/>
         <string name="wrap_mode" value="%s"/>
-    </texture>""" % (wrap_mode)).expand()[0]
+    </texture>""" % (wrap_mode))
 
     def eval_ranges(range_x, range_y):
         xv, yv = dr.meshgrid(range_x, range_y)
@@ -138,3 +138,112 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
         x = dr.linspace(Float, 1, 2, axis_res)[::-1]
         y = dr.linspace(Float, 1, 2, axis_res)[::-1]
         assert dr.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
+
+
+@fresolver_append_path
+def test04_eval_rgb(variants_vec_backends_once_rgb):
+    from mitsuba.core import Float, load_string, luminance
+    from mitsuba.render import SurfaceInteraction3f
+    import numpy as np
+    import drjit as dr
+
+    # RGB image
+    bitmap = load_string("""
+    <texture type="bitmap" version="2.0.0">
+        <string name="filename" value="resources/data/common/textures/carrot.png"/>
+    </texture>""")
+
+    x_res, y_res =  bitmap.resolution()
+    # Coordinates of green pixel: (7, 1)
+    x = (1 / x_res) * 7 + (1 / (2 * x_res))
+    y = (1 / y_res) * 1 + (1 / (2 * y_res))
+
+    si = dr.zero(SurfaceInteraction3f)
+    si.uv = [x, y]
+
+    mono = bitmap.eval_1(si)
+    color = bitmap.eval_3(si)
+    spec = bitmap.eval(si)
+
+    expected = [0.0012, 0.1946, 0.0241]
+    assert dr.allclose(0, color - spec)
+    assert dr.allclose(expected, color, atol=1e-04)
+    assert dr.allclose(luminance(expected), mono, atol=1e-04)
+
+    # Grayscale image
+    bitmap = load_string("""
+    <texture type="bitmap" version="2.0.0">
+        <string name="filename" value="resources/data/common/textures/noise_02.png"/>
+    </texture>""")
+
+    x_res, y_res =  bitmap.resolution()
+    # Coordinates of gray pixel: (0, 15)
+    x = (1 / x_res) * 0 + (1 / (2 * x_res))
+    y = (1 / y_res) * 15 + (1 / (2 * y_res))
+
+    si = dr.zero(SurfaceInteraction3f)
+    si.uv = [x, y]
+
+    mono = bitmap.eval_1(si)
+    with pytest.raises(RuntimeError):
+        color = bitmap.eval_3(si)
+    spec = bitmap.eval(si)
+
+    expected = 0.5394
+    assert dr.allclose(expected, spec, atol=1e-04)
+    assert dr.allclose(expected, mono, atol=1e-04)
+
+@fresolver_append_path
+def test05_eval_spectral(variants_vec_backends_once_spectral):
+    from mitsuba.core import (Float, load_string, luminance, MTS_CIE_MIN,
+            MTS_CIE_MAX, MTS_WAVELENGTH_SAMPLES)
+    from mitsuba.render import SurfaceInteraction3f, srgb_model_eval
+    import numpy as np
+    import drjit as dr
+
+    # RGB image
+    bitmap = load_string("""
+    <texture type="bitmap" version="2.0.0">
+        <string name="filename" value="resources/data/common/textures/carrot.png"/>
+    </texture>""")
+
+    x_res, y_res =  bitmap.resolution()
+    # Coordinates of green pixel: (7, 1)
+    x = (1 / x_res) * 7 + (1 / (2 * x_res))
+    y = (1 / y_res) * 1 + (1 / (2 * y_res))
+
+    si = dr.zero(SurfaceInteraction3f)
+    si.wavelengths = np.linspace(MTS_CIE_MIN, MTS_CIE_MAX, MTS_WAVELENGTH_SAMPLES)
+    si.uv = [x, y]
+
+    with pytest.raises(RuntimeError):
+        mono = bitmap.eval_1(si)
+    with pytest.raises(RuntimeError):
+        color = bitmap.eval_3(si)
+    spec = bitmap.eval(si)
+
+    expected = [0.0023, 0.1910, 0.0059, 0.0003]
+    assert dr.allclose(expected, spec, atol=1e-04)
+
+    # Grayscale image
+    bitmap = load_string("""
+    <texture type="bitmap" version="2.0.0">
+        <string name="filename" value="resources/data/common/textures/noise_02.png"/>
+    </texture>""")
+
+    x_res, y_res =  bitmap.resolution()
+    # Coordinates of gray pixel: (0, 15)
+    x = (1 / x_res) * 0 + (1 / (2 * x_res))
+    y = (1 / y_res) * 15 + (1 / (2 * y_res))
+
+    si = dr.zero(SurfaceInteraction3f)
+    si.uv = [x, y]
+
+    mono = bitmap.eval_1(si)
+    with pytest.raises(RuntimeError):
+        color = bitmap.eval_3(si)
+    spec = bitmap.eval(si)
+
+    expected = 0.5394
+    assert dr.allclose(expected, spec, atol=1e-04)
+    assert dr.allclose(expected, mono, atol=1e-04)
