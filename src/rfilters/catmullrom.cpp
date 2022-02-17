@@ -14,6 +14,16 @@ Special version of the Mitchell-Netravali filter with constants B and C configur
 to match the Catmull-Rom spline. It usually does a better job at at preserving sharp
 features at the cost of more ringing.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: catmullrom-rfilter
+
+        <rfilter type="catmullrom"/>
+
+    .. code-tab:: python
+
+        'type': 'catmullrom',
+
  */
 
 template <typename Float, typename Spectrum>

@@ -15,6 +15,16 @@ This is the fastest, but also about the worst possible reconstruction filter,
 since it is prone to severe aliasing. It is included mainly for completeness,
 though some rare situations may warrant its use.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: box-rfilter
+
+        <rfilter type="box"/>
+
+    .. code-tab:: python
+
+        'type': 'box',
+
  */
 
 template <typename Float, typename Spectrum>

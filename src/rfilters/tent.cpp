@@ -11,11 +11,30 @@ NAMESPACE_BEGIN(mitsuba)
 Tent filter (:monosp:`tent`)
 ----------------------------
 
+.. pluginparameters::
+
+ * - radius
+   - |float|
+   - Specifies the radius of the tent function (Default: 1.0)
+
 Simple tent (triangular) filter. This reconstruction filter never suffers
 from ringing and usually causes less aliasing than a naive box filter. When
 rendering scenes with sharp brightness discontinuities, this may be useful;
 otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
 or Lanczos Sinc).
+
+.. tabs::
+    .. code-tab:: xml
+        :name: tent-rfilter
+
+        <rfilter type="tent">
+            <float name="radius" value="1.25"/>
+        </rfilter>
+
+    .. code-tab:: python
+
+        'type': 'tent',
+        'radius': 1.25,
 
  */
 

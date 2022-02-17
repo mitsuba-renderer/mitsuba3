@@ -11,6 +11,12 @@ NAMESPACE_BEGIN(mitsuba)
 Gaussian filter (:monosp:`gaussian`)
 ------------------------------------
 
+.. pluginparameters::
+
+ * - stddev
+   - |float|
+   - Specifies the standard deviation (Default: 0.5)
+
 This is a windowed Gaussian filter with configurable standard deviation.
 It often produces pleasing results, and never suffers from ringing, but may
 occasionally introduce too much blurring.
@@ -18,8 +24,18 @@ occasionally introduce too much blurring.
 When no reconstruction filter is explicitly requested, this is the default
 choice in Mitsuba.
 
-Takes a standard deviation parameter (:paramtype:`stddev`) which is set to 0.5
-pixels be default.
+.. tabs::
+    .. code-tab::  xml
+        :name: gaussian-rfilter
+
+        <rfilter type="gaussian">
+            <float name="stddev" value="0.25"/>
+        </rfilter>
+
+    .. code-tab:: python
+
+        'type': 'gaussian',
+        'stddev': 0.25
 
  */
 
@@ -38,7 +54,7 @@ public:
 
         /* Precompute a cheap approximation to the filter kernel.
            Unnecessary on NVIDIA GPUs that provide a fast exponential
-           instruction via the MUFU (multi-function genrator). */
+           instruction via the MUFU (multi-function generator). */
         if constexpr (!dr::is_cuda_array_v<Float>) {
             /*
               Remez fit to exp(-x/2), obtained using:

@@ -11,13 +11,33 @@ NAMESPACE_BEGIN(mitsuba)
 Mitchell filter (:monosp:`mitchell`)
 ------------------------------------
 
-Separable cubic spline reconstruction filter by Mitchell and Netravali :cite:`MitchellNetravali88`.
-This is often a good compromise between sharpness and ringing.
+.. pluginparameters::
 
-This plugin has two :paramtype:`float`-valued parameters :paramtype:`B` and
-:paramtype:`C` that correspond to the two parameters in the original paper.
-By default, these are set to the recommended value of :math:`1/3`, but can be
-tweaked if desired.
+ * - A
+   - |float|
+   - A parameter in the original paper (Default: :math:`1/3`)
+ * - B
+   - |float|
+   - B parameter in the original paper (Default: :math:`1/3`)
+
+Separable cubic spline reconstruction filter by Mitchell and Netravali
+:cite:`MitchellNetravali88`. This is often a good compromise between sharpness
+and ringing.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: mitchell-rfilter
+
+        <rfilter type="mitchell">
+            <float name="A" value="0.25"/>
+            <float name="B" value="0.55"/>
+        </rfilter>
+
+    .. code-tab:: python
+
+        'type': 'mitchell',
+        'A': 0.25,
+        'B': 0.55
 
  */
 
