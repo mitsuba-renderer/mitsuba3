@@ -1079,12 +1079,12 @@ MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_
 MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     Base::traverse(callback);
 
-    callback->put_parameter("vertex_count",     m_vertex_count);
-    callback->put_parameter("face_count",       m_face_count);
-    callback->put_parameter("faces",            m_faces);
-    callback->put_parameter("vertex_positions", m_vertex_positions, true);
-    callback->put_parameter("vertex_normals",   m_vertex_normals);
-    callback->put_parameter("vertex_texcoords", m_vertex_texcoords);
+    callback->put_parameter("vertex_count",     m_vertex_count,     +ParamFlags::NonDifferentiable);
+    callback->put_parameter("face_count",       m_face_count,       +ParamFlags::NonDifferentiable);
+    callback->put_parameter("faces",            m_faces,            +ParamFlags::NonDifferentiable);
+    callback->put_parameter("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    callback->put_parameter("vertex_texcoords", m_vertex_texcoords, +ParamFlags::Differentiable);
 
     for (auto &[name, attribute]: m_mesh_attributes)
         callback->put_parameter(name, attribute.buf);

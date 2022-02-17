@@ -58,15 +58,21 @@ class SceneParameters(Mapping):
 
     def __repr__(self) -> str:
         param_list = '\n'
-        for k, v in self.items():
-            def is_diff(x):
-                return dr.is_diff_array_v(x) and dr.is_floating_point_v(x)
-            diff = is_diff(v)
-            if dr.is_drjit_struct_v(v):
-                for k2 in type(v).DRJIT_STRUCT.keys():
-                    diff |= is_diff(getattr(v, k2))
-            param_list += '  %s %s,\n' % (('*' if is_diff else ' '), k)
-        return 'SceneParameters[%s\n]' % param_list[:-2]
+        param_list += '  ' + '-' * 88 + '\n'
+        param_list += f"  {'Name':35}  {'Flags':7}  {'Type':15} {'Parent'}\n"
+        param_list += '  ' + '-' * 88 + '\n'
+        for k, v in self.properties.items():
+            value, value_type, node, flags = v
+
+            value = self.get_property(value, value_type, node)
+            flags_str = ''
+            if (flags & mi.ParamFlags.NonDifferentiable) == 0:
+                flags_str += '∂'
+            if (flags & mi.ParamFlags.Discontinuous) != 0:
+                flags_str += ', D'
+
+            param_list += f'  {k:35}  {flags_str:7}  {type(value).__name__:15} {node.class_().name()}\n'
+        return f'SceneParameters[{param_list}]'
 
     def __iter__(self):
         class SceneParametersItemIterator:
@@ -155,7 +161,7 @@ def traverse(node: mi.Object) -> SceneParameters:
     class SceneTraversal(mi.TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
                      hierarchy=None, prefixes=None, name=None, depth=0,
-                     flags=+mi.ParamFlags.Empty):
+                     flags=+mi.ParamFlags.Differentiable):
             mi.TraversalCallback.__init__(self)
             self.properties = dict() if properties is None else properties
             self.hierarchy = dict() if hierarchy is None else hierarchy
@@ -174,8 +180,14 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.hierarchy[node] = (parent, depth)
             self.flags = flags
 
-        def put_parameter(self, name, ptr, cpptype=None, flags=+mi.ParamFlags.Empty):
+        def put_parameter(self, name, ptr, cpptype=None, flags=+mi.ParamFlags.Differentiable):
             name = name if self.name is None else self.name + '.' + name
+
+            flags = self.flags | flags
+            # Non differentiable parameters shouldn't be flagged as discontinuous
+            if (flags & mi.ParamFlags.NonDifferentiable) != 0:
+                flags = flags & ~mi.ParamFlags.Discontinuous
+
             self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
         def put_object(self, name, node, flags):

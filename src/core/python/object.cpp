@@ -33,7 +33,7 @@ public:
 
 MI_PY_EXPORT(Object) {
     auto e = py::enum_<ParamFlags>(m, "ParamFlags", D(ParamFlags))
-        .def_value(ParamFlags, Empty)
+        .def_value(ParamFlags, Differentiable)
         .def_value(ParamFlags, NonDifferentiable)
         .def_value(ParamFlags, Discontinuous);
     MI_PY_DECLARE_ENUM_OPERATORS(ParamFlags, e)

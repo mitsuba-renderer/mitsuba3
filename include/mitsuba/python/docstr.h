@@ -8898,7 +8898,7 @@ static const char *__doc_mitsuba_TransportMode_TransportModes = R"doc(Specifies 
 static const char *__doc_mitsuba_ParamFlags =
 R"doc(This list of flags is used to classify the different types of parameters exposed by the plugins.)doc";
 
-static const char *__doc_mitsuba_ParamFlags_Empty = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_ParamFlags_Differentiable = R"doc(Tracking gradients w.r.t. this parameter is allowed)doc";
 
 static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 

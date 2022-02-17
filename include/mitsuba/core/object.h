@@ -273,8 +273,8 @@ private:
  * introduce discontinuities in the Monte Carlo simulation.
  */
 enum class ParamFlags : uint32_t {
-    /// No flags set (default value)
-    Empty = 0x0,
+    /// Tracking gradients w.r.t. this parameter is not allowed
+    Differentiable = 0x0,
 
     /// Tracking gradients w.r.t. this parameter is not allowed
     NonDifferentiable = 0x1,
@@ -298,15 +298,16 @@ public:
     /// Inform the traversal callback about an attribute of an instance
     template <typename T>
     void put_parameter(const std::string &name, T &v,
-                       uint32_t flags = +ParamFlags::Empty) {
-        if constexpr (!(dr::is_diff_array_v<T> && dr::is_floating_point_v<T>))
-            flags = flags & ParamFlags::NonDifferentiable;
+                       uint32_t flags = +ParamFlags::NonDifferentiable) {
+        if constexpr (!dr::is_drjit_struct_v<T> || !(dr::is_diff_array_v<T> && dr::is_floating_point_v<T>))
+            if ((flags & ParamFlags::Differentiable) != 0)
+                throw("Parameter can't be differentiable because of its type!");
         put_parameter_impl(name, &v, typeid(T), flags);
     }
 
     /// Inform the tranversal callback that the instance references another Mitsuba object
     virtual void put_object(const std::string &name, Object *obj,
-                            uint32_t flags = +ParamFlags::Empty) = 0;
+                            uint32_t flags = +ParamFlags::Differentiable) = 0;
 
     virtual ~TraversalCallback() = default;
 protected:
@@ -314,7 +315,7 @@ protected:
     virtual void put_parameter_impl(const std::string &name,
                                     void *ptr,
                                     const std::type_info &type,
-                                    uint32_t flags = +ParamFlags::Empty) = 0;
+                                    uint32_t flags = +ParamFlags::NonDifferentiable) = 0;
 };
 
 /// Prints the canonical string representation of an object instance
