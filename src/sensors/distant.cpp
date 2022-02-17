@@ -28,10 +28,12 @@ Distant radiancemeter sensor (:monosp:`distant`)
  * - to_world
    - |transform|
    - Sensor-to-world transformation matrix.
+
  * - direction
    - |vector|
    - Alternative (and exclusive) to ``to_world``. Direction orienting the
      sensor's reference hemisphere.
+
  * - target
    - |point| or nested :paramtype:`shape` plugin
    - *Optional.* Define the ray target sampling strategy.
@@ -40,6 +42,7 @@ Distant radiancemeter sensor (:monosp:`distant`)
      If a |point| is passed, rays will target it.
      If a shape plugin is passed, ray target points will be sampled from its
      surface.
+
  * - srf
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`

@@ -136,10 +136,10 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("shutter_open", m_shutter_open);
-        callback->put_parameter("shutter_open_time", m_shutter_open_time);
-        callback->put_object("film", m_film.get());
-        callback->put_object("sampler", m_sampler.get());
+        callback->put_parameter("shutter_open", m_shutter_open,           +ParamFlags::NonDifferentiable);
+        callback->put_parameter("shutter_open_time", m_shutter_open_time, +ParamFlags::NonDifferentiable);
+        callback->put_object("film", m_film.get(),                        +ParamFlags::NonDifferentiable);
+        callback->put_object("sampler", m_sampler.get(),                  +ParamFlags::NonDifferentiable);
         Base::traverse(callback);
     }
 
@@ -199,9 +199,8 @@ public:
     ScalarFloat focus_distance() const { return m_focus_distance; }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("near_clip", m_near_clip);
-        callback->put_parameter("far_clip", m_far_clip);
-        callback->put_parameter("focus_distance", m_focus_distance);
+        callback->put_parameter("near_clip",      m_near_clip,      +ParamFlags::NonDifferentiable);
+        callback->put_parameter("far_clip",       m_far_clip,       +ParamFlags::NonDifferentiable);
         Base::traverse(callback);
     }
 

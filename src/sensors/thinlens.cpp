@@ -14,26 +14,35 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
 --------------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 8
 
  * - to_world
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
+   - |exposed|
+
  * - aperture_radius
    - |float|
    - Denotes the radius of the camera's aperture in scene units.
+   - |exposed|
+
  * - focus_distance
    - |float|
    - Denotes the world-space distance from the camera's aperture to the focal plane.
      (Default: :monosp:`0`)
+   - |exposed|
+
  * - focal_length
    - |string|
    - Denotes the camera's focal length specified using *35mm* film equivalent units.
      See the main description for further details. (Default: :monosp:`50mm`)
+
  * - fov
    - |float|
    - An alternative to :monosp:`focal_length`: denotes the camera's field of view in degrees---must be
      between 0 and 180, excluding the extremes.
+
  * - fov_axis
    - |string|
    - When the parameter :monosp:`fov` is given (and only then), this parameter further specifies
@@ -48,14 +57,22 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
         (e.g. :monosp:`y` when :monosp:`width` < :monosp:`height`)
 
      The default is :monosp:`x`.
+
  * - near_clip, far_clip
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
      and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+   - |exposed|
+
  * - srf
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
+
+ * - x_fov
+   - |float|
+   - Denotes the camera's field of view in degrees along the horizontal axis.
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens_small_aperture.jpg
@@ -83,19 +100,44 @@ along a given axis (see the :monosp:`fov` and :monosp:`fov_axis` parameters).
 The exact camera position and orientation is most easily expressed using the
 :monosp:`lookat` tag, i.e.:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <sensor type="thinlens">
-        <transform name="to_world">
-            <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
-                and the direction (0, 0, 1) points "up" in the output image -->
-            <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
-        </transform>
+        <sensor type="thinlens">
+            <float name="fov" value="45"/>
+            <transform name="to_world">
+                <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
+                    and the direction (0, 0, 1) points "up" in the output image -->
+                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+            </transform>
 
-        <!-- Focus on the target -->
-        <float name="focus_distance" value="1"/>
-        <float name="aperture_radius" value="0.1"/>
-    </sensor>
+            <!-- Focus on the target -->
+            <float name="focus_distance" value="1"/>
+            <float name="aperture_radius" value="0.1"/>
+
+            <!-- film -->
+            <!-- sampler -->
+        </sensor>
+
+    .. code-tab:: python
+
+        'type'='thinlens',
+        'fov': 45,
+        'to_world': mi.ScalarTransform4f.lookat(
+            origin=[1, 1, 1],
+            target=[1, 2, 1],
+            up=[0, 0, 1]
+        ),
+        'focus_distance': 1.0,
+        'aperture_radius': 0.1,
+        'film_id': {
+            'type': '<film_type>',
+            # ...
+        },
+        'sampler_id': {
+            'type': '<sampler_type>',
+            # ...
+        }
 
  */
 
@@ -106,10 +148,6 @@ public:
                     m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
                     m_far_clip, m_focus_distance, sample_wavelengths)
     MI_IMPORT_TYPES()
-
-    // =============================================================
-    //! @{ \name Constructors
-    // =============================================================
 
     ThinLensCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
@@ -125,6 +163,31 @@ public:
         if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
+        update_camera_transforms();
+
+        m_needs_sample_3 = true;
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("focus_distance", m_focus_distance,   +ParamFlags::NonDifferentiable);
+        callback->put_parameter("x_fov", m_x_fov,                     +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),        +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            if (m_to_world.scalar().has_scale())
+                Throw("Scale factors in the camera-to-world transformation are not allowed!");
+        }
+        Base::parameters_changed(keys);
+        update_camera_transforms();
+    }
+
+    void update_camera_transforms() {
         m_camera_to_sample = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
             m_x_fov, m_near_clip, m_far_clip);
@@ -146,15 +209,7 @@ public:
         m_image_rect.expand(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
         m_image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
-        m_needs_sample_3 = true;
     }
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Sampling methods (Sensor interface)
-    // =============================================================
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &position_sample,
@@ -248,25 +303,6 @@ public:
     ScalarBoundingBox3f bbox() const override {
         ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
-    }
-
-    //! @}
-    // =============================================================
-
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr());
-        // TODO aperture_radius, x_fov
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            if (m_to_world.scalar().has_scale())
-                Throw("Scale factors in the camera-to-world transformation are not allowed!");
-        }
-        Base::parameters_changed(keys);
     }
 
     std::string to_string() const override {

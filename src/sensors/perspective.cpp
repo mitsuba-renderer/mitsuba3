@@ -13,22 +13,27 @@ Perspective pinhole camera (:monosp:`perspective`)
 --------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 7
 
  * - to_world
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
+   - |exposed|
+
  * - fov
    - |float|
    - Denotes the camera's field of view in degrees---must be between 0 and 180,
      excluding the extremes. Alternatively, it is also possible to specify a
      field of view using the :monosp:`focal_length` parameter.
+
  * - focal_length
    - |string|
    - Denotes the camera's focal length specified using *35mm* film
      equivalent units. Alternatively, it is also possible to specify a field of
      view using the :monosp:`fov` parameter. See the main description for further
      details. (Default: :monosp:`50mm`)
+
  * - fov_axis
    - |string|
    - When the parameter :monosp:`fov` is given (and only then), this parameter further specifies
@@ -43,17 +48,26 @@ Perspective pinhole camera (:monosp:`perspective`)
         (e.g. :monosp:`y` when :monosp:`width` < :monosp:`height`)
 
      The default is :monosp:`x`.
+
  * - near_clip, far_clip
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
      and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+   - |exposed|
+
  * - principal_point_offset_x, principal_point_offset_y
    - |float|
    - Specifies the position of the camera's principal point relative to the center of the film.
+
  * - srf
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
+
+ * - x_fov
+   - |float|
+   - Denotes the camera's field of view in degrees along the horizontal axis.
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
@@ -78,15 +92,38 @@ along a given axis (see the :monosp:`fov` and :monosp:`fov_axis` parameters).
 The exact camera position and orientation is most easily expressed using the
 :monosp:`lookat` tag, i.e.:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: perspective-sensor
 
-    <sensor type="perspective">
-        <transform name="to_world">
-            <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
-                and the direction (0, 0, 1) points "up" in the output image -->
-            <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
-        </transform>
-    </sensor>
+        <sensor type="perspective">
+            <float name="fov" value="45"/>
+            <transform name="to_world">
+                <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
+                    and the direction (0, 0, 1) points "up" in the output image -->
+                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+            </transform>
+            <!-- film -->
+            <!-- sampler -->
+        </sensor>
+
+    .. code-tab:: python
+
+        'type'='perspective',
+        'fov': 45,
+        'to_world': mi.ScalarTransform4f.lookat(
+            origin=[1, 1, 1],
+            target=[1, 2, 1],
+            up=[0, 0, 1]
+        ),
+        'film_id': {
+            'type': '<film_type>',
+            # ...
+        },
+        'sampler_id': {
+            'type': '<sampler_type>',
+            # ...
+        }
 
  */
 
@@ -98,10 +135,6 @@ public:
                     m_shutter_open_time, m_near_clip, m_far_clip,
                     sample_wavelengths)
     MI_IMPORT_TYPES()
-
-    // =============================================================
-    //! @{ \name Constructors
-    // =============================================================
 
     PerspectiveCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
@@ -118,6 +151,24 @@ public:
         );
         ScalarVector2f crop_size = ScalarVector2f(m_film->crop_size());
         m_principal_point_offset *= size / crop_size;
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("x_fov", m_x_fov,              +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            if (m_to_world.scalar().has_scale())
+                Throw("Scale factors in the camera-to-world transformation are not allowed!");
+        }
+
+        Base::parameters_changed(keys);
+        update_camera_transforms();
     }
 
     void update_camera_transforms() {
@@ -145,13 +196,6 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
     }
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Sampling methods (Sensor interface)
-    // =============================================================
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &position_sample,
@@ -329,27 +373,6 @@ public:
         Mask valid = ct > 0 && m_image_rect.contains(p);
 
         return dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
-    }
-
-    //! @}
-    // =============================================================
-
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("x_fov", m_x_fov);
-        callback->put_parameter("to_world", *m_to_world.ptr());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            if (m_to_world.scalar().has_scale())
-                Throw("Scale factors in the camera-to-world transformation are not allowed!");
-        }
-
-        Base::parameters_changed(keys);
-        update_camera_transforms();
     }
 
     std::string to_string() const override {

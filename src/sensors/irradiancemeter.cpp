@@ -33,14 +33,25 @@ object to a shape in a scene. To create an irradiance meter,
 simply instantiate the desired sensor shape and specify an
 :monosp:`irradiancemeter` instance as its child:
 
-.. code-block:: xml
-    :name: sphere-meter
+.. tabs::
+    .. code-tab:: xml
+        :name: sphere-meter
 
-    <shape type="sphere">
-        <sensor type="irradiancemeter">
-            <!-- film -->
-        </sensor>
-    </shape>
+        <shape type="sphere">
+            <sensor type="irradiancemeter">
+                <!-- film -->
+            </sensor>
+        </shape>
+
+    .. code-tab:: python
+
+        'type'='sphere',
+        'sensor': {
+            'type': 'irradiancemeter'
+            'film': {
+                # ...
+            }
+        }
 */
 
 MI_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {

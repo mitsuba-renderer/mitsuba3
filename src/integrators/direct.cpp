@@ -70,9 +70,6 @@ public:
     MI_IMPORT_BASE(SamplingIntegrator, m_hide_emitters)
     MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
-    // =============================================================
-    //! @{ \name Constructors
-    // =============================================================
     DirectIntegrator(const Properties &props) : Base(props) {
         if (props.has_property("shading_samples")
             && (props.has_property("emitter_samples") ||

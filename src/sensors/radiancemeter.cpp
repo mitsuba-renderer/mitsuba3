@@ -19,14 +19,17 @@ Radiance meter (:monosp:`radiancemeter`)
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
+
  * - origin
    - |point|
    - Location from which the sensor will be recording in world coordinates.
      Must be used with `origin`.
+
  * - direction
    - |vector|
    - Alternative (and exclusive) to `to_world`. Direction in which the
      sensor is pointing in world coordinates. Must be used with `origin`.
+
  * - srf
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
