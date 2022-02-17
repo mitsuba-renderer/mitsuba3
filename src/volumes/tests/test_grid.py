@@ -12,9 +12,10 @@ def test01_grid_construct(variant_scalar_rgb, tmpdir):
     grid[..., 2] = 0.0
 
     mi.VolumeGrid(grid).write(tmp_file)
-    vol = mi.load_string(f"""<volume type="gridvolume" version="2.0.0">
-                              <string name="filename" value="{tmp_file}"/>
-                          </volume>""")
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file
+    })
     it = dr.zero(mi.Interaction3f, 1)
 
     assert vol is not None
@@ -27,10 +28,11 @@ def test02_nearest_interpolation(variants_all, tmpdir):
     grid[0, 0, 0] = 0.0
     grid[1, 1, 1] = 0.5
     mi.VolumeGrid(grid).write(tmp_file)
-    vol = mi.load_string(f"""<volume type="gridvolume" version="2.0.0">
-                              <string name="filename" value="{tmp_file}"/>
-                              <string name="filter_type" value="nearest"/>
-                          </volume>""")
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file,
+        'filter_type' : 'nearest'
+    })
     assert vol is not None
     it = dr.zero(mi.Interaction3f, 1)
     assert dr.allclose(vol.eval(it), 0.0)
@@ -44,9 +46,10 @@ def test03_trilinear_interpolation(variants_all, tmpdir):
     grid[0, 0, 0] = 0.0
     grid[1, 1, 1] = 0.5
     mi.VolumeGrid(grid).write(tmp_file)
-    vol = mi.load_string(f"""<volume type="gridvolume" version="2.0.0">
-                              <string name="filename" value="{tmp_file}"/>
-                          </volume>""")
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file,
+    })
     it = dr.zero(mi.Interaction3f, 1)
     assert vol is not None
     assert dr.allclose(vol.eval(it), 0.0)
@@ -63,9 +66,10 @@ def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
     grid[0, :, :] = 0.32
 
     mi.VolumeGrid(grid).write(tmp_file)
-    vol = mi.load_string(f"""<volume type="gridvolume" version="2.0.0">
-                              <string name="filename" value="{tmp_file}"/>
-                          </volume>""")
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file,
+    })
     it = dr.zero(mi.Interaction3f, 1)
     assert vol is not None
     it.p = mi.Point3f(0.2, 1.0, 0.7)
@@ -81,9 +85,10 @@ def test05_trilinear_interpolation_6_channels(variants_all_rgb, tmpdir):
     grid[0, 0, 0, : ] = 0.0
     grid[1, 1, 1, : ] = 0.5
     mi.VolumeGrid(grid).write(tmp_file)
-    vol = mi.load_string(f"""<volume type="gridvolume" version="2.0.0">
-                              <string name="filename" value="{tmp_file}"/>
-                          </volume>""")
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file,
+    })
     it = dr.zero(mi.Interaction3f, 1)
     assert vol is not None
     assert dr.allclose(vol.eval_6(it), 0.0)
