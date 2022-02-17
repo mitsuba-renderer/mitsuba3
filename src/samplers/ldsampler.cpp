@@ -55,6 +55,20 @@ which is a quality criterion on their spatial distribution.
 .. subfigend::
    :label: fig-ldsampler-pattern_dim32
 
+
+.. tabs::
+    .. code-tab:: xml
+        :name: ldsampler-sampler
+
+        <sampler type="ldsampler">
+            <integer name="sample_count" value="64"/>
+        </sampler>
+
+    .. code-tab:: python
+
+        'type'='ldsampler',
+        'sample_count': '64'
+
  */
 
 template <typename Float, typename Spectrum>

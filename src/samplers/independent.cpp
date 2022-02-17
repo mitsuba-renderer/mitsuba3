@@ -17,6 +17,7 @@ Independent sampler (:monosp:`independent`)
  * - sample_count
    - |int|
    - Number of samples per pixel (Default: 4)
+
  * - seed
    - |int|
    - Seed offset (Default: 0)
@@ -47,6 +48,19 @@ on the order of the machine epsilon (:math:`6\cdot 10^{-8}`) in single precision
              projection on both 1D axis (top and right plot).
 .. subfigend::
    :label: fig-independent-pattern
+
+.. tabs::
+    .. code-tab:: xml
+        :name: independent-sampler
+
+        <sampler type="independent">
+            <integer name="sample_count" value="64"/>
+        </sampler>
+
+    .. code-tab:: python
+
+        'type'='independent',
+        'sample_count': '64'
 
  */
 

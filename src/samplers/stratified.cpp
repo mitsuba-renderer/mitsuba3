@@ -44,9 +44,22 @@ the independent sampler, as well as better convergence.
    :caption: 64 samples projected in 2D and on both 1D axis (top and right plot). Every strata
              contains a single sample creating a good distribution when projected in 2D. Projections
              on both 1D axis still exhibit sample clumping which will result in higher variance, for
-             instance when sampling a thin streched rectangular area light.
+             instance when sampling a thin stretched rectangular area light.
 .. subfigend::
    :label: fig-stratified-pattern
+
+.. tabs::
+    .. code-tab:: xml
+        :name: stratified-sampler
+
+        <sampler type="stratified">
+            <integer name="sample_count" value="64"/>
+        </sampler>
+
+    .. code-tab:: python
+
+        'type'='stratified',
+        'sample_count': '4'
 
  */
 

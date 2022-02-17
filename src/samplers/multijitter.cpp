@@ -18,9 +18,11 @@ Correlated Multi-Jittered sampler (:monosp:`multijitter`)
    - |int|
    - Number of samples per pixel. The sampler may internally choose to slightly increase this
      value to create a subdivision into strata that has an aspect ratio close to one. (Default: 4)
+
  * - seed
    - |int|
    - Seed offset (Default: 0)
+
  * - jitter
    - |bool|
    - Adds additional random jitter withing the substratum (Default: True)
@@ -54,6 +56,19 @@ columns and the rows.
              (top and right plot). As expected, the samples are well stratified both in 2D and 1D.
 .. subfigend::
    :label: fig-multijitter-pattern
+
+.. tabs::
+    .. code-tab:: xml
+        :name: multijitter-sampler
+
+        <sampler type="multijitter">
+            <integer name="sample_count" value="64"/>
+        </sampler>
+
+    .. code-tab:: python
+
+        'type'='multijitter',
+        'sample_count': '64'
 
  */
 

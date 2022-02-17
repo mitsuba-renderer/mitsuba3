@@ -17,12 +17,15 @@ Orthogonal Array sampler (:monosp:`orthogonal`)
  * - sample_count
    - |int|
    - Number of samples per pixel. This value has to be the square of a prime number. (Default: 4)
+
  * - strength
    - |int|
    - Orthogonal array's strength (Default: 2)
+
  * - seed
    - |int|
    - Seed offset (Default: 0)
+
  * - jitter
    - |bool|
    - Adds additional random jitter withing the substratum (Default: True)
@@ -31,7 +34,7 @@ This plugin implements the Orthogonal Array sampler generator introduced by Jaro
 :cite:`jarosz19orthogonal`. It generalizes correlated multi-jittered sampling to higher dimensions
 by using *orthogonal arrays (OAs)*. An OA of strength :math:`s` has the property that projecting
 the generated samples to any combination of :math:`s` dimensions will always result in a well
-stratified pattern. In other words, when :math:`s=2` (default value), the high-dimentional samples
+stratified pattern. In other words, when :math:`s=2` (default value), the high-dimensional samples
 are simultaneously stratified in all 2D projections as if they had been produced by correlated
 multi-jittered sampling. By construction, samples produced by this generator are also well
 stratified when projected on both 1D axis.
@@ -54,9 +57,22 @@ stratification of 2D projections of those samples wouldn't be ensured anymore.
    :caption: 49 samples projected onto the first two dimensions and their
              projection on both 1D axis (top and right plot). The pattern is well stratified
              in both 2D and 1D projections. This is true for every pair of dimensions of the
-             high-dimentional samples.
+             high-dimensional samples.
 .. subfigend::
    :label: fig-orthogonal-pattern
+
+.. tabs::
+    .. code-tab:: xml
+        :name: orthogonal-sampler
+
+        <sampler type="orthogonal">
+            <integer name="sample_count" value="4"/>
+        </sampler>
+
+    .. code-tab:: python
+
+        'type'='orthogonal',
+        'sample_count': '4'
 
  */
 
