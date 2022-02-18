@@ -337,7 +337,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "GridVolume[" << std::endl
-            << "  to_local = " << m_to_local << "," << std::endl
+            << "  to_local = " << string::indent(m_to_local, 13) << "," << std::endl
             << "  bbox = " << string::indent(m_bbox) << "," << std::endl
             << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
