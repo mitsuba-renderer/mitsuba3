@@ -14,7 +14,7 @@ class ADIntegrator(mi.SamplingIntegrator):
      * - max_depth
        - |int|
        - Specifies the longest path depth in the generated output image (where -1
-         corresponds to :math:`\infty`). A value of |1| will only render directly
+         corresponds to :math:`\\infty`). A value of |1| will only render directly
          visible light sources. |2| will lead to single-bounce (direct-only)
          illumination, and so on. (Default: |-1|)
      * - rr_depth
