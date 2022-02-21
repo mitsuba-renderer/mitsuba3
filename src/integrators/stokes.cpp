@@ -44,14 +44,23 @@ describe the polarization of light shown as false color images (green: positive,
 In the following example, a normal path tracer is nested inside the Stokes vector
 integrator:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab::  xml
+        :name: path-integrator
 
-    <integrator type="stokes">
-        <integrator type="path">
-            <!-- path tracer parameters -->
+        <integrator type="stokes">
+            <integrator type="path">
+                <!-- path tracer parameters -->
+            </integrator>
         </integrator>
-    </integrator>
 
+    .. code-tab:: python
+
+        'type': 'stokes',
+        'nested': {
+            'type': 'path',
+            # .. path tracer parameters
+        }
 
  */
 

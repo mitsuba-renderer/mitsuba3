@@ -12,8 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _integrator-ptracer:
 
-Path tracer (:monosp:`ptracer`)
--------------------------------
+Particle tracer (:monosp:`ptracer`)
+-----------------------------------
 
 .. pluginparameters::
 
@@ -22,18 +22,20 @@ Path tracer (:monosp:`ptracer`)
    - Specifies the longest path depth in the generated output image (where -1 corresponds to
      :math:`\infty`). A value of 1 will only render directly visible light sources. 2 will lead
      to single-bounce (direct-only) illumination, and so on. (Default: -1)
+
  * - rr_depth
    - |int|
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
+
  * - hide_emitters
    - |bool|
    - Hide directly visible emitters. (Default: no, i.e. |false|)
+
  * - samples_per_pass
    - |bool|
    - If specified, divides the workload in successive passes with :paramtype:`samples_per_pass`
      samples per pixel.
-
 
 This integrator traces rays starting from light sources and attempts to connect them
 to the sensor at each bounce.
@@ -47,7 +49,21 @@ Note that unlike sensor-based integrators such as :ref:`path <integrator-path>`,
 possible to divide the workload in image-space tiles. The :paramtype:`samples_per_pass` parameter
 allows splitting work in successive passes of the given sample count per pixel. It is particularly
 useful in wavefront mode.
+
+.. tabs::
+    .. code-tab::  xml
+
+        <integrator type="ptracer">
+            <integer name="max_depth" value="8"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        'type': 'ptracer',
+        'max_depth': 8
+
  */
+
 template <typename Float, typename Spectrum>
 class ParticleTracerIntegrator final : public AdjointIntegrator<Float, Spectrum> {
 public:

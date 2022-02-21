@@ -25,10 +25,12 @@ Volumetric path tracer (:monosp:`volpath`)
    - Specifies the longest path depth in the generated output image (where -1 corresponds to
      :math:`\infty`). A value of 1 will only render directly visible light sources. 2 will lead
      to single-bounce (direct-only) illumination, and so on. (Default: -1)
+
  * - rr_depth
    - |int|
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
+
  * - hide_emitters
    - |bool|
    - Hide directly visible emitters. (Default: no, i.e. |false|)
@@ -50,6 +52,18 @@ to it (as compared to, say, a :ref:`dielectric <bsdf-dielectric>` or
     it is better to use the more advanced :ref:`volumetric path tracer with
     spectral MIS <integrator-volpathmis>`, which will produce in a significantly less noisy
     rendered image.
+
+.. tabs::
+    .. code-tab::  xml
+
+        <integrator type="volpath">
+            <integer name="max_depth" value="8"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        'type': 'volpath',
+        'max_depth': 8
 
 */
 template <typename Float, typename Spectrum>

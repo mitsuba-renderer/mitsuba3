@@ -18,16 +18,19 @@ Direct illumination integrator (:monosp:`direct`)
    - |int|
    - This convenience parameter can be used to set both :code:`emitter_samples` and
      :code:`bsdf_samples` at the same time.
+
  * - emitter_samples
    - |int|
    - Optional more fine-grained parameter: specifies the number of samples that should be generated
      using the direct illumination strategies implemented by the scene's emitters.
      (Default: set to the value of :monosp:`shading_samples`)
+
  * - bsdf_samples
    - |int|
    - Optional more fine-grained parameter: specifies the number of samples that should be generated
      using the BSDF sampling strategies implemented by the scene's surfaces.
      (Default: set to the value of :monosp:`shading_samples`)
+
  * - hide_emitters
    - |bool|
    - Hide directly visible emitters.
@@ -61,6 +64,16 @@ it is also possible to turn this plugin into an emitter sampling-only
 or BSDF sampling-only integrator.
 
 .. note:: This integrator does not handle participating media or indirect illumination.
+
+.. tabs::
+    .. code-tab::  xml
+        :name: direct-integrator
+
+        <integrator type="direct"/>
+
+    .. code-tab:: python
+
+        'type': 'direct'
 
  */
 

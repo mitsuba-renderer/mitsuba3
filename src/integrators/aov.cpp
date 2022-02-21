@@ -16,13 +16,14 @@ Arbitrary Output Variables integrator (:monosp:`aov`)
  * - aovs
    - |string|
    - List of :monosp:`<name>:<type>` pairs denoting the enabled AOVs.
+
  * - (Nested plugin)
    - :paramtype:`integrator`
    - Sub-integrators (can have more than one) which will be sampled along the AOV integrator. Their
      respective output will be put into distinct images.
 
 
-This integrator returns one or more AOVs (Arbitraty Output Variables) describing the visible
+This integrator returns one or more AOVs (Arbitrary Output Variables) describing the visible
 surfaces.
 
 .. subfigstart::
@@ -42,12 +43,21 @@ image with a path tracer. The `RGBA` image produces by the path tracer will be s
 [:code:`my_image.R`, :code:`my_image.G`, :code:`my_image.B`, :code:`my_image.A`] channels of the EXR
 output file.
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <integrator type="aov">
-        <string name="aovs" value="dd.y:depth,nn:sh_normal"/>
-        <integrator type="path" name="my_image"/>
-    </integrator>
+        <integrator type="aov">
+            <string name="aovs" value="dd.y:depth,nn:sh_normal"/>
+            <integrator type="path" name="my_image"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        'type': 'aov',
+        'aovs': 'dd.y:depth,nn:sh_normal',
+        'my_image': {
+            'type': 'path',
+        }
 
 Currently, the following AOVs types are available:
 
@@ -59,7 +69,8 @@ Currently, the following AOVs types are available:
     - :monosp:`dp_du`, :monosp:`dp_dv`: Position partials wrt. the UV parameterization.
     - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
     - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
-    - :monosp:`shape_index`: Shape index.
+    - :monosp:`shape_index`: Shape index.boundary_test
+    - :monosp:`boundary_test`: Boundary test.
 
 Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
 are meaningless whenever there is only partial pixel coverage or when using a

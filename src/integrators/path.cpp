@@ -23,12 +23,14 @@ Path tracer (:monosp:`path`)
      corresponds to :math:`\infty`). A value of |1| will only render directly
      visible light sources. |2| will lead to single-bounce (direct-only)
      illumination, and so on. (Default: |-1|)
+
  * - rr_depth
    - |int|
    - Specifies the path depth, at which the implementation will begin to use
      the *russian roulette* path termination criterion. For example, if set to
      |1|, then path generation many randomly cease after encountering directly
      visible surfaces. (Default: |5|)
+
  * - hide_emitters
    - |bool|
    - Hide directly visible emitters. (Default: no, i.e. |false|)
@@ -65,29 +67,20 @@ relies on multiple importance sampling to combine BSDF and emitter samples. The
 main difference in comparison to the former plugin is that it considers light
 paths of arbitrary length to compute both direct and indirect illumination.
 
-.. _sec-path-strictnormals:
-
-.. Commented out for now
-.. Strict normals
-   --------------
-
-.. Triangle meshes often rely on interpolated shading normals
-   to suppress the inherently faceted appearance of the underlying geometry. These
-   "fake" normals are not without problems, however. They can lead to paradoxical
-   situations where a light ray impinges on an object from a direction that is
-   classified as "outside" according to the shading normal, and "inside" according
-   to the true geometric normal.
-
-.. The :paramtype:`strict_normals` parameter specifies the intended behavior when such cases arise. The
-   default (|false|, i.e. "carry on") gives precedence to information given by the shading normal and
-   considers such light paths to be valid. This can theoretically cause light "leaks" through
-   boundaries, but it is not much of a problem in practice.
-
-.. When set to |true|, the path tracer detects inconsistencies and ignores these paths. When objects
-   are poorly tesselated, this latter option may cause them to lose a significant amount of the
-   incident radiation (or, in other words, they will look dark).
-
 .. note:: This integrator does not handle participating media
+
+.. tabs::
+    .. code-tab::  xml
+        :name: path-integrator
+
+        <integrator type="path">
+            <integer name="max_depth" value="8"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        'type': 'path',
+        'max_depth': 8
 
  */
 

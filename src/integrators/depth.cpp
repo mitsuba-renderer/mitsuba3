@@ -3,11 +3,29 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Example of one an extremely simple type of integrator that is also
- * helpful for debugging: returns the distance from the camera to the closest
- * intersected object, or 0 if no intersection was found.
+/**!
+
+.. _integrator-depth:
+
+Depth integrator (:monosp:`depth`)
+----------------------------------
+
+Example of one an extremely simple type of integrator that is also
+helpful for debugging: returns the distance from the camera to the closest
+intersected object, or 0 if no intersection was found.
+
+.. tabs::
+    .. code-tab::  xml
+        :name: depth-integrator
+
+        <integrator type="depth"/>
+
+    .. code-tab:: python
+
+        'type': 'depth'
+
  */
+
 template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:

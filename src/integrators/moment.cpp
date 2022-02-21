@@ -18,9 +18,22 @@ Moment integrator (:monosp:`moment`)
    - Sub-integrators (can have more than one) which will be sampled along the AOV integrator. Their
      respective XYZ output will be put into distinct images.
 
-
 This integrator returns one AOVs recording the second moment of the samples of the nested
 integrator.
+
+.. tabs::
+    .. code-tab:: xml
+
+        <integrator type="moment">
+            <integrator type="path"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        'type': 'moment',
+        'nested': {
+            'type': 'path',
+        }
 
  */
 
