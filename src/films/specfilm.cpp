@@ -18,31 +18,36 @@ NAMESPACE_BEGIN(mitsuba)
 .. _film-specfilm:
 
 Spectral film (:monosp:`specfilm`)
--------------------------------------------
+----------------------------------
 
 .. pluginparameters::
 
  * - width, height
    - |int|
    - Width and height of the camera sensor in pixels Default: 768, 576)
+
  * - component_format
    - |string|
    - Specifies the desired floating  point component format of output images. The options are
      :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
+
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
      of the output. In this case, only the requested regions
      will be rendered. (Default: Unused)
+
  * - sample_border
    - |bool|
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
+
  * - (Nested plugin)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
      Gaussian filter)
+
  * - (Nested plugins)
    - |spectrum|
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
@@ -78,15 +83,34 @@ each channel containing the sensor response to each defined spectral band (it is
 spectrum from a file, see the :ref:`Spectrum definition <color-spectra>` section).
 Notice that in this example, each band contains the spectral sensitivity of one of the ``rgb`` channels.
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab::  xml
 
-    <film type="specfilm">
-        <integer  name="width" value="1920"/>
-        <integer  name="height" value="1080"/>
-        <spectrum name="band1_red" filename="data_red.spd" />
-        <spectrum name="band2_green" filename="data_green.spd" />
-        <spectrum name="band3_blue" filename="data_blue.spd" />
-    </film>
+        <film type="specfilm">
+            <integer  name="width" value="1920"/>
+            <integer  name="height" value="1080"/>
+            <spectrum name="band1_red" filename="data_red.spd" />
+            <spectrum name="band2_green" filename="data_green.spd" />
+            <spectrum name="band3_blue" filename="data_blue.spd" />
+        </film>
+
+    .. code-tab:: python
+
+        'type': 'specfilm',
+        'width': 1920,
+        'height': 1080,
+        'band1_red': {
+            'type': 'spectrum',
+            'filename': 'data_red.spd'
+        },
+        'band1_green': {
+            'type': 'spectrum',
+            'filename': 'data_green.spd'
+        },
+        'band1_blue': {
+            'type': 'spectrum',
+            'filename': 'data_blue.spd'
+        }
 
  */
 
@@ -385,8 +409,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpecFilm[" << std::endl
-            << "  size = " << m_size        << "," << std::endl
-            << "  crop_size = " << m_crop_size   << "," << std::endl
+            << "  size = " << m_size << "," << std::endl
+            << "  crop_size = " << m_crop_size << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  sample_border = " << m_sample_border << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl

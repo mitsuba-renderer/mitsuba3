@@ -23,31 +23,37 @@ High dynamic range film (:monosp:`hdrfilm`)
  * - width, height
    - |int|
    - Width and height of the camera sensor in pixels Default: 768, 576)
+
  * - file_format
    - |string|
    - Denotes the desired output file format. The options are :monosp:`openexr`
      (for ILM's OpenEXR format), :monosp:`rgbe` (for Greg Ward's RGBE format), or
      :monosp:`pfm` (for the Portable Float Map format). (Default: :monosp:`openexr`)
+
  * - pixel_format
    - |string|
    - Specifies the desired pixel format of output images. The options are :monosp:`luminance`,
      :monosp:`luminance_alpha`, :monosp:`rgb`, :monosp:`rgba`, :monosp:`xyz` and :monosp:`xyza`.
      (Default: :monosp:`rgb`)
+
  * - component_format
    - |string|
    - Specifies the desired floating  point component format of output images (when saving to disk).
      The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
      (Default: :monosp:`float16`)
+
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
      of the output. In this case, only the requested regions
      will be rendered. (Default: Unused)
+
  * - sample_border
    - |bool|
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
+
  * - (Nested plugin)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
@@ -82,13 +88,21 @@ the ITU-R Rec. BT.709-3 primaries with a D65 white point.
 
 The following XML snippet describes a film that writes a full-HD RGBA OpenEXR file:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab::  xml
 
-    <film type="hdrfilm">
-        <string name="pixel_format" value="rgba"/>
-        <integer name="width" value="1920"/>
-        <integer name="height" value="1080"/>
-    </film>
+        <film type="hdrfilm">
+            <string name="pixel_format" value="rgba"/>
+            <integer name="width" value="1920"/>
+            <integer name="height" value="1080"/>
+        </film>
+
+    .. code-tab:: python
+
+        'type': 'hdrfilm',
+        'pixel_format': 'rgba',
+        'width': 1920,
+        'height': 1080
 
  */
 
@@ -118,7 +132,6 @@ public:
                   "equal to \"openexr\", \"pfm\", or \"rgbe\","
                   " found %s instead.", file_format);
         }
-
 
         if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
             m_pixel_format = Bitmap::PixelFormat::Y;
@@ -532,8 +545,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HDRFilm[" << std::endl
-            << "  size = " << m_size        << "," << std::endl
-            << "  crop_size = " << m_crop_size   << "," << std::endl
+            << "  size = " << m_size << "," << std::endl
+            << "  crop_size = " << m_crop_size << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  sample_border = " << m_sample_border << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
