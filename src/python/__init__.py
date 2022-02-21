@@ -1,5 +1,6 @@
 """ Mitsuba Python extension library """
 
+import typing
 import types
 import sys
 import threading
@@ -95,6 +96,7 @@ class MitsubaVariantModule(types.ModuleType):
             pass
 
         submodule = super().__getattribute__('_submodule')
+        sub_suffix = '' if submodule is None else f'.{submodule}'
 
         # Try C++ libraries (Python bindings)
         try:
@@ -112,14 +114,22 @@ class MitsubaVariantModule(types.ModuleType):
                 for m in modules:
                     if not submodule is None:
                         m = getattr(m, submodule, None)
-                    result.update(getattr(m, '__dict__'))
+                    for k, v in getattr(m, '__dict__').items():
+                        if k not in result:
+                            result[k] = v
+
+                # Search python modules as well
+                py_m = _import(f'mitsuba.python{sub_suffix}')
+                for k, v in getattr(py_m, '__dict__').items():
+                    if not k.startswith('_') and k not in result:
+                        result[k] = v
+
                 return result
         except Exception:
             pass
 
         # Try Python extension (objects)
         try:
-            sub_suffix = '' if submodule is None else f'.{submodule}'
             return getattr(_import(f'mitsuba.python{sub_suffix}'), key)
         except Exception:
             pass
@@ -137,7 +147,8 @@ class MitsubaVariantModule(types.ModuleType):
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
 
-    def variant(self):
+    def variant(self) -> str:
+        'Return currently enabled variant'
         return super().__getattribute__('_variant')
 
 
@@ -204,26 +215,38 @@ class MitsubaModule(types.ModuleType):
         sub_suffix = '' if submodule is None else f'.{submodule}'
         module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
         result = module.__getattribute__(key)
+
+        # Add set_variant(), variant() and variant modules to the __dict__
+        if submodule is None and key == '__dict__':
+            result['set_variant'] = super().__getattribute__('set_variant')
+            result['variant']  = super().__getattribute__('variant')
+            result['variants'] = super().__getattribute__('variants')
+            for v in super().__getattribute__('variants')():
+                result[v] = sys.modules[f'mitsuba.{v}']
+
+        # Add this lookup to the cache
         _tls.cache[(variant, submodule, key)] = result
+
         return result
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
 
-    def variant(self):
+    def variant(self) -> str:
+        'Return currently enabled variant'
         return getattr(_tls, 'variant', None)
 
-    def variants(self):
-        'Returns a list of all variants that have been compiled'
+    def variants(self) -> typing.List[str]:
+        'Return a list of all variants that have been compiled'
         from .config import MI_VARIANTS
         return MI_VARIANTS
 
-    def set_variant(self, *args):
+    def set_variant(self, *args) -> None:
         '''
-        Set the variant to be used by the `mitsuba.current` module. Multiple variant
+        Set the variant to be used by the `mitsuba` module. Multiple variant
         names can be passed to this function and the first one that is supported
         will be set as current variant.
-       '''
+        '''
         value = None
         for v in args:
             if v in self.variants():
