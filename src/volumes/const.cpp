@@ -12,28 +12,44 @@ Constant-valued volume data source (:monosp:`constvolume`)
 
 .. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
-
  * - value
    - |float| or |spectrum|
    - Specifies the value of the constant volume.
+   - |exposed|, |differentiable|
 
 This plugin provides a volume data source that is constant throughout its domain.
 Depending on how it is used, its value can either be a scalar or a color spectrum.
 
-.. code-block:: xml
-    :name: lst-constvolume
+.. tabs::
+    .. code-tab::  xml
+        :name: lst-constvolume
 
-    <medium type="heterogeneous">
-        <volume type="constvolume" name="albedo">
-            <rgb name="value" value="0.99, 0.8, 0.8"/>
-        </volume>
+        <medium type="heterogeneous">
+            <volume type="constvolume" name="albedo">
+                <rgb name="value" value="0.99, 0.8, 0.8"/>
+            </volume>
 
-        <!-- shorthand: this will create a 'constvolume' internally -->
-        <rgb name="albedo" value="0.99, 0.99, 0.99"/>
-    </medium>
+            <!-- shorthand: this will create a 'constvolume' internally -->
+            <rgb name="albedo" value="0.99, 0.99, 0.99"/>
+        </medium>
+
+    .. code-tab:: python
+
+        'type': 'heterogeneous',
+        'albedo': {
+            'type': 'constvolume',
+            'value': {
+                'type': 'rgb',
+                'value': [0.99, 0.8, 0.8]
+            }
+        }
+
+        # shorthand: this will create a 'constvolume' internally
+        'albedo': {
+            'type': 'rgb',
+            'value': [0.99, 0.8, 0.8]
+        }
+
 */
 
 template <typename Float, typename Spectrum>
@@ -44,6 +60,10 @@ public:
 
     ConstVolume(const Properties &props) : Base(props) {
         m_value = props.texture<Texture>("value", 1.f);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("value", m_value.get(), +ParamFlags::Differentiable);
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
@@ -62,10 +82,6 @@ public:
     }
 
     ScalarFloat max() const override { NotImplementedError("max"); }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("value", m_value.get());
-    }
 
     std::string to_string() const override {
         std::ostringstream oss;

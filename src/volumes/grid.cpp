@@ -16,9 +16,10 @@ NAMESPACE_BEGIN(mitsuba)
 .. _volume-gridvolume:
 
 Grid-based volume data source (:monosp:`gridvolume`)
-----------------------------------------------------------
+----------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 6
 
  * - filename
    - |string|
@@ -61,6 +62,11 @@ Grid-based volume data source (:monosp:`gridvolume`)
      cause small differences as hardware interpolation methods typically have a
      loss of precision (not exactly 32-bit arithmethic). (Default: true)
 
+ * - data
+   - |tensor|
+   - Tensor array containing the grid data.
+   - |exposed|, |differentiable|
+
 This class implements access to volume data stored on a 3D grid using a
 simple binary exchange format (compatible with Mitsuba 0.6). When appropriate,
 spectral upsampling is applied at loading time to convert RGB values to
@@ -99,6 +105,23 @@ little endian encoding and is specified as follows:
        after the file has been loaded into memory:
        :code:`data[((zpos*yres + ypos)*xres + xpos)*channels + chan]`
        where (xpos, ypos, zpos, chan) denotes the lookup location.
+
+.. tabs::
+    .. code-tab:: xml
+
+        <medium type="heterogeneous">
+            <volume type="grid" name="albedo">
+                <string name="filename" value="my_volume.vol"/>
+            </volume>
+        </medium>
+
+    .. code-tab:: python
+
+        'type': 'heterogeneous',
+        'albedo': {
+            'type': 'grid',
+            'filename': 'my_volume.vol'
+        }
 
 */
 
@@ -212,6 +235,26 @@ public:
         }
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("data", m_texture.tensor(), +ParamFlags::Differentiable);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "data")) {
+            const size_t channels = nchannels();
+            if (channels != 1 && channels != 3 && channels != 6)
+                Throw("parameters_changed(): The volume data %s was changed "
+                      "to have %d channels, only volumes with 1, 3 or 6 "
+                      "channels are supported!", to_string(), channels);
+
+            m_texture.set_tensor(m_texture.tensor());
+
+            if (!m_fixed_max)
+                m_max = (float) dr::hmax_nested(dr::detach(m_texture.value()));
+        }
+    }
+
     UnpolarizedSpectrum eval(const Interaction3f &it,
                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
@@ -313,26 +356,6 @@ public:
         auto shape = m_texture.shape();
         return { (int) shape[0], (int) shape[1], (int) shape[2] };
     };
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_texture.tensor());
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "data")) {
-            const size_t channels = nchannels();
-            if (channels != 1 && channels != 3 && channels != 6)
-                Throw("parameters_changed(): The volume data %s was changed "
-                      "to have %d channels, only volumes with 1, 3 or 6 "
-                      "channels are supported!", to_string(), channels);
-
-            m_texture.set_tensor(m_texture.tensor());
-
-            if (!m_fixed_max)
-                m_max = (float) dr::hmax_nested(dr::detach(m_texture.value()));
-        }
-    }
 
     std::string to_string() const override {
         std::ostringstream oss;
