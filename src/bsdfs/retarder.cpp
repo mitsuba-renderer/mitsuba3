@@ -18,12 +18,17 @@ Linear retarder material (:monosp:`retarder`)
  * - theta
    - |spectrum| or |texture|
    - Specifies the rotation angle (in degrees) of the retarder around the optical axis (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - delta
    - |spectrum| or |texture|
    - Specifies the retardance (in degrees) where 360 degrees is equivalent to a full wavelength. (Default: 90.0)
+   - |exposed|, |differentiable|
+
  * - transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
+   - |exposed|, |differentiable|
 
 This material simulates an ideal linear retarder useful to test polarization aware
 light transport or to conduct virtual optical experiments. The fast axis of the
@@ -35,12 +40,21 @@ This plugin can be used to instantiate the  common special cases of
 
 The following XML snippet describes a quarter-wave plate material:
 
-.. code-block:: xml
-    :name: retarder
+.. tabs::
+    .. code-tab:: xml
+        :name: retarder
 
-    <bsdf type="retarder">
-        <spectrum name="delta" value="90"/>
-    </bsdf>
+        <bsdf type="retarder">
+            <spectrum name="delta" value="90"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'retarder',
+        'delta': {
+            'type': 'spectrum',
+            'value': 90
+        }
 
 Apart from a change of polarization, light does not interact with this material
 in any way and does not change its direction.
@@ -67,6 +81,12 @@ public:
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("theta",         m_theta.get(),         +ParamFlags::Differentiable);
+        callback->put_object("delta",         m_delta.get(),         +ParamFlags::Differentiable);
+        callback->put_object("transmittance", m_transmittance.get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -166,12 +186,6 @@ public:
         } else {
             return transmittance;
         }
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("theta", m_theta.get());
-        callback->put_object("delta", m_delta.get());
-        callback->put_object("transmittance", m_transmittance.get());
     }
 
     std::string to_string() const override {

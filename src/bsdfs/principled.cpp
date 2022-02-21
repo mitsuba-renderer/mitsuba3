@@ -21,58 +21,89 @@ The Principled BSDF (:monosp:`principled`)
  * - base_color
    - |spectrum| or |texture|
    - The color of the material. (Default:0.5)
+   - |exposed|, |differentiable|
+
  * - roughness
    - |float| or |texture|
    - Controls the roughness parameter of the main specular lobes. (Default:0.5)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - anisotropic
    - |float| or |texture|
    - Controls the degree of anisotropy. (0.0 : isotropic material) (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - metallic
    - |texture| or |float|
    - The "metallicness" of the model. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - spec_trans
    - |texture| or |float|
    - Blends BRDF and BSDF major lobe. (1.0: only BSDF
      response, 0.0 : only BRDF response.) (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - eta
    - |float|
    - Interior IOR/Exterior IOR
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - specular
    - |float|
    - Controls the Fresnel reflection coefficient. This parameter has one to one
      correspondence with `eta`, so both of them can not be specified in xml.
      (Default:0.5)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - spec_tint
    - |texture| or |float|
    - The fraction of `base_color` tint applied onto the dielectric reflection
      lobe. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - sheen
    - |float| or |texture|
    - The rate of the sheen lobe. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - sheen_tint
    - |float| or |texture|
    - The fraction of `base_color` tint applied onto the sheen lobe. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - flatness
    - |float| or |texture|
    - Blends between the diffuse response and fake subsurface approximation based
      on Hanrahan-Krueger approximation. (0.0:only diffuse response, 1.0:only
      fake subsurface scattering.) (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - clearcoat
    - |texture| or |float|
    - The rate of the secondary isotropic specular lobe. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - clearcoat_gloss
    - |texture| or |float|
    - Controls the roughness of the secondary specular lobe. Clearcoat response
      gets glossier as the parameter increases. (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - diffuse_reflectance_sampling_rate
    - |float|
    - The rate of the cosine hemisphere reflection in sampling. (Default:1.0)
+   - |exposed|
+
  * - main_specular_sampling_rate
    - |float|
    - The rate of the main specular lobe in sampling. (Default:1.0)
+   - |exposed|
+
  * - clearcoat_sampling_rate
    - |float|
    - The rate of the secondary specular reflection in sampling. (Default:0.0)
+   - |exposed|
 
 The principled BSDF is a complex BSDF with numerous reflective and transmittive
 lobes. It is able to produce great number of material types ranging from metals
@@ -109,22 +140,41 @@ You can see the general structure of the BSDF below.
 The following XML snippet describes a material definition for :monosp:`principled`
 material:
 
-.. code-block:: xml
-    :name: principled
+.. tabs::
+    .. code-tab:: xml
+        :name: principled
 
-    <bsdf type="principled">
-        <rgb name="base_color" value="1.0,1.0,1.0"/>
-        <float name="metallic" value="0.7" />
-        <float name="specular" value="0.6" />
-        <float name="roughness" value="0.2" />
-        <float name="spec_tint" value="0.4" />
-        <float name="anisotropic" value="0.5" />
-        <float name="sheen" value="0.3" />
-        <float name="sheen_tint" value="0.2" />
-        <float name="clearcoat" value="0.6" />
-        <float name="clearcoat_gloss" value="0.3" />
-        <float name="spec_trans" value="0.4" />
-    </bsdf>
+        <bsdf type="principled">
+            <rgb name="base_color" value="1.0,1.0,1.0"/>
+            <float name="metallic" value="0.7" />
+            <float name="specular" value="0.6" />
+            <float name="roughness" value="0.2" />
+            <float name="spec_tint" value="0.4" />
+            <float name="anisotropic" value="0.5" />
+            <float name="sheen" value="0.3" />
+            <float name="sheen_tint" value="0.2" />
+            <float name="clearcoat" value="0.6" />
+            <float name="clearcoat_gloss" value="0.3" />
+            <float name="spec_trans" value="0.4" />
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'principled',
+        'base_color': {
+            'type': 'rgb',
+            'value': [1.0, 1.0, 1.0]
+        },
+        'metallic' : 0.7,
+        'specular' : 0.6,
+        'roughness' : 0.2,
+        'spec_tint' : 0.4,
+        'anisotropic' : 0.5,
+        'sheen' : 0.3,
+        'sheen_tint' : 0.2,
+        'clearcoat' : 0.6,
+        'clearcoat_glass' : 0.3,
+        'spec_trans' : 0.4
 
 All of the parameters except sampling rates and `eta` should take values
 between 0.0 and 1.0.
@@ -204,6 +254,67 @@ public:
         dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("clearcoat",       m_clearcoat.get(),       +ParamFlags::Differentiable);
+        callback->put_object("clearcoat_gloss", m_clearcoat_gloss.get(), +ParamFlags::Differentiable);
+        callback->put_object("metallic",        m_metallic.get(),        +ParamFlags::Differentiable);
+
+        callback->put_parameter("main_specular_sampling_rate",       m_spec_srate,      +ParamFlags::NonDifferentiable);
+        callback->put_parameter("clearcoat_sampling_rate",           m_clearcoat_srate, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("diffuse_reflectance_sampling_rate", m_diff_refl_srate, +ParamFlags::NonDifferentiable);
+
+        if (m_eta_specular) //Only one of them traversed! (based on xml file)
+            callback->put_parameter("eta",      m_eta,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        else
+            callback->put_parameter("specular", m_specular, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+
+        callback->put_object("roughness",       m_roughness.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("base_color",      m_base_color.get(),  +ParamFlags::Differentiable);
+        callback->put_object("anisotropic",     m_anisotropic.get(), +ParamFlags::Differentiable);
+        callback->put_object("spec_tint",       m_spec_tint.get(),   +ParamFlags::Differentiable);
+        callback->put_object("sheen",           m_sheen.get(),       +ParamFlags::Differentiable);
+        callback->put_object("sheen_tint",      m_sheen_tint.get(),  +ParamFlags::Differentiable);
+        callback->put_object("spec_trans",      m_spec_trans.get(),  +ParamFlags::Differentiable);
+        callback->put_object("flatness",        m_flatness.get(),    +ParamFlags::Differentiable);
+    }
+
+    void
+    parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (string::contains(keys, "spec_trans"))
+            m_has_spec_trans = true;
+        if (string::contains(keys, "clearcoat"))
+            m_has_clearcoat = true;
+        if (string::contains(keys, "sheen"))
+            m_has_sheen = true;
+        if (string::contains(keys, "sheen_tint"))
+            m_has_sheen_tint = true;
+        if (string::contains(keys, "anisotropic"))
+            m_has_anisotropic = true;
+        if (string::contains(keys, "metallic"))
+            m_has_metallic = true;
+        if (string::contains(keys, "spec_tint"))
+            m_has_spec_tint = true;
+        if (string::contains(keys, "flatness"))
+            m_has_flatness = true;
+        if (!m_eta_specular && string::contains(keys, "specular")) {
+            /* Specular=0 is corresponding to eta=1 which is not plausible
+               for transmission. */
+            dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
+            m_eta =
+                    2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
+        }
+        if (m_eta_specular && string::contains(keys, "eta")) {
+            // Eta = 1 is not plausible for transmission.
+            dr::masked(m_eta, m_eta == 1.0f) = 1.001f;
+        }
+        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                        m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
+                        m_diff_refl_srate, m_spec_srate, m_clearcoat_srate);
+        if (!m_eta_specular)
+            dr::make_opaque(m_specular);
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -713,68 +824,6 @@ public:
                     prob_clearcoat * cc_dist.pdf(wh) * dwh_dwo_abs;
         }
         return pdf;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("clearcoat", m_clearcoat.get());
-        callback->put_object("clearcoat_gloss", m_clearcoat_gloss.get());
-        callback->put_object("metallic", m_metallic.get());
-        callback->put_parameter("main_specular_sampling_rate",
-                                m_spec_srate);
-        callback->put_parameter("clearcoat_sampling_rate",
-                                m_clearcoat_srate);
-
-        if (m_eta_specular) //Only one of them traversed! (based on xml file)
-            callback->put_parameter("eta", m_eta);
-        else
-            callback->put_parameter("specular", m_specular);
-
-        callback->put_object("base_color", m_base_color.get());
-        callback->put_object("roughness", m_roughness.get());
-        callback->put_object("anisotropic", m_anisotropic.get());
-        callback->put_object("spec_tint", m_spec_tint.get());
-        callback->put_object("sheen", m_sheen.get());
-        callback->put_object("sheen_tint", m_sheen_tint.get());
-        callback->put_object("spec_trans", m_spec_trans.get());
-        callback->put_object("flatness", m_flatness.get());
-        callback->put_parameter("m_diff_refl_srate", m_diff_refl_srate);
-    }
-
-    void
-    parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (string::contains(keys, "spec_trans"))
-            m_has_spec_trans = true;
-        if (string::contains(keys, "clearcoat"))
-            m_has_clearcoat = true;
-        if (string::contains(keys, "sheen"))
-            m_has_sheen = true;
-        if (string::contains(keys, "sheen_tint"))
-            m_has_sheen_tint = true;
-        if (string::contains(keys, "anisotropic"))
-            m_has_anisotropic = true;
-        if (string::contains(keys, "metallic"))
-            m_has_metallic = true;
-        if (string::contains(keys, "spec_tint"))
-            m_has_spec_tint = true;
-        if (string::contains(keys, "flatness"))
-            m_has_flatness = true;
-        if (!m_eta_specular && string::contains(keys, "specular")) {
-            /* Specular=0 is corresponding to eta=1 which is not plausible
-               for transmission. */
-            dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
-            m_eta =
-                    2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
-        }
-        if (m_eta_specular && string::contains(keys, "eta")) {
-            // Eta = 1 is not plausible for transmission.
-            dr::masked(m_eta, m_eta == 1.0f) = 1.001f;
-        }
-        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
-                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                        m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
-                        m_diff_refl_srate, m_spec_srate, m_clearcoat_srate);
-        if (!m_eta_specular)
-            dr::make_opaque(m_specular);
     }
 
     std::string to_string() const override {

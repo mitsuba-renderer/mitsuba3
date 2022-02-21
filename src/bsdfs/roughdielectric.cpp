@@ -19,17 +19,21 @@ Rough dielectric material (:monosp:`roughdielectric`)
 -----------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 6
 
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+
  * - specular_reflectance, specular_transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection/transmission components.
      Note that for physical realism, these parameters should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - distribution
    - |string|
@@ -41,18 +45,25 @@ Rough dielectric material (:monosp:`roughdielectric`)
        :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
+
  * - alpha, alpha_u, alpha_v
    - |texture| or |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      *root mean square* (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
      parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
      focuses computation on the visible parts of the microfacet normal distribution, considerably
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
 
+ * - eta
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a realistic microfacet scattering model for rendering
 rough interfaces between dielectric materials, such as a transition from air to
@@ -104,15 +115,24 @@ description of what this entails.
 
 The following XML snippet describes a material definition for rough glass:
 
-.. code-block:: xml
-    :name: roughdielectric-roughglass
+.. tabs::
+    .. code-tab:: xml
+        :name: roughdielectric-roughglass
 
-    <bsdf type="roughdielectric">
-        <string name="distribution" value="beckmann"/>
-        <float name="alpha" value="0.1"/>
-        <string name="int_ior" value="bk7"/>
-        <string name="ext_ior" value="air"/>
-    </bsdf>
+        <bsdf type="roughdielectric">
+            <string name="distribution" value="beckmann"/>
+            <float name="alpha" value="0.1"/>
+            <string name="int_ior" value="bk7"/>
+            <string name="ext_ior" value="air"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'roughdielectric',
+        'distribution': 'beckmann',
+        'alpha': 0.1,
+        'int_ior': 'bk7',
+        'ext_ior': 'air'
 
 Technical details
 *****************
@@ -195,6 +215,21 @@ public:
         dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
+            callback->put_object("alpha",                  m_alpha_u.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        else {
+            callback->put_object("alpha_u",                m_alpha_u.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            callback->put_object("alpha_v",                m_alpha_v.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        }
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance",   m_specular_reflectance.get(),   +ParamFlags::Differentiable);
+        if (m_specular_transmittance)
+            callback->put_object("specular_transmittance", m_specular_transmittance.get(), +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -559,20 +594,6 @@ public:
 
         return { depolarizer<Spectrum>(result),
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_object("alpha", m_alpha_u.get());
-        else {
-            callback->put_object("alpha_u", m_alpha_u.get());
-            callback->put_object("alpha_v", m_alpha_v.get());
-        }
-        callback->put_parameter("eta", m_eta);
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
-        if (m_specular_transmittance)
-            callback->put_object("specular_transmittance", m_specular_transmittance.get());
     }
 
     std::string to_string() const override {

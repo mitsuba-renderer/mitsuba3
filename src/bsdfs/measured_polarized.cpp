@@ -26,10 +26,12 @@ Measured polarized material (:monosp:`measured_polarized`)
  * - filename
    - |string|
    - Filename of the material data file to be loaded
+
  * - alpha_sample
    - |float|
    - Specifies which roughness value should be used for the internal Microfacet
      importance sampling routine. (Default: 0.1)
+
  * - wavelength
    - |float|
    - Specifies if the material should only be rendered for just one specific wavelength.
@@ -76,12 +78,20 @@ visualizations of the resulting Stokes vectors rendered with the
 
 In the following example, the measured gold BSDF from the dataset is setup:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: measured-polarized
 
-    <bsdf type="measured_polarized">
-        <string name="filename" value="6_gold_inpainted.pbsdf"/>
-        <float name="alpha_sample" value="0.02"/>
-    </bsdf>
+        <bsdf type="measured_polarized">
+            <string name="filename" value="6_gold_inpainted.pbsdf"/>
+            <float name="alpha_sample" value="0.02"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type' : 'measured_polarized',
+        'filename' : '6_gold_inpainted.pbsdf',
+        'alpha_sample' : 0.02
 
 Internally, a sampling routine from the GGX Microfacet model is used in order to
 importance sampling outgoing directions. The used GGX roughness value is exposed

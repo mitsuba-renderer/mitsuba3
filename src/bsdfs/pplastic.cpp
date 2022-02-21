@@ -15,18 +15,23 @@ Polarized plastic material (:monosp:`pplastic`)
 --------------------------------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 7
 
  * - diffuse_reflectance
    - |spectrum| or |texture|
    - Optional factor used to modulate the diffuse reflection component. (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
      Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: polypropylene / 1.49)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
@@ -41,16 +46,24 @@ Polarized plastic material (:monosp:`pplastic`)
        :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
+
  * - alpha
    - |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. (Default: 0.1)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
      focuses computation on the visible parts of the microfacet normal distribution, considerably
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
+
+ * - eta
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a scattering model that combines diffuse and specular reflection
 where both components can interact with polarized light. This is based on the pBRDF proposed in
@@ -111,14 +124,23 @@ This is a property that is commonly exploited in *shape from polarization* appli
 
 The following XML snippet describes the purple material from the test scene above:
 
-.. code-block:: xml
-    :name: lst-pplastic
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-pplastic
 
-    <bsdf type="pplastic">
-        <rgb name="diffuse_reflectance" value="0.05, 0.03, 0.1"/>
-        <float name="alpha" value="0.06"/>
-    </bsdf>
+        <bsdf type="pplastic">
+            <rgb name="diffuse_reflectance" value="0.05, 0.03, 0.1"/>
+            <float name="alpha" value="0.06"/>
+        </bsdf>
 
+    .. code-tab:: python
+
+        'type': 'ppplastic',
+        'diffuse_reflectance': {
+            'type' : 'rgb',
+            'value' : [0.05, 0.03, 0.1]
+        },
+        'alpha': 0.06
  */
 
 template <typename Float, typename Spectrum>
@@ -162,6 +184,34 @@ public:
         m_components.push_back(m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("eta",              m_eta,                       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
+            callback->put_parameter("alpha",             m_alpha_u,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        else {
+            callback->put_parameter("alpha_u",           m_alpha_u,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            callback->put_parameter("alpha_v",           m_alpha_v,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        }
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        /* Compute weights that further steer samples towards
+           the specular or diffuse components */
+        Float d_mean = m_diffuse_reflectance->mean(),
+              s_mean = 1.f;
+
+        if (m_specular_reflectance)
+            s_mean = m_specular_reflectance->mean();
+
+        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
+
+        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -366,33 +416,6 @@ public:
         Float p_diffuse = warp::square_to_cosine_hemisphere_pdf(wo);
 
         return dr::select(active, prob_specular * p_specular + prob_diffuse * p_diffuse, 0.f);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_parameter("alpha", m_alpha_u);
-        else {
-            callback->put_parameter("alpha_u", m_alpha_u);
-            callback->put_parameter("alpha_v", m_alpha_v);
-        }
-        callback->put_parameter("eta", m_eta);
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        /* Compute weights that further steer samples towards
-           the specular or diffuse components */
-        Float d_mean = m_diffuse_reflectance->mean(),
-              s_mean = 1.f;
-
-        if (m_specular_reflectance)
-            s_mean = m_specular_reflectance->mean();
-
-        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
-
-        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
     }
 
     std::string to_string() const override {

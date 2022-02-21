@@ -16,19 +16,30 @@ Thin dielectric material (:monosp:`thindielectric`)
 ---------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 4
 
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
+
  * - specular_transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
+
+ * - eta
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
@@ -97,6 +108,18 @@ public:
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_components[0] | m_components[1];
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        if (m_specular_transmittance)
+            callback->put_object("specular_transmittance", m_specular_transmittance.get(), +ParamFlags::Differentiable);
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance",   m_specular_reflectance.get(),   +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        dr::make_opaque(m_eta);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -174,18 +197,6 @@ public:
             value *= m_specular_transmittance->eval(si, active);
 
         return depolarizer<Spectrum>(value);
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_eta);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta", m_eta);
-        if (m_specular_transmittance)
-            callback->put_object("specular_transmittance", m_specular_transmittance.get());
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {

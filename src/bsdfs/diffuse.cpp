@@ -46,50 +46,40 @@ The following XML snippet describes a diffuse material,
 whose reflectance is specified as an sRGB color:
 
 .. tabs::
+    .. code-tab:: xml
+        :name: diffuse-srgb
 
-    .. tab:: XML
+        <bsdf type="diffuse">
+            <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
+        </bsdf>
 
-        .. code-block:: xml
-            :name: diffuse-srgb
+    .. code-tab:: python
 
-            <bsdf type="diffuse">
-                <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
-            </bsdf>
-
-    .. tab:: dict
-
-        .. code-block:: python
-            :name: diffuse-srgb
-
-            'type': 'diffuse',
-            'reflectance': {
-                'type': 'rgb',
-                'value': [0.2, 0.25, 0.7]
-            }
+        'type': 'diffuse',
+        'reflectance': {
+            'type': 'rgb',
+            'value': [0.2, 0.25, 0.7]
+        }
 
 Alternatively, the reflectance can be textured:
 
 .. tabs::
-    .. tab:: XML
+    .. code-tab:: xml
+        :name: diffuse-texture
 
-        .. code-block:: xml
-            :name: diffuse-texture
+        <bsdf type="diffuse">
+            <texture type="bitmap" name="reflectance">
+                <string name="filename" value="wood.jpg"/>
+            </texture>
+        </bsdf>
 
-            <bsdf type="diffuse">
-                <texture type="bitmap" name="reflectance">
-                    <string name="filename" value="wood.jpg"/>
-                </texture>
-            </bsdf>
+    .. code-tab:: python
 
-    .. tab:: dict
-
-        .. code-block:: python
-
-            'type': 'diffuse',
-            'reflectance': {
-                'type': 'bitmap',
-                'filename': "wood.jpg"
-            }
+        'type': 'diffuse',
+        'reflectance': {
+            'type': 'bitmap',
+            'filename': 'wood.jpg'
+        }
 */
 template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
@@ -102,6 +92,10 @@ public:
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("reflectance", m_reflectance.get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -183,10 +177,6 @@ public:
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
         return { depolarizer<Spectrum>(value) & active, dr::select(active, pdf, 0.f) };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("reflectance", m_reflectance.get());
     }
 
     std::string to_string() const override {

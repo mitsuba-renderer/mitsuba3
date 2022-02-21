@@ -18,9 +18,13 @@ Linear polarizer material (:monosp:`polarizer`)
  * - theta
    - |spectrum| or |texture|
    - Specifies the rotation angle (in degrees) of the polarizer around the optical axis (Default: 0.0)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
+   - |exposed|, |differentiable|
+
  * - polarizing
    - |bool|
    - Optional flag to disable polarization changes in order to use this as a neutral density filter,
@@ -45,12 +49,21 @@ a rotation can be applied directly to the associated shape.
 The following XML snippet describes a linear polarizer material with a rotation
 of 90 degrees.
 
-.. code-block:: xml
-    :name: polarizer
+.. tabs::
+    .. code-tab:: xml
+        :name: polarizer
 
-    <bsdf type="polarizer">
-        <spectrum name="theta" value="90"/>
-    </bsdf>
+        <bsdf type="polarizer">
+            <spectrum name="theta" value="90"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'polarizer',
+        'theta': {
+            'type' : 'spectrum',
+            'value' : 90
+        }
 
 Apart from a change of polarization, light does not interact with this material
 in any way and does not change its direction.
@@ -76,6 +89,11 @@ public:
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("theta",         m_theta.get(),         ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("transmittance", m_transmittance.get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -184,11 +202,6 @@ public:
         } else {
             return 0.5f * transmittance;
         }
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("theta", m_theta.get());
-        callback->put_object("transmittance", m_transmittance.get());
     }
 
     std::string to_string() const override {

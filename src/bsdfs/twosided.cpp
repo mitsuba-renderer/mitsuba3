@@ -16,6 +16,7 @@ Two-sided BRDF adapter (:monosp:`twosided`)
  * - (Nested plugin)
    - |bsdf|
    - A nested BRDF that should be turned into a two-sided scattering model. If two BRDFs are specified, they will be placed on the front and back side, respectively
+   - |exposed|, |differentiable|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox_onesided.jpg
@@ -43,15 +44,26 @@ side, respectively.
 
 The following snippet describes a two-sided diffuse material:
 
-.. code-block:: xml
-    :name: twosided
+.. tabs::
+    .. code-tab:: xml
+        :name: twosided
 
-    <bsdf type="twosided">
-        <bsdf type="diffuse">
-             <spectrum name="reflectance" value="0.4"/>
+        <bsdf type="twosided">
+            <bsdf type="diffuse">
+                 <spectrum name="reflectance" value="0.4"/>
+            </bsdf>
         </bsdf>
-    </bsdf>
 
+    .. code-tab:: python
+
+        'type': 'twosided',
+        'material' : {
+            'type': 'diffuse',
+            'reflectance' : {
+                'type' : 'spectrum',
+                'value' : 0.4
+            }
+        }
  */
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
@@ -89,6 +101,11 @@ public:
 
         if (has_flag(m_flags, BSDFFlags::Transmission))
             Throw("Only materials without a transmission component can be nested!");
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("brdf_0", m_brdf[0].get(), +ParamFlags::Differentiable);
+        callback->put_object("brdf_1", m_brdf[1].get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
@@ -238,11 +255,6 @@ public:
         }
 
         return { value, pdf };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("brdf_0", m_brdf[0].get());
-        callback->put_object("brdf_1", m_brdf[1].get());
     }
 
     std::string to_string() const override {

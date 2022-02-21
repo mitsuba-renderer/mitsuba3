@@ -13,19 +13,30 @@ Smooth dielectric material (:monosp:`dielectric`)
 -------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 4
 
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
+
  * - specular_transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
+
+ * - eta
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
@@ -50,15 +61,22 @@ instead describes a rough surface microstructure, take a look at the
 
 This snippet describes a simple air-to-water interface
 
-.. code-block:: xml
-    :name: dielectric-water
+.. tabs::
+    .. code-tab:: xml
+        :name: dielectric-water
 
-    <shape type="...">
-        <bsdf type="dielectric">
-            <string name="int_ior" value="water"/>
-            <string name="ext_ior" value="air"/>
-        </bsdf>
-    <shape>
+        <shape type="...">
+            <bsdf type="dielectric">
+                <string name="int_ior" value="water"/>
+                <string name="ext_ior" value="air"/>
+            </bsdf>
+        <shape>
+
+    .. code-tab:: python
+
+        'type': 'dielectric',
+        'int_ior': 'water',
+        'ext_ior': 'air'
 
 When using this model, it is crucial that the scene contains
 meaningful and mutually compatible indices of refraction changes---see the
@@ -70,21 +88,43 @@ dielectric material. This requires the use of a rendering technique that is
 aware of media (e.g. the :ref:`volumetric path tracer <integrator-volpath>`).
 An example of how one might describe a slightly absorbing piece of glass is shown below:
 
-.. code-block:: xml
-    :name: dielectric-glass
+.. tabs::
+    .. code-tab:: xml
+        :name: dielectric-glass
 
-    <shape type="...">
-        <bsdf type="dielectric">
-            <float name="int_ior" value="1.504"/>
-            <float name="ext_ior" value="1.0"/>
-        </bsdf>
+        <shape type="...">
+            <bsdf type="dielectric">
+                <float name="int_ior" value="1.504"/>
+                <float name="ext_ior" value="1.0"/>
+            </bsdf>
 
-        <medium type="homogeneous" name="interior">
-            <float name="scale" value="4"/>
-	    <rgb name="sigma_t" value="1, 1, 0.5"/>
-	    <rgb name="albedo" value="0.0, 0.0, 0.0"/>
-        </medium>
-    <shape>
+            <medium type="homogeneous" name="interior">
+                <float name="scale" value="4"/>
+                <rgb name="sigma_t" value="1, 1, 0.5"/>
+                <rgb name="albedo" value="0.0, 0.0, 0.0"/>
+            </medium>
+        <shape>
+
+    .. code-tab:: python
+
+        'type': '...',
+        'glass' :  {
+            'type' : 'dielectric',
+            'int_ior' : 1.504,
+            'ext_ior' : 1.0
+        },
+        'interior' : {
+            'type' : 'homogeneous',
+            'scale' : 4,
+            'sigma_t' : {
+                'type' : 'rgb',
+                'value' : [1, 1, 0.5]
+            },
+            'albedo' : {
+                'type' : 'rgb',
+                'value' : [0.0, 0.0, 0.0]
+            }
+        }
 
 In *polarized* rendering modes, the material automatically switches to a polarized
 implementation of the underlying Fresnel equations that quantify the reflectance and
@@ -161,8 +201,6 @@ parameter:
           - 1.52045
         * - :paramtype:`polypropylene`
           - 1.49
-          -
-          -
  */
 
 template <typename Float, typename Spectrum>
@@ -197,6 +235,14 @@ public:
 
         m_flags = m_components[0] | m_components[1];
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("eta", m_eta, +ParamFlags::NonDifferentiable);
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance",   m_specular_reflectance.get(),   +ParamFlags::Differentiable);
+        if (m_specular_transmittance)
+            callback->put_object("specular_transmittance", m_specular_transmittance.get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -318,14 +364,6 @@ public:
     Float pdf(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,
               const Vector3f & /* wo */, Mask /* active */) const override {
         return 0.f;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta", m_eta);
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
-        if (m_specular_transmittance)
-            callback->put_object("specular_transmittance", m_specular_transmittance.get());
     }
 
     std::string to_string() const override {

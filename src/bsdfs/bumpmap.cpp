@@ -17,12 +17,17 @@ Bump map BSDF adapter (:monosp:`bumpmap`)
  * - (Nested plugin)
    - |texture|
    - Specifies the bump map texture.
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - (Nested plugin)
    - |bsdf|
    - A BSDF model that should be affected by the bump map
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - scale
    - |float|
    - Bump map gradient multiplier. (Default: 1.0)
+   - |exposed|
 
 Bump mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a displacement height field provided as a
@@ -48,16 +53,28 @@ The following XML snippet describes a rough plastic material affected by a bump
 map. Note the we set the ``raw`` properties of the bump map ``bitmap`` object to
 ``true`` in order to disable the transformation from sRGB to linear encoding:
 
-.. code-block:: xml
-    :name: bumpmap
+.. tabs::
+    .. code-tab:: xml
+        :name: bumpmap
 
-    <bsdf type="bumpmap">
-        <texture name="arbitrary" type="bitmap">
-            <boolean name="raw" value="true"/>
-            <string name="filename" value="textures/bumpmap.jpg"/>
-        </texture>
-        <bsdf type="roughplastic"/>
-    </bsdf>
+        <bsdf type="bumpmap">
+            <texture name="arbitrary" type="bitmap">
+                <boolean name="raw" value="true"/>
+                <string name="filename" value="textures/bumpmap.jpg"/>
+            </texture>
+            <bsdf type="roughplastic"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'bumpmap',
+        'arbitrary': {
+            'raw': True,
+            'filename': 'textures/bumpmap.jpg'
+        },
+        'bsdf' : {
+            'type': 'roughplastic'
+        }
 */
 
 template <typename Float, typename Spectrum>
@@ -96,6 +113,12 @@ public:
             m_components.push_back(m_nested_bsdf->flags(i));
         m_flags = m_nested_bsdf->flags();
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("nested_bsdf",     m_nested_bsdf.get(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("nested_texture",  m_nested_texture.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("scale",        m_scale,                +ParamFlags::NonDifferentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -196,12 +219,6 @@ public:
         result.t = dr::cross(result.n, result.s);
 
         return result;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf", m_nested_bsdf.get());
-        callback->put_object("nested_texture", m_nested_texture.get());
-        callback->put_parameter("scale", m_scale);
     }
 
     std::string to_string() const override {

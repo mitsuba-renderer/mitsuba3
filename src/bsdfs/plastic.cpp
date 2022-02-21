@@ -16,10 +16,13 @@ Smooth plastic material (:monosp:`plastic`)
 -------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 5
 
  * - diffuse_reflectance
    - |spectrum| or |texture|
    - Optional factor used to modulate the diffuse reflection component. (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - nonlinear
    - |bool|
    - Account for nonlinear color shifts due to internal scattering? See the main text for details..
@@ -29,14 +32,22 @@ Smooth plastic material (:monosp:`plastic`)
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name.
      (Default: polypropylene / 1.49)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.
      (Default: air / 1.000277)
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component. Note that for
      physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
+
+ * - ext
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_default.jpg
@@ -58,13 +69,23 @@ plastic material.
 The following XML snippet describes a shiny material whose diffuse reflectance is specified using
 sRGB:
 
-.. code-block:: xml
-    :name: plastic-shiny
+.. tabs::
+    .. code-tab:: xml
+        :name: plastic-shiny
 
-    <bsdf type="plastic">
-        <rgb name="diffuse_reflectance" value="0.1, 0.27, 0.36"/>
-        <float name="int_ior" value="1.9"/>
-    </bsdf>
+        <bsdf type="plastic">
+            <rgb name="diffuse_reflectance" value="0.1, 0.27, 0.36"/>
+            <float name="int_ior" value="1.9"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'plastic',
+        'diffuse_reflectance' : {
+            'type' : 'rgb',
+            'value' : [0.1, 0.27, 0.36]
+        },
+        'int_ior' : 1.9
 
 Internal scattering
 *******************
@@ -159,6 +180,14 @@ public:
         dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("eta",              m_eta,                       +ParamFlags::NonDifferentiable);
+        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
+
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -329,14 +358,6 @@ public:
 
         return { dr::select(active, depolarizer<Spectrum>(diff), 0.f),
                  dr::select(active, hemi_pdf * prob_diffuse, 0.f) };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta", m_eta);
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
-
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {

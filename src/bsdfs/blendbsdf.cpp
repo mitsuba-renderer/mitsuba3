@@ -19,9 +19,12 @@ Blended material (:monosp:`blendbsdf`)
    - A floating point value or texture with values between zero and one. The extreme values zero and
      one activate the first and second nested BSDF respectively, and inbetween values interpolate
      accordingly. (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - (Nested plugin)
    - |bsdf|
    - Two nested BSDF instances that should be mixed according to the specified blending weight
+   - |exposed|, |differentiable|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_blendbsdf.jpg
@@ -35,19 +38,35 @@ rough, reflecting, or transmitting) can be mixed with others in this manner to s
 
 The following XML snippet describes the material shown above:
 
-.. code-block:: xml
-    :name: blendbsdf
+.. tabs::
+    .. code-tab:: xml
+        :name: blendbsdf
 
-    <bsdf type="blendbsdf">
-        <texture name="weight" type="bitmap">
-            <string name="filename" value="pattern.png"/>
-        </texture>
-        <bsdf type="conductor">
+        <bsdf type="blendbsdf">
+            <texture name="weight" type="bitmap">
+                <string name="filename" value="pattern.png"/>
+            </texture>
+            <bsdf type="conductor">
+            </bsdf>
+            <bsdf type="roughplastic">
+                <spectrum name="diffuse_reflectance" value="0.1"/>
+            </bsdf>
         </bsdf>
-        <bsdf type="roughplastic">
-            <spectrum name="diffuse_reflectance" value="0.1"/>
-        </bsdf>
-    </bsdf>
+
+    .. code-tab:: python
+
+            'type': 'blendbsdf',
+            'weight': {
+                'type': 'bitmap',
+                'filename': 'pattern.png'
+            },
+            'bsdf_0' : {
+                'type': 'conductor'
+            },
+            'bsdf_1' : {
+                'type': 'roughplastic',
+                'diffuse_reflectance': 0.1
+            }
  */
 
 template <typename Float, typename Spectrum>
@@ -79,6 +98,12 @@ public:
 
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("weight", m_weight.get(),          +ParamFlags::Differentiable);
+        callback->put_object("bsdf_0", m_nested_bsdf[0].get(),  +ParamFlags::Differentiable);
+        callback->put_object("bsdf_1", m_nested_bsdf[1].get(),  +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -188,12 +213,6 @@ public:
 
     MI_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
         return dr::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("weight", m_weight.get());
-        callback->put_object("bsdf_0", m_nested_bsdf[0].get());
-        callback->put_object("bsdf_1", m_nested_bsdf[1].get());
     }
 
     std::string to_string() const override {

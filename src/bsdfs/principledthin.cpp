@@ -22,51 +22,78 @@ The Thin Principled BSDF (:monosp:`principledthin`)
  * - base_color
    - |spectrum| or |texture|
    - The color of the material. (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - roughness
    - |float| or |texture|
    - Controls the roughness parameter of the main specular lobes. (Default: 0.5)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - anisotropic
    - |float| or |texture|
    - Controls the degree of anisotropy. (0.0: isotropic material) (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - spec_trans
    - |texture| or |float|
    - Blends diffuse and specular responses. (1.0: only
      specular response, 0.0 : only diffuse response.)(Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - eta
    - |float| or |texture|
    - Interior IOR/Exterior IOR (Default: 1.5)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - spec_tint
    - |texture| or |float|
    - The fraction of `base_color` tint applied onto the dielectric reflection
      lobe. (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - sheen
    - |float| or |texture|
    - The rate of the sheen lobe. (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - sheen_tint
    - |float| or |texture|
    - The fraction of `base_color` tint applied onto the sheen lobe. (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - flatness
    - |float| or |texture|
    - Blends between the diffuse response and fake subsurface approximation based
      on Hanrahan-Krueger approximation. (0.0:only diffuse response, 1.0:only
      fake subsurface scattering.) (Default: 0.0)
+   - |exposed|, |differentiable|
+
  * - diff_trans
    - |texture| or |float|
    - The fraction that the energy of diffuse reflection is given to the
      transmission. (0.0: only diffuse reflection, 2.0: only diffuse
      transmission) (Default:0.0)
+   - |exposed|, |differentiable|
+
  * - diffuse_reflectance_sampling_rate
    - |float|
    - The rate of the cosine hemisphere reflection in sampling. (Default: 1.0)
+   - |exposed|
+
  * - specular_reflectance_sampling_rate
    - |float|
    - The rate of the main specular reflection in sampling. (Default: 1.0)
+   - |exposed|
+
  * - specular_transmittance_sampling_rate
    - |float|
    - The rate of the main specular transmission in sampling. (Default: 1.0)
+   - |exposed|
+
  * - diffuse_transmittance_sampling_rate
    - |float|
    - The rate of the cosine hemisphere transmission in sampling. (Default: 1.0)
+   - |exposed|
 
 The thin principled BSDF is a complex BSDF which is designed by approximating
 some features of thin, translucent materials. The implementation is based on
@@ -94,18 +121,33 @@ You can see the general structure of the BSDF below.
 The following XML snippet describes a material definition for
 :monosp:`principledthin` material:
 
-.. code-block:: xml
-    :name: principledthin
+.. tabs::
+    .. code-tab:: xml
+        :name: principledthin
 
-    <bsdf type="principledthin">
-        <rgb name="base_color" value="0.7,0.1,0.1 "/>
-        <float name="roughness" value="0.15" />
-        <float name="spec_tint" value="0.1" />
-        <float name="anisotropic" value="0.5" />
-        <float name="spec_trans" value="0.8" />
-        <float name="diff_trans" value="0.3" />
-        <float name="eta" value="1.33" />
-    </bsdf>
+        <bsdf type="principledthin">
+            <rgb name="base_color" value="0.7,0.1,0.1 "/>
+            <float name="roughness" value="0.15" />
+            <float name="spec_tint" value="0.1" />
+            <float name="anisotropic" value="0.5" />
+            <float name="spec_trans" value="0.8" />
+            <float name="diff_trans" value="0.3" />
+            <float name="eta" value="1.33" />
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'principledthin',
+        'base_color': {
+            'type': 'rgb',
+            'value': [0.7, 0.1, 0.1]
+        },
+        'roughness' : 0.15,
+        'spec_tint' : 0.1,
+        'anisotropic' : 0.5,
+        'spec_trans' : 0.8,
+        'diff_trans' : 0.3,
+        'eta' : 1.33
 
 All of the parameters, except sampling rates, `diff_trans` and
 `eta`, should take values between 0.0 and 1.0. The range of
@@ -165,6 +207,48 @@ public:
         dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("eta",                                     m_eta_thin.get() , ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("roughness",                               m_roughness.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("diff_trans",                              m_diff_trans.get(),  +ParamFlags::Differentiable);
+        callback->put_parameter("specular_reflectance_sampling_rate",   m_spec_refl_srate,   +ParamFlags::NonDifferentiable);
+        callback->put_parameter("diffuse_reflectance_sampling_rate",    m_diff_refl_srate,   +ParamFlags::NonDifferentiable);
+        callback->put_parameter("diffuse_transmittance_sampling_rate",  m_diff_trans_srate,  +ParamFlags::NonDifferentiable);
+        callback->put_parameter("specular_transmittance_sampling_rate", m_spec_trans_srate,  +ParamFlags::NonDifferentiable);
+        callback->put_object("base_color",                              m_base_color.get(),  +ParamFlags::Differentiable);
+        callback->put_object("anisotropic",                             m_anisotropic.get(), +ParamFlags::Differentiable);
+        callback->put_object("spec_tint",                               m_spec_tint.get(),   +ParamFlags::Differentiable);
+        callback->put_object("sheen",                                   m_sheen.get(),       +ParamFlags::Differentiable);
+        callback->put_object("sheen_tint",                              m_sheen_tint.get(),  +ParamFlags::Differentiable);
+        callback->put_object("spec_trans",                              m_spec_trans.get(),  +ParamFlags::Differentiable);
+        callback->put_object("flatness",                                m_flatness.get(),    +ParamFlags::Differentiable);
+    }
+
+    void
+    parameters_changed(const std::vector <std::string> &keys = {}) override {
+        // In case the parameters are changed from zero to something else
+        // boolean flags need to be changed also.
+        if (string::contains(keys, "spec_trans"))
+            m_has_spec_trans = true;
+        if (string::contains(keys, "diff_trans"))
+            m_has_diff_trans = true;
+        if (string::contains(keys, "sheen"))
+            m_has_sheen = true;
+        if (string::contains(keys, "sheen_tint"))
+            m_has_sheen_tint = true;
+        if (string::contains(keys, "anisotropic"))
+            m_has_anisotropic = true;
+        if (string::contains(keys, "flatness"))
+            m_has_flatness = true;
+        if (string::contains(keys, "spec_tint"))
+            m_has_spec_tint = true;
+        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                        m_diff_trans, m_eta_thin, m_diff_refl_srate,
+                        m_spec_refl_srate, m_spec_trans_srate,
+                        m_diff_trans_srate);
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -614,51 +698,6 @@ public:
                     warp::square_to_cosine_hemisphere_pdf(-wo_t);
         }
         return pdf;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("diff_trans", m_diff_trans.get());
-        callback->put_object("eta", m_eta_thin.get());
-        callback->put_parameter("specular_reflectance_sampling_rate",
-                                m_spec_refl_srate);
-        callback->put_parameter("diffuse_transmittance_sampling_rate",
-                                m_diff_trans_srate);
-        callback->put_parameter("specular_transmittance_sampling_rate",
-                                m_spec_trans_srate);
-        callback->put_object("base_color", m_base_color.get());
-        callback->put_object("roughness", m_roughness.get());
-        callback->put_object("anisotropic", m_anisotropic.get());
-        callback->put_object("spec_tint", m_spec_tint.get());
-        callback->put_object("sheen", m_sheen.get());
-        callback->put_object("sheen_tint", m_sheen_tint.get());
-        callback->put_object("spec_trans", m_spec_trans.get());
-        callback->put_object("flatness", m_flatness.get());
-        callback->put_parameter("m_diff_refl_srate", m_diff_refl_srate);
-    }
-
-    void
-    parameters_changed(const std::vector <std::string> &keys = {}) override {
-        // In case the parameters are changed from zero to something else
-        // boolean flags need to be changed also.
-        if (string::contains(keys, "spec_trans"))
-            m_has_spec_trans = true;
-        if (string::contains(keys, "diff_trans"))
-            m_has_diff_trans = true;
-        if (string::contains(keys, "sheen"))
-            m_has_sheen = true;
-        if (string::contains(keys, "sheen_tint"))
-            m_has_sheen_tint = true;
-        if (string::contains(keys, "anisotropic"))
-            m_has_anisotropic = true;
-        if (string::contains(keys, "flatness"))
-            m_has_flatness = true;
-        if (string::contains(keys, "spec_tint"))
-            m_has_spec_tint = true;
-        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
-                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                        m_diff_trans, m_eta_thin, m_diff_refl_srate,
-                        m_spec_refl_srate, m_spec_trans_srate,
-                        m_diff_trans_srate);
     }
 
     std::string to_string() const override {

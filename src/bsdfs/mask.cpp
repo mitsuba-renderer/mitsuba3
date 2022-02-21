@@ -17,9 +17,12 @@ Opacity mask (:monosp:`mask`)
  * - opacity
    - |spectrum| or |texture|
    - Specifies the opacity (where 1=completely opaque) (Default: 0.5)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - (Nested plugin)
    - |bsdf|
    - A base BSDF model that represents the non-transparent portion of the scattering
+   - |exposed|, |differentiable|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
@@ -39,24 +42,46 @@ scenes that contain the :ref:`mask <bsdf-mask>` plugin, even if there is nothing
 
 The following XML snippet describes a material configuration for a transparent leaf:
 
-.. code-block:: xml
-    :name: mask-leaf
+.. tabs::
+    .. code-tab:: xml
+        :name: mask-leaf
 
-    <bsdf type="mask">
-        <!-- Base material: a two-sided textured diffuse BSDF -->
-        <bsdf type="twosided">
-            <bsdf type="diffuse">
-                <texture name="reflectance" type="bitmap">
-                    <string name="filename" value="leaf.png"/>
-                </texture>
+        <bsdf type="mask">
+            <!-- Base material: a two-sided textured diffuse BSDF -->
+            <bsdf type="twosided">
+                <bsdf type="diffuse">
+                    <texture name="reflectance" type="bitmap">
+                        <string name="filename" value="leaf.png"/>
+                    </texture>
+                </bsdf>
             </bsdf>
+
+            <!-- Fetch the opacity mask from a monochromatic texture -->
+            <texture type="bitmap" name="opacity">
+                <string name="filename" value="leaf_mask.png"/>
+            </texture>
         </bsdf>
 
-        <!-- Fetch the opacity mask from a monochromatic texture -->
-        <texture type="bitmap" name="opacity">
-            <string name="filename" value="leaf_mask.png"/>
-        </texture>
-    </bsdf>
+    .. code-tab:: python
+
+        'type': 'mask',
+        # Base material: a two-sided textured diffuse BSDF
+        'material': {
+            'type': 'twosided',
+            'bsdf': {
+                'type': 'diffuse',
+                'reflectance' : {
+                    'type': 'bitmap',
+                    'filename': 'leaf.png'
+                }
+            }
+        },
+
+        # Fetch the opacity mask from a monochromatic texture
+        'opacity' : {
+            'type' : 'texture',
+            'filename' : 'leaf_mask.png'
+        }
 */
 
 template <typename Float, typename Spectrum>
@@ -89,6 +114,11 @@ public:
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_nested_bsdf->flags() | m_components.back();
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("opacity",     m_opacity.get(),     ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("nested_bsdf", m_nested_bsdf.get(), +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -188,11 +218,6 @@ public:
 
     MI_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
         return dr::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("opacity", m_opacity.get());
-        callback->put_object("nested_bsdf", m_nested_bsdf.get());
     }
 
     std::string to_string() const override {

@@ -18,9 +18,13 @@ Circular polarizer material (:monosp:`circular`)
  * - theta
    - |spectrum| or |texture|
    - Specifies the rotation angle (in degrees) of the polarizer around the optical axis (Default: 0.0)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
+   - |exposed|, |differentiable|
+
  * - left_handed
    - |bool|
    - Flag to switch between left and right circular polarization. (Default: |false|, i.e. right circular polarizer)
@@ -32,12 +36,18 @@ directly to the associated shape.
 
 The following XML snippet describes a left circular polarizer material:
 
-.. code-block:: xml
-    :name: circular
+.. tabs::
+    .. code-tab:: xml
+        :name: circular
 
-    <bsdf type="circular">
-        <boolean name="left_handed" value="true"/>
-    </bsdf>
+        <bsdf type="circular">
+            <boolean name="left_handed" value="true"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'circular',
+        'left_handed': True
 
 Apart from a change of polarization, light does not interact with this material
 in any way and does not change its direction.
@@ -62,6 +72,11 @@ public:
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("theta",           m_theta.get(),          ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("transmittance",   m_transmittance.get(),  +ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -156,11 +171,6 @@ public:
         } else {
             return 0.5f*transmittance;
         }
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("theta", m_theta.get());
-        callback->put_object("transmittance", m_transmittance.get());
     }
 
     std::string to_string() const override {

@@ -21,10 +21,13 @@ Rough plastic material (:monosp:`roughplastic`)
 -----------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 8
 
  * - diffuse_reflectance
    - |spectrum| or |texture|
    - Optional factor used to modulate the diffuse reflection component. (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - nonlinear
    - |bool|
    - Account for nonlinear color shifts due to internal scattering? See the
@@ -34,13 +37,16 @@ Rough plastic material (:monosp:`roughplastic`)
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: polypropylene / 1.49)
+
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
      Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - distribution
    - |string|
@@ -52,18 +58,24 @@ Rough plastic material (:monosp:`roughplastic`)
        :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
+
  * - alpha
    - |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. (Default: 0.1)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
      focuses computation on the visible parts of the microfacet normal distribution, considerably
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
 
-
+ * - eta
+   - |float|
+   - Relative index of refreaction from the exterior to the interior
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a realistic microfacet scattering model for rendering
 rough dielectric materials with internal scattering, such as plastic.
@@ -101,15 +113,25 @@ finish). Values significantly above that are probably not too realistic.
 
 The following XML snippet describes a material definition for black plastic material.
 
-.. code-block:: xml
-    :name: lst-roughplastic-black
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-roughplastic-black
 
-    <bsdf type="roughplastic">
-        <string name="distribution" value="beckmann"/>
-        <float name="int_ior" value="1.61"/>
-        <spectrum name="diffuse_reflectance" value="0"/>
-    </bsdf>
+        <bsdf type="roughplastic">
+            <string name="distribution" value="beckmann"/>
+            <float name="int_ior" value="1.61"/>
+            <spectrum name="diffuse_reflectance" value="0"/>
+        </bsdf>
 
+    .. code-tab:: python
+
+        'type': 'roughplastic',
+        'distribution': 'beckmann',
+        'int_ior': 1.61,
+        'diffuse_reflectance': {
+            'type' : 'spectrum',
+            'value' : 0
+        }
 
 Like the :ref:`plastic <bsdf-plastic>` material, this model internally simulates the
 interaction of light with a diffuse base surface coated by a thin dielectric
@@ -182,6 +204,54 @@ public:
         dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("alpha",            m_alpha,                     ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("eta",              m_eta,                       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        // Compute inverse of eta squared
+        m_inv_eta_2 = 1.f / (m_eta * m_eta);
+
+        /* Compute weights that further steer samples towards
+           the specular or diffuse components */
+        Float d_mean = m_diffuse_reflectance->mean(),
+              s_mean = 1.f;
+
+        if (m_specular_reflectance)
+            s_mean = m_specular_reflectance->mean();
+
+        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
+
+        // Precompute rough reflectance (vectorized)
+        if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
+            using FloatX = DynamicBuffer<ScalarFloat>;
+            using Vector3fX = Vector<FloatX, 3>;
+            ScalarFloat eta = dr::slice(m_eta), alpha = dr::slice(m_alpha);
+
+            using FloatP = dr::Packet<dr::scalar_t<Float>>;
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
+            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MI_ROUGH_TRANSMITTANCE_RES));
+            FloatX zero = dr::zero<FloatX>(MI_ROUGH_TRANSMITTANCE_RES);
+
+            Vector3fX wi = Vector3fX(dr::sqrt(1 - mu * mu), zero, mu);
+
+            auto external_transmittance = eval_transmittance(distr, wi, eta);
+
+            m_external_transmittance = dr::load<DynamicBuffer<Float>>(
+                external_transmittance.data(),
+                dr::width(external_transmittance));
+
+            m_internal_reflectance =
+                dr::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
+        }
+        dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+                        m_internal_reflectance);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -429,54 +499,6 @@ public:
         }
 
         return { depolarizer<Spectrum>(value) & active, pdf };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("alpha", m_alpha, +ParamFlags::Discontinuous);
-        callback->put_parameter("eta", m_eta, +ParamFlags::Discontinuous);
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        // Compute inverse of eta squared
-        m_inv_eta_2 = 1.f / (m_eta * m_eta);
-
-        /* Compute weights that further steer samples towards
-           the specular or diffuse components */
-        Float d_mean = m_diffuse_reflectance->mean(),
-              s_mean = 1.f;
-
-        if (m_specular_reflectance)
-            s_mean = m_specular_reflectance->mean();
-
-        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
-
-        // Precompute rough reflectance (vectorized)
-        if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
-            using FloatX = DynamicBuffer<ScalarFloat>;
-            using Vector3fX = Vector<FloatX, 3>;
-            ScalarFloat eta = dr::slice(m_eta), alpha = dr::slice(m_alpha);
-
-            using FloatP = dr::Packet<dr::scalar_t<Float>>;
-            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
-            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MI_ROUGH_TRANSMITTANCE_RES));
-            FloatX zero = dr::zero<FloatX>(MI_ROUGH_TRANSMITTANCE_RES);
-
-            Vector3fX wi = Vector3fX(dr::sqrt(1 - mu * mu), zero, mu);
-
-            auto external_transmittance = eval_transmittance(distr, wi, eta);
-
-            m_external_transmittance = dr::load<DynamicBuffer<Float>>(
-                external_transmittance.data(),
-                dr::width(external_transmittance));
-
-            m_internal_reflectance =
-                dr::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
-        }
-        dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
-                        m_internal_reflectance);
     }
 
     std::string to_string() const override {

@@ -19,13 +19,17 @@ Smooth conductor (:monosp:`conductor`)
  * - material
    - |string|
    - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
+
  * - eta, k
    - |spectrum| or |texture|
    - Real and imaginary components of the material's index of refraction. (Default: based on the value of :paramtype:`material`)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
      Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_conductor_gold.jpg
@@ -52,24 +56,44 @@ consider using the :ref:`twosided <bsdf-twosided>` BRDF adapter plugin.
 
 The following XML snippet describes a material definition for gold:
 
-.. code-block:: xml
-    :name: lst-conductor-gold
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-conductor-gold
 
-    <bsdf type="conductor">
-        <string name="material" value="Au"/>
-    </bsdf>
+        <bsdf type="conductor">
+            <string name="material" value="Au"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'conductor',
+        'material' : 'Au'
 
 It is also possible to load spectrally varying index of refraction data from
 two external files containing the real and imaginary components,
 respectively (see :ref:`Scene format <sec-file-format>` for details on the file format):
 
-.. code-block:: xml
-    :name: lst-conductor-files
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-conductor-files
 
-    <bsdf type="conductor">
-        <spectrum name="eta" filename="conductorIOR.eta.spd"/>
-        <spectrum name="k" filename="conductorIOR.k.spd"/>
-    </bsdf>
+        <bsdf type="conductor">
+            <spectrum name="eta" filename="conductorIOR.eta.spd"/>
+            <spectrum name="k" filename="conductorIOR.k.spd"/>
+        </bsdf>
+
+
+    .. code-tab:: python
+
+        'type': 'conductor',
+        'eta' :  {
+            'type' : 'spectrum',
+            'filename' : 'conductorIOR.eta.spd'
+        },
+        'k' :  {
+            'type' : 'spectrum',
+            'filename' : 'conductorIOR.k.spd'
+        }
 
 In *polarized* rendering modes, the material automatically switches to a polarized
 implementation of the underlying Fresnel equations.
@@ -215,6 +239,12 @@ public:
         }
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("eta",                  m_eta.get(),                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("k",                    m_k.get(),                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+    }
+
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
                                              const SurfaceInteraction3f &si,
                                              Float /* sample1 */,
@@ -278,12 +308,6 @@ public:
     Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
               const Vector3f & /*wo*/, Mask /*active*/) const override {
         return 0.f;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("specular_reflectance", m_specular_reflectance.get());
-        callback->put_object("eta", m_eta.get());
-        callback->put_object("k", m_k.get());
     }
 
     std::string to_string() const override {

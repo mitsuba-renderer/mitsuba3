@@ -20,9 +20,12 @@ Normal map BSDF (:monosp:`normalmap`)
  * - normalmap
    - |texture|
    - The color values of this texture specify the perturbed normals relative in the local surface coordinate system
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - (Nested plugin)
    - |bsdf|
    - A BSDF model that should be affected by the normal map
+   - |exposed|, |differentiable|
 
 Normal mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a normal map provided as a texture. This method
@@ -47,17 +50,29 @@ The following XML snippet describes a smooth mirror material affected by a norma
 ``raw`` properties of the normal map ``bitmap`` object to ``true`` in order to disable the
 transformation from sRGB to linear encoding:
 
-.. code-block:: xml
-    :name: normalmap
+.. tabs::
+    .. code-tab:: xml
+        :name: normalmap
 
-    <bsdf type="normalmap">
-        <texture name="normalmap" type="bitmap">
-            <boolean name="raw" value="true"/>
-            <string name="filename" value="textures/normalmap.jpg"/>
-        </texture>
-        <bsdf type="roughplastic"/>
-    </bsdf>
+        <bsdf type="normalmap">
+            <texture name="normalmap" type="bitmap">
+                <boolean name="raw" value="true"/>
+                <string name="filename" value="textures/normalmap.jpg"/>
+            </texture>
+            <bsdf type="roughplastic"/>
+        </bsdf>
 
+    .. code-tab:: python
+
+        'type': 'normalmap',
+        'normalmap': {
+            'type': 'bitmap',
+            'raw' : True,
+            'filename' : 'textures/normalmap.jpg'
+        },
+        'bsdf' : {
+            'type' : 'roughplastic'
+        }
 */
 
 template <typename Float, typename Spectrum>
@@ -90,6 +105,11 @@ public:
             m_flags |= m_components.back();
         }
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("nested_bsdf", m_nested_bsdf.get(), +ParamFlags::Differentiable);
+        callback->put_object("normalmap",   m_normalmap.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -174,12 +194,6 @@ public:
         result.t = dr::cross(result.n, result.s);
         return result;
     }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf", m_nested_bsdf.get());
-        callback->put_object("normalmap", m_normalmap.get());
-    }
-
 
     std::string to_string() const override {
         std::ostringstream oss;

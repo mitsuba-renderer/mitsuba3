@@ -19,13 +19,17 @@ Rough conductor material (:monosp:`roughconductor`)
  * - material
    - |string|
    - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
+
  * - eta, k
    - |spectrum| or |texture|
    - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
      Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+   - |exposed|, |differentiable|
 
  * - distribution
    - |string|
@@ -37,12 +41,15 @@ Rough conductor material (:monosp:`roughconductor`)
        :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
+
  * - alpha, alpha_u, alpha_v
    - |texture| or |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
      parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
+   - |exposed|, |differentiable|, |discontinuous|
+
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
@@ -99,15 +106,24 @@ finish). Values significantly above that are probably not too realistic.
 
 The following XML snippet describes a material definition for brushed aluminium:
 
-.. code-block:: xml
-    :name: lst-roughconductor-aluminium
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-roughconductor-aluminium
 
-    <bsdf type="roughconductor">
-        <string name="material" value="Al"/>
-        <string name="distribution" value="ggx"/>
-        <float name="alphaU" value="0.05"/>
-        <float name="alphaV" value="0.3"/>
-    </bsdf>
+        <bsdf type="roughconductor">
+            <string name="material" value="Al"/>
+            <string name="distribution" value="ggx"/>
+            <float name="alphaU" value="0.05"/>
+            <float name="alphaV" value="0.3"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'roughconductor',
+        'material': 'Al',
+        'distribution': 'ggx',
+        'alphaU': 0.05,
+        'alphaV': 0.3
 
 Technical details
 *****************
@@ -192,6 +208,19 @@ public:
 
         m_components.clear();
         m_components.push_back(m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
+            callback->put_object("alpha",                m_alpha_u.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        else {
+            callback->put_object("alpha_u",              m_alpha_u.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            callback->put_object("alpha_v",              m_alpha_v.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        }
+        callback->put_object("eta", m_eta.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_object("k",   m_k.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -464,19 +493,6 @@ public:
             pdf = distr.pdf(si.wi, H) / (4.f * dr::dot(wo, H));
 
         return { F * value & active, dr::select(active, pdf, 0.f) };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_object("alpha", m_alpha_u.get());
-        else {
-            callback->put_object("alpha_u", m_alpha_u.get());
-            callback->put_object("alpha_v", m_alpha_v.get());
-        }
-        callback->put_object("eta", m_eta.get());
-        callback->put_object("k", m_k.get());
-        if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {
