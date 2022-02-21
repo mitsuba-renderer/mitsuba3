@@ -49,6 +49,10 @@ public:
         m_scale *= 1.f / 10568.f;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale, +ParamFlags::NonDifferentiable);
+    }
+
     std::vector<ref<Object>> expand() const override {
         // This plugin recursively expands into an instance of 'interpolated'
         Properties props("regular");
@@ -62,10 +66,6 @@ public:
 
         PluginManager *pmgr = PluginManager::instance();
         return { ref<Object>(pmgr->create_object<Texture>(props)) };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
     }
 
     std::string to_string() const override {

@@ -15,7 +15,6 @@ Regular spectrum (:monosp:`regular`)
 
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
 placed samples.
-
  */
 
 template <typename Float, typename Spectrum>

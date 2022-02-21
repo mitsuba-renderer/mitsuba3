@@ -60,6 +60,10 @@ public:
         parameters_changed();
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("temperature", m_temperature, +ParamFlags::NonDifferentiable);
+    }
+
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_integral_min = cdf_and_pdf(ScalarFloat(m_wavelength_range.x())).first;
         m_integral = cdf_and_pdf(ScalarFloat(m_wavelength_range.y())).first - m_integral_min;
@@ -203,10 +207,6 @@ public:
 
     Float mean() const override {
         return m_integral / (m_wavelength_range.y() - m_wavelength_range.x());
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("temperature", m_temperature);
     }
 
     MI_DECLARE_CLASS()

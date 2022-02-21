@@ -12,9 +12,14 @@ NAMESPACE_BEGIN(mitsuba)
 Irregular spectrum (:monosp:`irregular`)
 ----------------------------------------
 
+.. pluginparameters::
+
+ * - wavelengths
+   - |spectrum| or |texture|
+   - Specifies the diffuse albedo of the material (Default: 0.5)
+
 This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
 placed samples.
-
  */
 
 template <typename Float, typename Spectrum>
