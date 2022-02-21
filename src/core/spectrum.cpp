@@ -20,19 +20,17 @@ void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavele
 
     std::string extension = string::to_lower(file_path.extension().string());
     if (extension == ".spd") {
-        std::string line, rest;
-        Scalar wav, value;
+        std::string line;
         while (true) {
             try {
                 line = file->read_line();
                 if (line.size() == 0 || line[0] == '#')
                     continue;
-
-                std::istringstream iss(line);
-                iss >> wav;
-                iss >> value;
-                if (iss >> rest)
-                    Log(Error, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
+                std::vector<std::string> tokens = string::tokenize(line, " ");
+                if (tokens.size() == 0 || tokens.size() > 2)
+                    Log(Error, "\"%s\": expected wavelength <space> value , but found:\n%s!", file_path, line);
+                Scalar wav = string::stof<Scalar>(tokens[0]);
+                Scalar value = string::stof<Scalar>(tokens[1]);
                 wavelengths.push_back(wav);
                 values.push_back(value);
             } catch (std::exception &) {
@@ -43,7 +41,7 @@ void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavele
         char header[3];
         file->read(header, 3);
         if (header[0] != 'S' || header[1] != 'P' || header[2] != 'B')
-            Throw("Invalid spectra file!");
+            Throw("Invalid binary spectra file!");
 
         uint8_t version;
         file->read(version);
