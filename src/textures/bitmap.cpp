@@ -72,7 +72,6 @@ Bitmap texture (:monosp:`bitmap`)
    - Tensor array containing the texture data.
    - |exposed|, |differentiable|, |discontinuous|
 
-
  * - accel
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can

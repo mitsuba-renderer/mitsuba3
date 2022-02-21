@@ -19,27 +19,24 @@ NAMESPACE_BEGIN(mitsuba)
 Homogeneous medium (:monosp:`homogeneous`)
 -----------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - albedo
    - |float|, |spectrum| or |volume|
    - Single-scattering albedo of the medium (Default: 0.75).
+   - |exposed|, |differentiable|
 
  * - sigma_t
    - |float| or |spectrum|
    - Extinction coefficient in inverse scene units (Default: 1).
+   - |exposed|, |differentiable|
 
  * - scale
    - |float|
    - Optional scale factor that will be applied to the extinction parameter.
      It is provided for convenience when accommodating data based on different
      units, or to simply tweak the density of the medium. (Default: 1)
+   - |exposed|
 
  * - sample_emitters
    - |bool|
@@ -77,31 +74,57 @@ meters and the coefficients are in inverse millimeters, set scale to 1000.
 The homogeneous medium assumes the extinction coefficient to be constant throughout the medium.
 However, it supports the use of a spatially varying albedo.
 
-.. code-block:: xml
-    :name: lst-homogeneous
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-homogeneous
 
-    <medium id="myMedium" type="homogeneous">
-        <rgb name="albedo" value="0.99, 0.9, 0.96"/>
-        <float name="sigma_t" value="5"/>
+        <medium id="myMedium" type="homogeneous">
+            <rgb name="albedo" value="0.99, 0.9, 0.96"/>
+            <float name="sigma_t" value="5"/>
 
-        <!-- The extinction is also allowed to be spectrally varying
-             Since RGB values have to be in the [0, 1]
-            <rgb name="sigma_t" value="0.5, 0.25, 0.8"/>
-        -->
+            <!-- The extinction is also allowed to be spectrally varying
+                 Since RGB values have to be in the [0, 1]
+                <rgb name="sigma_t" value="0.5, 0.25, 0.8"/>
+            -->
 
-        <!-- A homogeneous medium needs to have a constant extinction,
-            but can have a spatially varying albedo:
+            <!-- A homogeneous medium needs to have a constant extinction,
+                but can have a spatially varying albedo:
 
-            <volume name="albedo" type="gridvolume">
-                <string name="filename" value="albedo.vol"/>
-            </volume>
-        -->
+                <volume name="albedo" type="gridvolume">
+                    <string name="filename" value="albedo.vol"/>
+                </volume>
+            -->
 
-        <phase type="hg">
-            <float name="g" value="0.7"/>
-        </phase>
-    </medium>
+            <phase type="hg">
+                <float name="g" value="0.7"/>
+            </phase>
+        </medium>
 
+    .. code-tab:: python
+
+        'type': 'homogeneous',
+        'albedo': {
+            'type': 'rgb',
+            'value': [0.99, 0.9, 0.96]
+        },
+        'sigma_t': 5,
+        # The extinction is also allowed to be spectrally varying
+        # since RGB values have to be in the [0, 1]
+        # 'sigma_t' : {
+        #     'value' : [0.5, 0.25, 0.8]
+        # }
+
+        # A homogeneous medium needs to have a constant extinction,
+        # but can have a spatially varying albedo:
+        # 'albedo' : {
+        #     'type' : 'gridvolume',
+        #     'filename' : 'albedo.vol'
+        # }
+
+        'phase' : {
+            'type' : 'hg',
+            'g' : 0.7
+        }
 */
 
 template <typename Float, typename Spectrum>
@@ -120,6 +143,13 @@ public:
 
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
+        callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
+        callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
+        Base::traverse(callback);
     }
 
     MI_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
@@ -150,13 +180,6 @@ public:
     std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f & /* ray */) const override {
         return { true, 0.f, dr::Infinity<Float> };
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
-        callback->put_object("albedo", m_albedo.get());
-        callback->put_object("sigma_t", m_sigmat.get());
-        Base::traverse(callback);
     }
 
     std::string to_string() const override {

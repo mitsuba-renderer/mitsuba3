@@ -19,27 +19,24 @@ NAMESPACE_BEGIN(mitsuba)
 Heterogeneous medium (:monosp:`heterogeneous`)
 -----------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - albedo
    - |float|, |spectrum| or |volume|
    - Single-scattering albedo of the medium (Default: 0.75).
+   - |exposed|, |differentiable|
 
  * - sigma_t
    - |float|, |spectrum| or |volume|
    - Extinction coefficient in inverse scene units (Default: 1).
+   - |exposed|, |differentiable|
 
  * - scale
    - |float|
    - Optional scale factor that will be applied to the extinction parameter.
      It is provided for convenience when accomodating data based on different
      units, or to simply tweak the density of the medium. (Default: 1)
+   - |exposed|
 
  * - sample_emitters
    - |bool|
@@ -70,42 +67,82 @@ meters and the coefficients are in inverse millimeters, set scale to 1000.
 Both the albedo and the extinction coefficient can either be constant or textured,
 and both parameters are allowed to be spectrally varying.
 
-.. code-block:: xml
-    :name: lst-heterogeneous
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-heterogeneous
 
-    <!-- Declare a heterogeneous participating medium named 'smoke' -->
-    <medium type="heterogeneous" id="smoke">
-    	<!-- Acquire extinction values from an external data file -->
-    	<volume name="sigma_t" type="gridvolume">
-    		<string name="filename" value="frame_0150.vol"/>
-    	</volume>
+        <!-- Declare a heterogeneous participating medium named 'smoke' -->
+        <medium type="heterogeneous" id="smoke">
+            <!-- Acquire extinction values from an external data file -->
+            <volume name="sigma_t" type="gridvolume">
+                <string name="filename" value="frame_0150.vol"/>
+            </volume>
 
-    	<!-- The albedo is constant and set to 0.9 -->
-    	<float name="albedo" value="0.9"/>
+            <!-- The albedo is constant and set to 0.9 -->
+            <float name="albedo" value="0.9"/>
 
-    	<!-- Use an isotropic phase function -->
-    	<phase type="isotropic"/>
+            <!-- Use an isotropic phase function -->
+            <phase type="isotropic"/>
 
-    	<!-- Scale the density values as desired -->
-    	<float name="scale" value="200"/>
-    </medium>
+            <!-- Scale the density values as desired -->
+            <float name="scale" value="200"/>
+        </medium>
 
-    <!-- Attach the index-matched medium to a shape in the scene -->
-    <shape type="obj">
-    	<!-- Load an OBJ file, which contains a mesh version
-             of the axis-aligned box of the volume data file -->
-    	<string name="filename" value="bounds.obj"/>
+        <!-- Attach the index-matched medium to a shape in the scene -->
+        <shape type="obj">
+            <!-- Load an OBJ file, which contains a mesh version
+                 of the axis-aligned box of the volume data file -->
+            <string name="filename" value="bounds.obj"/>
 
-    	<!-- Reference the medium by ID -->
-    	<ref name="interior" id="smoke"/>
-    	<!-- If desired, this shape could also declare
-            a BSDF to create an index-mismatched
-            transition, e.g.
-            <bsdf type="dielectric"/>
-        -->
-    </shape>
+            <!-- Reference the medium by ID -->
+            <ref name="interior" id="smoke"/>
+            <!-- If desired, this shape could also declare
+                a BSDF to create an index-mismatched
+                transition, e.g.
+                <bsdf type="dielectric"/>
+            -->
+        </shape>
 
+    .. code-tab:: python
 
+        # Declare a heterogeneous participating medium named 'smoke'
+        'smoke': {
+            'type' : 'heterogeneous',
+
+            # Acquire extinction values from an external data file
+            'simgma_t' : {
+                'type' : 'gridvolume',
+                'filename' : 'frame_0150.vol'
+            },
+
+            # The albedo is constant and set to 0.9
+            'albedo' : 0.9,
+
+            # Use an isotropic phase function
+            'phase' : {
+                'type' : 'isotropic'
+            },
+
+            # Scale the density values as desired
+            'scale' : 200
+        },
+
+        # Attach the index-matched medium to a shape in the scene
+        'shape': {
+            'type': 'obj',
+            # Load an OBJ file, which contains a mesh version
+            # of the axis-aligned box of the volume data file
+            'filename': 'bounds.obj',
+
+            # Reference the medium by ID
+            'interior' : 'smoke'
+            # If desired, this shape could also declare
+            # a BSDF to create an index-mismatched
+            # transition, e.g.
+            # 'bsdf' : { 
+            #     'type' : 'isotropic'
+            # },
+        }
 */
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
@@ -126,6 +163,17 @@ public:
 
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
+        callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
+        callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
     }
 
     UnpolarizedSpectrum
@@ -152,17 +200,6 @@ public:
     std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f &ray) const override {
         return m_sigmat->bbox().ray_intersect(ray);
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
-        callback->put_object("albedo", m_albedo.get());
-        callback->put_object("sigma_t", m_sigmat.get());
-        Base::traverse(callback);
     }
 
     std::string to_string() const override {
