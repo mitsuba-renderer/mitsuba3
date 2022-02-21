@@ -21,6 +21,7 @@ Mesh attribute texture (:monosp:`mesh_attribute`)
    - |float|
    - Scaling factor applied to the interpolated attribute value during evalutation.
      (Default: 1.0)
+   - |exposed|
 
 This plugin provides a simple mechanism to expose Mesh attributes (e.g. vertex color)
 as a texture.
@@ -36,17 +37,31 @@ as a texture.
 The following XML snippet describes a mesh with diffuse material,
 whose reflectance is specified using the ``vertex_color`` attribute of that mesh:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: mesh-attribute
 
-    <shape type="ply">
-        <string name="filename" value="my_mesh_with_vertex_color_attr.ply"/>
+        <shape type="ply">
+            <string name="filename" value="my_mesh_with_vertex_color_attr.ply"/>
 
-        <bsdf type="diffuse">
-            <texture type="mesh_attribute" name="reflectance">
-                <string name="name" value="vertex_color"/>
-            </texture>
-        </bsdf>
-    </shape>
+            <bsdf type="diffuse">
+                <texture type="mesh_attribute" name="reflectance">
+                    <string name="name" value="vertex_color"/>
+                </texture>
+            </bsdf>
+        </shape>
+
+    .. code-tab:: python
+
+        'type' : 'ply',
+        'filename' : 'my_mesh_with_vertex_color_attr.ply',
+        'bsdf': {
+            'type' : 'diffuse',
+            'reflectance' : {
+                'type' : 'mesh_attribute',
+                'name' : 'vertex_color'
+            }
+        }
 
 .. note::
 
@@ -70,6 +85,10 @@ public:
         m_scale = props.get<ScalarFloat>("scale", 1.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale, +ParamFlags::NonDifferentiable);
+    }
+
     const std::string& name() const { return m_name; }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -85,10 +104,6 @@ public:
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return si.shape->eval_attribute_3(m_name, si, active) * m_scale;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale);
     }
 
     std::string to_string() const override {

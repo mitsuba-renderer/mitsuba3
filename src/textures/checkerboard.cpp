@@ -17,10 +17,13 @@ Checkerboard texture (:monosp:`checkerboard`)
  * - color0, color1
    - |spectrum| or |texture|
    - Color values for the two differently-colored patches (Default: 0.4 and 0.2)
+   - |exposed|, |differentiable|
+
  * - to_uv
    - |transform|
    - Specifies an optional 3x3 UV transformation matrix. A 4x4 matrix can also be provided.
      In that case, the last row and columns will be ignored.  (Default: none)
+   - |exposed|
 
 This plugin provides a simple procedural checkerboard texture with customizable colors.
 
@@ -41,6 +44,12 @@ public:
         m_color0 = props.texture<Texture>("color0", .4f);
         m_color1 = props.texture<Texture>("color1", .2f);
         m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_uv", m_transform,    +ParamFlags::NonDifferentiable);
+        callback->put_object("color0",   m_color0.get(), +ParamFlags::Differentiable);
+        callback->put_object("color1",   m_color1.get(), +ParamFlags::Differentiable);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
@@ -87,12 +96,6 @@ public:
 
     Float mean() const override {
         return .5f * (m_color0->mean() + m_color1->mean());
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("transform", m_transform);
-        callback->put_object("color0", m_color0.get());
-        callback->put_object("color1", m_color1.get());
     }
 
     bool is_spatially_varying() const override { return true; }

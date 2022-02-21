@@ -21,7 +21,7 @@ Bitmap texture (:monosp:`bitmap`)
 ---------------------------------
 
 .. pluginparameters::
- :extra-rows: 6
+ :extra-rows: 7
 
  * - filename
    - |string|
@@ -65,18 +65,19 @@ Bitmap texture (:monosp:`bitmap`)
    - Specifies an optional 3x3 transformation matrix that will be applied to UV
      values. A 4x4 matrix can also be provided, in which case the extra row and
      column are ignored.
-   - |exposed|, |differentiable|
-
- * - data
-   - |tensor|
-   - Tensor array containing the texture data.
-   - |exposed|, |differentiable|, |discontinuous|
+   - |exposed|
 
  * - accel
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
      loss of precision (not exactly 32-bit arithmethic). (Default: true)
+
+ * - data
+   - |tensor|
+   - Tensor array containing the texture data.
+   - |exposed|, |differentiable|
+
 
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
@@ -246,6 +247,30 @@ public:
         size_t shape[3] = { (size_t) res.x(), (size_t) res.y(), channels };
         m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
                               filter_mode, wrap_mode);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
+    }
+
+    void
+    parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "data")) {
+            const size_t channels = m_texture.shape()[2];
+            if (channels != 1 && channels != 3)
+                Throw("parameters_changed(): The bitmap texture %s was changed "
+                      "to have %d channels, only textures with 1 or 3 channels "
+                      "are supported!",
+                      to_string(), channels);
+            else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
+                Throw("parameters_changed(): The bitmap texture %s was changed,"
+                      " it must be at least 2x2 pixels in size!",
+                      to_string());
+
+            m_texture.set_tensor(m_texture.tensor());
+            rebuild_internals(true, m_distr2d != nullptr);
+        }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
@@ -507,30 +532,6 @@ public:
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
             return { dr::empty<Wavelength>(), value };
-        }
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_texture.tensor());
-        callback->put_parameter("transform", m_transform);
-    }
-
-    void
-    parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (keys.empty() || string::contains(keys, "data")) {
-            const size_t channels = m_texture.shape()[2];
-            if (channels != 1 && channels != 3)
-                Throw("parameters_changed(): The bitmap texture %s was changed "
-                      "to have %d channels, only textures with 1 or 3 channels "
-                      "are supported!",
-                      to_string(), channels);
-            else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
-                Throw("parameters_changed(): The bitmap texture %s was changed,"
-                      " it must be at least 2x2 pixels in size!",
-                      to_string());
-
-            m_texture.set_tensor(m_texture.tensor());
-            rebuild_internals(true, m_distr2d != nullptr);
         }
     }
 
