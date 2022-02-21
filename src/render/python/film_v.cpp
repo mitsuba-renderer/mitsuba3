@@ -7,12 +7,71 @@
 #include <mitsuba/render/spiral.h>
 #include <mitsuba/python/python.h>
 
+/// Trampoline for derived types implemented in Python
+MI_VARIANT class PyFilm : public Film<Float, Spectrum> {
+public:
+    MI_IMPORT_TYPES(Film, ImageBlock)
+
+    PyFilm(const Properties &props) : Film(props) { }
+
+    size_t prepare(const std::vector<std::string> &aovs) override {
+        PYBIND11_OVERRIDE_PURE(size_t, Film, prepare, aovs);
+    }
+
+    void put_block(const ImageBlock *block) override {
+        PYBIND11_OVERRIDE_PURE(void, Film, put_block, block);
+    }
+
+    TensorXf develop(bool raw = false) const override {
+        PYBIND11_OVERRIDE_PURE(TensorXf, Film, develop, raw);
+    }
+
+    ref<Bitmap> bitmap(bool raw = false) const override {
+        PYBIND11_OVERRIDE_PURE(ref<Bitmap>, Film, bitmap, raw);
+    }
+
+    void write(const fs::path &path) const override {
+        PYBIND11_OVERRIDE_PURE(void, Film, write, path);
+    }
+
+    void schedule_storage() override {
+        PYBIND11_OVERRIDE_PURE(void, Film, schedule_storage,);
+    }
+
+    void prepare_sample(const UnpolarizedSpectrum &spec,
+                        const Wavelength &wavelengths,
+                        Float* aovs, Float weight = 1.f,
+                        Float alpha = 1.f, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(void, Film, prepare_sample, spec,
+                               wavelengths, aovs, weight, alpha, active);
+    }
+
+    ref<ImageBlock> create_block(const ScalarVector2u &size = 0,
+                                 bool normalize = false,
+                                 bool border = false) override {
+        PYBIND11_OVERRIDE_PURE(ref<ImageBlock>, Film, create_block, size, normalize, border);
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERRIDE_PURE(std::string, Film, to_string,);
+    }
+
+    using Film::m_flags;
+    using Film::m_size;
+    using Film::m_crop_size;
+    using Film::m_crop_offset;
+    using Film::m_sample_border;
+    using Film::m_filter;
+    using Film::m_srf;
+};
+
 MI_PY_EXPORT(Film) {
     MI_PY_IMPORT_TYPES(Film)
+    using PyFilm = PyFilm<Float, Spectrum>;
 
-    m.def("has_flag", [](UInt32 flags, FilmFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](uint32_t flags, FilmFlags f) {return has_flag(flags, f);});
 
-    MI_PY_CLASS(Film, Object)
+    py::class_<Film, PyFilm, Object, ref<Film>>(m, "Film", D(Film))
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, develop, "raw"_a = false)
@@ -40,4 +99,6 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, schedule_storage)
         .def_method(Film, sensor_response_function)
         .def_method(Film, flags);
+
+    MI_PY_REGISTER_OBJECT("register_film", Film)
 }

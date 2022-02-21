@@ -98,7 +98,7 @@ class ADIntegrator(mi.SamplingIntegrator):
 
             # Accumulate into the image block
             alpha = dr.select(valid, mi.Float(1), mi.Float(0))
-            if (dr.all(has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+            if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                 aovs = sensor.film().prepare_sample(L * weight, ray.wavelengths,
                                                    block.channel_count(), alpha=alpha)
                 block.put(pos, aovs)
@@ -246,11 +246,11 @@ class ADIntegrator(mi.SamplingIntegrator):
                     sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
 
                     # Deposit samples with gradient tracking for 'pos'.
-                    if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                    if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                         aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
-                                                           sample_pos_deriv.channel_count(),
-                                                           weight=det,
-                                                           alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                                                            sample_pos_deriv.channel_count(),
+                                                            weight=det,
+                                                            alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
                         sample_pos_deriv.put(pos, aovs)
                         del aovs
                     else:
@@ -304,7 +304,7 @@ class ADIntegrator(mi.SamplingIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+            if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                 aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
                                                    block.channel_count(),
                                                    alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
@@ -335,7 +335,8 @@ class ADIntegrator(mi.SamplingIntegrator):
             # Potentially add the derivative of the reparameterized samples
             if sample_pos_deriv is not None:
                 with dr.resume_grad():
-                    film.prepare(aovs)
+                    # film.prepare(aovs)
+                    film.prepare(self.aovs())
                     film.put_block(sample_pos_deriv)
                     reparam_result = film.develop()
                     dr.forward_to(reparam_result)
@@ -453,7 +454,7 @@ class ADIntegrator(mi.SamplingIntegrator):
                 dr.enable_grad(L)
 
                 # Accumulate into the image block
-                if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                     aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
                                                        block.channel_count(),
                                                        weight=det,
