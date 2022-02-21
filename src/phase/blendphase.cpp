@@ -19,10 +19,13 @@ Blended phase function (:monosp:`blendphase`)
      The extreme values zero and one activate the first and second nested phase
      function respectively, and inbetween values interpolate accordingly.
      (Default: 0.5)
+   - |exposed|, |differentiable|
+
  * - (Nested plugin)
    - |phase|
    - Two nested phase function instances that should be mixed according to the
      specified blending weight
+   - |exposed|, |differentiable|
 
 This plugin implements a *blend* phase function, which represents linear
 combinations of two phase function instances. Any phase function in Mitsuba 2
@@ -64,6 +67,12 @@ public:
 
         m_flags = m_nested_phase[0]->flags() | m_nested_phase[1]->flags();
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("weight",  m_weight.get(),          +ParamFlags::Differentiable);
+        callback->put_object("phase_0", m_nested_phase[0].get(), +ParamFlags::Differentiable);
+        callback->put_object("phase_1", m_nested_phase[1].get(), +ParamFlags::Differentiable);
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
@@ -137,12 +146,6 @@ public:
 
         return m_nested_phase[0]->eval(ctx, mi, wo, active) * (1 - weight) +
                m_nested_phase[1]->eval(ctx, mi, wo, active) * weight;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("weight", m_weight.get());
-        callback->put_object("phase_0", m_nested_phase[0].get());
-        callback->put_object("phase_1", m_nested_phase[1].get());
     }
 
     std::string to_string() const override {

@@ -6,43 +6,34 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-    /**!
+/**!
 
-      .. _phase-sggx:
+.. _phase-sggx:
 
-      SGGX phase function (:monosp:`sggx`)
-      -------------------------------------
+SGGX phase function (:monosp:`sggx`)
+-------------------------------------
 
+.. pluginparameters::
 
-      .. list-table::
-      :widths: 20 15 65
-      :header-rows: 1
-      :class: paramstable
-
-     * - Parameter
-     - Type
-     - Description
-
-     * - S
-     - |volume|
-     - A volume containing the SGGX parameters. The phase function is parametrized
+ * - S
+   - |volume|
+   - A volume containing the SGGX parameters. The phase function is parametrized
      by six values :math:`S_{xx}`, :math:`S_{yy}`, :math:`S_{zz}`, :math:`S_{xy}`, :math:`S_{xz}` and
      :math:`S_{yz}` (see below for their meaning). The parameters can either be specified as a
      :ref:`constvolume <volume-constvolume>` with six values or as a :ref:`gridvolume <volume-gridvolume>`
      with six channels.
+   - |exposed|, |differentiable|
 
+This plugin implements the SGGX phase functuon :cite:`Heitz2015SGGX`.
+The SGGX phase function is an anisotropic microflake phase function :cite:`Jakob10`.
+This phase function can be useful to model fibers or surface-like structures using volume rendering.
+The SGGX microflake distribution is parametrized by a symmetric, positive definite matrix :math:`S`.
+This positive definite matrix describes the geometry of a 3D ellipsoid.
+The microflake normals of the SGGX phase function correspond to normals of this ellisoid.
 
-     This plugin implements the SGGX phase functuon :cite:`Heitz2015SGGX`.
-     The SGGX phase function is an anisotropic microflake phase function :cite:`Jakob10`.
-     This phase function can be useful to model fibers or surface-like structures using volume rendering.
-     The SGGX microflake distribution is parametrized by a symmetric, positive definite matrix :math:`S`.
-     This positive definite matrix describes the geometry of a 3D ellipsoid.
-     The microflake normals of the SGGX phase function correspond to normals of this ellisoid.
-
-     Due to it's symmetry, the matrix :math:`S` is fully specified by providing the entries
-     :math:`S_{xx}`, :math:`S_{yy}`, :math:`S_{zz}`, :math:`S_{xy}`, :math:`S_{xz}` and :math:`S_{yz}`.
-     It is the responsiblity of the user to ensure that these parameters describe a valid positive definite matrix.
-
+Due to it's symmetry, the matrix :math:`S` is fully specified by providing the entries
+:math:`S_{xx}`, :math:`S_{yy}`, :math:`S_{zz}`, :math:`S_{xy}`, :math:`S_{xz}` and :math:`S_{yz}`.
+It is the responsiblity of the user to ensure that these parameters describe a valid positive definite matrix.
 
 */
 template <typename Float, typename Spectrum>
@@ -58,6 +49,10 @@ public:
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
         dr::set_attr(this, "flags", m_flags);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("S", m_ndf_params, +ParamFlags::Differentiable);
     }
 
     MI_INLINE
@@ -110,10 +105,6 @@ public:
     virtual Float projected_area(const MediumInteraction3f &mi,
                                  Mask active = true) const override {
         return sggx_projected_area(mi.wi, eval_ndf_params(mi, active));
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("S", m_ndf_params);
     }
 
     std::string to_string() const override {

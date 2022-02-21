@@ -11,14 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 Henyey-Greenstein phase function (:monosp:`hg`)
 -----------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - g
    - |float|
    - This parameter must be somewhere in the range -1 to 1
@@ -27,6 +21,7 @@ Henyey-Greenstein phase function (:monosp:`hg`)
      predominantly scatter incident light into a similar direction (i.e. the
      medium is *forward-scattering*), whereas values smaller than zero cause
      the medium to be scatter more light in the opposite direction.
+   - |exposed|
 
 This plugin implements the phase function model proposed by
 Henyey and Greenstein |nbsp| :cite:`Henyey1941Diffuse`. It is
@@ -48,6 +43,10 @@ public:
         m_flags = +PhaseFunctionFlags::Anisotropic;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags); // TODO: check
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("g", m_g, +ParamFlags::NonDifferentiable);
     }
 
     MI_INLINE Float eval_hg(Float cos_theta) const {
@@ -82,10 +81,6 @@ public:
                const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return eval_hg(dr::dot(wo, mi.wi));
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("g", m_g);
     }
 
     std::string to_string() const override {
