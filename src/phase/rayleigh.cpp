@@ -19,6 +19,16 @@ atmospheres.
 
 This model has no parameters.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: phase-rayleigh
+
+        <phase type="rayleigh" />
+
+    .. code-tab:: python
+
+        'type': 'rayleigh'
+
 */
 
 NAMESPACE_BEGIN(mitsuba)

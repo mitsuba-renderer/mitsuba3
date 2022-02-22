@@ -78,7 +78,6 @@ Bitmap texture (:monosp:`bitmap`)
    - Tensor array containing the texture data.
    - |exposed|, |differentiable|
 
-
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
 

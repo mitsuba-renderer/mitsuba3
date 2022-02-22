@@ -35,6 +35,24 @@ Due to it's symmetry, the matrix :math:`S` is fully specified by providing the e
 :math:`S_{xx}`, :math:`S_{yy}`, :math:`S_{zz}`, :math:`S_{xy}`, :math:`S_{xz}` and :math:`S_{yz}`.
 It is the responsiblity of the user to ensure that these parameters describe a valid positive definite matrix.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: phase-sggx
+
+        <phase type='sggx'>
+            <volume type="gridvolume" name="S">
+                <string name="filename" value="volume.vol"/>
+            </volume>
+        </phase>
+
+    .. code-tab:: python
+
+        'type' : 'rayleigh',
+        'S' : {
+            'type' : 'gridvolume',
+            'filename' : 'volume.vol'
+        }
+
 */
 template <typename Float, typename Spectrum>
 class SGGXPhaseFunction final : public PhaseFunction<Float, Spectrum> {

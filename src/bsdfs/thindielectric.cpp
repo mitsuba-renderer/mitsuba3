@@ -78,6 +78,21 @@ be specified numerically, or based on a list of known materials (see the
 corresponding table in the :ref:`dielectric <bsdf-dielectric>` reference).
 When no parameters are given, the plugin activates the default settings,
 which describe a borosilicate glass (BK7) ↔ air interface.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: thindielectric
+
+        <bsdf type="thindielectric">
+            <string name="int_ior" value="bk7"/>
+            <string name="ext_ior" value="air"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'thindielectric',
+        'int_ior': 'bk7',
+        'ext_ior': 'air'
  */
 
 template <typename Float, typename Spectrum>

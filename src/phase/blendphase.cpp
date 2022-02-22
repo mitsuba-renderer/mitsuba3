@@ -28,11 +28,28 @@ Blended phase function (:monosp:`blendphase`)
    - |exposed|, |differentiable|
 
 This plugin implements a *blend* phase function, which represents linear
-combinations of two phase function instances. Any phase function in Mitsuba 2
+combinations of two phase function instances. Any phase function in Mitsuba 3
 (be it isotropic, anisotropic, micro-flake ...) can be mixed with others in this
 manner. This is of particular interest when mixing components in a participating
 medium (*e.g.* accounting for the presence of aerosols in a Rayleigh-scattering
 atmosphere).
+
+.. tabs::
+    .. code-tab:: xml
+        :name: phase-blendphase
+
+        <phase type="blendphase">
+            <float name="weight" value="0.5"/>
+            <phase type="isotropic" />
+            <phase type="hg">
+                <float name="g" value="0.2"/>
+            </phase>
+        </phase>
+
+    .. code-tab:: python
+
+        'type': 'hg',
+        'g': 0.1
 
 */
 

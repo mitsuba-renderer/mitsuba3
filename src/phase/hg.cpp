@@ -28,6 +28,19 @@ Henyey and Greenstein |nbsp| :cite:`Henyey1941Diffuse`. It is
 parameterizable from backward- (g<0) through
 isotropic- (g=0) to forward (g>0) scattering.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: phase-hg
+
+        <phase type="hg">
+            <float name="g" value="0.1"/>
+        </phase>
+
+    .. code-tab:: python
+
+        'type': 'hg',
+        'g': 0.1
+
 */
 template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {

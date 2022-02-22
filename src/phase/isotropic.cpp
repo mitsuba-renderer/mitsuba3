@@ -15,6 +15,15 @@ This phase function simulates completely uniform scattering,
 where all directionality is lost after a single scattering
 interaction. It does not have any parameters.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: phase-isotropic
+
+        <phase type="isotropic" />
+
+    .. code-tab:: python
+
+        'type': 'isotropic'
 */
 
 template <typename Float, typename Spectrum>
