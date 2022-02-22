@@ -301,7 +301,9 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         for (size_t i = 0; i < m_integrators.size(); ++i)
-            callback->put_object("integrator_" + std::to_string(i), m_integrators[i].first.get());
+            callback->put_object("integrator_" + std::to_string(i),
+                                 m_integrators[i].first.get(),
+                                 +ParamFlags::Differentiable);
     }
 
     std::string to_string() const override {

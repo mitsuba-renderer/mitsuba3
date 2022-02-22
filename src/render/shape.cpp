@@ -485,15 +485,15 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
 }
 
 MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_object("bsdf", m_bsdf.get());
+    callback->put_object("bsdf", m_bsdf.get(), +ParamFlags::Differentiable);
     if (m_emitter)
-        callback->put_object("emitter", m_emitter.get());
+        callback->put_object("emitter",         m_emitter.get(),         +ParamFlags::Differentiable);
     if (m_sensor)
-        callback->put_object("sensor", m_sensor.get());
+        callback->put_object("sensor",          m_sensor.get(),          +ParamFlags::Differentiable);
     if (m_interior_medium)
-        callback->put_object("interior_medium", m_interior_medium.get());
+        callback->put_object("interior_medium", m_interior_medium.get(), +ParamFlags::Differentiable);
     if (m_exterior_medium)
-        callback->put_object("exterior_medium", m_exterior_medium.get());
+        callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
 }
 
 MI_VARIANT

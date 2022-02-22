@@ -297,8 +297,7 @@ class TraversalCallback {
 public:
     /// Inform the traversal callback about an attribute of an instance
     template <typename T>
-    void put_parameter(const std::string &name, T &v,
-                       uint32_t flags) {
+    void put_parameter(const std::string &name, T &v, uint32_t flags) {
         if constexpr (!dr::is_drjit_struct_v<T> || !(dr::is_diff_array_v<T> && dr::is_floating_point_v<T>))
             if ((flags & ParamFlags::Differentiable) != 0)
                 throw("Parameter can't be differentiable because of its type!");
@@ -307,7 +306,7 @@ public:
 
     /// Inform the tranversal callback that the instance references another Mitsuba object
     virtual void put_object(const std::string &name, Object *obj,
-                            uint32_t flags = +ParamFlags::Differentiable) = 0;
+                            uint32_t flags) = 0;
 
     virtual ~TraversalCallback() = default;
 protected:
@@ -315,7 +314,7 @@ protected:
     virtual void put_parameter_impl(const std::string &name,
                                     void *ptr,
                                     const std::type_info &type,
-                                    uint32_t flags = +ParamFlags::NonDifferentiable) = 0;
+                                    uint32_t flags) = 0;
 };
 
 /// Prints the canonical string representation of an object instance

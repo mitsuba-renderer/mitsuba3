@@ -105,7 +105,7 @@ MI_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f &
 
 MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *callback) {
     if (m_medium)
-        callback->put_object("medium", m_medium.get());
+        callback->put_object("medium", m_medium.get(), +ParamFlags::Differentiable);
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)

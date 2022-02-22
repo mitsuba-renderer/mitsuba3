@@ -139,7 +139,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("integrator", m_integrator.get());
+        callback->put_object("integrator", m_integrator.get(), +ParamFlags::Differentiable);
     }
 
     MI_DECLARE_CLASS()

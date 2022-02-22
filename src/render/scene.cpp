@@ -331,7 +331,7 @@ MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
         std::string id = child->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
             id = child->class_()->name();
-        callback->put_object(id, child.get());
+        callback->put_object(id, child.get(), +ParamFlags::Differentiable);
     }
 }
 
