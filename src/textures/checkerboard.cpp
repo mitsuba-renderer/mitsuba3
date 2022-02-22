@@ -33,6 +33,21 @@ This plugin provides a simple procedural checkerboard texture with customizable 
 .. subfigend::
     :label: fig-texture-checkerboard
 
+.. tabs::
+    .. code-tab:: xml
+        :name: checkerboard-texture
+
+        <texture type="checkerboard">
+            <rgb name="color0" value="0.1, 0.1, 0.1"/>
+            <rgb name="color1" value="0.5, 0.5, 0.5"/>
+        </texture>
+
+    .. code-tab:: python
+
+        'type': 'checkerboard',
+        'color0': [0.1, 0.1, 0.1],
+        'color1': [0.5, 0.5, 0.5]
+
  */
 
 template <typename Float, typename Spectrum>

@@ -94,6 +94,21 @@ These conversions can alternatively be disabled with the :paramtype:`raw` flag,
 e.g. when textured data is already in linear space or does not represent colors
 at all.
 
+.. tabs::
+    .. code-tab:: xml
+        :name: bitmap-texture
+
+        <texture type="bitmap">
+            <string name="filename" value="texture.png"/>
+            <string name="wrap_mode" value="mirror"/>
+        </texture>
+
+    .. code-tab:: python
+
+        'type': 'mesh_attribute',
+        'filename': 'texture.png',
+        'wrap_mode': 'mirror'
+
 */
 
 template <typename Float, typename Spectrum>
