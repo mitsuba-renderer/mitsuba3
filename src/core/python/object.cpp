@@ -8,13 +8,12 @@ extern py::object cast_object(Object *o);
 class PyTraversalCallback : public TraversalCallback {
 public:
     void put_parameter_impl(const std::string &name, void *ptr,
-                            const std::type_info &type,
-                            uint32_t flags) override {
+                            uint32_t flags, const std::type_info &type) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "put_parameter");
 
         if (overload)
-            overload(name, ptr, (void *) &type, flags);
+            overload(name, ptr, flags, (void *) &type);
         else
             Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
     }

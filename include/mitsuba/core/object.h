@@ -301,7 +301,7 @@ public:
         if constexpr (!dr::is_drjit_struct_v<T> || !(dr::is_diff_array_v<T> && dr::is_floating_point_v<T>))
             if ((flags & ParamFlags::Differentiable) != 0)
                 throw("Parameter can't be differentiable because of its type!");
-        put_parameter_impl(name, &v, typeid(T), flags);
+        put_parameter_impl(name, &v, flags, typeid(T));
     }
 
     /// Inform the tranversal callback that the instance references another Mitsuba object
@@ -313,8 +313,8 @@ protected:
     /// Actual implementation of \ref put_parameter(). [To be provided by subclass]
     virtual void put_parameter_impl(const std::string &name,
                                     void *ptr,
-                                    const std::type_info &type,
-                                    uint32_t flags) = 0;
+                                    uint32_t flags,
+                                    const std::type_info &type) = 0;
 };
 
 /// Prints the canonical string representation of an object instance

@@ -64,7 +64,9 @@ class SceneParameters(Mapping):
         for k, v in self.properties.items():
             value, value_type, node, flags = v
 
-            value = self.get_property(value, value_type, node)
+            if value_type is not None:
+                value = self.get_property(value, value_type, node)
+
             flags_str = ''
             if (flags & mi.ParamFlags.NonDifferentiable) == 0:
                 flags_str += '∂'
@@ -180,7 +182,7 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.hierarchy[node] = (parent, depth)
             self.flags = flags
 
-        def put_parameter(self, name, ptr, cpptype=None, flags=+mi.ParamFlags.Differentiable):
+        def put_parameter(self, name, ptr, flags, cpptype=None):
             name = name if self.name is None else self.name + '.' + name
 
             flags = self.flags | flags
