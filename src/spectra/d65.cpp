@@ -34,7 +34,7 @@ D65 spectrum (:monosp:`d65`)
 
  * - scale
    - |float|
-   - Optional scaling factor applied to the emitted spectrum
+   - Optional scaling factor applied to the emitted spectrum. (Default: 1.0)
    - |exposed|
 
 The CIE Standard Illuminant D65 corresponds roughly to the average midday light in Europe,

@@ -16,12 +16,12 @@ Irregular spectrum (:monosp:`irregular`)
 
  * - wavelengths
    - |string|
-   - Wavelengths
+   - Wavelength values where the function is defined.
    - |exposed|, |differentiable|
 
  * - values
    - |string|
-   - 
+   - Values of the spectral function at the specified wavelengths.
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
@@ -40,7 +40,7 @@ placed samples.
 
         'type': 'irregular',
         'wavelengths': '400, 700',
-        'values': '0.1, 0.2',
+        'values': '0.1, 0.2'
  */
 
 template <typename Float, typename Spectrum>

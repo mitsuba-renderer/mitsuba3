@@ -55,19 +55,19 @@ The following XML snippet describes the material shown above:
 
     .. code-tab:: python
 
-            'type': 'blendbsdf',
-            'weight': {
-                'type': 'bitmap',
-                'filename': 'pattern.png'
-            },
-            'bsdf_0': {
-                'type': 'conductor'
-            },
-            'bsdf_1': {
-                'type': 'roughplastic',
-                'diffuse_reflectance': 0.1
-            }
- */
+        'type': 'blendbsdf',
+        'weight': {
+            'type': 'bitmap',
+            'filename': 'pattern.png'
+        },
+        'bsdf_0': {
+            'type': 'conductor'
+        },
+        'bsdf_1': {
+            'type': 'roughplastic',
+            'diffuse_reflectance': 0.1
+        }
+*/
 
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {

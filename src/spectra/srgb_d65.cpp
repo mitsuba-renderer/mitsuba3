@@ -13,16 +13,34 @@ sRGB D65 spectrum (:monosp:`srgb_d65`)
 --------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 1
+
+ * - color
+   - :paramtype:`color`
+   - The corresponding sRGB color value.
 
  * - value
-   - |float|
-   - Range
+   - :paramtype:`color`
+   - Spectral upsampling model coefficients of the srgb color value.
    - |exposed|, |differentiable|
 
 This is a convenience wrapper around both the :ref:`srgb <spectrum-srgb>` and
 :ref:`d65 <spectrum-d65>` plugins and returns their product.
 This is the current default behavior in spectral rendering modes for light sources
 specified from an RGB color value.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: srgb_d65
+
+        <spectrum type="srgb_d65">
+            <rgb name="color" value="10, 20, 250"/>
+        </spectrum>
+
+    .. code-tab:: python
+
+        'type': 'srgb_d65',
+        'color': [10, 20, 250]
 
  */
 

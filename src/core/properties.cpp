@@ -88,7 +88,7 @@ T get_routing(const Iterator &it) {
         Assert(T::Size == 3);
         if constexpr (std::is_same_v<T, Color<float, 3>> ||
                       std::is_same_v<T, Color<double, 3>>)
-            return (T) get_impl<Color3f>(it);
+            return (T) get_impl<Color3f, Array3f>(it);
         else
             return (T) get_impl<Array3f>(it);
     }

@@ -13,9 +13,17 @@ sRGB D65 spectrum (:monosp:`blackbody`)
 
 .. pluginparameters::
 
+ * - lambda_min
+   - |float|
+   - Minimum wavelength of the spectral range in nanometers. (Default: 360nm)
+
+ * - lambda_max
+   - |float|
+   - Maximum wavelength of the spectral range in nanometers. (Default: 830nm)
+
  * - temperature
    - |float|
-   - Temperature in Kelvins
+   - Black body temperature in Kelvins.
    - |exposed|
 
 This is a black body radiation spectrum for a specified temperature

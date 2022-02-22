@@ -14,15 +14,24 @@ Regular spectrum (:monosp:`regular`)
 ------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 3
 
- * - range
-   - |string|
-   - Range
-   - |exposed|, |differentiable|
+ * - lambda_min
+   - |float|
+   - Minimum wavelength of the spectral range in nanometers.
+
+ * - lambda_max
+   - |float|
+   - Maximum wavelength of the spectral range in nanometers.
 
  * - values
    - |string|
-   - Values
+   - Values of the spectral function at spectral range extremities.
+   - |exposed|, |differentiable|
+
+ * - range
+   - |string|
+   - Spectral emission range.
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
@@ -41,7 +50,7 @@ placed samples.
 
         'type': 'regular',
         'range': '400, 700',
-        'values': '0.1, 0.2',
+        'values': '0.1, 0.2'
  */
 
 template <typename Float, typename Spectrum>

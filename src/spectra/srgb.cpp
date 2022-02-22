@@ -13,16 +13,34 @@ sRGB spectrum (:monosp:`srgb`)
 ------------------------------
 
 .. pluginparameters::
+ :extra-rows: 1
+
+ * - color
+   - :paramtype:`color`
+   - The corresponding sRGB color value.
 
  * - value
-   - |float|
-   - Range
+   - :paramtype:`color`
+   - Spectral upsampling model coefficients of the srgb color value.
    - |exposed|, |differentiable|
 
 In spectral render modes, this smooth spectrum is the result of the
 *spectral upsampling* process :cite:`Jakob2019Spectral` used by the system.
 In RGB render modes, this spectrum represents a constant RGB value.
 In monochrome modes, this spectrum represents a constant luminance value.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: srgb
+
+        <spectrum type="srgb">
+            <rgb name="color" value="10, 20, 250"/>
+        </spectrum>
+
+    .. code-tab:: python
+
+        'type': 'srgb',
+        'color': [10, 20, 250]
 
  */
 

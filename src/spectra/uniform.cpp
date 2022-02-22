@@ -13,23 +13,33 @@ Uniform spectrum (:monosp:`uniform`)
 
 .. pluginparameters::
 
- * - value
-   - |float|
-   - Range
-   - |exposed|, |differentiable|
-
  * - wavelength_min
    - |float|
-   - Minium wavelength 
-   - |exposed|, |differentiable|
+   - Minimum wavelength of the spectral range in nanometers.
 
  * - wavelength_max
    - |float|
-   - Maximum wavelength 
+   - Maximum wavelength of the spectral range in nanometers.
+
+ * - value
+   - |float|
+   - Value of the spectral function across the specified spectral range.
    - |exposed|, |differentiable|
 
-
 This spectrum returns a constant reflectance or emission value between 360 and 830nm.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: srgb
+
+        <spectrum type="uniform">
+            <float name="value" value="0.1"/>
+        </spectrum>
+
+    .. code-tab:: python
+
+        'type': 'uniform',
+        'value': 0.1
 
  */
 
