@@ -25,6 +25,7 @@ Instance (:monosp:`instance`)
  * - (Nested plugin)
    - :paramtype:`shapegroup`
    - A reference to a shape group that should be instantiated.
+
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))

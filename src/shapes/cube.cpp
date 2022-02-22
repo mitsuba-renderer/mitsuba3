@@ -17,6 +17,7 @@ Cube (:monosp:`cube`)
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none (i.e. object space = world space))
+
  * - flip_normals
    - |bool|
    - Is the cube inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
@@ -27,6 +28,21 @@ mesh class.  By default, it creates a cube between the world-space positions
 (−1, −1, −1) and (1, 1, 1). However, an arbitrary linear transformation may be
 specified to translate, rotate, scale or skew it as desired. The parameterization
 of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: cube
+
+        <shape type="cube">
+            <transform name="to_world">
+                <scale x="2" y="10" z="1"/>
+            </transform>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'cube',
+        'to_world': mi.ScalarTransform4f([2, 10, 1])
 */
 
 MI_VARIANT class Cube final : public Mesh<Float, Spectrum> {

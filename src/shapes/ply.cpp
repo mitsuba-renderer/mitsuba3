@@ -25,15 +25,18 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
  * - filename
    - |string|
    - Filename of the PLY file that should be loaded
+
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
      discarded and *face normals* will instead be used during rendering.
      This gives the rendered object a faceted appearance. (Default: |false|)
+
  * - flip_normals
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
@@ -61,6 +64,21 @@ will be group together under a single multidimentional attribute named ``{vertex
 RGB color attributes can also be defined without a prefix, following the naming scheme ``{r|g|b|a}``
 or ``{red|green|blue|alpha}``. Those attributes will be group together under a single
 multidimentional attribute named ``{vertex|face}_color``.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: ply
+
+        <shape type="ply">
+            <string name="filename" value="my_shape.ply"/>
+            <boolean name="flip_normals" value="true"/>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'ply',
+        'filename': 'my_shape.ply',
+        'flip_normals': True
 
 .. note::
 

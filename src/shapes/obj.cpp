@@ -22,11 +22,13 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
  * - filename
    - |string|
    - Filename of the OBJ file that should be loaded
+
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
      discarded and *face normals* will instead be used during rendering.
      This gives the rendered object a faceted appearance. (Default: |false|)
+
  * - flip_tex_coords
    - |bool|
    - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
@@ -34,6 +36,7 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
@@ -45,11 +48,18 @@ and texture coordinates.
 
 Loading an ordinary OBJ file is as simple as writing:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: obj
 
-    <shape type="obj">
-        <string name="filename" value="my_shape.obj"/>
-    </shape>
+        <shape type="obj">
+            <string name="filename" value="my_shape.obj"/>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'obj',
+        'filename': 'my_shape.obj'
 
 .. note:: Importing geometry via OBJ files should only be used as an absolutely
           last resort. Due to inherent limitations of this format, the files

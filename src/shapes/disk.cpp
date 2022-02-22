@@ -27,10 +27,12 @@ Disk (:monosp:`disk`)
  * - flip_normals
    - |bool|
    - Is the disk inverted, i.e. should the normal vectors be flipped? (Default: |false|)
+
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. Note that non-uniform scales are not
      permitted! (Default: none, i.e. object space = world space)
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_disk.jpg
@@ -50,17 +52,30 @@ To change the disk scale, rotation, or translation, use the
 
 The following XML snippet instantiates an example of a textured disk shape:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: disk
 
-    <shape type="disk">
-        <bsdf type="diffuse">
-            <texture name="reflectance" type="checkerboard">
-                <transform name="to_uv">
-                    <scale x="2" y="10" />
-                </transform>
-            </texture>
-        </bsdf>
-    </shape>
+        <shape type="disk">
+            <bsdf type="diffuse">
+                <texture name="reflectance" type="checkerboard">
+                    <transform name="to_uv">
+                        <scale x="2" y="10" />
+                    </transform>
+                </texture>
+            </bsdf>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'disk',
+        'material': {
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'checkerboard',
+                'to_uv': mi.ScalarTransform4f([2, 10, 0])
+            }
+        }
  */
 
 template <typename Float, typename Spectrum>
@@ -80,6 +95,20 @@ public:
 
         update();
         initialize();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+        Base::parameters_changed();
     }
 
     void update() {
@@ -247,20 +276,6 @@ public:
             si.boundary_test = dr::abs(1.f - si.uv.x());
 
         return si;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr());
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-        Base::parameters_changed();
     }
 
 #if defined(MI_ENABLE_CUDA)

@@ -30,20 +30,25 @@ Cylinder (:monosp:`cylinder`)
    - |point|
    - Object-space starting point of the cylinder's centerline.
      (Default: (0, 0, 0))
+
  * - p1
    - |point|
    - Object-space endpoint of the cylinder's centerline (Default: (0, 0, 1))
+
  * - radius
    - |float|
    - Radius of the cylinder in object-space units (Default: 1)
+
  * - flip_normals
    - |bool|
    -  Is the cylinder inverted, i.e. should the normal vectors
       be flipped? (Default: |false|, i.e. the normals point outside)
+
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation. Note that non-uniform scales are
      not permitted! (Default: none, i.e. object space = world space)
+   - |exposed|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_onesided.jpg
@@ -62,14 +67,24 @@ desirable, consider using the :ref:`twosided <bsdf-twosided>` plugin.
 
 A simple example for instantiating a cylinder, whose interior is visible:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: cylinder
 
-    <shape type="cylinder">
-        <float name="radius" value="0.3"/>
-        <bsdf type="twosided">
-            <bsdf type="diffuse"/>
-        </bsdf>
-    </shape>
+        <shape type="cylinder">
+            <float name="radius" value="0.3"/>
+            <bsdf type="twosided">
+                <bsdf type="diffuse"/>
+            </bsdf>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'cylinder',
+        'radius': 0.3,
+        'material': {
+            'type': 'diffuse'
+        }
  */
 
 template <typename Float, typename Spectrum>
@@ -101,6 +116,20 @@ public:
 
         update();
         initialize();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+        Base::parameters_changed();
     }
 
     void update() {
@@ -210,10 +239,6 @@ public:
         return 2.f * dr::Pi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
-    // =============================================================
-    //! @{ \name Sampling routines
-    // =============================================================
-
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
@@ -242,13 +267,6 @@ public:
         MI_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
-    //! @{ \name Ray tracing routines
-    // =============================================================
 
     template <typename FloatP, typename Ray3fP>
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
@@ -434,23 +452,6 @@ public:
         }
 
         return si;
-    }
-
-    //! @}
-    // =============================================================
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr());
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-        Base::parameters_changed();
     }
 
 #if defined(MI_ENABLE_CUDA)

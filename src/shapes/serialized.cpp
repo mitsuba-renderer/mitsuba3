@@ -20,26 +20,30 @@ Serialized mesh loader (:monosp:`serialized`)
  * - filename
    - |string|
    - Filename of the OBJ file that should be loaded
+
  * - shape_index
    - |int|
    - A :monosp:`.serialized` file may contain several separate meshes. This parameter
      specifies which one should be loaded. (Default: 0, i.e. the first one)
+
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
      discarded and \emph{face normals} will instead be used during rendering.
-     This gives the rendered object a faceted appearance.(Default: |false|)
+     This gives the rendered object a faceted appearance. (Default: |false|)
+
  * - flip_normals
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none, i.e. object space = world space)
 
 The serialized mesh format represents the most space and time-efficient way
-of getting geometry information into Mitsuba 2. It stores indexed triangle meshes
+of getting geometry information into Mitsuba 3. It stores indexed triangle meshes
 in a lossless gzip-based encoding that (after decompression) nicely matches up
 with the internally used data structures. Loading such files is considerably
 faster than the :ref:`ply <shape-ply>` plugin and orders of magnitude faster than
@@ -137,6 +141,22 @@ at the end of the file, which specifies the starting position of each sub-mesh:
         * - :monosp:`uint32`
           - Total number of meshes in the :monosp:`.serialized` file
 
+.. tabs::
+    .. code-tab:: xml
+        :name: serialized
+
+        <shape type="serialized">
+            <string name="filename" value="shape.serialized"/>
+            <bsdf type='diffuse'/>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'serialized',
+        'filename': 'shape.serialized',
+        'material': {
+            'type': 'diffuse',
+        }
  */
 
 #define MI_FILEFORMAT_HEADER     0x041C

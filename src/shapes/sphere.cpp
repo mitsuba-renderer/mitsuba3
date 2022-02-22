@@ -26,13 +26,16 @@ Sphere (:monosp:`sphere`)
  * - center
    - |point|
    - Center of the sphere (Default: (0, 0, 0))
+
  * - radius
    - |float|
    - Radius of the sphere (Default: 1)
+
  * - flip_normals
    - |bool|
    - Is the sphere inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
  * - to_world
    - |transform|
    -  Specifies an optional linear object-to-world transformation.
@@ -53,24 +56,45 @@ always be preferred over sphere approximations modeled using triangles.
 A sphere can either be configured using a linear :monosp:`to_world` transformation or the :monosp:`center` and :monosp:`radius` parameters (or both).
 The two declarations below are equivalent.
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: sphere
 
-    <shape type="sphere">
-        <transform name="to_world">
-            <scale value="2"/>
-            <translate x="1" y="0" z="0"/>
-        </transform>
-        <bsdf type="diffuse"/>
-    </shape>
+        <shape type="sphere">
+            <transform name="to_world">
+                <scale value="2"/>
+                <translate x="1" y="0" z="0"/>
+            </transform>
+            <bsdf type="diffuse"/>
+        </shape>
 
-    <shape type="sphere">
-        <point name="center" x="1" y="0" z="0"/>
-        <float name="radius" value="2"/>
-        <bsdf type="diffuse"/>
-    </shape>
+        <shape type="sphere">
+            <point name="center" x="1" y="0" z="0"/>
+            <float name="radius" value="2"/>
+            <bsdf type="diffuse"/>
+        </shape>
+
+    .. code-tab:: python
+
+        'sphere_1': {
+            'type': 'sphere',
+            'to_world': mi.ScalarTransform4f.scale([2, 2, 2]).translate([1, 0, 0]),
+            'bsdf': {
+                'type': 'diffuse'
+            }
+        }, 
+
+        'sphere_2': {
+            'type': 'sphere',
+            'center': [1, 0, 0],
+            'radius': 2,
+            'bsdf': {
+                'type': 'diffuse'
+            }
+        }
 
 When a :ref:`sphere <shape-sphere>` shape is turned into an :ref:`area <emitter-area>`
-light source, Mitsuba 2 switches to an efficient
+light source, Mitsuba 3 switches to an efficient
 `sampling strategy <https://www.akalin.com/sampling-visible-sphere>`_ by Fred Akalin that
 has particularly low variance.
 This makes it a good default choice for lighting new scenes.
