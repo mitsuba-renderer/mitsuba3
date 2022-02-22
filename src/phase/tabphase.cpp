@@ -16,12 +16,12 @@ Lookup table phase function (:monosp:`tabphase`)
 
  * - values
    - |string|
-   - A comma-separated list of phase function values parametrised by the
+   - A comma-separated list of phase function values parametrized by the
      cosine of the scattering angle.
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a generic phase function model for isotropic media
-parametrised by a lookup table giving values of the phase function as a
+parametrized by a lookup table giving values of the phase function as a
 function of the cosine of the scattering angle.
 
 .. admonition:: Notes
@@ -68,7 +68,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("values", m_distr.pdf(), +ParamFlags::NonDifferentiable);
+        callback->put_parameter("values", m_distr.pdf(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> & /*keys*/) override {

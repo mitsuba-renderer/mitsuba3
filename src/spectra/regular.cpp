@@ -13,8 +13,35 @@ NAMESPACE_BEGIN(mitsuba)
 Regular spectrum (:monosp:`regular`)
 ------------------------------------
 
+.. pluginparameters::
+
+ * - range
+   - |string|
+   - Range
+   - |exposed|, |differentiable|
+
+ * - values
+   - |string|
+   - Values
+   - |exposed|, |differentiable|
+
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
 placed samples.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: irregular
+
+        <spectrum type="regular">
+            <string name="range" value="400, 700">
+            <string name="values" value="0.1, 0.2">
+        </spectrum>
+
+    .. code-tab:: python
+
+        'type': 'regular',
+        'range': '400, 700',
+        'values': '0.1, 0.2',
  */
 
 template <typename Float, typename Spectrum>
@@ -64,8 +91,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("range", m_distr.range());
-        callback->put_parameter("values", m_distr.pdf());
+        callback->put_parameter("range",  m_distr.range(), +ParamFlags::NonDifferentiable);
+        callback->put_parameter("values", m_distr.pdf(),   +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {

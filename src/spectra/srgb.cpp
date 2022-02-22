@@ -12,6 +12,13 @@ NAMESPACE_BEGIN(mitsuba)
 sRGB spectrum (:monosp:`srgb`)
 ------------------------------
 
+.. pluginparameters::
+
+ * - value
+   - |float|
+   - Range
+   - |exposed|, |differentiable|
+
 In spectral render modes, this smooth spectrum is the result of the
 *spectral upsampling* process :cite:`Jakob2019Spectral` used by the system.
 In RGB render modes, this spectrum represents a constant RGB value.
@@ -37,6 +44,14 @@ public:
         else
             m_value = luminance(color);
 
+        dr::make_opaque(m_value);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         dr::make_opaque(m_value);
     }
 
@@ -73,14 +88,6 @@ public:
             return dr::hmean(srgb_model_mean(m_value));
         else
             return dr::hmean(hmean(m_value));
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value);
     }
 
     std::string to_string() const override {

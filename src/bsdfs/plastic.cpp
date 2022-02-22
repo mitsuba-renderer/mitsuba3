@@ -44,9 +44,9 @@ Smooth plastic material (:monosp:`plastic`)
      physical realism, this parameter should never be touched. (Default: 1.0)
    - |exposed|, |differentiable|
 
- * - ext
+ * - eta
    - |float|
-   - Relative index of refreaction from the exterior to the interior
+   - Relative index of refraction from the exterior to the interior
    - |exposed|
 
 .. subfigstart::

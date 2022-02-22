@@ -32,7 +32,7 @@ The Thin Principled BSDF (:monosp:`principledthin`)
  * - anisotropic
    - |float| or |texture|
    - Controls the degree of anisotropy. (0.0: isotropic material) (Default: 0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - spec_trans
    - |texture| or |float|

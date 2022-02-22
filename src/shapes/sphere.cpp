@@ -479,7 +479,7 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr());
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
         Base::traverse(callback);
     }
 

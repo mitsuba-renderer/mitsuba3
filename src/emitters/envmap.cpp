@@ -46,7 +46,7 @@ Environment emitter (:monosp:`envmap`)
  * - data
    - |tensor|
    - Tensor array containing the radiance-valued data.
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin provides a HDRI (high dynamic range imaging) environment map,
 which is a type of light source that is well-suited for representing "natural"
@@ -209,7 +209,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("scale",    m_scale,           +ParamFlags::Differentiable);
-        callback->put_parameter("data",     m_data,            +ParamFlags::Differentiable);
+        callback->put_parameter("data",     m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 

@@ -11,20 +11,40 @@ NAMESPACE_BEGIN(mitsuba)
 sRGB D65 spectrum (:monosp:`blackbody`)
 ---------------------------------------
 
+.. pluginparameters::
+
+ * - temperature
+   - |float|
+   - Temperature in Kelvins
+   - |exposed|
+
 This is a black body radiation spectrum for a specified temperature
 And therefore takes a single :monosp:`float`-valued parameter :paramtype:`temperature` (in Kelvins).
 
 This is the only spectrum type that needs to be explicitly instantiated in its full XML description:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
+        :name: blackbody
 
-    <shape type=".. shape type ..">
-        <emitter type="area">
-            <spectrum type="blackbody" name="radiance">
-                <float name="temperature" value="5000"/>
-            </spectrum>
-        </emitter>
-    </shape>
+        <shape type=".. shape type ..">
+            <emitter type="area">
+                <spectrum type="blackbody" name="radiance">
+                    <float name="temperature" value="5000"/>
+                </spectrum>
+            </emitter>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': '.. shape type ..',
+        'emitter': {
+            'type': 'area',
+            'radiance': {
+                'type': 'blackbody',
+                'temperature': 5000
+            }
+        }
 
 This spectrum type only makes sense for specifying emission and is unavailable
 in non-spectral rendering modes.

@@ -11,6 +11,24 @@ NAMESPACE_BEGIN(mitsuba)
 Uniform spectrum (:monosp:`uniform`)
 ------------------------------------
 
+.. pluginparameters::
+
+ * - value
+   - |float|
+   - Range
+   - |exposed|, |differentiable|
+
+ * - wavelength_min
+   - |float|
+   - Minium wavelength 
+   - |exposed|, |differentiable|
+
+ * - wavelength_max
+   - |float|
+   - Maximum wavelength 
+   - |exposed|, |differentiable|
+
+
 This spectrum returns a constant reflectance or emission value between 360 and 830nm.
 
  */
@@ -24,6 +42,14 @@ public:
         m_value = dr::opaque<Float>(props.get<ScalarFloat>("value"));
         m_range = ScalarVector2f(props.get<ScalarFloat>("wavelength_min", MI_CIE_MIN),
                                  props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX));
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        dr::make_opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f & /*si*/,
@@ -66,14 +92,6 @@ public:
 
     ScalarFloat spectral_resolution() const override {
         return 0.f;
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value);
     }
 
     std::string to_string() const override {

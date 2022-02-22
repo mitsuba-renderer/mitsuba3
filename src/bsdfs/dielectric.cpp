@@ -35,7 +35,7 @@ Smooth dielectric material (:monosp:`dielectric`)
 
  * - eta
    - |float|
-   - Relative index of refreaction from the exterior to the interior
+   - Relative index of refraction from the exterior to the interior
    - |exposed|
 
 .. subfigstart::

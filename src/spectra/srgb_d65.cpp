@@ -12,6 +12,13 @@ NAMESPACE_BEGIN(mitsuba)
 sRGB D65 spectrum (:monosp:`srgb_d65`)
 --------------------------------------
 
+.. pluginparameters::
+
+ * - value
+   - |float|
+   - Range
+   - |exposed|, |differentiable|
+
 This is a convenience wrapper around both the :ref:`srgb <spectrum-srgb>` and
 :ref:`d65 <spectrum-d65>` plugins and returns their product.
 This is the current default behavior in spectral rendering modes for light sources
@@ -52,6 +59,14 @@ public:
         dr::make_opaque(m_value);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        dr::make_opaque(m_value);
+    }
+
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
@@ -79,14 +94,6 @@ public:
             UnpolarizedSpectrum value = eval(_si, active);
             return { dr::empty<Wavelength>(), value };
         }
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value);
-    }
-
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
     }
 
     std::string to_string() const override {

@@ -30,9 +30,36 @@ const float data[95] = {
 D65 spectrum (:monosp:`d65`)
 ----------------------------
 
+.. pluginparameters::
+
+ * - scale
+   - |float|
+   - Optional scaling factor applied to the emitted spectrum
+   - |exposed|
+
 The CIE Standard Illuminant D65 corresponds roughly to the average midday light in Europe,
 also called a daylight illuminant. It is the default emission spectrum used for light sources
 in all spectral rendering modes.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: d65
+
+        <shape type=".. shape type ..">
+            <emitter type="area">
+                <spectrum type="d65" name="radiance" />
+            </emitter>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': '.. shape type ..',
+        'emitter': {
+            'type': 'area',
+            'radiance': {
+                'type': 'd65',
+            }
+        }
 
  */
 

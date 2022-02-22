@@ -135,7 +135,7 @@ and both parameters are allowed to be spectrally varying.
             'filename': 'bounds.obj',
 
             # Reference the medium by ID
-            'interior': 'smoke'
+            'interior': 'smoke',
             # If desired, this shape could also declare
             # a BSDF to create an index-mismatched
             # transition, e.g.

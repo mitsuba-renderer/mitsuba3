@@ -31,18 +31,18 @@ The Principled BSDF (:monosp:`principled`)
  * - anisotropic
    - |float| or |texture|
    - Controls the degree of anisotropy. (0.0 : isotropic material) (Default:0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - metallic
    - |texture| or |float|
    - The "metallicness" of the model. (Default:0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - spec_trans
    - |texture| or |float|
    - Blends BRDF and BSDF major lobe. (1.0: only BSDF
      response, 0.0 : only BRDF response.) (Default: 0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - eta
    - |float|
@@ -82,13 +82,13 @@ The Principled BSDF (:monosp:`principled`)
  * - clearcoat
    - |texture| or |float|
    - The rate of the secondary isotropic specular lobe. (Default:0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - clearcoat_gloss
    - |texture| or |float|
    - Controls the roughness of the secondary specular lobe. Clearcoat response
      gets glossier as the parameter increases. (Default:0.0)
-   - |exposed|, |differentiable|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - diffuse_reflectance_sampling_rate
    - |float|
@@ -105,7 +105,7 @@ The Principled BSDF (:monosp:`principled`)
    - The rate of the secondary specular reflection in sampling. (Default:0.0)
    - |exposed|
 
-The principled BSDF is a complex BSDF with numerous reflective and transmittive
+The principled BSDF is a complex BSDF with numerous reflective and transmitive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
 artist-friendly and do not directly correspond to physical units.
@@ -336,7 +336,7 @@ public:
         roughness = m_roughness->eval_1(si, active),
         spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f,
         metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
-        clearcoat =m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f;
+        clearcoat = m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f;
 
         // Weights of BSDF and BRDF major lobes
         Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
@@ -490,17 +490,15 @@ public:
             return 0.0f;
 
         // Store the weights.
-        Float anisotropic =
-                m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f,
-                roughness = m_roughness->eval_1(si, active),
-                flatness = m_has_flatness ? m_flatness->eval_1(si, active) : 0.0f,
-                spec_trans =
-                        m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f,
-                        metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
-                        clearcoat =
-                                m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f,
-                                sheen = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
+        Float anisotropic = m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f,
+              roughness = m_roughness->eval_1(si, active),
+              flatness = m_has_flatness ? m_flatness->eval_1(si, active) : 0.0f,
+              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f,
+              metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
+              clearcoat = m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f,
+              sheen = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
         UnpolarizedSpectrum base_color = m_base_color->eval(si, active);
+
         // Weights for BRDF and BSDF major lobes.
         Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
         bsdf = (1.0f - metallic) * spec_trans;

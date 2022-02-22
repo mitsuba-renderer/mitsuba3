@@ -1086,8 +1086,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     callback->put_parameter("vertex_texcoords", m_vertex_texcoords, +ParamFlags::Differentiable);
 
+    // We arbitrarily chose to show all attributes as being differentiable here.
     for (auto &[name, attribute]: m_mesh_attributes)
-        callback->put_parameter(name, attribute.buf);
+        callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {

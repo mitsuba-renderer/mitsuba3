@@ -113,8 +113,8 @@ The following XML snippet describes a material definition for brushed aluminium:
         <bsdf type="roughconductor">
             <string name="material" value="Al"/>
             <string name="distribution" value="ggx"/>
-            <float name="alphaU" value="0.05"/>
-            <float name="alphaV" value="0.3"/>
+            <float name="alpha_u" value="0.05"/>
+            <float name="alpha_v" value="0.3"/>
         </bsdf>
 
     .. code-tab:: python
@@ -122,8 +122,8 @@ The following XML snippet describes a material definition for brushed aluminium:
         'type': 'roughconductor',
         'material': 'Al',
         'distribution': 'ggx',
-        'alphaU': 0.05,
-        'alphaV': 0.3
+        'alpha_u': 0.05,
+        'alpha_v': 0.3
 
 Technical details
 *****************

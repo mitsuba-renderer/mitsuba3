@@ -15,11 +15,32 @@ Irregular spectrum (:monosp:`irregular`)
 .. pluginparameters::
 
  * - wavelengths
-   - |spectrum| or |texture|
-   - Specifies the diffuse albedo of the material (Default: 0.5)
+   - |string|
+   - Wavelengths
+   - |exposed|, |differentiable|
+
+ * - values
+   - |string|
+   - 
+   - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
 placed samples.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: irregular
+
+        <spectrum type="irregular">
+            <string name="wavelengths" value="400, 700">
+            <string name="values" value="0.1, 0.2">
+        </spectrum>
+
+    .. code-tab:: python
+
+        'type': 'irregular',
+        'wavelengths': '400, 700',
+        'values': '0.1, 0.2',
  */
 
 template <typename Float, typename Spectrum>
@@ -79,8 +100,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("wavelengths", m_distr.nodes());
-        callback->put_parameter("values", m_distr.pdf());
+        callback->put_parameter("wavelengths", m_distr.nodes(), +ParamFlags::Differentiable);
+        callback->put_parameter("values",      m_distr.pdf(),   +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
