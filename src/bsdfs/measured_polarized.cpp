@@ -89,9 +89,9 @@ In the following example, the measured gold BSDF from the dataset is setup:
 
     .. code-tab:: python
 
-        'type' : 'measured_polarized',
-        'filename' : '6_gold_inpainted.pbsdf',
-        'alpha_sample' : 0.02
+        'type': 'measured_polarized',
+        'filename': '6_gold_inpainted.pbsdf',
+        'alpha_sample': 0.02
 
 Internally, a sampling routine from the GGX Microfacet model is used in order to
 importance sampling outgoing directions. The used GGX roughness value is exposed

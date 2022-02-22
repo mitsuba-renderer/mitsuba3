@@ -110,20 +110,20 @@ However, it supports the use of a spatially varying albedo.
         'sigma_t': 5,
         # The extinction is also allowed to be spectrally varying
         # since RGB values have to be in the [0, 1]
-        # 'sigma_t' : {
-        #     'value' : [0.5, 0.25, 0.8]
+        # 'sigma_t': {
+        #     'value': [0.5, 0.25, 0.8]
         # }
 
         # A homogeneous medium needs to have a constant extinction,
         # but can have a spatially varying albedo:
-        # 'albedo' : {
-        #     'type' : 'gridvolume',
-        #     'filename' : 'albedo.vol'
+        # 'albedo': {
+        #     'type': 'gridvolume',
+        #     'filename': 'albedo.vol'
         # }
 
-        'phase' : {
-            'type' : 'hg',
-            'g' : 0.7
+        'phase': {
+            'type': 'hg',
+            'g': 0.7
         }
 */
 

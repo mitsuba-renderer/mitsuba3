@@ -60,10 +60,10 @@ The following XML snippet describes the material shown above:
                 'type': 'bitmap',
                 'filename': 'pattern.png'
             },
-            'bsdf_0' : {
+            'bsdf_0': {
                 'type': 'conductor'
             },
-            'bsdf_1' : {
+            'bsdf_1': {
                 'type': 'roughplastic',
                 'diffuse_reflectance': 0.1
             }

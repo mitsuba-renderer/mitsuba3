@@ -81,16 +81,16 @@ sRGB:
     .. code-tab:: python
 
         'type': 'plastic',
-        'diffuse_reflectance' : {
-            'type' : 'rgb',
-            'value' : [0.1, 0.27, 0.36]
+        'diffuse_reflectance': {
+            'type': 'rgb',
+            'value': [0.1, 0.27, 0.36]
         },
-        'int_ior' : 1.9
+        'int_ior': 1.9
 
 Internal scattering
 *******************
 
-Internally, this model simulates the interaction of light with a diffuse
+Internally, tis model simulates the interaction of light with a diffuse
 base surface coated by a thin dielectric layer. This is a convenient
 abstraction rather than a restriction. In other words, there are many
 materials that can be rendered with this model, even if they might not

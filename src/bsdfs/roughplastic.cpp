@@ -129,8 +129,8 @@ The following XML snippet describes a material definition for black plastic mate
         'distribution': 'beckmann',
         'int_ior': 1.61,
         'diffuse_reflectance': {
-            'type' : 'spectrum',
-            'value' : 0
+            'type': 'spectrum',
+            'value': 0
         }
 
 Like the :ref:`plastic <bsdf-plastic>` material, this model internally simulates the

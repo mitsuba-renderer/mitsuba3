@@ -142,12 +142,12 @@ The following XML snippet describes a material definition for
             'type': 'rgb',
             'value': [0.7, 0.1, 0.1]
         },
-        'roughness' : 0.15,
-        'spec_tint' : 0.1,
-        'anisotropic' : 0.5,
-        'spec_trans' : 0.8,
-        'diff_trans' : 0.3,
-        'eta' : 1.33
+        'roughness': 0.15,
+        'spec_tint': 0.1,
+        'anisotropic': 0.5,
+        'spec_trans': 0.8,
+        'diff_trans': 0.3,
+        'eta': 1.33
 
 All of the parameters, except sampling rates, `diff_trans` and
 `eta`, should take values between 0.0 and 1.0. The range of

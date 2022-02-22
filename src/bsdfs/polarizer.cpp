@@ -61,8 +61,8 @@ of 90 degrees.
 
         'type': 'polarizer',
         'theta': {
-            'type' : 'spectrum',
-            'value' : 90
+            'type': 'spectrum',
+            'value': 90
         }
 
 Apart from a change of polarization, light does not interact with this material

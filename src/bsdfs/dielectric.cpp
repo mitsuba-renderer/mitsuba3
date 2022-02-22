@@ -108,21 +108,21 @@ An example of how one might describe a slightly absorbing piece of glass is show
     .. code-tab:: python
 
         'type': '...',
-        'glass' :  {
-            'type' : 'dielectric',
-            'int_ior' : 1.504,
-            'ext_ior' : 1.0
+        'glass':  {
+            'type': 'dielectric',
+            'int_ior': 1.504,
+            'ext_ior': 1.0
         },
-        'interior' : {
-            'type' : 'homogeneous',
-            'scale' : 4,
-            'sigma_t' : {
-                'type' : 'rgb',
-                'value' : [1, 1, 0.5]
+        'interior': {
+            'type': 'homogeneous',
+            'scale': 4,
+            'sigma_t': {
+                'type': 'rgb',
+                'value': [1, 1, 0.5]
             },
-            'albedo' : {
-                'type' : 'rgb',
-                'value' : [0.0, 0.0, 0.0]
+            'albedo': {
+                'type': 'rgb',
+                'value': [0.0, 0.0, 0.0]
             }
         }
 

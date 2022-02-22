@@ -57,11 +57,11 @@ The following snippet describes a two-sided diffuse material:
     .. code-tab:: python
 
         'type': 'twosided',
-        'material' : {
+        'material': {
             'type': 'diffuse',
-            'reflectance' : {
-                'type' : 'spectrum',
-                'value' : 0.4
+            'reflectance': {
+                'type': 'spectrum',
+                'value': 0.4
             }
         }
  */

@@ -72,7 +72,7 @@ map. Note the we set the ``raw`` properties of the bump map ``bitmap`` object to
             'raw': True,
             'filename': 'textures/bumpmap.jpg'
         },
-        'bsdf' : {
+        'bsdf': {
             'type': 'roughplastic'
         }
 */

@@ -67,7 +67,7 @@ The following XML snippet describes a material definition for gold:
     .. code-tab:: python
 
         'type': 'conductor',
-        'material' : 'Au'
+        'material': 'Au'
 
 It is also possible to load spectrally varying index of refraction data from
 two external files containing the real and imaginary components,
@@ -86,13 +86,13 @@ respectively (see :ref:`Scene format <sec-file-format>` for details on the file 
     .. code-tab:: python
 
         'type': 'conductor',
-        'eta' :  {
-            'type' : 'spectrum',
-            'filename' : 'conductorIOR.eta.spd'
+        'eta':  {
+            'type': 'spectrum',
+            'filename': 'conductorIOR.eta.spd'
         },
-        'k' :  {
-            'type' : 'spectrum',
-            'filename' : 'conductorIOR.k.spd'
+        'k':  {
+            'type': 'spectrum',
+            'filename': 'conductorIOR.k.spd'
         }
 
 In *polarized* rendering modes, the material automatically switches to a polarized

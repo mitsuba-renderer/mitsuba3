@@ -137,8 +137,8 @@ The following XML snippet describes the purple material from the test scene abov
 
         'type': 'ppplastic',
         'diffuse_reflectance': {
-            'type' : 'rgb',
-            'value' : [0.05, 0.03, 0.1]
+            'type': 'rgb',
+            'value': [0.05, 0.03, 0.1]
         },
         'alpha': 0.06
  */

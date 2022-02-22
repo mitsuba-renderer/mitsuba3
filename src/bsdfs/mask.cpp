@@ -70,7 +70,7 @@ The following XML snippet describes a material configuration for a transparent l
             'type': 'twosided',
             'bsdf': {
                 'type': 'diffuse',
-                'reflectance' : {
+                'reflectance': {
                     'type': 'bitmap',
                     'filename': 'leaf.png'
                 }
@@ -78,9 +78,9 @@ The following XML snippet describes a material configuration for a transparent l
         },
 
         # Fetch the opacity mask from a monochromatic texture
-        'opacity' : {
-            'type' : 'texture',
-            'filename' : 'leaf_mask.png'
+        'opacity': {
+            'type': 'texture',
+            'filename': 'leaf_mask.png'
         }
 */
 

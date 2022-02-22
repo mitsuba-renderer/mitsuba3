@@ -165,16 +165,16 @@ material:
             'type': 'rgb',
             'value': [1.0, 1.0, 1.0]
         },
-        'metallic' : 0.7,
-        'specular' : 0.6,
-        'roughness' : 0.2,
-        'spec_tint' : 0.4,
-        'anisotropic' : 0.5,
-        'sheen' : 0.3,
-        'sheen_tint' : 0.2,
-        'clearcoat' : 0.6,
-        'clearcoat_glass' : 0.3,
-        'spec_trans' : 0.4
+        'metallic': 0.7,
+        'specular': 0.6,
+        'roughness': 0.2,
+        'spec_tint': 0.4,
+        'anisotropic': 0.5,
+        'sheen': 0.3,
+        'sheen_tint': 0.2,
+        'clearcoat': 0.6,
+        'clearcoat_glass': 0.3,
+        'spec_trans': 0.4
 
 All of the parameters except sampling rates and `eta` should take values
 between 0.0 and 1.0.

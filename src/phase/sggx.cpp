@@ -47,10 +47,10 @@ It is the responsiblity of the user to ensure that these parameters describe a v
 
     .. code-tab:: python
 
-        'type' : 'rayleigh',
-        'S' : {
-            'type' : 'gridvolume',
-            'filename' : 'volume.vol'
+        'type': 'rayleigh',
+        'S': {
+            'type': 'gridvolume',
+            'filename': 'volume.vol'
         }
 
 */

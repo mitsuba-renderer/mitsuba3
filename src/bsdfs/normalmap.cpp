@@ -67,11 +67,11 @@ transformation from sRGB to linear encoding:
         'type': 'normalmap',
         'normalmap': {
             'type': 'bitmap',
-            'raw' : True,
-            'filename' : 'textures/normalmap.jpg'
+            'raw': True,
+            'filename': 'textures/normalmap.jpg'
         },
-        'bsdf' : {
-            'type' : 'roughplastic'
+        'bsdf': {
+            'type': 'roughplastic'
         }
 */
 

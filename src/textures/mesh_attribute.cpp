@@ -53,13 +53,13 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
 
     .. code-tab:: python
 
-        'type' : 'ply',
-        'filename' : 'my_mesh_with_vertex_color_attr.ply',
+        'type': 'ply',
+        'filename': 'my_mesh_with_vertex_color_attr.ply',
         'bsdf': {
-            'type' : 'diffuse',
-            'reflectance' : {
-                'type' : 'mesh_attribute',
-                'name' : 'vertex_color'
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'mesh_attribute',
+                'name': 'vertex_color'
             }
         }
 

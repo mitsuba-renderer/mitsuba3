@@ -107,24 +107,24 @@ and both parameters are allowed to be spectrally varying.
 
         # Declare a heterogeneous participating medium named 'smoke'
         'smoke': {
-            'type' : 'heterogeneous',
+            'type': 'heterogeneous',
 
             # Acquire extinction values from an external data file
-            'simgma_t' : {
-                'type' : 'gridvolume',
-                'filename' : 'frame_0150.vol'
+            'simgma_t': {
+                'type': 'gridvolume',
+                'filename': 'frame_0150.vol'
             },
 
             # The albedo is constant and set to 0.9
-            'albedo' : 0.9,
+            'albedo': 0.9,
 
             # Use an isotropic phase function
-            'phase' : {
-                'type' : 'isotropic'
+            'phase': {
+                'type': 'isotropic'
             },
 
             # Scale the density values as desired
-            'scale' : 200
+            'scale': 200
         },
 
         # Attach the index-matched medium to a shape in the scene
@@ -135,12 +135,12 @@ and both parameters are allowed to be spectrally varying.
             'filename': 'bounds.obj',
 
             # Reference the medium by ID
-            'interior' : 'smoke'
+            'interior': 'smoke'
             # If desired, this shape could also declare
             # a BSDF to create an index-mismatched
             # transition, e.g.
-            # 'bsdf' : { 
-            #     'type' : 'isotropic'
+            # 'bsdf': {
+            #     'type': 'isotropic'
             # },
         }
 */
