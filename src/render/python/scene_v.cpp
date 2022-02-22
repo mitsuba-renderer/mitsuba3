@@ -44,13 +44,6 @@ MI_PY_EXPORT(Scene) {
     MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
     MI_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
-        .def("render",
-            [&](Scene *scene, uint32_t sensor_index, uint32_t seed, uint32_t spp) {
-                py::gil_scoped_release release;
-                ScopedSignalHandler sh(scene->integrator());
-                return scene->render(sensor_index, seed, spp);
-            },
-            D(Scene, render), "sensor_index"_a = 0, "seed"_a = 0,  "spp"_a = 0)
         .def("ray_intersect_preliminary",
              py::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, py::const_),
              "ray"_a, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))

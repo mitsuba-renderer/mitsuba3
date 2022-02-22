@@ -138,12 +138,6 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     }
 }
 
-MI_VARIANT ref<Bitmap>
-Scene<Float, Spectrum>::render(uint32_t sensor_index, uint32_t seed, uint32_t spp) {
-    m_integrator->render(this, sensor_index, seed, spp, /* develop = */ false);
-    return m_sensors[sensor_index]->film()->bitmap();
-}
-
 // -----------------------------------------------------------------------
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f

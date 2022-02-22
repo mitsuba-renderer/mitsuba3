@@ -140,5 +140,5 @@ def test_render(variant_scalar_rgb, radiance):
     }
 
     scene = mi.load_dict(scene_dict)
-    img = scene.render()
-    assert dr.allclose(mi.TensorXf(img), radiance)
+    img = mi.render(scene)
+    assert dr.allclose(img, radiance)

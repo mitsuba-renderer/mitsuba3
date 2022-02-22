@@ -377,7 +377,7 @@ def test_checkerboard(variants_all_rgb):
     }
 
     scene = mi.load_dict(scene_dict)
-    data = mi.TensorXf(scene.render())
+    data = mi.render(scene)
 
     expected = l_o * 0.5 * (rho0 + rho1) / dr.Pi
     assert dr.allclose(data, expected, atol=1e-3)

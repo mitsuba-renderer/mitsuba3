@@ -42,48 +42,6 @@ public:
     Scene(const Properties &props);
 
     // =============================================================
-    //! @{ \name Rendering
-    // =============================================================
-
-    /**
-     * \brief Render the scene and return a bitmap
-     *
-     * This convenience function invokes the scene's integrator to render the
-     * scene from the default sensor. All parameters are optional and control
-     * different aspects of the rendering process.
-     *
-     * This method should not be used for differentiable rendering, since the
-     * rendered image will be returned in the form of a \ref Bitmap instance
-     * that isn't associated with Dr.Jit's AD graph. We recommended that you
-     * use the Python interface for this, specifically the function
-     * <tt>mitsuba.python.ad.render()</tt>.
-     *
-     * \param sensor_index
-     *     When the scene contains multiple sensors, this parameter can be used
-     *     to select the desired viewpoint. Sensor indices are assigned
-     *     according to the order in the scene description.
-     *
-     * \param seed
-     *     This parameter controls the initialization of the random number
-     *     generator. It is crucial that you specify different seeds (e.g., an
-     *     increasing sequence) if subsequent \c render() calls should produce
-     *     statistically independent images.
-     *
-     * \param spp
-     *     Set this parameter to a nonzero value to override the number of
-     *     samples per pixel. This value then takes precedence over whatever
-     *     was specified in the construction of <tt>sensor->sampler()</tt>.
-     *     This parameter may be useful in research applications where an image
-     *     must be rendered multiple times using different quality levels.
-     */
-    ref<Bitmap> render(uint32_t sensor_index = 0,
-                       uint32_t seed = 0,
-                       uint32_t spp = 0);
-
-    //! @}
-    // =============================================================
-
-    // =============================================================
     //! @{ \name Ray tracing
     // =============================================================
 

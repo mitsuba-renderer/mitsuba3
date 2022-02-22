@@ -6373,37 +6373,6 @@ static const char *__doc_mitsuba_Scene_ray_test_cpu = R"doc(Trace a shadow ray)d
 
 static const char *__doc_mitsuba_Scene_ray_test_gpu = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_render =
-R"doc(Render the scene and return a bitmap
-
-This convenience function invokes the scene's integrator to render the
-scene from the default sensor. All parameters are optional and control
-different aspects of the rendering process.
-
-This method should not be used for differentiable rendering, since the
-rendered image will be returned in the form of a Bitmap instance that
-isn't associated with Dr.Jit's AD graph. We recommended that you use
-the Python interface for this, specifically the function
-``mitsuba.python.ad.render()``.
-
-Parameter ``sensor``:
-    When the scene contains multiple sensors, this parameter can be
-    used to select the desired viewpoint. Sensor indices are assigned
-    according to the order in the scene description.
-
-Parameter ``seed``:
-    This parameter controls the initialization of the random number
-    generator. It is crucial that you specify different seeds (e.g.,
-    an increasing sequence) if subsequent ``render``() calls should
-    produce statistically independent images.
-
-Parameter ``spp``:
-    Set this parameter to a nonzero value to override the number of
-    samples per pixel. This value then takes precedence over whatever
-    was specified in the construction of ``sensor->sampler()``. This
-    parameter may be useful in research applications where an image
-    must be rendered multiple times using different quality levels.)doc";
-
 static const char *__doc_mitsuba_Scene_sample_emitter =
 R"doc(Sample one emitter in the scene and rescale the input sample for
 reuse.
