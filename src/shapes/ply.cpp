@@ -21,6 +21,7 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
 ----------------------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 4
 
  * - filename
    - |string|
@@ -41,6 +42,41 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none, i.e. object space = world space)
+
+ * - vertex_count
+   - |int|
+   - Total number of vertices
+   - |exposed|
+
+ * - face_count
+   - |int|
+   - Total number of faces
+   - |exposed|
+
+ * - faces
+   - :paramtype:`uint32[]`
+   - Face indices buffer (flatten)
+   - |exposed|
+
+ * - vertex_positions
+   - :paramtype:`float[]`
+   - Vertex positions buffer (flatten) pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_normals
+   - :paramtype:`float[]`
+   - Vertex normals buffer (flatten)  pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_texcoords
+   - :paramtype:`float[]`
+   - Vertex texcoords buffer (flatten)
+   - |exposed|, |differentiable|
+
+ * - (Mesh attribute)
+   - :paramtype:`float[]`
+   - Mesh attribute buffer (flatten)
+   - |exposed|, |differentiable|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_ply_bunny.jpg

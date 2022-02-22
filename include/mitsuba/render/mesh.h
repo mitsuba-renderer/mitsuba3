@@ -84,7 +84,7 @@ public:
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
-                                 dr::mask_t<Index> active = true) const {
+                                dr::mask_t<Index> active = true) const {
         using Result = dr::Array<dr::uint32_array_t<Index>, 3>;
         return dr::gather<Result>(m_faces, index, active);
     }
@@ -92,7 +92,7 @@ public:
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MI_INLINE auto vertex_position(Index index,
-                                    dr::mask_t<Index> active = true) const {
+                                   dr::mask_t<Index> active = true) const {
         using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 3>;
         return dr::gather<Result>(m_vertex_positions, index, active);
     }
@@ -100,7 +100,7 @@ public:
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MI_INLINE auto vertex_normal(Index index,
-                                  dr::mask_t<Index> active = true) const {
+                                 dr::mask_t<Index> active = true) const {
         using Result = Normal<dr::replace_scalar_t<Index, InputFloat>, 3>;
         return dr::gather<Result>(m_vertex_normals, index, active);
     }
@@ -108,7 +108,7 @@ public:
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MI_INLINE auto vertex_texcoord(Index index,
-                                    dr::mask_t<Index> active = true) const {
+                                   dr::mask_t<Index> active = true) const {
         using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 2>;
         return dr::gather<Result>(m_vertex_texcoords, index, active);
     }

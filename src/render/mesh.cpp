@@ -64,6 +64,43 @@ void Mesh<Float, Spectrum>::initialize() {
 
 MI_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
 
+MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    Base::traverse(callback);
+
+    callback->put_parameter("vertex_count",     m_vertex_count,     +ParamFlags::NonDifferentiable);
+    callback->put_parameter("face_count",       m_face_count,       +ParamFlags::NonDifferentiable);
+    callback->put_parameter("faces",            m_faces,            +ParamFlags::NonDifferentiable);
+    callback->put_parameter("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    callback->put_parameter("vertex_texcoords", m_vertex_texcoords, +ParamFlags::Differentiable);
+
+    // We arbitrarily chose to show all attributes as being differentiable here.
+    for (auto &[name, attribute]: m_mesh_attributes)
+        callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
+}
+
+MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    if (keys.empty() || string::contains(keys, "vertex_positions")) {
+        recompute_bbox();
+
+        if (has_vertex_normals())
+            recompute_vertex_normals();
+
+        if (!m_area_pmf.empty())
+            m_area_pmf = DiscreteDistribution<Float>();
+
+        if (m_parameterization)
+            m_parameterization = nullptr;
+
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
+        m_vertex_positions_ptr = m_vertex_positions.data();
+        m_faces_ptr = m_faces.data();
+#endif
+        mark_dirty();
+    }
+    Base::parameters_changed();
+}
+
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox() const {
     return m_bbox;
@@ -1075,43 +1112,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_
     build_input.triangleArray.numSbtRecords    = 1;
 }
 #endif
-
-MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    Base::traverse(callback);
-
-    callback->put_parameter("vertex_count",     m_vertex_count,     +ParamFlags::NonDifferentiable);
-    callback->put_parameter("face_count",       m_face_count,       +ParamFlags::NonDifferentiable);
-    callback->put_parameter("faces",            m_faces,            +ParamFlags::NonDifferentiable);
-    callback->put_parameter("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
-    callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
-    callback->put_parameter("vertex_texcoords", m_vertex_texcoords, +ParamFlags::Differentiable);
-
-    // We arbitrarily chose to show all attributes as being differentiable here.
-    for (auto &[name, attribute]: m_mesh_attributes)
-        callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
-}
-
-MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    if (keys.empty() || string::contains(keys, "vertex_positions")) {
-        recompute_bbox();
-
-        if (has_vertex_normals())
-            recompute_vertex_normals();
-
-        if (!m_area_pmf.empty())
-            m_area_pmf = DiscreteDistribution<Float>();
-
-        if (m_parameterization)
-            m_parameterization = nullptr;
-
-#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
-        m_vertex_positions_ptr = m_vertex_positions.data();
-        m_faces_ptr = m_faces.data();
-#endif
-        mark_dirty();
-    }
-    Base::parameters_changed();
-}
 
 MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     bool result = false;

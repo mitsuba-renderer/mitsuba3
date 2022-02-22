@@ -18,6 +18,7 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
 -----------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 5
 
  * - filename
    - |string|
@@ -32,6 +33,7 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
  * - flip_tex_coords
    - |bool|
    - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
+
  * - flip_normals
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
@@ -41,6 +43,41 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none, i.e. object space = world space)
+
+ * - vertex_count
+   - |int|
+   - Total number of vertices
+   - |exposed|
+
+ * - face_count
+   - |int|
+   - Total number of faces
+   - |exposed|
+
+ * - faces
+   - :paramtype:`uint32[]`
+   - Face indices buffer (flatten)
+   - |exposed|
+
+ * - vertex_positions
+   - :paramtype:`float[]`
+   - Vertex positions buffer (flatten) pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_normals
+   - :paramtype:`float[]`
+   - Vertex normals buffer (flatten)  pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_texcoords
+   - :paramtype:`float[]`
+   - Vertex texcoords buffer (flatten)
+   - |exposed|, |differentiable|
+
+ * - (Mesh attribute)
+   - :paramtype:`float[]`
+   - Mesh attribute buffer (flatten)
+   - |exposed|, |differentiable|
 
 This plugin implements a simple loader for Wavefront OBJ files. It handles
 meshes containing triangles and quadrilaterals, and it also imports vertex normals
