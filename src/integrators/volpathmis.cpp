@@ -167,7 +167,7 @@ public:
         dr::Loop<Mask> loop("Volpath MIS integrator",
                             /* loop state: */
                             active, depth, ray, p_over_f, p_over_f_nee, result,
-                            si, mei, medium, eta, last_scatter_event,
+                            si, mei, medium, eta, last_scatter_event, sampler,
                             needs_intersection, specular_chain, valid_ray);
 
         while (loop(active)) {

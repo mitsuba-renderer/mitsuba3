@@ -131,7 +131,7 @@ public:
                             /* loop state: */ active, depth, ray, throughput,
                             result, si, mei, medium, eta, last_scatter_event,
                             last_scatter_direction_pdf, needs_intersection,
-                            specular_chain, valid_ray);
+                            specular_chain, valid_ray, sampler);
 
         while (loop(active)) {
             // ----------------- Handle termination of paths ------------------
