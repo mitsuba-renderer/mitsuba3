@@ -99,34 +99,35 @@ class MitsubaVariantModule(types.ModuleType):
         sub_suffix = '' if submodule is None else f'.{submodule}'
 
         # Try C++ libraries (Python bindings)
-        try:
-            if key != '__dict__':
-                # Walk through loaded extension modules
-                for m in modules:
-                    if not submodule is None:
-                        m = getattr(m, submodule, None)
-                    result = getattr(m, key, None)
-                    if result is not None:
-                        return result
-            else:
-                # Stitch together a dictionary, needed for pydoc
-                result = super().__getattribute__('__dict__')
-                for m in modules:
-                    if not submodule is None:
-                        m = getattr(m, submodule, None)
+        if key != '__dict__':
+            # Walk through loaded extension modules
+            for m in modules:
+                if not submodule is None:
+                    m = getattr(m, submodule, None)
+                result = getattr(m, key, None)
+                if result is not None:
+                    return result
+        else:
+            # Stitch together a dictionary, needed for pydoc
+            result = super().__getattribute__('__dict__')
+            for m in modules:
+                if not submodule is None:
+                    m = getattr(m, submodule, None)
+                if m is not None:
                     for k, v in getattr(m, '__dict__').items():
                         if k not in result:
                             result[k] = v
 
-                # Search python modules as well
+            # Search python modules as well
+            try:
                 py_m = _import(f'mitsuba.python{sub_suffix}')
                 for k, v in getattr(py_m, '__dict__').items():
                     if not k.startswith('_') and k not in result:
                         result[k] = v
+            except Exception:
+                pass
 
-                return result
-        except Exception:
-            pass
+            return result
 
         # Try Python extension (objects)
         try:
