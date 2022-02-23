@@ -101,11 +101,6 @@ if (NOT MSVC)
   target_link_libraries(mitsuba-core PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
-  # Treat undefined symbols as errors when linking
-  target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
-endif()
-
 target_link_libraries(mitsuba-core PUBLIC drjit)
 target_link_libraries(mitsuba-core PRIVATE fast_float)
 

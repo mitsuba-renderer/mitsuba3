@@ -89,11 +89,6 @@ if (MI_ENABLE_EMBREE)
     target_link_libraries(mitsuba-render PRIVATE embree)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
-  # Treat undefined symbols as errors when linking
-  target_link_libraries(mitsuba-render PRIVATE -Wl,--no-undefined)
-endif()
-
 target_link_libraries(mitsuba-render PUBLIC drjit)
 
 if (MI_ENABLE_JIT)

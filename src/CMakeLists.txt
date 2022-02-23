@@ -10,6 +10,11 @@ target_link_libraries(mitsuba PUBLIC mitsuba-core)
 target_link_libraries(mitsuba PUBLIC mitsuba-render)
 set_target_properties(mitsuba PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
+  # Treat undefined symbols as errors when linking
+  target_link_libraries(mitsuba PRIVATE -Wl,--no-undefined)
+endif()
+
 # ----------------------------------------------------------
 #  Other libraries
 # ----------------------------------------------------------
