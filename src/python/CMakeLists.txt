@@ -2,6 +2,15 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
+include_directories(
+  ${PNG_INCLUDE_DIRS}
+  ${PUGIXML_INCLUDE_DIRS}
+  ${ASMJIT_INCLUDE_DIRS}
+  ${ZLIB_INCLUDE_DIR}
+  ${OPENEXR_INCLUDE_DIRS}
+  ${JPEG_INCLUDE_DIRS}
+)
+
 foreach (MI_VARIANT ${MI_VARIANTS})
   string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
   list(GET MI_VARIANT 0 MI_VARIANT_NAME)
@@ -50,7 +59,7 @@ target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
 target_link_libraries(mitsuba_ext PRIVATE mitsuba)
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
-target_link_libraries(mitsuba_ext PRIVATE asmjit)
+  target_link_libraries(mitsuba_ext PRIVATE asmjit)
 endif()
 
 set_target_properties(mitsuba_ext
@@ -148,7 +157,6 @@ set_target_properties(copy-python PROPERTIES FOLDER python)
 
 if (UNIX)
   include_directories(
-    ${ASMJIT_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include

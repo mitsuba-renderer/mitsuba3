@@ -15,7 +15,7 @@ set_target_properties(mitsuba PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 # ----------------------------------------------------------
 
 if (MI_ENABLE_GUI)
-    add_subdirectory(libui)
+  add_subdirectory(libui)
 endif()
 
 # ----------------------------------------------------------
@@ -25,7 +25,7 @@ endif()
 add_subdirectory(mitsuba)
 
 if (MI_ENABLE_GUI)
-    add_subdirectory(mtsgui)
+  add_subdirectory(mtsgui)
 endif()
 
 # ----------------------------------------------------------
