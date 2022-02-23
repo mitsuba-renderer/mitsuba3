@@ -25,7 +25,7 @@ def run_notebook(notebook_path, tmp_dir=None):
         nb = nbformat.read(f, as_version=4)
 
     # Check the variants required in this notebook are enabled, otherwise skip
-    regex = re.compile(r'mitsuba.set_variant\(\'([a-zA-Z_]+)\'\)', re.MULTILINE)
+    regex = re.compile(r'[a-zA-Z_]+.set_variant\(\'([a-zA-Z_]+)\'\)', re.MULTILINE)
     for c in filter(lambda c: c['cell_type'] == 'code', nb['cells']):
         for v in re.findall(regex, c['source']):
             if v not in mi.variants():
