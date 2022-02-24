@@ -104,6 +104,13 @@ class ConfigBase:
         self.params.update()
         dr.eval()
 
+    def __repr__(self) -> str:
+        return f'{self.name}[\n' \
+               f'  integrator = { self.integrator_dict },\n' \
+               f'  spp = {self.spp},\n' \
+               f'  key = {self.key if hasattr(self, "key") else "None"}\n' \
+               f']'
+
 # BSDF albedo of a directly visible gray plane illuminated by a constant emitter
 class DiffuseAlbedoConfig(ConfigBase):
     def __init__(self) -> None:
@@ -738,6 +745,9 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     dr.enable_grad(theta)
     dr.set_label(theta, 'theta')
     config.update(theta)
+    # We call dr.forward() here to propagate the gradient from the latent variable into
+    # the scene parameter. This prevents dr.forward_to() in integrator.render_forward() 
+    # to trace gradients outside the dr.Loop().
     dr.forward(theta, dr.ADFlag.ClearEdges)
 
     dr.set_label(config.params, 'params')
@@ -819,6 +829,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     config = DiffuseAlbedoConfig()
     config.initialize()
 
+    # Primal comparison
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     integrator = mi.load_dict({
@@ -855,6 +866,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     filename = f"test_render_custom_op_image_primal.exr"
     mi.util.write_bitmap(filename, image_primal)
 
+    # Backward comparison
     obj = dr.hmean_async(image_primal)
     dr.backward(obj)
 
@@ -870,6 +882,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"-> ratio: {grad / grad_ref}")
         assert False
 
+    # Forward comparison
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
