@@ -94,3 +94,23 @@ def test05_trilinear_interpolation_6_channels(variants_all_rgb, tmpdir):
     assert dr.allclose(vol.eval_6(it), 0.0)
     it.p = mi.Point3f(1.0) / 3
     assert dr.allclose(vol.eval_6(it), (6 * 1 + 1 * 0.5 + 1 * 0.0) / 8)
+
+
+def test06_eval_per_channel(variants_all_rgb, tmpdir):
+    tmp_file = os.path.join(str(tmpdir), "out.vol")
+    grid = dr.full(mi.TensorXf, 1, [3, 3, 3, 6])
+    grid[0, 0, 0, : ] = 0.0
+    for i in range(6):
+        grid[2, 2, 2, i ] = i + 1
+    mi.VolumeGrid(grid).write(tmp_file)
+    vol = mi.load_dict({
+        'type' : 'gridvolume',
+        'filename' : tmp_file,
+    })
+    it = dr.zero(mi.Interaction3f, 1)
+    assert vol is not None
+    print(vol.eval_per_channel_1(it))
+    assert dr.allclose(vol.eval_per_channel_1(it), [0.0] * 6)
+    it.p = mi.Point3f(1.0)
+    print(vol.eval_per_channel_1(it))
+    assert dr.allclose(vol.eval_per_channel_1(it), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])

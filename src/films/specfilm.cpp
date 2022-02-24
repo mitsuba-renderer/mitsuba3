@@ -51,6 +51,7 @@ Spectral film (:monosp:`specfilm`)
  * - (Nested plugins)
    - |spectrum|
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
+   - |exposed|
 
 This plugin stores one or several spectral bands as a multichannel spectral image in a high dynamic
 range OpenEXR file and tries to preserve the rendering as much as possible by not performing any
@@ -78,7 +79,7 @@ reduce the spectral noise that would appear if each channel were calculated inde
 .. subfigend::
    :label: fig-specfilm
 
-The following XML snippet describes a film that writes the previously shown 3-channel OpenEXR file with
+The following snippet describes a film that writes the previously shown 3-channel OpenEXR file with
 each channel containing the sensor response to each defined spectral band (it is possible to load a
 spectrum from a file, see the :ref:`Spectrum definition <color-spectra>` section).
 Notice that in this example, each band contains the spectral sensitivity of one of the ``rgb`` channels.
@@ -162,6 +163,12 @@ public:
         m_flags = FilmFlags::Spectral | FilmFlags::Special;
 
         compute_srf_sampling();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        for (size_t i=0; i<m_srfs.size(); ++i)
+            callback->put_object(m_names[i], m_srfs[i].get(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
     }
 
     void compute_srf_sampling() {
@@ -405,13 +412,6 @@ public:
     void schedule_storage() override {
         dr::schedule(m_storage->tensor());
     };
-
-    void traverse(TraversalCallback *callback) override {
-        for (size_t i=0; i<m_srfs.size(); ++i) {
-            callback->put_object(m_names[i], m_srfs[i].get());
-        }
-        Base::traverse(callback);
-    }
 
     std::string to_string() const override {
         std::ostringstream oss;

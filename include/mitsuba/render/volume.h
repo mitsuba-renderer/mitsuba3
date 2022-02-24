@@ -35,11 +35,10 @@ public:
     virtual dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
-     * Evaluate this volume as a n-channel quantity with no color processing
+     * \brief Evaluate this volume as a n-channel float quantity
      * This interface is specifically intended to encode a variable number of parameters
      */
-    virtual std::vector<Spectrum> eval_generic(const Interaction3f &it, Mask active = true) const;
-    virtual std::vector<Float> eval_generic_1(const Interaction3f &it, Mask active = true) const;
+    virtual void eval_per_channel_1(const Interaction3f &it, Float *out, Mask active = true) const;
 
     /**
      * Evaluate the volume at the given surface interaction,
@@ -51,8 +50,11 @@ public:
     /// Returns the maximum value of the volume over all dimensions.
     virtual ScalarFloat max() const;
 
-    /// Returns the maximum value of the volume over all dimensions per channel.
-    virtual std::vector<ScalarFloat> max_generic() const;
+    /**
+     * In the case of a multi-channel volume, this function returns
+     * the maximum value for each channel.
+     */
+    virtual void max_per_channel(ScalarFloat *out) const;
 
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
@@ -64,6 +66,14 @@ public:
      * The default implementation returns <tt>(1, 1, 1)</tt>
      */
     virtual ScalarVector3i resolution() const;
+
+    /**
+     * \brief Returns the number of channels stored in the volume
+     *
+     *  When the channel count is zero, it indicates that the volume
+     *  does not support per-channel queries.
+     */
+    uint32_t channel_count() const { return m_channel_count; }
 
     //! @}
     // ======================================================================
@@ -94,6 +104,8 @@ protected:
     ScalarTransform4f m_to_local;
     /// Bounding box
     ScalarBoundingBox3f m_bbox;
+    /// Number of channels stored in the volume
+    uint32_t m_channel_count;
 };
 
 MI_EXTERN_CLASS(Volume)

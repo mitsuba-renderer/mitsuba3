@@ -405,8 +405,10 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
 
     if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
-        film->prepare_sample(spec_u, ray.wavelengths, aovs, 1.f,
-                             dr::select(valid, Float(1.f), Float(0.f)), valid);
+        film->prepare_sample(spec_u, ray.wavelengths, aovs,
+                             /*weight*/ 1.f,
+                             /*alpha */ dr::select(valid, Float(1.f), Float(0.f)),
+                             valid);
     } else {
         Color3f rgb;
         if constexpr (is_spectral_v<Spectrum>)

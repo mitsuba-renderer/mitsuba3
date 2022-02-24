@@ -420,8 +420,8 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
  */
 template <typename Scalar>
 MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
-                                        std::vector<Scalar> &wavelengths,
-                                        std::vector<Scalar> &values);
+                                      std::vector<Scalar> &wavelengths,
+                                      std::vector<Scalar> &values);
 
 /**
  * \brief Write a file containing information about the spectra.
@@ -437,9 +437,9 @@ MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
  *     Array with the values to be stored in the file
  */
 template <typename Scalar>
-MTS_EXPORT_CORE void spectrum_to_file(const std::string &filename,
-                                      const std::vector<Scalar> &wavelengths,
-                                      const std::vector<Scalar> &values);
+MI_EXPORT_LIB void spectrum_to_file(const std::string &filename,
+                                    const std::vector<Scalar> &wavelengths,
+                                    const std::vector<Scalar> &values);
 
 template <typename Scalar>
 MI_EXPORT_LIB Color<Scalar, 3>

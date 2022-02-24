@@ -189,6 +189,14 @@ div.subfigure {
 	}
 }
 
+div.subsubfigure {
+	flex-direction: column;
+}
+
+a.subsubfigure > img {
+    margin-top: 0.25em !important;
+    margin-bottom: 0.5em !important;
+}
 
 /* change section titles to get highlighted when targeted with a link */
 div.section:target > h6,

@@ -481,19 +481,18 @@ private:
 
         std::vector<ScalarFloat> cdf(size - 1);
         m_valid = (uint32_t) -1;
-        m_max = -dr::Infinity<ScalarFloat>;
 
         double range = double(m_range.y()) - double(m_range.x()),
                interval_size = range / (size - 1),
                integral = 0.;
 
+        m_max = pdf[0];
         for (size_t i = 0; i < size - 1; ++i) {
             double y0 = (double) pdf[0],
                    y1 = (double) pdf[1];
 
             double value = 0.5 * interval_size * (y0 + y1);
 
-            m_max = dr::max(m_max, y0);
             m_max = dr::max(m_max, y1);
 
             integral += value;
@@ -801,11 +800,11 @@ private:
              dr::Infinity<ScalarFloat>,
             -dr::Infinity<ScalarFloat>
         );
-        m_max = -dr::Infinity<ScalarFloat>;
 
         double integral = 0.;
         std::vector<ScalarFloat> cdf(size - 1);
 
+        m_max = nodes[0];
         for (size_t i = 0; i < size - 1; ++i) {
             double x0 = (double) nodes[0],
                    x1 = (double) nodes[1],
@@ -814,7 +813,6 @@ private:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_max = dr::max(m_max, y0);
             m_max = dr::max(m_max, y1);
 
             m_range.x() = dr::min(m_range.x(), (ScalarFloat) x0);

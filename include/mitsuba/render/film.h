@@ -75,6 +75,15 @@ public:
     /**
       * \brief Prepare spectrum samples to be in the format expected by the film
       *
+      * It will be used if the Film contains the ``Special`` flag enabled.
+      *
+      * This method should be applied to films that deviate from HDR film behavior.
+      * Normally ``Films`` will store within the ``ImageBlock`` the samples following
+      * an RGB shape. But ``Films`` may want to store the samples with other
+      * structures (e.g. store several channels containing monochromatic information).
+      * In that situation, this method allows transforming the sample format generated
+      * by the integrators to the one that the Film will store inside the ImageBlock.
+      *
       * \param spec
       *    Sample value associated with the specified wavelengths
       *
@@ -96,7 +105,9 @@ public:
       */
     virtual void prepare_sample(const UnpolarizedSpectrum &spec,
                                 const Wavelength &wavelengths,
-                                Float* aovs, Float weight = 1.f, Float alpha = 1.f, Mask active = true) const;
+                                Float* aovs, Float weight = 1.f,
+                                Float alpha = 1.f,
+                                Mask active = true) const;
 
     /**
      * \brief Return an \ref ImageBlock instance, whose internal representation

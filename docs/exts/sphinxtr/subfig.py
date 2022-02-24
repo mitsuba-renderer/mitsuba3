@@ -34,7 +34,7 @@ def visit_subfig_html(self, node):
 
 def depart_subfig_html(self, node):
     figoutput = ''.join(self.body)
-    figoutput = figoutput.replace('class="', 'class="align-center subfigure" style="width: %g%%"' % (float(node['width']) * 100))
+    figoutput = figoutput.replace('class="', 'class="align-center subsubfigure" style="width: %g%%"' % (float(node['width']) * 100))
     self.body = self.__body
     self.body.append(figoutput)
 

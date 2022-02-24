@@ -100,7 +100,7 @@ class ADIntegrator(mi.SamplingIntegrator):
             alpha = dr.select(valid, mi.Float(1), mi.Float(0))
             if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                 aovs = sensor.film().prepare_sample(L * weight, ray.wavelengths,
-                                                   block.channel_count(), alpha=alpha)
+                                                    block.channel_count(), alpha=alpha)
                 block.put(pos, aovs)
                 del aovs
             else:
@@ -306,8 +306,8 @@ class ADIntegrator(mi.SamplingIntegrator):
             # Accumulate into the image block
             if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                 aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
-                                                   block.channel_count(),
-                                                   alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
+                                                    block.channel_count(),
+                                                    alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
                 block.put(pos, aovs)
                 del aovs
             else:
@@ -456,9 +456,9 @@ class ADIntegrator(mi.SamplingIntegrator):
                 # Accumulate into the image block
                 if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
                     aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
-                                                       block.channel_count(),
-                                                       weight=det,
-                                                       alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                                                        block.channel_count(),
+                                                        weight=det,
+                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
                     block.put(pos, aovs)
                     del aovs
                 else:
