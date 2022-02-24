@@ -12,6 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props) {
     m_to_local = props.get<ScalarTransform4f>("to_world", ScalarTransform4f()).inverse();
+    m_channel_count = 0;
     update_bbox();
 }
 
@@ -34,14 +35,11 @@ Volume<Float, Spectrum>::eval_6(const Interaction3f &, Mask) const {
     NotImplementedError("eval_6");
 }
 
-MI_VARIANT std::vector<Spectrum>
-Volume<Float, Spectrum>::eval_generic(const Interaction3f &, Mask) const {
-    NotImplementedError("eval_generic");
-}
-
-MI_VARIANT std::vector<Float>
-Volume<Float, Spectrum>::eval_generic_1(const Interaction3f &, Mask) const {
-    NotImplementedError("eval_generic_1");
+MI_VARIANT void
+Volume<Float, Spectrum>::eval_per_channel_1(const Interaction3f & /*it*/,
+                                            Float * /*out*/,
+                                            Mask /*active*/) const {
+    NotImplementedError("eval_per_channel_1");
 }
 
 MI_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,
@@ -53,8 +51,10 @@ Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*acti
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
 Volume<Float, Spectrum>::max() const { NotImplementedError("max"); }
 
-MI_VARIANT typename std::vector< typename Volume<Float, Spectrum>::ScalarFloat>
-Volume<Float, Spectrum>::max_generic() const { NotImplementedError("max_generic"); }
+MI_VARIANT void
+Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
+    NotImplementedError("max_per_channel");
+}
 
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {

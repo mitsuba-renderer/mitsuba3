@@ -198,7 +198,7 @@ public:
     virtual ScalarVector2f wavelength_range() const;
 
     /**
-     * Return the max value of the spectrum
+     * Return the maximum value of the spectrum
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.

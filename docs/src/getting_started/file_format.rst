@@ -271,9 +271,9 @@ by loading it from an external file:
     <spectrum name="color_property" filename="measured_binary_spectrum.spb"/>  (Binary)
 
 
-There exist two possibilities: the first consists of using a text format ``.spd``
+Two different file formats for spectral information are supported: the first is a text format ``.spd``
 that contains a single measurement per line, with the corresponding wavelength in
-nanometers and the measured value separated by a space. Comments are allowed.
+nanometers and the measured value separated by a space. Comments prefixed by ``#`` are allowed.
 Here is an example:
 
 .. code-block:: text
@@ -286,7 +286,7 @@ Here is an example:
     435.09 0.834000
     ...
 
-The second way, which is usually more efficient in both loading time and storage size,
+The second way, which is more efficient in both loading time and storage size,
 is to use the binary format ``.spb``.
 Specifically, the format uses a little-endian encoding and is specified as follows:
 
@@ -297,15 +297,17 @@ Specifically, the format uses a little-endian encoding and is specified as follo
    * - Position
      - Content
    * - Bytes 1-3
-     - ASCII Bytes ``’S’``, ``’P’``, and ``’B’``
+     - ASCII Bytes ``’S’``, ``’P’``, and ``’B’``.
    * - Byte 4
-     - File format version number (currently ``1``)
-   * - Bytes 5-X
+     - File format version number (currently ``1``).
+   * - Bytes 5-8
+     - Number of wavelengths stored.
+   * - Bytes 9-X
      - Binary data of all the wavelengths stored in the file.
    * - Bytes X-*
-     - Binary data of all the values corresponding to the previous wavelengths
+     - Binary data of all the values corresponding to the previous wavelengths.
 
-It is available the function :py:meth:`mitsuba.core.spectrum_to_file` that generates,
+It is available the function :py:meth:`mitsuba.spectrum_to_file` that generates,
 given the wavelengths and its values, the binary file corresponding to the format (or
 the text format depending on the extension passed to the function).
 

@@ -84,16 +84,16 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, set_crop_window)
         .def_method(Film, rfilter)
         .def("prepare_sample",
-        [] (const Film *film, const UnpolarizedSpectrum &spec,
-            const Wavelength &wavelengths, size_t nChannels,
-            Float weight, Float alpha, Mask active) {
-            std::vector<Float> aovs(nChannels);
-            film->prepare_sample(spec, wavelengths, aovs.data(), weight, alpha, active);
-            return aovs;
-        },
-        "spec"_a, "wavelengths"_a, "nChannels"_a,
-        "weight"_a = 1.f, "alpha"_a = 1.f, "active"_a = true,
-        D(Film, prepare_sample))
+            [] (const Film *film, const UnpolarizedSpectrum &spec,
+                const Wavelength &wavelengths, size_t nChannels,
+                Float weight, Float alpha, Mask active) {
+                std::vector<Float> aovs(nChannels);
+                film->prepare_sample(spec, wavelengths, aovs.data(), weight, alpha, active);
+                return aovs;
+            },
+            "spec"_a, "wavelengths"_a, "nChannels"_a,
+            "weight"_a = 1.f, "alpha"_a = 1.f, "active"_a = true,
+            D(Film, prepare_sample))
         .def_method(Film, create_block, "size"_a = ScalarVector2u(0, 0),
                     "normalize"_a = false, "borders"_a = false)
         .def_method(Film, schedule_storage)

@@ -30,3 +30,19 @@ def test02_read_write(variants_all_scalar, tmpdir, np_rng):
     assert dr.allclose(loaded.max(), np.max(grid))
     assert dr.allclose([grid.shape[2], grid.shape[1], grid.shape[0]], loaded.size())
     assert dr.allclose(grid.shape[3], loaded.channel_count())
+
+def test03_max_per_channel(variants_all_scalar, tmpdir, np_rng):
+    tmp_file = os.path.join(str(tmpdir), "out.vol")
+    data = np_rng.random((4, 8, 16, 3))
+    grid = mi.VolumeGrid(data)
+    grid.write(tmp_file)
+    np_max_per_channel = np.array([np.max(data[:,:,:,0]),
+                                   np.max(data[:,:,:,1]),
+                                   np.max(data[:,:,:,2])])
+    # Check direct construction compute the maximum values
+    mi_max_per_channel = grid.max_per_channel()
+    assert dr.allclose(np_max_per_channel, mi_max_per_channel)
+    # Check disk construction compute the maximum values
+    grid = mi.VolumeGrid(tmp_file)
+    mi_max_per_channel = grid.max_per_channel()
+    assert dr.allclose(np_max_per_channel, mi_max_per_channel)

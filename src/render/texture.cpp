@@ -89,7 +89,7 @@ Texture<Float, Spectrum>::wavelength_range() const {
     return ScalarVector2f(MI_CIE_MIN, MI_CIE_MAX);
 }
 
-MTS_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
+MI_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
 Texture<Float, Spectrum>::max() const {
     NotImplementedError("max");
 }
