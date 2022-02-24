@@ -53,8 +53,15 @@ MI_PY_EXPORT(Volume) {
     MI_PY_TRAMPOLINE_CLASS(PyVolume, Volume, Object)
         .def_method(Volume, resolution)
         .def_method(Volume, bbox)
+        .def_method(Volume, channel_count)
         .def_method(Volume, max)
-        .def_method(Volume, max_generic)
+        .def("max_per_channel",
+            [] (const Volume *volume) {
+                std::vector<ScalarFloat> max_values(volume->channel_count());
+                volume->max_per_channel(max_values.data());
+                return max_values;
+            },
+            D(Volume, max_per_channel))
         .def_method(Volume, eval, "it"_a, "active"_a = true)
         .def_method(Volume, eval_1, "it"_a, "active"_a = true)
         .def_method(Volume, eval_3, "it"_a, "active"_a = true)
@@ -68,10 +75,16 @@ MI_PY_EXPORT(Volume) {
                 }, "it"_a, "active"_a = true, D(Volume, eval_6))
         .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,
              D(Volume, eval_gradient))
-        .def("eval_generic", &Volume::eval_generic, "it"_a, "active"_a = true,
+        .def("eval_per_channel", &Volume::eval_per_channel, "it"_a, "active"_a = true,
              D(Volume, eval_generic))
-        .def("eval_generic_1", &Volume::eval_generic_1, "it"_a, "active"_a = true,
-             D(Volume, eval_generic_1));
+        .def("eval_per_channel_1",
+            [] (const Volume *volume, const Interaction3f &it, Mask active = true) {
+                std::vector<Float> evaluation(volume->channel_count());
+                volume->eval_per_channel_1(it, evaluation.data(), active);
+                return evaluation;
+            },
+            "it"_a, "active"_a = true,
+            D(Volume, eval_per_channel_1));
 
     MI_PY_REGISTER_OBJECT("register_volume", Volume)
 }

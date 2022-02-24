@@ -539,9 +539,10 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
 
-                    // CUSTOM : Improve it at some point
-                    // Detect we are using spectral film and change context
-                    // We need to put the spectral film as the first thing before everything else in the xml
+                    // TODO : Improve it at some point
+                    // Detect that we are using spectral film and change context
+                    // We need to put the spectral film as the first thing before anything that
+                    // needs correction
                     if (type == "specfilm") {
                         ctx.spectral_unbounded = true;
                         Log(Info, "Enabled spectral unbounded mode");
@@ -1160,8 +1161,8 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
-        Float min_interval = 0,
-              max_interval = std::numeric_limits<Float>::infinity();
+        Float min_interval = std::numeric_limits<Float>::infinity(),
+              max_interval = 0.0;
 
         for (size_t n = 0; n < wavelengths.size(); ++n) {
             values[n] *= unit_conversion;
