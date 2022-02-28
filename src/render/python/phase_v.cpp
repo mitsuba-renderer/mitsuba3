@@ -28,11 +28,11 @@ public:
     }
 
     Float max_projected_area() const override {
-        PYBIND11_OVERRIDE(Float, PhaseFunction, max_projected_area, );
+        PYBIND11_OVERRIDE(Float, PhaseFunction, max_projected_area);
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string, );
+        PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string);
     }
 
     using PhaseFunction::m_flags;
