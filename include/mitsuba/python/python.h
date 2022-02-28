@@ -54,7 +54,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 /// Shorthand notation for defining object registration routine for trampoline objects
 /// WARNING: this will leak out memory as the constructed py::object will never be destroyed
-#define MI_PY_REGISTER_OBJECT(Function, Name)                                 \
+#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
     m.def(                                                                     \
         Function,                                                              \
         [](const std::string &name,                                            \
