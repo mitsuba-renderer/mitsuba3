@@ -152,13 +152,13 @@ class PRBVolpathIntegrator(ADIntegrator):
                 scatter_prob = index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel)
                 act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                 act_medium_scatter = ~act_null_scatter & active_medium
-                weight[act_null_scatter] *= mi.sigma_n / dr.detach(1 - scatter_prob)
+                weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
             else:
                 scatter_prob = Float(1.0)
                 act_medium_scatter = active_medium
 
             depth[act_medium_scatter] += 1
-            last_scatter_event[act_medium_scatter] = dr.detach(mi)
+            last_scatter_event[act_medium_scatter] = dr.detach(mei)
 
             # Dont estimate lighting if we exceeded number of bounces
             active &= depth < self.max_depth
@@ -167,7 +167,7 @@ class PRBVolpathIntegrator(ADIntegrator):
                 ray.o[act_null_scatter] = dr.detach(mei.p)
                 si.t[act_null_scatter] = si.t - dr.detach(mei.t)
 
-            weight[act_medium_scatter] *= mi.sigma_s / dr.detach(scatter_prob)
+            weight[act_medium_scatter] *= mei.sigma_s / dr.detach(scatter_prob)
             throughput[active_medium] *= dr.detach(weight)
 
             mei = dr.detach(mei)
@@ -334,10 +334,10 @@ class PRBVolpathIntegrator(ADIntegrator):
             escaped_medium = active_medium & ~mei.is_valid()
 
             # Ratio tracking transmittance computation
-            active_medium &= mi.is_valid()
-            ray.o[active_medium] = dr.detach(mi.p)
-            si.t[active_medium] = dr.detach(si.t - mi.t)
-            tr_multiplier[active_medium] *= mi.sigma_n / mi.combined_extinction
+            active_medium &= mei.is_valid()
+            ray.o[active_medium] = dr.detach(mei.p)
+            si.t[active_medium] = dr.detach(si.t - mei.t)
+            tr_multiplier[active_medium] *= mei.sigma_n / mei.combined_extinction
 
             # Handle interactions with surfaces
             active_surface |= escaped_medium
@@ -360,7 +360,7 @@ class PRBVolpathIntegrator(ADIntegrator):
 
             # Continue tracing through scene if non-zero weights exist
             active &= (active_medium | active_surface) & dr.any(dr.neq(transmittance, 0.0))
-            total_dist[active] += dr.select(active_medium, mi.t, si.t)
+            total_dist[active] += dr.select(active_medium, mei.t, si.t)
 
             # If a medium transition is taking place: Update the medium pointer
             has_medium_trans = active_surface & si.is_medium_transition()
