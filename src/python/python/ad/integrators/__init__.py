@@ -18,9 +18,6 @@ if not mitsuba.variant().startswith('scalar'):
         if not os.path.isfile(f) or f.endswith('__init__.py'):
             continue
 
-        if f.endswith('prbvolpath.py'):
-            continue
-
         name = os.path.basename(f)[:-3]
         if do_reload and not name == 'common':
             importlib.reload(globals()[name])

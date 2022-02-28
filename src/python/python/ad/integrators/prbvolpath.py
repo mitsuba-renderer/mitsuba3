@@ -1,13 +1,13 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba
+import mitsuba as mi
 
 from .common import ADIntegrator, mis_weight
 
 def index_spectrum(spec, idx):
     m = spec[0]
-    if mitsuba.core.is_rgb:
+    if mi.is_rgb:
         m[dr.eq(idx, 1)] = spec[1]
         m[dr.eq(idx, 2)] = spec[2]
     return m
@@ -38,7 +38,7 @@ class PRBVolpathIntegrator(ADIntegrator):
 
     for details on PRB and differentiable delta tracking.
     """
-    def __init__(self, props=mitsuba.core.Properties()):
+    def __init__(self, props=mi.Properties()):
         super().__init__(props)
         self.max_depth = props.get('max_depth', 4)
         self.rr_depth = props.get('rr_depth', 5)
@@ -65,51 +65,47 @@ class PRBVolpathIntegrator(ADIntegrator):
         self.use_nee = True
 
     def sample(self,
-               mode: drjit.ADMode,
-               scene: mitsuba.render.Scene,
-               sampler: mitsuba.render.Sampler,
-               ray: mitsuba.core.Ray3f,
-               δL: Optional[mitsuba.core.Spectrum],
-               state_in: Optional[mitsuba.core.Spectrum],
-               active: mitsuba.core.Bool,
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.mi.Ray3f,
+               δL: Optional[mi.Spectrum],
+               state_in: Optional[mi.Spectrum],
+               active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mitsuba.core.Spectrum,
-               mitsuba.core.Bool, mitsuba.core.Spectrum]:
-        from mitsuba.core import Float, Loop, Bool, Ray3f, Spectrum, UInt32
-        from mitsuba.render import (BSDFContext, BSDFFlags, DirectionSample3f,
-                                    MediumPtr, PhaseFunctionContext,
-                                    SurfaceInteraction3f, has_flag)
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         self.prepare_scene(scene)
 
         is_primal = mode == dr.ADMode.Primal
 
-        ray = Ray3f(ray)
-        depth = UInt32(0)                          # Depth of current vertex
-        L = Spectrum(0 if is_primal else state_in) # Radiance accumulator
-        δL = Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
-        throughput = Spectrum(1)                   # Path throughput weight
-        η = Float(1)                               # Index of refraction
-        active = Bool(active)
+        ray = mi.Ray3f(ray)
+        depth = mi.UInt32(0)                          # Depth of current vertex
+        L = mi.Spectrum(0 if is_primal else state_in) # Radiance accumulator
+        δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
+        throughput = mi.Spectrum(1)                   # Path throughput weight
+        η = mi.Float(1)                               # Index of refraction
+        active = mi.Bool(active)
 
-        si = dr.zero(SurfaceInteraction3f)
-        needs_intersection = Bool(True)
-        last_scatter_event = dr.zero(mitsuba.render.Interaction3f)
-        last_scatter_direction_pdf = Float(1.0)
+        si = dr.zero(mi.SurfaceInteraction3f)
+        needs_intersection = mi.Bool(True)
+        last_scatter_event = dr.zero(mi.Interaction3f)
+        last_scatter_direction_pdf = mi.Float(1.0)
 
         # TODO: Support sensors inside media
-        # medium = MediumPtr(medium)
-        medium = dr.zero(MediumPtr)
+        # medium = mi.MediumPtr(medium)
+        medium = dr.zero(mi.MediumPtr)
 
         channel = 0
-        depth = UInt32(0)
-        valid_ray = Bool(False)
-        specular_chain = Bool(True)
+        depth = mi.UInt32(0)
+        valid_ray = mi.Bool(False)
+        specular_chain = mi.Bool(True)
 
-        if mitsuba.core.is_rgb: # Sample a color channel to sample free-flight distances
-            n_channels = dr.array_size_v(Spectrum)
+        if mi.is_rgb: # Sample a color channel to sample free-flight distances
+            n_channels = dr.array_size_v(mi.Spectrum)
             channel = dr.min(n_channels * sampler.next_1d(active), n_channels - 1)
 
-        loop = Loop(name=f"Path Replay Backpropagation ({mode.name})",
+        loop = mi.Loop(name=f"Path Replay Backpropagation ({mode.name})",
                     state=lambda: (sampler, active, depth, ray, medium, throughput, si,
                                    L, needs_intersection,
                                    last_scatter_event,
@@ -141,7 +137,7 @@ class PRBVolpathIntegrator(ADIntegrator):
             # Evaluate ratio of transmittance and free-flight PDF
             tr, free_flight_pdf = medium.eval_tr_and_pdf(mei, si, active_medium)
             tr_pdf = index_spectrum(free_flight_pdf, channel)
-            weight = Spectrum(1.0)
+            weight = mi.Spectrum(1.0)
             weight[active_medium] *= dr.select(tr_pdf > 0.0, tr / dr.detach(tr_pdf), 0.0)
 
             escaped_medium = active_medium & ~mei.is_valid()
@@ -154,7 +150,7 @@ class PRBVolpathIntegrator(ADIntegrator):
                 act_medium_scatter = ~act_null_scatter & active_medium
                 weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
             else:
-                scatter_prob = Float(1.0)
+                scatter_prob = mi.Float(1.0)
                 act_medium_scatter = active_medium
 
             depth[act_medium_scatter] += 1
@@ -175,9 +171,9 @@ class PRBVolpathIntegrator(ADIntegrator):
                 Lo = dr.detach(dr.select(active_medium | escaped_medium, L / dr.max(1e-8, weight), 0.0))
                 dr.backward(δL * weight * Lo)
 
-            phase_ctx = PhaseFunctionContext(sampler)
+            phase_ctx = mi.PhaseFunctionContext(sampler)
             phase = mei.medium.phase_function()
-            phase[~act_medium_scatter] = dr.zero(mitsuba.render.PhaseFunctionPtr)
+            phase[~act_medium_scatter] = dr.zero(mi.PhaseFunctionPtr)
 
             valid_ray |= act_medium_scatter
             with dr.suspend_grad():
@@ -199,7 +195,7 @@ class PRBVolpathIntegrator(ADIntegrator):
             active_e = active_surface & dr.neq(emitter, None) & ~(dr.eq(depth, 0) & self.hide_emitters)
 
             # Get the PDF of sampling this emitter using next event estimation
-            ds = DirectionSample3f(scene, si, last_scatter_event)
+            ds = mi.DirectionSample3f(scene, si, last_scatter_event)
             if self.use_nee:
                 emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e)
             else:
@@ -212,18 +208,18 @@ class PRBVolpathIntegrator(ADIntegrator):
                 dr.backward(δL * contrib)
 
             active_surface &= si.is_valid()
-            ctx = BSDFContext()
+            ctx = mi.BSDFContext()
             bsdf = si.bsdf(ray)
 
             # --------------------- Emitter sampling ---------------------
             if self.use_nee:
-                active_e_surface = active_surface & has_flag(bsdf.flags(), BSDFFlags.Smooth) & (depth + 1 < self.max_depth)
+                active_e_surface = active_surface & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth) & (depth + 1 < self.max_depth)
                 sample_emitters = mei.medium.use_emitter_sampling()
                 specular_chain &= ~act_medium_scatter
                 specular_chain |= act_medium_scatter & ~sample_emitters
                 active_e_medium = act_medium_scatter & sample_emitters
                 active_e = active_e_surface | active_e_medium
-                ref_interaction = dr.zero(mitsuba.render.Interaction3f)
+                ref_interaction = dr.zero(mi.Interaction3f)
                 ref_interaction[act_medium_scatter] = mei
                 ref_interaction[active_surface] = si
                 nee_sampler = sampler if is_primal else sampler.clone()
@@ -264,7 +260,7 @@ class PRBVolpathIntegrator(ADIntegrator):
             ray[active_surface] = bsdf_ray
 
             needs_intersection |= active_surface
-            non_null_bsdf = active_surface & ~has_flag(bs.sampled_type, BSDFFlags.Null)
+            non_null_bsdf = active_surface & ~mi.has_flag(bs.sampled_type, mi.BSDFFlags.Null)
             depth[non_null_bsdf] += 1
 
             # update the last scatter PDF event if we encountered a non-null scatter event
@@ -272,8 +268,8 @@ class PRBVolpathIntegrator(ADIntegrator):
             last_scatter_direction_pdf[non_null_bsdf] = bs.pdf
 
             valid_ray |= non_null_bsdf
-            specular_chain |= non_null_bsdf & has_flag(bs.sampled_type, BSDFFlags.Delta)
-            specular_chain &= ~(active_surface & has_flag(bs.sampled_type, BSDFFlags.Smooth))
+            specular_chain |= non_null_bsdf & mi.has_flag(bs.sampled_type, mi.BSDFFlags.Delta)
+            specular_chain &= ~(active_surface & mi.has_flag(bs.sampled_type, mi.BSDFFlags.Smooth))
             has_medium_trans = active_surface & si.is_medium_transition()
             medium[has_medium_trans] = si.target_medium(ray.d)
             active &= (active_surface | active_medium)
@@ -282,13 +278,11 @@ class PRBVolpathIntegrator(ADIntegrator):
 
     def sample_emitter(self, ref_interaction, scene, sampler, medium, channel,
                        active, adj_emitted=None, δL=None, mode=None):
-        from mitsuba.core import Float, Loop, Bool, Spectrum, Vector3f
-        from mitsuba.render import MediumPtr, SurfaceInteraction3f
 
         is_primal = mode == dr.ADMode.Primal
 
-        active = Bool(active)
-        medium = dr.select(active, medium, dr.zero(MediumPtr))
+        active = mi.Bool(active)
+        medium = dr.select(active, medium, dr.zero(mi.MediumPtr))
 
         ds, emitter_val = scene.sample_emitter_direction(ref_interaction, sampler.next_2d(active), False, active)
         ds = dr.detach(ds)
@@ -297,15 +291,15 @@ class PRBVolpathIntegrator(ADIntegrator):
         active &= ~invalid
 
         ray = ref_interaction.spawn_ray(ds.d)
-        total_dist = Float(0.0)
-        si = dr.zero(SurfaceInteraction3f)
-        needs_intersection = Bool(True)
-        transmittance = Spectrum(1.0)
-        loop = Loop(name=f"PRB Next Event Estimation ({mode.name})",
+        total_dist = mi.Float(0.0)
+        si = dr.zero(mi.SurfaceInteraction3f)
+        needs_intersection = mi.Bool(True)
+        transmittance = mi.Spectrum(1.0)
+        loop = mi.Loop(name=f"PRB Next Event Estimation ({mode.name})",
                     state=lambda: (sampler, active, medium, ray, needs_intersection,
                                    si, total_dist, transmittance))
         while loop(active):
-            remaining_dist = ds.dist * (1.0 - mitsuba.core.math.ShadowEpsilon) - total_dist
+            remaining_dist = ds.dist * (1.0 - mi.math.ShadowEpsilon) - total_dist
             ray.maxt = dr.detach(remaining_dist)
             active &= remaining_dist > 0.0
 
@@ -322,7 +316,7 @@ class PRBVolpathIntegrator(ADIntegrator):
             mei.t[active_medium & (si.t < mei.t)] = dr.Infinity
             mei.t = dr.detach(mei.t)
 
-            tr_multiplier = Spectrum(1.0)
+            tr_multiplier = mi.Spectrum(1.0)
 
             # Special case for homogeneous media: directly advance to the next surface / end of the segment
             if self.nee_handle_homogeneous:
@@ -353,7 +347,7 @@ class PRBVolpathIntegrator(ADIntegrator):
             transmittance *= dr.detach(tr_multiplier)
 
             # Update the ray with new origin & t parameter
-            new_ray = si.spawn_ray(Vector3f(ray.d))
+            new_ray = si.spawn_ray(mi.Vector3f(ray.d))
             ray[active_surface] = dr.detach(new_ray)
             ray.maxt = dr.detach(remaining_dist)
             needs_intersection |= active_surface
@@ -372,4 +366,4 @@ class PRBVolpathIntegrator(ADIntegrator):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'
 
 
-mitsuba.render.register_integrator("prbvolpath", lambda props: PRBVolpathIntegrator(props))
+mi.register_integrator("prbvolpath", lambda props: PRBVolpathIntegrator(props))
