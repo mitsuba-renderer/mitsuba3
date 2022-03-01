@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/platform.h>
 #include <drjit/array_traits.h>
+#include <drjit/array_router.h>
 #include <drjit/map.h>
 #include <vector>
 
