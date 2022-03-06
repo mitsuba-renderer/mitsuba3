@@ -3,9 +3,9 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import ADIntegrator, mis_weight
+from .common import RBIntegrator, mis_weight
 
-class PRBReparamIntegrator(ADIntegrator):
+class PRBReparamIntegrator(RBIntegrator):
     """
     This class implements a reparameterized Path Replay Backpropagation (PRB)
     integrator with the following properties:
@@ -132,7 +132,7 @@ class PRBReparamIntegrator(ADIntegrator):
             L₂ = β * E₂(v₁, v₂') + Lᵢ * f₂(v₁, v₂', v₃) + ...
 
     with a later call to 'dr.backward(L₂)'. In practice, 'E' and 'f' are
-    directional functions, which means that these direction need to be
+    directional functions, which means that these directions need to be
     recomputed from positions using AD.
 
     However, that leaves a few more terms in ∂L₂ that unfortunately add some
@@ -267,7 +267,7 @@ class PRBReparamIntegrator(ADIntegrator):
                                       ray_prev, ray_cur, pi_prev, pi_cur, reparam))
 
         # Specify the max. number of loop iterations (this can help avoid
-        # costly synchronization when when wavefront-style loops are generated)
+        # costly synchronization when wavefront-style loops are generated)
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
@@ -359,6 +359,7 @@ class PRBReparamIntegrator(ADIntegrator):
                 bsdf_value_em, bsdf_pdf_em = bsdf_cur.eval_pdf(bsdf_ctx, si_cur,
                                                                wo, active_em)
                 mis_direct = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+                dr.disable_grad(mis_direct)  # Detached MIS
                 Lr_dir = β * mis_direct * bsdf_value_em * em_weight * em_ray_det
 
             # ------------------ Detached BSDF sampling -------------------

@@ -3,9 +3,9 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import ADIntegrator
+from .common import RBIntegrator
 
-class BasicPRBIntegrator(ADIntegrator):
+class BasicPRBIntegrator(RBIntegrator):
     """
     Basic Path Replay Backpropagation-style integrator *without* next event
     estimation, multiple importance sampling, Russian Roulette, and
@@ -109,14 +109,14 @@ class BasicPRBIntegrator(ADIntegrator):
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
 
                     # Detached version of the above term and inverse
-                    bsdf_val_det = bsdf_weight * bsdf_sample.pdf
-                    inv_bsdf_val_det = dr.select(dr.neq(bsdf_val_det, 0),
-                                                 dr.rcp(bsdf_val_det), 0)
+                    bsdf_val_detach = bsdf_weight * bsdf_sample.pdf
+                    inv_bsdf_val_detach = dr.select(dr.neq(bsdf_val_detach, 0),
+                                                 dr.rcp(bsdf_val_detach), 0)
 
                     # Differentiable version of the reflected radiance. Minor
                     # optional tweak: indicate that the primal value of the
                     # second term is 1.
-                    Lr = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val)
+                    Lr = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val)
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr

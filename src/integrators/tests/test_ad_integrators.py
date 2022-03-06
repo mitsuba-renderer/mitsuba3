@@ -466,7 +466,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
             }
         }
-        self.ref_fd_epsilon = 1e-4
+        self.ref_fd_epsilon = 2e-4
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.25

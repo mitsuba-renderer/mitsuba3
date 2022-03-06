@@ -35,7 +35,7 @@ def _sample_warp_field(scene: mi.Scene,
     Parameter ``scene`` (``mitsuba.Scene``):
         The scene being rendered differentially.
 
-    Parameter ``rng`` (``mitsuba.Point2f``):
+    Parameter ``sample`` (``mitsuba.Point2f``):
         A uniformly distributed random variate on the domain [0, 1]^2.
 
     Parameter ``ray`` (``mitsuba.Ray3f``):

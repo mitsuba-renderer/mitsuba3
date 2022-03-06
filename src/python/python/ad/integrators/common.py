@@ -120,6 +120,450 @@ class ADIntegrator(mi.SamplingIntegrator):
                        sensor: Union[int, mi.Sensor] = 0,
                        seed: int = 0,
                        spp: int = 0) -> mi.TensorXf:
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+        aovs = self.aovs()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
+
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, pos, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
+
+            with dr.resume_grad():
+                L, valid, _ = self.sample(
+                    mode=dr.ADMode.Forward,
+                    scene=scene,
+                    sampler=sampler,
+                    ray=ray,
+                    depth=mi.UInt32(0),
+                    δL=None,
+                    state_in=None,
+                    reparam=reparam,
+                    active=mi.Bool(True)
+                )
+
+                block = film.create_block()
+                # Only use the coalescing feature when rendering enough samples
+                block.set_coalesce(block.coalesce() and spp >= 4)
+
+                # Deposit samples with gradient tracking for 'pos'.
+                block.put(
+                    pos=pos,
+                    wavelengths=ray.wavelengths,
+                    value=L * weight * det,
+                    weight=det,
+                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                )
+
+                # Perform the weight division and return an image tensor
+                film.put_block(block)
+                result_img = film.develop()
+
+                dr.forward_to(result_img)
+
+        return dr.grad(result_img)
+
+    def render_backward(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
+                        params: Any,
+                        grad_in: mi.TensorXf,
+                        sensor: Union[int, mi.Sensor] = 0,
+                        seed: int = 0,
+                        spp: int = 0) -> None:
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+        aovs = self.aovs()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
+
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, pos, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
+
+            with dr.resume_grad():
+                L, valid, _ = self.sample(
+                    mode=dr.ADMode.Backward,
+                    scene=scene,
+                    sampler=sampler,
+                    ray=ray,
+                    depth=mi.UInt32(0),
+                    δL=None,
+                    state_in=None,
+                    reparam=reparam,
+                    active=mi.Bool(True)
+                )
+
+                # Prepare an ImageBlock as specified by the film
+                block = film.create_block()
+
+                # Only use the coalescing feature when rendering enough samples
+                block.set_coalesce(block.coalesce() and spp >= 4)
+
+                # Accumulate into the image block
+                block.put(
+                    pos=pos,
+                    wavelengths=ray.wavelengths,
+                    value=L * weight * det,
+                    weight=det,
+                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                )
+
+                sensor.film().put_block(block)
+
+                # Probably a little overkill, but why not.. If there are any
+                # DrJit arrays to be collected by Python's cyclic GC, then
+                # freeing them may enable loop simplifications in dr.eval().
+                del valid
+                gc.collect()
+
+                # This step launches a kernel
+                dr.schedule(block.tensor())
+                image = sensor.film().develop()
+
+                # Differentiate sample splatting and weight division steps to
+                # retrieve the adjoint radiance
+                dr.set_grad(image, grad_in)
+                dr.enqueue(dr.ADMode.Backward, image)
+                dr.traverse(mi.Float, dr.ADMode.Backward)
+
+            # We don't need any of the outputs here
+            del ray, weight, pos, block, sampler
+            gc.collect()
+
+            # Run kernel representing side effects of the above
+            dr.eval()
+
+    def sample_rays(
+        self,
+        scene: mi.Scene,
+        sensor: mi.Sensor,
+        sampler: mi.Sampler,
+        reparam: Callable[[mi.Ray3f, mi.Bool],
+                          Tuple[mi.Ray3f, mi.Float]] = None
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
+        """
+        Sample a 2D grid of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous 2D image-space positions associated with each ray
+
+        When a reparameterization function is provided via the 'reparam'
+        argument, it will be applied to the returned image-space position (i.e.
+        the sample positions will be moving). The other two return values
+        remain detached.
+        """
+
+        film = sensor.film()
+        film_size = film.crop_size()
+        rfilter = film.rfilter()
+        border_size = rfilter.border_size()
+
+        if film.sample_border():
+            film_size += 2 * border_size
+
+        spp = sampler.sample_count()
+
+        # Compute discrete sample position
+        idx = dr.arange(mi.UInt32, dr.hprod(film_size) * spp)
+
+        # Try to avoid a division by an unknown constant if we can help it
+        log_spp = dr.log2i(spp)
+        if 1 << log_spp == spp:
+            idx >>= dr.opaque(mi.UInt32, log_spp)
+        else:
+            idx //= dr.opaque(mi.UInt32, spp)
+
+        # Compute the position on the image plane
+        pos = mi.Vector2u()
+        pos.y = idx // film_size[0]
+        pos.x = dr.fnmadd(film_size[0], pos.y, idx)
+
+        if film.sample_border():
+            pos -= border_size
+
+        pos += film.crop_offset()
+
+        # Cast to floating point and add random offset
+        pos_f = mi.Vector2f(pos) + sampler.next_2d()
+
+        # Re-scale the position to [0, 1]^2
+        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
+        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
+        pos_adjusted = dr.fmadd(pos_f, scale, offset)
+
+        aperture_sample = mi.Vector2f(0.0)
+        if sensor.needs_aperture_sample():
+            aperture_sample = sampler.next_2d()
+
+        time = sensor.shutter_open()
+        if sensor.shutter_open_time() > 0:
+            time += sampler.next_1d() * sensor.shutter_open_time()
+
+        wavelength_sample = 0
+        if mi.is_spectral:
+            wavelength_sample = sampler.next_1d()
+
+        ray, weight = sensor.sample_ray_differential(
+            time=time,
+            sample1=wavelength_sample,
+            sample2=pos_adjusted,
+            sample3=aperture_sample
+        )
+
+        reparam_det = 1.0
+
+        if reparam is not None:
+            if rfilter.is_box_filter():
+                raise Exception(
+                    "ADIntegrator detected the potential for image-space "
+                    "motion due to differentiable shape or camera pose "
+                    "parameters. This is, however, incompatible with the box "
+                    "reconstruction filter that is currently used. Please "
+                    "specify a a smooth reconstruction filter in your scene "
+                    "description (e.g. 'gaussian', which is actually the "
+                    "default)")
+
+            # This is less serious, so let's just warn once
+            if not film.sample_border() and self.sample_border_warning:
+                self.sample_border_warning = True
+
+                mi.Log(mi.LogLevel.Warn,
+                    "ADIntegrator detected the potential for image-space "
+                    "motion due to differentiable shape or camera pose "
+                    "parameters. To correctly account for shapes entering "
+                    "or leaving the viewport, it is recommended that you set "
+                    "the film's 'sample_border' parameter to True.")
+
+            with dr.resume_grad():
+                # Reparameterize the camera ray
+                reparam_d, reparam_det = reparam(ray=ray, depth=mi.UInt32(0))
+
+                # Create a fake interaction along the sampled ray and use it to the
+                # position with derivative tracking
+                it = dr.zero(mi.Interaction3f)
+                it.p = ray.o + reparam_d
+                ds, _ = sensor.sample_direction(it, aperture_sample)
+
+                # Return a reparameterized image position
+                pos_f = ds.uv + film.crop_offset()
+
+        return ray, weight, pos_f, reparam_det
+
+    def prepare(self,
+                sensor: mi.Sensor,
+                seed: int = 0,
+                spp: int = 0,
+                aovs: list = []):
+        """
+        Given a sensor and a desired number of samples per pixel, this function
+        computes the necessary number of Monte Carlo samples and then suitably
+        seeds the sampler underlying the sensor.
+
+        Returns the created sampler and the final number of samples per pixel
+        (which may differ from the requested amount depending on the type of
+        ``Sampler`` being used)
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor to render the scene from a different viewpoint.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator during the primal rendering step. It is crucial that you
+            specify different seeds (e.g., an increasing sequence) if subsequent
+            calls should produce statistically independent images (e.g. to
+            de-correlate gradient-based optimization steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            primal rendering step. The value provided within the original scene
+            specification takes precedence if ``spp=0``.
+        """
+
+        film = sensor.film()
+        sampler = sensor.sampler().clone()
+
+        if spp != 0:
+            sampler.set_sample_count(spp)
+
+        spp = sampler.sample_count()
+        sampler.set_samples_per_wavefront(spp)
+
+        film_size = film.crop_size()
+
+        if film.sample_border():
+            film_size += 2 * film.rfilter().border_size()
+
+        wavefront_size = dr.hprod(film_size) * spp
+
+        is_llvm = dr.is_llvm_array_v(mi.Float)
+        wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
+
+        if wavefront_size >  wavefront_size_limit:
+            raise Exception(
+                "Tried to perform a %s-based rendering with a total sample "
+                "count of %u, which exceeds 2^%u = %u (the upper limit "
+                "for this backend). Please use fewer samples per pixel or "
+                "render using multiple passes." %
+                ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
+                 dr.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
+
+        sampler.seed(seed, wavefront_size)
+        film.prepare(aovs)
+
+        return sampler, spp
+
+    def sample(self,
+               mode: dr.ADMode,
+               scene: mi.Scene,
+               sampler: mi.Sampler,
+               ray: mi.Ray3f,
+               depth: mi.UInt32,
+               δL: Optional[mi.Spectrum],
+               state_in: Any,
+               reparam: Optional[
+                   Callable[[mi.Ray3f, mi.Bool],
+                            Tuple[mi.Ray3f, mi.Float]]],
+               active: mi.Bool) -> Tuple[mi.Spectrum,
+                                         mi.Bool, Any]:
+        """
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``ADIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``reparam`` (see above):
+            If provided, this callable takes a ray and a mask of active SIMD
+            lanes and returns a reparameterized ray and Jacobian determinant.
+            The implementation of the ``sample`` function should then use it to
+            correctly account for visibility-induced discontinuities during
+            differentiation.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``state_out`` (``Any``):
+            When invoked in primal mode, this return argument provides an
+            unspecified state vector that is a required input of both
+            forward/backward differential phases.
+        """
+
+        raise Exception('ADIntegrator does not provide the sample() method. '
+                        'It should be implemented by subclasses that '
+                        'specialize the abstract ADIntegrator interface.')
+
+class RBIntegrator(ADIntegrator):
+
+    def render_forward(self: mi.SamplingIntegrator,
+                       scene: mi.Scene,
+                       params: Any,
+                       sensor: Union[int, mi.Sensor] = 0,
+                       seed: int = 0,
+                       spp: int = 0) -> mi.TensorXf:
         """
         Evaluates the forward-mode derivative of the rendering step.
 
@@ -432,6 +876,10 @@ class ADIntegrator(mi.SamplingIntegrator):
                 dr.enable_grad(L)
 
                 # Accumulate into the image block
+                # After reparamtrizing the camera ray, we need to evaluate
+                #   Σ (fi Li det)
+                #  ---------------
+                #   Σ (fi det)
                 block.put(
                     pos=pos,
                     wavelengths=ray.wavelengths,
@@ -483,286 +931,6 @@ class ADIntegrator(mi.SamplingIntegrator):
 
             # Run kernel representing side effects of the above
             dr.eval()
-
-    def sample_rays(
-        self,
-        scene: mi.Scene,
-        sensor: mi.Sensor,
-        sampler: mi.Sampler,
-        reparam: Callable[[mi.Ray3f, mi.Bool],
-                          Tuple[mi.Ray3f, mi.Float]] = None
-    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
-        """
-        Sample a 2D grid of primary rays for a given sensor
-
-        Returns a tuple containing
-
-        - the set of sampled rays
-        - a ray weight (usually 1 if the sensor's response function is sampled
-          perfectly)
-        - the continuous 2D image-space positions associated with each ray
-
-        When a reparameterization function is provided via the 'reparam'
-        argument, it will be applied to the returned image-space position (i.e.
-        the sample positions will be moving). The other two return values
-        remain detached.
-        """
-
-        film = sensor.film()
-        film_size = film.crop_size()
-        rfilter = film.rfilter()
-        border_size = rfilter.border_size()
-
-        if film.sample_border():
-            film_size += 2 * border_size
-
-        spp = sampler.sample_count()
-
-        # Compute discrete sample position
-        idx = dr.arange(mi.UInt32, dr.hprod(film_size) * spp)
-
-        # Try to avoid a division by an unknown constant if we can help it
-        log_spp = dr.log2i(spp)
-        if 1 << log_spp == spp:
-            idx >>= dr.opaque(mi.UInt32, log_spp)
-        else:
-            idx //= dr.opaque(mi.UInt32, spp)
-
-        # Compute the position on the image plane
-        pos = mi.Vector2u()
-        pos.y = idx // film_size[0]
-        pos.x = dr.fnmadd(film_size[0], pos.y, idx)
-
-        if film.sample_border():
-            pos -= border_size
-
-        pos += film.crop_offset()
-
-        # Cast to floating point and add random offset
-        pos_f = mi.Vector2f(pos) + sampler.next_2d()
-
-        # Re-scale the position to [0, 1]^2
-        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
-        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
-        pos_adjusted = dr.fmadd(pos_f, scale, offset)
-
-        aperture_sample = mi.Vector2f(0.0)
-        if sensor.needs_aperture_sample():
-            aperture_sample = sampler.next_2d()
-
-        time = sensor.shutter_open()
-        if sensor.shutter_open_time() > 0:
-            time += sampler.next_1d() * sensor.shutter_open_time()
-
-        wavelength_sample = 0
-        if mi.is_spectral:
-            wavelength_sample = sampler.next_1d()
-
-        ray, weight = sensor.sample_ray_differential(
-            time=time,
-            sample1=wavelength_sample,
-            sample2=pos_adjusted,
-            sample3=aperture_sample
-        )
-
-        reparam_det = 1.0
-
-        if reparam is not None:
-            if rfilter.is_box_filter():
-                raise Exception(
-                    "ADIntegrator detected the potential for image-space "
-                    "motion due to differentiable shape or camera pose "
-                    "parameters. This is, however, incompatible with the box "
-                    "reconstruction filter that is currently used. Please "
-                    "specify a a smooth reconstruction filter in your scene "
-                    "description (e.g. 'gaussian', which is actually the "
-                    "default)")
-
-            # This is less serious, so let's just warn once
-            if not film.sample_border() and self.sample_border_warning:
-                self.sample_border_warning = True
-
-                mi.Log(mi.LogLevel.Warn,
-                    "ADIntegrator detected the potential for image-space "
-                    "motion due to differentiable shape or camera pose "
-                    "parameters. To correctly account for shapes entering "
-                    "or leaving the viewport, it is recommended that you set "
-                    "the film's 'sample_border' parameter to True.")
-
-            with dr.resume_grad():
-                # Reparameterize the camera ray
-                reparam_d, reparam_det = reparam(ray=ray, depth=mi.UInt32(0))
-
-                # Create a fake interaction along the sampled ray and use it to the
-                # position with derivative tracking
-                it = dr.zero(mi.Interaction3f)
-                it.p = ray.o + reparam_d
-                ds, _ = sensor.sample_direction(it, aperture_sample)
-
-                # Return a reparameterized image position
-                pos_f = ds.uv + film.crop_offset()
-
-        return ray, weight, pos_f, reparam_det
-
-    def prepare(self,
-                sensor: mi.Sensor,
-                seed: int = 0,
-                spp: int = 0,
-                aovs: list = []):
-        """
-        Given a sensor and a desired number of samples per pixel, this function
-        computes the necessary number of Monte Carlo samples and then suitably
-        seeds the sampler underlying the sensor.
-
-        Returns the created sampler and the final number of samples per pixel
-        (which may differ from the requested amount depending on the type of
-        ``Sampler`` being used)
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor to render the scene from a different viewpoint.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator during the primal rendering step. It is crucial that you
-            specify different seeds (e.g., an increasing sequence) if subsequent
-            calls should produce statistically independent images (e.g. to
-            de-correlate gradient-based optimization steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            primal rendering step. The value provided within the original scene
-            specification takes precedence if ``spp=0``.
-        """
-
-        film = sensor.film()
-        sampler = sensor.sampler().clone()
-
-        if spp != 0:
-            sampler.set_sample_count(spp)
-
-        spp = sampler.sample_count()
-        sampler.set_samples_per_wavefront(spp)
-
-        film_size = film.crop_size()
-
-        if film.sample_border():
-            film_size += 2 * film.rfilter().border_size()
-
-        wavefront_size = dr.hprod(film_size) * spp
-
-        is_llvm = dr.is_llvm_array_v(mi.Float)
-        wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
-
-        if wavefront_size >  wavefront_size_limit:
-            raise Exception(
-                "Tried to perform a %s-based rendering with a total sample "
-                "count of %u, which exceeds 2^%u = %u (the upper limit "
-                "for this backend). Please use fewer samples per pixel or "
-                "render using multiple passes." %
-                ("LLVM JIT" if is_llvm else "OptiX", wavefront_size,
-                 dr.log2i(wavefront_size_limit) + 1, wavefront_size_limit))
-
-        sampler.seed(seed, wavefront_size)
-        film.prepare(aovs)
-
-        return sampler, spp
-
-    def sample(self,
-               mode: dr.ADMode,
-               scene: mi.Scene,
-               sampler: mi.Sampler,
-               ray: mi.Ray3f,
-               depth: mi.UInt32,
-               δL: Optional[mi.Spectrum],
-               state_in: Any,
-               reparam: Optional[
-                   Callable[[mi.Ray3f, mi.Bool],
-                            Tuple[mi.Ray3f, mi.Float]]],
-               active: mi.Bool) -> Tuple[mi.Spectrum,
-                                         mi.Bool, Any]:
-        """
-        This function does the main work of differentiable rendering and
-        remains unimplemented here. It is provided by subclasses of the
-        ``ADIntegrator`` interface.
-
-        In those concrete implementations, the function performs a Monte Carlo
-        random walk, implementing a number of different behaviors depending on
-        the ``mode`` argument. For example in primal mode (``mode ==
-        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
-        and estimates the radiance incident along ``ray``.
-
-        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
-        derivative of the incident radiance for a set of scene parameters being
-        differentiated. (This requires that these parameters are attached to
-        the AD graph and have gradients specified via ``dr.set_grad()``)
-
-        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
-        radiance ``δL`` and accumulates it into differentiable scene parameters.
-
-        You are normally *not* expected to directly call this function. Instead,
-        use ``mi.render()`` , which performs various necessary
-        setup steps to correctly use the functionality provided here.
-
-        The parameters of this function are as follows:
-
-        Parameter ``mode`` (``drjit.ADMode``)
-            Specifies whether the rendering algorithm should run in primal or
-            forward/backward derivative propagation mode
-
-        Parameter ``scene`` (``mi.Scene``):
-            Reference to the scene being rendered in a differentiable manner.
-
-        Parameter ``sampler`` (``mi.Sampler``):
-            A pre-seeded sample generator
-
-        Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
-            for forward/backward differentiable rendering phases that need to
-            obtain an incident radiance estimate. In this case, they may
-            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
-            depth.
-
-        Parameter ``δL`` (``mi.Spectrum``):
-            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
-            the ``δL`` parameter should specify the adjoint radiance associated
-            with each ray. Otherwise, it must be set to ``None``.
-
-        Parameter ``state_in`` (``Any``):
-            The primal phase of ``sample()`` returns a state vector as part of
-            its return value. The forward/backward differential phases expect
-            that this state vector is provided to them via this argument. When
-            invoked in primal mode, it should be set to ``None``.
-
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
-
-        Parameter ``active`` (``mi.Bool``):
-            This mask array can optionally be used to indicate that some of
-            the rays are disabled.
-
-        The function returns a tuple ``(spec, valid, state_out)`` where
-
-        Output ``spec`` (``mi.Spectrum``):
-            Specifies the estimated radiance and differential radiance in
-            primal and forward mode, respectively.
-
-        Output ``valid`` (``mi.Bool``):
-            Indicates whether the rays intersected a surface, which can be used
-            to compute an alpha channel.
-
-        Output ``state_out`` (``Any``):
-            When invoked in primal mode, this return argument provides an
-            unspecified state vector that is a required input of both
-            forward/backward differential phases.
-        """
-
-        raise Exception('ADIntegrator does not provide the sample() method. '
-                        'It should be implemented by subclasses that '
-                        'specialize the abstract ADIntegrator interface.')
 
 # ---------------------------------------------------------------------------
 # Default implementation of Integrator.render_forward/backward
@@ -1125,7 +1293,7 @@ class _ReparamWrapper:
         # information (vertex positions, etc.)
         if isinstance(params, mi.SceneParameters):
             params = params.copy()
-            params.keep_shape()
+            # params.keep_shape() ## DO NOT COMMIT THIS 
 
         # Create a uniform random number generator that won't show any
         # correlation with the main sampler. PCG32Sampler.seed() uses
