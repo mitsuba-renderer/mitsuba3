@@ -118,14 +118,14 @@ class MitsubaVariantModule(types.ModuleType):
                         if k not in result:
                             result[k] = v
 
-            # Search python modules as well
-            try:
-                py_m = _import(f'mitsuba.python{sub_suffix}')
-                for k, v in getattr(py_m, '__dict__').items():
-                    if not k.startswith('_') and k not in result:
-                        result[k] = v
-            except Exception:
-                pass
+                # Search python modules as well
+                try:
+                    py_m = _import(f'mitsuba.python{sub_suffix}')
+                    for k, v in getattr(py_m, '__dict__').items():
+                        if not k.startswith('_') and k not in result:
+                            result[k] = v
+                except Exception:
+                    pass
 
             return result
 
@@ -169,6 +169,10 @@ class MitsubaModule(types.ModuleType):
         self.__file__ = __file__
         self._submodule = submodule
 
+        global _tls
+        _tls.cache = {}
+        _tls.variant = None
+
     def __getattribute__(self, key):
         global _tls
 
@@ -195,7 +199,7 @@ class MitsubaModule(types.ModuleType):
         if key in MI_VARIANTS:
             return sys.modules[f'mitsuba.{key}']
 
-        if not hasattr(_tls, 'variant'):
+        if not hasattr(_tls, 'variant') or _tls.variant is None:
             # The variant wasn't set explicitly, we first check if a default
             # variant is set in the config.py file.
             from .config import MI_DEFAULT_VARIANT
@@ -235,6 +239,7 @@ class MitsubaModule(types.ModuleType):
 
     def variant(self) -> str:
         'Return currently enabled variant'
+        global _tls
         return getattr(_tls, 'variant', None)
 
     def variants(self) -> typing.List[str]:
@@ -260,6 +265,7 @@ class MitsubaModule(types.ModuleType):
                                 args if len(args) > 1 else args[0],
                                 ", ".join(self.variants())))
 
+        global _tls
         if getattr(_tls, 'variant', None) == value:
             return
 
@@ -274,27 +280,43 @@ class MitsubaModule(types.ModuleType):
                 _import('mitsuba.ad.integrators')
             del sys
 
+# Check whether we are reloading the mitsuba module
+reload = f'mitsuba.{submodules[0]}' in sys.modules
+
 # Register the variant modules
 from .config import MI_VARIANTS
 for variant in MI_VARIANTS:
     name = f'mitsuba.{variant}'
-    module = MitsubaVariantModule(name, variant)
-    sys.modules[name] = module
+    if reload:
+        sys.modules[name].__init__(name, variant)
+    else:
+        module = MitsubaVariantModule(name, variant)
+        sys.modules[name] = module
 
 # Register variant submodules
 for variant in MI_VARIANTS:
     for submodule in submodules:
         name = f'mitsuba.{variant}.{submodule}'
-        module = MitsubaVariantModule(name, variant, submodule)
-        sys.modules[name] = module
+        if reload:
+            sys.modules[name].__init__(name, variant, submodule)
+        else:
+            module = MitsubaVariantModule(name, variant, submodule)
+            sys.modules[name] = module
 
 # Register the virtual mitsuba module and submodules. This will overwrite the
 # real mitsuba module in order to redirect future imports.
-sys.modules['mitsuba'] = MitsubaModule('mitsuba')
+if reload:
+    sys.modules['mitsuba'].__init__('mitsuba')
+else:
+    sys.modules['mitsuba'] = MitsubaModule('mitsuba')
+
 for submodule in submodules:
     name = f'mitsuba.{submodule}'
-    module = MitsubaModule(name, submodule)
-    sys.modules[name] = module
+    if reload:
+        sys.modules[name].__init__(name, submodule)
+    else:
+        module = MitsubaModule(name, submodule)
+        sys.modules[name] = module
 
 
 # Cleanup

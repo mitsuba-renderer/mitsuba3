@@ -13,18 +13,19 @@ do_reload = 'common' in globals()
 if do_reload:
     importlib.reload(globals()['common'])
 
-for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
-    if not os.path.isfile(f) or f.endswith('__init__.py'):
-        continue
+if not mitsuba.variant().startswith('scalar'):
+    for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
+        if not os.path.isfile(f) or f.endswith('__init__.py'):
+            continue
 
-    if f.endswith('prbvolpath.py'):
-        continue
+        if f.endswith('prbvolpath.py'):
+            continue
 
-    name = os.path.basename(f)[:-3]
-    if do_reload and not name == 'common':
-        importlib.reload(globals()[name])
-    else:
-        importlib.import_module('mitsuba.ad.integrators.' + name)
+        name = os.path.basename(f)[:-3]
+        if do_reload and not name == 'common':
+            importlib.reload(globals()[name])
+        else:
+            importlib.import_module('mitsuba.ad.integrators.' + name)
 
 from .common import render
 
