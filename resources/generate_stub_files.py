@@ -70,22 +70,56 @@ def process_type_hint(s):
 def process_properties(name, p, indent=0):
     indent = ' ' * indent
 
-    if p is None or p.__doc__ is None:
-        return
+    if not p is None:
+        w(f'{indent}{name} = ...')
+        if not p.__doc__ is None:
+            doc = p.__doc__.splitlines()
+            if len(doc) == 1:
+                w(f'{indent}\"{doc[0]}\"')
+            elif len(doc) > 1:
+                w(f'{indent}\"\"\"')
+                for l in doc:
+                    w(f'{indent}{l}')
+                w(f'{indent}\"\"\"')
 
-    w(f'{indent}{name} = ...')
-    doc = p.__doc__.splitlines()
-    if len(doc) == 1:
-        w(f'{indent}\"{doc[0]}\"')
-    elif len(doc) > 1:
-        w(f'{indent}\"\"\"')
-        for l in doc:
-            w(f'{indent}{l}')
-        w(f'{indent}\"\"\"')
+# ------------------------------------------------------------------------------
+
+def process_enums(name, e, indent=0):
+    indent = ' ' * indent
+
+    if not e is None:
+        w(f'{indent}{name} = {int(e)}')
+
+        if not e.__doc__ is None:
+            doc = e.__doc__.splitlines()
+            w(f'{indent}\"\"\"')
+            for l in doc:
+                if l.startswith(f'  {name}'):
+                    w(f'{indent}{l}')
+            w(f'{indent}\"\"\"')
 
 # ------------------------------------------------------------------------------
 
 def process_class(obj):
+    methods = []
+    properties = []
+    enums = []
+    for k in dir(obj):
+        # Skip private attributes
+        if k.startswith('_'):
+            continue
+
+        if k.endswith('_'):
+            continue
+
+        v = getattr(obj, k)
+        if type(v).__name__ == 'instancemethod':
+            methods.append((k, v))
+        elif type(v).__name__ == 'property':
+            properties.append((k, v))
+        elif str(v).endswith(k):
+            enums.append((k, v))
+
     w(f'class {obj.__name__}:')
     if obj.__doc__ is not None:
         doc = obj.__doc__.splitlines()
@@ -102,26 +136,14 @@ def process_class(obj):
     process_function('__init__', obj.__init__, indent=4)
     process_function('__call__', obj.__call__, indent=4)
 
-    methods = []
-    properties = []
-    for k in dir(obj):
-        # Skip private attributes
-        if k.startswith('_'):
-            continue
-
-        if k.endswith('_'):
-            continue
-
-        v = getattr(obj, k)
-        if type(v).__name__ == 'instancemethod':
-            methods.append((k, v))
-
-        if type(v).__name__ == 'property':
-            properties.append((k, v))
-
     if len(properties) > 0:
         for k, v in properties:
             process_properties(k, v, indent=4)
+        w(f'')
+
+    if len(enums) > 0:
+        for k, v in enums:
+            process_enums(k, v, indent=4)
         w(f'')
 
     for k, v in methods:
