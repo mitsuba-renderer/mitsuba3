@@ -201,7 +201,7 @@ class MitsubaModule(types.ModuleType):
         if key in MI_VARIANTS:
             return sys.modules[f'mitsuba.{key}']
 
-        if not hasattr(_tls, 'variant') or _tls.variant is None:
+        if not key == '__dict__' and variant is None:
             # The variant wasn't set explicitly, we first check if a default
             # variant is set in the config.py file.
             from .config import MI_DEFAULT_VARIANT
@@ -214,17 +214,20 @@ class MitsubaModule(types.ModuleType):
                                   'following variants are available: %s.' % (
                                   ", ".join(self.variants())))
 
-        # Check whether we are importing a known submodule
-        if submodule is None and key in submodules:
-            return sys.modules[f'mitsuba.{variant}.{key}']
+        if not variant is None:
+            # Check whether we are importing a known submodule
+            if submodule is None and key in submodules:
+                return sys.modules[f'mitsuba.{variant}.{key}']
 
-        # Redirect all other imports to the currently enabled variant module.
-        sub_suffix = '' if submodule is None else f'.{submodule}'
-        module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
-        result = module.__getattribute__(key)
+            # Redirect all other imports to the currently enabled variant module.
+            sub_suffix = '' if submodule is None else f'.{submodule}'
+            module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
+            result = module.__getattribute__(key)
 
         # Add set_variant(), variant() and variant modules to the __dict__
         if submodule is None and key == '__dict__':
+            if variant is None:
+                result = super().__getattribute__(key)
             result['set_variant'] = super().__getattribute__('set_variant')
             result['variant']  = super().__getattribute__('variant')
             result['variants'] = super().__getattribute__('variants')
