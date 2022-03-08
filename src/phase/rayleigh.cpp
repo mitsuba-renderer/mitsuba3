@@ -21,7 +21,6 @@ This model has no parameters.
 
 .. tabs::
     .. code-tab:: xml
-        :name: phase-rayleigh
 
         <phase type="rayleigh" />
 

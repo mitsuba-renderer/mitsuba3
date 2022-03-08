@@ -46,7 +46,6 @@ integrator:
 
 .. tabs::
     .. code-tab::  xml
-        :name: path-integrator
 
         <integrator type="stokes">
             <integrator type="path">

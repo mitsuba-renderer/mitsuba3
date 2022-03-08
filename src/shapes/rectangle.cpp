@@ -54,7 +54,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
 
 .. tabs::
     .. code-tab:: xml
-        :name: obj
+        :name: rectangle
 
         <shape type="rectangle">
             <bsdf type="diffuse">

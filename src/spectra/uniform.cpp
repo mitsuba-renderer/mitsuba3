@@ -30,7 +30,7 @@ This spectrum returns a constant reflectance or emission value between 360 and 8
 
 .. tabs::
     .. code-tab:: xml
-        :name: srgb
+        :name: uniform
 
         <spectrum type="uniform">
             <float name="value" value="0.1"/>

@@ -1,4 +1,4 @@
-Mitsuba 2: A Retargetable Forward and Inverse Renderer
+Mitsuba 3: A Retargetable Forward and Inverse Renderer
 ======================================================
 
 .. only:: not latex
@@ -13,13 +13,13 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: Overview
 
     src/getting_started/intro
-    src/getting_started/cloning
-    src/getting_started/variants
-    src/getting_started/compiling
-    src/getting_started/file_format
-    src/getting_started/differences
-    src/getting_started/faq
-    release_notes.rst
+    .. src/getting_started/cloning
+    .. src/getting_started/variants
+    .. src/getting_started/compiling
+    .. src/getting_started/file_format
+    .. src/getting_started/differences
+    .. src/getting_started/faq
+    .. release_notes.rst
 
 .. toctree::
     :maxdepth: 1
@@ -28,65 +28,65 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     tutorials/basics/index
     tutorials/inverse_rendering/index
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Python interface
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Python interface
 
-    src/python_interface/intro
-    src/python_interface/parsing_xml
-    src/python_interface/rendering_scene
-    src/python_interface/bsdf_eval
-
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Inverse rendering
-
-    src/inverse_rendering/intro
-    src/inverse_rendering/diff_render
-    src/inverse_rendering/advanced
-    src/inverse_rendering/pytorch
+..     src/python_interface/intro
+..     src/python_interface/parsing_xml
+..     src/python_interface/rendering_scene
+..     src/python_interface/bsdf_eval
 
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Developer guide
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Inverse rendering
 
-    src/developer_guide/intro
-    src/developer_guide/variants_cpp
-    src/developer_guide/writing_plugin
-    src/developer_guide/testing
-    src/developer_guide/debugging
-    src/developer_guide/building_documentation
-    src/developer_guide/polarization
+..     src/inverse_rendering/intro
+..     src/inverse_rendering/diff_render
+..     src/inverse_rendering/advanced
+..     src/inverse_rendering/pytorch
 
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Advanced topics
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Developer guide
 
-    src/advanced_topics/custom_plugins
+..     src/developer_guide/intro
+..     src/developer_guide/variants_cpp
+..     src/developer_guide/writing_plugin
+..     src/developer_guide/testing
+..     src/developer_guide/debugging
+..     src/developer_guide/building_documentation
+..     src/developer_guide/polarization
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Plugin reference
-    :titlesonly:
-    :glob:
 
-    src/plugin_reference/intro
-    generated/plugins_*
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Advanced topics
 
-.. toctree::
-    :maxdepth: 1
-    :caption: API reference
+..     src/advanced_topics/custom_plugins
 
-    src/api_reference/intro
-    generated/core_api
-    generated/render_api
-    generated/python_api
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Plugin reference
+..     :titlesonly:
+..     :glob:
 
-.. toctree::
-    :maxdepth: 1
-    :caption: Miscellaneous
+..     src/plugin_reference/intro
+..     generated/plugins_*
 
-    zz_bibliography
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: API reference
+
+..     src/api_reference/intro
+..     generated/core_api
+..     generated/render_api
+..     generated/python_api
+
+.. .. toctree::
+..     :maxdepth: 1
+..     :caption: Miscellaneous
+
+..     zz_bibliography

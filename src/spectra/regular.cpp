@@ -39,7 +39,7 @@ placed samples.
 
 .. tabs::
     .. code-tab:: xml
-        :name: irregular
+        :name: regular
 
         <spectrum type="regular">
             <string name="range" value="400, 700">
