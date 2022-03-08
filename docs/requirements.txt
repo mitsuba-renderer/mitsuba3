@@ -4,3 +4,8 @@ pygments-mathematica
 sphinxcontrib-bibtex<2.0.0
 pybtex
 nbsphinx
+
+sphinx.ext.mathjax
+sphinx_tabs.tabs
+hoverxref.extension
+sphinx.ext.todo

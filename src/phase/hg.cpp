@@ -30,7 +30,6 @@ isotropic- (g=0) to forward (g>0) scattering.
 
 .. tabs::
     .. code-tab:: xml
-        :name: phase-hg
 
         <phase type="hg">
             <float name="g" value="0.1"/>

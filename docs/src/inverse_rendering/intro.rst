@@ -29,7 +29,7 @@ currently not supported for performance reasons, but we have some ideas on
 making this faster and plan to incorporate them in the future.
 
 Differentiable calculations using Dr.Jit
----------------------------------------
+----------------------------------------
 
 Mitsuba's ability to automatically differentiate entire rendering algorithms
 builds on differentiable CUDA array types provided by the Dr.Jit library. Both

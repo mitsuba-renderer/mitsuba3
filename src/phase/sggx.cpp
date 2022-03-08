@@ -37,7 +37,6 @@ It is the responsiblity of the user to ensure that these parameters describe a v
 
 .. tabs::
     .. code-tab:: xml
-        :name: phase-sggx
 
         <phase type='sggx'>
             <volume type="gridvolume" name="S">

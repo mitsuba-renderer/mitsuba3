@@ -36,7 +36,6 @@ atmosphere).
 
 .. tabs::
     .. code-tab:: xml
-        :name: phase-blendphase
 
         <phase type="blendphase">
             <float name="weight" value="0.5"/>

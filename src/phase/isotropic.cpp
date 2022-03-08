@@ -17,7 +17,6 @@ interaction. It does not have any parameters.
 
 .. tabs::
     .. code-tab:: xml
-        :name: phase-isotropic
 
         <phase type="isotropic" />
 
