@@ -7,7 +7,7 @@ BSDFs
         :width: 100%
         :align: center
 
-    Schematic overview of the most important surface scattering models in Mitsuba 2.
+    Schematic overview of the most important surface scattering models in Mitsuba 3.
     The arrows indicate possible outcomes of an interaction with a surface that has
     the respective model applied to it.
 
@@ -15,14 +15,14 @@ Surface scattering models describe the manner in which light interacts
 with surfaces in the scene. They conveniently summarize the mesoscopic
 scattering processes that take place within the material and
 cause it to look the way it does.
-This represents one central component of the material system in Mitsuba 2---another
+This represents one central component of the material system in Mitsuba 3---another
 part of the renderer concerns itself with what happens
 *in between* surface interactions. For more information on this aspect,
 please refer to the sections regarding participating media.
 This section presents an overview of all surface scattering models that are
 supported, along with their parameters.
 
-To achieve realistic results, Mitsuba 2 comes with a library of general-purpose
+To achieve realistic results, Mitsuba 3 comes with a library of general-purpose
 surface scattering models such as glass, metal, or plastic.
 Some model plugins can also act as modifiers that are applied on top of one or
 more scattering models.
@@ -33,7 +33,7 @@ scattering model*. This is an abbreviation for *Bidirectional
 Scattering Distribution Function*, a more precise technical
 term.
 
-In Mitsuba 2, BSDFs are assigned to *shapes*, which describe the visible surfaces in
+In Mitsuba 3, BSDFs are assigned to *shapes*, which describe the visible surfaces in
 the scene. In the scene description language, this assignment can
 either be performed by nesting BSDFs within shapes, or they can
 be named and then later referenced by their name.

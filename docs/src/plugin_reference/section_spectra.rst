@@ -4,7 +4,7 @@ Spectra
 =======
 
 This section describes the plugins behind spectral reflectance or emission used
-in Mitsuba 2. On an implementation level, these behave very similarly to the
+in 3. On an implementation level, these behave very similarly to the
 :ref:`texture plugins <sec-textures>` described earlier (but lacking their
 spatially varying property) and can thus be used similarly as either BSDF or
 emitter parameters:

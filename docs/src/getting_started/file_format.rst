@@ -289,7 +289,7 @@ It is available the function :py:meth:`mitsuba.spectrum_to_file` that generates,
 given the wavelengths and its values, the text file corresponding to the previously
 explained format.
 
-For more details regarding spectral information in Mitsuba 2, please have a look
+For more details regarding spectral information in Mitsuba 3, please have a look
 at the :ref:`corresponding section <sec-spectra>` in the plugin documentation.
 
 Transformations
@@ -387,7 +387,7 @@ parent object.
     Note that while this feature is meant to efficiently handle materials,
     textures, and particiapating media that are referenced from multiple
     places, it cannot be used to instantiate geometry. (the `instance` plugin
-    should be used for that purpose. This is not yet part of Mitsuba 2
+    should be used for that purpose. This is not yet part of Mitsuba 3
     but will be added at a later point.)
 
 .. _sec-scene-file-format-params:
@@ -455,7 +455,7 @@ External resource folders
 
 Using the ``path`` tag, it is possible to add a path to the list of search paths. This can
 be useful for instance when some meshes and textures are stored in a different directory, (e.g. when
-shared with other scenes). If the path is a relative path, Mitsuba 2 will first try to interpret it
+shared with other scenes). If the path is a relative path, Mitsuba 3 will first try to interpret it
 relative to the scene directory, then to other paths that are already on the search path (e.g. added
 using the ``-a <path1>;<path2>;..`` command line argument).
 

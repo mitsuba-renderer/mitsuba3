@@ -10,9 +10,9 @@ Polarization
 Introduction
 ------------
 
-The retargetable design of the Mitsuba 2 rendering system can be leveraged to optionally keep track of the full polarization state of light, meaning that it simulates the oscillations of the light's electromagnetic wave perpendicular to its direction of travel.
+The retargetable design of the Mitsuba 3 rendering system can be leveraged to optionally keep track of the full polarization state of light, meaning that it simulates the oscillations of the light's electromagnetic wave perpendicular to its direction of travel.
 
-Because humans do not perceive this directly, accounting for it is usually not necessary when rendering images that are intended to look realistic. However, polarization is easily observed using a variety of measurement devices and cameras and it tends to provide a wealth of information about the material and shape of visible objects. For this reason, polarization is a powerful tool for solving inverse problems, and this is one of the reasons why we chose to support it in Mitsuba 2.
+Because humans do not perceive this directly, accounting for it is usually not necessary when rendering images that are intended to look realistic. However, polarization is easily observed using a variety of measurement devices and cameras and it tends to provide a wealth of information about the material and shape of visible objects. For this reason, polarization is a powerful tool for solving inverse problems, and this is one of the reasons why we chose to support it in Mitsuba 3.
 
 Polarized rendering has been studied extensively before. A first (unidirectional) algorithm was proposed by Wilkie and Weidlich
 :cite:`WilkieWeidlich2012` before it was extended to bidirectional techniques in two later works :cite:`Mojzik2016BidirectionalPol`, :cite:`Jarabo2018BidirectionalPol` by leveraging the general path space formulation :cite:`Veach1998`.
@@ -22,7 +22,7 @@ Polarized rendering is also implemented by the `Advanced Rendering Toolkit (ART)
 ------------
 
 The first two sections of this document cover the mathematical framework behind polarization that is relevant for rendering (Section `Mathematics of polarized light`_) as well as an in-depth description of the *Fresnel equations* that are important components of many reflectance models (Section `Fresnel equations`_).
-Finally, Section `Implementation`_ serves as a *developer guide* and explains how polarization is implemented in Mitsuba 2.
+Finally, Section `Implementation`_ serves as a *developer guide* and explains how polarization is implemented in Mitsuba 3.
 
 Mathematics of polarized light
 ------------------------------
@@ -544,7 +544,7 @@ In :ref:`Figure 7 <electric_magnetic_fields_verdet_first>` (**b**), we decided t
 Equations
 """""""""
 
-Based on the chosen convention above, we now summarize the Fresnel equations as implemented in Mitsuba 2. For the purpose of this document we omit their actual derivations and instead refer interested readers to *Optics* by E. Hecht :cite:`Hecht1998`.
+Based on the chosen convention above, we now summarize the Fresnel equations as implemented in Mitsuba 3. For the purpose of this document we omit their actual derivations and instead refer interested readers to *Optics* by E. Hecht :cite:`Hecht1998`.
 
 The *reflection amplitude coefficients* for the ":math:`\bot`" and ":math:`\parallel`" components relate the incident and reflected electric fields via
 
@@ -943,7 +943,7 @@ As mentioned at the beginning of Section `Theory`_, all equations also generaliz
 
     **Figure 14**: Reflectance and phase shifts for varying incident angles of a specular reflection on a conductor with complex IOR of :math:`\eta = 0.183 - 3.43i`. Compare also with Fig. B in :cite:`Muller1969`.
 
-Plugging in complex IORs with the wrong sign convention into the equations here will result in a sign flip between the two :math:`\sin(...)` expressions in the matrix below. To avoid any issues in our implementation, Mitsuba 2 will automatically flip the sign appropriately so both conventions of input parameters can be used.
+Plugging in complex IORs with the wrong sign convention into the equations here will result in a sign flip between the two :math:`\sin(...)` expressions in the matrix below. To avoid any issues in our implementation, Mitsuba 3 will automatically flip the sign appropriately so both conventions of input parameters can be used.
 
 Compared to the dielectric cases earlier, every incident angle results in some phase shift now, and thus the Mueller matrix is a combination of a polarizer and retarder:
 
@@ -1038,7 +1038,7 @@ The phase shifts  :math:`\delta_\parallel` and :math:`\delta_\bot` are sometimes
 Validation against measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Due to the many possible sources of subtle errors and sign flips in the implementation of the Fresnel equation we also validated the output of Mitsuba 2 against real world measurements from
+Due to the many possible sources of subtle errors and sign flips in the implementation of the Fresnel equation we also validated the output of Mitsuba 3 against real world measurements from
 
 1. An accurate in-plane acquisition system built in our lab.
 2. The image-based pBRDF measurements by Baek et al. :cite:`Baek2020Image`.
@@ -1160,7 +1160,7 @@ We measured two representative materials (conductor and dielectric) that can be 
 
 2. An absorptive `neutral density filter (NG1), made from Schott glass <https://www.thorlabs.com/NewGroupPage9_PF.cfm?Guide=10&Category_ID=220&ObjectGroup_ID=5011>`_. This filter absorbs most of the refracted light and thus is very similar to observing only the reflection component of the Fresnel equations on dielectrics.
 
-In the following we show the DRR signal (densely measured over all :math:`\theta_i = -\theta_o` configurations of perfect specular reflection) and the reconstructed Mueller matrix entries compared to the analytical version from Mitsuba 2 (plotted over all :math:`\theta_i` angles). Note that some areas (highlighted in gray) cannot be measured due to the sensor or sample holder blocking the light beam.
+In the following we show the DRR signal (densely measured over all :math:`\theta_i = -\theta_o` configurations of perfect specular reflection) and the reconstructed Mueller matrix entries compared to the analytical version from Mitsuba 3 (plotted over all :math:`\theta_i` angles). Note that some areas (highlighted in gray) cannot be measured due to the sensor or sample holder blocking the light beam.
 
 For readability, we only show the relevant Mueller matrix entries that are expected to be non-zero for the Fresnel equations:
 
@@ -1227,7 +1227,7 @@ Validation against ART
 Comparison
 """"""""""
 
-During development of Mitsuba 2 we also compared its polarized output against the existing implementation in the `Advanced Rendering Toolkit (ART) research rendering system <https://cgg.mff.cuni.cz/ART/>`_.
+During development of Mitsuba 3 we also compared its polarized output against the existing implementation in the `Advanced Rendering Toolkit (ART) research rendering system <https://cgg.mff.cuni.cz/ART/>`_.
 
 We used a few simple test scenes that we were able to reproduce in both systems that involve specular reflections and refractions. In each case, we directly compare the Stokes vector output (see also Section `Stokes vector output`_) of the two systems. For ART, this information is normalized (s.t. :math:`\mathbf{s}_0 = 1`) so we apply this consistently also to our results.
 
@@ -1359,7 +1359,7 @@ After communication with the authors of ART, this issue will be addressed in the
 Implementation
 --------------
 
-We now turn to the actual implementation of polarized rendering im Mitsuba 2. Due to its :ref:`retargetable architecture <sec-variants>`, the whole system is already built on top of a templated ``Spectrum`` type and in principle it is very easy to use this mechanism to introduce the required Mueller/Stokes representations but some manual extra effort needs to be made to carefully place the correct Stokes coordinate system rotations.
+We now turn to the actual implementation of polarized rendering im Mitsuba 3. Due to its :ref:`retargetable architecture <sec-variants>`, the whole system is already built on top of a templated ``Spectrum`` type and in principle it is very easy to use this mechanism to introduce the required Mueller/Stokes representations but some manual extra effort needs to be made to carefully place the correct Stokes coordinate system rotations.
 Implementing various forms of Mueller matrices (linear polarizers, retarders, Fresnel equations, ...) covered in Section `Mathematics of polarized light`_ and Section `Fresnel equations`_ are also more or less straightforward and they can be found in the corresponding source file ``include/mitsuba/render/mueller.h``.
 
 As often is the case however, the devil lies in the details and throughout the developement we ran into various issues related to coordinate systems and sign flips. In hindsight, these can all be attributed to mixing conventions from different sources :cite:`Muller1969` or misconceptions about what they mean.
@@ -1374,9 +1374,9 @@ We briefly list these here for reference and to help people avoid these issues i
 
 4. One of the biggest confusions we faced is related to the Fresnel equations themselves (Section `Different conventions in the literature`_ and Section `Different conventions in the context of Mueller matrices`_). For instance, the *Fresnel* or *Verdet conventions* of defining the underlying electric fields cause subtle sign flips in some of the equations. You can also define phase shifts (e.g. on total internal reflection) as either phase *retardations* or *advances*. Again, this only flips a few signs but together this gives a few different combinations of signs in the resulting Mueller matrices (e.g. Eq. :eq:`eq_mm_general_reflection`) --- and you can find all of them in various sources. All of them are correct (in their respective conventions) but this situation makes it very hard to work with multiple references simultaneously.
 
-We originally used *Stellar polarimetry* :cite:`Clarke2009` as our main sources so our implementation was consistent from the beginning. However the formulation there uses the Fresnel convention and phase delays and we did not initially understand why most other sources we looked had things written down differently. (And we always came back to this question whenever some other part of the implementation was not behaving as expected.) Towards the end of development (when we had consistency with the measurements) and after a thorough literature review we decided to switch Mitsuba 2 to the much more common Verdet convention and phase advances.
+We originally used *Stellar polarimetry* :cite:`Clarke2009` as our main sources so our implementation was consistent from the beginning. However the formulation there uses the Fresnel convention and phase delays and we did not initially understand why most other sources we looked had things written down differently. (And we always came back to this question whenever some other part of the implementation was not behaving as expected.) Towards the end of development (when we had consistency with the measurements) and after a thorough literature review we decided to switch Mitsuba 3 to the much more common Verdet convention and phase advances.
 
-The remainder of this document serves as an overview of all relevant parts of the code base and it will hopefully be useful for both understanding and extending the polarization specific aspects of Mitsuba 2.
+The remainder of this document serves as an overview of all relevant parts of the code base and it will hopefully be useful for both understanding and extending the polarization specific aspects of Mitsuba 3.
 
 Representation
 ^^^^^^^^^^^^^^
@@ -1392,11 +1392,11 @@ We avoid this asymmetry we made the decision to only use Mueller matrices where 
     :width: 33%
     :align: center
 
-This leads to some unnecessary arithmetic but simplifies the API which is especially useful when implementing bidirectional techniques. In particular, Mitsuba 2 has a single API (``include/mitsuba/render/endpoint.h``) that is shared by both emitters and sensors.
+This leads to some unnecessary arithmetic but simplifies the API which is especially useful when implementing bidirectional techniques. In particular, Mitsuba 3 has a single API (``include/mitsuba/render/endpoint.h``) that is shared by both emitters and sensors.
 
 ------------
 
-When also considering the different :ref:`color representations in Mitsuba 2 <sec-variants-colors>` there are three possible Mueller matrix types:
+When also considering the different :ref:`color representations in Mitsuba 3 <sec-variants-colors>` there are three possible Mueller matrix types:
 
 .. image:: ../../../resources/data/docs/images/polarization/color_modes.svg
     :width: 90%
@@ -1404,7 +1404,7 @@ When also considering the different :ref:`color representations in Mitsuba 2 <se
 
 | 1. **Monochrome mode**: :math:`4 \times 4 \times 1` matrices.
 |
-|   This mode completely disables all concept of color in Mitsuba 2, and instead, only the intensity / luminance of light is simulated.
+|   This mode completely disables all concept of color in Mitsuba 3, and instead, only the intensity / luminance of light is simulated.
 |
 |   Example: ``scalar_mono_polarized``.
 
@@ -1416,7 +1416,7 @@ When also considering the different :ref:`color representations in Mitsuba 2 <se
 
 | 3. **Spectral mode**: :math:`4 \times 4 \times 4` matrices
 |
-|   A full spectral color representation is the recommended approach to use for polarized rendering. The last dimension is :math:`4` because Mitsuba 2 by default traces four randomly sampled wavelengths at once.
+|   A full spectral color representation is the recommended approach to use for polarized rendering. The last dimension is :math:`4` because Mitsuba 3 by default traces four randomly sampled wavelengths at once.
 |
 |   Example: ``scalar_spectral_polarized``.
 
@@ -1468,7 +1468,7 @@ The remainder of this section covers a few more implementation details / helpful
     }
 
 | 4. Another helper function returns a depolarizing Mueller matrix (with only its :math:`(1, 1)` entry used) where the input is usually an ``UnpolarizedSpectrum`` value.
-| This is obviously used in places where we want materials to act as depolarizers, e.g. in the case of a Lambertian diffuse material. However, there are also many BSDFs where it is currently not clear how they should interact with polarized light, or the functionality is not yet implemented. For now, these all act as depolarizers. Lastly, this is also used for light sources, as they currently all emit completely unpolarized light in Mitsuba 2.
+| This is obviously used in places where we want materials to act as depolarizers, e.g. in the case of a Lambertian diffuse material. However, there are also many BSDFs where it is currently not clear how they should interact with polarized light, or the functionality is not yet implemented. For now, these all act as depolarizers. Lastly, this is also used for light sources, as they currently all emit completely unpolarized light in Mitsuba 3.
 
 .. code-block:: cpp
     :linenos:
@@ -1495,7 +1495,7 @@ Coordinate frames
 
 A second complication of the Mueller-Stokes calculus is the need to keep track of reference frames throughout the rendering process. One choice (e.g. used by the `ART rendering system <https://cgg.mff.cuni.cz/ART/>`_) would be to store incident and outgoing frames with each Mueller matrix type directly (where one of the two is redundant in case the matrix encodes a Stokes vector).
 
-To better leverage the retargetable design of Mitsuba 2 where the ``Spectrum`` template type is substituted for arrays of varying dimensions we chose to instead represent these coordinate systems implicitly. For each unit vector, we can construct its orthogonal Stokes basis vector:
+To better leverage the retargetable design of Mitsuba 3 where the ``Spectrum`` template type is substituted for arrays of varying dimensions we chose to instead represent these coordinate systems implicitly. For each unit vector, we can construct its orthogonal Stokes basis vector:
 
 .. code-block:: cpp
     :linenos:
@@ -1509,7 +1509,7 @@ To better leverage the retargetable design of Mitsuba 2 where the ``Spectrum`` t
 
 Here, the ``coordinate_system`` function constructs two orthogonal vectors to ``omega`` in a deterministic way :cite:`Duff2017`. The resulting Stokes basis vector is therefore always unique for a given direction.
 
-Recall from Section `Mueller matrices`_ that whenever two Mueller matrices (or a Mueller matrix and a Stokes vector) are multiplied with each other, their respective outgoing and incident reference frames need to be aligned with each other. This is usually achieved by some combination of rotator matrices (Eq. :eq:`eq_rotator_matrix`) that transform the Stokes frames (Section `Rotation of Stokes vector frames`_). Mitsuba 2 implements two versions where the rotation angle :math:`\theta` is either directly known, or inferred from a provided set of basis vectors before and after the desired rotation:
+Recall from Section `Mueller matrices`_ that whenever two Mueller matrices (or a Mueller matrix and a Stokes vector) are multiplied with each other, their respective outgoing and incident reference frames need to be aligned with each other. This is usually achieved by some combination of rotator matrices (Eq. :eq:`eq_rotator_matrix`) that transform the Stokes frames (Section `Rotation of Stokes vector frames`_). Mitsuba 3 implements two versions where the rotation angle :math:`\theta` is either directly known, or inferred from a provided set of basis vectors before and after the desired rotation:
 
 .. code-block:: cpp
     :linenos:
@@ -1623,7 +1623,7 @@ With the discussion about representation of light via Stokes vectors and scatter
 Handling of light paths
 """""""""""""""""""""""
 
-In principle, not much changes when adding polarization to a rendering algorithm and the retargetable type system of Mitsuba 2 will do a lot of the heavy lifting. In particular, emitters will return emission in form of Stokes vectors (or rather Mueller matrices with three zero valued columns.) and *polarized bidirectional scattering distribution functions (pBSDFs)* will return Mueller matrices that are multiplied with the emission:
+In principle, not much changes when adding polarization to a rendering algorithm and the retargetable type system of Mitsuba 3 will do a lot of the heavy lifting. In particular, emitters will return emission in form of Stokes vectors (or rather Mueller matrices with three zero valued columns.) and *polarized bidirectional scattering distribution functions (pBSDFs)* will return Mueller matrices that are multiplied with the emission:
 
 .. image:: ../../../resources/data/docs/images/polarization/light_path_ordering.svg
     :width: 80%
@@ -1658,20 +1658,20 @@ Polarized rendering algorithms compute Stokes vectors as output where either onl
 pBSDF evaluation and sampling
 """""""""""""""""""""""""""""
 
-During Section `Handling of light paths`_ we glossed over the tricky question of coordinate system rotations and silently assumed that all Mueller matrix multiplications are taking place in their valid reference frames. Mitsuba 2 deals with this issue in a consistent way that is tightly coupled to how BSDF evaluations and sampling take place.
+During Section `Handling of light paths`_ we glossed over the tricky question of coordinate system rotations and silently assumed that all Mueller matrix multiplications are taking place in their valid reference frames. Mitsuba 3 deals with this issue in a consistent way that is tightly coupled to how BSDF evaluations and sampling take place.
 
 **Default case without polarization**
 
 For completeness, we will first briefly discuss the usual convention **without polarization** specific changes. Also see ``include/mitsuba/render/bsdf.h`` for details about the BSDF API.
 
-Mitsuba 2 (like most modern rendering systems) uses BSDF implementations that are completely decoupled from the actual rendering algorithms in order to be as extensible as possible. To facilitate this, their sampling and evaluation is taking place in some canonical *local* coordinate system that is always aligned with the shading normal :math:`\mathbf{n}` pointing *up* (towards :math:`+\mathbf{z}`):
+Mitsuba 3 (like most modern rendering systems) uses BSDF implementations that are completely decoupled from the actual rendering algorithms in order to be as extensible as possible. To facilitate this, their sampling and evaluation is taking place in some canonical *local* coordinate system that is always aligned with the shading normal :math:`\mathbf{n}` pointing *up* (towards :math:`+\mathbf{z}`):
 
 .. image:: ../../../resources/data/docs/images/polarization/world_local_unpol.svg
     :width: 90%
     :align: center
 
 Note also how both incident and outgoing directions :math:`\boldsymbol{\omega}_i, \boldsymbol{\omega}_o` point "away" from the center and that, due to reciprocity of BSDFs, they are completely interchangeable
-Care only needs to be taken when sampling the BSDFs, i.e. when only one direction is given initially, and a new one should be generated. In this scenario, Mitsuba 2 (arbitrarily) has the convention that :math:`\boldsymbol{\omega}_i` is given, and :math:`\boldsymbol{\omega}_o` is newly sampled.
+Care only needs to be taken when sampling the BSDFs, i.e. when only one direction is given initially, and a new one should be generated. In this scenario, Mitsuba 3 (arbitrarily) has the convention that :math:`\boldsymbol{\omega}_i` is given, and :math:`\boldsymbol{\omega}_o` is newly sampled.
 
 As rendering algorithms take place in *world space* however, some transformations between the two spaces are necessary:
 
@@ -1701,7 +1701,7 @@ In a setting **with polarization** this aspect becomes more involved as there ar
     :width: 90%
     :align: center
 
-Mitsuba 2 makes heavy use of its *implicit* Stokes coordinate frames (Section `Coordinate frames`_) here. Mueller matrices returned from pBSDF evaluation or sampling are always assumed to be valid for the implicit bases of the local unit vectors (:math:`-\boldsymbol{\omega}_o^{\text{local}}` and :math:`\boldsymbol{\omega}_i^{\text{local}}` in the Figure above). Or outlined more clearly in code:
+Mitsuba 3 makes heavy use of its *implicit* Stokes coordinate frames (Section `Coordinate frames`_) here. Mueller matrices returned from pBSDF evaluation or sampling are always assumed to be valid for the implicit bases of the local unit vectors (:math:`-\boldsymbol{\omega}_o^{\text{local}}` and :math:`\boldsymbol{\omega}_i^{\text{local}}` in the Figure above). Or outlined more clearly in code:
 
 .. code-block:: cpp
     :linenos:
@@ -1771,7 +1771,7 @@ At this point we have all the information to transform the Mueller matrix such t
 
 The complementary ``to_local_mueller`` function is also implemented but is usually not needed apart from debugging purposes.
 
-Finally, the following two code snippets show heavily commented pBSDF evaluation and sampling steps that include all of the considerations above. This is comparable to what is done e.g. in the current path tracer implementation of Mitsuba 2 (``src/integrators/path.cpp``). Note that only the lines involving ``to_world_mueller`` had to be added compared to a standard unpolarized path tracer.
+Finally, the following two code snippets show heavily commented pBSDF evaluation and sampling steps that include all of the considerations above. This is comparable to what is done e.g. in the current path tracer implementation of Mitsuba 3 (``src/integrators/path.cpp``). Note that only the lines involving ``to_world_mueller`` had to be added compared to a standard unpolarized path tracer.
 
 .. code-block:: cpp
     :linenos:
@@ -1852,7 +1852,7 @@ In terms of code, they are computed as
     Vector3f bo_local = stokes_basis(-wo_local);
     Vector3f bi_local = stokes_basis(wi_local);
 
-When pBSDFs construct Mueller matrices, these are usually based on some very specific Stokes basis convention, e.g. described in textbooks. For instance, the current pBSDFs found in Mitsuba 2 are mostly built from Mueller matrices based on the Fresnel equations. This means, they are constructed based on the perpendicular (":math:`\bot`") and parallel (":math:`\parallel`") vectors relative to the plane of reflection. Please refer back to Section `Fresnel equations`_ for details. In particular, the main "horizontal" or :math:`\mathbf{b}_{i/o}` vector is the ":math:`\bot`" component that can be constructed as follows for incident and outgoing directions:
+When pBSDFs construct Mueller matrices, these are usually based on some very specific Stokes basis convention, e.g. described in textbooks. For instance, the current pBSDFs found in Mitsuba 3 are mostly built from Mueller matrices based on the Fresnel equations. This means, they are constructed based on the perpendicular (":math:`\bot`") and parallel (":math:`\parallel`") vectors relative to the plane of reflection. Please refer back to Section `Fresnel equations`_ for details. In particular, the main "horizontal" or :math:`\mathbf{b}_{i/o}` vector is the ":math:`\bot`" component that can be constructed as follows for incident and outgoing directions:
 
 .. code-block:: cpp
     :linenos:
@@ -1863,7 +1863,7 @@ When pBSDFs construct Mueller matrices, these are usually based on some very spe
 
 As illustrated in the Figure above, a (final) coordinate rotation needs to take place to convert the Mueller matrix to the right bases before it can be returned from the pBSDF.
 
-For this rotation, we need to know along what direction the light is traveling so we need to correctly distinguish between :math:`\boldsymbol{\omega}_i` and :math:`\boldsymbol{\omega}_o`. During path tracing (or any algorithm that traces from the sensor side), Mitsuba 2 uses BSDFs with the convention that light arrives from :math:`-\boldsymbol{\omega}_o` and leaves along :math:`\boldsymbol{\omega}_i` (because :math:`\boldsymbol{\omega}_o` is sampled based on :math:`\boldsymbol{\omega}_i` that points towards the sensor side). During light tracing from emitters, the roles are reversed however: light arrives from :math:`-\boldsymbol{\omega}_i` and leaves along :math:`\boldsymbol{\omega}_o`. Mitsuba 2 has a special BSDF flag (``TransportMode``) that carries the relevant information to resolve this confusion and is used for similar "non-reciprocal" situations in bi-directional techniques :cite:`Veach1998`.
+For this rotation, we need to know along what direction the light is traveling so we need to correctly distinguish between :math:`\boldsymbol{\omega}_i` and :math:`\boldsymbol{\omega}_o`. During path tracing (or any algorithm that traces from the sensor side), Mitsuba 3 uses BSDFs with the convention that light arrives from :math:`-\boldsymbol{\omega}_o` and leaves along :math:`\boldsymbol{\omega}_i` (because :math:`\boldsymbol{\omega}_o` is sampled based on :math:`\boldsymbol{\omega}_i` that points towards the sensor side). During light tracing from emitters, the roles are reversed however: light arrives from :math:`-\boldsymbol{\omega}_i` and leaves along :math:`\boldsymbol{\omega}_o`. Mitsuba 3 has a special BSDF flag (``TransportMode``) that carries the relevant information to resolve this confusion and is used for similar "non-reciprocal" situations in bi-directional techniques :cite:`Veach1998`.
 
 Putting everything together, here is a short snippet as example of how the a pBSDF evaluation based on the Fresnel equations can be implemented. This is very close to what is done for instance in ``src/bsdfs/conductor.cpp``.
 
@@ -1925,7 +1925,7 @@ In this section we will briefly discuss the output side of the rendering system 
 Intensity output
 """"""""""""""""
 
-In most natural scenes, polarization effects are very subtle and hardly visible to the eye. Enabling polarized rendering modes in Mitsuba 2 therefore also usually does not produce vastly different outputs compared to an unpolarized mode. However, in particular cases such as specular interreflections or as soon as polarizing optical elements (such as linear polarizers) are introduced to the scene differences can be noticed.
+In most natural scenes, polarization effects are very subtle and hardly visible to the eye. Enabling polarized rendering modes in Mitsuba 3 therefore also usually does not produce vastly different outputs compared to an unpolarized mode. However, in particular cases such as specular interreflections or as soon as polarizing optical elements (such as linear polarizers) are introduced to the scene differences can be noticed.
 
 Here we compare unpolarized (**left**) vs polarized (**right**) renderings of a simple Cornell box scene with both dielectric and conductor materials and a microfacet based rough conductor pattern on the otherwise diffuse walls. Because differences are still subtle in this case, we also show a visualization of the pixel-wise absolute error.
 
@@ -1953,7 +1953,7 @@ Another simple but effective way to make the effects visible is to place a (rota
 Stokes vector output
 """"""""""""""""""""
 
-Mitsuba 2 can optionally also output the complete Stokes vector output at the end of the simulation by writing a multichannel EXR image. This is accomplished by switching to a special :ref:`Stokes integrator plugin <integrator-stokes>` when setting up the scene description ``.xml`` file:
+Mitsuba 3 can optionally also output the complete Stokes vector output at the end of the simulation by writing a multichannel EXR image. This is accomplished by switching to a special :ref:`Stokes integrator plugin <integrator-stokes>` when setting up the scene description ``.xml`` file:
 
 .. code-block:: xml
     :linenos:
@@ -2011,7 +2011,7 @@ Or in source code:
 Polarization visualizations
 """""""""""""""""""""""""""
 
-Mitsuba 2 also includes a separate command line tool to create commonly used visualizations from the EXR images with Stokes vector information, which can be run via Python, e.g.:
+Mitsuba 3 also includes a separate command line tool to create commonly used visualizations from the EXR images with Stokes vector information, which can be run via Python, e.g.:
 
 .. code-block::
 
@@ -2048,7 +2048,7 @@ Alternatives that are more intuitive, originally proposed by Wilkie and Weidlich
 Choosing an integrator
 """"""""""""""""""""""
 
-Like for regular rendering, the normal :ref:`path tracer <integrator-path>` is a great default choice for polarized rendering. But it does have one notable limitation that tends to come up in polarized scenes, especially ones that use optical elements (e.g. polarizers, retarders) for instance when using Mitsuba 2 to build a virtual version of optical experiments.
+Like for regular rendering, the normal :ref:`path tracer <integrator-path>` is a great default choice for polarized rendering. But it does have one notable limitation that tends to come up in polarized scenes, especially ones that use optical elements (e.g. polarizers, retarders) for instance when using Mitsuba 3 to build a virtual version of optical experiments.
 
 Consider the following (seemingly) simple Cornell box scene, where a relatively small light source is behind a linear polarizer:
 
@@ -2056,7 +2056,7 @@ Consider the following (seemingly) simple Cornell box scene, where a relatively 
     :width: 50%
     :align: center
 
-In such scenes, a path tracer will normally rely heavily on the ability to connect *shadow rays* directly to the light source to account for the incoming illumination at a shading point. Unfortunately, the path tracer implemented in Mitsuba 2 is not able to do so through the linear polarizer and as a consequence, it has to rely on hitting the light source purely by chance after diffuse scattering on one of the walls. Depending on the size of the light source, this can be a source of very high variance that will take a long time to converge, see the image below (**left**).
+In such scenes, a path tracer will normally rely heavily on the ability to connect *shadow rays* directly to the light source to account for the incoming illumination at a shading point. Unfortunately, the path tracer implemented in Mitsuba 3 is not able to do so through the linear polarizer and as a consequence, it has to rely on hitting the light source purely by chance after diffuse scattering on one of the walls. Depending on the size of the light source, this can be a source of very high variance that will take a long time to converge, see the image below (**left**).
 
 Because light travels through the polarizer in a straight line (unlike for instance when rendering caustics through some glass objects), these *shadow rays* can in principle be traced through the filter. In such scenarios, it is recommended to switch to the :ref:`volumetric path tracer <integrator-volpath>` that does have support for this (see image below, **right**) even if the scene does not actually contain any volumes.
 
@@ -2073,7 +2073,7 @@ Both of these images were rendered in roughly equal time at the same number of s
 Feature list
 ^^^^^^^^^^^^
 
-The following plugins in Mitsuba 2 currently work/interact with polarization:
+The following plugins in Mitsuba 3 currently work/interact with polarization:
 
 **Integrators**
 
@@ -2106,15 +2106,15 @@ All remaining BSDFs currently act as depolarizers.
 
 ------------
 
-At this point, the polarization support in Mitsuba 2 has two main functionalities that are missing: polarized emission and volumetric scattering.
+At this point, the polarization support in Mitsuba 3 has two main functionalities that are missing: polarized emission and volumetric scattering.
 
 **Polarized emission**
 
-All emitters in Mitsuba 2 currently emit completely unpolarized light. This can be partially sidestepped for now by placing filters (e.g. linear polarizer) into the scene. A more complete solution would require careful Stokes reference basis conversions between emitter coordinate systems and world space, similarly as for the BSDF case (Section `pBSDF evaluation and sampling`_).
+All emitters in Mitsuba 3 currently emit completely unpolarized light. This can be partially sidestepped for now by placing filters (e.g. linear polarizer) into the scene. A more complete solution would require careful Stokes reference basis conversions between emitter coordinate systems and world space, similarly as for the BSDF case (Section `pBSDF evaluation and sampling`_).
 
 **Polarized volumetric scattering**
 
-While the volumetric path tracer (``volpath``) does support polarization when restricted to the surface case, it does not support polarized volumes. In particular, all phase functions in Mitsuba 2 act as depolarizers currently. Support for this would likely require small adjustments to the integrator (for tracking coordinate systems) and implementing some polarized phase function. A lot of the coordinate conversions from the BSDF case could probably be omitted as phase functions do not have a concept of *local space* and always operate in *world space* (Section `pBSDF evaluation and sampling`_).
+While the volumetric path tracer (``volpath``) does support polarization when restricted to the surface case, it does not support polarized volumes. In particular, all phase functions in Mitsuba 3 act as depolarizers currently. Support for this would likely require small adjustments to the integrator (for tracking coordinate systems) and implementing some polarized phase function. A lot of the coordinate conversions from the BSDF case could probably be omitted as phase functions do not have a concept of *local space* and always operate in *world space* (Section `pBSDF evaluation and sampling`_).
 
 
 .. |br| raw:: html

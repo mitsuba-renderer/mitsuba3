@@ -99,7 +99,7 @@ In *polarized* rendering modes, the material automatically switches to a polariz
 implementation of the underlying Fresnel equations.
 
 To facilitate the tedious task of specifying spectrally-varying index of
-refraction information, Mitsuba 2 ships with a set of measured data for several
+refraction information, Mitsuba 3 ships with a set of measured data for several
 materials, where visible-spectrum information was publicly
 available:
 

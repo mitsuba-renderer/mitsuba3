@@ -1,7 +1,7 @@
 Differences to Mitsuba 0.6
 ==========================
 
-Mitsuba 2 strives to retain scene compatibility with its predecessor `Mitsuba
+Mitsuba 3 strives to retain scene compatibility with its predecessor `Mitsuba
 0.6 <https://github.com/mitsuba-renderer/mitsuba>`_. However, in most other
 respects, it is a completely new system following a different set of goals. The
 previous section on :ref:`variants <sec-variants>` provided an initial overview of a
@@ -12,7 +12,7 @@ changes.
 Missing features
 ----------------
 
-A number of Mitsuba 0.6 features are missing in Mitsuba 2. We plan to port some
+A number of Mitsuba 0.6 features are missing in Mitsuba 3. We plan to port some
 of these features in the future and discard others. The following list provides
 an overview:
 
@@ -48,11 +48,11 @@ In the following, we list the main missing features:
 Scene format
 ------------
 
-Mitsuba 2's XML scene format is almost identical to that of Mitsuba 0.6.
+Mitsuba 3's XML scene format is almost identical to that of Mitsuba 0.6.
 Most plugins have the same name and same parameters, and we made sure that
 parameters behave in the same way as in Mitsuba 0.6.
 
-One significant change is that Mitsuba 2 uses "``underscore_case``"-style
+One significant change is that Mitsuba 3 uses "``underscore_case``"-style
 instead of "``camelCase``"-style capitalization. This is part of a concerted
 change to the entire renderer that also touches all C++ and Python interfaces
 (see the developer guide for reasons behind this).

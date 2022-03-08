@@ -41,4 +41,4 @@ Afterwards, simply write
 
     git pullall
 
-to fetch the latest version of Mitsuba 2.
+to fetch the latest version of Mitsuba 3.

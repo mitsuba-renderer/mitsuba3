@@ -24,7 +24,7 @@ MI_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
 }
 
 MI_VARIANT bool ReconstructionFilter<Float, Spectrum>::is_box_filter() const {
-    // The box filter is the only filter in Mitsuba 2 with 1/2px radius
+    // The box filter is the only filter in Mitsuba 3 with 1/2px radius
     return m_radius == .5f;
 }
 

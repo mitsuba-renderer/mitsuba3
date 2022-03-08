@@ -3,7 +3,7 @@
 Introduction
 ==============
 
-Mitsuba 2 provides extremely fine-grained Python bindings to essentially every
+Mitsuba 3 provides extremely fine-grained Python bindings to essentially every
 function in the system. This makes it possible to import the renderer into a
 Jupyter notebook and develop new algorithms interactively while visualizing
 their behavior using plots.
@@ -30,7 +30,7 @@ of tutorials describes applications to differentiable and inverse rendering.
 Importing the renderer
 ----------------------
 
-Mitsuba 2 ships with many different system variants, each of which provides its
+Mitsuba 3 ships with many different system variants, each of which provides its
 own set of Python bindings that are necessarily different from others due to
 the replacement of types in function signatures.
 

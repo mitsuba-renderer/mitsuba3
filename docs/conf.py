@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mitsuba 2 documentation build configuration file
+# Mitsuba 3 documentation build configuration file
 #
 # The documentation can be built by invoking "make mkdoc"
 # from the build directory
@@ -219,7 +219,7 @@ Path('zz_bibliography.rst').touch()
 
 # Guzzle theme options (see theme.conf for more information)
 html_theme_options = {
-    "project_nav_name": "Mitsuba 2"
+    "project_nav_name": "Mitsuba 3"
 }
 
 # Custom sidebar templates, maps document names to template names.
@@ -314,7 +314,7 @@ html_show_sourcelink = False
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'mitsuba2_doc'
+htmlhelp_basename = 'mitsuba3_doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -336,7 +336,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mitsuba2.tex', 'Mitsuba 2 Documentation',
+    (master_doc, 'mitsuba2.tex', 'Mitsuba 3 Documentation',
      'Wenzel Jakob', 'manual'),
 ]
 
@@ -366,7 +366,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mitsuba2', 'Mitsuba 2 Documentation',
+    (master_doc, 'mitsuba2', 'Mitsuba 3 Documentation',
      [author], 1)
 ]
 
@@ -380,7 +380,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'mitsuba2', 'Mitsuba 2 Documentation',
+    (master_doc, 'mitsuba2', 'Mitsuba 3 Documentation',
      author, 'mitsuba2', 'One line description of project.',
      'Miscellaneous'),
 ]

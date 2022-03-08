@@ -21,4 +21,4 @@ Fixes # (issue)
 - [ ] I have made corresponding changes to the documentation
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I cleaned the commit history and removed any "Merge" commits
-- [ ] I give permission that the Mitsuba 2 project may redistribute my contributions under the terms of its [license](https://github.com/mitsuba-renderer/mitsuba2/blob/master/LICENSE)
+- [ ] I give permission that the Mitsuba 3 project may redistribute my contributions under the terms of its [license](https://github.com/mitsuba-renderer/mitsuba2/blob/master/LICENSE)

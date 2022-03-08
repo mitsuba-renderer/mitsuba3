@@ -3,7 +3,7 @@
 Samplers
 ========
 
-When rendering an image, Mitsuba 2 has to solve a high-dimensional integration problem that involves
+When rendering an image, Mitsuba 3 has to solve a high-dimensional integration problem that involves
 the geometry, materials, lights, and sensors that make up the scene. Because of the mathematical
 complexity of these integrals, it is generally impossible to solve them analytically — instead, they
 are solved numerically by evaluating the function to be integrated at a large number of different

@@ -70,7 +70,7 @@ or XYZ(A) tristimulus bitmap having a :monosp:`float16`,
 The default configuration is RGB with a :monosp:`float16` component format, which is appropriate for
 most purposes.
 
-For OpenEXR files, Mitsuba 2 also supports fully general multi-channel output; refer to
+For OpenEXR files, Mitsuba 3 also supports fully general multi-channel output; refer to
 the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>` plugins for
 details on how this works.
 
@@ -199,7 +199,7 @@ public:
             }
         }
 
-        props.mark_queried("banner"); // no banner in Mitsuba 2
+        props.mark_queried("banner"); // no banner in Mitsuba 3
     }
 
     size_t prepare(const std::vector<std::string> &aovs) override {

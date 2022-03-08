@@ -7,7 +7,7 @@ We briefly show how the example from the earlier section on
 :ref:`differentiable rendering <sec-differentiable-rendering>` can be made to
 work when combining differentiable rendering with an optimization expressed
 using PyTorch. The ability to combine these frameworks enables sandwiching
-Mitsuba 2 between neural layers and differentiating the combination end-to-end.
+Mitsuba 3 between neural layers and differentiating the combination end-to-end.
 
 Note that communication and synchronization between Dr.Jit and PyTorch along
 with the complexity of traversing two separate computation graph data

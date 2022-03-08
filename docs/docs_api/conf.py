@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mitsuba 2 documentation build configuration file
+# Mitsuba 3 documentation build configuration file
 #
 # The documentation can be built by invoking "make mkdoc"
 # from the build directory

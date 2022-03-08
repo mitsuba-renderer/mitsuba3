@@ -1,5 +1,5 @@
 # ----------------------------------------------------------
-# Top-level Mitsuba 2 CMake file, requires a recent version.
+# Top-level Mitsuba 3 CMake file, requires a recent version.
 # ----------------------------------------------------------
 cmake_minimum_required (VERSION 3.13...3.18)
 
@@ -14,13 +14,13 @@ project(mitsuba
 #  Optional features available to users
 # ----------------------------------------------------------
 
-# A number of Mitsuba 2 features (scripting, differentiable rendering, testing
+# A number of Mitsuba 3 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
 option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
 
-# Mitsuba 2 ships with its own ray tracing acceleration data structure. If
+# Mitsuba 3 ships with its own ray tracing acceleration data structure. If
 # desired, Embree (which tends to be quite a bit faster) can be used instead.
-# Embree lacks some features provided by Mitsuba 2, like support for double
+# Embree lacks some features provided by Mitsuba 3, like support for double
 # precision arithmetic.
 option(MI_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 
@@ -50,7 +50,7 @@ option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 # ----------------------------------------------------------
 
 if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults")
-  message(FATAL_ERROR "The Mitsuba 2 dependencies are missing! "
+  message(FATAL_ERROR "The Mitsuba 3 dependencies are missing! "
     "You probably did not clone the project with --recursive. It is possible to recover "
     "by invoking\n$ git submodule update --init --recursive")
 endif()

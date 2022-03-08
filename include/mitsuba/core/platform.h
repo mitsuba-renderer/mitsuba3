@@ -1,5 +1,5 @@
 /*
-    Mitsuba 2: A Retargetable Forward and Inverse Renderer
+    Mitsuba 3: A Retargetable Forward and Inverse Renderer
     Copyright 2021, Realistic Graphics Lab, EPFL.
 
     All rights reserved. Use of this source code is governed by a

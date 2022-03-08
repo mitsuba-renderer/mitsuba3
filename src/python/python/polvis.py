@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
     parser = MyParser(description=
         'This program creates visualizations for the polarization specific information from '
-        'EXR images rendered with the `stokes` integrator in Mitsuba 2. '
+        'EXR images rendered with the `stokes` integrator in Mitsuba 3. '
         'The various false-color images are described in the paper "A Standardised '
         'Polarisation Visualisation for Images" by Wilkie and Weidlich (SCCG 2010).')
 

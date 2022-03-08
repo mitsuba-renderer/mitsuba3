@@ -7,7 +7,7 @@ As described in the section on :ref:`choosing variants <sec-variants>`, Mitsuba
 2 code can be compiled into different variants, which are parameterized by
 their computational backend and representation of color. To enable such
 retargeting from a single implementation, the system relies on C++ templates
-and metaprogramming. Indeed, most C++ classes and functions in Mitsuba 2 are
+and metaprogramming. Indeed, most C++ classes and functions in Mitsuba 3 are
 templates with the following two type parameters:
 
 - ``Float`` and
@@ -158,7 +158,7 @@ gathers, scatters, etc.).  However, applying a *horizontal* operations (e.g.
 amount of parallelism.
 
 In many cases, horizontal mask-related operations can safely be skipped if this
-yields a performance benefit. For this reason, the Mitsuba 2 codebase makes
+yields a performance benefit. For this reason, the Mitsuba 3 codebase makes
 frequent use of alternative reduction operations (``any_or<>()``,
 ``all_or<>()``, ...) that skip evaluation on GPU targets.
 
