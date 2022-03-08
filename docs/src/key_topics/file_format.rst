@@ -14,7 +14,7 @@ might look something like this:
 
 .. code-block:: xml
 
-    <scene version="2.0.0">
+    <scene version="3.0.0">
         <shape type="obj">
             <string name="filename" value="dragon.obj"/>
         </shape>
@@ -41,7 +41,7 @@ Similarly, you could write
 
 .. code-block:: xml
 
-    <scene version="2.0.0">
+    <scene version="3.0.0">
         <shape type="sphere">
             <float name="radius" value="10"/>
         </shape>
@@ -58,7 +58,7 @@ more complex example:
 
 .. code-block:: xml
 
-    <scene version="2.0.0">
+    <scene version="3.0.0">
         <integrator type="path">
             <!-- Instantiate a path tracer with a max. path length of 8 -->
             <integer name="max_depth" value="8"/>
@@ -358,7 +358,7 @@ memory, you can make use of references. Here is an example of how this works:
 
 .. code-block:: xml
 
-    <scene version="2.0.0">
+    <scene version="3.0.0">
         <texture type="bitmap" id="my_image">
             <string name="filename" value="textures/my_image.jpg"/>
         </texture>

@@ -131,5 +131,3 @@ away from the glass.
         :alt: Glass interfaces explanation
         :width: 95%
         :align: center
-
-

@@ -9,3 +9,5 @@ sphinx.ext.mathjax
 sphinx_tabs.tabs
 hoverxref.extension
 sphinx.ext.todo
+
+sphinx-panels

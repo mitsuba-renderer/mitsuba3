@@ -89,7 +89,7 @@ rst_prolog = r"""
 master_doc = 'index'
 
 # General information about the project.
-project = 'mitsuba2'
+project = 'mitsuba3'
 copyright = '2021, Realistic Graphics Lab (RGL), EPFL'
 author = 'Realistic Graphics Lab, EPFL'
 
@@ -181,6 +181,8 @@ extensions.append('sphinx.ext.todo')
 todo_include_todos = True
 
 extensions.append('sphinxcontrib.bibtex')
+
+extensions.append('sphinx_panels')
 
 extensions.append('nbsphinx')
 nbsphinx_execute = 'never'
@@ -336,7 +338,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mitsuba2.tex', 'Mitsuba 3 Documentation',
+    (master_doc, 'mitsuba3.tex', 'Mitsuba 3 Documentation',
      'Wenzel Jakob', 'manual'),
 ]
 
@@ -366,7 +368,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mitsuba2', 'Mitsuba 3 Documentation',
+    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
      [author], 1)
 ]
 
@@ -380,8 +382,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'mitsuba2', 'Mitsuba 3 Documentation',
-     author, 'mitsuba2', 'One line description of project.',
+    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
+     author, 'mitsuba3', 'One line description of project.',
      'Miscellaneous'),
 ]
 
