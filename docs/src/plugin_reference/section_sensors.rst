@@ -3,7 +3,7 @@
 Sensors
 =======
 
-In Mitsuba 2, *sensors*, along with a *film*, are responsible for recording
+In Mitsuba 3, *sensors*, along with a *film*, are responsible for recording
 radiance measurements in some usable format.
 
 In the XML scene description language, a sensor declaration looks as follows:
@@ -51,7 +51,7 @@ In other words, the ``sensor`` declaration is a child element of the ``<scene>``
 the sensor declaration is a sampler instance (see :ref:`Samplers <sec-samplers>`)
 and a film instance (see :ref:`Films <sec-films>`).
 
-Sensors in Mitsuba 2 are *right-handed*. Any number of rotations and translations
+Sensors in Mitsuba 3 are *right-handed*. Any number of rotations and translations
 can be applied to them without changing this property. By default, they are located
 at the origin and oriented in such a way that in the rendered image, :math:`+X`
 points left, :math:`+Y` points upwards, and :math:`+Z` points along the viewing

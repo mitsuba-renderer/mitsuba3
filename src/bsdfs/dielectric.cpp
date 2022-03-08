@@ -134,7 +134,7 @@ transmission.
 
     Dispersion is currently unsupported but will be enabled in a future release.
 
-Instead of specifying numerical values for the indices of refraction, Mitsuba 2
+Instead of specifying numerical values for the indices of refraction, Mitsuba 3
 comes with a list of presets that can be specified with the :paramtype:`material`
 parameter:
 

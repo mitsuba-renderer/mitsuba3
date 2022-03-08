@@ -58,7 +58,7 @@ This spectrum type only makes sense for specifying emission and is unavailable
 in non-spectral rendering modes.
 
 Note that attaching a black body spectrum to the intensity property of a emitter introduces
-physical units into the rendering process of Mitsuba 2, which is ordinarily a unitless system.
+physical units into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
 Specifically, the black body spectrum has units of power (:math:`W`) per unit area (:math:`m^{-2}`)
 per steradian (:math:`sr^{-1}`) per unit wavelength (:math:`nm^{-1}`). As a consequence,
 your scene should be modeled in meters for this plugin to work properly.

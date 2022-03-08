@@ -4,10 +4,10 @@ Compiling the system
 ====================
 
 Before continuing, please make sure that you have read and followed the
-instructions on :ref:`cloning Mitsuba 2 and its dependencies <sec-cloning>` and
+instructions on :ref:`cloning Mitsuba 3 and its dependencies <sec-cloning>` and
 :ref:`choosing desired variants <sec-variants>`.
 
-Compiling Mitsuba 2 from scratch requires recent versions of CMake (at least
+Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
 **3.9.0**) and Python (at least **3.6**). Further platform-specific
 dependencies and compilation instructions are provided below for each operating
 system. Some additional steps are required for GPU-based backends that are
@@ -139,7 +139,7 @@ Additionally, running the Xcode command line tools once might be necessary:
 
     xcode-select --install
 
-Note that the default Python version installed with macOS is not compatible with Mitsuba 2, and a more recent version (at least 3.6) needs to be installed (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew <https://brew.sh/>`_).
+Note that the default Python version installed with macOS is not compatible with Mitsuba 3, and a more recent version (at least 3.6) needs to be installed (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew <https://brew.sh/>`_).
 
 Now, compilation should be as simple as running the following from inside the `mitsuba2` root directory:
 
@@ -236,7 +236,7 @@ Embree
 ------
 
 Mitsuba's ``scalar`` and ``packet`` backends can optionally use Intel's Embree
-library for ray tracing instead of the builtin kd-tree in Mitsuba 2. To do so,
+library for ray tracing instead of the builtin kd-tree in Mitsuba 3. To do so,
 invoke CMake with the ``-DMI_ENABLE_EMBREE=1`` parameter or use a visual CMake
 tool like ``cmake-gui`` or ``ccmake`` to flip the value of this parameter.
 Embree tends to be faster but lacks some features such as support for double

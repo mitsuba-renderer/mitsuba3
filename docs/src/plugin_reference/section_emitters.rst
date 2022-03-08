@@ -7,10 +7,10 @@ Emitters
         :width: 70%
         :align: center
 
-    Schematic overview of the emitters in Mitsuba 2. The arrows indicate
+    Schematic overview of the emitters in 3. The arrows indicate
     the directional distribution of light.
 
-Mitsuba 2 supports a number of different emitters/light sources, which can be
+Mitsuba 3 supports a number of different emitters/light sources, which can be
 classified into two main categories: emitters which are located somewhere within the scene, and emitters that surround the scene to simulate a distant environment.
 
 Generally, light sources are specified as children of the ``<scene>`` element; for instance,

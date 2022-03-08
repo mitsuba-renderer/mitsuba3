@@ -34,16 +34,16 @@ Frequently asked questions
     and / or resolution. If high sample count renders are necessary, it is possible to split computation
     in several low sample count passes and average together the gradients.
 
-- Citing Mitsuba 2 in scientific literature.
+- Citing Mitsuba 3 in scientific literature.
 
-  Please use the following BibTeX entry to cite Mitsuba 2 in research articles,
+  Please use the following BibTeX entry to cite Mitsuba 3 in research articles,
   books, etc.
 
   .. code-block:: bibtex
 
       @article{NimierDavidVicini2019Mitsuba2,
           author = {Merlin Nimier-David and Delio Vicini and Tizian Zeltner and Wenzel Jakob},
-          title = {Mitsuba 2: A Retargetable Forward and Inverse Renderer},
+          title = {Mitsuba 3: A Retargetable Forward and Inverse Renderer},
           journal = {Transactions on Graphics (Proceedings of SIGGRAPH Asia)},
           volume = {38},
           number = {6},
@@ -55,7 +55,7 @@ Frequently asked questions
   Here is a plain-text version of the above:
 
       Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob.
-      2019. Mitsuba 2: A Retargetable Forward and Inverse Renderer. In
+      2019. Mitsuba 3: A Retargetable Forward and Inverse Renderer. In
       Transactions on Graphics (Proceedings of SIGGRAPH Asia)
       38(6).
 

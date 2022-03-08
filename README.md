@@ -24,31 +24,31 @@
 
 ## Introduction
 
-Mitsuba 2 is a research-oriented rendering system written in portable C++17. It
+Mitsuba 3 is a research-oriented rendering system written in portable C++17. It
 consists of a small set of core libraries and a wide variety of plugins that
 implement functionality ranging from materials and light sources to complete
-rendering algorithms. Mitsuba 2 strives to retain scene compatibility with its
+rendering algorithms. Mitsuba 3 strives to retain scene compatibility with its
 predecessor [Mitsuba 0.6](https://github.com/mitsuba-renderer/mitsuba).
 However, in most other respects, it is a completely new system following a
 different set of goals.
 
-The most significant change of Mitsuba 2 is that it is a *retargetable*
+The most significant change of Mitsuba 3 is that it is a *retargetable*
 renderer: this means that the underlying implementations and data structures
 are specified in a generic fashion that can be transformed to accomplish a
 number of different tasks. For example:
 
-1. In the simplest case, Mitsuba 2 is an ordinary CPU-based RGB renderer that
+1. In the simplest case, Mitsuba 3 is an ordinary CPU-based RGB renderer that
    processes one ray at a time similar to its predecessor [Mitsuba
    0.6](https://github.com/mitsuba-renderer/mitsuba).
 
-2. Alternatively, Mitsuba 2 can be transformed into a differentiable renderer
+2. Alternatively, Mitsuba 3 can be transformed into a differentiable renderer
    that runs on NVIDIA RTX GPUs. A differentiable rendering algorithm is able
    to compute derivatives of the entire simulation with respect to input
    parameters such as camera pose, geometry, BSDFs, textures, and volumes. In
    conjunction with gradient-based optimization, this opens door to challenging
    inverse problems including computational material design and scene reconstruction.
 
-3. Another type of transformation turns Mitsuba 2 into a vectorized CPU
+3. Another type of transformation turns Mitsuba 3 into a vectorized CPU
    renderer that leverages Single Instruction/Multiple Data (SIMD) instruction
    sets such as AVX512 on modern CPUs to efficiently sample many light paths in
    parallel.
@@ -61,7 +61,7 @@ number of different tasks. For example:
 In addition to the above transformations, there are
 several other noteworthy changes:
 
-1. Mitsuba 2 provides very fine-grained Python bindings to essentially every
+1. Mitsuba 3 provides very fine-grained Python bindings to essentially every
    function using [pybind11](https://github.com/pybind/pybind11). This makes it
    possible to import the renderer into a Jupyter notebook and develop new
    algorithms interactively while visualizing their behavior using plots.
@@ -80,10 +80,10 @@ several other noteworthy changes:
    the [NanoGUI](https://github.com/mitsuba-renderer/nanogui) library. *Note
    that this is not yet complete.*
 
-## Compiling and using Mitsuba 2
+## Compiling and using Mitsuba 3
 
 Please see the [documentation](http://mitsuba2.readthedocs.org/en/latest) for
-details on how to compile, use, and extend Mitsuba 2.
+details on how to compile, use, and extend Mitsuba 3.
 
 ## About
 

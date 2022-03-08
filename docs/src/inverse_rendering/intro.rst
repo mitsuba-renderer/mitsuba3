@@ -3,7 +3,7 @@
 Introduction
 ============
 
-Mitsuba 2 can be used to solve inverse problems involving light using a
+Mitsuba 3 can be used to solve inverse problems involving light using a
 technique known as *differentiable rendering*. It interprets the rendering
 algorithm as a function :math:`f(\mathbf{x})` that converts an input
 :math:`\mathbf{x}` (the scene description) into an output :math:`\mathbf{y}`

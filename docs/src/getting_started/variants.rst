@@ -3,7 +3,7 @@
 Choosing variants
 =================
 
-Mitsuba 2 is a retargetable rendering system that provides a set of different
+Mitsuba 3 is a retargetable rendering system that provides a set of different
 system "*variants*" that change elementary aspects of simulation---they can for
 instance replace the representation of color to support monochromatic, RGB,
 spectral, or even polarized illumination. Similarly, the numerical
@@ -13,7 +13,7 @@ at once, or it can be mathematically differentiated to to solve inverse
 problems. All variants are automatically created from a single generic codebase.
 
 As many as 36 different variants of the renderer are presently available, shown
-in the list below. Before building Mitsuba 2, you will therefore need to decide
+in the list below. Before building Mitsuba 3, you will therefore need to decide
 which of these are relevant for your intended application.
 
   .. container:: toggle
@@ -62,7 +62,7 @@ which of these are relevant for your intended application.
 
 Note that compilation time and compilation memory usage is roughly proportional
 to the number of enabled variants, hence including many of them (more than
-five) may not be advisable. Mitsuba 2 developers will typically want to
+five) may not be advisable. Mitsuba 3 developers will typically want to
 restrict themselves to 1-2 variants used by their current experiment to
 minimize edit-recompile times. Each variant is associated with an identifying
 name that is composed of several parts:
@@ -116,7 +116,7 @@ are available:
   for solving *inverse problems* using rendering algorithms.
 
   The following shows an example from :cite:`NimierDavidVicini2019Mitsuba2`.
-  Here, Mitsuba 2 is used to compute the height profile of a transparent glass
+  Here, Mitsuba 3 is used to compute the height profile of a transparent glass
   panel that refracts red, green, and blue light in such a way as to reproduce
   a specified color image.
 
@@ -245,7 +245,7 @@ following choices are available:
 Part 3: Polarization
 --------------------
 
-If desired, Mitsuba 2 can keep track of the full polarization state of light.
+If desired, Mitsuba 3 can keep track of the full polarization state of light.
 Polarization refers to the property that light is an electromagnetic wave that
 oscillates perpendicularly to the direction of travel. This oscillation can
 take on infinitely many different shapes---the following images show examples
@@ -261,7 +261,7 @@ However, polarization is easily observed using a variety of measurement devices
 and cameras, and it tends to provide a wealth of information about the material
 and shape of visible objects. For this reason, polarization is a powerful tool
 for solving inverse problems, and this is one of the reasons why we chose to
-support it in Mitsuba 2. Note that accounting for polarization comes at a
+support it in Mitsuba 3. Note that accounting for polarization comes at a
 cost---roughly a 1.5-2X increase in rendering time.
 
 Inside the light transport simulation, *Stokes vectors* are used to
@@ -275,7 +275,7 @@ implementation of the polarized rendering modes, please refer to the
 Part 4: Precision
 -----------------
 
-Mitsuba 2 normally relies on single precision (32 bit) arithmetic, but double
+Mitsuba 3 normally relies on single precision (32 bit) arithmetic, but double
 precision (64 bit) is optionally available. We find this particularly helpful
 for debugging: whether or not an observed problem arises due to floating point
 imprecisions can normally be determined after switching to double precision.
@@ -285,8 +285,8 @@ is because OptiX performs ray tracing in single precision.
 Configuring :monosp:`mitsuba.conf`
 ----------------------------------
 
-Mitsuba 2 variants are specified in the file :monosp:`mitsuba.conf`. To get
-started, first copy the default template to the root directory of the Mitsuba 2
+Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. To get
+started, first copy the default template to the root directory of the Mitsuba 3
 repository.
 
 .. code-block:: bash

@@ -26,7 +26,7 @@ Two-sided BRDF adapter (:monosp:`twosided`)
 .. subfigend::
     :label: fig-bsdf-twosided
 
-By default, all non-transmissive scattering models in Mitsuba 2
+By default, all non-transmissive scattering models in Mitsuba 3
 are *one-sided* --- in other words, they absorb all light
 that is received on the interior-facing side of any associated
 surfaces. Holes and visible back-facing parts are thus exposed

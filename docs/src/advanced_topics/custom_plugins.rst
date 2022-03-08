@@ -3,7 +3,7 @@
 Custom plugins in Python
 ========================
 
-Mitsuba 2 provides a mechanism to implement custom plugins *directly in
+Mitsuba 3 provides a mechanism to implement custom plugins *directly in
 Python*. To do so, simply extend a base class (e.g. `BSDF`, `Emitter`) and
 override its class methods (e.g. ``sample()``, ``eval()``, ...). This leverages
 the `trampoline feature

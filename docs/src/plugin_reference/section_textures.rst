@@ -3,7 +3,7 @@
 Textures
 ========
 
-The following section describes the available texture data sources. In Mitsuba 2,
+The following section describes the available texture data sources. In Mitsuba 3,
 textures are objects that can be attached to certain surface scattering model
 parameters to introduce spatial variation. In the documentation, these are listed
 as supporting the :paramtype:`texture` type. See the last sections about
