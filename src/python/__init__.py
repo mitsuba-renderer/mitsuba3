@@ -75,6 +75,8 @@ class MitsubaVariantModule(types.ModuleType):
         variant = super().__getattribute__('_variant')
         modules = super().__getattribute__('_modules')
 
+        # print('get V', key, variant)
+
         if modules is None:
             try:
                 modules = (
@@ -282,6 +284,12 @@ class MitsubaModule(types.ModuleType):
 
 # Check whether we are reloading the mitsuba module
 reload = f'mitsuba.{submodules[0]}' in sys.modules
+if reload:
+    print(
+        "The Mitsuba module was reloaded (imported a second time). "
+        "This can in some cases result in small but subtle issues "
+        "and is discouraged."
+    )
 
 # Register the variant modules
 from .config import MI_VARIANTS
@@ -290,8 +298,7 @@ for variant in MI_VARIANTS:
     if reload:
         sys.modules[name].__init__(name, variant)
     else:
-        module = MitsubaVariantModule(name, variant)
-        sys.modules[name] = module
+        sys.modules[name] = MitsubaVariantModule(name, variant)
 
 # Register variant submodules
 for variant in MI_VARIANTS:
@@ -300,8 +307,7 @@ for variant in MI_VARIANTS:
         if reload:
             sys.modules[name].__init__(name, variant, submodule)
         else:
-            module = MitsubaVariantModule(name, variant, submodule)
-            sys.modules[name] = module
+            sys.modules[name] = MitsubaVariantModule(name, variant, submodule)
 
 # Register the virtual mitsuba module and submodules. This will overwrite the
 # real mitsuba module in order to redirect future imports.
@@ -315,13 +321,15 @@ for submodule in submodules:
     if reload:
         sys.modules[name].__init__(name, submodule)
     else:
-        module = MitsubaModule(name, submodule)
-        sys.modules[name] = module
+        sys.modules[name] = MitsubaModule(name, submodule)
 
 
 # Cleanup
 del MitsubaModule
 del MitsubaVariantModule
-del types
+del typing, types
 del threading
 del os
+del config
+del MI_VARIANTS
+del variant, submodule, name, reload
