@@ -1,10 +1,9 @@
-Mitsuba 3
-=========
+:hide-toc:
 
 .. only:: not latex
 
     .. image:: images/mitsuba-logo-white-bg.png
-        :width: 75%
+        :width: 55%
         :align: center
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse
@@ -24,14 +23,13 @@ different set of goals.
 
     Getting Started
     ^^^^^^^^^^^^^^^
-
     .. image:: ../resources/data/docs/images/logos/getting-started-logo.png
         :width: 20%
         :align: center
 
     Learn about the main concepts.
 
-    .. link-button:: src/getting_started/intro
+    .. link-button:: src/getting_started
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -47,7 +45,7 @@ different set of goals.
 
     Explore specific problems step by step.
 
-    .. link-button:: src/how_to_guides/intro
+    .. link-button:: src/how_to_guides
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -63,7 +61,7 @@ different set of goals.
 
     Dive deep in advanced topics.
 
-    .. link-button:: src/key_topics/overview
+    .. link-button:: src/key_topics
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -79,7 +77,7 @@ different set of goals.
 
     For the bravest of all.
 
-    .. link-button:: src/developer_guide/intro
+    .. link-button:: src/developer_guide
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -94,7 +92,7 @@ different set of goals.
         :align: center
 
 
-    .. link-button:: src/plugin_reference/intro
+    .. link-button:: src/plugin_reference
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -108,7 +106,7 @@ different set of goals.
         :width: 20%
         :align: center
 
-    .. link-button:: src/api_reference/intro
+    .. link-button:: src/api_reference
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -119,66 +117,14 @@ different set of goals.
 
 .. toctree::
     :maxdepth: 1
-    :caption: Getting Started
     :hidden:
 
-    src/getting_started/intro
-    tutorials/basics/index
-    tutorials/inverse_rendering/index
-
-.. .............................................................................
-
-.. toctree::
-    :maxdepth: 1
-    :caption: How-to Guides
-    :hidden:
-
-    src/how_to_guides/intro
-
-.. .............................................................................
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Key Topics
-    :hidden:
-
-    src/key_topics/overview
-    src/key_topics/variants
-    src/key_topics/file_format
-    src/key_topics/polarization
-
-.. .............................................................................
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Developer's Guide
-    :hidden:
-
-    src/developer_guide/intro
-    src/developer_guide/compiling
-
-.. .............................................................................
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Plugin reference
-    :hidden:
-    :glob:
-
-    src/plugin_reference/intro
-    generated/plugins_*
-
-.. .............................................................................
-
-.. toctree::
-    :maxdepth: 1
-    :caption: API reference
-    :hidden:
-
-    src/api_reference/intro
-    generated/core_api
-    generated/render_api
-    generated/python_api
+    src/getting_started
+    src/how_to_guides
+    src/key_topics
+    src/developer_guide
+    src/plugin_reference
+    src/api_reference
 
 .. .............................................................................
 

@@ -3,6 +3,15 @@
 API reference
 =============
 
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :glob:
+
+    generated/core_api
+    generated/render_api
+    generated/python_api
+
 This API reference documentation was automatically generated using the `Autodoc
 <http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.htm>`_ Sphinx
 extension.
