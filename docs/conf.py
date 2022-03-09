@@ -8,9 +8,6 @@
 
 import sys
 import os
-import shlex
-import subprocess
-import guzzle_sphinx_theme
 
 from sphinx.writers.html5 import HTML5Translator
 
@@ -23,8 +20,15 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('tutorials'):
-    os.symlink('../tutorials', 'tutorials', target_is_directory=True)
+if not os.path.exists('src/tutorials'):
+    os.symlink('../../tutorials', 'src/tutorials', target_is_directory=True)
+
+if not os.path.exists('src/generated'):
+    os.symlink('../generated', 'src/generated', target_is_directory=True)
+
+# This is necessary for the plugin doc to properly access the resources (images)
+if not os.path.exists('resources'):
+    os.symlink('../resources', 'resources', target_is_directory=True)
 
 from pathlib import Path
 
@@ -159,14 +163,13 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-
-html_theme_path = guzzle_sphinx_theme.html_theme_path()
-html_theme = 'guzzle_sphinx_theme'
+html_logo = "images/logo.png"
+html_title = "Mitsuba 3"
+html_theme = 'furo'
 html_static_path = ['_static']
 
 # Register the theme as an extension to generate a sitemap.xml
 extensions = []
-extensions.append("guzzle_sphinx_theme")
 extensions.append("sphinx.ext.mathjax")
 extensions.append("sphinx_tabs.tabs")
 extensions.append("hoverxref.extension")
@@ -196,7 +199,7 @@ nbsphinx_prolog = """
 
     </style>
 
-    <div id="nb_link" class="alert alert-block alert-success">
+    <div id="nb_link" class="admonition topic alert alert-block alert-success">
         <a href="#">
             <center>📑⬇️ Download Jupyter notebook</center>
         </a>
@@ -212,22 +215,16 @@ nbsphinx_prolog = """
     </script>
 """
 
+extensions.append( 'sphinx_gallery.load_style')
+nbsphinx_thumbnails = {
+    'src/tutorials/getting_started/00_drjit_cheat_sheet': '_static/drjit-logo-dark.png',
+}
+
 # Add bibfile
 bibtex_bibfiles = ['references.bib']
 
 # Touch the bibliography file to force a rebuild of it
 Path('zz_bibliography.rst').touch()
-
-
-# Guzzle theme options (see theme.conf for more information)
-html_theme_options = {
-    "project_nav_name": "Mitsuba 3"
-}
-
-# Custom sidebar templates, maps document names to template names.
-html_sidebars = {
-    '**': ['logo-text.html', 'globaltoc.html', 'searchbox.html']
-}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -237,9 +234,9 @@ html_sidebars = {
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
-
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
+
 #html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
@@ -247,7 +244,7 @@ html_sidebars = {
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = None
+# html_logo = None
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

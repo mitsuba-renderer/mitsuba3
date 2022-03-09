@@ -136,7 +136,7 @@ div.related ul {
 div.figure {
 	margin: 20px 0px;
 	padding: 3px 7px;
-	padding-top: 10px;
+	/* padding-top: 10px; */
 	border: 1px solid #DDD;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
@@ -240,4 +240,12 @@ div#bibliography span.brackets {
 img {
     margin-top:1.5em;
     margin-bottom:1.5em;
+}
+
+.sidebar-logo {
+    max-width: 25%;
+}
+
+.card-body.text-center {
+    padding: 0.01rem;
 }
