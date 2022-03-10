@@ -2804,7 +2804,7 @@ R"doc(Prepare spectrum samples to be in the format expected by the film
 
 It will be used if the Film contains the ``Special`` flag enabled.
 
-This method should be applied to films that deviate from HDR film
+This method should be applied with films that deviate from HDR film
 behavior. Normally ``Films`` will store within the ``ImageBlock`` the
 samples following an RGB shape. But ``Films`` may want to store the
 samples with other structures (e.g. store several channels containing
@@ -9092,13 +9092,19 @@ static const char *__doc_mitsuba_VolumeGrid_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_max = R"doc(Return the precomputed maximum over the volume grid)doc";
 
-static const char *__doc_mitsuba_VolumeGrid_max_per_channel = R"doc(Return the precomputed maximum over the volume grid per channel)doc";
+static const char *__doc_mitsuba_VolumeGrid_max_per_channel =
+R"doc(Return the precomputed maximum over the volume grid per channel
+
+Pointer allocation/deallocation must be performed by the caller.)doc";
 
 static const char *__doc_mitsuba_VolumeGrid_read = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_set_max = R"doc(Set the precomputed maximum over the volume grid)doc";
 
-static const char *__doc_mitsuba_VolumeGrid_set_max_per_channel = R"doc(Set the precomputed maximum over the volume grid per channel)doc";
+static const char *__doc_mitsuba_VolumeGrid_set_max_per_channel =
+R"doc(Set the precomputed maximum over the volume grid per channel
+
+Pointer allocation/deallocation must be performed by the caller.)doc";
 
 static const char *__doc_mitsuba_VolumeGrid_size = R"doc(Return the resolution of the voxel grid)doc";
 
@@ -9147,9 +9153,12 @@ static const char *__doc_mitsuba_Volume_eval_gradient =
 R"doc(Evaluate the volume at the given surface interaction, and compute the
 gradients of the linear interpolant as well.)doc";
 
-static const char *__doc_mitsuba_Volume_eval_per_channel_1 =
-R"doc(Evaluate this volume as a n-channel float quantity This interface is
-specifically intended to encode a variable number of parameters)doc";
+static const char *__doc_mitsuba_Volume_eval_n =
+R"doc(Evaluate this volume as a n-channel float quantity
+
+This interface is specifically intended to encode a variable number of
+parameters. Pointer allocation/deallocation must be performed by the
+caller.)doc";
 
 static const char *__doc_mitsuba_Volume_m_bbox = R"doc(Bounding box)doc";
 
@@ -9161,7 +9170,9 @@ static const char *__doc_mitsuba_Volume_max = R"doc(Returns the maximum value of
 
 static const char *__doc_mitsuba_Volume_max_per_channel =
 R"doc(In the case of a multi-channel volume, this function returns the
-maximum value for each channel.)doc";
+maximum value for each channel.
+
+Pointer allocation/deallocation must be performed by the caller.)doc";
 
 static const char *__doc_mitsuba_Volume_resolution =
 R"doc(Returns the resolution of the volume, assuming that it is based on a
@@ -10737,7 +10748,7 @@ R"doc(Read a file containing information about the spectra.
 Depending on the extension of the file, it will read it in text format
 or in binary format.
 
-Parameter ``filename``:
+Parameter ``path``:
     Path of the file to be read
 
 Parameter ``wavelengths``:
@@ -10754,7 +10765,7 @@ R"doc(Write a file containing information about the spectra.
 Depending on the extension of the file, it will write it in text
 format or in binary format.
 
-Parameter ``filename``:
+Parameter ``path``:
     Path to the file to be written to
 
 Parameter ``wavelengths``:
@@ -11235,6 +11246,16 @@ number of spaces)doc";
 static const char *__doc_mitsuba_string_indent_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_string_indent_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_string_parse_float =
+R"doc(Locale-independent string to floating point conversion analogous to
+std::stof. (implemented using Daniel Lemire's fast_float library.)
+
+Parses a floating point number in a (potentially longer) string
+start..end-1. The 'endptr' argument (if non-NULL) is used to return a
+pointer to the character following the parsed floating point value.
+
+Throws an exception if the conversion is unsuccessful.)doc";
 
 static const char *__doc_mitsuba_string_replace_inplace = R"doc()doc";
 

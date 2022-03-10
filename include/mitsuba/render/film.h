@@ -77,7 +77,7 @@ public:
       *
       * It will be used if the Film contains the ``Special`` flag enabled.
       *
-      * This method should be applied to films that deviate from HDR film behavior.
+      * This method should be applied with films that deviate from HDR film behavior.
       * Normally ``Films`` will store within the ``ImageBlock`` the samples following
       * an RGB shape. But ``Films`` may want to store the samples with other
       * structures (e.g. store several channels containing monochromatic information).

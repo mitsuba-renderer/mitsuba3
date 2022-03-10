@@ -36,10 +36,10 @@ Volume<Float, Spectrum>::eval_6(const Interaction3f &, Mask) const {
 }
 
 MI_VARIANT void
-Volume<Float, Spectrum>::eval_per_channel_1(const Interaction3f & /*it*/,
-                                            Float * /*out*/,
-                                            Mask /*active*/) const {
-    NotImplementedError("eval_per_channel_1");
+Volume<Float, Spectrum>::eval_n(const Interaction3f & /*it*/,
+                                Float * /*out*/,
+                                Mask /*active*/) const {
+    NotImplementedError("eval_n");
 }
 
 MI_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,

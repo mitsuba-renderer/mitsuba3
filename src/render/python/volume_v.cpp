@@ -75,16 +75,14 @@ MI_PY_EXPORT(Volume) {
                 }, "it"_a, "active"_a = true, D(Volume, eval_6))
         .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,
              D(Volume, eval_gradient))
-        .def("eval_per_channel", &Volume::eval_per_channel, "it"_a, "active"_a = true,
-             D(Volume, eval_generic))
-        .def("eval_per_channel_1",
+        .def("eval_n",
             [] (const Volume *volume, const Interaction3f &it, Mask active = true) {
                 std::vector<Float> evaluation(volume->channel_count());
-                volume->eval_per_channel_1(it, evaluation.data(), active);
+                volume->eval_n(it, evaluation.data(), active);
                 return evaluation;
             },
             "it"_a, "active"_a = true,
-            D(Volume, eval_per_channel_1));
+            D(Volume, eval_n));
 
     MI_PY_REGISTER_OBJECT("register_volume", Volume)
 }
