@@ -36,9 +36,11 @@ public:
 
     /**
      * \brief Evaluate this volume as a n-channel float quantity
-     * This interface is specifically intended to encode a variable number of parameters
+     *
+     * This interface is specifically intended to encode a variable number of parameters.
+     * Pointer allocation/deallocation must be performed by the caller.
      */
-    virtual void eval_per_channel_1(const Interaction3f &it, Float *out, Mask active = true) const;
+    virtual void eval_n(const Interaction3f &it, Float *out, Mask active = true) const;
 
     /**
      * Evaluate the volume at the given surface interaction,
@@ -51,8 +53,10 @@ public:
     virtual ScalarFloat max() const;
 
     /**
-     * In the case of a multi-channel volume, this function returns
+     * \brief In the case of a multi-channel volume, this function returns
      * the maximum value for each channel.
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
      */
     virtual void max_per_channel(ScalarFloat *out) const;
 

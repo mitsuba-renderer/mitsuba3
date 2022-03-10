@@ -31,10 +31,31 @@ NAMESPACE_BEGIN(string)
  * \brief Locale-independent string to floating point conversion analogous
  * to std::stof. (implemented using Daniel Lemire's fast_float library.)
  *
+ * Parses a floating point number in a (potentially longer) string start..end-1.
+ * The 'endptr' argument (if non-NULL) is used to return a pointer to the
+ * character following the parsed floating point value.
+ *
+ * Throws an exception if the conversion is unsuccessful.
+ */
+template <typename T>
+T parse_float(const char *start, const char *end, char **endptr);
+extern template MI_EXPORT_LIB float parse_float<float>(
+    const char *start, const char *end, char **endptr);
+extern template MI_EXPORT_LIB double parse_float<double>(
+    const char *start, const char *end, char **endptr);
+
+
+/**
+ * \brief Locale-independent string to floating point conversion analogous
+ * to std::stof. (implemented using Daniel Lemire's fast_float library.)
+ *
  * Throws an exception if the conversion is unsuccessful, or if the portion of
  * the string following the parsed number contains non-whitespace characters.
  */
 template <typename T> T stof(const std::string &s);
+
+extern template MI_EXPORT_LIB float  stof<float>(const std::string &str);
+extern template MI_EXPORT_LIB double stof<double>(const std::string &str);
 
 /**
  * \brief Locale-independent string to floating point conversion analogous
@@ -42,13 +63,9 @@ template <typename T> T stof(const std::string &s);
  *
  * Throws an exception if the conversion is unsuccessful.
  */
-template <typename T> T strtof(const char *s, char **endptr);
-
-extern template MI_EXPORT_LIB float  stof<float>(const std::string &str);
-extern template MI_EXPORT_LIB double stof<double>(const std::string &str);
-
-extern template MI_EXPORT_LIB float  strtof<float>(const char *str, char **endptr);
-extern template MI_EXPORT_LIB double strtof<double>(const char *str, char **endptr);
+template <typename T> T strtof(const char *s, char **endptr) {
+    return parse_float<T>(s, s + strlen(s), endptr);
+}
 
 /// Check if the given string starts with a specified prefix
 inline bool starts_with(const std::string &string, const std::string &prefix) {

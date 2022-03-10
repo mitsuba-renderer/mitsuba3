@@ -319,7 +319,7 @@ public:
         }
     }
 
-    void eval_per_channel_1(const Interaction3f &it, Float *out, Mask active = true) const override {
+    void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         return interpolate_per_channel<Float>(it, out, active);

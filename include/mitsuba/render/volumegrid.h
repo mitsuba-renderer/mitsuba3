@@ -60,13 +60,21 @@ public:
     /// Return the precomputed maximum over the volume grid
     ScalarFloat max() const { return m_max; }
 
-    /// Return the precomputed maximum over the volume grid per channel
+    /**
+     * \brief Return the precomputed maximum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
     void max_per_channel(ScalarFloat *out) const;
 
     /// Set the precomputed maximum over the volume grid
     void set_max(ScalarFloat max) { m_max = max; }
 
-    /// Set the precomputed maximum over the volume grid per channel
+    /**
+     * \brief Set the precomputed maximum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
     void set_max_per_channel(ScalarFloat *max) {
         for (size_t i=0; i<m_channel_count; ++i)
             m_max_per_channel[i] = max[i];
