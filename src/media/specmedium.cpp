@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _medium-specmedium:
 
-Spectra medium (:monosp:`specmedium`)
+Spectral medium (:monosp:`specmedium`)
 -----------------------------------------------
 
 .. pluginparameters::
@@ -27,14 +27,14 @@ Spectra medium (:monosp:`specmedium`)
  * - albedo_[name]
    - |float| or |spectrum|
    - Single-scattering albedo of the medium. It is important to follow
-     the name convention. This parameter would be specified several times with different
+     the name convention. This parameter will typically be specified several times with different
      values for ``_name``. Matching ``albedo`` and ``sigma_t`` should have the same ``[name]``.
    - |exposed|, |differentiable|
 
  * - sigmat_[name]
    - |spectrum|
    - Extinction coefficient in inverse scene units. It is important to
-     follow the name convention. This parameter would be specified several times with
+     follow the name convention. This parameter will typically be specified several times with
      different values for ``_name``.
      Matching ``albedo`` and ``sigma_t`` should have the same ``[name]``.
    - |exposed|, |differentiable|
@@ -57,36 +57,36 @@ Spectra medium (:monosp:`specmedium`)
    - Flag to specify whether shadow rays should be cast from inside the volume (Default: |true|)
      If the medium is enclosed in a :ref:`dielectric <bsdf-dielectric>` boundary,
      shadow rays are ineffective and turning them off will significantly reduce
-     render time. This can reduce render time up to 50% when rendering objects
+     render time. This improve performance by up to 2× when rendering objects
      with subsurface scattering.
 
  * - (Nested plugin)
    - |phase|
    - A nested phase function that describes the directional scattering properties of
      the medium. When none is specified, the renderer will automatically use an instance of
-     isotropic.
+     an isotropic phase function.
 
 A medium with high-resolution spectra can be extremely costly to store -- essentially, asymptotic
-storage costs scale as to :math:O(n^4). The implementation in this plugin uses a more efficient
+storage costs scale as :math:O(n^4). The implementation in this plugin uses a more efficient
 representation that only stores the proportions of different compounds with known spectra
 properties that are interpolated on the fly during medium queries.
 
-In the case of extinction, the medium works as follows (it is the same for albedo):
+For example, the spectral extinction :math:`\mu_t(x, \lambda)` for wavelength :math:`\lambda` at
+position :math:`x` is evaluated as a sum over the compounds :math:`i=1,\ldots, N`
 .. math::
-    \mu_t(x, \lambda) = \sum_i^N p^{(i)}(x) \, \mu_t^{(i)}(\lambda)
+    \mu_t(x, \lambda) = \sum_i^N p^{(i)}(x) \, \mu_t^{(i)}(\lambda),
 
-being :math:`N` the number of elements in the mixture, for the element :math:`i` its proportion
-is :math:`p^{(i)}(x)`, and its spectral extinction coefficient is :math:`\mu_t^{(i)}(\lambda)`.
+where :math:`\mu_t^{(i)}(x, \lambda)` denotes the extinction of compound :math:`i` and
+:math:`p^{(i)}(x)` denotes the proportion. A similar interpolation scheme is used for the albedo.
 
-Note that we need some order to relate the information of the different spectra (extinction/albedo)
-with their corresponding ratios. Because of the way Mitsuba loads the information, it will order
-the spectra by name (e.g. ``sigmat_elem1`` will have position ``0`` while ``sigmat_elem2`` will have
-position ``1``). Therefore, the first channel of the volume representing the proportions will refer
-to ``elem1``. Also, note that the different extinction and albedo spectra will be related if
-they share the suffix.
+The association between medium channels storing mixture proportions and extinction/albedo spectra of
+specific compounds is based on the alphanumeric order of their identifiers. For example, in a medium
+with extinction parameters `sigmat_elem1` and `sigmat_elem2`, these will respectively be associated
+with channels `0` and `1`. Also, note that the different extinction and albedo spectra will be related
+if they share the suffix.
 
 The following snippet describes a heterogenous spectral medium composed of a mixture of two
-only-absorbing spectra, and a isotrophic phase function.
+purely-absorbing spectra, and a isotrophic phase function.
 
 .. tabs::
     .. code-tab::  xml
@@ -129,13 +129,13 @@ only-absorbing spectra, and a isotrophic phase function.
 
 */
 template <typename Float, typename Spectrum>
-class SpectraMedium final : public Medium<Float, Spectrum> {
+class SpectralMedium final : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
                     m_phase_function)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume, VolumeGrid)
 
-    SpectraMedium(const Properties &props) : Base(props) {
+    SpectralMedium(const Properties &props) : Base(props) {
         if constexpr (!is_spectral_v<Spectrum>)
             Log(Error, "This media can only be used in Mitsuba variants that "
                        "perform a spectral simulation.");
@@ -156,19 +156,19 @@ public:
         // Load all spectrum data
         for (auto &[name, obj] : props.objects(false)) {
             auto srf = dynamic_cast<Texture *>(obj.get());
-            if (srf != nullptr) {
-                if (name.rfind("sigmat_", 0) == 0) {
+            if (srf) {
+                if (string::starts_with(name, "sigmat_")) {
                     m_spectra_sigma_t.push_back(srf);
                     m_names_sigma_t.push_back(name);
                     props.mark_queried(name);
                     max_density += max_proportions_grid[index] * srf->max();
                     index++;
-                } else if (name.rfind("albedo_", 0) == 0) {
+                } else if (string::starts_with(name, "albedo_")) {
                     m_spectra_albedo.push_back(srf);
                     m_names_albedo.push_back(name);
                     props.mark_queried(name);
                 } else {
-                    Log(Error, "Name %s is not valid. Should start with \"sigmat_\" or \"albedo_\".");
+                    Log(Error, "Spectrum passed to \"specmedium\" has an invalid name (\"%s\"). It must start with \"sigmat_\" or \"albedo_\".", name);
                 }
             }
         }
@@ -201,14 +201,19 @@ public:
                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-        std::vector<Float> proportions(m_proportions->channel_count());
-        m_proportions->eval_per_channel_1(mi, proportions.data(), active);
+        size_t n = m_proportions->channel_count();
+        Float *proportions = (Float *) alloca(sizeof(Float) * n);
+        // call in-place default constructor in case `Float` is a non-POD type (e.g. JIT array)
+        for (size_t i = 0; i < n; ++i)
+            new (&proportions[i]) Float();
+
+        m_proportions->eval_n(mi, proportions, active);
 
         SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = mi.wavelengths;
 
-        UnpolarizedSpectrum sigma_t(0.0), albedo(0.0);
-        for (size_t i=0; i<proportions.size(); ++i) {
+        UnpolarizedSpectrum sigma_t(0.f), albedo(0.f);
+        for (size_t i=0; i<n; ++i) {
             sigma_t += proportions[i] * m_spectra_sigma_t[i]->eval(si, active);
             albedo += proportions[i] * m_spectra_albedo[i]->eval(si, active);
         }
@@ -216,6 +221,10 @@ public:
 
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigma_t *= m_phase_function->projected_area(mi, active);
+
+        // call destructor in case `Float` is a non-POD type (e.g. JIT array)
+        for (size_t i = 0; i < n; ++i)
+            proportions[i].~Float();
 
         UnpolarizedSpectrum sigma_s = sigma_t * albedo;
         UnpolarizedSpectrum sigma_n = m_max_density - sigma_t;
@@ -240,7 +249,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Spectra Medium[" << std::endl
+        oss << "Spectral Medium[" << std::endl
             << "  proportions = " << string::indent(m_proportions) << "," << std::endl
             << "  scale   = " << string::indent(m_scale) << "," << std::endl
             << "  max_density = " << string::indent(m_max_density) << "," << std::endl;
@@ -274,6 +283,6 @@ private:
     ref<Volume> m_proportions;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SpectraMedium, Medium)
-MI_EXPORT_PLUGIN(SpectraMedium, "Spectra medium")
+MI_IMPLEMENT_CLASS_VARIANT(SpectralMedium, Medium)
+MI_EXPORT_PLUGIN(SpectralMedium, "Spectral medium")
 NAMESPACE_END(mitsuba)

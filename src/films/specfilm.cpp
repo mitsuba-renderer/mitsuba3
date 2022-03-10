@@ -424,14 +424,11 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
-            << "  FilmSRF = [" << std::endl
-            << "       range = " << m_srf->wavelength_range() << "," << std::endl
-            << "       spec_res = " << m_srf->spectral_resolution() << "," << std::endl
-            << "  ]," << std::endl
+            << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)
-            oss << m_srfs[c] << std::endl;
-        oss << " )]";
+            oss << "    " << string::indent(m_srfs[c], 4) << std::endl;
+        oss << "  )" << std::endl << "]";
         return oss.str();
     }
 
