@@ -7,8 +7,13 @@ from .common import ADIntegrator
 
 class EmitterReparamIntegrator(ADIntegrator):
     """
+    This class implements a reparameterized emitter integrator.
 
+    It reparametrizes the camera ray to handle discontinuity issues
+    caused by moving emitters. This is mainly used for learning and
+    debugging purpose.
     """
+
     def __init__(self, props):
         super().__init__(props)
 
@@ -38,7 +43,6 @@ class EmitterReparamIntegrator(ADIntegrator):
                 depth: mi.UInt32,
                 active: mi.Bool):
 
-        # Potentially disable the reparameterization completely
         if self.reparam_max_depth == 0:
             return dr.detach(ray.d, True), mi.Float(1)
 
@@ -57,19 +61,22 @@ class EmitterReparamIntegrator(ADIntegrator):
                scene: mi.Scene,
                sampler: mi.Sampler,
                ray: mi.Ray3f,
-               δL: Optional[mi.Spectrum],
-               state_in: Optional[mi.Spectrum],
                reparam: Optional[
                    Callable[[mi.Ray3f, mi.Bool],
                             Tuple[mi.Ray3f, mi.Float]]],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum, mi.Bool]:
+        """
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+        """
 
         primal = mode == dr.ADMode.Primal
 
         ray_reparam = mi.Ray3f(ray)
         if not primal:
+            # Camera ray reparameterization determinant already considered in ADIntegrator.sample_rays()
             ray_reparam.d, _ = reparam(ray, depth=0, active=active)
 
         # ---------------------- Direct emission ----------------------
@@ -78,6 +85,6 @@ class EmitterReparamIntegrator(ADIntegrator):
         si = scene.ray_intersect(ray_reparam, active)
         L += si.emitter(scene).eval(si)
 
-        return (L, active, [])
+        return (L, active)
 
 mi.register_integrator("emitter_reparam", lambda props: EmitterReparamIntegrator(props))

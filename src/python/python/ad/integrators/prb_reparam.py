@@ -181,10 +181,10 @@ class PRBReparamIntegrator(RBIntegrator):
         self.reparam_rays = props.get('reparam_rays', 16)
 
         # Specifies the von Mises Fisher distribution parameter for sampling
-        # auxiliary rays in Bangaru et al.'s [2000] parameterization
+        # auxiliary rays in Bangaru et al.'s [2020] parameterization
         self.reparam_kappa = props.get('reparam_kappa', 1e5)
 
-        # Harmonic weight exponent in Bangaru et al.'s [2000] parameterization
+        # Harmonic weight exponent in Bangaru et al.'s [2020] parameterization
         self.reparam_exp = props.get('reparam_exp', 3.0)
 
         # Enable antithetic sampling in the reparameterization?
@@ -377,7 +377,7 @@ class PRBReparamIntegrator(RBIntegrator):
 
             η     *= bsdf_sample.eta
             β     *= bsdf_weight
-            L_prev = L # Value of 'L' at previous vertex
+            L_prev = L  # Value of 'L' at previous vertex
             L      = (L + Le + Lr_dir) if primal else (L - Le - Lr_dir)
 
             # -------------------- Stopping criterion ---------------------

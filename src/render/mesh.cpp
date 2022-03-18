@@ -642,6 +642,20 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Point2f prim_uv = pi.prim_uv;
 
     if constexpr (IsDiff) {
+        /* On a high level, the computed surface interaction has gradients
+           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected 
+           triangle.
+           Moeller and Trumbore method bridges the gradients at 'ray' and the 
+           computed surface interaction. But the effects of the third part
+           remains ambigious. 'DetachShape' explicitly detaches the three 
+           vertices, which is equvilant to computing a 'hit point' of a laser 
+           characterized by 'ray'. 'FollowShape' on the other hand first finds
+           the 'hit point', then glues the interaction point with the intersected
+           triangle. For this reason, it no longer tracks infinitesimal changes
+           of the laser ('ray') itself.
+           Note these two flags not only affects the interaction point position,
+           but also the distance and local differential geometry.
+           */
         if (has_flag(ray_flags, RayFlags::DetachShape) &&
             has_flag(ray_flags, RayFlags::FollowShape))
             Throw("Invalid combination of RayFlags: DetachShape | FollowShape");

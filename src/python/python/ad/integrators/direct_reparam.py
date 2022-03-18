@@ -7,8 +7,16 @@ from .common import ADIntegrator, mis_weight
 
 class DirectReparamIntegrator(ADIntegrator):
     """
-
+    This class implements a reparameterized direct illumination integrator.
+    
+    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
+    'reparam_max_depth' are both set to be 2. But since direct illumination
+    tasks only have two ray segments, the overhead of relying on radiative
+    backpropagation is non-neglegible. This implementation builds on the
+    traditional ADIntegrator that does not require two passes during
+    gradient traversal.
     """
+
     def __init__(self, props):
         super().__init__(props)
 
@@ -60,15 +68,15 @@ class DirectReparamIntegrator(ADIntegrator):
                scene: mi.Scene,
                sampler: mi.Sampler,
                ray: mi.Ray3f,
-               δL: Optional[mi.Spectrum],
-               state_in: Optional[mi.Spectrum],
                reparam: Optional[
                    Callable[[mi.Ray3f, mi.Bool],
                             Tuple[mi.Ray3f, mi.Float]]],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum, mi.Bool]:
         """
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
         """
 
         primal = mode == dr.ADMode.Primal
@@ -78,6 +86,7 @@ class DirectReparamIntegrator(ADIntegrator):
 
         ray_reparam = mi.Ray3f(ray)
         if not primal:
+            # Camera ray reparameterization determinant already considered in ADIntegrator.sample_rays()
             ray_reparam.d, _ = reparam(ray, depth=0, active=active)
 
         # ---------------------- Direct emission ----------------------
@@ -108,9 +117,13 @@ class DirectReparamIntegrator(ADIntegrator):
             em_weight = dr.select(dr.neq(ds.pdf, 0), em_val / ds.pdf, 0)
             dr.disable_grad(ds.d)
 
-        # reparam
+        # Reparametrize the ray
         em_ray_det = 1
         if not primal:
+            # Create a surface interaction that follows the shape's
+            # motion while ignoring any reparameterization from the
+            # previous ray. In other words, 'si_follow.o' along can
+            # have gradients attached for subsequent reparametrization.
             si_follow = pi.compute_surface_interaction(
                 ray_reparam, mi.RayFlags.All | mi.RayFlags.FollowShape)
             # Reparameterize the ray towards the emitter
@@ -118,11 +131,10 @@ class DirectReparamIntegrator(ADIntegrator):
             em_ray.d, em_ray_det = reparam(em_ray, depth=1, active=active_em)
             ds.d = em_ray.d
 
-        # Compute MIS  # detach
+        # Compute MIS
         wo = si.to_local(ds.d)
         bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
         mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-        dr.disable_grad(mis_em)  # Detached MIS
 
         L += mis_em * bsdf_value_em * em_weight * em_ray_det
 
@@ -135,7 +147,7 @@ class DirectReparamIntegrator(ADIntegrator):
             ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
         active_bsdf = active_next & dr.neq(bsdf_sample, 0.0)
 
-        # reparam
+        # Reparametrize the ray
         ray_reparam_next = mi.Ray3f(ray_next)
         ray_reparam_det_next = 1
         if not primal:
@@ -154,6 +166,6 @@ class DirectReparamIntegrator(ADIntegrator):
 
         L += L_bsdf * bsdf_weight * mis_bsdf * ray_reparam_det_next
 
-        return (L, active, [])
+        return (L, active)
 
 mi.register_integrator("direct_reparam", lambda props: DirectReparamIntegrator(props))

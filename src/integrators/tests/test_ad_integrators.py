@@ -14,7 +14,7 @@ rendering and adjoint backward rendering.
 
 Those tests will be run on a set of configurations (scene description + metadata)
 also provided in this file. More tests can easily be added by creating a new
-configuration type and at it to the *_CONFIGS_LIST below.
+configuration type and add it to the *_CONFIGS_LIST below.
 
 By executing this script with python directly it is possible to regenerate the
 reference data (e.g. for a new configurations). Please see the following command:
@@ -468,7 +468,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         }
         self.ref_fd_epsilon = 2e-4
         self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.5
+        self.error_max_threshold = 0.6
         self.error_mean_threshold_bwd = 0.25
         self.spp = 2048
         self.integrator_dict = {
