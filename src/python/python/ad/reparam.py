@@ -55,21 +55,22 @@ def _sample_warp_field(scene: mi.Scene,
     The function returns a tuple ``(Z, dZ, V, div)`` containing
 
     Return value ``Z`` (``mitsuba.Float``)
-        The harmonic weight of the generated sample (detached).
+        The harmonic weight of the generated sample. (detached)
 
     Return value ``dZ`` (``mitsuba.Vector3f``)
         The gradient of ``Z`` with respect to tangential changes
-        in ``ray.d`` (detached).
+        in ``ray.d``. (detached)
 
     Return value ``V`` (``mitsuba.Vector3f``)
-        The weighted mi.warp field value (attached). Taking the derivative
-        w.r.t. scene parameter π gives the vector field that follows an 
-        object's motion due to π.
+        The weighted mi.warp field value. Taking the derivative w.r.t.
+        scene parameter π gives the vector field that follows an object's
+        motion due to π. (attached)
 
     Return value ``div_lhs`` (``mitsuba.Vector3f``)
-        Dot product between dZ and the unweighted mi.warp field (attached), 
-        which is an intermediate value used to compute the divergence of
-        the mi.warp field/jacobian determinant of the reparameterization.
+        Dot product between dZ and the unweighted mi.warp field, which is
+        an intermediate value used to compute the divergence of the
+        mi.warp field/jacobian determinant of the reparameterization.
+        (attached)
     """
 
     # Sample an auxiliary ray from a von Mises Fisher distribution
@@ -195,7 +196,7 @@ class _ReparameterizeOp(dr.CustomOp):
                                                            repeat, self.kappa,
                                                            self.exponent)
 
-            # Keep input vertex gradient
+            # Do not clear input vertex gradient
             dr.forward_to(V_i, div_lhs_i,
                           flags=dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
 

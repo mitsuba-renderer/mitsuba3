@@ -682,7 +682,6 @@ for integrator_name, reparam in INTEGRATORS:
     for config in todos:
         if integrator_name == 'direct_reparam' and config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
             continue
-        print(f"{integrator_name == 'direct_reparam'}   {integrator_name}   {config}")
         CONFIGS.append((integrator_name, config))
 
 # -------------------------------------------------------------------
