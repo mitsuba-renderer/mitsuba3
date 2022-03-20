@@ -140,11 +140,10 @@ class DirectReparamIntegrator(ADIntegrator):
 
         # ------------------ BSDF sampling -------------------
 
-        # Detached sample
-        with dr.suspend_grad():
-            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
-                                                sampler.next_2d(active_next), active_next)
-            ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
+        # Attached sample
+        bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
+                                            sampler.next_2d(active_next), active_next)
+        ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
         active_bsdf = active_next & dr.neq(bsdf_sample, 0.0)
 
         # Reparametrize the ray

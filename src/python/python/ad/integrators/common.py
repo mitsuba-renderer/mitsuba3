@@ -222,7 +222,7 @@ class ADIntegrator(mi.SamplingIntegrator):
                                                      sampler, reparam)
 
             with dr.resume_grad():
-                L, valid, _ = self.sample(
+                L, valid = self.sample(
                     mode=dr.ADMode.Backward,
                     scene=scene,
                     sampler=sampler,

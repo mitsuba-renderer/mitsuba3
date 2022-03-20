@@ -661,17 +661,28 @@ REPARAM_CONFIGS_LIST = [
     TranslateSphereOnGlossyFloorConfig
 ]
 
+# List of configs that fail on integrators with depth less than three
+INDIRECT_ILLUMINATION_CONFIGS_LIST = [
+    DiffuseAlbedoGIConfig,
+    TranslateSelfShadowAreaLightConfig,
+    TranslateSphereOnGlossyFloorConfig
+]
+
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     ('path', False),
     ('prb', False),
     ('prb_reparam', True),
+    ('direct_reparam', True)
 ]
 
 CONFIGS = []
 for integrator_name, reparam in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (REPARAM_CONFIGS_LIST if reparam else [])
     for config in todos:
+        if integrator_name == 'direct_reparam' and config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
+            continue
+        print(f"{integrator_name == 'direct_reparam'}   {integrator_name}   {config}")
         CONFIGS.append((integrator_name, config))
 
 # -------------------------------------------------------------------
@@ -942,20 +953,33 @@ if __name__ == "__main__":
             filename = join(output_dir, f"test_{config.name}_image_boundary_test.exr")
             mi.Bitmap(image_boundary_test[:, :, 3]).write(filename)
 
-        integrator = mi.load_dict({
+        integrator_path = mi.load_dict({
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
         })
+        integrator_direct = mi.load_dict({
+            'type': 'direct'
+        })
 
-        image_ref = integrator.render(config.scene, seed=0, spp=args.spp)
+        # Primal render
+        image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
 
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
         mi.util.write_bitmap(filename, image_ref)
 
+        # Primal render (direct illumination)
+        if False:
+            # for the current simple test scenes, path results match witg direct results
+            image_ref_direct = integrator_direct.render(config.scene, seed=0, spp=args.spp)
+
+            filename = join(output_dir, f"test_{config.name}_image_primal_direct_ref.exr")
+            mi.util.write_bitmap(filename, image_ref_direct)
+
+        # Finite difference
         theta = mi.Float(config.ref_fd_epsilon)
         config.update(theta)
 
-        image_2 = integrator.render(config.scene, seed=0, spp=args.spp)
+        image_2 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         image_fd = (image_2 - image_ref) / config.ref_fd_epsilon
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
