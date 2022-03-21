@@ -55,7 +55,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mint = dr::max(0.f, mint);
     maxt = dr::min(ray.maxt, maxt);
 
-    auto combined_extinction = get_combined_extinction(mei, active);
+    auto combined_extinction = get_majorant(mei, active);
     Float m                  = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
         dr::masked(m, dr::eq(channel, 1u)) = combined_extinction[1];
