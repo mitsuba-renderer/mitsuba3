@@ -109,8 +109,8 @@ def test06_eval_per_channel(variants_all_rgb, tmpdir):
     })
     it = dr.zero(mi.Interaction3f, 1)
     assert vol is not None
-    print(vol.eval_per_channel_1(it))
-    assert dr.allclose(vol.eval_per_channel_1(it), [0.0] * 6)
+    print(vol.eval_n(it))
+    assert dr.allclose(vol.eval_n(it), [0.0] * 6)
     it.p = mi.Point3f(1.0)
-    print(vol.eval_per_channel_1(it))
-    assert dr.allclose(vol.eval_per_channel_1(it), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    print(vol.eval_n(it))
+    assert dr.allclose(vol.eval_n(it), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
