@@ -19,8 +19,8 @@ public:
 
     /// Returns the medium's majorant used for delta tracking
     virtual UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f &mi,
-                            Mask active = true) const = 0;
+    get_majorant(const MediumInteraction3f &mi,
+                 Mask active = true) const = 0;
 
     /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
     /// at a given MediumInteraction mi
@@ -122,7 +122,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_GETTER(use_emitter_sampling, bool)
     DRJIT_VCALL_GETTER(is_homogeneous, bool)
     DRJIT_VCALL_GETTER(has_spectral_extinction, bool)
-    DRJIT_VCALL_METHOD(get_combined_extinction)
+    DRJIT_VCALL_METHOD(get_majorant)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
     DRJIT_VCALL_METHOD(eval_tr_and_pdf)
