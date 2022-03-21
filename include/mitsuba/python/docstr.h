@@ -3973,7 +3973,7 @@ depend on the wavelength.
 Returns:
     This method returns a pair of (Transmittance, PDF).)doc";
 
-static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc(Returns the medium's majorant used for delta tracking)doc";
+static const char *__doc_mitsuba_Medium_get_majorant = R"doc(Returns the medium's majorant used for delta tracking)doc";
 
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
@@ -10743,10 +10743,12 @@ static const char *__doc_mitsuba_sggx_sample_vndf_2 = R"doc()doc";
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
 static const char *__doc_mitsuba_spectrum_from_file =
-R"doc(Read a file containing information about the spectra.
+R"doc(Read a spectral power distribution from an ASCII file.
 
-Depending on the extension of the file, it will read it in text format
-or in binary format.
+The data should be arranged as follows: The file should contain a
+single measurement per line, with the corresponding wavelength in
+nanometers and the measured value separated by a space. Comments are
+allowed.
 
 Parameter ``path``:
     Path of the file to be read
@@ -10757,13 +10759,26 @@ Parameter ``wavelengths``:
 Parameter ``values``:
     Array that will be loaded with the values stored in the file)doc";
 
-static const char *__doc_mitsuba_spectrum_list_to_srgb = R"doc()doc";
+static const char *__doc_mitsuba_spectrum_list_to_srgb =
+R"doc(Tranform a spectrum into a set of equivalent sRGB coefficients
+
+When ``bounded`` is set, the resulting sRGB coefficients will be at
+most 1.0. In any case, sRGB coefficients will be clamped to 0 if they
+are negative.
+
+Parameter ``wavelengths``:
+    Array with the wavelengths of the spectrum
+
+Parameter ``values``:
+    Array with the values at the previously specified wavelengths
+
+Parameter ``bounded``:
+    Boolean that controls if clamping is required.)doc";
 
 static const char *__doc_mitsuba_spectrum_to_file =
-R"doc(Write a file containing information about the spectra.
+R"doc(Write a spectral power distribution to an ASCII file.
 
-Depending on the extension of the file, it will write it in text
-format or in binary format.
+The format is identical to that parsed by spectrum_from_file().
 
 Parameter ``path``:
     Path to the file to be written to

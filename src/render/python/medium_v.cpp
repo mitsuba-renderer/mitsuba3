@@ -16,8 +16,8 @@ public:
         PYBIND11_OVERRIDE_PURE(Return, Medium, intersect_aabb, ray);
     }
 
-    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const override {
-        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_combined_extinction, mi, active);
+    UnpolarizedSpectrum get_majorant(const MediumInteraction3f &mi, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_majorant, mi, active);
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -50,11 +50,11 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
        .def("has_spectral_extinction",
             [](Ptr ptr) { return ptr->has_spectral_extinction(); },
             D(Medium, has_spectral_extinction))
-       .def("get_combined_extinction",
+       .def("get_majorant",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
-                return ptr->get_combined_extinction(mi, active); },
+                return ptr->get_majorant(mi, active); },
             "mi"_a, "active"_a=true,
-            D(Medium, get_combined_extinction))
+            D(Medium, get_majorant))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
                 return ptr->intersect_aabb(ray); },
