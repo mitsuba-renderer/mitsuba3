@@ -539,13 +539,22 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
 
-                    // TODO : Improve it at some point
-                    // Detect that we are using spectral film and change context
-                    // We need to put the spectral film as the first thing before anything that
-                    // needs correction
+                    /*
+                     * Detect that we are using a Spectral Film and change spectral context
+                     *
+                     * This is necessary because in a normal Spectral to RGB rendering, the system uses
+                     * D65 illuminants for emitters and a normalization to keep Spectral and RGB
+                     * renderings similar. When using the Spectral Film, we potentially work outside
+                     * of the visible range (so D65 by default may not be ideal). Furthermore, the
+                     * normalization constant does not help in this scenario.
+                     *
+                     * It is needed to put the spectral film as the first thing before anything that
+                     * needs correction inside the scene description.
+                     */
                     if (type == "specfilm") {
                         ctx.spectral_unbounded = true;
-                        Log(Info, "Enabled spectral unbounded mode");
+                        Log(Info, "Spectral Film detected during scene loading."
+                                  "\"D65\" emitters and \"MI_CIE_Y_NORMALIZATION\" have been disabled");
                     }
 
                     Properties props_nested(type);
