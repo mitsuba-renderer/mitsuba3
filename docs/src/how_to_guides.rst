@@ -1,8 +1,9 @@
 How-to Guides
 =============
 
-.. toctree::
-    :maxdepth: 1
-    :glob:
+Unlike the Getting Started tutorials, the How-to Guides wont take the reader by the hand to complete a project from A to Z. They will focus on a specific concept, task, abstraction of the Mitsuba library and are dedicated only to users with some experience.
 
-    how_to_guides/*
+
+.. nbgallery::
+
+    tutorials/how_to_guides/use_optimizers
