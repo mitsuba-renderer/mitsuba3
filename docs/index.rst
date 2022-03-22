@@ -3,7 +3,7 @@
 .. only:: not latex
 
     .. image:: images/mitsuba-logo-white-bg.png
-        :width: 55%
+        :width: 75%
         :align: center
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse

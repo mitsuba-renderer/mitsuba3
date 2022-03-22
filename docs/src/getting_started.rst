@@ -20,6 +20,7 @@ Quickstart
 
     tutorials/getting_started/00_drjit_cheat_sheet
     tutorials/getting_started/01_rendering
+    tutorials/getting_started/03_python_renderer
 
 
 Differentiable rendering
@@ -29,3 +30,12 @@ Differentiable rendering
     :caption: Differentiable rendering
 
     tutorials/getting_started/02_forward_ad_rendering
+
+
+Other examples
+--------------
+
+.. nbgallery::
+    :caption: Differentiable rendering
+
+    tutorials/basics/05_grain_phasefunction
