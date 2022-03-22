@@ -19,9 +19,9 @@ Quickstart
 .. nbgallery::
     :caption: Quickstart
 
-    tutorials/getting_started/00_drjit_cheat_sheet
-    tutorials/getting_started/01_rendering
-    tutorials/getting_started/03_python_renderer
+    tutorials/getting_started/quickstart/00_drjit_cheat_sheet
+    tutorials/getting_started/quickstart/01_rendering
+    tutorials/getting_started/quickstart/03_python_renderer
 
 
 Differentiable rendering
@@ -30,8 +30,8 @@ Differentiable rendering
 .. nbgallery::
     :caption: Differentiable rendering
 
-    tutorials/getting_started/02_forward_ad_rendering
-    tutorials/getting_started/04_gradient_based_opt
+    tutorials/getting_started/inverse_rendering/01_forward_ad_rendering
+    tutorials/getting_started/inverse_rendering/02_gradient_based_opt
 
 
 Other examples
@@ -40,4 +40,4 @@ Other examples
 .. nbgallery::
     :caption: Other examples
 
-    tutorials/basics/05_grain_phasefunction
+    tutorials/getting_started/examples/granular_phase_function
