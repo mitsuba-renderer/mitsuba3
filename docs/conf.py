@@ -217,7 +217,7 @@ nbsphinx_prolog = """
 
 extensions.append( 'sphinx_gallery.load_style')
 nbsphinx_thumbnails = {
-    'src/tutorials/getting_started/00_drjit_cheat_sheet': '_static/drjit-logo-dark.png',
+    'src/tutorials/getting_started/quickstart/00_drjit_cheat_sheet': '_static/drjit-logo-dark.png',
 }
 
 # Add bibfile
