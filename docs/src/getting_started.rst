@@ -11,6 +11,7 @@ on `PyPI <https://pypi.org/project/mitsuba/>`_ and can easily be installed with
 
     pip3 install mitsuba
 
+DrJit being a dependency of Mitsuba 3, it will be automatically installed when executing the command above.
 
 Quickstart
 ----------
@@ -30,12 +31,13 @@ Differentiable rendering
     :caption: Differentiable rendering
 
     tutorials/getting_started/02_forward_ad_rendering
+    tutorials/getting_started/04_gradient_based_opt
 
 
 Other examples
 --------------
 
 .. nbgallery::
-    :caption: Differentiable rendering
+    :caption: Other examples
 
     tutorials/basics/05_grain_phasefunction
