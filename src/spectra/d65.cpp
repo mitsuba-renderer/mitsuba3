@@ -35,11 +35,13 @@ D65 spectrum (:monosp:`d65`)
  * - scale
    - |float|
    - Optional scaling factor applied to the emitted spectrum. (Default: 1.0)
-   - |exposed|
 
 The CIE Standard Illuminant D65 corresponds roughly to the average midday light in Europe,
 also called a daylight illuminant. It is the default emission spectrum used for light sources
 in all spectral rendering modes.
+
+This plugin, once instantiated, will usually automatically be converted into a
+`spectrum-regular`_ instance.
 
 .. tabs::
     .. code-tab:: xml
@@ -74,10 +76,6 @@ public:
            sRGB yields a pixel value of (1, 1, 1) */
         m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_scale *= 1.f / 10568.f;
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale, +ParamFlags::NonDifferentiable);
     }
 
     std::vector<ref<Object>> expand() const override {

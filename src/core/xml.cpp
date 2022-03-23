@@ -1210,10 +1210,20 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
     }
 }
 
+std::vector<ref<Object>> expand_node(const ref<Object> &node) {
+    std::vector<ref<Object>> sub_objects = node->expand();
+    if (!sub_objects.empty())
+        return sub_objects;
+
+    return { node };
+}
+
 NAMESPACE_END(detail)
 
-ref<Object> load_string(const std::string &string, const std::string &variant,
-                        ParameterList param, bool parallel) {
+std::vector<ref<Object>> load_string(const std::string &string,
+                                     const std::string &variant,
+                                     ParameterList param,
+                                     bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -1235,22 +1245,27 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
     try {
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
-        Properties prop;
+        Properties props;
         size_t arg_counter; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
+        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
-        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
+
+        ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
+        std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
-        return obj;
+        return objects;
     } catch(...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
         throw;
     }
 }
 
-ref<Object> load_file(const fs::path &filename_, const std::string &variant,
-                      ParameterList param, bool write_update, bool parallel) {
+std::vector<ref<Object>> load_file(const fs::path &filename_,
+                                   const std::string &variant,
+                                   ParameterList param,
+                                   bool write_update,
+                                   bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1282,9 +1297,9 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
     try {
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
-        Properties prop;
+        Properties props;
         size_t arg_counter = 0; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
+        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
 
         if (src.modified && write_update) {
@@ -1311,14 +1326,15 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
             filename = backup;
         }
 
-        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
+        ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
+        std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
 
         Log(Info, "Done loading XML file \"%s\" (took %s).",
             filename, util::time_string((float) timer.value(), true));
 
-        return obj;
+        return objects;
     } catch(...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
         throw;

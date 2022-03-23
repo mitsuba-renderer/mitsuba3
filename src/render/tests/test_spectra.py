@@ -17,7 +17,7 @@ def test02_d65(variant_scalar_spectral):
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
 
-    d65 = mi.load_dict({ "type" : "d65" }).expand()[0]
+    d65 = mi.load_dict({ "type" : "d65" })
     ps = mi.PositionSample3f()
 
     assert dr.allclose(d65.eval(mi.SurfaceInteraction3f(ps, [350, 456, 700, 840])),
@@ -45,7 +45,7 @@ def test04_srgb_d65(variant_scalar_spectral, np_rng):
 
     wavelengths = np.linspace(300, 800, mi.MI_WAVELENGTH_SAMPLES)
     wavelengths += (10 * np_rng.uniform(size=wavelengths.shape)).astype(int)
-    d65 = mi.load_dict({ "type" : "d65" }).expand()[0]
+    d65 = mi.load_dict({ "type" : "d65" })
 
     ps = mi.PositionSample3f()
     d65_eval = d65.eval(mi.SurfaceInteraction3f(ps, wavelengths))
