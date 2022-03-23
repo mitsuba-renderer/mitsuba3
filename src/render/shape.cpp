@@ -147,6 +147,11 @@ void embree_intersect_scalar(int* valid,
             rtc_hit->geomID    = geomID;
             rtc_hit->primID    = 0;
             rtc_hit->instID[0] = instID;
+#if !defined(NDEBUG)
+            rtc_hit->Ng_x      = 0.f;
+            rtc_hit->Ng_y      = 0.f;
+            rtc_hit->Ng_z      = 0.f;
+#endif
         }
     } else {
         if (dr::all(shape->ray_test(ray)))
