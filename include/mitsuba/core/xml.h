@@ -30,17 +30,19 @@ using ParameterList = std::vector<std::pair<std::string, std::string>>;
  *     When Mitsuba updates scene to a newer version, should the
  *     updated XML file be written back to disk?
  */
-extern MI_EXPORT_LIB ref<Object> load_file(const fs::path &path,
-                                             const std::string &variant,
-                                             ParameterList parameters = ParameterList(),
-                                             bool update_scene = false,
-                                             bool parallel = true);
+extern MI_EXPORT_LIB std::vector<ref<Object>> load_file(
+                                        const fs::path &path,
+                                        const std::string &variant,
+                                        ParameterList parameters = ParameterList(),
+                                        bool update_scene = false,
+                                        bool parallel = true);
 
 /// Load a Mitsuba scene from an XML string
-extern MI_EXPORT_LIB ref<Object> load_string(const std::string &string,
-                                               const std::string &variant,
-                                               ParameterList parameters = ParameterList(),
-                                               bool parallel = true);
+extern MI_EXPORT_LIB std::vector<ref<Object>> load_string(
+                                        const std::string &string,
+                                        const std::string &variant,
+                                        ParameterList parameters = ParameterList(),
+                                        bool parallel = true);
 
 
 
@@ -62,6 +64,10 @@ extern MI_EXPORT_LIB ref<Object> create_texture_from_spectrum(
                                         bool within_emitter,
                                         bool is_spectral_mode,
                                         bool is_monochromatic_mode);
+
+/// Expands a node (if it does not expand it is wrapped into a std::vector)
+extern MI_EXPORT_LIB std::vector<ref<Object>> expand_node(
+                                        const ref<Object> &top_node);
 NAMESPACE_END(detail)
 
 NAMESPACE_END(xml)

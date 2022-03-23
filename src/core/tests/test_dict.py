@@ -440,18 +440,12 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
 
     assert str(b0) == str(b1)
 
-    # Check that root object isn't expanded
+    # Check that root object is expanded
     spectrum = mi.load_dict({
             "type" : "d65",
     })
-    assert len(spectrum.expand()) == 1
-
-    # But we should be able to use this object in another dict, and it will be expanded
-    b3 = mi.load_dict({
-        "type" : "diffuse",
-        "reflectance" : spectrum
-    })
-    assert str(b0) == str(b3)
+    assert len(spectrum.expand()) == 0
+    assert spectrum.class_().name() == "RegularSpectrum"
 
     # Object should be expanded when used through a reference
     scene = mi.load_dict({
