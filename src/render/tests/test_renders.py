@@ -5,6 +5,7 @@ import os
 import argparse
 import glob
 import numpy as np
+import re
 
 from os.path import join, realpath, dirname, basename, splitext, exists
 from drjit.scalar import ArrayXf as Float
@@ -35,6 +36,12 @@ POLARIZED_EXCLUDE_FOLDERS = [
     'participating_media',
 ]
 
+PYTHON_INTEGRATOR_MAPPING = {
+    'PathIntegrator' : ['prb', 'prb_reparam'],
+    'VolumetricSimplePathIntegrator' : ['prbvolpath'],
+    'VolumetricMisPathIntegrator' : ['prbvolpath']
+}
+
 if hasattr(dr, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
@@ -46,30 +53,45 @@ if hasattr(dr, 'JitFlag'):
 
 def list_all_render_test_configs():
     """
-    Return a list of (variant, scene_fname, jit_flags) for all the valid render
-    tests given the list of exclusion above.
+    Return a list of (variant, scene_fname, integrator_type, jit_flags) for all
+    the valid render tests given the list of exclusion above.
+
+    If the integrator_type is `None`, the default integrator of the scene should
+    be used.
     """
     configs = []
     for variant in mi.variants():
+        mi.set_variant(variant)
         is_jit = "cuda" in variant or "llvm" in variant
         is_polarized = "polarized" in variant
-        for scene in SCENES:
-            if any(ex in scene for ex in EXCLUDE_FOLDERS):
+
+        for scene_fname in SCENES:
+            if any(ex in scene_fname for ex in EXCLUDE_FOLDERS):
                 continue
-            if is_jit and any(ex in scene for ex in JIT_EXCLUDE_FOLDERS):
+            if is_jit and any(ex in scene_fname for ex in JIT_EXCLUDE_FOLDERS):
                 continue
-            if is_polarized and any(ex in scene for ex in POLARIZED_EXCLUDE_FOLDERS):
+            if is_polarized and any(ex in scene_fname for ex in POLARIZED_EXCLUDE_FOLDERS):
                 continue
+
             if not is_jit:
-                configs.append((variant, scene, 'scalar'))
+                configs.append((variant, scene_fname, None, 'scalar'))
             else:
                 for k, v in JIT_FLAG_OPTIONS.items():
-                    if k == 'scalar':
+                    if v.get(dr.JitFlag.VCallRecord, 0) and any(ex in scene_fname for ex in SYMBOLIC_EXCLUDE_FOLDERS):
                         continue
-                    is_symbolic = v[dr.JitFlag.VCallRecord] == 1
-                    if is_symbolic and any(ex in scene for ex in SYMBOLIC_EXCLUDE_FOLDERS):
-                        continue
-                    configs.append((variant, scene, k))
+                    configs.append((variant, scene_fname, None, k))
+
+            scene = mi.load_file(scene_fname)
+            scene_integrator_type = re.findall(
+                r'^\s*.+Integrator\[$',
+                scene.integrator().__repr__(),
+                re.MULTILINE
+            )[0].strip()[:-1]
+
+            if is_jit:
+                for integrator_type in PYTHON_INTEGRATOR_MAPPING.get(scene_integrator_type, []):
+                    configs.append((variant, scene_fname, integrator_type, 'jit_flag_option_3'))
+
     return configs
 
 
@@ -135,8 +157,8 @@ def z_test(mean, sample_count, reference, reference_var):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("variant, scene_fname, jit_flags_key", list_all_render_test_configs())
-def test_render(variant, scene_fname, jit_flags_key):
+@pytest.mark.parametrize("variant, scene_fname, integrator_type, jit_flags_key", list_all_render_test_configs())
+def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     mi.set_variant(variant)
 
     if 'cuda' in variant or 'llvm' in variant:
@@ -167,7 +189,12 @@ def test_render(variant, scene_fname, jit_flags_key):
 
     # Load and render
     scene = mi.load_file(scene_fname, spp=spp)
-    scene.integrator().render(scene, seed=0, develop=False)
+    integrator = scene.integrator()
+    if integrator_type is not None:
+        integrator = mi.load_dict({
+            'type' : integrator_type
+        })
+    integrator.render(scene, seed=0, spp=spp, develop=True)
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
