@@ -89,7 +89,7 @@ class Optimizer:
         regexps = [re.compile(k).match for k in regexps]
         return [k for k in params.keys() if any (r(k) for r in regexps)]
 
-    def load(self, keys=None):
+    def load(self, keys=None) -> None:
         """
         Load a set of scene parameters to optimize.
 
@@ -108,7 +108,7 @@ class Optimizer:
             if dr.is_diff_array_v(value) and dr.is_floating_point_v(value):
                 self[k] = value
 
-    def update(self, keys=None):
+    def update(self, keys=None) -> None:
         """
         Propagate updates of the parameters being optimized back to the scene state.
 
@@ -132,29 +132,32 @@ class Optimizer:
         dr.schedule(self.params)
         self.params.update()
 
-    def set_learning_rate(self, lr, key=None):
-        """Set the learning rate.
+    def set_learning_rate(self, lr) -> None:
+        """
+        Set the learning rate.
 
-        Parameter ``lr``:
-            The new learning rate
-
-        Parameter ``key`` (``None``, ``str``):
-            Optional parameter to specify for which parameter to set the learning rate.
-            If set to ``None``, the default learning rate is updated.
+        Parameter ``lr`` (``float``, ``dict``):
+            The new learning rate. A ``dict`` can be provided instead to
+            specify the learning rate for specific parameters.
         """
 
         # We use `dr.opaque` so the that the JIT compiler does not include
         # the learning rate as a scalar literal into generated code, which
         # would defeat kernel caching when updating learning rates.
-        if key is None:
+        if isinstance(lr, float):
             self.lr_default = lr
             self.lr_default_v = dr.opaque(dr.detached_t(mi.Float), lr, shape=1)
+        elif isinstance(lr, dict):
+            for k, v in lr.items():
+                self.lr[k] = v
+                self.lr_v[k] = dr.opaque(dr.detached_t(mi.Float), v, shape=1)
         else:
-            self.lr[key] = lr
-            self.lr_v[key] = dr.opaque(dr.detached_t(mi.Float), lr, shape=1)
+            raise Exception('Optimizer.set_learning_rate(): value should be a float or a dict!')
 
     def reset(self, key):
-        """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
+        """
+        Resets the internal state associated with a parameter, if any (e.g. momentum).
+        """
         pass
 
 
@@ -239,8 +242,12 @@ class SGD(Optimizer):
         self.state[key] = dr.zero(dr.detached_t(p), shape)
 
     def __repr__(self):
-        return ('SGD[\n  params = %s,\n  lr = %s,\n  momentum = %.2g\n]') % \
-            (list(self.keys()), dict(self.lr, default=self.lr_default), self.momentum)
+        return ('SGD[\n'
+                '  variables = %s,\n'
+                '  lr = %s,\n'
+                '  momentum = %.2g\n'
+                ']' % (list(self.keys()), dict(self.lr, default=self.lr_default),
+                       self.momentum))
 
 
 class Adam(Optimizer):
@@ -343,7 +350,7 @@ class Adam(Optimizer):
 
     def __repr__(self):
         return ('Adam[\n'
-                '  params = %s,\n'
+                '  variables = %s,\n'
                 '  lr = %s,\n'
                 '  betas = (%g, %g),\n'
                 '  eps = %g\n'
