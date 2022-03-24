@@ -125,7 +125,7 @@ def z_test(mean, sample_count, reference, reference_var):
     # Cumulative distribution function of the standard normal distribution
     def stdnormal_cdf(x):
         shape = x.shape
-        cdf = (1.0 - dr.erf(Float(x.flatten()) / dr.sqrt(2.0))) * 0.5
+        cdf = (1.0 - dr.erf(-Float(x.flatten()) / dr.sqrt(2.0))) * 0.5
         return np.array(cdf).reshape(shape)
 
     # Compute p-value
