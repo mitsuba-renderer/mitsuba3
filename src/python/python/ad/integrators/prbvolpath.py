@@ -68,7 +68,7 @@ class PRBVolpathIntegrator(ADIntegrator):
                mode: dr.ADMode,
                scene: mi.Scene,
                sampler: mi.Sampler,
-               ray: mi.mi.Ray3f,
+               ray: mi.Ray3f,
                δL: Optional[mi.Spectrum],
                state_in: Optional[mi.Spectrum],
                active: mi.Bool,
