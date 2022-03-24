@@ -17,7 +17,7 @@ class PRBVolpathIntegrator(ADIntegrator):
     This class implements a volumetric Path Replay Backpropagation (PRB) integrator
     with the following properties:
 
-    - Differentiable Delta tracking for free-flight distance sampling
+    - Differentiable delta tracking for free-flight distance sampling
 
     - Emitter sampling (a.k.a. next event estimation).
 
