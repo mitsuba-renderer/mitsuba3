@@ -966,14 +966,6 @@ if __name__ == "__main__":
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
         mi.util.write_bitmap(filename, image_ref)
 
-        # Primal render (direct illumination)
-        if False:
-            # for the current simple test scenes, path results match witg direct results
-            image_ref_direct = integrator_direct.render(config.scene, seed=0, spp=args.spp)
-
-            filename = join(output_dir, f"test_{config.name}_image_primal_direct_ref.exr")
-            mi.util.write_bitmap(filename, image_ref_direct)
-
         # Finite difference
         theta = mi.Float(config.ref_fd_epsilon)
         config.update(theta)

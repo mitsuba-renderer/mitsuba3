@@ -111,7 +111,7 @@ class BasicPRBIntegrator(RBIntegrator):
                     # Detached version of the above term and inverse
                     bsdf_val_detach = bsdf_weight * bsdf_sample.pdf
                     inv_bsdf_val_detach = dr.select(dr.neq(bsdf_val_detach, 0),
-                                                 dr.rcp(bsdf_val_detach), 0)
+                                                    dr.rcp(bsdf_val_detach), 0)
 
                     # Differentiable version of the reflected radiance. Minor
                     # optional tweak: indicate that the primal value of the

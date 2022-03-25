@@ -5,9 +5,9 @@ import mitsuba as mi
 
 from .common import ADIntegrator
 
-class EmitterReparamIntegrator(ADIntegrator):
+class EmissionReparamIntegrator(ADIntegrator):
     """
-    This class implements a reparameterized emitter integrator.
+    This class implements a reparameterized emission integrator.
 
     It reparametrizes the camera ray to handle discontinuity issues
     caused by moving emitters. This is mainly used for learning and
@@ -17,7 +17,9 @@ class EmitterReparamIntegrator(ADIntegrator):
     def __init__(self, props):
         super().__init__(props)
 
+        # Specifies the max depth that reparamtrization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 1)
+        assert(self.reparam_max_depth <= 1)
 
         # Specifies the number of auxiliary rays used to evaluate the
         # reparameterization
@@ -66,25 +68,22 @@ class EmitterReparamIntegrator(ADIntegrator):
                             Tuple[mi.Ray3f, mi.Float]]],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
         """
 
-        primal = mode == dr.ADMode.Primal
-
         ray_reparam = mi.Ray3f(ray)
-        if not primal:
-            # Camera ray reparameterization determinant already considered in ADIntegrator.sample_rays()
+        if mode != dr.ADMode.Primal:
+            # Camera ray reparameterization determinant multiplied in ADIntegrator.sample_rays()
             ray_reparam.d, _ = reparam(ray, depth=0, active=active)
 
         # ---------------------- Direct emission ----------------------
 
-        L = mi.Spectrum(0)
         si = scene.ray_intersect(ray_reparam, active)
-        L += si.emitter(scene).eval(si)
+        L = si.emitter(scene).eval(si)
 
-        return (L, active)
+        return L, active, None
 
-mi.register_integrator("emitter_reparam", lambda props: EmitterReparamIntegrator(props))
+mi.register_integrator("emission_reparam", lambda props: EmissionReparamIntegrator(props))

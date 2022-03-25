@@ -20,7 +20,9 @@ class DirectReparamIntegrator(ADIntegrator):
     def __init__(self, props):
         super().__init__(props)
 
+        # Specifies the max depth that reparamtrization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 2)
+        assert(self.reparam_max_depth <= 2)
 
         # Specifies the number of auxiliary rays used to evaluate the
         # reparameterization
@@ -73,7 +75,7 @@ class DirectReparamIntegrator(ADIntegrator):
                             Tuple[mi.Ray3f, mi.Float]]],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -86,7 +88,7 @@ class DirectReparamIntegrator(ADIntegrator):
 
         ray_reparam = mi.Ray3f(ray)
         if not primal:
-            # Camera ray reparameterization determinant already considered in ADIntegrator.sample_rays()
+            # Camera ray reparameterization determinant multiplied in ADIntegrator.sample_rays()
             ray_reparam.d, _ = reparam(ray, depth=0, active=active)
 
         # ---------------------- Direct emission ----------------------
@@ -104,21 +106,21 @@ class DirectReparamIntegrator(ADIntegrator):
         # Get the BSDF. Potentially computes texture-space differentials.
         bsdf = si.bsdf(ray_reparam)
 
-        # Detached sample
+        # Detached emiitter sample
         active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
         with dr.suspend_grad():
-            ds, em_weight = scene.sample_emitter_direction(
-                si, sampler.next_2d(), True, active_em)  # is it correct to attached sample?
+            ds, weight_em = scene.sample_emitter_direction(
+                si, sampler.next_2d(), True, active_em)
         active_em &= dr.neq(ds.pdf, 0.0)
-        # Re-compute attached `em_weight` to enable emitter optimization
+        # Re-compute attached `weight_em` to enable emitter optimization
         if not primal:
             ds.d = dr.normalize(ds.p - si.p)
-            em_val = scene.eval_emitter_direction(si, ds, active_em)
-            em_weight = dr.select(dr.neq(ds.pdf, 0), em_val / ds.pdf, 0)
+            val_em = scene.eval_emitter_direction(si, ds, active_em)
+            weight_em = dr.select(dr.neq(ds.pdf, 0), val_em / ds.pdf, 0)
             dr.disable_grad(ds.d)
 
         # Reparametrize the ray
-        em_ray_det = 1
+        ray_em_det = 1.0
         if not primal:
             # Create a surface interaction that follows the shape's
             # motion while ignoring any reparameterization from the
@@ -127,44 +129,48 @@ class DirectReparamIntegrator(ADIntegrator):
             si_follow = pi.compute_surface_interaction(
                 ray_reparam, mi.RayFlags.All | mi.RayFlags.FollowShape)
             # Reparameterize the ray towards the emitter
-            em_ray = si_follow.spawn_ray_to(ds.p)
-            em_ray.d, em_ray_det = reparam(em_ray, depth=1, active=active_em)
-            ds.d = em_ray.d
+            ds.d, ray_em_det = reparam(si_follow.spawn_ray_to(ds.p), depth=1, active=active_em)
 
         # Compute MIS
         wo = si.to_local(ds.d)
         bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-        mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+        mis_em = dr.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf_em))
 
-        L += mis_em * bsdf_value_em * em_weight * em_ray_det
+        L += bsdf_value_em * weight_em * ray_em_det * mis_em
 
         # ------------------ BSDF sampling -------------------
 
-        # Attached sample
-        bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
-                                            sampler.next_2d(active_next), active_next)
-        ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
-        active_bsdf = active_next & dr.neq(bsdf_sample, 0.0)
+        # Detached BSDF sample
+        with dr.suspend_grad():
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
+                                                   sampler.next_2d(active_next), active_next)
+            ray_bsdf = si.spawn_ray(si.to_world(bsdf_sample.wo))
+        active_bsdf = active_next & dr.any(dr.neq(bsdf_weight, 0.0))
+        # Re-compute attached `bsdf_weight`
+        if not primal:
+            wo = si.to_local(ray_bsdf.d)
+            bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
+            bsdf_weight = dr.select(dr.neq(bsdf_pdf, 0.0), bsdf_val / dr.detach(bsdf_pdf), 0.0)
 
         # Reparametrize the ray
-        ray_reparam_next = mi.Ray3f(ray_next)
-        ray_reparam_det_next = 1
+        ray_bsdf_det = 1.0
         if not primal:
-            ray_reparam_next.d, ray_reparam_det_next = reparam(ray_next, depth=1, active=active_bsdf)
+            ray_bsdf.d, ray_bsdf_det = reparam(
+                si_follow.spawn_ray(ray_bsdf.d), depth=1, active=active_bsdf)
 
         # Illumination
-        si_next = scene.ray_intersect(ray_reparam_next, active_bsdf)
-        L_bsdf = si_next.emitter(scene).eval(si_next, active_bsdf)
+        si_bsdf = scene.ray_intersect(ray_bsdf, active_bsdf)
+        L_bsdf = si_bsdf.emitter(scene).eval(si_bsdf, active_bsdf)
 
         # Compute MIS
         with dr.suspend_grad():
-            ds = mi.DirectionSample3f(scene, si_next, si)
+            ds = mi.DirectionSample3f(scene, si_bsdf, si)
             delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
             emitter_pdf = scene.pdf_emitter_direction(si, ds, active_bsdf & ~delta)
             mis_bsdf = mis_weight(bsdf_sample.pdf, emitter_pdf)
 
-        L += L_bsdf * bsdf_weight * mis_bsdf * ray_reparam_det_next
+        L += L_bsdf * bsdf_weight * ray_bsdf_det * mis_bsdf
 
-        return (L, active)
+        return L, active, None
 
 mi.register_integrator("direct_reparam", lambda props: DirectReparamIntegrator(props))

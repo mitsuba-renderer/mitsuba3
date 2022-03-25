@@ -110,7 +110,7 @@ def _sample_warp_field(scene: mi.Scene,
 
         # Compute harmonic weight, being wary of division by near-zero values
         w_denom = inv_vmf_density - 1 + B
-        w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)  # 1 / (D+B)
+        w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)  # 1 / (D + B)
         w = dr.pow(w_denom_rcp, exponent) * inv_vmf_density
 
         # Analytic weight gradient w.r.t. `ray.d` (detaching inv_vmf_density gradient)

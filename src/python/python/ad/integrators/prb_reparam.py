@@ -359,7 +359,6 @@ class PRBReparamIntegrator(RBIntegrator):
                 bsdf_value_em, bsdf_pdf_em = bsdf_cur.eval_pdf(bsdf_ctx, si_cur,
                                                                wo, active_em)
                 mis_direct = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-                dr.disable_grad(mis_direct)  # Detached MIS
                 Lr_dir = β * mis_direct * bsdf_value_em * em_weight * em_ray_det
 
             # ------------------ Detached BSDF sampling -------------------
@@ -503,14 +502,14 @@ class PRBReparamIntegrator(RBIntegrator):
                     bsdf_val = bsdf_cur.eval(bsdf_ctx, si_cur, wo, active_next)
 
                     # Detached version of the above term and inverse
-                    bsdf_val_det = bsdf_weight * bsdf_sample.pdf
-                    inv_bsdf_val_det = dr.select(dr.neq(bsdf_val_det, 0),
-                                                 dr.rcp(bsdf_val_det), 0)
+                    bsdf_val_detach = bsdf_weight * bsdf_sample.pdf
+                    inv_bsdf_val_detach = dr.select(dr.neq(bsdf_val_detach, 0),
+                                                    dr.rcp(bsdf_val_detach), 0)
 
                     # Differentiable version of the reflected indirect
                     # radiance. Minor optional tweak: indicate that the primal
                     # value of the second term is always 1.
-                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val)
+                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val)
 
                 with dr.resume_grad():
                     # Differentiable Monte Carlo estimate of all contributions

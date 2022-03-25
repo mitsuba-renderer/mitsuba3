@@ -78,11 +78,14 @@ class ADIntegrator(mi.SamplingIntegrator):
             ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
-            L, valid = self.sample(
+            L, valid, state = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
+                depth=mi.UInt32(0),
+                δL=None,
+                state_in=None,
                 reparam=None,
                 active=mi.Bool(True)
             )
@@ -99,10 +102,6 @@ class ADIntegrator(mi.SamplingIntegrator):
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid, alpha
-
-            # Probably a little overkill, but why not.. If there are any
-            # DrJit arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in dr.eval().
             gc.collect()
 
             # Perform the weight division and return an image tensor
@@ -149,7 +148,7 @@ class ADIntegrator(mi.SamplingIntegrator):
                                                      sampler, reparam)
 
             with dr.resume_grad():
-                L, valid = self.sample(
+                L, valid, _ = self.sample(
                     mode=dr.ADMode.Forward,
                     scene=scene,
                     sampler=sampler,
@@ -222,7 +221,7 @@ class ADIntegrator(mi.SamplingIntegrator):
                                                      sampler, reparam)
 
             with dr.resume_grad():
-                L, valid = self.sample(
+                L, valid, _ = self.sample(
                     mode=dr.ADMode.Backward,
                     scene=scene,
                     sampler=sampler,
@@ -456,6 +455,9 @@ class ADIntegrator(mi.SamplingIntegrator):
                scene: mi.Scene,
                sampler: mi.Sampler,
                ray: mi.Ray3f,
+               depth: mi.UInt32,
+               δL: Optional[mi.Spectrum],
+               state_in: Any,
                reparam: Optional[
                    Callable[[mi.Ray3f, mi.Bool],
                             Tuple[mi.Ray3f, mi.Float]]],
@@ -464,7 +466,7 @@ class ADIntegrator(mi.SamplingIntegrator):
         """
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
-        ``ADIntegrator`` interface.
+        ``RBIntegrator`` interface.
 
         In those concrete implementations, the function performs a Monte Carlo
         random walk, implementing a number of different behaviors depending on
@@ -496,6 +498,24 @@ class ADIntegrator(mi.SamplingIntegrator):
         Parameter ``sampler`` (``mi.Sampler``):
             A pre-seeded sample generator
 
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
         Parameter ``reparam`` (see above):
             If provided, this callable takes a ray and a mask of active SIMD
             lanes and returns a reparameterized ray and Jacobian determinant.
@@ -518,72 +538,10 @@ class ADIntegrator(mi.SamplingIntegrator):
             to compute an alpha channel.
         """
 
-        raise Exception('ADIntegrator does not provide the sample() method. '
+        raise Exception('RBIntegrator does not provide the sample() method. '
                         'It should be implemented by subclasses that '
-                        'specialize the abstract ADIntegrator interface.')
-
+                        'specialize the abstract RBIntegrator interface.')
 class RBIntegrator(ADIntegrator):
-
-    def render(self: mi.SamplingIntegrator,
-               scene: mi.Scene,
-               sensor: Union[int, mi.Sensor] = 0,
-               seed: int = 0,
-               spp: int = 0,
-               develop: bool = True,
-               evaluate: bool = True) -> mi.TensorXf:
-
-        if not develop:
-            raise Exception("develop=True must be specified when "
-                            "invoking AD integrators")
-
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-
-        # Disable derivatives in all of the following
-        with dr.suspend_grad():
-            # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(
-                sensor=sensor,
-                seed=seed,
-                spp=spp,
-                aovs=self.aovs()
-            )
-
-            # Generate a set of rays starting at the sensor
-            ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
-
-            # Launch the Monte Carlo sampling process in primal mode
-            L, valid, state = self.sample(
-                mode=dr.ADMode.Primal,
-                scene=scene,
-                sampler=sampler,
-                ray=ray,
-                depth=mi.UInt32(0),
-                δL=None,
-                state_in=None,
-                reparam=None,
-                active=mi.Bool(True)
-            )
-
-            # Prepare an ImageBlock as specified by the film
-            block = sensor.film().create_block()
-
-            # Only use the coalescing feature when rendering enough samples
-            block.set_coalesce(block.coalesce() and spp >= 4)
-
-            # Accumulate into the image block
-            alpha = dr.select(valid, mi.Float(1), mi.Float(0))
-            block.put(pos, ray.wavelengths, L * weight, alpha)
-
-            # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, L, valid, alpha
-            gc.collect()
-
-            # Perform the weight division and return an image tensor
-            sensor.film().put_block(block)
-            self.primal_image = sensor.film().develop()
-
-            return self.primal_image
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
@@ -952,98 +910,6 @@ class RBIntegrator(ADIntegrator):
 
             # Run kernel representing side effects of the above
             dr.eval()
-
-    def sample(self,
-               mode: dr.ADMode,
-               scene: mi.Scene,
-               sampler: mi.Sampler,
-               ray: mi.Ray3f,
-               depth: mi.UInt32,
-               δL: Optional[mi.Spectrum],
-               state_in: Any,
-               reparam: Optional[
-                   Callable[[mi.Ray3f, mi.Bool],
-                            Tuple[mi.Ray3f, mi.Float]]],
-               active: mi.Bool) -> Tuple[mi.Spectrum,
-                                         mi.Bool]:
-        """
-        This function does the main work of differentiable rendering and
-        remains unimplemented here. It is provided by subclasses of the
-        ``RBIntegrator`` interface.
-
-        In those concrete implementations, the function performs a Monte Carlo
-        random walk, implementing a number of different behaviors depending on
-        the ``mode`` argument. For example in primal mode (``mode ==
-        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
-        and estimates the radiance incident along ``ray``.
-
-        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
-        derivative of the incident radiance for a set of scene parameters being
-        differentiated. (This requires that these parameters are attached to
-        the AD graph and have gradients specified via ``dr.set_grad()``)
-
-        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
-        radiance ``δL`` and accumulates it into differentiable scene parameters.
-
-        You are normally *not* expected to directly call this function. Instead,
-        use ``mi.render()`` , which performs various necessary
-        setup steps to correctly use the functionality provided here.
-
-        The parameters of this function are as follows:
-
-        Parameter ``mode`` (``drjit.ADMode``)
-            Specifies whether the rendering algorithm should run in primal or
-            forward/backward derivative propagation mode
-
-        Parameter ``scene`` (``mi.Scene``):
-            Reference to the scene being rendered in a differentiable manner.
-
-        Parameter ``sampler`` (``mi.Sampler``):
-            A pre-seeded sample generator
-
-        Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
-            for forward/backward differentiable rendering phases that need to
-            obtain an incident radiance estimate. In this case, they may
-            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
-            depth.
-
-        Parameter ``δL`` (``mi.Spectrum``):
-            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
-            the ``δL`` parameter should specify the adjoint radiance associated
-            with each ray. Otherwise, it must be set to ``None``.
-
-        Parameter ``state_in`` (``Any``):
-            The primal phase of ``sample()`` returns a state vector as part of
-            its return value. The forward/backward differential phases expect
-            that this state vector is provided to them via this argument. When
-            invoked in primal mode, it should be set to ``None``.
-
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
-
-        Parameter ``active`` (``mi.Bool``):
-            This mask array can optionally be used to indicate that some of
-            the rays are disabled.
-
-        The function returns a tuple ``(spec, valid, state_out)`` where
-
-        Output ``spec`` (``mi.Spectrum``):
-            Specifies the estimated radiance and differential radiance in
-            primal and forward mode, respectively.
-
-        Output ``valid`` (``mi.Bool``):
-            Indicates whether the rays intersected a surface, which can be used
-            to compute an alpha channel.
-        """
-
-        raise Exception('RBIntegrator does not provide the sample() method. '
-                        'It should be implemented by subclasses that '
-                        'specialize the abstract RBIntegrator interface.')
 
 # ---------------------------------------------------------------------------
 # Default implementation of Integrator.render_forward/backward

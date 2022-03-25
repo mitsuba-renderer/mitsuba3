@@ -180,6 +180,8 @@ public:
             if (dr::none_or<false>(active_next))
                 break; // early exit for scalar mode
 
+            // ---------------------- Emitter sampling ----------------------
+
             // Perform emitter sampling?
             BSDFPtr bsdf = si.bsdf(ray);
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
