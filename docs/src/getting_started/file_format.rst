@@ -267,11 +267,13 @@ by loading it from an external file:
 
 .. code-block:: xml
 
-    <spectrum name="color_property" filename="measured_spectrum.spd"/>
+    <spectrum name="color_property" filename="measured_spectrum.spd"/>         (Text)
+    <spectrum name="color_property" filename="measured_binary_spectrum.spb"/>  (Binary)
 
-The file should contain a single measurement per line, with the corresponding
-wavelength in nanometers and the measured value separated by a space. Comments
-are allowed. Here is an example:
+
+The file should contain a single measurement per line, with the corresponding wavelength
+in nanometers and the measured value separated by a space. Comments are allowed.
+Here is an example:
 
 .. code-block:: text
 
@@ -282,6 +284,10 @@ are allowed. Here is an example:
     430.62 0.822125
     435.09 0.834000
     ...
+
+It is available the function :py:meth:`mitsuba.spectrum_to_file` that generates,
+given the wavelengths and its values, the text file corresponding to the previously
+explained format.
 
 For more details regarding spectral information in Mitsuba 2, please have a look
 at the :ref:`corresponding section <sec-spectra>` in the plugin documentation.

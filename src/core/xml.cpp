@@ -250,6 +250,7 @@ struct XMLParseContext {
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
+    bool spectral_unbounded = false;
     std::string variant;
     bool parallel;
 
@@ -537,6 +538,24 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 name      = node.attribute("name").value(),
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
+
+                    /*
+                     * Detect that we are using a Spectral Film and change spectral context
+                     *
+                     * This is necessary because in a normal Spectral to RGB rendering, the system uses
+                     * D65 illuminants for emitters and a normalization to keep Spectral and RGB
+                     * renderings similar. When using the Spectral Film, we potentially work outside
+                     * of the visible range (so D65 by default may not be ideal). Furthermore, the
+                     * normalization constant does not help in this scenario.
+                     *
+                     * It is needed to put the spectral film as the first thing before anything that
+                     * needs correction inside the scene description.
+                     */
+                    if (type == "specfilm") {
+                        ctx.spectral_unbounded = true;
+                        Log(Info, "Spectral Film detected during scene loading."
+                                  "\"D65\" emitters and \"MI_CIE_Y_NORMALIZATION\" have been disabled");
+                    }
 
                     Properties props_nested(type);
                     props_nested.set_id(id);
@@ -844,7 +863,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         name, const_value, wavelengths, values, ctx.variant,
                         within_emitter,
                         ctx.color_mode == ColorMode::Spectral,
-                        ctx.color_mode == ColorMode::Monochromatic);
+                        ctx.color_mode == ColorMode::Monochromatic,
+                        ctx.spectral_unbounded);
 
                     props.set_object(name, obj);
                 }
@@ -1122,12 +1142,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                                          const std::string &variant,
                                          bool within_emitter,
                                          bool is_spectral_mode,
-                                         bool is_monochromatic_mode) {
+                                         bool is_monochromatic_mode,
+                                         bool spectral_unbounded) {
     const Class *class_ = Class::for_name("Texture", variant);
 
     if (wavelengths.empty()) {
         Properties props("uniform");
-        if (within_emitter && is_spectral_mode) {
+        if (within_emitter && is_spectral_mode && !spectral_unbounded) {
             props.set_plugin_name("d65");
             props.set_float("scale", const_value);
         } else {
@@ -1144,13 +1165,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         /* Values are scaled so that integrating the spectrum against the CIE curves
             and converting to sRGB yields (1, 1, 1) for D65. */
         Float unit_conversion = 1;
-        if (within_emitter || !is_spectral_mode)
+        if ((within_emitter && !spectral_unbounded) || !is_spectral_mode)
             unit_conversion = Float(MI_CIE_Y_NORMALIZATION);
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
-        Float min_interval = 0,
-              max_interval = std::numeric_limits<Float>::infinity();
+        Float min_interval = std::numeric_limits<Float>::infinity(),
+              max_interval = 0.0;
 
         for (size_t n = 0; n < wavelengths.size(); ++n) {
             values[n] *= unit_conversion;
@@ -1172,7 +1193,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             /* The regular spectrum class is more efficient, so tolerate a small
                amount of imprecision in the parsed interval positions.. */
             bool is_regular =
-                (max_interval - min_interval) > Float(1e-3) * min_interval;
+                (max_interval - min_interval) < Float(1e-3) * min_interval;
 
             if (is_regular) {
                 props.set_plugin_name("regular");
@@ -1210,10 +1231,20 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
     }
 }
 
+std::vector<ref<Object>> expand_node(const ref<Object> &node) {
+    std::vector<ref<Object>> sub_objects = node->expand();
+    if (!sub_objects.empty())
+        return sub_objects;
+
+    return { node };
+}
+
 NAMESPACE_END(detail)
 
-ref<Object> load_string(const std::string &string, const std::string &variant,
-                        ParameterList param, bool parallel) {
+std::vector<ref<Object>> load_string(const std::string &string,
+                                     const std::string &variant,
+                                     ParameterList param,
+                                     bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -1235,22 +1266,27 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
     try {
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
-        Properties prop;
+        Properties props;
         size_t arg_counter; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
+        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
-        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
+
+        ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
+        std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
-        return obj;
+        return objects;
     } catch(...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
         throw;
     }
 }
 
-ref<Object> load_file(const fs::path &filename_, const std::string &variant,
-                      ParameterList param, bool write_update, bool parallel) {
+std::vector<ref<Object>> load_file(const fs::path &filename_,
+                                   const std::string &variant,
+                                   ParameterList param,
+                                   bool write_update,
+                                   bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1282,9 +1318,9 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
     try {
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
-        Properties prop;
+        Properties props;
         size_t arg_counter = 0; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
+        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
 
         if (src.modified && write_update) {
@@ -1311,14 +1347,15 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
             filename = backup;
         }
 
-        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
+        ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
+        std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
 
         Log(Info, "Done loading XML file \"%s\" (took %s).",
             filename, util::time_string((float) timer.value(), true));
 
-        return obj;
+        return objects;
     } catch(...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
         throw;

@@ -51,6 +51,7 @@ Spectral film (:monosp:`specfilm`)
  * - (Nested plugins)
    - |spectrum|
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
+   - |exposed|
 
 This plugin stores one or several spectral bands as a multichannel spectral image in a high dynamic
 range OpenEXR file and tries to preserve the rendering as much as possible by not performing any
@@ -78,7 +79,7 @@ reduce the spectral noise that would appear if each channel were calculated inde
 .. subfigend::
    :label: fig-specfilm
 
-The following XML snippet describes a film that writes the previously shown 3-channel OpenEXR file with
+The following snippet describes a film that writes the previously shown 3-channel OpenEXR file with
 each channel containing the sensor response to each defined spectral band (it is possible to load a
 spectrum from a file, see the :ref:`Spectrum definition <color-spectra>` section).
 Notice that in this example, each band contains the spectral sensitivity of one of the ``rgb`` channels.
@@ -130,7 +131,7 @@ public:
 
         // Load all SRF and store both name and data
         for (auto &[name, obj] : props.objects(false)) {
-            auto srf = dynamic_cast<Texture *>(obj.get());
+            Texture *srf = dynamic_cast<Texture *>(obj.get());
             if (srf != nullptr) {
                 m_srfs.push_back(srf);
                 m_names.push_back(name);
@@ -162,6 +163,12 @@ public:
         m_flags = FilmFlags::Spectral | FilmFlags::Special;
 
         compute_srf_sampling();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        for (size_t i=0; i<m_srfs.size(); ++i)
+            callback->put_object(m_names[i], m_srfs[i].get(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
     }
 
     void compute_srf_sampling() {
@@ -242,8 +249,8 @@ public:
     }
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
-                        Float* aovs, Mask /* active */) const override {
-        aovs[m_channels.size() - 1] = 1.f;   // Set sample weight
+                        Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
+        aovs[m_channels.size() - 1] = weight;   // Set sample weight
 
         SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
@@ -417,10 +424,11 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)
-            oss << m_srfs[c] << std::endl;
-        oss << " )]";
+            oss << "    " << string::indent(m_srfs[c], 4) << std::endl;
+        oss << "  )" << std::endl << "]";
         return oss.str();
     }
 

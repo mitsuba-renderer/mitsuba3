@@ -197,6 +197,16 @@ public:
      */
     virtual ScalarVector2f wavelength_range() const;
 
+    /**
+     * Return the maximum value of the spectrum
+     *
+     * Not every implementation necessarily provides this function. The default
+     * implementation throws an exception.
+     *
+     * Even if the operation is provided, it may only return an approximation.
+     */
+    virtual ScalarFloat max() const;
+
     //! @}
     // ======================================================================
 

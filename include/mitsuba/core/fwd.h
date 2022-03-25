@@ -2,7 +2,6 @@
 
 #include <mitsuba/core/platform.h>
 #include <drjit/array_traits.h>
-#include <drjit/array_router.h>
 #include <drjit/map.h>
 #include <vector>
 
@@ -317,7 +316,7 @@ extern "C" {
 //! @{ \name Helper macros
 // =============================================================
 
-#define MI_DECLARE_ENUM_OPERATORS(name)                                        \
+#define MI_DECLARE_ENUM_OPERATORS_IMPL(name, neq_expr)                         \
     constexpr uint32_t operator|(name f1, name f2) {                           \
         return (uint32_t) f1 | (uint32_t) f2;                                  \
     }                                                                          \
@@ -334,8 +333,22 @@ extern "C" {
     constexpr uint32_t operator+(name e) { return (uint32_t) e; }              \
     template <typename UInt32>                                                 \
     constexpr auto has_flag(UInt32 flags, name f) {                            \
-        return drjit::neq(flags & (uint32_t) f, 0u);                           \
+        return neq_expr(flags & (uint32_t) f, 0u);                             \
     }
+
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+#  define MI_DECLARE_ENUM_OPERATORS(name)                                      \
+   MI_DECLARE_ENUM_OPERATORS_IMPL(name,                                        \
+                             [&](UInt32 a, UInt32 b) {                         \
+                                 return drjit::neq(a, b);                      \
+                             })
+#else
+# define MI_DECLARE_ENUM_OPERATORS(name)                                       \
+  MI_DECLARE_ENUM_OPERATORS_IMPL(name,                                         \
+                            [&](UInt32 a, UInt32 b) {                          \
+                                return a != b;                                 \
+                            })
+#endif
 
 //! @}
 // =============================================================

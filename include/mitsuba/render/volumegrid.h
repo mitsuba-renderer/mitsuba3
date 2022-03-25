@@ -60,8 +60,25 @@ public:
     /// Return the precomputed maximum over the volume grid
     ScalarFloat max() const { return m_max; }
 
+    /**
+     * \brief Return the precomputed maximum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    void max_per_channel(ScalarFloat *out) const;
+
     /// Set the precomputed maximum over the volume grid
     void set_max(ScalarFloat max) { m_max = max; }
+
+    /**
+     * \brief Set the precomputed maximum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    void set_max_per_channel(ScalarFloat *max) {
+        for (size_t i=0; i<m_channel_count; ++i)
+            m_max_per_channel[i] = max[i];
+    }
 
     /// Return the number bytes of storage used per voxel
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
@@ -100,6 +117,7 @@ protected:
     ScalarUInt32 m_channel_count;
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
+    std::vector<ScalarFloat> m_max_per_channel;
 };
 
 MI_EXTERN_CLASS(VolumeGrid)

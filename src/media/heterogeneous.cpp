@@ -60,7 +60,7 @@ disk, e.g. using a 3D grid.
 The medium is parametrized by the single scattering albedo and the extinction coefficient
 :math:`\sigma_t`. The extinction coefficient should be provided in inverse scene units.
 For instance, when a world-space distance of 1 unit corresponds to a meter, the
-extinction coefficent should have units of inverse meters. For convenience,
+extinction coefficient should have units of inverse meters. For convenience,
 the scale parameter can be used to correct the units. For instance, when the scene is in
 meters and the coefficients are in inverse millimeters, set scale to 1000.
 
@@ -177,8 +177,8 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f & /* mi */,
-                            Mask active) const override {
+    get_majorant(const MediumInteraction3f & /* mi */,
+                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
     }

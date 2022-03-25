@@ -405,14 +405,60 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     }
 }
 
+/**
+ * \brief Read a spectral power distribution from an ASCII file.
+ *
+ * The data should be arranged as follows:
+ * The file should contain a single measurement per line, with the corresponding
+ * wavelength in nanometers and the measured value separated by a space.
+ * Comments are allowed.
+ *
+ * \param path
+ *     Path of the file to be read
+ * \param wavelengths
+ *     Array that will be loaded with the wavelengths stored in the file
+ * \param values
+ *     Array that will be loaded with the values stored in the file
+ */
 template <typename Scalar>
-MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
-                                        std::vector<Scalar> &wavelengths,
-                                        std::vector<Scalar> &values);
+MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+                                      std::vector<Scalar> &wavelengths,
+                                      std::vector<Scalar> &values);
 
+/**
+ * \brief Write a spectral power distribution to an ASCII file.
+ *
+ * The format is identical to that parsed by \ref spectrum_from_file().
+ *
+ * \param path
+ *     Path to the file to be written to
+ * \param wavelengths
+ *     Array with the wavelengths to be stored in the file
+ * \param values
+ *     Array with the values to be stored in the file
+ */
+template <typename Scalar>
+MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+                                    const std::vector<Scalar> &wavelengths,
+                                    const std::vector<Scalar> &values);
+
+/**
+ * \brief Tranform a spectrum into a set of equivalent sRGB coefficients
+ *
+ * When ``bounded`` is set, the resulting sRGB coefficients will be at most 1.0.
+ * In any case, sRGB coefficients will be clamped to 0 if they are negative.
+ *
+ * \param wavelengths
+ *     Array with the wavelengths of the spectrum
+ * \param values
+ *     Array with the values at the previously specified wavelengths
+ * \param bounded
+ *     Boolean that controls if clamping is required.
+ */
 template <typename Scalar>
 MI_EXPORT_LIB Color<Scalar, 3>
 spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
-                      const std::vector<Scalar> &values, bool bounded = true);
+                      const std::vector<Scalar> &values,
+                      bool bounded = true);
 
 NAMESPACE_END(mitsuba)

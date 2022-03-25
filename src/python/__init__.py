@@ -75,6 +75,13 @@ class MitsubaVariantModule(types.ModuleType):
         variant = super().__getattribute__('_variant')
         modules = super().__getattribute__('_modules')
 
+        # Try default lookup first
+        try:
+            if not key == '__dict__':
+                return super().__getattribute__(key)
+        except Exception:
+            pass
+
         if modules is None:
             try:
                 modules = (
@@ -87,13 +94,6 @@ class MitsubaVariantModule(types.ModuleType):
                     raise ImportError('Mitsuba variant "%s" not found.' % variant)
                 else:
                     raise
-
-        # Try default lookup first
-        try:
-            if not key == '__dict__':
-                return super().__getattribute__(key)
-        except Exception:
-            pass
 
         submodule = super().__getattribute__('_submodule')
         sub_suffix = '' if submodule is None else f'.{submodule}'
@@ -118,14 +118,14 @@ class MitsubaVariantModule(types.ModuleType):
                         if k not in result:
                             result[k] = v
 
-            # Search python modules as well
-            try:
-                py_m = _import(f'mitsuba.python{sub_suffix}')
-                for k, v in getattr(py_m, '__dict__').items():
-                    if not k.startswith('_') and k not in result:
-                        result[k] = v
-            except Exception:
-                pass
+                # Search python modules as well
+                try:
+                    py_m = _import(f'mitsuba.python{sub_suffix}')
+                    for k, v in getattr(py_m, '__dict__').items():
+                        if not k.startswith('_') and k not in result:
+                            result[k] = v
+                except Exception:
+                    pass
 
             return result
 
@@ -169,6 +169,10 @@ class MitsubaModule(types.ModuleType):
         self.__file__ = __file__
         self._submodule = submodule
 
+        global _tls
+        _tls.cache = {}
+        _tls.variant = None
+
     def __getattribute__(self, key):
         global _tls
 
@@ -195,7 +199,7 @@ class MitsubaModule(types.ModuleType):
         if key in MI_VARIANTS:
             return sys.modules[f'mitsuba.{key}']
 
-        if not hasattr(_tls, 'variant'):
+        if not key in ['__dict__', '__wrapped__'] and variant is None:
             # The variant wasn't set explicitly, we first check if a default
             # variant is set in the config.py file.
             from .config import MI_DEFAULT_VARIANT
@@ -208,17 +212,20 @@ class MitsubaModule(types.ModuleType):
                                   'following variants are available: %s.' % (
                                   ", ".join(self.variants())))
 
-        # Check whether we are importing a known submodule
-        if submodule is None and key in submodules:
-            return sys.modules[f'mitsuba.{variant}.{key}']
+        if not variant is None:
+            # Check whether we are importing a known submodule
+            if submodule is None and key in submodules:
+                return sys.modules[f'mitsuba.{variant}.{key}']
 
-        # Redirect all other imports to the currently enabled variant module.
-        sub_suffix = '' if submodule is None else f'.{submodule}'
-        module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
-        result = module.__getattribute__(key)
+            # Redirect all other imports to the currently enabled variant module.
+            sub_suffix = '' if submodule is None else f'.{submodule}'
+            module = sys.modules[f'mitsuba.{variant}{sub_suffix}']
+            result = module.__getattribute__(key)
 
         # Add set_variant(), variant() and variant modules to the __dict__
         if submodule is None and key == '__dict__':
+            if variant is None:
+                result = super().__getattribute__('__dict__')
             result['set_variant'] = super().__getattribute__('set_variant')
             result['variant']  = super().__getattribute__('variant')
             result['variants'] = super().__getattribute__('variants')
@@ -235,6 +242,7 @@ class MitsubaModule(types.ModuleType):
 
     def variant(self) -> str:
         'Return currently enabled variant'
+        global _tls
         return getattr(_tls, 'variant', None)
 
     def variants(self) -> typing.List[str]:
@@ -260,6 +268,7 @@ class MitsubaModule(types.ModuleType):
                                 args if len(args) > 1 else args[0],
                                 ", ".join(self.variants())))
 
+        global _tls
         if getattr(_tls, 'variant', None) == value:
             return
 
@@ -274,32 +283,54 @@ class MitsubaModule(types.ModuleType):
                 _import('mitsuba.ad.integrators')
             del sys
 
+# Check whether we are reloading the mitsuba module
+reload = f'mitsuba.{submodules[0]}' in sys.modules
+if reload:
+    print(
+        "The Mitsuba module was reloaded (imported a second time). "
+        "This can in some cases result in small but subtle issues "
+        "and is discouraged."
+    )
+
 # Register the variant modules
 from .config import MI_VARIANTS
 for variant in MI_VARIANTS:
     name = f'mitsuba.{variant}'
-    module = MitsubaVariantModule(name, variant)
-    sys.modules[name] = module
+    if reload:
+        sys.modules[name].__init__(name, variant)
+    else:
+        sys.modules[name] = MitsubaVariantModule(name, variant)
 
 # Register variant submodules
 for variant in MI_VARIANTS:
     for submodule in submodules:
         name = f'mitsuba.{variant}.{submodule}'
-        module = MitsubaVariantModule(name, variant, submodule)
-        sys.modules[name] = module
+        if reload:
+            sys.modules[name].__init__(name, variant, submodule)
+        else:
+            sys.modules[name] = MitsubaVariantModule(name, variant, submodule)
 
 # Register the virtual mitsuba module and submodules. This will overwrite the
 # real mitsuba module in order to redirect future imports.
-sys.modules['mitsuba'] = MitsubaModule('mitsuba')
+if reload:
+    sys.modules['mitsuba'].__init__('mitsuba')
+else:
+    sys.modules['mitsuba'] = MitsubaModule('mitsuba')
+
 for submodule in submodules:
     name = f'mitsuba.{submodule}'
-    module = MitsubaModule(name, submodule)
-    sys.modules[name] = module
+    if reload:
+        sys.modules[name].__init__(name, submodule)
+    else:
+        sys.modules[name] = MitsubaModule(name, submodule)
 
 
 # Cleanup
 del MitsubaModule
 del MitsubaVariantModule
-del types
+del typing, types
 del threading
 del os
+del config
+del MI_VARIANTS
+del variant, submodule, name, reload

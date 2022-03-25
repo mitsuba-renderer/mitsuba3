@@ -141,7 +141,7 @@ little endian encoding and is specified as follows:
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
+    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox, m_channel_count)
     MI_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props) {
@@ -170,6 +170,8 @@ public:
 
         FileResolver *fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
+        if (!fs::exists(file_path))
+            Log(Error, "\"%s\": file does not exist!", file_path);
         m_volume_grid = new VolumeGrid(file_path);
 
         m_raw = props.get<bool>("raw", false);
@@ -222,6 +224,9 @@ public:
             m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
                                   m_accel, filter_mode, wrap_mode);
             m_max = m_volume_grid->max();
+            m_max_per_channel.resize(m_volume_grid->channel_count());
+            m_volume_grid->max_per_channel(m_max_per_channel.data());
+            m_channel_count = m_volume_grid->channel_count();
         }
 
         if (props.get<bool>("use_grid_bbox", false)) {
@@ -314,6 +319,12 @@ public:
         }
     }
 
+    void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
+        return interpolate_per_channel<Float>(it, out, active);
+    }
+
     Vector3f eval_3(const Interaction3f &it,
                     Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
@@ -351,6 +362,11 @@ public:
     }
 
     ScalarFloat max() const override { return m_max; }
+
+    void max_per_channel(ScalarFloat *out) const override {
+        for (size_t i=0; i<m_max_per_channel.size(); ++i)
+            out[i] = m_max_per_channel[i];
+    }
 
     ScalarVector3i resolution() const override {
         auto shape = m_texture.shape();
@@ -519,6 +535,23 @@ protected:
         return result;
     }
 
+
+    /**
+     * \brief Evaluates the volume at the given interaction
+     *
+     * Should only be used when the volume contains data with multiple channels
+     */
+    template <typename VALUE>
+    MI_INLINE void interpolate_per_channel(const Interaction3f &it, Float *out, Mask active) const {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f p = m_to_local * it.p;
+        if (m_accel)
+            m_texture.eval(p, out, active);
+        else
+            m_texture.eval_nonaccel(p, out, active);
+    }
+
 protected:
     Texture3f m_texture;
     bool m_accel;
@@ -526,6 +559,7 @@ protected:
     ref<VolumeGrid> m_volume_grid;
     bool m_fixed_max = false;
     ScalarFloat m_max;
+    std::vector<ScalarFloat> m_max_per_channel;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)

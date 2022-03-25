@@ -23,19 +23,37 @@ MI_PY_EXPORT(VolumeGrid) {
             memcpy(volumegrid->data(), obj.data(), volumegrid->buffer_size());
 
             ScalarFloat max = 0.f;
+            std::vector<ScalarFloat> max_per_channel(channel_count, -dr::Infinity<ScalarFloat>);
             if (compute_max) {
-                for (size_t i = 0; i < dr::hprod(size) * channel_count; ++i)
+                size_t ch_index = 0;
+                for (size_t i = 0; i < dr::hprod(size) * channel_count; ++i) {
                     max = dr::max(max, volumegrid->data()[i]);
+                    ch_index = i % channel_count;
+                    max_per_channel[ch_index] = dr::max(max_per_channel[ch_index], volumegrid->data()[i]);
+                }
             }
 
             volumegrid->set_max(max);
+            volumegrid->set_max_per_channel(max_per_channel.data());
             return volumegrid;
         }), "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a NumPy array")
 
         .def_method(VolumeGrid, size)
         .def_method(VolumeGrid, channel_count)
         .def_method(VolumeGrid, max)
+        .def("max_per_channel",
+            [] (const VolumeGrid *volgrid) {
+                std::vector<ScalarFloat> max_values(volgrid->channel_count());
+                volgrid->max_per_channel(max_values.data());
+                return max_values;
+            },
+            D(VolumeGrid, max_per_channel))
         .def_method(VolumeGrid, set_max)
+        .def("set_max_per_channel",
+            [] (VolumeGrid *volgrid, std::vector<ScalarFloat> &max_values) {
+                volgrid->set_max_per_channel(max_values.data());
+            },
+            D(VolumeGrid, set_max_per_channel))
         .def_method(VolumeGrid, bytes_per_voxel)
         .def_method(VolumeGrid, buffer_size)
         .def("write", py::overload_cast<Stream *>(&VolumeGrid::write, py::const_),

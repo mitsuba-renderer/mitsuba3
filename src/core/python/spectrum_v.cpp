@@ -1,5 +1,6 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/filesystem.h>
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(Spectrum) {
@@ -58,4 +59,15 @@ MI_PY_EXPORT(Spectrum) {
 
     m.def("spectrum_list_to_srgb", &spectrum_list_to_srgb<ScalarFloat>,
           "wavelengths"_a, "values"_a, "bounded"_a=true);
+
+    m.def("spectrum_from_file",
+        [] (const fs::path &filename) {
+            std::vector<ScalarFloat> wavelengths, values;
+            spectrum_from_file(filename, wavelengths, values);
+            return std::make_pair(wavelengths, values);
+        },
+        "filename"_a, D(spectrum_from_file));
+
+    m.def("spectrum_to_file", &spectrum_to_file<ScalarFloat>,
+          "filename"_a, "wavelengths"_a, "values"_a, D(spectrum_to_file));
 }

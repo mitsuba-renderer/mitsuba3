@@ -11,7 +11,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
-template <typename T> T strtof(const char *s, char **endptr) {
+template <typename T> T parse_float(const char *s, const char *end, char **endptr) {
     const char *p = s;
 
     // Skip leading space
@@ -29,12 +29,13 @@ template <typename T> T strtof(const char *s, char **endptr) {
 
     T result;
     fast_float::from_chars_result status =
-        fast_float::from_chars(p, p + strlen(p), result);
+        fast_float::from_chars(p, end, result);
 
     bool success = status.ec == std::errc();
 
     if (likely(success)) {
-        *endptr = (char *) status.ptr;
+        if (endptr)
+            *endptr = (char *) status.ptr;
         p = status.ptr;
     } else {
         Throw("Floating point number \"%s\" could not be parsed!", s);
@@ -44,42 +45,21 @@ template <typename T> T strtof(const char *s, char **endptr) {
 }
 
 template <typename T> T stof(const std::string &s) {
-    const char *p = s.c_str();
+    char *p = (char *) s.c_str();
+    T result = parse_float<T>(p, p + s.length(), &p);
+    bool success = false;
 
-    // Skip leading space
+    // Skip trailing space
     do {
         char c = *p;
-        if (c == ' ' || c == '\t')
+
+        if (c == ' ' || c == '\t') {
             ++p;
-        else
+        } else  {
+            success = c == '\0';
             break;
+        }
     } while (true);
-
-    // Skip leading '+' signs (not handled by from_chars)
-    if (*p == '+')
-        ++p;
-
-    T result;
-    fast_float::from_chars_result status =
-        fast_float::from_chars(p, p + s.length(), result);
-
-    bool success = status.ec == std::errc();
-
-    if (likely(success)) {
-        p = status.ptr;
-
-        // Skip trailing space
-        do {
-            char c = *p;
-
-            if (c == ' ' || c == '\t') {
-                ++p;
-            } else  {
-                success = c == '\0';
-                break;
-            }
-        } while (true);
-    }
 
     if (unlikely(!success))
         Throw("Floating point number \"%s\" could not be parsed!", s);
@@ -89,8 +69,8 @@ template <typename T> T stof(const std::string &s) {
 
 template MI_EXPORT_LIB float  stof<float>(const std::string &);
 template MI_EXPORT_LIB double stof<double>(const std::string &);
-template MI_EXPORT_LIB float  strtof<float>(const char *, char **);
-template MI_EXPORT_LIB double strtof<double>(const char *, char **);
+template MI_EXPORT_LIB float  parse_float<float>(const char *, const char *, char **);
+template MI_EXPORT_LIB double parse_float<double>(const char *, const char *, char **);
 
 std::vector<std::string> tokenize(const std::string &string,
                                   const std::string &delim,

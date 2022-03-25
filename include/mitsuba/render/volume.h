@@ -35,6 +35,14 @@ public:
     virtual dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
+     * \brief Evaluate this volume as a n-channel float quantity
+     *
+     * This interface is specifically intended to encode a variable number of parameters.
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    virtual void eval_n(const Interaction3f &it, Float *out, Mask active = true) const;
+
+    /**
      * Evaluate the volume at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */
@@ -43,6 +51,14 @@ public:
 
     /// Returns the maximum value of the volume over all dimensions.
     virtual ScalarFloat max() const;
+
+    /**
+     * \brief In the case of a multi-channel volume, this function returns
+     * the maximum value for each channel.
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    virtual void max_per_channel(ScalarFloat *out) const;
 
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
@@ -54,6 +70,14 @@ public:
      * The default implementation returns <tt>(1, 1, 1)</tt>
      */
     virtual ScalarVector3i resolution() const;
+
+    /**
+     * \brief Returns the number of channels stored in the volume
+     *
+     *  When the channel count is zero, it indicates that the volume
+     *  does not support per-channel queries.
+     */
+    uint32_t channel_count() const { return m_channel_count; }
 
     //! @}
     // ======================================================================
@@ -84,6 +108,8 @@ protected:
     ScalarTransform4f m_to_local;
     /// Bounding box
     ScalarBoundingBox3f m_bbox;
+    /// Number of channels stored in the volume
+    uint32_t m_channel_count;
 };
 
 MI_EXTERN_CLASS(Volume)

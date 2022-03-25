@@ -72,10 +72,42 @@ public:
     /// dr::schedule() variables that represent the internal film storage
     virtual void schedule_storage() = 0;
 
-    /// Prepare spectrum samples to be in the format expected by the film
+    /**
+      * \brief Prepare spectrum samples to be in the format expected by the film
+      *
+      * It will be used if the Film contains the ``Special`` flag enabled.
+      *
+      * This method should be applied with films that deviate from HDR film behavior.
+      * Normally ``Films`` will store within the ``ImageBlock`` the samples following
+      * an RGB shape. But ``Films`` may want to store the samples with other
+      * structures (e.g. store several channels containing monochromatic information).
+      * In that situation, this method allows transforming the sample format generated
+      * by the integrators to the one that the Film will store inside the ImageBlock.
+      *
+      * \param spec
+      *    Sample value associated with the specified wavelengths
+      *
+      * \param wavelengths
+      *    Sample wavelengths in nanometers
+      *
+      * \param aovs
+      *    Points to an array of length equal to the number of spectral sensitivities
+      *    of the film, which specifies the sample value for each channel.
+      *
+      * \param weight
+      *    Value to be added to the weight channel of the sample
+      *
+      * \param alpha
+      *    Alpha value of the sample
+      *
+      * \param active
+      *    Mask indicating if the lanes are active
+      */
     virtual void prepare_sample(const UnpolarizedSpectrum &spec,
                                 const Wavelength &wavelengths,
-                                Float* aovs, Mask active) const;
+                                Float* aovs, Float weight = 1.f,
+                                Float alpha = 1.f,
+                                Mask active = true) const;
 
     /**
      * \brief Return an \ref ImageBlock instance, whose internal representation

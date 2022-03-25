@@ -1,39 +1,83 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/mmap.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Scalar>
-void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavelengths,
+void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
                         std::vector<Scalar> &values) {
+
     auto fs = Thread::thread()->file_resolver();
-    fs::path file_path = fs->resolve(filename);
+    fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);
 
     Log(Info, "Loading spectral data file \"%s\" ..", file_path);
-    ref<FileStream> file = new FileStream(file_path);
-
-    std::string line, rest;
-    Scalar wav, value;
-    while (true) {
-        try {
-            line = file->read_line();
-            if (line.size() == 0 || line[0] == '#')
-                continue;
-
-            std::istringstream iss(line);
-            iss >> wav;
-            iss >> value;
-            if (iss >> rest)
-                Log(Error, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
-            wavelengths.push_back(wav);
-            values.push_back(value);
-        } catch (std::exception &) {
-            break;
+    std::string extension = string::to_lower(file_path.extension().string());
+    if (extension == ".spd") {
+        ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path, false);
+        char *current = (char *) mmap->data(),
+             *end     = current + mmap->size(),
+             *tmp;
+        bool comment = false;
+        size_t counter = 0;
+        while (current != end) {
+            char c = *current;
+            if (c == '#') {
+                comment = true;
+                current++;
+            } else if (c == '\n') {
+                comment = false;
+                counter = 0;
+                current++;
+            } else if (!comment && c != ' ' && c != '\r') {
+                Scalar val = string::parse_float<Scalar>(current, end, &tmp);
+                current = tmp;
+                if (counter == 0)
+                    wavelengths.push_back(val);
+                else if (counter == 1)
+                    values.push_back(val);
+                else
+                    Log(Error, "While parsing the file, more than two elements were defined in a line");
+                counter++;
+            } else {
+                current++;
+            }
         }
+    } else {
+        Log(Error, "You need to provide a valid extension like \".spd\" to read"
+                   "the information from an ASCII file. You used \"%s\"", extension);
+    }
+}
+
+template <typename Scalar>
+void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengths,
+                      const std::vector<Scalar> &values) {
+
+    auto fs = Thread::thread()->file_resolver();
+    fs::path file_path = fs->resolve(path);
+
+    if (wavelengths.size() != values.size())
+        Log(Error, "Wavelengths size (%u) need to be equal to values size (%u)",
+            wavelengths.size(), values.size());
+
+    Log(Info, "Writing spectral data to file \"%s\" ..", file_path);
+    ref<FileStream> file = new FileStream(file_path, FileStream::ETruncReadWrite);
+    std::string extension = string::to_lower(file_path.extension().string());
+
+    if (extension == ".spd") {
+        // Write file with textual spectra format
+        for (size_t i = 0; i < wavelengths.size(); ++i) {
+            std::ostringstream oss;
+            oss << wavelengths[i] << " " << values[i];
+            file->write_line(oss.str());
+        }
+    } else {
+        Log(Error, "You need to provide a valid extension like \".spd\" to store"
+                   "the information in an ASCII file. You used \"%s\"", extension);
     }
 }
 
@@ -87,12 +131,19 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 }
 
 /// Explicit instantiations
-template MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
-                                                std::vector<float> &wavelengths,
-                                                std::vector<float> &values);
-template MI_EXPORT_LIB void spectrum_from_file(const std::string &filename,
-                                                std::vector<double> &wavelengths,
-                                                std::vector<double> &values);
+template MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+                                               std::vector<float> &wavelengths,
+                                               std::vector<float> &values);
+template MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+                                               std::vector<double> &wavelengths,
+                                               std::vector<double> &values);
+
+template MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+                                             const std::vector<float> &wavelengths,
+                                             const std::vector<float> &values);
+template MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+                                             const std::vector<double> &wavelengths,
+                                             const std::vector<double> &values);
 
 template MI_EXPORT_LIB Color<float, 3>
 spectrum_list_to_srgb(const std::vector<float> &wavelengths,

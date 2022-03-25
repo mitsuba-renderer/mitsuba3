@@ -98,7 +98,13 @@ class ADIntegrator(mi.SamplingIntegrator):
 
             # Accumulate into the image block
             alpha = dr.select(valid, mi.Float(1), mi.Float(0))
-            block.put(pos, ray.wavelengths, L * weight, alpha)
+            if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
+                aovs = sensor.film().prepare_sample(L * weight, ray.wavelengths,
+                                                    block.channel_count(), alpha=alpha)
+                block.put(pos, aovs)
+                del aovs
+            else:
+                block.put(pos, ray.wavelengths, L * weight, alpha)
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid, alpha
@@ -237,13 +243,21 @@ class ADIntegrator(mi.SamplingIntegrator):
                 block.set_coalesce(block.coalesce() and spp >= 4)
 
                 # Accumulate into the image block
-                block.put(
-                    pos=pos,
-                    wavelengths=ray.wavelengths,
-                    value=L * weight * det,
-                    weight=det,
-                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                )
+                if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
+                    aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                                                        block.channel_count(),
+                                                        weight=det,
+                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                    block.put(pos, aovs)
+                    del aovs
+                else:
+                    block.put(
+                        pos=pos,
+                        wavelengths=ray.wavelengths,
+                        value=L * weight * det,
+                        weight=det,
+                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                    )
 
                 sensor.film().put_block(block)
 
@@ -669,13 +683,21 @@ class RBIntegrator(ADIntegrator):
                     sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
 
                     # Deposit samples with gradient tracking for 'pos'.
-                    sample_pos_deriv.put(
-                        pos=pos,
-                        wavelengths=ray.wavelengths,
-                        value=L * weight * det,
-                        weight=det,
-                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                    )
+                    if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                         aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                                                            sample_pos_deriv.channel_count(),
+                                                            weight=det,
+                                                            alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                         sample_pos_deriv.put(pos, aovs)
+                         del aovs
+                     else:
+                         sample_pos_deriv.put(
+                             pos=pos,
+                             wavelengths=ray.wavelengths,
+                             value=L * weight * det,
+                             weight=det,
+                             alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                         )
 
                     # Compute the derivative of the reparameterized image ..
                     tensor = sample_pos_deriv.tensor()
@@ -719,12 +741,19 @@ class RBIntegrator(ADIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            block.put(
-                pos=pos,
-                wavelengths=ray.wavelengths,
-                value=δL * weight,
-                alpha=dr.select(valid_2, mi.Float(1), mi.Float(0))
-            )
+            if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                 aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
+                                                    block.channel_count(),
+                                                    alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
+                 block.put(pos, aovs)
+                 del aovs
+             else:
+                 block.put(
+                     pos=pos,
+                     wavelengths=ray.wavelengths,
+                     value=δL * weight,
+                     alpha=dr.select(valid_2, mi.Float(1), mi.Float(0))
+                 )
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
@@ -862,13 +891,21 @@ class RBIntegrator(ADIntegrator):
                 #   Σ (fi Li det)
                 #  ---------------
                 #   Σ (fi det)
-                block.put(
-                    pos=pos,
-                    wavelengths=ray.wavelengths,
-                    value=L * weight * det,
-                    weight=det,
-                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                )
+                if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                     aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                                                        block.channel_count(),
+                                                        weight=det,
+                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                     block.put(pos, aovs)
+                     del aovs
+                 else:
+                     block.put(
+                         pos=pos,
+                         wavelengths=ray.wavelengths,
+                         value=L * weight * det,
+                         weight=det,
+                         alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                     )
 
                 sensor.film().put_block(block)
 

@@ -32,7 +32,7 @@ def sensor_dict(target=None, direction=None):
 
 
 def make_sensor(d):
-    return mi.load_dict(d).expand()[0]
+    return mi.load_dict(d)
 
 
 def test_construct(variant_scalar_rgb):

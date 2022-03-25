@@ -12,10 +12,27 @@ extern Caster cast_object;
 
 // Forward declaration
 template <typename Float, typename Spectrum>
-ref<Object> load_dict(const std::string& dict_key, const py::dict& dict, std::map<std::string, ref<Object>> &instances);
+std::vector<ref<Object>> load_dict(
+        const std::string &dict_key, 
+        const py::dict &dict,
+        std::map<std::string, ref<Object>> &instances
+);
 
 /// Shorthand notation for accessing the MI_VARIANT string
 #define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
+
+/// Depending on whether or not the input vector has size 1, returns the first
+/// and only element of the vector or the entire vector as a list
+MI_INLINE py::object single_object_or_list(std::vector<ref<Object>> &objects) {
+    if (objects.size() == 1)
+        return cast_object(objects[0]);
+
+    py::list l;
+    for (ref<Object> &obj : objects)
+        l.append(cast_object(obj));
+
+    return static_cast<py::object>(l);
+}
 
 MI_PY_EXPORT(xml) {
     MI_PY_IMPORT_TYPES()
@@ -33,7 +50,11 @@ MI_PY_EXPORT(xml) {
             }
 
             py::gil_scoped_release release;
-            return cast_object(xml::load_file(name, GET_VARIANT(), param, update_scene, parallel));
+
+            std::vector<ref<Object>> objects = xml::load_file(
+                name, GET_VARIANT(), param, update_scene, parallel);
+
+            return single_object_or_list(objects);
         },
         "path"_a, "update_scene"_a = false, "parallel"_a = !dr::is_jit_array_v<Float>,
         D(xml, load_file));
@@ -41,7 +62,6 @@ MI_PY_EXPORT(xml) {
     m.def(
         "load_string",
         [](const std::string &name, bool parallel, py::kwargs kwargs) {
-
             xml::ParameterList param;
             if (kwargs) {
                 for (auto [k, v] : kwargs)
@@ -52,7 +72,11 @@ MI_PY_EXPORT(xml) {
             }
 
             py::gil_scoped_release release;
-            return cast_object(xml::load_string(name, GET_VARIANT(), param, parallel));
+
+            std::vector<ref<Object>> objects = xml::load_string(
+                name, GET_VARIANT(), param, parallel);
+
+            return single_object_or_list(objects);
         },
         "string"_a, "parallel"_a = !dr::is_jit_array_v<Float>,
         D(xml, load_string));
@@ -61,12 +85,17 @@ MI_PY_EXPORT(xml) {
         "load_dict",
         [](const py::dict dict) {
             std::map<std::string, ref<Object>> instances;
-            auto obj = cast_object(load_dict<Float, Spectrum>("", dict, instances));
+            std::vector<ref<Object>> objects =
+                load_dict<Float, Spectrum>("", dict, instances);
+
+            py::object out = single_object_or_list(objects);
+
             if constexpr (dr::is_jit_array_v<Float>) {
                 dr::eval();
                 dr::sync_thread();
             }
-            return obj;
+
+            return out;
         },
         "dict"_a,
         R"doc(Load a Mitsuba scene or object from an Python dictionary
@@ -165,23 +194,24 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
         obj = mitsuba::xml::detail::create_texture_from_spectrum(
                 "spectrum", const_value, wavelengths, values, GET_VARIANT(),
                 within_emitter, is_spectral_v<Spectrum>,
-                is_monochromatic_v<Spectrum>);
+                is_monochromatic_v<Spectrum>, false);
     }
 
     return obj;
 }
 
 template <typename Float, typename Spectrum>
-ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
-                      std::map<std::string, ref<Object>> &instances) {
+std::vector<ref<Object>> load_dict(const std::string &dict_key,
+                                   const py::dict &dict,
+                                   std::map<std::string,
+                                   ref<Object>> &instances) {
     MI_IMPORT_CORE_TYPES()
     using ScalarArray3f = dr::Array<ScalarFloat, 3>;
 
     std::string type = get_type(dict);
 
-    if (type == "spectrum" || type == "rgb") {
-        return create_texture_from<Float, Spectrum>(dict, false);
-    }
+    if (type == "spectrum" || type == "rgb")
+        return { create_texture_from<Float, Spectrum>(dict, false) };
 
     bool is_scene = (type == "scene");
 
@@ -245,22 +275,32 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
             }
 
             // Load the dictionary recursively
-            ref<Object> obj = load_dict<Float, Spectrum>(key, dict2, instances);
-            expand_and_set_object(props, key, obj);
+            std::vector<ref<Object>> objects = load_dict<Float, Spectrum>(key, dict2, instances);
+            size_t n_objects = objects.size();
+            int ctr = 0;
 
-            // Add instanced object to the instance map for later references
-            if (is_scene) {
-                // An object can be referenced using its key
-                if (instances.count(key) != 0)
-                    Throw("%s has duplicate id: %s", key, key);
-                instances[key] = obj;
+            for (auto &obj : objects) {
+                if (n_objects > 1) {
+                    props.set_object(key + "_" + std::to_string(ctr++), obj);
+                } else {
+                    props.set_object(key, obj);
+                }
 
-                // An object can also be referenced using its "id" if it has one
-                std::string id = obj->id();
-                if (!id.empty() && id != key) {
-                    if (instances.count(id) != 0)
-                        Throw("%s has duplicate id: %s", key, id);
-                    instances[id] = obj;
+                // Add instanced object to the instance map for later references
+                if (is_scene) {
+                    // An object can be referenced using its key
+                    if (instances.count(key) != 0)
+                        Throw("%s has duplicate id: %s", key, key);
+                    instances[key] = obj;
+
+                    // An object can also be referenced using its "id" if it has
+                    // one
+                    std::string id = obj->id();
+                    if (!id.empty() && id != key) {
+                        if (instances.count(id) != 0)
+                            Throw("%s has duplicate id: %s", key, id);
+                        instances[id] = obj;
+                    }
                 }
             }
 
@@ -295,7 +335,7 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
     if (!props.unqueried().empty())
         Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);
 
-    return obj;
+    return mitsuba::xml::detail::expand_node(obj);
 }
 
 #undef SET_PROPS

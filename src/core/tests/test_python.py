@@ -90,3 +90,19 @@ def test06_register_ad_integrators():
         mi.set_variant(variant)
         integrator = mi.load_dict({'type': 'prb'})
         assert integrator.class_().variant() == variant
+
+def test07_reload():
+    from importlib import reload
+
+    import mitsuba
+    mitsuba.set_variant('scalar_rgb')
+    mitsuba.Float()
+
+    reload(mitsuba)
+
+    with pytest.raises(ImportError, match=r'.*Before importing any packages.*'):
+        mitsuba.Float()
+
+    mitsuba.set_variant('scalar_rgb')
+    mitsuba.Float()
+    assert mitsuba.variant() == 'scalar_rgb'

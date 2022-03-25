@@ -359,11 +359,15 @@ int main(int argc, char *argv[]) {
                 filename = arg_output->as_string();
 
             // Try and parse a scene from the passed file.
-            ref<Object> parsed =
+            std::vector<ref<Object>> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params,
                                *arg_update, parallel_loading);
 
-            MI_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
+            if (parsed.size() != 1)
+                Throw("Root element of the input file is expanded into "
+                      "multiple objects, only a single object is expected!");
+
+            MI_INVOKE_VARIANT(mode, render, parsed[0].get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
