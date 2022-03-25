@@ -185,9 +185,9 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HomogeneousMedium[" << std::endl
-            << "  albedo  = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << std::endl
-            << "  scale   = " << string::indent(m_scale)  << std::endl
+            << "  albedo = " << string::indent(m_albedo) << "," << std::endl
+            << "  sigma_t = " << string::indent(m_sigmat) << "," << std::endl
+            << "  scale = " << string::indent(m_scale)  << std::endl
             << "]";
         return oss.str();
     }
