@@ -1165,7 +1165,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         /* Values are scaled so that integrating the spectrum against the CIE curves
             and converting to sRGB yields (1, 1, 1) for D65. */
         Float unit_conversion = 1;
-        if ((within_emitter && spectral_unbounded) || !is_spectral_mode)
+        if ((within_emitter && !spectral_unbounded) || !is_spectral_mode)
             unit_conversion = Float(MI_CIE_Y_NORMALIZATION);
 
         /* Detect whether wavelengths are regularly sampled and potentially
