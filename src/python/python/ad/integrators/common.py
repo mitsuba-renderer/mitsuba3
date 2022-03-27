@@ -172,13 +172,21 @@ class ADIntegrator(mi.SamplingIntegrator):
                 #   Σ (fi Li det)
                 #  ---------------
                 #   Σ (fi det)
-                block.put(
-                    pos=pos,
-                    wavelengths=ray.wavelengths,
-                    value=L * weight * det,
-                    weight=det,
-                    alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                )
+                if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
+                    aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                                                        block.channel_count(),
+                                                        weight=det,
+                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                    block.put(pos, aovs)
+                    del aovs
+                else:
+                    block.put(
+                        pos=pos,
+                        wavelengths=ray.wavelengths,
+                        value=L * weight * det,
+                        weight=det,
+                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                    )
 
                 # Perform the weight division and return an image tensor
                 film.put_block(block)
@@ -684,20 +692,20 @@ class RBIntegrator(ADIntegrator):
 
                     # Deposit samples with gradient tracking for 'pos'.
                     if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                         aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                        aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
                                                             sample_pos_deriv.channel_count(),
                                                             weight=det,
                                                             alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
-                         sample_pos_deriv.put(pos, aovs)
-                         del aovs
-                     else:
-                         sample_pos_deriv.put(
-                             pos=pos,
-                             wavelengths=ray.wavelengths,
-                             value=L * weight * det,
-                             weight=det,
-                             alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                         )
+                        sample_pos_deriv.put(pos, aovs)
+                        del aovs
+                    else:
+                        sample_pos_deriv.put(
+                            pos=pos,
+                            wavelengths=ray.wavelengths,
+                            value=L * weight * det,
+                            weight=det,
+                            alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                        )
 
                     # Compute the derivative of the reparameterized image ..
                     tensor = sample_pos_deriv.tensor()
@@ -742,18 +750,18 @@ class RBIntegrator(ADIntegrator):
 
             # Accumulate into the image block
             if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                 aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
+                aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
                                                     block.channel_count(),
                                                     alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
-                 block.put(pos, aovs)
-                 del aovs
-             else:
-                 block.put(
-                     pos=pos,
-                     wavelengths=ray.wavelengths,
-                     value=δL * weight,
-                     alpha=dr.select(valid_2, mi.Float(1), mi.Float(0))
-                 )
+                block.put(pos, aovs)
+                del aovs
+            else:
+                block.put(
+                    pos=pos,
+                    wavelengths=ray.wavelengths,
+                    value=δL * weight,
+                    alpha=dr.select(valid_2, mi.Float(1), mi.Float(0))
+                )
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
@@ -892,20 +900,20 @@ class RBIntegrator(ADIntegrator):
                 #  ---------------
                 #   Σ (fi det)
                 if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                     aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                    aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
                                                         block.channel_count(),
                                                         weight=det,
                                                         alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
-                     block.put(pos, aovs)
-                     del aovs
-                 else:
-                     block.put(
-                         pos=pos,
-                         wavelengths=ray.wavelengths,
-                         value=L * weight * det,
-                         weight=det,
-                         alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                     )
+                    block.put(pos, aovs)
+                    del aovs
+                else:
+                    block.put(
+                        pos=pos,
+                        wavelengths=ray.wavelengths,
+                        value=L * weight * det,
+                        weight=det,
+                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
+                    )
 
                 sensor.film().put_block(block)
 
