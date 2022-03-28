@@ -5,7 +5,6 @@ import os
 import argparse
 import glob
 import numpy as np
-import re
 
 from os.path import join, realpath, dirname, basename, splitext, exists
 from drjit.scalar import ArrayXf as Float
@@ -24,7 +23,6 @@ EXCLUDE_FOLDERS = [
 
 # List of test scene folders to exclude for JIT modes
 JIT_EXCLUDE_FOLDERS = [
-    'participating_media',
 ]
 
 # List of test scene folders to exclude for symbolic modes
@@ -32,14 +30,22 @@ SYMBOLIC_EXCLUDE_FOLDERS = [
     # all working now, yay
 ]
 
-POLARIZED_EXCLUDE_FOLDERS = [
+POLARIZED_EXCLUDE_FOLDERS = {
     'participating_media',
-]
+}
 
-PYTHON_INTEGRATOR_MAPPING = {
-    'PathIntegrator' : ['prb', 'prb_reparam'],
-    'VolumetricSimplePathIntegrator' : ['prbvolpath'],
-    'VolumetricMisPathIntegrator' : ['prbvolpath']
+POLARIZED_EXCLUDE_INTEGRATORS = {
+    'prb', 'prb_reparam', 'prbvolpath'
+}
+
+# Every scene that has an integrator which is in this mapping's keys will also
+# be rendered with the integrator(s) listed in the corresponding mapping's
+# values. The new integrators are only executed in JIT modes with the default
+# set flags.
+INTEGRATOR_MAPPING = {
+    'path' : ['prb', 'prb_reparam'],
+    'volpath' : ['prbvolpath'],
+    'volpathmis' : ['prbvolpath']
 }
 
 if hasattr(dr, 'JitFlag'):
@@ -56,12 +62,12 @@ def list_all_render_test_configs():
     Return a list of (variant, scene_fname, integrator_type, jit_flags) for all
     the valid render tests given the list of exclusion above.
 
-    If the integrator_type is `None`, the default integrator of the scene should
-    be used.
+    Scene file names need to be suffixed with the integrator type (e.g.,
+    "scene_path.xml", "scene_ptracer.xml") for this method to generate valid
+    test configurations.
     """
     configs = []
     for variant in mi.variants():
-        mi.set_variant(variant)
         is_jit = "cuda" in variant or "llvm" in variant
         is_polarized = "polarized" in variant
 
@@ -73,23 +79,19 @@ def list_all_render_test_configs():
             if is_polarized and any(ex in scene_fname for ex in POLARIZED_EXCLUDE_FOLDERS):
                 continue
 
+            scene_integrator_type = scene_fname.split('.')[0].rsplit('_', 1)[-1]
+
             if not is_jit:
-                configs.append((variant, scene_fname, None, 'scalar'))
+                configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))
             else:
                 for k, v in JIT_FLAG_OPTIONS.items():
                     if v.get(dr.JitFlag.VCallRecord, 0) and any(ex in scene_fname for ex in SYMBOLIC_EXCLUDE_FOLDERS):
                         continue
-                    configs.append((variant, scene_fname, None, k))
+                    configs.append((variant, scene_fname, scene_integrator_type, k))
 
-            scene = mi.load_file(scene_fname)
-            scene_integrator_type = re.findall(
-                r'^\s*.+Integrator\[$',
-                scene.integrator().__repr__(),
-                re.MULTILINE
-            )[0].strip()[:-1]
-
-            if is_jit:
-                for integrator_type in PYTHON_INTEGRATOR_MAPPING.get(scene_integrator_type, []):
+                for integrator_type in INTEGRATOR_MAPPING.get(scene_integrator_type, []):
+                    if is_polarized and integrator_type in POLARIZED_EXCLUDE_INTEGRATORS:
+                        continue
                     configs.append((variant, scene_fname, integrator_type, 'jit_flag_option_3'))
 
     return configs
@@ -100,7 +102,7 @@ def get_ref_fname(scene_fname):
     for color_mode in color_modes:
         if color_mode in mi.variant():
             ref_fname = join(dirname(scene_fname), 'refs', splitext(
-                basename(scene_fname))[0] + '_ref_' + color_mode + '.exr')
+                basename(scene_fname))[0].rsplit('_', 1)[0] + '_ref_' + color_mode + '.exr')
             var_fname = ref_fname.replace('.exr', '_var.exr')
             return ref_fname, var_fname
     assert False
@@ -188,13 +190,8 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     spp = sample_budget // pixel_count
 
     # Load and render
-    scene = mi.load_file(scene_fname, spp=spp)
-    integrator = scene.integrator()
-    if integrator_type is not None:
-        integrator = mi.load_dict({
-            'type' : integrator_type
-        })
-    integrator.render(scene, seed=0, spp=spp, develop=True)
+    scene = mi.load_file(scene_fname, spp=spp, integrator=integrator_type)
+    scene.integrator().render(scene, seed=0, spp=spp, develop=True)
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
