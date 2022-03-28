@@ -703,11 +703,13 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
 MI_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
 MI_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
+MI_IMPLEMENT_CLASS_VARIANT(ADIntegrator, SamplingIntegrator)
 MI_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
 MI_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
 
 MI_INSTANTIATE_CLASS(Integrator)
 MI_INSTANTIATE_CLASS(SamplingIntegrator)
+MI_INSTANTIATE_CLASS(ADIntegrator)
 MI_INSTANTIATE_CLASS(MonteCarloIntegrator)
 MI_INSTANTIATE_CLASS(AdjointIntegrator)
 
