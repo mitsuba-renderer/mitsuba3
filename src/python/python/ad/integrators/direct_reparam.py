@@ -20,7 +20,7 @@ class DirectReparamIntegrator(ADIntegrator):
     def __init__(self, props):
         super().__init__(props)
 
-        # Specifies the max depth that reparamtrization is applied
+        # Specifies the max depth up to which reparamtrization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 2)
         assert(self.reparam_max_depth <= 2)
 
@@ -106,7 +106,7 @@ class DirectReparamIntegrator(ADIntegrator):
         # Get the BSDF. Potentially computes texture-space differentials.
         bsdf = si.bsdf(ray_reparam)
 
-        # Detached emiitter sample
+        # Detached emitter sample
         active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
         with dr.suspend_grad():
             ds, weight_em = scene.sample_emitter_direction(
