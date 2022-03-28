@@ -372,6 +372,8 @@ ref<Bitmap> Bitmap::resample(
         new Bitmap(m_pixel_format, m_component_format, res, channel_count());
     result->m_struct = m_struct;
     result->m_metadata = m_metadata;
+    result->set_srgb_gamma(m_srgb_gamma);
+    result->set_premultiplied_alpha(m_premultiplied_alpha);
     resample(result, rfilter, bc, bound, nullptr);
     return result;
 }

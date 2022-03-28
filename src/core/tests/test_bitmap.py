@@ -333,6 +333,13 @@ def test_resample(variants_all):
     b2 = b.resample([6, 7], None, (mi.FilterBoundaryCondition.Zero, mi.FilterBoundaryCondition.Zero), (-1, 1))
     assert b2.width() == 6 and b2.height() == 7
 
+    b.set_srgb_gamma(True)
+    b.set_premultiplied_alpha(True)
+
+    b3 = b.resample([4, 6])
+    assert b3.srgb_gamma()
+    assert b3.premultiplied_alpha()
+
 
 def test_check_weight_division(variant_scalar_rgb):
     b = mi.Bitmap(
