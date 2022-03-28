@@ -17,7 +17,7 @@ class EmissionReparamIntegrator(ADIntegrator):
     def __init__(self, props):
         super().__init__(props)
 
-        # Specifies the max depth that reparamtrization is applied
+        # Specifies the max depth up to which reparameterization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 1)
         assert(self.reparam_max_depth <= 1)
 

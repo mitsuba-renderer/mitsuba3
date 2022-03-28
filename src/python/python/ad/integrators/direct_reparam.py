@@ -20,7 +20,7 @@ class DirectReparamIntegrator(ADIntegrator):
     def __init__(self, props):
         super().__init__(props)
 
-        # Specifies the max depth up to which reparamtrization is applied
+        # Specifies the max depth up to which reparamterization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 2)
         assert(self.reparam_max_depth <= 2)
 
@@ -119,7 +119,7 @@ class DirectReparamIntegrator(ADIntegrator):
             weight_em = dr.select(dr.neq(ds.pdf, 0), val_em / ds.pdf, 0)
             dr.disable_grad(ds.d)
 
-        # Reparametrize the ray
+        # Reparameterize the ray
         ray_em_det = 1.0
         if not primal:
             # Create a surface interaction that follows the shape's
@@ -152,7 +152,7 @@ class DirectReparamIntegrator(ADIntegrator):
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
             bsdf_weight = dr.select(dr.neq(bsdf_pdf, 0.0), bsdf_val / dr.detach(bsdf_pdf), 0.0)
 
-        # Reparametrize the ray
+        # Reparameterize the ray
         ray_bsdf_det = 1.0
         if not primal:
             ray_bsdf.d, ray_bsdf_det = reparam(

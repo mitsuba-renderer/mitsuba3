@@ -168,7 +168,7 @@ class ADIntegrator(mi.SamplingIntegrator):
                 block.set_coalesce(block.coalesce() and spp >= 4)
 
                 # Deposit samples with gradient tracking for 'pos'.
-                # After reparamtrizing the camera ray, we need to evaluate
+                # After reparameterizing the camera ray, we need to evaluate
                 #   Σ (fi Li det)
                 #  ---------------
                 #   Σ (fi det)
@@ -895,7 +895,7 @@ class RBIntegrator(ADIntegrator):
                 dr.enable_grad(L)
 
                 # Accumulate into the image block.
-                # After reparamtrizing the camera ray, we need to evaluate
+                # After reparameterizing the camera ray, we need to evaluate
                 #   Σ (fi Li det)
                 #  ---------------
                 #   Σ (fi det)
