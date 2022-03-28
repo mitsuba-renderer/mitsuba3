@@ -283,6 +283,18 @@ protected:
     uint32_t m_rr_depth;
 };
 
+template <typename Float, typename Spectrum>
+class MI_EXPORT_LIB ADIntegrator
+    : public SamplingIntegrator<Float, Spectrum> {
+    protected:
+    MI_IMPORT_BASE(SamplingIntegrator)
+
+    ADIntegrator(const Properties &props) : Base(props) {}
+    virtual ~ADIntegrator() {}
+
+    MI_DECLARE_CLASS()
+};
+
 /** \brief Abstract adjoint integrator that performs Monte Carlo sampling
  * starting from the emitters.
  *
@@ -373,6 +385,7 @@ protected:
 
 MI_EXTERN_CLASS(Integrator)
 MI_EXTERN_CLASS(SamplingIntegrator)
+MI_EXTERN_CLASS(ADIntegrator)
 MI_EXTERN_CLASS(MonteCarloIntegrator)
 MI_EXTERN_CLASS(AdjointIntegrator)
 NAMESPACE_END(mitsuba)

@@ -5,7 +5,7 @@ import drjit as dr
 import gc
 
 
-class ADIntegrator(mi.SamplingIntegrator):
+class ADIntegrator(mi.ADIntegrator):
     """
     Abstract base class of numerous differentiable integrators in Mitsuba
 
