@@ -827,7 +827,7 @@ bool Bitmap::operator==(const Bitmap &bitmap) const {
 std::string Bitmap::to_string() const {
     std::ostringstream oss;
     oss << "Bitmap[" << std::endl
-        << "  type = " << m_pixel_format << "," << std::endl
+        << "  pixel_format = " << m_pixel_format << "," << std::endl
         << "  component_format = " << m_component_format << "," << std::endl
         << "  size = " << m_size << "," << std::endl
         << "  srgb_gamma = " << m_srgb_gamma << "," << std::endl

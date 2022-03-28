@@ -7,3 +7,4 @@ Unlike the Getting Started tutorials, the How-to Guides wont take the reader by 
 .. nbgallery::
 
     tutorials/how_to_guides/use_optimizers
+    tutorials/how_to_guides/use_bitmap
