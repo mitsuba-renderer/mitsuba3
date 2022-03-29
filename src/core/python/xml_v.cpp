@@ -104,6 +104,16 @@ Parameter ``dict``:
     Python dictionary containing the object description
 
 )doc");
+
+    m.def(
+        "xml_to_props",
+        [](const std::string &path) {
+            py::gil_scoped_release release;
+
+            return xml::detail::xml_to_properties(path, GET_VARIANT());
+        },
+        "path"_a,
+        R"doc(Get the names and properties of the objects described in a Mitsuba XML file)doc");
 }
 
 // Helper function to find a value of "type" in a Python dictionary
