@@ -347,6 +347,7 @@ del MitsubaVariantModule
 del typing, types
 del threading
 del os
-del config
+if config in locals():
+    del config
 del MI_VARIANTS
 del variant, submodule, name, reload
