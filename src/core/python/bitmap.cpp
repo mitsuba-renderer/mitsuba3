@@ -85,11 +85,24 @@ MI_PY_EXPORT(Bitmap) {
             D(Bitmap, resample, 2)
         )
         .def("convert",
-             py::overload_cast<Bitmap::PixelFormat, Struct::Type, bool,
-                               Bitmap::AlphaTransform>(&Bitmap::convert, py::const_),
+            [](const Bitmap& b,
+               py::object pf, py::object cf, py::object srgb,
+               Bitmap::AlphaTransform alpha_transform) {
+                   Bitmap::PixelFormat pixel_format = b.pixel_format();
+                   if (!pf.is(py::none()))
+                       pixel_format = pf.cast<Bitmap::PixelFormat>();
+                   Struct::Type component_format = b.component_format();
+                   if (!cf.is(py::none()))
+                       component_format = cf.cast<Struct::Type>();
+                   bool srgb_gamma = b.srgb_gamma();
+                   if (!srgb.is(py::none()))
+                       srgb_gamma = srgb.cast<bool>();
+                   return b.convert(pixel_format, component_format, srgb_gamma,
+                                    alpha_transform);
+            },
              D(Bitmap, convert),
-             "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
-             "alpha_transform"_a = Bitmap::AlphaTransform::Empty,
+             "pixel_format"_a = py::none(), "component_format"_a = py::none(),
+             "srgb_gamma"_a = py::none(), "alpha_transform"_a = Bitmap::AlphaTransform::Empty,
              py::call_guard<py::gil_scoped_release>())
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
              D(Bitmap, convert, 2), "target"_a,

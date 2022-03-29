@@ -104,6 +104,26 @@ def test_convert_rgb_y_gamma(variant_scalar_rgb, tmpdir):
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
 
+def test_convert_optional_args(variant_scalar_rgb):
+    b = mi.Bitmap(mi.Bitmap.PixelFormat.RGBA, mi.Struct.Type.Float64, [3, 1])
+    assert not b.srgb_gamma()
+
+    b1 = b.convert(srgb_gamma=True)
+    assert b1.srgb_gamma()
+    assert b1.pixel_format() == b.pixel_format()
+    assert b1.component_format() == b.component_format()
+
+    b2 = b.convert(pixel_format=mi.Bitmap.PixelFormat.RGB)
+    assert b2.srgb_gamma() == b.srgb_gamma()
+    assert b2.pixel_format() == mi.Bitmap.PixelFormat.RGB
+    assert b2.component_format() == b.component_format()
+
+    b3 = b.convert(component_format=mi.Struct.Type.UInt8)
+    assert b2.srgb_gamma() == b.srgb_gamma()
+    assert b1.pixel_format() == b.pixel_format()
+    assert b3.component_format() == mi.Struct.Type.UInt8
+
+
 def test_premultiply_alpha(variant_scalar_rgb, tmpdir):
     # Tests RGBA(float64) -> Y (float32) conversion
     b1 = mi.Bitmap(mi.Bitmap.PixelFormat.RGBA, mi.Struct.Type.Float64, [3, 1])
