@@ -982,6 +982,61 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
+static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
+                                                    const fs::path &filename_,
+                                                    const std::string &variant,
+                                                    ParameterList param,
+                                                    bool write_update,
+                                                    bool parallel) {
+    fs::path filename = filename_;
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
+        pugi::parse_default |
+        pugi::parse_comments);
+
+    detail::XMLSource src{
+        filename.string(), doc,
+        [=](ptrdiff_t pos) { return detail::file_offset(filename, pos); }
+    };
+
+    if (!result) // There was a parser / file IO error
+        Throw("Error while loading \"%s\" (at %s): %s", src.id,
+            src.offset(result.offset), result.description());
+
+    pugi::xml_node root = doc.document_element();
+    Properties props;
+    size_t arg_counter = 0; // Unused
+    auto scene_id = parse_xml(src, ctx, root, Tag::Invalid, props,
+                              param, arg_counter, 0).second;
+
+    if (src.modified && write_update) {
+        fs::path backup = filename;
+        backup.replace_extension(".bak");
+        Log(Info, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
+        if (!fs::rename(filename, backup))
+            Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
+
+        // Update version number
+        root.prepend_attribute("version").set_value(MI_VERSION);
+        if (root.attribute("type").value() == std::string("scene"))
+            root.remove_attribute("type");
+
+        // Strip anonymous IDs/names
+        for (pugi::xpath_node result2 : doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
+            result2.node().remove_attribute("id");
+        for (pugi::xpath_node result2 : doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
+            result2.node().remove_attribute("name");
+
+        doc.save_file(filename.native().c_str(), "    ");
+
+        // Update for detail::file_offset
+        filename = backup;
+    }
+
+    return scene_id;
+}
+
 static Task *instantiate_node(XMLParseContext &ctx,
                               const std::string &id,
                               ThreadEnvironment &env,
@@ -1239,6 +1294,51 @@ std::vector<ref<Object>> expand_node(const ref<Object> &node) {
     return { node };
 }
 
+std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path &filename,
+                                                                  const std::string &variant) {
+    if (!fs::exists(filename))
+        Throw("\"%s\": file does not exist!", filename);
+
+    Timer timer;
+    Log(Info, "Loading XML file \"%s\" with variant \"%s\"..", filename,
+        variant);
+
+    // Make a backup copy of the FileResolver, which will be restored after
+    // parsing
+    ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
+    ref<FileResolver> fs        = new FileResolver(*fs_backup);
+    fs->append(filename.parent_path());
+    Thread::thread()->set_file_resolver(fs.get());
+
+    try {
+        ParameterList param;
+        detail::XMLParseContext ctx(variant, false);
+        (void) detail::init_xml_parse_context_from_file(ctx, filename, variant, param,
+                                                        false, false);
+
+        Thread::thread()->set_file_resolver(fs_backup.get());
+
+        Log(Info, "Done loading XML file \"%s\" (took %s).", filename,
+            util::time_string((float) timer.value(), true));
+
+        // Copy all properties inside of a vector. The object hierarchy is handled
+        // using named reference properties.
+        std::vector<std::pair<std::string, Properties>> props;
+        for (auto &[id, object] : ctx.instances) {
+            if (!object.class_) {
+                Log(Warn, "Cannot find class for property with id \"%s\".", id);
+                continue;
+            }
+            props.emplace_back(object.class_->name(), std::move(object.props));
+        }
+
+        return props;
+    } catch (...) {
+        Thread::thread()->set_file_resolver(fs_backup.get());
+        throw;
+    }
+}
+
 NAMESPACE_END(detail)
 
 std::vector<ref<Object>> load_string(const std::string &string,
@@ -1282,32 +1382,18 @@ std::vector<ref<Object>> load_string(const std::string &string,
     }
 }
 
-std::vector<ref<Object>> load_file(const fs::path &filename_,
+std::vector<ref<Object>> load_file(const fs::path &filename,
                                    const std::string &variant,
                                    ParameterList param,
                                    bool write_update,
                                    bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
-    fs::path filename = filename_;
+    
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
     Timer timer;
     Log(Info, "Loading XML file \"%s\" with variant \"%s\"..", filename, variant);
-
-    pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
-                                                  pugi::parse_default |
-                                                  pugi::parse_comments);
-
-    detail::XMLSource src {
-        filename.string(), doc,
-        [=](ptrdiff_t pos) { return detail::file_offset(filename, pos); }
-    };
-
-    if (!result) // There was a parser / file IO error
-        Throw("Error while loading \"%s\" (at %s): %s", src.id,
-              src.offset(result.offset), result.description());
 
     // Make a backup copy of the FileResolver, which will be restored after parsing
     ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
@@ -1316,36 +1402,9 @@ std::vector<ref<Object>> load_file(const fs::path &filename_,
     Thread::thread()->set_file_resolver(fs.get());
 
     try {
-        pugi::xml_node root = doc.document_element();
-        detail::XMLParseContext ctx(variant, parallel);
-        Properties props;
-        size_t arg_counter = 0; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
-                                          param, arg_counter, 0).second;
-
-        if (src.modified && write_update) {
-            fs::path backup = filename;
-            backup.replace_extension(".bak");
-            Log(Info, "Writing updated \"%s\" .. (backup at \"%s\")", filename, backup);
-            if (!fs::rename(filename, backup))
-                Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
-
-            // Update version number
-            root.prepend_attribute("version").set_value(MI_VERSION);
-            if (root.attribute("type").value() == std::string("scene"))
-                root.remove_attribute("type");
-
-            // Strip anonymous IDs/names
-            for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
-                result2.node().remove_attribute("id");
-            for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
-                result2.node().remove_attribute("name");
-
-            doc.save_file(filename.native().c_str(), "    ");
-
-            // Update for detail::file_offset
-            filename = backup;
-        }
+        detail::XMLParseContext ctx(variant, false);
+        auto scene_id = detail::init_xml_parse_context_from_file(ctx, filename, variant, param,
+                                                                 write_update, parallel);
 
         ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
         std::vector<ref<Object>> objects = detail::expand_node(top_node);
@@ -1356,7 +1415,7 @@ std::vector<ref<Object>> load_file(const fs::path &filename_,
             filename, util::time_string((float) timer.value(), true));
 
         return objects;
-    } catch(...) {
+    } catch (...) {
         Thread::thread()->set_file_resolver(fs_backup.get());
         throw;
     }
