@@ -34,6 +34,7 @@ Differentiable rendering
 
     tutorials/getting_started/inverse_rendering/01_gradient_based_opt
     tutorials/getting_started/inverse_rendering/02_forward_ad_rendering
+    tutorials/getting_started/inverse_rendering/05_caustics_optimization
 
 
 Other examples
