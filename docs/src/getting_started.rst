@@ -22,6 +22,7 @@ Quickstart
     tutorials/getting_started/quickstart/00_drjit_cheat_sheet
     tutorials/getting_started/quickstart/01_rendering
     tutorials/getting_started/quickstart/03_python_renderer
+    tutorials/getting_started/quickstart/08_polarized_rendering
 
 
 Differentiable rendering
