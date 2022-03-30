@@ -1175,7 +1175,12 @@ class _ReparamWrapper:
         # information (vertex positions, etc.)
         if isinstance(params, mi.SceneParameters):
             params = params.copy()
-            params.keep_shape()
+            params.keep(
+                [
+                    k for k in params.keys() \
+                        if (params.flags(k) & mi.ParamFlags.Discontinuous) != 0
+                ]
+            )
 
         # Create a uniform random number generator that won't show any
         # correlation with the main sampler. PCG32Sampler.seed() uses
