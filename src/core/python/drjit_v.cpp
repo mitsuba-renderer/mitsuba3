@@ -26,11 +26,16 @@ void bind_dr(py::module_ &m, const char *name) {
     tinfo_array->implicit_conversions = tinfo_base->implicit_conversions;
 }
 
-template <typename Type, size_t Size>
+template <typename Type, size_t Size, bool IsDouble>
 void dr_bind_vp_impl(py::module_ &m, const std::string &prefix) {
     std::string suffix = std::to_string(Size);
-    if (std::is_floating_point_v<dr::scalar_t<Type>>)
+
+    if (IsDouble)
+        suffix += "d";
+    else if (std::is_floating_point_v<dr::scalar_t<Type>>)
         suffix += "f";
+    else if (std::is_signed_v<dr::scalar_t<Type>>)
+        suffix += "i";
     else if (std::is_signed_v<dr::scalar_t<Type>>)
         suffix += "i";
     else
@@ -42,13 +47,13 @@ void dr_bind_vp_impl(py::module_ &m, const std::string &prefix) {
         m, (prefix + "Point" + suffix).c_str());
 }
 
-template <typename Type>
+template <typename Type, bool IsDouble = false>
 void dr_bind_vp(py::module_ &m, const std::string &prefix = "") {
-    dr_bind_vp_impl<Type, 0>(m, prefix);
-    dr_bind_vp_impl<Type, 1>(m, prefix);
-    dr_bind_vp_impl<Type, 2>(m, prefix);
-    dr_bind_vp_impl<Type, 3>(m, prefix);
-    dr_bind_vp_impl<Type, 4>(m, prefix);
+    dr_bind_vp_impl<Type, 0, IsDouble>(m, prefix);
+    dr_bind_vp_impl<Type, 1, IsDouble>(m, prefix);
+    dr_bind_vp_impl<Type, 2, IsDouble>(m, prefix);
+    dr_bind_vp_impl<Type, 3, IsDouble>(m, prefix);
+    dr_bind_vp_impl<Type, 4, IsDouble>(m, prefix);
 }
 
 MI_PY_EXPORT(DrJit) {
@@ -95,6 +100,8 @@ MI_PY_EXPORT(DrJit) {
     dr_bind_vp<ScalarFloat>(m, "Scalar");
     dr_bind_vp<ScalarInt32>(m, "Scalar");
     dr_bind_vp<ScalarUInt32>(m, "Scalar");
+    dr_bind_vp<Float64, true>(m);
+    dr_bind_vp<ScalarFloat64, true>(m, "Scalar");
 
     bind_dr<Color<Float, 0>, dr::Array<Float, 0>>(m, "Color0f");
     bind_dr<Color<Float, 1>, dr::Array<Float, 1>>(m, "Color1f");
@@ -103,12 +110,17 @@ MI_PY_EXPORT(DrJit) {
     bind_dr<Color<ScalarFloat, 1>, dr::Array<ScalarFloat, 1>>(m, "ScalarColor1f");
     bind_dr<Color<ScalarFloat, 3>, dr::Array<ScalarFloat, 3>>(m, "ScalarColor3f");
 
+    bind_dr<Color<Float64, 0>, dr::Array<Float64, 0>>(m, "Color0d");
+    bind_dr<Color<Float64, 1>, dr::Array<Float64, 1>>(m, "Color1d");
+    bind_dr<Color<Float64, 3>, dr::Array<Float64, 3>>(m, "Color3d");
     bind_dr<Color<ScalarFloat64, 0>, dr::Array<ScalarFloat64, 0>>(m, "ScalarColor0d");
     bind_dr<Color<ScalarFloat64, 1>, dr::Array<ScalarFloat64, 1>>(m, "ScalarColor1d");
     bind_dr<Color<ScalarFloat64, 3>, dr::Array<ScalarFloat64, 3>>(m, "ScalarColor3d");
 
     bind_dr<Normal3f, dr::Array<Float, 3>>(m, "Normal3f");
+    bind_dr<Normal3d, dr::Array<Float64, 3>>(m, "Normal3d");
     bind_dr<ScalarNormal3f, dr::Array<ScalarFloat, 3>>(m, "ScalarNormal3f");
+    bind_dr<ScalarNormal3d, dr::Array<ScalarFloat64, 3>>(m, "ScalarNormal3d");
 
     using DrSpec = dr::Array<dr::value_t<UnpolarizedSpectrum>,
                              dr::array_size_v<UnpolarizedSpectrum>>;
@@ -122,15 +134,22 @@ MI_PY_EXPORT(DrJit) {
 
     // Matrix type aliases
     for (int dim = 2; dim < 5; ++dim) {
-        std::string mts_name = "Matrix" + std::to_string(dim) + "f",
-                    dr_name  = mts_name;
+        std::string name = "Matrix" + std::to_string(dim),
+                    dr_name  = name + "f";
         if constexpr (std::is_same_v<double, ScalarFloat>)
             dr_name += "64";
 
-        m.attr(mts_name.c_str()) =
+        m.attr((name + "f").c_str()) =
             drjit_variant.attr(dr_name.c_str());
+        m.attr(("Scalar" + name + "f").c_str()) =
+            drjit_scalar.attr(dr_name.c_str());
 
-        m.attr(("Scalar" + mts_name).c_str()) =
+        if constexpr (!std::is_same_v<double, ScalarFloat>)
+            dr_name += "64";
+
+        m.attr((name + "d").c_str()) =
+            drjit_variant.attr(dr_name.c_str());
+        m.attr(("Scalar" + name + "d").c_str()) =
             drjit_scalar.attr(dr_name.c_str());
     }
 
@@ -138,6 +157,7 @@ MI_PY_EXPORT(DrJit) {
         m.attr("TensorXf") = drjit_variant.attr("TensorXf");
     else
         m.attr("TensorXf") = drjit_variant.attr("TensorXf64");
+    m.attr("TensorXd") = drjit_variant.attr("TensorXf64");
 
     m.attr("PCG32") = drjit_variant.attr("PCG32");
     m.attr("Loop") = drjit_variant.attr("Loop");

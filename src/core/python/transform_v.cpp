@@ -7,7 +7,7 @@
 
 
 template <typename Float>
-void bind_transform3f(py::module &m, const char *name) {
+void bind_transform3(py::module &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
 
     auto trans3 = py::class_<Transform3f>(m, name, D(Transform))
@@ -66,7 +66,7 @@ void bind_transform3f(py::module &m, const char *name) {
 }
 
 template <typename Float, typename Spectrum>
-void bind_transform4f(py::module &m, const char *name) {
+void bind_transform4(py::module &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point<Float, 3>, Spectrum>;
     auto trans4 = py::class_<Transform4f>(m, name, D(Transform))
@@ -152,37 +152,45 @@ MI_PY_EXPORT(Transform) {
     using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
 
     MI_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
-        bind_transform3f<Float>(m, "Transform3f");
+        bind_transform3<Float>(m, "Transform3f");
+    }
+
+    MI_PY_CHECK_ALIAS(Transform3d, "Transform3d") {
+        bind_transform3<Float64>(m, "Transform3d");
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform3f, "ScalarTransform3f") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform3f<ScalarFloat>(m, "ScalarTransform3f");
+            bind_transform3<ScalarFloat>(m, "ScalarTransform3f");
             py::implicitly_convertible<ScalarTransform3f, Transform3f>();
         }
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform3d, "ScalarTransform3d") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform3f<ScalarFloat64>(m, "ScalarTransform3d");
+            bind_transform3<ScalarFloat64>(m, "ScalarTransform3d");
             py::implicitly_convertible<ScalarTransform3d, ScalarTransform3f>();
         }
     }
 
     MI_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
-        bind_transform4f<Float, Spectrum>(m, "Transform4f");
+        bind_transform4<Float, Spectrum>(m, "Transform4f");
+    }
+
+    MI_PY_CHECK_ALIAS(Transform4d, "Transform4d") {
+        bind_transform4<Float64, Spectrum>(m, "Transform4d");
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform4f, "ScalarTransform4f") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform4f<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform4f");
+            bind_transform4<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform4f");
             py::implicitly_convertible<ScalarTransform4f, Transform4f>();
         }
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform4d, "ScalarTransform4d") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform4f<ScalarFloat64, ScalarSpectrum>(m, "ScalarTransform4d");
+            bind_transform4<ScalarFloat64, ScalarSpectrum>(m, "ScalarTransform4d");
             py::implicitly_convertible<ScalarTransform4d, ScalarTransform4f>();
         }
     }

@@ -58,7 +58,7 @@ MI_PY_EXPORT(Properties) {
         using Color3f = Color<float, 3>;
         using Color3d = Color<double, 3>;
 
-        py::class_<Properties>(m, "Properties", D(Properties))
+        auto p = py::class_<Properties>(m, "Properties", D(Properties))
             // Constructors
             .def(py::init<>(), D(Properties, Properties))
             .def(py::init<const std::string &>(), D(Properties, Properties, 2))
@@ -76,6 +76,7 @@ MI_PY_EXPORT(Properties) {
             .def_method(Properties, property_names)
             .def_method(Properties, unqueried)
             .def_method(Properties, merge)
+            .def_method(Properties, type)
             // Getters & setters: used as if it were a simple map
             .SET_ITEM_BINDING(float, py::float_)
             .SET_ITEM_BINDING(bool, bool)
@@ -111,5 +112,18 @@ MI_PY_EXPORT(Properties) {
             .def(py::self == py::self, D(Properties, operator_eq))
             .def(py::self != py::self, D(Properties, operator_ne))
             .def_repr(Properties);
+
+        py::enum_<Properties::Type>(p, "Type")
+            .value("Bool",              Properties::Type::Bool)
+            .value("Long",              Properties::Type::Long)
+            .value("Float",             Properties::Type::Float)
+            .value("Array3f",           Properties::Type::Array3f)
+            .value("Transform",         Properties::Type::Transform)
+            .value("AnimatedTransform", Properties::Type::AnimatedTransform)
+            .value("Color",             Properties::Type::Color)
+            .value("String",            Properties::Type::String)
+            .value("NamedReference",    Properties::Type::NamedReference)
+            .value("Object",            Properties::Type::Object)
+            .value("Pointer",           Properties::Type::Pointer);
     }
 }
