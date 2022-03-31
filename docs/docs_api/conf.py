@@ -68,8 +68,8 @@ rst_prolog = r"""
 master_doc = 'list_api'
 
 # General information about the project.
-project = 'mitsuba2'
-copyright = '2021, Realistic Graphics Lab (RGL), EPFL'
+project = 'mitsuba3'
+copyright = '2022, Realistic Graphics Lab (RGL), EPFL'
 author = 'Realistic Graphics Lab, EPFL'
 
 
