@@ -3,9 +3,9 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import ADIntegrator, mis_weight
+from .common import RBIntegrator, mis_weight
 
-class PRBReparamIntegrator(ADIntegrator):
+class PRBReparamIntegrator(RBIntegrator):
     """
     This class implements a reparameterized Path Replay Backpropagation (PRB)
     integrator with the following properties:
@@ -132,7 +132,7 @@ class PRBReparamIntegrator(ADIntegrator):
             L₂ = β * E₂(v₁, v₂') + Lᵢ * f₂(v₁, v₂', v₃) + ...
 
     with a later call to 'dr.backward(L₂)'. In practice, 'E' and 'f' are
-    directional functions, which means that these direction need to be
+    directional functions, which means that these directions need to be
     recomputed from positions using AD.
 
     However, that leaves a few more terms in ∂L₂ that unfortunately add some
@@ -181,10 +181,10 @@ class PRBReparamIntegrator(ADIntegrator):
         self.reparam_rays = props.get('reparam_rays', 16)
 
         # Specifies the von Mises Fisher distribution parameter for sampling
-        # auxiliary rays in Bangaru et al.'s [2000] parameterization
+        # auxiliary rays in Bangaru et al.'s [2020] parameterization
         self.reparam_kappa = props.get('reparam_kappa', 1e5)
 
-        # Harmonic weight exponent in Bangaru et al.'s [2000] parameterization
+        # Harmonic weight exponent in Bangaru et al.'s [2020] parameterization
         self.reparam_exp = props.get('reparam_exp', 3.0)
 
         # Enable antithetic sampling in the reparameterization?
@@ -267,7 +267,7 @@ class PRBReparamIntegrator(ADIntegrator):
                                       ray_prev, ray_cur, pi_prev, pi_cur, reparam))
 
         # Specify the max. number of loop iterations (this can help avoid
-        # costly synchronization when when wavefront-style loops are generated)
+        # costly synchronization when wavefront-style loops are generated)
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
@@ -376,7 +376,7 @@ class PRBReparamIntegrator(ADIntegrator):
 
             η     *= bsdf_sample.eta
             β     *= bsdf_weight
-            L_prev = L # Value of 'L' at previous vertex
+            L_prev = L  # Value of 'L' at previous vertex
             L      = (L + Le + Lr_dir) if primal else (L - Le - Lr_dir)
 
             # -------------------- Stopping criterion ---------------------
@@ -502,14 +502,14 @@ class PRBReparamIntegrator(ADIntegrator):
                     bsdf_val = bsdf_cur.eval(bsdf_ctx, si_cur, wo, active_next)
 
                     # Detached version of the above term and inverse
-                    bsdf_val_det = bsdf_weight * bsdf_sample.pdf
-                    inv_bsdf_val_det = dr.select(dr.neq(bsdf_val_det, 0),
-                                                 dr.rcp(bsdf_val_det), 0)
+                    bsdf_val_detach = bsdf_weight * bsdf_sample.pdf
+                    inv_bsdf_val_detach = dr.select(dr.neq(bsdf_val_detach, 0),
+                                                    dr.rcp(bsdf_val_detach), 0)
 
                     # Differentiable version of the reflected indirect
                     # radiance. Minor optional tweak: indicate that the primal
                     # value of the second term is always 1.
-                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val)
+                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val)
 
                 with dr.resume_grad():
                     # Differentiable Monte Carlo estimate of all contributions

@@ -28,14 +28,15 @@ def _sample_warp_field(scene: mi.Scene,
 
     The function assumes that all inputs are *detached* from the AD graph, with
     one exception: the ray origin (``ray.o``) may have derivative tracking
-    enabled, which influences the returned directions.
+    enabled, which influences the returned directions. The scene parameter π
+    as an implicit input can also have derivative tracking enabled.
 
     It has the following inputs:
 
     Parameter ``scene`` (``mitsuba.Scene``):
         The scene being rendered differentially.
 
-    Parameter ``rng`` (``mitsuba.Point2f``):
+    Parameter ``sample`` (``mitsuba.Point2f``):
         A uniformly distributed random variate on the domain [0, 1]^2.
 
     Parameter ``ray`` (``mitsuba.Ray3f``):
@@ -49,24 +50,27 @@ def _sample_warp_field(scene: mi.Scene,
         sample auxiliary rays.
 
     Parameter ``exponent`` (``float``):
-        Exponent used in the computation of the harmonic weights.
+        Power exponent applied on the computed harmonic weights.
 
     The function returns a tuple ``(Z, dZ, V, div)`` containing
 
     Return value ``Z`` (``mitsuba.Float``)
-        The harmonic weight of the generated sample (detached).
+        The harmonic weight of the generated sample. (detached)
 
     Return value ``dZ`` (``mitsuba.Vector3f``)
         The gradient of ``Z`` with respect to tangential changes
-        in ``ray.d`` (detached).
+        in ``ray.d``. (detached)
 
     Return value ``V`` (``mitsuba.Vector3f``)
-        The weighted mi.warp field value (attached).
+        The weighted mi.warp field value. Taking the derivative w.r.t.
+        scene parameter π gives the vector field that follows an object's
+        motion due to π. (attached)
 
-    Return value ``div`` (``mitsuba.Vector3f``)
-        Dot product between dZ and the unweighted mi.warp field, which
-        is used to compute the divergence of the mi.warp field/jacobian
-        determinant of the parameterization.
+    Return value ``div_lhs`` (``mitsuba.Vector3f``)
+        Dot product between dZ and the unweighted mi.warp field, which is
+        an intermediate value used to compute the divergence of the
+        mi.warp field/jacobian determinant of the reparameterization.
+        (attached)
     """
 
     # Sample an auxiliary ray from a von Mises Fisher distribution
@@ -83,6 +87,7 @@ def _sample_warp_field(scene: mi.Scene,
 
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
+    # Propagation of such gradients guarantees the correct evaluation of 'V_direct'.
     si = scene.ray_intersect(aux_ray,
                              ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape | mi.RayFlags.BoundaryTest,
                              coherent=False)
@@ -104,11 +109,11 @@ def _sample_warp_field(scene: mi.Scene,
         inv_vmf_density = dr.rcp(dr.fmadd(sample.y, dr.exp(-2 * kappa), 1 - sample.y))
 
         # Compute harmonic weight, being wary of division by near-zero values
-        w_denom = inv_vmf_density + B - 1
-        w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)
+        w_denom = inv_vmf_density - 1 + B
+        w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)  # 1 / (D + B)
         w = dr.pow(w_denom_rcp, exponent) * inv_vmf_density
 
-        # Analytic weight gradient w.r.t. `ray.d`
+        # Analytic weight gradient w.r.t. `ray.d` (detaching inv_vmf_density gradient)
         tmp1 = inv_vmf_density * w * w_denom_rcp * kappa * exponent
         tmp2 = ray_frame.to_world(mi.Vector3f(omega_local.x, omega_local.y, 0))
         d_w_omega = dr.clamp(tmp1, -1e10, 1e10) * tmp2
@@ -146,6 +151,13 @@ class _ReparameterizeOp(dr.CustomOp):
 
 
     def forward(self):
+        """
+        Propagate the gradients in the forward direction to 'ray.d' and the 
+        jacobian determinant 'det'. From a warp field point of view, the 
+        derivative of 'ray.d' is the warp field direction at 'ray', and 
+        the derivative of 'det' is the divergence of the warp field at 'ray'.
+        """
+        
         # Initialize some accumulators
         Z = mi.Float(0.0)
         dZ = mi.Vector3f(0.0)
@@ -184,6 +196,7 @@ class _ReparameterizeOp(dr.CustomOp):
                                                            repeat, self.kappa,
                                                            self.exponent)
 
+            # Do not clear input vertex gradient
             dr.forward_to(V_i, div_lhs_i,
                           flags=dr.ADFlag.ClearEdges | dr.ADFlag.ClearInterior)
 

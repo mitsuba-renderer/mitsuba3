@@ -3,9 +3,9 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import ADIntegrator, mis_weight
+from .common import RBIntegrator, mis_weight
 
-class PRBIntegrator(ADIntegrator):
+class PRBIntegrator(RBIntegrator):
     """
     This class implements a basic Path Replay Backpropagation (PRB) integrator
     with the following properties:

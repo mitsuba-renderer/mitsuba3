@@ -14,7 +14,7 @@ rendering and adjoint backward rendering.
 
 Those tests will be run on a set of configurations (scene description + metadata)
 also provided in this file. More tests can easily be added by creating a new
-configuration type and at it to the *_CONFIGS_LIST below.
+configuration type and add it to the *_CONFIGS_LIST below.
 
 By executing this script with python directly it is possible to regenerate the
 reference data (e.g. for a new configurations). Please see the following command:
@@ -466,9 +466,9 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
             }
         }
-        self.ref_fd_epsilon = 1e-4
+        self.ref_fd_epsilon = 2e-4
         self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.5
+        self.error_max_threshold = 0.6
         self.error_mean_threshold_bwd = 0.25
         self.spp = 2048
         self.integrator_dict = {
@@ -661,17 +661,27 @@ REPARAM_CONFIGS_LIST = [
     TranslateSphereOnGlossyFloorConfig
 ]
 
+# List of configs that fail on integrators with depth less than three
+INDIRECT_ILLUMINATION_CONFIGS_LIST = [
+    DiffuseAlbedoGIConfig,
+    TranslateSelfShadowAreaLightConfig,
+    TranslateSphereOnGlossyFloorConfig
+]
+
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     ('path', False),
     ('prb', False),
     ('prb_reparam', True),
+    ('direct_reparam', True)
 ]
 
 CONFIGS = []
 for integrator_name, reparam in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (REPARAM_CONFIGS_LIST if reparam else [])
     for config in todos:
+        if integrator_name == 'direct_reparam' and config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
+            continue
         CONFIGS.append((integrator_name, config))
 
 # -------------------------------------------------------------------
@@ -942,20 +952,25 @@ if __name__ == "__main__":
             filename = join(output_dir, f"test_{config.name}_image_boundary_test.exr")
             mi.Bitmap(image_boundary_test[:, :, 3]).write(filename)
 
-        integrator = mi.load_dict({
+        integrator_path = mi.load_dict({
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
         })
+        integrator_direct = mi.load_dict({
+            'type': 'direct'
+        })
 
-        image_ref = integrator.render(config.scene, seed=0, spp=args.spp)
+        # Primal render
+        image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
 
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
         mi.util.write_bitmap(filename, image_ref)
 
+        # Finite difference
         theta = mi.Float(config.ref_fd_epsilon)
         config.update(theta)
 
-        image_2 = integrator.render(config.scene, seed=0, spp=args.spp)
+        image_2 = integrator_path.render(config.scene, seed=0, spp=args.spp)
         image_fd = (image_2 - image_ref) / config.ref_fd_epsilon
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
