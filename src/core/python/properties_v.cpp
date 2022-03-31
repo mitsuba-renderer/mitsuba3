@@ -35,6 +35,8 @@ py::object properties_get(const Properties& p, const std::string &key) {
         return py::cast(p.get<PFloat>(key));
     else if (type == Properties::Type::String)
         return py::cast(p.string(key));
+    else if (type == Properties::Type::NamedReference)
+        return py::cast((std::string) p.named_reference(key));
     else if (type == Properties::Type::Color)
         return py::cast(p.get<Color<PFloat, 3>>(key));
     else if (type == Properties::Type::Array3f)
@@ -43,13 +45,12 @@ py::object properties_get(const Properties& p, const std::string &key) {
         return py::cast(p.get<Transform<Point<PFloat, 4>>>(key));
     else if (type == Properties::Type::AnimatedTransform)
         return py::cast(p.animated_transform(key));
-    else if (type == Properties::Type::Object) {
+    else if (type == Properties::Type::Object)
         return cast_object((ref<Object>)p.object(key));
-    } else if (type == Properties::Type::Pointer)
+    else if (type == Properties::Type::Pointer)
         return py::cast(p.pointer(key));
-    else {
+    else
         throw std::runtime_error("Unsupported property type");
-    }
 }
 
 
@@ -77,6 +78,12 @@ MI_PY_EXPORT(Properties) {
             .def_method(Properties, unqueried)
             .def_method(Properties, merge)
             .def_method(Properties, type)
+            .def("named_references", [](const Properties& p){
+                std::vector<std::pair<std::string, std::string>> res;
+                for(auto [name, ref]: p.named_references())
+                    res.push_back({name, (std::string) ref});
+                return res;
+            })
             // Getters & setters: used as if it were a simple map
             .SET_ITEM_BINDING(float, py::float_)
             .SET_ITEM_BINDING(bool, bool)
