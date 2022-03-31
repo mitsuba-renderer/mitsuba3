@@ -4,14 +4,113 @@ Compiling the system
 ====================
 
 Before continuing, please make sure that you have read and followed the
-instructions on :ref:`cloning Mitsuba 3 and its dependencies <sec-cloning>` and
-:ref:`choosing desired variants <sec-variants>`.
+instructions on :ref:`choosing desired variants <sec-variants>`.
+
+Cloning the repository
+----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.6**). Further platform-specific
-dependencies and compilation instructions are provided below for each operating
-system. Some additional steps are required for GPU-based backends that are
-described at the end of this section.
+**3.9.0**) and Python (at least **3.6**). Further platform-specific dependencies
+and compilation instructions are provided below for each operating system. Some
+additional steps are required for GPU-based backends that are described at the
+end of this section.
+
+Mitsuba depends on several external dependencies, and its repository directly
+refers to specific versions of them using a Git feature called *submodules*.
+Cloning Mitsuba's repository will recursively fetch these dependencies, which
+are subsequently compiled using a single unified build system. This
+dramatically reduces the number steps needed to set up the renderer compared to
+previous versions of Mitsuba.
+
+For all of this to work out properly, you will have to specify the
+``--recursive`` flag when cloning the repository:
+
+.. code-block:: bash
+
+    git clone --recursive https://github.com/mitsuba-renderer/mitsuba2
+
+If you already cloned the repository and forgot to specify this flag, it's
+possible to fix the repository in retrospect using the following command:
+
+.. code-block:: bash
+
+    git submodule update --init --recursive
+
+**Staying up-to-date**
+
+Unfortunately, pulling from the main repository won't automatically keep the
+submodules in sync, which can lead to various problems. The following command
+installs a git alias named ``pullall`` that automates these two steps.
+
+.. code-block:: bash
+
+    git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
+
+Afterwards, simply write
+
+.. code-block:: bash
+
+    git pullall
+
+to fetch the latest version of Mitsuba 3.
+
+Configuring :monosp:`mitsuba.conf`
+----------------------------------
+
+Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. To get
+started, first copy the default template to the root directory of the Mitsuba 3
+repository.
+
+.. code-block:: bash
+
+    cd <..mitsuba repository..>
+    cp resources/mitsuba.conf.template mitsuba.conf
+
+Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
+to the declaration of the enabled variants (around line 70):
+
+.. code-block:: text
+
+    "enabled": [
+        # The "scalar_rgb" variant *must* be included at the moment.
+        "scalar_rgb",
+        "scalar_spectral"
+    ],
+
+The default file specifies two scalar variants that you may wish to extend
+according to your requirements and the explanations given above. Note that
+``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
+of the list as some core components of Mitsuba depend on it. If Mitsuba is
+launched from the command line without any specific mode parameter, the first
+variant of the list below will be used.
+
+You may also wish to change the *Python default* variant that is executed if no
+variant is explicitly specified (this must be one of the entries of the
+``enabled`` list):
+
+.. code-block:: text
+
+    # If mitsuba is launched without any specific mode parameter,
+    # the configuration below will be used by default
+
+    "python-default": "scalar_spectral",
+
+The remainder of this file lists the C++ types defining the available variants
+and can safely be ignored.
+
+TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
+``llvm_rgb`` or ``llvm_spectral`` for CPU rendering, or one of
+``cuda_ad_rgb`` or ``cuda_ad_spectral`` for differentiable GPU
+rendering.
+
+.. warning::
+
+    Note that compilation time and compilation memory usage is roughly
+    proportional to the number of enabled variants, hence including many of them
+    (more than five) may not be advisable. Mitsuba 3 developers will typically
+    want to restrict themselves to 1-2 variants used by their current experiment
+    to minimize edit-recompile times. Also note that the ``scalar_rgb`` variant
+    is mandatory.
 
 Linux
 -----

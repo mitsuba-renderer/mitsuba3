@@ -28,6 +28,7 @@ Quickstart
 
 Differentiable rendering
 ------------------------
+.. _sec-diff-rendering-tutos:
 
 .. nbgallery::
     :caption: Differentiable rendering
