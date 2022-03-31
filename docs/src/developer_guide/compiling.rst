@@ -3,9 +3,6 @@
 Compiling the system
 ====================
 
-Before continuing, please make sure that you have read and followed the
-instructions on :ref:`choosing desired variants <sec-variants>`.
-
 Cloning the repository
 ----------------------
 
@@ -18,16 +15,16 @@ end of this section.
 Mitsuba depends on several external dependencies, and its repository directly
 refers to specific versions of them using a Git feature called *submodules*.
 Cloning Mitsuba's repository will recursively fetch these dependencies, which
-are subsequently compiled using a single unified build system. This
-dramatically reduces the number steps needed to set up the renderer compared to
-previous versions of Mitsuba.
+are subsequently compiled using a single unified build system. This dramatically
+reduces the number steps needed to set up the renderer compared to previous
+versions of Mitsuba.
 
 For all of this to work out properly, you will have to specify the
 ``--recursive`` flag when cloning the repository:
 
 .. code-block:: bash
 
-    git clone --recursive https://github.com/mitsuba-renderer/mitsuba2
+    git clone --recursive https://github.com/mitsuba-renderer/mitsuba3
 
 If you already cloned the repository and forgot to specify this flag, it's
 possible to fix the repository in retrospect using the following command:
@@ -44,7 +41,8 @@ installs a git alias named ``pullall`` that automates these two steps.
 
 .. code-block:: bash
 
-    git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
+    git config --global alias.pullall '!f(){ git pull "$@" && git submodule
+    update --init --recursive; }; f'
 
 Afterwards, simply write
 
@@ -57,24 +55,17 @@ to fetch the latest version of Mitsuba 3.
 Configuring :monosp:`mitsuba.conf`
 ----------------------------------
 
-Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. To get
-started, first copy the default template to the root directory of the Mitsuba 3
-repository.
+Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. This file
+can be found in the build directory and will be created when executing CMake the
+first time.
 
-.. code-block:: bash
-
-    cd <..mitsuba repository..>
-    cp resources/mitsuba.conf.template mitsuba.conf
-
-Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
-to the declaration of the enabled variants (around line 70):
+Open :monosp:`mitsuba.conf` in your favorite text editor and scroll down to the
+declaration of the enabled variants (around line 86):
 
 .. code-block:: text
 
     "enabled": [
-        # The "scalar_rgb" variant *must* be included at the moment.
-        "scalar_rgb",
-        "scalar_spectral"
+        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb"
     ],
 
 The default file specifies two scalar variants that you may wish to extend
@@ -90,18 +81,14 @@ variant is explicitly specified (this must be one of the entries of the
 
 .. code-block:: text
 
-    # If mitsuba is launched without any specific mode parameter,
-    # the configuration below will be used by default
-
-    "python-default": "scalar_spectral",
+    "python-default": "llvm_ad_rgb",
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
 
 TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
-``llvm_rgb`` or ``llvm_spectral`` for CPU rendering, or one of
-``cuda_ad_rgb`` or ``cuda_ad_spectral`` for differentiable GPU
-rendering.
+``llvm_ad_rgb`` or ``llvm_ad_spectral`` for CPU rendering, or one of
+``cuda_ad_rgb`` or ``cuda_ad_spectral`` for differentiable GPU rendering.
 
 .. warning::
 
@@ -130,52 +117,49 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake ninja-build
+    # Install recent versions build tools, including Clang and libc++ (Clang's
+    C++ library) sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake
+    ninja-build
 
-    # Install libraries for image I/O and the graphical user interface
-    sudo apt install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev libxcursor-dev
+    # Install libraries for image I/O and the graphical user interface sudo apt
+    install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev
+    libxcursor-dev
 
-    # Install required Python packages
-    sudo apt install python3-dev python3-distutils python3-setuptools
+    # Install required Python packages sudo apt install python3-dev
+    python3-distutils python3-setuptools
 
-Additional packages are required to run the included test suite or to generate HTML
-documentation (see :ref:`Developer guide <sec-devguide>`). If those are interesting to you, also
-enter the following commands:
-
-.. code-block:: bash
-
-    # For running tests
-    sudo apt install python3-pytest python3-pytest-xdist python3-numpy
-
-    # For generating the documentation
-    sudo apt install python3-sphinx python3-guzzle-sphinx-theme python3-sphinxcontrib.bibtex
-
-Next, ensure that two environment variables :monosp:`CC` and
-:monosp:`CXX` are exported. You can either run these two commands manually
-before using CMake or---even better---add them to your :monosp:`~/.bashrc`
-file. This ensures that CMake will always use the correct compiler.
+Additional packages are required to run the included test suite or to generate
+HTML documentation (see :ref:`Developer guide <sec-devguide>`). If those are
+interesting to you, also enter the following commands:
 
 .. code-block:: bash
 
-    export CC=clang-9
-    export CXX=clang++-9
+    # For running tests sudo apt install python3-pytest python3-pytest-xdist
+    python3-numpy
 
-If you installed another version of Clang, the version suffix of course has to be adjusted.
-Now, compilation should be as simple as running the following from inside the
-:monosp:`mitsuba2` root directory:
+    # For generating the documentation sudo apt install python3-sphinx
+    python3-guzzle-sphinx-theme python3-sphinxcontrib.bibtex
+
+Next, ensure that two environment variables :monosp:`CC` and :monosp:`CXX` are
+exported. You can either run these two commands manually before using CMake
+or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
+CMake will always use the correct compiler.
 
 .. code-block:: bash
 
-    # Create a directory where build products are stored
-    mkdir build
-    cd build
-    cmake -GNinja ..
-    ninja
+    export CC=clang-9 export CXX=clang++-9
+
+If you installed another version of Clang, the version suffix of course has to
+be adjusted. Now, compilation should be as simple as running the following from
+inside the :monosp:`mitsuba3` root directory:
+
+.. code-block:: bash
+
+    # Create a directory where build products are stored mkdir build cd build
+    cmake -GNinja .. ninja
 
 
-Tested version
-^^^^^^^^^^^^^^
+**Tested version**
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
@@ -198,29 +182,29 @@ CMake, or Python (e.g. via `Miniconda 3
 manually. Mitsuba's build system *requires* access to Python >= 3.6 even if you
 do not plan to use Mitsuba's python interface.
 
-From the root `mitsuba2` directory, the build can be configured with:
+From the root `mitsuba3` directory, the build can be configured with:
 
 .. code-block:: bash
 
-    # To be safe, explicitly ask for the 64 bit version of Visual Studio
-    cmake -G "Visual Studio 16 2019" -A x64
+    # To be safe, explicitly ask for the 64 bit version of Visual Studio cmake
+    -G "Visual Studio 16 2019" -A x64
 
 
 Afterwards, open the generated ``mitsuba.sln`` file and proceed building as
 usual from within Visual Studio. You will probably also want to set the build
 mode to *Release* there.
 
-Additional packages are required to run the included test suite or to generate HTML
-documentation (see :ref:`Developer guide <sec-devguide>`). If those are interesting to you, also
-enter the following commands:
+Additional packages are required to run the included test suite or to generate
+HTML documentation (see :ref:`Developer guide <sec-devguide>`). If those are
+interesting to you, also enter the following commands:
 
 .. code-block:: bash
 
     conda install pytest numpy sphinx
 
 
-Tested version
-^^^^^^^^^^^^^^
+**Tested version**
+
 * Windows 10
 * Visual Studio 2019 (Community Edition) Version 16.4.5
 * cmake 3.16.4 (64bit)
@@ -231,27 +215,29 @@ Tested version
 macOS
 -----
 
-On macOS, you will need to install Xcode, CMake, and `Ninja <https://ninja-build.org/>`_.
-Additionally, running the Xcode command line tools once might be necessary:
+On macOS, you will need to install Xcode, CMake, and `Ninja
+<https://ninja-build.org/>`_. Additionally, running the Xcode command line tools
+once might be necessary:
 
 .. code-block:: bash
 
     xcode-select --install
 
-Note that the default Python version installed with macOS is not compatible with Mitsuba 3, and a more recent version (at least 3.6) needs to be installed (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew <https://brew.sh/>`_).
+Note that the default Python version installed with macOS is not compatible with
+Mitsuba 3, and a more recent version (at least 3.6) needs to be installed (e.g.
+via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
+<https://brew.sh/>`_).
 
-Now, compilation should be as simple as running the following from inside the `mitsuba2` root directory:
+Now, compilation should be as simple as running the following from inside the
+`mitsuba3` root directory:
 
 .. code-block:: bash
 
-    mkdir build
-    cd build
-    cmake -GNinja ..
-    ninja
+    mkdir build cd build cmake -GNinja .. ninja
 
 
-Tested version
-^^^^^^^^^^^^^^
+**Tested version**
+
 * macOS Catalina 10.15.2
 * Xcode 11.3.1
 * cmake 3.16.4
@@ -261,17 +247,15 @@ Tested version
 Running Mitsuba
 ---------------
 
-Once Mitsuba is compiled, run the ``setpath.sh/bat`` script to configure
-environment variables (``PATH/LD_LIBRARY_PATH/PYTHONPATH``) that are required
-to run Mitsuba.
+Once Mitsuba is compiled, run the ``setpath.sh/bat`` script in your build
+directory to configure environment variables
+(``PATH/LD_LIBRARY_PATH/PYTHONPATH``) that are required to run Mitsuba.
 
 .. code-block:: bash
 
-    # On Linux / Mac OS
-    source setpath.sh
+    # On Linux / Mac OS source setpath.sh
 
-    # On Windows
-    C:/.../mitsuba2> setpath
+    # On Windows C:/.../mitsuba3/build> setpath
 
 Mitsuba can then be used to render scenes by typing
 
@@ -294,49 +278,41 @@ GPU variants
 ------------
 
 Variants of Mitsuba that run on the GPU (e.g. :monosp:`cuda_rgb`,
-:monosp:`cuda_autodiff_spectral`, etc.) additionally depend on the `NVIDIA CUDA
+:monosp:`cuda_ad_spectral`, etc.) additionally depend on the `NVIDIA CUDA
 Toolkit <https://developer.nvidia.com/cuda-downloads>`_ and `NVIDIA OptiX
-<https://developer.nvidia.com/designworks/optix/download>`_. CUDA needs to be installed
-manually while OptiX 7 ships natively with the latest GPU driver. Make sure to have an
-up-to-date GPU driver if the framework fails to compile the GPU variants of Mitsuba.
+<https://developer.nvidia.com/designworks/optix/download>`_. CUDA needs to be
+installed manually while OptiX 7 ships natively with the latest GPU driver. Make
+sure to have an up-to-date GPU driver if the framework fails to compile the GPU
+variants of Mitsuba.
 
-Tested versions of CUDA include 10.0, 10.1, and 10.2. Only OptiX 7 is supported at this moment.
-
-.. warning::
-
-    Neither GPU- nor differentiable rendering currently work on macOS, which is
-    sadly unlikely to change in the future. Apple has expelled NVIDIA graphics
-    (and therefore APIs like CUDA that Mitsuba depends on) from the Mac
-    ecosystem some years ago. Please voice your concerns to Apple if you are
-    unhappy with this state of affairs.
+Tested versions of CUDA include 10.0, 10.1, and 10.2. Only OptiX 7 is supported
+at this moment.
 
 In case your CUDA installation is not automatically found by CMake (for instance
-because the directory is not in `PATH`), you need to either set the environment variable
-`CUDACXX` or the CMake cache entry `CMAKE_CUDA_COMPILER` to the full path to the
-compiler. E.g.
+because the directory is not in `PATH`), you need to either set the environment
+variable `CUDACXX` or the CMake cache entry `CMAKE_CUDA_COMPILER` to the full
+path to the compiler. E.g.
 
 .. code-block:: bash
 
-    # Environment variable
-    export CUDACXX=/usr/local/cuda/bin/nvcc
+    # Environment variable export CUDACXX=/usr/local/cuda/bin/nvcc
 
     # or
 
-    # As part of the CMake process
-    cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+    # As part of the CMake process cmake ..
+    -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 
-By default, Mitsuba is able to resolve the OptiX API itself, and therefore does not rely on
-the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake flag can be used to turn off
-this feature if a developer wants to experiment with parts of the OptiX API not yet exposed
-to the framework.
-
+By default, Mitsuba is able to resolve the OptiX API itself, and therefore does
+not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake flag
+can be used to turn off this feature if a developer wants to experiment with
+parts of the OptiX API not yet exposed to the framework.
 
 Embree
 ------
 
-Mitsuba's ``scalar`` and ``packet`` backends can optionally use Intel's Embree
-library for ray tracing instead of the builtin kd-tree in Mitsuba 3. To do so,
-invoke CMake with the ``-DMI_ENABLE_EMBREE=1`` parameter or use a visual CMake
-tool like ``cmake-gui`` or ``ccmake`` to flip the value of this parameter.
-Embree tends to be faster but lacks some features such as support for double
-precision ray intersection.
+By default, Mitsuba's ``scalar`` and ``llvm`` backends use Intel's Embree
+library for ray tracing instead of the builtin kd-tree in Mitsuba 3. To change
+this behavior, invoke CMake with the ``-DMI_ENABLE_EMBREE=0`` parameter
+or use a visual CMake tool like ``cmake-gui`` or ``ccmake`` to flip the value of
+this parameter. Embree tends to be faster but lacks some features such as
+support for double precision ray intersection.
