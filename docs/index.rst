@@ -133,4 +133,5 @@ different set of goals.
     :caption: Miscellaneous
     :hidden:
 
+    release_notes
     zz_bibliography
