@@ -490,22 +490,53 @@
   doi={10.1109/38.62695}
 }
 
+@article{Loubet2019Reparameterizing,
+    author = {Guillaume Loubet and Nicolas Holzschuch and Wenzel Jakob},
+    title = {Reparameterizing discontinuous integrands for differentiable rendering},
+    journal = {Transactions on Graphics (Proceedings of SIGGRAPH Asia)},
+    volume = {38},
+    number = {6},
+    year = {2019},
+    month = dec,
+    doi = {10.1145/3355089.3356510}
+}
+
+@article{Bangaru2020,
+    author = {Bangaru, Sai Praveen and Li, Tzu-Mao and Durand, Fr\'{e}do},
+    title = {Unbiased Warped-Area Sampling for Differentiable Rendering},
+    year = {2020},
+    issue_date = {December 2020},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    volume = {39},
+    number = {6},
+    issn = {0730-0301},
+    url = {https://doi.org/10.1145/3414685.3417833},
+    doi = {10.1145/3414685.3417833},
+    abstract = {Differentiable rendering computes derivatives of the light transport equation with respect to arbitrary 3D scene parameters, and enables various applications in inverse rendering and machine learning. We present an unbiased and efficient differentiable rendering algorithm that does not require explicit boundary sampling. We apply the divergence theorem to the derivative of the rendering integral to convert the boundary integral into an area integral. We rewrite the converted area integral to a form that is suitable for Monte Carlo rendering. We then develop an efficient Monte Carlo sampling algorithm for solving the area integral. Our method can be easily plugged into a traditional path tracer and does not require dedicated data structures for sampling boundaries.We analyze the convergence properties through bias-variance metrics, and demonstrate our estimator's advantages over existing methods for some synthetic inverse rendering examples.},
+    journal = {ACM Trans. Graph.},
+    month = {nov},
+    articleno = {245},
+    numpages = {18},
+    keywords = {differentiable rendering, inverse graphics, differentiating visibility, light transport}
+}
+
 @ARTICLE{Vicini2021,
-author = {Vicini, Delio and Speierer, S\'{e}bastien and Jakob, Wenzel},
-title = {Path Replay Backpropagation: Differentiating Light Paths Using Constant Memory and Linear Time},
-year = {2021},
-issue_date = {August 2021},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {40},
-number = {4},
-issn = {0730-0301},
-url = {https://doi.org/10.1145/3450626.3459804},
-doi = {10.1145/3450626.3459804},
-journal = {ACM Trans. Graph.},
-month = {jul},
-articleno = {108},
-numpages = {14},
-keywords = {gradient-based optimization, radiative backpropagation, differentiable rendering, inverse rendering}
+    author = {Vicini, Delio and Speierer, S\'{e}bastien and Jakob, Wenzel},
+    title = {Path Replay Backpropagation: Differentiating Light Paths Using Constant Memory and Linear Time},
+    year = {2021},
+    issue_date = {August 2021},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    volume = {40},
+    number = {4},
+    issn = {0730-0301},
+    url = {https://doi.org/10.1145/3450626.3459804},
+    doi = {10.1145/3450626.3459804},
+    journal = {ACM Trans. Graph.},
+    month = {jul},
+    articleno = {108},
+    numpages = {14},
+    keywords = {gradient-based optimization, radiative backpropagation, differentiable rendering, inverse rendering}
 }
 

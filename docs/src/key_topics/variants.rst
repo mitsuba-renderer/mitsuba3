@@ -8,13 +8,17 @@ system "*variants*" that change elementary aspects of simulation---they can for
 instance replace the representation of color to support monochromatic, RGB,
 spectral, or even polarized illumination. Similarly, the numerical
 representation underlying the simulation can be exchanged to perform renderings
-using a higher amount of precision, vectorization to process many light paths
-at once, or it can be mathematically differentiated to to solve inverse
-problems. All variants are automatically created from a single generic codebase.
+using a higher amount of precision, process many light paths at once on the GPU,
+or it can be mathematically differentiated to to solve inverse problems. All
+variants are automatically created from a single generic codebase. Each variant
+is associated with an identifying name that is composed of several parts:
 
-As many as 36 different variants of the renderer are presently available, shown
-in the list below. Before building Mitsuba 3, you will therefore need to decide
-which of these are relevant for your intended application.
+.. image:: ../../../resources/data/docs/images/variants/variant.svg
+    :width: 80%
+    :align: center
+
+As many as 60 different variants of the renderer are presently available, shown
+in the list below.
 
   .. container:: toggle
 
@@ -46,32 +50,55 @@ which of these are relevant for your intended application.
       - :monosp:`llvm_spectral_double`
       - :monosp:`llvm_spectral_polarized`
       - :monosp:`llvm_spectral_polarized_double`
+      - :monosp:`llvm_ad_mono`
+      - :monosp:`llvm_ad_mono_double`
+      - :monosp:`llvm_ad_mono_polarized`
+      - :monosp:`llvm_ad_mono_polarized_double`
+      - :monosp:`llvm_ad_rgb`
+      - :monosp:`llvm_ad_rgb_double`
+      - :monosp:`llvm_ad_rgb_polarized`
+      - :monosp:`llvm_ad_rgb_polarized_double`
+      - :monosp:`llvm_ad_spectral`
+      - :monosp:`llvm_ad_spectral_double`
+      - :monosp:`llvm_ad_spectral_polarized`
+      - :monosp:`llvm_ad_spectral_polarized_double`
       - :monosp:`cuda_mono`
+      - :monosp:`cuda_mono_double`
       - :monosp:`cuda_mono_polarized`
+      - :monosp:`cuda_mono_polarized_double`
       - :monosp:`cuda_rgb`
+      - :monosp:`cuda_rgb_double`
       - :monosp:`cuda_rgb_polarized`
+      - :monosp:`cuda_rgb_polarized_double`
       - :monosp:`cuda_spectral`
+      - :monosp:`cuda_spectral_double`
       - :monosp:`cuda_spectral_polarized`
-      - :monosp:`cuda_autodiff_mono`
-      - :monosp:`cuda_autodiff_mono_polarized`
-      - :monosp:`cuda_autodiff_rgb`
-      - :monosp:`cuda_autodiff_rgb_polarized`
-      - :monosp:`cuda_autodiff_spectral`
-      - :monosp:`cuda_autodiff_spectral_polarized`
+      - :monosp:`cuda_spectral_polarized_double`
+      - :monosp:`cuda_ad_mono`
+      - :monosp:`cuda_ad_mono_double`
+      - :monosp:`cuda_ad_mono_polarized`
+      - :monosp:`cuda_ad_mono_polarized_double`
+      - :monosp:`cuda_ad_rgb`
+      - :monosp:`cuda_ad_rgb_double`
+      - :monosp:`cuda_ad_rgb_polarized`
+      - :monosp:`cuda_ad_rgb_polarized_double`
+      - :monosp:`cuda_ad_spectral`
+      - :monosp:`cuda_ad_spectral_double`
+      - :monosp:`cuda_ad_spectral_polarized`
+      - :monosp:`cuda_ad_spectral_polarized_double`
 
+However, when installing Mitsuba on your system with ``pip``, only a subset of
+those variants will be installed.
 
-Note that compilation time and compilation memory usage is roughly proportional
-to the number of enabled variants, hence including many of them (more than
-five) may not be advisable. Mitsuba 3 developers will typically want to
-restrict themselves to 1-2 variants used by their current experiment to
-minimize edit-recompile times. Each variant is associated with an identifying
-name that is composed of several parts:
+    - :monosp:`scalar_rgb`
+    - :monosp:`scalar_spectral`
+    - :monosp:`cuda_ad_rgb`
+    - :monosp:`llvm_ad_rgb`
 
-.. image:: ../../../resources/data/docs/images/variants/variant.svg
-    :width: 80%
-    :align: center
-
-We will now discuss each part in turn.
+This is to avoid the burden of downloading massive binaries, but those should be
+enough to get you started with Mitsuba 3. For advanced applications that require
+another variant, you will need to compile it yourself. For this please refer to
+the :ref:`documentation on compiling the system from source <sec-compiling>`.
 
 Part 1: Computational backend
 -----------------------------
@@ -81,28 +108,13 @@ additions or multiplications are realized by the system. The following choices
 are available:
 
 - The ``scalar`` backend performs computation on the CPU using normal floating
-  point arithmetic similar to older versions of Mitsuba. This is the default
-  choice for generating renderings using the :monosp:`mitsuba` command line
-  executable, or using the graphical user interface.
+  point arithmetic similar to older versions of Mitsuba. The renderer
+  processes individual rays at a time. This mode is the
+  easiest to understand and therefore preferred for fixing
+  compilation errors and debugging the renderer.
 
-- The ``packet`` backend efficiently performs calculations on groups of 4, 8,
-  or 16 floating point numbers, exploiting instruction set extensions such as
-  SSE4.2, AVX, AVX2, and AVX512. In packet mode, every single operation in a
-  rendering algorithm (ray tracing, BSDF sampling, etc.) will therefore operate on
-  multiple inputs at once. The following visualizations of tracing light
-  paths in scalar and packet mode gives an idea of this difference:
-
-  .. image:: ../../../resources/data/docs/images/variants/vectorization.jpg
-      :width: 100%
-      :align: center
-
-  Note, however, that packet mode is not a magic bullet: standard algorithms
-  won't automatically be 8 or 16x faster. Packet mode requires special
-  algorithms and is intended to be used by developers, whose software can
-  exploit this type of parallelism.
-
-- The ``gpu`` backend offloads computation to the GPU using `Dr.Jit's
-  <https://github.com/mitsuba-renderer/enoki>`_ just-in-time (JIT) compiler
+- The ``cuda`` backend offloads computation to the GPU using `Dr.Jit's
+  <https://github.com/mitsuba-renderer/drjit>`_ just-in-time (JIT) compiler
   that transforms computation into CUDA kernels. Using this backend, each
   operation typically operates on millions of inputs at the same time. Mitsuba
   then becomes what is known as a *wavefront path tracer* and delegates ray
@@ -111,57 +123,58 @@ are available:
   architecture is also supported but tends to be slower because it lacks ray
   tracing hardware acceleration.
 
-- Building on the ``gpu`` backend, ``cuda_autodiff`` furthermore propagates
-  derivative information through the simulation, which is a crucial ingredient
-  for solving *inverse problems* using rendering algorithms.
+- ``llvm``: Similar to the ``cuda`` backend, the computation required to render
+  a scene is just-in-time compiled using ``Dr.Jit`` to parallel CPU kernels that
+  process many rays at the same time. This uses the LLVM compiler framework,
+  which is detected and loaded at runtime. If you don't have a NVIDIA GPU, this
+  mode is a great alternative to the ``cuda`` backend.
 
-  The following shows an example from :cite:`NimierDavidVicini2019Mitsuba2`.
-  Here, Mitsuba 3 is used to compute the height profile of a transparent glass
-  panel that refracts red, green, and blue light in such a way as to reproduce
-  a specified color image.
-
-  .. image:: ../../../resources/data/docs/images/autodiff/caustic.jpg
-      :width: 100%
-      :align: center
-
-  The main use case of the ``cuda_autodiff`` backend is *differentiable
-  rendering*, which interprets the rendering algorithm as a function
-  :math:`f(\mathbf{x})` that converts an input :math:`\mathbf{x}` (the scene
-  description) into an output :math:`\mathbf{y}` (the rendering). This function
-  :math:`f` is then mathematically differentiated to obtain
-  :math:`\frac{\mathrm{d}\mathbf{y}}{\mathrm{d}\mathbf{x}}`, providing a
-  first-order approximation of how a desired change in the output
-  :math:`\mathbf{y}` (the rendering) can be achieved by changing the inputs
-  :math:`\mathbf{x}` (the scene description). Together with a differentiable
-  *objective function* :math:`g(\mathbf{y})` that quantifies the suitability of
-  tentative scene parameters and a gradient-based optimization algorithm, a
-  differentiable renderer can be used to solve complex inverse problems
-  involving light.
-
-  .. image:: ../../../resources/data/docs/images/autodiff/autodiff.jpg
-      :width: 100%
-      :align: center
-
-  The documentations provides several applied examples on :ref:`differentiable
-  and inverse rendering <sec-inverse-rendering>`.
-
-An appealing aspect of ``llvm``, ``cuda``, and ``cuda_autodiff`` modes, is that
-they expose *vectorized* Python interfaces that operate on arbitrarily large
-set of inputs (even in the case of ``packet`` mode that works with smaller
-arrays. The C++ implementation sweeps over larger inputs in this case). This
-means that millions of ray tracing operations or BSDF evaluations can be
+An appealing aspect of the ``llvm`` and ``cuda`` modes, is that they expose
+*vectorized* Python interfaces that operate on arbitrarily large set of inputs.
+This means that millions of ray tracing operations or BSDF evaluations can be
 performed with a single Python function call, enabling efficient prototyping
 within Python or Jupyter notebooks without costly iteration over many elements.
 
-How to choose?
-^^^^^^^^^^^^^^
+Part 2: Automatic differentiation
+---------------------------------
 
-We generally recommend compiling ``scalar`` variants for command line
-rendering, and ``packet`` or ``cuda_autodiff`` variants for Python
-development---the latter only if differentiable rendering is desired.
+It is possible to add the ``_ad`` suffix to enable automatic differentiation for
+both ``cuda`` and ``llvm`` modes. In which case the backend will furthermore
+propagates derivative information through the simulation, which is a crucial
+ingredient for solving *inverse problems* using rendering algorithms.
+
+The following shows an example from :cite:`NimierDavidVicini2019Mitsuba2`.
+Here, Mitsuba 3 is used to compute the height profile of a transparent glass
+panel that refracts red, green, and blue light in such a way as to reproduce
+a specified color image.
+
+.. image:: ../../../resources/data/docs/images/autodiff/caustic.jpg
+    :width: 100%
+    :align: center
+
+The main use case of the ``_ad`` backends is *differentiable
+rendering*, which interprets the rendering algorithm as a function
+:math:`f(\mathbf{x})` that converts an input :math:`\mathbf{x}` (the scene
+description) into an output :math:`\mathbf{y}` (the rendering). This function
+:math:`f` is then mathematically differentiated to obtain
+:math:`\frac{\mathrm{d}\mathbf{y}}{\mathrm{d}\mathbf{x}}`, providing a
+first-order approximation of how a desired change in the output
+:math:`\mathbf{y}` (the rendering) can be achieved by changing the inputs
+:math:`\mathbf{x}` (the scene description). Together with a differentiable
+*objective function* :math:`g(\mathbf{y})` that quantifies the suitability of
+tentative scene parameters and a gradient-based optimization algorithm, a
+differentiable renderer can be used to solve complex inverse problems
+involving light.
+
+.. image:: ../../../resources/data/docs/images/autodiff/autodiff.jpg
+    :width: 100%
+    :align: center
+
+The documentations provides several applied examples on :ref:`differentiable
+and inverse rendering <sec-diff-rendering-tutos>`.
 
 .. _sec-variants-colors:
-Part 2: Color representation
+Part 3: Color representation
 ----------------------------
 
 The next part determines how Mitsuba represents color information. The
@@ -240,9 +253,11 @@ following choices are available:
   spectral mode is active. It is also important to note that many existing
   Mitsuba scenes only specify RGB color information. Spectral Mitsuba can still
   render such scenes -- in this case, it determines plausible smooth spectra
-  corresponding to the specified RGB colors :cite:`Jakob2019Spectral`.
+  corresponding to the specified RGB colors :cite:`Jakob2019Spectral`. We also
+  recommend taking a look at the :ref:`Spectral film plugin<film-specfilm>`
+  which is able to output spectral multichannel output images.
 
-Part 3: Polarization
+Part 4: Polarization
 --------------------
 
 If desired, Mitsuba 3 can keep track of the full polarization state of light.
@@ -251,7 +266,7 @@ oscillates perpendicularly to the direction of travel. This oscillation can
 take on infinitely many different shapes---the following images show examples
 of *horizontal* and *elliptical* polarization.
 
-.. image:: ../../images/polarization_wave_variations.svg
+.. image:: ../../../resources/data/docs/images/polarization/polarization_wave_variations.svg
     :width: 90%
     :align: center
 
@@ -272,60 +287,16 @@ implementation of the polarized rendering modes, please refer to the
 :ref:`developer_guide-polarization` section in the developer guide.
 
 
-Part 4: Precision
+Part 5: Precision
 -----------------
 
 Mitsuba 3 normally relies on single precision (32 bit) arithmetic, but double
-precision (64 bit) is optionally available. We find this particularly helpful
-for debugging: whether or not an observed problem arises due to floating point
-imprecisions can normally be determined after switching to double precision.
-Note that double precision currently not available for ``cuda_*`` variants. This
-is because OptiX performs ray tracing in single precision.
-
-Configuring :monosp:`mitsuba.conf`
-----------------------------------
-
-Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. To get
-started, first copy the default template to the root directory of the Mitsuba 3
-repository.
-
-.. code-block:: bash
-
-    cd <..mitsuba repository..>
-    cp resources/mitsuba.conf.template mitsuba.conf
-
-Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
-to the declaration of the enabled variants (around line 70):
-
-.. code-block:: text
-
-    "enabled": [
-        # The "scalar_rgb" variant *must* be included at the moment.
-        "scalar_rgb",
-        "scalar_spectral"
-    ],
-
-The default file specifies two scalar variants that you may wish to extend
-according to your requirements and the explanations given above. Note that
-``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
-of the list as some core components of Mitsuba depend on it. You may also wish
-to change the *default* variant that is executed if no variant is explicitly
-specified (this must be one of the entries of the ``enabled`` list):
-
-.. code-block:: text
-
-    # If mitsuba is launched without any specific mode parameter,
-    # the configuration below will be used by default
-
-    "default": "scalar_spectral",
-
-The remainder of this file lists the C++ types defining the available variants
-and can safely be ignored.
-
-TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
-``llvm_rgb`` or ``llvm_spectral`` for CPU rendering, or one of
-``cuda_autodiff_rgb`` or ``cuda_autodiff_spectral`` for differentiable GPU
-rendering.
-
-Once you are finished with :monosp:`mitsuba.conf`, proceed to the next section
-on :ref:`compiling the system <sec-compiling>`.
+precision (64 bit) is optionally available adding the ``_double`` suffix to the
+variant name. We find this particularly helpful for debugging: whether or not an
+observed problem arises due to floating point imprecisions can normally be
+determined after switching to double precision. Note that Embree and OptiX don't
+support double precision, hence ray-tracing operations will run in reduced
+(single) precision in those modes. The only way to use precision for everything
+including ray tracing is to render on the CPU (``scalar`` or ``llvm``) and
+disable Embree in CMake. Also note that double precision arithmetic runs with
+greatly reduced throughput (1/64th of FP32) on recent NVIDIA GPUs.
