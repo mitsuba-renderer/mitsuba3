@@ -1,7 +1,7 @@
 .. _sec-file-format:
 
-Scene file format
-=================
+Scene XML file format
+=====================
 
 Mitsuba uses a simple and general XML-based format to represent scenes. Since
 the framework's philosophy is to represent discrete blocks of functionality as
@@ -9,7 +9,7 @@ plugins, a scene file can be interpreted as "recipe" specifying which plugins
 should be instantiated and how they should be put together. In the following,
 we will look at a few examples to get a feeling for the scope of the format.
 
-A simple scene with a single mesh and the default lighting and camera setup
+A simple scene with a single mesh with no lighting and the default camera setup
 might look something like this:
 
 .. code-block:: xml
@@ -49,8 +49,9 @@ Similarly, you could write
 
 This loads a different plugin (``sphere``) which is still a *Shape* but instead
 represents a :ref:`sphere <shape-sphere>` configured with a radius of 10
-world-space units. Mitsuba ships with a large number of plugins; please refer
-to the next chapter for a detailed overview of them.
+world-space units. Mitsuba ships with a large number of plugins; please refer to
+the :ref:`Plugin reference <sec-plugins>` section for a detailed overview of
+them.
 
 The most common scene setup is to declare an integrator, some geometry, a
 sensor (e.g. a camera), a film, a sampler and one or more emitters. Here is a
@@ -111,7 +112,7 @@ more complex example:
     </scene>
 
 This example introduces several new object types (``integrator``, ``sensor``,
-``bsdf``, ``sampler``, ``film``, and``emitter``) and property types
+``bsdf``, ``sampler``, ``film``, and ``emitter``) and property types
 (``integer``, ``transform``, and ``rgb``). As you can see in the example,
 objects are usually declared at the top level except if there is some inherent
 relation that links them to another object. For instance, BSDFs are usually
@@ -140,7 +141,7 @@ the available object types:
           - `constant`, `envmap`, `point`
         * - `film`
           - Film plugins convert measurements into the final output file that is written to disk
-          - `hdrfilm`
+          - `hdrfilm`, `specfilm`
         * - `integrator`
           - Integrators implement rendering techniques for solving the light transport equation
           - `path`, `direct`, `depth`
@@ -149,7 +150,7 @@ the available object types:
           - `box`, `gaussian`
         * - `sampler`
           - Sample generator plugins used by the `integrator`
-          - `independent`
+          - `independent`, `multijitter`
         * - `sensor`
           - Sensor plugins like cameras are responsible for measuring radiance
           - `perspective`, `orthogonal`
@@ -158,7 +159,7 @@ the available object types:
           - `obj`, `ply`, `serialized`
         * - `texture`
           - Texture plugins represent spatially varying signals on surfaces
-          - `bitmap`
+          - `bitmap`, `checkerboard`
 
 
 Properties
@@ -285,9 +286,8 @@ Here is an example:
     435.09 0.834000
     ...
 
-It is available the function :py:meth:`mitsuba.spectrum_to_file` that generates,
-given the wavelengths and its values, the text file corresponding to the previously
-explained format.
+Mitsuba provides a function (:py:meth:`mitsuba.spectrum_to_file`) to create such
+file, given the wavelenths and its values.
 
 For more details regarding spectral information in Mitsuba 3, please have a look
 at the :ref:`corresponding section <sec-spectra>` in the plugin documentation.
@@ -365,7 +365,7 @@ memory, you can make use of references. Here is an example of how this works:
 
         <bsdf type="diffuse" id="my_material">
             <!-- Reference the texture named my_image and pass it
-                 to the BRDF as the reflectance parameter -->
+                 to the BSDF as the reflectance parameter -->
             <ref name="reflectance" id="my_image"/>
         </bsdf>
 
@@ -385,10 +385,9 @@ parent object.
 .. note::
 
     Note that while this feature is meant to efficiently handle materials,
-    textures, and particiapating media that are referenced from multiple
-    places, it cannot be used to instantiate geometry. (the `instance` plugin
-    should be used for that purpose. This is not yet part of Mitsuba 3
-    but will be added at a later point.)
+    textures, and participating media that are referenced from multiple places,
+    it cannot be used to instantiate geometry. The :ref:`instance
+    <shape-instance>` plugin should be used for that purpose.
 
 .. _sec-scene-file-format-params:
 
@@ -462,3 +461,200 @@ using the ``-a <path1>;<path2>;..`` command line argument).
 .. code-block:: xml
 
     <path value="../../my_resources"/>
+
+Scene Python ``dict`` format
+============================
+
+A more convenient way of constructing Mitsuba objects in Python is to use
+:py:func:`mitsuba.load_dict` which takes as argument a Python dictionary. The
+structure of this python dictionary should be similar to the XML structure used
+for the Mitsuba scene description.
+
+The dictionary should always contain an entry ``"type"`` to specify the name of
+the plugin to be instantiated. Keys of the dictionary must be strings and will
+represent the name of the properties. The type of the property will be deduced
+from the Python type for simple types (e.g. ``bool``, ``float``, ``int``,
+``string``, ...). It is possible to provide another dictionary as the value of
+an entry, which will be used to create nested objects, as in the XML scene
+description.
+
+The following snippets illustrate the similarity between the XML code and the
+Python dictionary structure. Also note that similarly, the :ref:`plugin
+documentation <sec-plugins>` section provides both XML snippets and the
+corresponding python ``dict`` code examples for every referenced plugins.
+
+.. tabs::
+    .. code-tab:: xml
+
+        <shape type="obj">
+            <string name="filename" value="dragon.obj"/>
+            <bsdf type="roughconductor">
+                <float name="alpha" value="0.01"/>
+            </bsdf>
+        </shape>
+
+    .. code-tab:: python
+
+        {
+            "type": "obj",
+            "filename": "dragon.obj",
+            "bsdf_id": {
+                "type": "roughconductor",
+                "alpha": 0.01
+            }
+        }
+
+Here is a more concrete example on how to use the function:
+
+.. code-block:: python
+
+    sphere = mi.load_dict({
+        "type": "sphere",
+        "center": [0, 0, -10],
+        "radius": 10.0,
+        "flip_normals": False,
+        "bsdf": {
+            "type": "dielectric"
+        }
+    })
+
+It is also possible to provide another Mitsuba object within the Python
+dictionary instead of using nested dictionaries:
+
+.. code-block:: python
+
+    # First create a BSDF (could use xml.load_string(..) as well)
+    my_bsdf = mi.load_dict({
+        "type": "roughconductor",
+        "alpha": 0.14,
+    })
+
+    # Pass the BSDF object in the dictionary
+    sphere = load_dict({
+        "type": "sphere",
+        "something": my_bsdf
+    })
+
+For convenience, a nested dictionary can be provided with a ``"type"`` entry
+equal to ``"rgb"`` or ``"spectrum"``. Similarly to the XML parser, the
+``"value"`` entry in that dictionary will be used to instantiate the right
+`Spectrum` plugin. (See the :ref:`corresponding section <sec-spectra>`)
+
+Here as some examples of the possible use of the ``"value"`` entry in the nested
+dictionary:
+
+.. code-block:: python
+
+    # Passing gray-scale value
+    "color_property": {
+        "type": "rgb",
+        "value": 0.44
+    }
+
+    # Passing tri-stimulus values
+    "color_property": {
+        "type": "rgb",
+        "value": [0.7, 0.1, 0.5]
+    }
+
+    # Providing a spectral file
+    "color_property": {
+        "type": "spectrum",
+        "filename": "filename.spd"
+    }
+
+    # Providing a list of (wavelength, value) pairs
+    "color_property": {
+        "type": "spectrum",
+        "value": [(400.0, 0.5), (500.0, 0.8), (600.0, 0.2)]
+    }
+
+The following example constructs a Mitsuba scene using
+:py:func:`mitsuba.load_dict`:
+
+.. code-block:: python
+
+    scene = mi.load_dict({
+        "type": "scene",
+        "myintegrator": {
+            "type": "path",
+        },
+        "mysensor": {
+            "type": "perspective",
+            "near_clip": 1.0,
+            "far_clip": 1000.0,
+            "to_world": mi.ScalarTransform4f.look_at(origin=[1, 1, 1],
+                                                     target=[0, 0, 0],
+                                                     up=[0, 0, 1]),
+            "myfilm": {
+                "type": "hdrfilm",
+                "rfilter": {
+                    "type": "box"
+                },
+                "width": 1024,
+                "height": 768,
+            }, "mysampler": {
+                "type": "independent",
+                "sample_count": 4,
+            },
+        },
+        "myemitter": {
+            "type": "constant"
+        },
+        "myshape": {
+            "type": "sphere",
+            "mybsdf": {
+                "type": "diffuse",
+                "reflectance": {
+                    "type": "rgb",
+                    "value": [0.8, 0.1, 0.1],
+                }
+            }
+        }
+    })
+
+As in the XML scene description, it is possible to reference other objects in
+the `dict`, as long as those a declared before the reference takes place in the
+dictionary. For this purpose, you can specify a nested dictionary with
+``"type":"ref"`` and an ``"id"`` entry. Objects can be referenced using their
+``key`` in the dictionary. It is also possible to reference an object using it's
+``id`` if one was defined.
+
+.. code-block:: python
+
+    {
+        "type": "scene", # this BSDF can be referenced using its key "bsdf_id_0"
+        "bsdf_key_0": {
+            "type": "roughconductor"
+        },
+
+        "shape_0": {
+            "type": "sphere",
+            "mybsdf": {
+                "type": "ref",
+                "id": "bsdf_key_0"
+            }
+        }
+
+        # this BSDF can be referenced using its key "bsdf_key_1" or its id "bsdf_id_1"
+        "bsdf_key_1": {
+            "type": "roughconductor",
+            "id": "bsdf_id_1"
+        },
+
+        "shape_2": {
+            "type": "sphere",
+            "mybsdf": {
+                "type": "ref",
+                "id": "bsdf_id_1"
+            }
+        },
+
+        "shape_3": {
+            "type": "sphere",
+            "mybsdf": {
+                "type": "ref",
+                "id": "bsdf_key_1"
+            }
+        }
+    }
