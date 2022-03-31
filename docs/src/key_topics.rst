@@ -6,5 +6,5 @@ Key Topics
     :glob:
 
     key_topics/variants
-    key_topics/file_format
+    key_topics/scene_format
     key_topics/polarization
