@@ -34,13 +34,13 @@ Modern rendering systems are generally built on top of the *radiometry* framewor
 
 From the optics community, there are two commonly used frameworks to describe the polarization state of light:
 
-| 1. **Mueller-Stokes calculus**
-|
-|   The polarization state (fully polarized, partially polarized, or unpolarized) is represented with a :math:`4 \times 1` *Stokes vector* while interaction with optical elements or scattering is achieved by multiplication with :math:`4 \times 4` *Mueller matrices*.
+1. **Mueller-Stokes calculus**
 
-| 2. **Jones calculus**
-|
-|   This representation is simpler and uses :math:`2 \times 1` and :math:`2 \times 2` *Jones vectors and matrices* instead. They are directly related to the underlying electrical field components of the wave and can explain superpositions of waves, e.g. interference effects. However, Jones calculus can only represent fully polarized light and is therefore of limited interest for rendering applications.
+The polarization state (fully polarized, partially polarized, or unpolarized) is represented with a :math:`4 \times 1` *Stokes vector* while interaction with optical elements or scattering is achieved by multiplication with :math:`4 \times 4` *Mueller matrices*.
+
+2. **Jones calculus**
+
+This representation is simpler and uses :math:`2 \times 1` and :math:`2 \times 2` *Jones vectors and matrices* instead. They are directly related to the underlying electrical field components of the wave and can explain superpositions of waves, e.g. interference effects. However, Jones calculus can only represent fully polarized light and is therefore of limited interest for rendering applications.
 
 Like previous work in polarized rendering :cite:`WilkieWeidlich2012`, :cite:`Mojzik2016BidirectionalPol`, :cite:`Jarabo2018BidirectionalPol`, we will use the Mueller-Stokes calculus for our implementation.
 
@@ -1478,7 +1478,7 @@ The remainder of this section covers a few more implementation details / helpful
     template <typename T>
     auto depolarizer(const T &s = T(1)) {
         if constexpr (is_polarized_v<T>) {
-            T result = ek::zero<T>();
+            T result = dr::zero<T>();
             result(0, 0) = s(0, 0);
             return result;
         } else {
@@ -1521,7 +1521,7 @@ Recall from Section `Mueller matrices`_ that whenever two Mueller matrices (or a
     // vector by an angle `theta`.
     template <typename Float>
     MuellerMatrix<Float> rotator(Float theta) {
-        auto [s, c] = ek::sincos(2.f * theta);
+        auto [s, c] = dr::sincos(2.f * theta);
         return MuellerMatrix<Float>(
             1, 0, 0, 0,
             0, c, s, 0,
@@ -1534,16 +1534,16 @@ Recall from Section `Mueller matrices`_ that whenever two Mueller matrices (or a
     // vector from `basis_current` to `basis_target`.
     // The masked condition ensures that rotation is performed in the right direction.
     template <typename Vector3,
-              typename Float = ek::value_t<Vector3>,
+              typename Float = dr::value_t<Vector3>,
               typename MuellerMatrix = MuellerMatrix<Float>>
     MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
                                       const Vector3 &basis_current,
                                       const Vector3 &basis_target) {
-        Float theta = unit_angle(ek::normalize(basis_current),
-                                 ek::normalize(basis_target));
+        Float theta = unit_angle(dr::normalize(basis_current),
+                                 dr::normalize(basis_target));
 
-        auto flip = ek::dot(forward, ek::cross(basis_current, basis_target)) < 0;
-        ek::masked(theta, flip) *= -1.f;
+        auto flip = dr::dot(forward, dr::cross(basis_current, basis_target)) < 0;
+        dr::masked(theta, flip) *= -1.f;
         return rotator(theta);
     }
 
@@ -1568,7 +1568,7 @@ We then have more functions that build on top of this to cover the common cases 
     // After:
     //     Returned matrix operates from `in_basis_target` to `out_basis_target` frames.
     template <typename Vector3,
-              typename Float = ek::value_t<Vector3>,
+              typename Float = dr::value_t<Vector3>,
               typename MuellerMatrix = MuellerMatrix<Float>>
     MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
                                        const Vector3 &in_forward,
@@ -1595,7 +1595,7 @@ We then have more functions that build on top of this to cover the common cases 
     // After:
     //     Returned matrix operates from `basis_target` to `basis_target` frames.
     template <typename Vector3,
-              typename Float = ek::value_t<Vector3>,
+              typename Float = dr::value_t<Vector3>,
               typename MuellerMatrix = MuellerMatrix<Float>>
     MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
                                                  const Vector3 &forward,
@@ -1684,7 +1684,7 @@ As rendering algorithms take place in *world space* however, some transformation
     // Convert from world coordinates to local coordinates
     // with orthogonal frame `(s, t, n)`.
     Vector3f to_local(const Vector3f &v) const {
-        return Vector3f(ek::dot(v, s), ek::dot(v, t), ek::dot(v, n));
+        return Vector3f(dr::dot(v, s), dr::dot(v, t), dr::dot(v, n));
     }
 
     // Convert from local coordinates with orthogonal
@@ -1858,8 +1858,8 @@ When pBSDFs construct Mueller matrices, these are usually based on some very spe
     :linenos:
 
     Vector3f n(0, 0, 1);  // Surface normal
-    Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_local)),
-             s_axis_out = ek::normalize(ek::cross(n, wi_local));
+    Vector3f s_axis_in  = dr::normalize(dr::cross(n, -wo_local)),
+             s_axis_out = dr::normalize(dr::cross(n, wi_local));
 
 As illustrated in the Figure above, a (final) coordinate rotation needs to take place to convert the Mueller matrix to the right bases before it can be returned from the pBSDF.
 
@@ -1888,7 +1888,7 @@ Putting everything together, here is a short snippet as example of how the a pBS
              wi_hat = ctx.mode == TransportMode::Radiance ? wi_local : wo_local;
 
     // Querty the complex index of refraction
-    ek::Complex<UnpolarizedSpectrum> eta = ...;
+    dr::Complex<UnpolarizedSpectrum> eta = ...;
 
     // Evaluate the Mueller matrix for specular reflection.
     // This will internally call the Fresnel equations and assemble the correct
@@ -1906,8 +1906,8 @@ Putting everything together, here is a short snippet as example of how the a pBS
     // Compute the Stokes reference frame vectors of this matrix that are
     // perpendicular to the plane of reflection.
     Vector3f n(0, 0, 1);
-    Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
-             s_axis_out = ek::normalize(ek::cross(n, wi_hat));
+    Vector3f s_axis_in  = dr::normalize(dr::cross(n, -wo_hat)),
+             s_axis_out = dr::normalize(dr::cross(n, wi_hat));
 
     // Rotate in/out reference vector of `value` s.t. it aligns with the implicit
     // Stokes bases of -wo_hat & wi_hat. */
@@ -1962,7 +1962,6 @@ Mitsuba 3 can optionally also output the complete Stokes vector output at the en
         <!-- Note how there is still a normal path tracer nested inside that
              will do the actual simulation. -->
         <integrator type="path"/>
-        </integrator>
     </integrator>
 
 The output EXR images produced by this encodes the Stokes vectors with 16 channels in total:
@@ -2000,7 +1999,7 @@ Or in source code:
 
     // Compute the output Stokes reference that alignes horizontally with the camera
     Vector3f vertical = transform * Vector3f(0.f, 1.f, 0.f);
-    Vector3f basis_cam = ek::cross(ray.d, vertical);
+    Vector3f basis_cam = dr::cross(ray.d, vertical);
 
     // Perform the final Mueller matrix reference frame rotation on the output
     result = mueller::rotate_stokes_basis(-ray.d, basis_out, basis_cam) * result;
