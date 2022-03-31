@@ -32,12 +32,21 @@ The documentation of a plugin always starts with a table similar to the one belo
 Suppose this hypothetical plugin is an integrator named ``amazing``. Then, based on this
 description, it can be instantiated from an XML scene file using a custom configuration such as:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <integrator type="amazing">
-        <boolean name="softer_rays" value="true"/>
-        <float name="dark_matter" value="0.44"/>
-    </integrator>
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+        </integrator>
+
+    .. code-tab:: python
+
+        {
+            'type': 'amazing',
+            'softer_rays': True,
+            'dark_matter': 0.44
+        }
 
 In some cases, plugins also indicate that they accept nested plugins as input arguments. These can
 either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the following two parameters:
@@ -54,15 +63,35 @@ either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the 
 
 then it can be instantiated e.g. as follows:
 
-.. code-block:: xml
+.. tabs::
+    .. code-tab:: xml
 
-    <integrator type="amazing">
-        <boolean name="softer_rays" value="true"/>
-        <float name="dark_matter" value="0.44"/>
-        <!-- Nested unnamed integrator -->
-        <integrator type="path"/>
-        <!-- Nested texture named puppies -->
-        <texture name="puppies" type="bitmap">
-            <string name="filename" value="cute.jpg"/>
-        </texture>
-    </integrator>
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+            <!-- Nested unnamed integrator -->
+            <integrator type="path"/>
+            <!-- Nested texture named puppies -->
+            <texture name="puppies" type="bitmap">
+                <string name="filename" value="cute.jpg"/>
+            </texture>
+        </integrator>
+
+    .. code-tab:: python
+
+        {
+            'type': 'amazing',
+            'softer_rays': True,
+            'dark_matter': 0.44,
+            # Nested unnamed integrator
+            'foo': {
+                'type': 'path'
+            },
+            # Nested texture named puppies
+            'puppies': {
+                'type': 'bitmap',
+                'filename': 'cute.jpg'
+            }
+        }
+
+    }
