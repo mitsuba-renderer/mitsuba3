@@ -9,9 +9,9 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _texture-texture3d:
+.. _texture-volume:
 
-Volumetric 3D texture (:monosp:`texture3d`)
+Volumetric texture (:monosp:`volume`)
 ---------------------------------------------
 
 .. pluginparameters::
@@ -31,7 +31,7 @@ transformation to align the volume with the object using the texture.
 
 .. tabs:: .. code-tab:: xml
 
-        <texture type="texture3d">
+        <texture type="volume">
             <volume name="volume" type="gridvolume">
                 <string name="filename" value="my_volume.vol"/>
             </volume>
@@ -39,7 +39,7 @@ transformation to align the volume with the object using the texture.
 
     .. code-tab:: python
 
-        'type': 'texture3d',
+        'type': 'volume',
         'volume': {
             'type': 'gridvolume',
             'filename': 'my_volume.vol'
@@ -48,11 +48,11 @@ transformation to align the volume with the object using the texture.
  */
 
 template <typename Float, typename Spectrum>
-class Texture3D final : public Texture<Float, Spectrum> {
+class VolumeAdapter final : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture, Volume)
 
-    Texture3D(const Properties &props) : Texture(props) {
+    VolumeAdapter(const Properties &props) : Texture(props) {
         m_volume = props.volume<Volume>("volume", 0.75f);
     }
 
@@ -80,7 +80,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Texture3D[" << std::endl
+        oss << "Volume[" << std::endl
             << "  volume = " << string::indent(m_volume) << std::endl
             << "]";
         return oss.str();
@@ -91,6 +91,6 @@ protected:
     ref<Volume> m_volume;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Texture3D, Texture)
-MI_EXPORT_PLUGIN(Texture3D, "Texture3D texture")
+MI_IMPLEMENT_CLASS_VARIANT(VolumeAdapter, Texture)
+MI_EXPORT_PLUGIN(VolumeAdapter, "Volumetric texture")
 NAMESPACE_END(mitsuba)

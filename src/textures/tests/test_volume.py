@@ -15,7 +15,7 @@ def test01_eval(variants_vec_backends_once, tmpdir):
     grid[:, 0, :] = 0.0
     mi.VolumeGrid(grid).write(tmp_file)
     texture = mi.load_dict({
-        'type': 'texture3d',
+        'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
     si = dr.zero(mi.SurfaceInteraction3f)
@@ -31,7 +31,7 @@ def test02_eval_1(variants_vec_backends_once, tmpdir):
     grid[:, 0, :] = 0.0
     mi.VolumeGrid(grid).write(tmp_file)
     texture = mi.load_dict({
-        'type': 'texture3d',
+        'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
     si = dr.zero(mi.SurfaceInteraction3f)
@@ -50,7 +50,7 @@ def test03_eval_3(variants_vec_backends_once, tmpdir):
 
     mi.VolumeGrid(grid).write(tmp_file)
     texture = mi.load_dict({
-        'type': 'texture3d',
+        'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
     si = dr.zero(mi.SurfaceInteraction3f)
