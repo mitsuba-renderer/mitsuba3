@@ -98,9 +98,15 @@ protected:
 
     void update_bbox() {
         ScalarTransform4f to_world = m_to_local.inverse();
-        ScalarPoint3f a = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
-        ScalarPoint3f b = to_world * ScalarPoint3f(1.f, 1.f, 1.f);
-        m_bbox = ScalarBoundingBox3f(a, b);
+        m_bbox = ScalarBoundingBox3f();
+        m_bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 0.f));
+        m_bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 1.f));
+        m_bbox.expand(to_world * ScalarPoint3f(0.f, 1.f, 0.f));
+        m_bbox.expand(to_world * ScalarPoint3f(0.f, 1.f, 1.f));
+        m_bbox.expand(to_world * ScalarPoint3f(1.f, 0.f, 0.f));
+        m_bbox.expand(to_world * ScalarPoint3f(1.f, 0.f, 1.f));
+        m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 0.f));
+        m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 1.f));
     }
 
 protected:
