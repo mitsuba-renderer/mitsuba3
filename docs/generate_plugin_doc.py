@@ -58,7 +58,9 @@ SENSOR_ORDERING = [
 
 TEXTURE_ORDERING = [
     'bitmap',
-    'checkerboard'
+    'checkerboard',
+    'mesh_attribute',
+    'volume'
 ]
 
 SPECTRUM_ORDERING = [
@@ -112,8 +114,8 @@ PHASE_ORDERING = [
 ]
 
 VOLUME_ORDERING = [
-    'constant3d',
-    'grid3d'
+    'constvolume',
+    'gridvolume'
 ]
 
 
