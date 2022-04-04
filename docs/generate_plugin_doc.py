@@ -58,7 +58,9 @@ SENSOR_ORDERING = [
 
 TEXTURE_ORDERING = [
     'bitmap',
-    'checkerboard'
+    'checkerboard',
+    'mesh_attribute',
+    'texture3d'
 ]
 
 SPECTRUM_ORDERING = [
