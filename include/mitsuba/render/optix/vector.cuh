@@ -212,7 +212,7 @@ template <typename Value, size_t Size>
 DEVICE Array<Value, Size> max(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
     Array<Value, Size> result;
     for (size_t i = 0; i < Size; ++i)
-        result.v[i] = std::max(a1.v[i], a2.v[i]);
+        result.v[i] = ::max(a1.v[i], a2.v[i]);
     return result;
 }
 
@@ -220,7 +220,7 @@ template <typename Value, size_t Size>
 DEVICE Array<Value, Size> min(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
     Array<Value, Size> result;
     for (size_t i = 0; i < Size; ++i)
-        result.v[i] = std::min(a1.v[i], a2.v[i]);
+        result.v[i] = ::min(a1.v[i], a2.v[i]);
     return result;
 }
 
