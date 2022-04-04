@@ -2,12 +2,8 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 import os
-import numpy as np
-
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
-@fresolver_append_path
 def test01_eval(variants_vec_backends_once, tmpdir):
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
@@ -23,7 +19,6 @@ def test01_eval(variants_vec_backends_once, tmpdir):
     assert dr.allclose(dr.hmean(texture.eval(si)), [0.9, 0.0, 0.0])
 
 
-@fresolver_append_path
 def test02_eval_1(variants_vec_backends_once, tmpdir):
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
@@ -39,7 +34,6 @@ def test02_eval_1(variants_vec_backends_once, tmpdir):
     assert dr.allclose(texture.eval_1(si), [0.9, 0.0, 0.0])
 
 
-@fresolver_append_path
 def test03_eval_3(variants_vec_backends_once, tmpdir):
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
