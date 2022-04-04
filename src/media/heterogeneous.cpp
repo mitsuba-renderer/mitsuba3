@@ -34,7 +34,7 @@ Heterogeneous medium (:monosp:`heterogeneous`)
  * - scale
    - |float|
    - Optional scale factor that will be applied to the extinction parameter.
-     It is provided for convenience when accomodating data based on different
+     It is provided for convenience when accommodating data based on different
      units, or to simply tweak the density of the medium. (Default: 1)
    - |exposed|
 
@@ -110,7 +110,7 @@ and both parameters are allowed to be spectrally varying.
             'type': 'heterogeneous',
 
             # Acquire extinction values from an external data file
-            'simgma_t': {
+            'sigma_t': {
                 'type': 'gridvolume',
                 'filename': 'frame_0150.vol'
             },
