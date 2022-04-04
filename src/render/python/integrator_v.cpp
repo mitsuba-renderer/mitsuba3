@@ -111,11 +111,11 @@ public:
 
 
 
-MI_VARIANT class PyADIntegrator : public ADIntegrator<Float, Spectrum> {
+MI_VARIANT class PyADIntegrator : public CppADIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(ADIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_TYPES(CppADIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
-    PyADIntegrator(const Properties &props) : ADIntegrator(props) {
+    PyADIntegrator(const Properties &props) : CppADIntegrator(props) {
         if constexpr (!dr::is_jit_array_v<Float>) {
             Log(Warn, "ADIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
@@ -135,7 +135,7 @@ public:
         if (render_override) {
             return render_override(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
         } else {
-            return ADIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
+            return CppADIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
         }
     }
 
@@ -143,13 +143,13 @@ public:
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
                                      const Medium * /* unused */,
-                                     Float * aovs,
+                                     Float * /* unused */,
                                      Mask active) const override {
         py::gil_scoped_acquire gil;
 
         py::function sample_override = py::get_override(this, "sample");
         if (sample_override) {
-            using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
+            using PyReturn = std::tuple<Spectrum, Mask, py::object>;
 
             py::kwargs kwargs = py::dict(
                 "mode"_a=drjit::ADMode::Primal,
@@ -162,9 +162,9 @@ public:
                 "reparam"_a=py::none(),
                 "active"_a=active
             );
-            auto [spec, mask, aovs_] =
+            // Third output is the ADIntegrator's state, which we ignore here
+            auto [spec, mask, _] =
                 sample_override(**kwargs).template cast<PyReturn>();
-            std::copy(aovs_.begin(), aovs_.end(), aovs);
 
             return { spec, mask };
         } else {
@@ -173,11 +173,11 @@ public:
     }
 
     std::vector<std::string> aov_names() const override {
-        PYBIND11_OVERRIDE(std::vector<std::string>, ADIntegrator, aov_names, );
+        PYBIND11_OVERRIDE(std::vector<std::string>, CppADIntegrator, aov_names, );
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERRIDE(std::string, ADIntegrator, to_string, );
+        PYBIND11_OVERRIDE(std::string, CppADIntegrator, to_string, );
     }
 };
 
@@ -234,7 +234,7 @@ MI_PY_EXPORT(Integrator) {
 
     MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    MI_PY_TRAMPOLINE_CLASS(PyADIntegrator, ADIntegrator, SamplingIntegrator)
+    MI_PY_TRAMPOLINE_CLASS(PyADIntegrator, CppADIntegrator, SamplingIntegrator)
         .def(py::init<const Properties&>());
 
     MI_PY_CLASS(AdjointIntegrator, Integrator)

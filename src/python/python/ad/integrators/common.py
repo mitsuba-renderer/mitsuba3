@@ -5,7 +5,7 @@ import drjit as dr
 import gc
 
 
-class ADIntegrator(mi.ADIntegrator):
+class ADIntegrator(mi.CppADIntegrator):
     """
     Abstract base class of numerous differentiable integrators in Mitsuba
 
@@ -563,6 +563,8 @@ class ADIntegrator(mi.ADIntegrator):
         raise Exception('RBIntegrator does not provide the sample() method. '
                         'It should be implemented by subclasses that '
                         'specialize the abstract RBIntegrator interface.')
+
+
 class RBIntegrator(ADIntegrator):
 
     def render_forward(self: mi.SamplingIntegrator,
