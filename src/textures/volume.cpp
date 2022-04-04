@@ -21,10 +21,10 @@ Volumetric texture (:monosp:`volume`)
    - Volumetric texture (Default: 0.75).
    - |exposed|, |differentiable|
 
-This plugin provides a allows to apply a 3D texture (i.e. a plugin of type
-`volume`) to a 2D surface. This can be useful to apply procedural 3D textures to
-surfaces or texture surfaces without a meaningful UV parameterization (e.g., an
-implicit surface). At a given point on a surface, the value will be determined
+This plugin allows using a 3D texture (i.e. a plugin of type `volume`) on a 2D
+surface. This is intended to be used to texture surfaces without a meaningful UV
+parameterization (e.g., an implicit surface) or to apply procedural 3D textures
+to surfaces. At a given point on a surface, the texture value will be determined
 by looking up the corresponding value in the referenced `volume`. This is done
 in world space and potentially requires using the volume's `to_world`
 transformation to align the volume with the object using the texture.
