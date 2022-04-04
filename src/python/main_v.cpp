@@ -42,7 +42,7 @@ static py::object caster(Object *o) {
     PY_TRY_CAST(Film);
 
     PY_TRY_CAST(MonteCarloIntegrator);
-    PY_TRY_CAST(ADIntegrator);
+    PY_TRY_CAST(CppADIntegrator);
     PY_TRY_CAST(SamplingIntegrator);
     PY_TRY_CAST(AdjointIntegrator);
     PY_TRY_CAST(Integrator);

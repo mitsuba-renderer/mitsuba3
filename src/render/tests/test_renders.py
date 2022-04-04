@@ -35,7 +35,7 @@ POLARIZED_EXCLUDE_FOLDERS = {
 }
 
 POLARIZED_EXCLUDE_INTEGRATORS = {
-    'prb', 'prb_reparam', 'prbvolpath'
+    'direct_reparam', 'prb', 'prb_reparam', 'prbvolpath'
 }
 
 # Every scene that has an integrator which is in this mapping's keys will also
@@ -43,6 +43,7 @@ POLARIZED_EXCLUDE_INTEGRATORS = {
 # values. The new integrators are only executed in JIT modes with the default
 # set flags.
 INTEGRATOR_MAPPING = {
+    'direct' : ['direct_reparam'],
     'path' : ['prb', 'prb_reparam'],
     'volpath' : ['prbvolpath'],
     'volpathmis' : ['prbvolpath']

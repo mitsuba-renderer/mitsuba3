@@ -283,14 +283,18 @@ protected:
     uint32_t m_rr_depth;
 };
 
+/**
+ * \brief Abstract integrator that should **exclusively** be used to trampoline
+ * Python AD integrators for primal renderings
+ */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB ADIntegrator
+class MI_EXPORT_LIB CppADIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
     protected:
     MI_IMPORT_BASE(SamplingIntegrator)
 
-    ADIntegrator(const Properties &props) : Base(props) {}
-    virtual ~ADIntegrator() {}
+    CppADIntegrator(const Properties &props) : Base(props) {}
+    virtual ~CppADIntegrator() {}
 
     MI_DECLARE_CLASS()
 };
@@ -385,7 +389,7 @@ protected:
 
 MI_EXTERN_CLASS(Integrator)
 MI_EXTERN_CLASS(SamplingIntegrator)
-MI_EXTERN_CLASS(ADIntegrator)
+MI_EXTERN_CLASS(CppADIntegrator)
 MI_EXTERN_CLASS(MonteCarloIntegrator)
 MI_EXTERN_CLASS(AdjointIntegrator)
 NAMESPACE_END(mitsuba)

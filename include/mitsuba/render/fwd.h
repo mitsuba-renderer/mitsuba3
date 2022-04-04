@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
 template <typename Float, typename Spectrum> class SamplingIntegrator;
-template <typename Float, typename Spectrum> class ADIntegrator;
+template <typename Float, typename Spectrum> class CppADIntegrator;
 template <typename Float, typename Spectrum> class MonteCarloIntegrator;
 template <typename Float, typename Spectrum> class AdjointIntegrator;
 template <typename Float, typename Spectrum> class Medium;
@@ -79,7 +79,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
     using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
     using SamplingIntegrator     = mitsuba::SamplingIntegrator<FloatU, SpectrumU>;
-    using ADIntegrator           = mitsuba::ADIntegrator<FloatU, SpectrumU>;
+    using CppADIntegrator        = mitsuba::CppADIntegrator<FloatU, SpectrumU>;
     using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<FloatU, SpectrumU>;
     using AdjointIntegrator      = mitsuba::AdjointIntegrator<FloatU, SpectrumU>;
     using BSDF                   = mitsuba::BSDF<FloatU, SpectrumU>;
@@ -166,7 +166,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Mesh                   = typename RenderAliases::Mesh;                                   \
     using Integrator             = typename RenderAliases::Integrator;                             \
     using SamplingIntegrator     = typename RenderAliases::SamplingIntegrator;                     \
-    using ADIntegrator           = typename RenderAliases::ADIntegrator;                           \
+    using CppADIntegrator        = typename RenderAliases::CppADIntegrator;                        \
     using MonteCarloIntegrator   = typename RenderAliases::MonteCarloIntegrator;                   \
     using AdjointIntegrator      = typename RenderAliases::AdjointIntegrator;                      \
     using BSDF                   = typename RenderAliases::BSDF;                                   \
