@@ -99,7 +99,7 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
 
 @pytest.mark.parametrize('scene_fname', [
     'resources/data/scenes/cbox/cbox.xml',
-    'resources/data/tests/scenes/various_emitters/test_various_emitters.xml'])
+    'resources/data/tests/scenes/various_emitters/test_various_emitters_ptracer.xml'])
 def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     """
     Tests that forward rendering launches the correct number of kernels
