@@ -1,11 +1,10 @@
-#include <mitsuba/render/texture.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/interaction.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
 
 /**!
 
@@ -56,7 +55,8 @@ public:
         m_volume = props.volume<Volume>("volume", 0.75f);
     }
 
-    UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &it,
+                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return m_volume->eval(it, active);
     }
@@ -73,10 +73,13 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("volume", m_volume.get(), +ParamFlags::Differentiable);
+        callback->put_object("volume", m_volume.get(),
+                             +ParamFlags::Differentiable);
     }
 
     bool is_spatially_varying() const override { return true; }
+
+    ScalarFloat max() const override { return m_volume->max(); };
 
     std::string to_string() const override {
         std::ostringstream oss;
