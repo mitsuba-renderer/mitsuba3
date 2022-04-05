@@ -112,6 +112,13 @@ public:
             return dr::hmean_async(dr::hmean(m_value));
     }
 
+    ScalarFloat max() const override {
+        if constexpr (is_spectral_v<Spectrum>)
+            return dr::hmax(srgb_model_mean(m_value));
+        else
+            return dr::hmax(hmax(m_value));
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SRGBReflectanceSpectrum[" << std::endl

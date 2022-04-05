@@ -28,7 +28,7 @@ Bitmap texture (:monosp:`bitmap`)
    - Filename of the bitmap to be loaded
 
  * - bitmap
-   - |Bitmap object|
+   - :monosp:`Bitmap object`
    - When creating a Bitmap texture at runtime, e.g. from Python or C++,
      an existing Bitmap image instance can be passed directly rather than
      loading it from the filesystem with :paramtype:`filename`.
