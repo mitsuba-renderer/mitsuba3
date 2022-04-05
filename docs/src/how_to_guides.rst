@@ -8,4 +8,4 @@ Unlike the Getting Started tutorials, the How-to Guides wont take the reader by 
 
     tutorials/how_to_guides/use_optimizers
     tutorials/how_to_guides/use_bitmap
-    tutorials/how_to_guides/01_mesh_manipulation
+    tutorials/how_to_guides/mesh_manipulation

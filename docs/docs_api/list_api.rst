@@ -424,7 +424,19 @@
 
 .. autofunction:: mitsuba.ad.common.render
 
+.. autoclass:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
+
+.. autofunction:: mitsuba.ad.direct_reparam.annotations
+
+.. autoclass:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
+
+.. autofunction:: mitsuba.ad.emission_reparam.annotations
+
 .. autofunction:: mitsuba.ad.f
+
+.. autofunction:: mitsuba.ad.integrators.direct_reparam.annotations
+
+.. autofunction:: mitsuba.ad.integrators.emission_reparam.annotations
 
 .. autofunction:: mitsuba.ad.integrators.f
 
