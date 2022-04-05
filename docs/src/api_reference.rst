@@ -8,9 +8,7 @@ API reference
     :hidden:
     :glob:
 
-    generated/core_api
-    generated/render_api
-    generated/python_api
+    generated/mitsuba_api
 
 This API reference documentation was automatically generated using the `Autodoc
 <http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.htm>`_ Sphinx

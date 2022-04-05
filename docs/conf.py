@@ -72,7 +72,6 @@ rst_prolog = r"""
 .. |volume| replace:: :paramtype:`volume`
 .. |tensor| replace:: :paramtype:`tensor`
 
-.. |enoki| replace:: :monosp:`enoki`
 .. |drjit| replace:: :monosp:`drjit`
 .. |numpy| replace:: :monosp:`numpy`
 

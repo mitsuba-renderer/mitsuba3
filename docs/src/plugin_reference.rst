@@ -11,7 +11,7 @@ Plugin reference
     generated/plugins_*
 
 
-The following subsections describe the available 3 plugins, usually along with example
+The following subsections describe the available Mitsuba 3 plugins, usually along with example
 renderings and a description of what each parameter does. They are separated into subsections
 covering textures, surface scattering models, etc.
 

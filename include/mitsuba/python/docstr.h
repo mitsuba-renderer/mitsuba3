@@ -257,6 +257,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc()doc";
@@ -528,10 +530,10 @@ these coordinate systems are given by ``coordinate_system(wi)`` and
 outgoing direction in local coordinates.
 
 See also:
-    mitsuba.render.BSDFContext
+    mitsuba.BSDFContext
 
 See also:
-    mitsuba.render.BSDFSample3f)doc";
+    mitsuba.BSDFSample3f)doc";
 
 static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 
@@ -540,6 +542,8 @@ static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -1696,7 +1700,7 @@ functions (PDFs) will automatically be normalized during
 initialization. The associated scale factor can be retrieved using the
 function normalization().)doc";
 
-static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution = R"doc(Create an unitialized ContinuousDistribution instance)doc";
+static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution = R"doc(Create an uninitialized ContinuousDistribution instance)doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution_2 = R"doc(Initialize from a given density function on the interval ``range``)doc";
 
@@ -2019,7 +2023,7 @@ steps.)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution2D_to_string = R"doc()doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Create an unitialized DiscreteDistribution instance)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Create an uninitialized DiscreteDistribution instance)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_2 = R"doc(Initialize from a given probability mass function)doc";
 
@@ -2206,6 +2210,8 @@ static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2294,6 +2300,8 @@ static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -2705,6 +2713,8 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
 static const char *__doc_mitsuba_FilmFlags_Alpha = R"doc(The film stores an alpha channel)doc";
@@ -2863,7 +2873,7 @@ Parameter ``class_``:
     Originating class or ``nullptr``
 
 Parameter ``thread``:
-    Thread, which is reponsible for creating the message
+    Thread, which is responsible for creating the message
 
 Parameter ``file``:
     File, which is responsible for creating the message
@@ -3129,6 +3139,8 @@ static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3366,6 +3378,8 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_Integrator_aov_names =
@@ -3509,7 +3523,7 @@ functions (PDFs) will automatically be normalized during
 initialization. The associated scale factor can be retrieved using the
 function normalization().)doc";
 
-static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution = R"doc(Create an unitialized IrregularContinuousDistribution instance)doc";
+static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution = R"doc(Create an uninitialized IrregularContinuousDistribution instance)doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution_2 =
 R"doc(Initialize from a given density function discretized on nodes
@@ -3854,6 +3868,8 @@ static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
@@ -4134,6 +4150,8 @@ static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -4539,6 +4557,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -4630,7 +4650,7 @@ static const char *__doc_mitsuba_Object_parameters_changed =
 R"doc(Update internal state after applying changes to parameters
 
 This function should be invoked when attributes (obtained via
-traverse) are modified in some way. The obect can then update its
+traverse) are modified in some way. The object can then update its
 internal state so that derived quantities are consistent with the
 change.
 
@@ -4701,6 +4721,8 @@ static const char *__doc_mitsuba_PCG32Sampler_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -4738,6 +4760,8 @@ static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -4933,7 +4957,7 @@ R"doc(Generic sampling record for positions
 
 This sampling record is used to implement techniques that draw a
 position from a point, line, surface, or volume domain in 3D and
-furthermore provide auxilary information about the sample.
+furthermore provide auxiliary information about the sample.
 
 Apart from returning the position and (optionally) the surface normal,
 the responsible sampling method must annotate the record with the
@@ -5196,6 +5220,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -5665,6 +5691,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -5839,6 +5867,8 @@ static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -5934,6 +5964,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -6025,6 +6057,8 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
 static const char *__doc_mitsuba_Scene_accel_init_cpu = R"doc(Create the ray-intersection acceleration data structure)doc";
@@ -6042,6 +6076,8 @@ static const char *__doc_mitsuba_Scene_accel_release_gpu = R"doc()doc";
 static const char *__doc_mitsuba_Scene_bbox = R"doc(Return a bounding box surrounding the scene)doc";
 
 static const char *__doc_mitsuba_Scene_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_clear_shapes_dirty = R"doc(Unmarks all shapes as dirty)doc";
 
 static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitters)doc";
 
@@ -6524,6 +6560,8 @@ static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -6654,6 +6692,8 @@ static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -6663,6 +6703,8 @@ static const char *__doc_mitsuba_ShapeGroup_3 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -6719,6 +6761,8 @@ static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -7447,7 +7491,7 @@ Remark:
     instance.)doc";
 
 static const char *__doc_mitsuba_StructConverter =
-R"doc(This class solves the any-to-any problem: effiently converting from
+R"doc(This class solves the any-to-any problem: efficiently converting from
 one kind of structured data representation to another
 
 Graphics applications often need to convert from one kind of
@@ -8371,6 +8415,8 @@ static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
@@ -8894,6 +8940,8 @@ static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -8903,6 +8951,8 @@ static const char *__doc_mitsuba_VolumeGrid_3 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -9832,7 +9882,7 @@ Given a floating point value ``x`` on the interval ``[0, 1]`` return a
 floating point array with values ``[x, x+offset, x+2*offset, ...]``,
 where ``offset`` is the reciprocal of the array size. Entries that
 become greater than 1.0 wrap around to the other side of the unit
-inteval.
+interval.
 
 This operation is useful to implement a type of correlated
 stratification in the context of Monte Carlo integration.)doc";
