@@ -25,9 +25,16 @@ Grid-based volume data source (:monosp:`gridvolume`)
    - |string|
    - Filename of the volume to be loaded
 
+ * - grid
+   - :monosp:`VolumeGrid object`
+   - When creating a grid volume at runtime, e.g. from Python or C++,
+     an existing ``VolumeGrid`` instance can be passed directly rather than
+     loading it from the filesystem with :paramtype:`filename`.
+
  * - filter_type
    - |string|
-   - Specifies how voxel values are interpolated. The following options are currently available:
+   - Specifies how voxel values are interpolated. The following options are
+     currently available:
 
      - ``trilinear`` (default): perform trilinear interpolation.
 
@@ -168,11 +175,24 @@ public:
                   "\"mirror\", or \"clamp\"!",
                   wrap_mode_st);
 
-        FileResolver *fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
-        if (!fs::exists(file_path))
-            Log(Error, "\"%s\": file does not exist!", file_path);
-        m_volume_grid = new VolumeGrid(file_path);
+        if (props.has_property("grid")) {
+            // Creates a Bitmap texture directly from an existing Bitmap object
+            if (props.has_property("filename"))
+                Throw("Cannot specify both \"grid\" and \"filename\".");
+            Log(Debug, "Loading volume grid from memory...");
+            // Note: ref-counted, so we don't have to worry about lifetime
+            ref<Object> other = props.object("grid");
+            VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
+            if (!volume_grid)
+                Throw("Property \"grid\" must be a VolumeGrid instance.");
+            m_volume_grid = volume_grid;
+        } else {
+            FileResolver *fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
+            if (!fs::exists(file_path))
+                Log(Error, "\"%s\": file does not exist!", file_path);
+            m_volume_grid = new VolumeGrid(file_path);
+        }
 
         m_raw = props.get<bool>("raw", false);
 
