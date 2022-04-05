@@ -259,8 +259,8 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * where 'wi' and 'wo' are the incident and outgoing direction in local
  * coordinates.
  *
- * \sa mitsuba.render.BSDFContext
- * \sa mitsuba.render.BSDFSample3f
+ * \sa mitsuba.BSDFContext
+ * \sa mitsuba.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public Object {

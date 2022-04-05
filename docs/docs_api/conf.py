@@ -53,7 +53,7 @@ rst_prolog = r"""
 .. |transform| replace:: :paramtype:`transform`
 .. |volume| replace:: :paramtype:`volume`
 
-.. |enoki| replace:: :monosp:`enoki`
+.. |drjit| replace:: :monosp:`drjit`
 .. |numpy| replace:: :monosp:`numpy`
 
 .. |nbsp| unicode:: 0xA0
@@ -90,8 +90,8 @@ autodoc_member_order = 'bysource'
 
 # Set Mitsuba variant for autodoc
 import mitsuba
-mitsuba.set_variant('scalar_rgb')
-import mitsuba.python
+mitsuba.set_variant('llvm_rgb')
+variant_prefix = 'mitsuba.llvm_rgb.'
 
 # -- Event callback for processing the docstring ----------------------------------------------
 
@@ -141,56 +141,53 @@ extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 
 
 # List of patterns defining element that shouldn't be added to the API documentation
-excluded_api = [r'mitsuba.python.test.scenes.([\w]+)', 'mitsuba.python.autodiff.contextmanager']
+excluded_api = [r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager']
 
 # Define the structure of the generated reference pages for the different libraries.
 api_doc_structure = {
-    'core': {
-        'Object': ['mitsuba.core.Object'],
-        'Properties': ['mitsuba.core.Properties'],
-        'Bitmap': ['mitsuba.core.Bitmap'],
-        'Warp': [r'mitsuba.core.warp.([\w]+)'],
-        'Distributions': [r'mitsuba.core.([\w]+)Distribution',
-                          r'mitsuba.core.Hierarchical2D\d',
-                          r'mitsuba.core.Marginal([\w]+)2D\d'],
-        'Math': [r'mitsuba.core.math.([\w]+)', r'mitsuba.core.spline.([\w]+)'],
-        'Log': [r'mitsuba.core.Log([\w]+)', 'mitsuba.core.Appender', ],
-        'Types': [r'mitsuba.core.Scalar([\w]+)',
-                  r'mitsuba.core.Vector([\w]+)',
-                  r'mitsuba.core.Point([\w]+)',
-                  r'mitsuba.core.Matrix([\w]+)',
-                  r'mitsuba.core.Bounding([\w]+)',
-                  r'mitsuba.core.Transform([\w]+)',
-                  r'mitsuba.core.AnimatedTransform'],
-    },
-    'render': {
-        'BSDF': [r'mitsuba.render.BSDF([\w]+|)', 'mitsuba.render.TransportMode',
-                 r'mitsuba.render.Microfacet([\w]+|)'],
-        'Endpoint': ['mitsuba.render.Endpoint'],
-        'Emitter': [r'mitsuba.render.Emitter([\w]+|)'],
-        'Sensor': ['mitsuba.render.Sensor', 'mitsuba.render.ProjectiveCamera'],
-        'Medium': ['mitsuba.render.Medium', r'mitsuba.render.PhaseFunction([\w]+|)'],
-        'Shape': ['mitsuba.render.Shape', 'mitsuba.render.Mesh'],
-        'Texture': [],
-        'Film': ['mitsuba.render.Film'],
-        'Sampler': ['mitsuba.render.Sampler'],
-        'Scene': ['mitsuba.render.Scene', 'mitsuba.render.ShapeKDTree'],
-        'Record': ['mitsuba.render.PositionSample3f', 'mitsuba.render.DirectionSample3f',
-                   r'mitsuba.render.([\w]+)Interaction3f'],
-        'Polarization': [r'mitsuba.render.mueller.([\w]+)'],
-    },
-    'python': {
-        'Chi2': [r'mitsuba.python.chi2.([\w]+)'],
-        'Autodiff': [r'mitsuba.python.autodiff.([\w]+)'],
-    }
+        'Object': ['mitsuba.Object'],
+        'Properties': ['mitsuba.Properties'],
+        'Bitmap': ['mitsuba.Bitmap'],
+        'Warp': [r'mitsuba.warp.([\w]+)'],
+        'Distributions': [r'mitsuba.([\w]+)Distribution',
+                          r'mitsuba.Hierarchical2D\d',
+                          r'mitsuba.Marginal([\w]+)2D\d'],
+        'Math': [r'mitsuba.math.([\w]+)', r'mitsuba.spline.([\w]+)'],
+        'Log': [r'mitsuba.Log([\w]+)', 'mitsuba.Appender', ],
+        'Types': [r'mitsuba.Scalar([\w]+)',
+                  r'mitsuba.Vector([\w]+)',
+                  r'mitsuba.Point([\w]+)',
+                  r'mitsuba.Matrix([\w]+)',
+                  r'mitsuba.Bounding([\w]+)',
+                  r'mitsuba.Transform([\w]+)',
+                  r'mitsuba.AnimatedTransform'],
+        'BSDF': [r'mitsuba.BSDF([\w]+|)', 'mitsuba.TransportMode',
+                 r'mitsuba.Microfacet([\w]+|)'],
+        'Endpoint': ['mitsuba.Endpoint'],
+        'Emitter': [r'mitsuba.Emitter([\w]+|)'],
+        'Sensor': ['mitsuba.Sensor', 'mitsuba.ProjectiveCamera'],
+        'Medium': ['mitsuba.Medium', r'mitsuba.PhaseFunction([\w]+|)'],
+        'Shape': ['mitsuba.Shape', 'mitsuba.Mesh'],
+        'Texture': ['mitsuba.Texture'],
+        'Film': ['mitsuba.Film'],
+        'Sampler': ['mitsuba.Sampler'],
+        'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree'],
+        'Record': ['mitsuba.PositionSample3f', 'mitsuba.DirectionSample3f',
+                   r'mitsuba.([\w]+)Interaction3f'],
+        'Polarization': [r'mitsuba.mueller.([\w]+)'],
+        'Chi2': [r'mitsuba.chi2.([\w]+)'],
+        'Autodiff': [r'mitsuba.ad.([\w]+)'],
 }
 
 
 # TODO this shouldn't be needed
-def sanitize_cpp_types(s):
-    """ Replace C++ type with python type in signature """
-    # TODO it shouldn't always be 'render'
-    return re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'mitsuba.render.\1', s)
+def sanitize_types(s):
+    """ Replaces C++ type with Python type in signature. For Python types,
+        removes variant prefix.
+    """
+    s = re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'mitsuba.\1', s)
+    s = re.sub(fr'{variant_prefix}([a-zA-Z\_0-9]+)', r'mitsuba.\1', s)
+    return s
 
 
 def parse_signature_args(signature):
@@ -201,7 +198,7 @@ def parse_signature_args(signature):
        names and the default types:
            "(arg0, ..., arg4=default4)"
     """
-    signature = sanitize_cpp_types(signature)
+    signature = sanitize_types(signature)
 
     # Check for overloaded functions
     if signature == "(*args, **kwargs)":
@@ -260,7 +257,7 @@ def parse_overload_signature(signature):
           "1. name(arg0: type0, ..., arg4: type4=default4) -> return_type"
        This function generate the same output as the parse_signature_args() function.
     """
-    signature = sanitize_cpp_types(signature)
+    signature = sanitize_types(signature)
 
     # Remove enumeration
     signature = signature[3:]
@@ -291,7 +288,7 @@ def insert_params_and_return_docstring(lines, params, next_idx, indent=''):
        through this process.
     """
     offset = 0
-    for p_name, p_type, p_default in params:
+    for p_name, p_type, _ in params:
         is_return = (p_name == '__return')
 
         if is_return:
@@ -371,36 +368,32 @@ def process_signature_callback(app, what, name, obj, options, signature, return_
         It parses and caches the signature arguments for function and classes so it can
         be used in the process_docstring_callback callback.
     """
+    del app, name, obj, options # unused
+
     global cached_parameters
     global cached_signature
 
-    if name.startswith('mitsuba.python.'):
-        # Signatures from python scripts do not contain any argument types or
-        # return type information. So we don't need to do anything.
-        cached_signature = signature
-        cached_parameters = []
+    if signature and what == 'class':
+        # For classes we don't display any signature in the class headers
+
+        # Parse the signature string
+        cached_signature, cached_parameters = parse_signature_args(signature)
+
+    elif signature and what in ['method', 'function']:
+        # For methods and functions, parameter types will be added to the docstring.
+
+        # Parse the signature string
+        cached_signature, cached_parameters = parse_signature_args(signature)
+
+        # Return type (if any) will also be added to the docstring
+        if return_annotation:
+            return_annotation = sanitize_types(return_annotation)
+            cached_parameters.append(['__return', return_annotation, None])
     else:
-        if signature and what == 'class':
-            # For classes we don't display any signature in the class headers
+        cached_signature = ''
+        cached_parameters = []
 
-            # Parse the signature string
-            cached_signature, cached_parameters = parse_signature_args(signature)
-
-        elif signature and what in ['method', 'function']:
-            # For methods and functions, parameter types will be added to the docstring.
-
-            # Parse the signature string
-            cached_signature, cached_parameters = parse_signature_args(signature)
-
-            # Return type (if any) will also be added to the docstring
-            if return_annotation:
-                return_annotation = sanitize_cpp_types(return_annotation)
-                cached_parameters.append(['__return', return_annotation, None])
-        else:
-            cached_signature = ''
-            cached_parameters = []
-
-    return signature, None
+    return signature, return_annotation
 
 
 def process_docstring_callback(app, what, name, obj, options, lines):
@@ -416,7 +409,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     global block_line_start
     global last_block_name
 
-    # True is the documentation wasn't generated with pybind11 (e.g. python script)
+    # True if the documentation wasn't generated with pybind11 (e.g. python script)
     is_python_doc = name.startswith('mitsuba.python.')
 
     if type(obj) in (int, float, bool, str):
@@ -436,7 +429,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             if len(obj.__bases__) > 0:
                 full_base_name = str(obj.__bases__[0])[8:-2]
                 if full_base_name.startswith('mitsuba'):
-                    lines.insert(0, 'Base class: %s' % full_base_name)
+                    lines.insert(0, 'Base class: %s' % sanitize_types(full_base_name))
                     lines.insert(1, '')
 
             # Handle enums properly
@@ -638,46 +631,43 @@ def write_rst_file_callback(app, exception):
             f.write(l)
 
     # Generate API Reference RST according to the api_doc_structure description
-    for lib in api_doc_structure.keys():
-        lib_structure = api_doc_structure[lib]
-        lib_api_filename = join(docs_path, 'generated/%s_api.rst' % lib)
-        with open(lib_api_filename, 'w') as f:
-            print('Generate %s API RST file: %s' % (lib, lib_api_filename))
-            f.write('.. _sec-api-%s:\n\n' % lib)
-            f.write('%s API Reference\n' % lib.title())
-            f.write('=' * len(lib) + '==============\n')
+    lib_api_filename = join(docs_path, 'generated/mitsuba_api.rst')
+    with open(lib_api_filename, 'w') as f:
+        print('Generate API RST file: %s' % (lib_api_filename))
+        f.write('.. _sec-api-mitsuba:\n\n')
+        f.write('%s API Reference\n' % 'mitsuba'.title())
+        f.write('=' * len('mitsuba') + '==============\n')
+        f.write('\n')
+
+        # Keep track of the added block, so to add the rest in the 'Other' section
+        added_block = []
+
+        for section_name in api_doc_structure.keys():
+            # Write section name
+            f.write('%s\n' % section_name)
+            f.write('-' * len(section_name) + '\n')
             f.write('\n')
 
-            # Keep track of the added block, so to add the rest in the 'Other' section
-            added_block = []
+            # Write all the blocks
+            for pattern in api_doc_structure[section_name]:
+                for block_name in rst_block_range.keys():
+                    if re.fullmatch(pattern, block_name):
+                        write_block(f, block_name)
+                        added_block.append(block_name)
 
-            for section_name in lib_structure.keys():
-                # Write section name
-                f.write('%s\n' % section_name)
-                f.write('-' * len(section_name) + '\n')
-                f.write('\n')
+        # Add the rest into the 'Other' section
+        f.write('Other\n')
+        f.write('-----\n')
+        f.write('\n')
 
-                # Write all the blocks
-                for pattern in lib_structure[section_name]:
-                    for block_name in rst_block_range.keys():
-                        if re.fullmatch(pattern, block_name):
-                            write_block(f, block_name)
-                            added_block.append(block_name)
+        for block_name in rst_block_range.keys():
+            if block_name in added_block:
+                continue
 
-            # Add the rest into the 'Other' section
-            f.write('Other\n')
-            f.write('-----\n')
-            f.write('\n')
+            #if not block_name.startswith('mitsuba.%s' % lib):
+            #    continue
 
-            for block_name in rst_block_range.keys():
-                if block_name in added_block:
-                    continue
-
-                if not block_name.startswith('mitsuba.%s' % lib):
-                    continue
-
-                write_block(f, block_name)
-
+            write_block(f, block_name)
 
 def generate_list_api_callback(app):
     """Generate a RST file listing all the python members (classes or functions)
@@ -687,33 +677,41 @@ def generate_list_api_callback(app):
     import importlib
     from inspect import isclass, isfunction, ismodule, ismethod
 
-    def process(f, obj, lib, name):
+    list_api = {}
+
+    def process(obj, lib, name):
         if re.match(r'__[a-zA-Z\_0-9]+__', name):
+            # Skip properties
+            return
+        elif re.match(r'_[a-zA-Z\_0-9]+', name):
+            # Skip private attributes
+            return
+        elif ((isclass(obj) and obj.__module__.startswith('drjit.llvm')) or
+              (ismethod(obj) and obj.__module__.startswith('drjit.llvm')) or
+              (isfunction(obj) and obj.__module__.startswith('drjit.llvm'))):
+            # Do not ignore "aliased" DrJit imports
+            pass
+        elif ((ismodule(obj) and not obj.__name__.startswith('mitsuba.')) or
+              (isclass(obj) and not obj.__module__.startswith('mitsuba')) or
+              (ismethod(obj) and not obj.__module__.startswith('mitsuba')) or
+              (isfunction(obj) and not obj.__module__.startswith('mitsuba'))
+              ):
+            # Handles imports from external packages
             return
 
         if ismodule(obj):
-            # 'python' is a package, so it needs to be treated differently
-            if name == 'python':
-                # Iterate recursively on all the python files
-                for root, dirs, files in os.walk(obj.__path__[0]):
-                    root = root.replace(obj.__path__[0], '').replace('/', '.')
-                    if root.endswith('__pycache__'):
-                        continue
-                    for f_name in files:
-                        if not f_name == '__init__.py' and f_name.endswith('.py'):
-                            module = importlib.import_module(
-                                'mitsuba.python%s.%s' % (root, f_name[:-3]))
-                            for x in dir(module):
-                                obj2 = getattr(module, x)
-                                # Skip the imported modules (e.g. enoki)
-                                if not ismodule(obj2):
-                                    process(f, obj2, '.python%s.%s' %
-                                            (root, f_name[:-3]), x)
+            if name in mitsuba.variants():
+                return
+            elif obj.__name__ in [f'mitsuba.{variant}' for variant in mitsuba.variants()]:
+                # Handles recursive imports of 'mi'
+                return
+            elif name == 'python':
+                # Handles the 'python' module which will be removed
+                return
             else:
                 for x in dir(obj):
-                    process(f, getattr(obj, x), '%s.%s' % (lib, name), x)
+                    process(getattr(obj, x), '%s.%s' % (lib, name), x)
         else:
-
             full_name = 'mitsuba%s.%s' % (lib, name)
 
             # Check if this block should be excluded from the API documentation
@@ -721,14 +719,33 @@ def generate_list_api_callback(app):
                 if re.fullmatch(pattern, full_name):
                     return
 
+            if hasattr(obj, '__module__') and hasattr(obj, '__name__'):
+                obj_module = str(obj.__module__)
+                obj_name = obj.__name__
+            else: 
+                obj_module = 'mitsuba%s' % lib
+                obj_name = name
+
+            key = (obj_module, obj_name)
+            if key in list_api:
+                previous_full_name = list_api[key][1]
+                if len(previous_full_name) < len(full_name):
+                    full_name = previous_full_name
+
+            list_api[(obj_module, obj_name)] = (obj, full_name)
+
+
+    print('Generate API list file: %s' % list_api_filename)
+    module = importlib.import_module('mitsuba')
+    for x in dir(module):
+        process(getattr(module, x), '', x)
+
+    with open(list_api_filename, 'w') as f:
+        for k in dict(sorted(list_api.items(), key=lambda item: item[1][1])):
+            obj, full_name = list_api[k]
             f.write('.. auto%s:: %s\n\n' %
                     ('class' if isclass(obj) else 'function', full_name))
 
-    with open(list_api_filename, 'w') as f:
-        print('Generate API list file: %s' % list_api_filename)
-        for lib in ['core', 'render', 'python']:
-            module = importlib.import_module('mitsuba.%s' % lib)
-            process(f, module, '', lib)
 
 
 # -- Register event callbacks ----------------------------------------------

@@ -1,912 +1,832 @@
-.. autoclass:: mitsuba.core.AnimatedTransform
+.. autoclass:: mitsuba.AdjointIntegrator
 
-.. autoclass:: mitsuba.core.Appender
+.. autoclass:: mitsuba.AnimatedTransform
 
-.. autoclass:: mitsuba.core.ArgParser
+.. autoclass:: mitsuba.Appender
 
-.. autoclass:: mitsuba.core.AtomicFloat
+.. autoclass:: mitsuba.ArgParser
 
-.. autoclass:: mitsuba.core.Bitmap
+.. autoclass:: mitsuba.AtomicFloat
 
-.. autoclass:: mitsuba.core.BitmapReconstructionFilter
+.. autoclass:: mitsuba.BSDF
 
-.. autoclass:: mitsuba.core.Bool
+.. autoclass:: mitsuba.BSDFContext
 
-.. autoclass:: mitsuba.core.BoundingBox2f
+.. autoclass:: mitsuba.BSDFFlags
 
-.. autoclass:: mitsuba.core.BoundingBox3f
+.. autoclass:: mitsuba.BSDFPtr
 
-.. autoclass:: mitsuba.core.BoundingSphere3f
+.. autoclass:: mitsuba.BSDFSample3f
 
-.. autoclass:: mitsuba.core.Class
+.. autoclass:: mitsuba.Bitmap
 
-.. autoclass:: mitsuba.core.Color0f
+.. autoclass:: mitsuba.BitmapReconstructionFilter
 
-.. autoclass:: mitsuba.core.Color1f
+.. autoclass:: mitsuba.BoundingBox2f
 
-.. autoclass:: mitsuba.core.Color3f
+.. autoclass:: mitsuba.BoundingBox3f
 
-.. autoclass:: mitsuba.core.ContinuousDistribution
+.. autoclass:: mitsuba.BoundingSphere3f
 
-.. autofunction:: mitsuba.core.DEBUG
+.. autoclass:: mitsuba.Class
 
-.. autoclass:: mitsuba.core.DefaultFormatter
+.. autoclass:: mitsuba.Color0f
 
-.. autoclass:: mitsuba.core.DiscreteDistribution
+.. autoclass:: mitsuba.Color1f
 
-.. autoclass:: mitsuba.core.DiscreteDistribution2D
+.. autoclass:: mitsuba.Color3f
 
-.. autoclass:: mitsuba.core.DummyStream
+.. autoclass:: mitsuba.ContinuousDistribution
 
-.. autoclass:: mitsuba.core.FileResolver
+.. autofunction:: mitsuba.DEBUG
 
-.. autoclass:: mitsuba.core.FileStream
+.. autoclass:: mitsuba.DefaultFormatter
 
-.. autoclass:: mitsuba.core.FilterBoundaryCondition
+.. autoclass:: mitsuba.DirectionSample3f
 
-.. autoclass:: mitsuba.core.Float
+.. autoclass:: mitsuba.DiscreteDistribution
 
-.. autoclass:: mitsuba.core.Float32
+.. autoclass:: mitsuba.DiscreteDistribution2D
 
-.. autoclass:: mitsuba.core.Float64
+.. autoclass:: mitsuba.DummyStream
 
-.. autoclass:: mitsuba.core.Formatter
+.. autoclass:: mitsuba.Emitter
 
-.. autoclass:: mitsuba.core.Frame3f
+.. autoclass:: mitsuba.EmitterFlags
 
-.. autoclass:: mitsuba.core.Hierarchical2D0
+.. autoclass:: mitsuba.EmitterPtr
 
-.. autoclass:: mitsuba.core.Hierarchical2D1
+.. autoclass:: mitsuba.Endpoint
 
-.. autoclass:: mitsuba.core.Hierarchical2D2
+.. autoclass:: mitsuba.FileResolver
 
-.. autoclass:: mitsuba.core.Hierarchical2D3
+.. autoclass:: mitsuba.FileStream
 
-.. autoclass:: mitsuba.core.Int
+.. autoclass:: mitsuba.Film
 
-.. autoclass:: mitsuba.core.Int32
+.. autoclass:: mitsuba.FilmFlags
 
-.. autoclass:: mitsuba.core.Int64
+.. autoclass:: mitsuba.FilterBoundaryCondition
 
-.. autoclass:: mitsuba.core.IrregularContinuousDistribution
+.. autoclass:: mitsuba.Float
 
-.. autofunction:: mitsuba.core.Log
+.. autoclass:: mitsuba.Float64
 
-.. autoclass:: mitsuba.core.LogLevel
+.. autoclass:: mitsuba.Formatter
 
-.. autoclass:: mitsuba.core.Logger
+.. autoclass:: mitsuba.Frame3f
 
-.. autoclass:: mitsuba.core.Loop
+.. autoclass:: mitsuba.Hierarchical2D0
 
-.. autofunction:: mitsuba.core.MI_AUTHORS
+.. autoclass:: mitsuba.Hierarchical2D1
 
-.. autofunction:: mitsuba.core.MI_CIE_MAX
+.. autoclass:: mitsuba.Hierarchical2D2
 
-.. autofunction:: mitsuba.core.MI_CIE_MIN
+.. autoclass:: mitsuba.Hierarchical2D3
 
-.. autofunction:: mitsuba.core.MI_ENABLE_CUDA
+.. autoclass:: mitsuba.ImageBlock
 
-.. autofunction:: mitsuba.core.MI_ENABLE_EMBREE
+.. autoclass:: mitsuba.Int
 
-.. autofunction:: mitsuba.core.MI_FILTER_RESOLUTION
+.. autoclass:: mitsuba.Int64
 
-.. autofunction:: mitsuba.core.MI_VERSION
+.. autoclass:: mitsuba.Integrator
 
-.. autofunction:: mitsuba.core.MI_VERSION_MAJOR
+.. autoclass:: mitsuba.Interaction3f
 
-.. autofunction:: mitsuba.core.MI_VERSION_MINOR
+.. autoclass:: mitsuba.IrregularContinuousDistribution
 
-.. autofunction:: mitsuba.core.MI_VERSION_PATCH
+.. autofunction:: mitsuba.Log
 
-.. autofunction:: mitsuba.core.MI_YEAR
+.. autoclass:: mitsuba.LogLevel
 
-.. autoclass:: mitsuba.core.MarginalContinuous2D0
+.. autoclass:: mitsuba.Logger
 
-.. autoclass:: mitsuba.core.MarginalContinuous2D1
+.. autoclass:: mitsuba.Loop
 
-.. autoclass:: mitsuba.core.MarginalContinuous2D2
+.. autofunction:: mitsuba.MI_AUTHORS
 
-.. autoclass:: mitsuba.core.MarginalContinuous2D3
+.. autofunction:: mitsuba.MI_CIE_MAX
 
-.. autoclass:: mitsuba.core.MarginalDiscrete2D0
+.. autofunction:: mitsuba.MI_CIE_MIN
 
-.. autoclass:: mitsuba.core.MarginalDiscrete2D1
+.. autofunction:: mitsuba.MI_ENABLE_CUDA
 
-.. autoclass:: mitsuba.core.MarginalDiscrete2D2
+.. autofunction:: mitsuba.MI_ENABLE_EMBREE
 
-.. autoclass:: mitsuba.core.MarginalDiscrete2D3
+.. autofunction:: mitsuba.MI_FILTER_RESOLUTION
 
-.. autoclass:: mitsuba.core.Mask
+.. autofunction:: mitsuba.MI_VERSION
 
-.. autoclass:: mitsuba.core.Matrix2f
+.. autofunction:: mitsuba.MI_VERSION_MAJOR
 
-.. autoclass:: mitsuba.core.Matrix3f
+.. autofunction:: mitsuba.MI_VERSION_MINOR
 
-.. autoclass:: mitsuba.core.Matrix4f
+.. autofunction:: mitsuba.MI_VERSION_PATCH
 
-.. autoclass:: mitsuba.core.MemoryMappedFile
+.. autofunction:: mitsuba.MI_YEAR
 
-.. autoclass:: mitsuba.core.MemoryStream
+.. autoclass:: mitsuba.MarginalContinuous2D0
 
-.. autoclass:: mitsuba.core.Normal3f
+.. autoclass:: mitsuba.MarginalContinuous2D1
 
-.. autoclass:: mitsuba.core.Object
+.. autoclass:: mitsuba.MarginalContinuous2D2
 
-.. autoclass:: mitsuba.core.PCG32
+.. autoclass:: mitsuba.MarginalContinuous2D3
 
-.. autoclass:: mitsuba.core.PluginManager
+.. autoclass:: mitsuba.MarginalDiscrete2D0
 
-.. autoclass:: mitsuba.core.Point0f
+.. autoclass:: mitsuba.MarginalDiscrete2D1
 
-.. autoclass:: mitsuba.core.Point0i
+.. autoclass:: mitsuba.MarginalDiscrete2D2
 
-.. autoclass:: mitsuba.core.Point0u
+.. autoclass:: mitsuba.MarginalDiscrete2D3
 
-.. autoclass:: mitsuba.core.Point1f
+.. autoclass:: mitsuba.Mask
 
-.. autoclass:: mitsuba.core.Point1i
+.. autoclass:: mitsuba.Matrix2f
 
-.. autoclass:: mitsuba.core.Point1u
+.. autoclass:: mitsuba.Matrix3f
 
-.. autoclass:: mitsuba.core.Point2f
+.. autoclass:: mitsuba.Matrix4f
 
-.. autoclass:: mitsuba.core.Point2i
+.. autoclass:: mitsuba.Medium
 
-.. autoclass:: mitsuba.core.Point2u
+.. autoclass:: mitsuba.MediumInteraction3f
 
-.. autoclass:: mitsuba.core.Point3f
+.. autoclass:: mitsuba.MediumPtr
 
-.. autoclass:: mitsuba.core.Point3i
+.. autoclass:: mitsuba.MemoryMappedFile
 
-.. autoclass:: mitsuba.core.Point3u
+.. autoclass:: mitsuba.MemoryStream
 
-.. autoclass:: mitsuba.core.Point4f
+.. autoclass:: mitsuba.Mesh
 
-.. autoclass:: mitsuba.core.Point4i
+.. autoclass:: mitsuba.MicrofacetDistribution
 
-.. autoclass:: mitsuba.core.Point4u
+.. autoclass:: mitsuba.MicrofacetType
 
-.. autoclass:: mitsuba.core.Properties
+.. autoclass:: mitsuba.MonteCarloIntegrator
 
-.. autoclass:: mitsuba.core.PyObjectWrapper
+.. autoclass:: mitsuba.Normal3f
 
-.. autoclass:: mitsuba.core.RadicalInverse
+.. autoclass:: mitsuba.Object
 
-.. autoclass:: mitsuba.core.Ray3f
+.. autoclass:: mitsuba.ObjectPtr
 
-.. autoclass:: mitsuba.core.RayDifferential3f
+.. autoclass:: mitsuba.PCG32
 
-.. autoclass:: mitsuba.core.ReconstructionFilter
+.. autoclass:: mitsuba.ParamFlags
 
-.. autoclass:: mitsuba.core.Resampler
+.. autoclass:: mitsuba.PhaseFunction
 
-.. autoclass:: mitsuba.core.ScalarBool
+.. autoclass:: mitsuba.PhaseFunctionContext
 
-.. autoclass:: mitsuba.core.ScalarColor0d
+.. autoclass:: mitsuba.PhaseFunctionFlags
 
-.. autoclass:: mitsuba.core.ScalarColor0f
+.. autoclass:: mitsuba.PhaseFunctionPtr
 
-.. autoclass:: mitsuba.core.ScalarColor1d
+.. autoclass:: mitsuba.PluginManager
 
-.. autoclass:: mitsuba.core.ScalarColor1f
+.. autoclass:: mitsuba.Point0f
 
-.. autoclass:: mitsuba.core.ScalarColor3d
+.. autoclass:: mitsuba.Point0i
 
-.. autoclass:: mitsuba.core.ScalarColor3f
+.. autoclass:: mitsuba.Point0u
 
-.. autoclass:: mitsuba.core.ScalarFloat
+.. autoclass:: mitsuba.Point1f
 
-.. autoclass:: mitsuba.core.ScalarFloat32
+.. autoclass:: mitsuba.Point1i
 
-.. autoclass:: mitsuba.core.ScalarFloat64
+.. autoclass:: mitsuba.Point1u
 
-.. autoclass:: mitsuba.core.ScalarInt
+.. autoclass:: mitsuba.Point2f
 
-.. autoclass:: mitsuba.core.ScalarInt32
+.. autoclass:: mitsuba.Point2i
 
-.. autoclass:: mitsuba.core.ScalarInt64
+.. autoclass:: mitsuba.Point2u
 
-.. autoclass:: mitsuba.core.ScalarMask
+.. autoclass:: mitsuba.Point3f
 
-.. autoclass:: mitsuba.core.ScalarMatrix2f
+.. autoclass:: mitsuba.Point3i
 
-.. autoclass:: mitsuba.core.ScalarMatrix3f
+.. autoclass:: mitsuba.Point3u
 
-.. autoclass:: mitsuba.core.ScalarMatrix4f
+.. autoclass:: mitsuba.Point4f
 
-.. autoclass:: mitsuba.core.ScalarNormal3f
+.. autoclass:: mitsuba.Point4i
 
-.. autoclass:: mitsuba.core.ScalarPoint0f
+.. autoclass:: mitsuba.Point4u
 
-.. autoclass:: mitsuba.core.ScalarPoint0i
+.. autoclass:: mitsuba.PositionSample3f
 
-.. autoclass:: mitsuba.core.ScalarPoint0u
+.. autoclass:: mitsuba.PreliminaryIntersection3f
 
-.. autoclass:: mitsuba.core.ScalarPoint1f
+.. autoclass:: mitsuba.ProjectiveCamera
 
-.. autoclass:: mitsuba.core.ScalarPoint1i
+.. autoclass:: mitsuba.Properties
 
-.. autoclass:: mitsuba.core.ScalarPoint1u
+.. autoclass:: mitsuba.PyObjectWrapper
 
-.. autoclass:: mitsuba.core.ScalarPoint2f
+.. autoclass:: mitsuba.RadicalInverse
 
-.. autoclass:: mitsuba.core.ScalarPoint2i
+.. autoclass:: mitsuba.Ray3f
 
-.. autoclass:: mitsuba.core.ScalarPoint2u
+.. autoclass:: mitsuba.RayDifferential3f
 
-.. autoclass:: mitsuba.core.ScalarPoint3f
+.. autoclass:: mitsuba.RayFlags
 
-.. autoclass:: mitsuba.core.ScalarPoint3i
+.. autoclass:: mitsuba.ReconstructionFilter
 
-.. autoclass:: mitsuba.core.ScalarPoint3u
+.. autoclass:: mitsuba.Resampler
 
-.. autoclass:: mitsuba.core.ScalarPoint4f
+.. autoclass:: mitsuba.Sampler
 
-.. autoclass:: mitsuba.core.ScalarPoint4i
+.. autoclass:: mitsuba.SamplingIntegrator
 
-.. autoclass:: mitsuba.core.ScalarPoint4u
+.. autoclass:: mitsuba.ScalarBoundingBox2f
 
-.. autoclass:: mitsuba.core.ScalarTransform3f
+.. autoclass:: mitsuba.ScalarBoundingBox3f
 
-.. autoclass:: mitsuba.core.ScalarTransform4f
+.. autoclass:: mitsuba.ScalarBoundingSphere3f
 
-.. autoclass:: mitsuba.core.ScalarUInt
+.. autoclass:: mitsuba.ScalarColor0d
 
-.. autoclass:: mitsuba.core.ScalarUInt32
+.. autoclass:: mitsuba.ScalarColor0f
 
-.. autoclass:: mitsuba.core.ScalarUInt64
+.. autoclass:: mitsuba.ScalarColor1d
 
-.. autoclass:: mitsuba.core.ScalarVector0f
+.. autoclass:: mitsuba.ScalarColor1f
 
-.. autoclass:: mitsuba.core.ScalarVector0i
+.. autoclass:: mitsuba.ScalarColor3d
 
-.. autoclass:: mitsuba.core.ScalarVector0u
+.. autoclass:: mitsuba.ScalarColor3f
 
-.. autoclass:: mitsuba.core.ScalarVector1f
+.. autoclass:: mitsuba.ScalarNormal3f
 
-.. autoclass:: mitsuba.core.ScalarVector1i
+.. autoclass:: mitsuba.ScalarPoint0f
 
-.. autoclass:: mitsuba.core.ScalarVector1u
+.. autoclass:: mitsuba.ScalarPoint0i
 
-.. autoclass:: mitsuba.core.ScalarVector2f
+.. autoclass:: mitsuba.ScalarPoint0u
 
-.. autoclass:: mitsuba.core.ScalarVector2i
+.. autoclass:: mitsuba.ScalarPoint1f
 
-.. autoclass:: mitsuba.core.ScalarVector2u
+.. autoclass:: mitsuba.ScalarPoint1i
 
-.. autoclass:: mitsuba.core.ScalarVector3f
+.. autoclass:: mitsuba.ScalarPoint1u
 
-.. autoclass:: mitsuba.core.ScalarVector3i
+.. autoclass:: mitsuba.ScalarPoint2f
 
-.. autoclass:: mitsuba.core.ScalarVector3u
+.. autoclass:: mitsuba.ScalarPoint2i
 
-.. autoclass:: mitsuba.core.ScalarVector4f
+.. autoclass:: mitsuba.ScalarPoint2u
 
-.. autoclass:: mitsuba.core.ScalarVector4i
+.. autoclass:: mitsuba.ScalarPoint3f
 
-.. autoclass:: mitsuba.core.ScalarVector4u
+.. autoclass:: mitsuba.ScalarPoint3i
 
-.. autoclass:: mitsuba.core.ScopedSetThreadEnvironment
+.. autoclass:: mitsuba.ScalarPoint3u
 
-.. autoclass:: mitsuba.core.Spectrum
+.. autoclass:: mitsuba.ScalarPoint4f
 
-.. autoclass:: mitsuba.core.Stream
+.. autoclass:: mitsuba.ScalarPoint4i
 
-.. autoclass:: mitsuba.core.StreamAppender
+.. autoclass:: mitsuba.ScalarPoint4u
 
-.. autoclass:: mitsuba.core.Struct
+.. autoclass:: mitsuba.ScalarTransform3d
 
-.. autoclass:: mitsuba.core.StructConverter
+.. autoclass:: mitsuba.ScalarTransform3f
 
-.. autoclass:: mitsuba.core.TensorXf
+.. autoclass:: mitsuba.ScalarTransform4d
 
-.. autoclass:: mitsuba.core.Thread
+.. autoclass:: mitsuba.ScalarTransform4f
 
-.. autoclass:: mitsuba.core.ThreadEnvironment
+.. autoclass:: mitsuba.ScalarVector0f
 
-.. autoclass:: mitsuba.core.Timer
+.. autoclass:: mitsuba.ScalarVector0i
 
-.. autoclass:: mitsuba.core.Transform3f
+.. autoclass:: mitsuba.ScalarVector0u
 
-.. autoclass:: mitsuba.core.Transform4f
+.. autoclass:: mitsuba.ScalarVector1f
 
-.. autoclass:: mitsuba.core.TraversalCallback
+.. autoclass:: mitsuba.ScalarVector1i
 
-.. autoclass:: mitsuba.core.UInt
+.. autoclass:: mitsuba.ScalarVector1u
 
-.. autoclass:: mitsuba.core.UInt32
+.. autoclass:: mitsuba.ScalarVector2f
 
-.. autoclass:: mitsuba.core.UInt64
+.. autoclass:: mitsuba.ScalarVector2i
 
-.. autoclass:: mitsuba.core.UnpolarizedSpectrum
+.. autoclass:: mitsuba.ScalarVector2u
 
-.. autoclass:: mitsuba.core.Vector0f
+.. autoclass:: mitsuba.ScalarVector3f
 
-.. autoclass:: mitsuba.core.Vector0i
+.. autoclass:: mitsuba.ScalarVector3i
 
-.. autoclass:: mitsuba.core.Vector0u
+.. autoclass:: mitsuba.ScalarVector3u
 
-.. autoclass:: mitsuba.core.Vector1f
+.. autoclass:: mitsuba.ScalarVector4f
 
-.. autoclass:: mitsuba.core.Vector1i
+.. autoclass:: mitsuba.ScalarVector4i
 
-.. autoclass:: mitsuba.core.Vector1u
+.. autoclass:: mitsuba.ScalarVector4u
 
-.. autoclass:: mitsuba.core.Vector2f
+.. autoclass:: mitsuba.Scene
 
-.. autoclass:: mitsuba.core.Vector2i
+.. autoclass:: mitsuba.SceneParameters
 
-.. autoclass:: mitsuba.core.Vector2u
+.. autoclass:: mitsuba.ScopedSetThreadEnvironment
 
-.. autoclass:: mitsuba.core.Vector3f
+.. autoclass:: mitsuba.Sensor
 
-.. autoclass:: mitsuba.core.Vector3i
+.. autoclass:: mitsuba.SensorPtr
 
-.. autoclass:: mitsuba.core.Vector3u
+.. autoclass:: mitsuba.Shape
 
-.. autoclass:: mitsuba.core.Vector4f
+.. autoclass:: mitsuba.ShapePtr
 
-.. autoclass:: mitsuba.core.Vector4i
+.. autoclass:: mitsuba.Spiral
 
-.. autoclass:: mitsuba.core.Vector4u
+.. autoclass:: mitsuba.Stream
 
-.. autoclass:: mitsuba.core.ZStream
+.. autoclass:: mitsuba.StreamAppender
 
-.. autofunction:: mitsuba.core.cast_object
+.. autoclass:: mitsuba.Struct
 
-.. autofunction:: mitsuba.core.casters
+.. autoclass:: mitsuba.StructConverter
 
-.. autofunction:: mitsuba.core.cie1931_xyz
+.. autoclass:: mitsuba.SurfaceInteraction3f
 
-.. autofunction:: mitsuba.core.cie1931_y
+.. autoclass:: mitsuba.TensorXf
 
-.. autofunction:: mitsuba.core.coordinate_system
+.. autoclass:: mitsuba.Texture
 
-.. autofunction:: mitsuba.core.depolarizer
+.. autoclass:: mitsuba.Thread
 
-.. autofunction:: mitsuba.core.filesystem.absolute
+.. autoclass:: mitsuba.ThreadEnvironment
 
-.. autofunction:: mitsuba.core.filesystem.create_directory
+.. autoclass:: mitsuba.Timer
 
-.. autofunction:: mitsuba.core.filesystem.current_path
+.. autoclass:: mitsuba.Transform3f
 
-.. autofunction:: mitsuba.core.filesystem.equivalent
+.. autoclass:: mitsuba.Transform4f
 
-.. autofunction:: mitsuba.core.filesystem.exists
+.. autoclass:: mitsuba.TransportMode
 
-.. autofunction:: mitsuba.core.filesystem.file_size
+.. autoclass:: mitsuba.TraversalCallback
 
-.. autofunction:: mitsuba.core.filesystem.is_directory
+.. autoclass:: mitsuba.UInt
 
-.. autofunction:: mitsuba.core.filesystem.is_regular_file
+.. autoclass:: mitsuba.UInt64
 
-.. autoclass:: mitsuba.core.filesystem.path
+.. autoclass:: mitsuba.Vector0f
 
-.. autofunction:: mitsuba.core.filesystem.preferred_separator
+.. autoclass:: mitsuba.Vector0i
 
-.. autofunction:: mitsuba.core.filesystem.remove
+.. autoclass:: mitsuba.Vector0u
 
-.. autofunction:: mitsuba.core.filesystem.resize_file
+.. autoclass:: mitsuba.Vector1f
 
-.. autofunction:: mitsuba.core.float_dtype
+.. autoclass:: mitsuba.Vector1i
 
-.. autofunction:: mitsuba.core.get_property
+.. autoclass:: mitsuba.Vector1u
 
-.. autofunction:: mitsuba.core.is_monochromatic
+.. autoclass:: mitsuba.Vector2f
 
-.. autofunction:: mitsuba.core.is_polarized
+.. autoclass:: mitsuba.Vector2i
 
-.. autofunction:: mitsuba.core.is_rgb
+.. autoclass:: mitsuba.Vector2u
 
-.. autofunction:: mitsuba.core.is_spectral
+.. autoclass:: mitsuba.Vector3f
 
-.. autofunction:: mitsuba.core.linear_rgb_rec
+.. autoclass:: mitsuba.Vector3i
 
-.. autofunction:: mitsuba.core.load_dict
+.. autoclass:: mitsuba.Vector3u
 
-.. autofunction:: mitsuba.core.load_file
+.. autoclass:: mitsuba.Vector4f
 
-.. autofunction:: mitsuba.core.load_string
+.. autoclass:: mitsuba.Vector4i
 
-.. autofunction:: mitsuba.core.luminance
+.. autoclass:: mitsuba.Vector4u
 
-.. autofunction:: mitsuba.core.math.RayEpsilon
+.. autoclass:: mitsuba.Volume
 
-.. autofunction:: mitsuba.core.math.ShadowEpsilon
+.. autoclass:: mitsuba.VolumeGrid
 
-.. autofunction:: mitsuba.core.math.chi2
+.. autoclass:: mitsuba.ZStream
 
-.. autofunction:: mitsuba.core.math.find_interval
+.. autoclass:: mitsuba.ad.Adam
 
-.. autofunction:: mitsuba.core.math.is_power_of_two
+.. autoclass:: mitsuba.ad.Optimizer
 
-.. autofunction:: mitsuba.core.math.legendre_p
+.. autoclass:: mitsuba.ad.SGD
 
-.. autofunction:: mitsuba.core.math.legendre_pd
+.. autofunction:: mitsuba.ad.common.render
 
-.. autofunction:: mitsuba.core.math.legendre_pd_diff
+.. autofunction:: mitsuba.ad.f
 
-.. autofunction:: mitsuba.core.math.linear_to_srgb
+.. autofunction:: mitsuba.ad.integrators.f
 
-.. autofunction:: mitsuba.core.math.morton_decode2
+.. autofunction:: mitsuba.ad.integrators.name
 
-.. autofunction:: mitsuba.core.math.morton_decode3
+.. autofunction:: mitsuba.ad.integrators.prb.annotations
 
-.. autofunction:: mitsuba.core.math.morton_encode2
+.. autofunction:: mitsuba.ad.integrators.prb_basic.annotations
 
-.. autofunction:: mitsuba.core.math.morton_encode3
+.. autofunction:: mitsuba.ad.integrators.prb_reparam.annotations
 
-.. autofunction:: mitsuba.core.math.round_to_power_of_two
+.. autofunction:: mitsuba.ad.integrators.prbvolpath.annotations
 
-.. autofunction:: mitsuba.core.math.solve_quadratic
+.. autofunction:: mitsuba.ad.name
 
-.. autofunction:: mitsuba.core.math.srgb_to_linear
+.. autoclass:: mitsuba.ad.prb.ADIntegrator
 
-.. autofunction:: mitsuba.core.math.ulpdiff
+.. autoclass:: mitsuba.ad.prb.PRBIntegrator
 
-.. autofunction:: mitsuba.core.pdf_rgb_spectrum
+.. autofunction:: mitsuba.ad.prb.annotations
 
-.. autofunction:: mitsuba.core.permute
+.. autofunction:: mitsuba.ad.prb.mis_weight
 
-.. autofunction:: mitsuba.core.permute_kensler
+.. autoclass:: mitsuba.ad.prb_basic.BasicPRBIntegrator
 
-.. autofunction:: mitsuba.core.quad.chebyshev
+.. autofunction:: mitsuba.ad.prb_basic.annotations
 
-.. autofunction:: mitsuba.core.quad.composite_simpson
+.. autoclass:: mitsuba.ad.prb_reparam.PRBReparamIntegrator
 
-.. autofunction:: mitsuba.core.quad.composite_simpson_38
+.. autofunction:: mitsuba.ad.prb_reparam.annotations
 
-.. autofunction:: mitsuba.core.quad.gauss_legendre
+.. autoclass:: mitsuba.ad.prbvolpath.PRBVolpathIntegrator
 
-.. autofunction:: mitsuba.core.quad.gauss_lobatto
+.. autofunction:: mitsuba.ad.prbvolpath.annotations
 
-.. autofunction:: mitsuba.core.radical_inverse_2
+.. autofunction:: mitsuba.ad.prbvolpath.index_spectrum
 
-.. autofunction:: mitsuba.core.sample_rgb_spectrum
+.. autofunction:: mitsuba.ad.reparameterize_ray
 
-.. autofunction:: mitsuba.core.sample_tea_32
+.. autofunction:: mitsuba.cast_object
 
-.. autofunction:: mitsuba.core.sample_tea_64
+.. autofunction:: mitsuba.casters
 
-.. autofunction:: mitsuba.core.sample_tea_float
+.. autofunction:: mitsuba.chi2.BSDFAdapter
 
-.. autofunction:: mitsuba.core.sample_tea_float32
+.. autoclass:: mitsuba.chi2.ChiSquareTest
 
-.. autofunction:: mitsuba.core.sample_tea_float64
+.. autofunction:: mitsuba.chi2.EmitterAdapter
 
-.. autofunction:: mitsuba.core.set_property
+.. autoclass:: mitsuba.chi2.LineDomain
 
-.. autofunction:: mitsuba.core.sobol_2
+.. autofunction:: mitsuba.chi2.MicrofacetAdapter
 
-.. autofunction:: mitsuba.core.spectrum_from_file
+.. autofunction:: mitsuba.chi2.PhaseFunctionAdapter
 
-.. autofunction:: mitsuba.core.spectrum_list_to_srgb
+.. autoclass:: mitsuba.chi2.PlanarDomain
 
-.. autofunction:: mitsuba.core.spectrum_to_file
+.. autofunction:: mitsuba.chi2.SpectrumAdapter
 
-.. autofunction:: mitsuba.core.spline.eval_1d
+.. autoclass:: mitsuba.chi2.SphericalDomain
 
-.. autofunction:: mitsuba.core.spline.eval_2d
+.. autofunction:: mitsuba.cie1931_xyz
 
-.. autofunction:: mitsuba.core.spline.eval_spline
+.. autofunction:: mitsuba.cie1931_y
 
-.. autofunction:: mitsuba.core.spline.eval_spline_d
+.. autofunction:: mitsuba.coordinate_system
 
-.. autofunction:: mitsuba.core.spline.eval_spline_i
+.. autofunction:: mitsuba.depolarizer
 
-.. autofunction:: mitsuba.core.spline.eval_spline_weights
+.. autofunction:: mitsuba.eval_reflectance
 
-.. autofunction:: mitsuba.core.spline.integrate_1d
+.. autofunction:: mitsuba.filesystem.absolute
 
-.. autofunction:: mitsuba.core.spline.invert_1d
+.. autofunction:: mitsuba.filesystem.create_directory
 
-.. autofunction:: mitsuba.core.spline.sample_1d
+.. autofunction:: mitsuba.filesystem.current_path
 
-.. autofunction:: mitsuba.core.srgb_to_xyz
+.. autofunction:: mitsuba.filesystem.equivalent
 
-.. autofunction:: mitsuba.core.unpolarized_spectrum
+.. autofunction:: mitsuba.filesystem.exists
 
-.. autofunction:: mitsuba.core.util.core_count
+.. autofunction:: mitsuba.filesystem.file_size
 
-.. autofunction:: mitsuba.core.util.mem_string
+.. autofunction:: mitsuba.filesystem.is_directory
 
-.. autofunction:: mitsuba.core.util.time_string
+.. autofunction:: mitsuba.filesystem.is_regular_file
 
-.. autofunction:: mitsuba.core.util.trap_debugger
+.. autoclass:: mitsuba.filesystem.path
 
-.. autofunction:: mitsuba.core.warp.beckmann_to_square
+.. autofunction:: mitsuba.filesystem.preferred_separator
 
-.. autofunction:: mitsuba.core.warp.bilinear_to_square
+.. autofunction:: mitsuba.filesystem.remove
 
-.. autofunction:: mitsuba.core.warp.cosine_hemisphere_to_square
+.. autofunction:: mitsuba.filesystem.resize_file
 
-.. autofunction:: mitsuba.core.warp.interval_to_linear
+.. autofunction:: mitsuba.float_dtype
 
-.. autofunction:: mitsuba.core.warp.interval_to_nonuniform_tent
+.. autofunction:: mitsuba.fresnel
 
-.. autofunction:: mitsuba.core.warp.interval_to_tent
+.. autofunction:: mitsuba.fresnel_conductor
 
-.. autofunction:: mitsuba.core.warp.linear_to_interval
+.. autofunction:: mitsuba.fresnel_polarized
 
-.. autofunction:: mitsuba.core.warp.square_to_beckmann
+.. autofunction:: mitsuba.get_property
 
-.. autofunction:: mitsuba.core.warp.square_to_beckmann_pdf
+.. autofunction:: mitsuba.has_flag
 
-.. autofunction:: mitsuba.core.warp.square_to_bilinear
+.. autofunction:: mitsuba.is_monochromatic
 
-.. autofunction:: mitsuba.core.warp.square_to_bilinear_pdf
+.. autofunction:: mitsuba.is_polarized
 
-.. autofunction:: mitsuba.core.warp.square_to_cosine_hemisphere
+.. autofunction:: mitsuba.is_rgb
 
-.. autofunction:: mitsuba.core.warp.square_to_cosine_hemisphere_pdf
+.. autofunction:: mitsuba.is_spectral
 
-.. autofunction:: mitsuba.core.warp.square_to_rough_fiber
+.. autofunction:: mitsuba.linear_rgb_rec
 
-.. autofunction:: mitsuba.core.warp.square_to_rough_fiber_pdf
+.. autofunction:: mitsuba.load_dict
 
-.. autofunction:: mitsuba.core.warp.square_to_std_normal
+.. autofunction:: mitsuba.load_file
 
-.. autofunction:: mitsuba.core.warp.square_to_std_normal_pdf
+.. autofunction:: mitsuba.load_string
 
-.. autofunction:: mitsuba.core.warp.square_to_tent
+.. autofunction:: mitsuba.luminance
 
-.. autofunction:: mitsuba.core.warp.square_to_tent_pdf
+.. autofunction:: mitsuba.math.RayEpsilon
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_cone
+.. autofunction:: mitsuba.math.ShadowEpsilon
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_cone_pdf
+.. autofunction:: mitsuba.math.chi2
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_disk
+.. autofunction:: mitsuba.math.find_interval
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_disk_concentric
+.. autofunction:: mitsuba.math.is_power_of_two
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_disk_concentric_pdf
+.. autofunction:: mitsuba.math.legendre_p
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_disk_pdf
+.. autofunction:: mitsuba.math.legendre_pd
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_hemisphere
+.. autofunction:: mitsuba.math.legendre_pd_diff
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_hemisphere_pdf
+.. autofunction:: mitsuba.math.linear_to_srgb
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_sphere
+.. autofunction:: mitsuba.math.morton_decode2
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_sphere_pdf
+.. autofunction:: mitsuba.math.morton_decode3
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_square_concentric
+.. autofunction:: mitsuba.math.morton_encode2
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_triangle
+.. autofunction:: mitsuba.math.morton_encode3
 
-.. autofunction:: mitsuba.core.warp.square_to_uniform_triangle_pdf
+.. autofunction:: mitsuba.math.rlgamma
 
-.. autofunction:: mitsuba.core.warp.square_to_von_mises_fisher
+.. autofunction:: mitsuba.math.round_to_power_of_two
 
-.. autofunction:: mitsuba.core.warp.square_to_von_mises_fisher_pdf
+.. autofunction:: mitsuba.math.solve_quadratic
 
-.. autofunction:: mitsuba.core.warp.tent_to_interval
+.. autofunction:: mitsuba.math.srgb_to_linear
 
-.. autofunction:: mitsuba.core.warp.tent_to_square
+.. autofunction:: mitsuba.math.ulpdiff
 
-.. autofunction:: mitsuba.core.warp.uniform_cone_to_square
+.. autofunction:: mitsuba.mueller.absorber
 
-.. autofunction:: mitsuba.core.warp.uniform_disk_to_square
+.. autofunction:: mitsuba.mueller.depolarizer
 
-.. autofunction:: mitsuba.core.warp.uniform_disk_to_square_concentric
+.. autofunction:: mitsuba.mueller.diattenuator
 
-.. autofunction:: mitsuba.core.warp.uniform_hemisphere_to_square
+.. autofunction:: mitsuba.mueller.linear_polarizer
 
-.. autofunction:: mitsuba.core.warp.uniform_sphere_to_square
+.. autofunction:: mitsuba.mueller.linear_retarder
 
-.. autofunction:: mitsuba.core.warp.uniform_triangle_to_square
+.. autofunction:: mitsuba.mueller.rotate_mueller_basis
 
-.. autofunction:: mitsuba.core.warp.von_mises_fisher_to_square
+.. autofunction:: mitsuba.mueller.rotate_mueller_basis_collinear
 
-.. autofunction:: mitsuba.core.xyz_to_srgb
+.. autofunction:: mitsuba.mueller.rotate_stokes_basis
 
-.. autoclass:: mitsuba.render.AdjointIntegrator
+.. autofunction:: mitsuba.mueller.rotate_stokes_basis_m
 
-.. autoclass:: mitsuba.render.BSDF
+.. autofunction:: mitsuba.mueller.rotated_element
 
-.. autoclass:: mitsuba.render.BSDFContext
+.. autofunction:: mitsuba.mueller.rotator
 
-.. autoclass:: mitsuba.render.BSDFFlags
+.. autofunction:: mitsuba.mueller.specular_reflection
 
-.. autoclass:: mitsuba.render.BSDFSample3f
+.. autofunction:: mitsuba.mueller.specular_transmission
 
-.. autoclass:: mitsuba.render.DirectionSample3f
+.. autofunction:: mitsuba.mueller.stokes_basis
 
-.. autoclass:: mitsuba.render.Emitter
+.. autofunction:: mitsuba.mueller.unit_angle
 
-.. autoclass:: mitsuba.render.EmitterFlags
+.. autofunction:: mitsuba.parse_fov
 
-.. autoclass:: mitsuba.render.Endpoint
+.. autofunction:: mitsuba.pdf_rgb_spectrum
 
-.. autoclass:: mitsuba.render.Film
+.. autofunction:: mitsuba.permute
 
-.. autoclass:: mitsuba.render.FilmFlags
+.. autofunction:: mitsuba.permute_kensler
 
-.. autoclass:: mitsuba.render.ImageBlock
+.. autofunction:: mitsuba.perspective_projection
 
-.. autoclass:: mitsuba.render.Integrator
+.. autofunction:: mitsuba.quad.chebyshev
 
-.. autoclass:: mitsuba.render.Interaction3f
+.. autofunction:: mitsuba.quad.composite_simpson
 
-.. autoclass:: mitsuba.render.Medium
+.. autofunction:: mitsuba.quad.composite_simpson_38
 
-.. autoclass:: mitsuba.render.MediumInteraction3f
+.. autofunction:: mitsuba.quad.gauss_legendre
 
-.. autoclass:: mitsuba.render.Mesh
+.. autofunction:: mitsuba.quad.gauss_lobatto
 
-.. autoclass:: mitsuba.render.MicrofacetDistribution
+.. autofunction:: mitsuba.radical_inverse_2
 
-.. autoclass:: mitsuba.render.MicrofacetType
+.. autofunction:: mitsuba.reflect
 
-.. autoclass:: mitsuba.render.MonteCarloIntegrator
+.. autofunction:: mitsuba.refract
 
-.. autoclass:: mitsuba.render.PhaseFunction
+.. autofunction:: mitsuba.register_bsdf
 
-.. autoclass:: mitsuba.render.PhaseFunctionContext
+.. autofunction:: mitsuba.register_emitter
 
-.. autoclass:: mitsuba.render.PhaseFunctionFlags
+.. autofunction:: mitsuba.register_film
 
-.. autoclass:: mitsuba.render.PositionSample3f
+.. autofunction:: mitsuba.register_integrator
 
-.. autoclass:: mitsuba.render.PreliminaryIntersection3f
+.. autofunction:: mitsuba.register_medium
 
-.. autoclass:: mitsuba.render.ProjectiveCamera
+.. autofunction:: mitsuba.register_mesh
 
-.. autoclass:: mitsuba.render.RayFlags
+.. autofunction:: mitsuba.register_phasefunction
 
-.. autoclass:: mitsuba.render.Sampler
+.. autofunction:: mitsuba.register_sampler
 
-.. autoclass:: mitsuba.render.SamplingIntegrator
+.. autofunction:: mitsuba.register_sensor
 
-.. autoclass:: mitsuba.render.Scene
+.. autofunction:: mitsuba.register_texture
 
-.. autoclass:: mitsuba.render.Sensor
+.. autofunction:: mitsuba.register_volume
 
-.. autoclass:: mitsuba.render.Shape
+.. autofunction:: mitsuba.render
 
-.. autoclass:: mitsuba.render.Spiral
+.. autofunction:: mitsuba.sample_rgb_spectrum
 
-.. autoclass:: mitsuba.render.SurfaceInteraction3f
+.. autofunction:: mitsuba.sample_tea_32
 
-.. autoclass:: mitsuba.render.Texture
+.. autofunction:: mitsuba.sample_tea_64
 
-.. autoclass:: mitsuba.render.TransportMode
+.. autofunction:: mitsuba.sample_tea_float
 
-.. autoclass:: mitsuba.render.Volume
+.. autofunction:: mitsuba.sample_tea_float32
 
-.. autoclass:: mitsuba.render.VolumeGrid
+.. autofunction:: mitsuba.set_log_level
 
-.. autofunction:: mitsuba.render.eval_reflectance
+.. autofunction:: mitsuba.set_property
 
-.. autofunction:: mitsuba.render.fresnel
+.. autofunction:: mitsuba.set_variant
 
-.. autofunction:: mitsuba.render.fresnel_conductor
+.. autofunction:: mitsuba.sobol_2
 
-.. autofunction:: mitsuba.render.fresnel_polarized
+.. autofunction:: mitsuba.spectrum_from_file
 
-.. autofunction:: mitsuba.render.has_flag
+.. autofunction:: mitsuba.spectrum_list_to_srgb
 
-.. autofunction:: mitsuba.render.mueller.absorber
+.. autofunction:: mitsuba.spectrum_to_file
 
-.. autofunction:: mitsuba.render.mueller.depolarizer
+.. autofunction:: mitsuba.spline.eval_1d
 
-.. autofunction:: mitsuba.render.mueller.diattenuator
+.. autofunction:: mitsuba.spline.eval_2d
 
-.. autofunction:: mitsuba.render.mueller.linear_polarizer
+.. autofunction:: mitsuba.spline.eval_spline
 
-.. autofunction:: mitsuba.render.mueller.linear_retarder
+.. autofunction:: mitsuba.spline.eval_spline_d
 
-.. autofunction:: mitsuba.render.mueller.rotate_mueller_basis
+.. autofunction:: mitsuba.spline.eval_spline_i
 
-.. autofunction:: mitsuba.render.mueller.rotate_mueller_basis_collinear
+.. autofunction:: mitsuba.spline.eval_spline_weights
 
-.. autofunction:: mitsuba.render.mueller.rotate_stokes_basis
+.. autofunction:: mitsuba.spline.integrate_1d
 
-.. autofunction:: mitsuba.render.mueller.rotate_stokes_basis_m
+.. autofunction:: mitsuba.spline.invert_1d
 
-.. autofunction:: mitsuba.render.mueller.rotated_element
+.. autofunction:: mitsuba.spline.sample_1d
 
-.. autofunction:: mitsuba.render.mueller.rotator
+.. autofunction:: mitsuba.srgb_model_eval
 
-.. autofunction:: mitsuba.render.mueller.specular_reflection
+.. autofunction:: mitsuba.srgb_model_fetch
 
-.. autofunction:: mitsuba.render.mueller.specular_transmission
+.. autofunction:: mitsuba.srgb_model_mean
 
-.. autofunction:: mitsuba.render.mueller.stokes_basis
+.. autofunction:: mitsuba.srgb_to_xyz
 
-.. autofunction:: mitsuba.render.mueller.unit_angle
+.. autofunction:: mitsuba.traverse
 
-.. autofunction:: mitsuba.render.parse_fov
+.. autofunction:: mitsuba.unpolarized_spectrum
 
-.. autofunction:: mitsuba.render.perspective_projection
+.. autofunction:: mitsuba.util.convert_to_bitmap
 
-.. autofunction:: mitsuba.render.reflect
+.. autofunction:: mitsuba.util.core_count
 
-.. autofunction:: mitsuba.render.refract
+.. autofunction:: mitsuba.util.mem_string
 
-.. autofunction:: mitsuba.render.register_bsdf
+.. autofunction:: mitsuba.util.time_string
 
-.. autofunction:: mitsuba.render.register_emitter
+.. autofunction:: mitsuba.util.trap_debugger
 
-.. autofunction:: mitsuba.render.register_integrator
+.. autofunction:: mitsuba.util.write_bitmap
 
-.. autofunction:: mitsuba.render.register_medium
+.. autofunction:: mitsuba.variant
 
-.. autofunction:: mitsuba.render.register_mesh
+.. autofunction:: mitsuba.variants
 
-.. autofunction:: mitsuba.render.register_phasefunction
+.. autofunction:: mitsuba.warp.beckmann_to_square
 
-.. autofunction:: mitsuba.render.register_sensor
+.. autofunction:: mitsuba.warp.bilinear_to_square
 
-.. autofunction:: mitsuba.render.srgb_model_eval
+.. autofunction:: mitsuba.warp.cosine_hemisphere_to_square
 
-.. autofunction:: mitsuba.render.srgb_model_fetch
+.. autofunction:: mitsuba.warp.interval_to_linear
 
-.. autofunction:: mitsuba.render.srgb_model_mean
+.. autofunction:: mitsuba.warp.interval_to_nonuniform_tent
 
-.. autofunction:: mitsuba.python.math.rlgamma
+.. autofunction:: mitsuba.warp.interval_to_tent
 
-.. autoclass:: mitsuba.python.tonemap.Bitmap
+.. autofunction:: mitsuba.warp.linear_to_interval
 
-.. autofunction:: mitsuba.python.tonemap.Log
+.. autofunction:: mitsuba.warp.square_to_beckmann
 
-.. autoclass:: mitsuba.python.tonemap.LogLevel
+.. autofunction:: mitsuba.warp.square_to_beckmann_pdf
 
-.. autoclass:: mitsuba.python.tonemap.ScopedSetThreadEnvironment
+.. autofunction:: mitsuba.warp.square_to_bilinear
 
-.. autoclass:: mitsuba.python.tonemap.Struct
+.. autofunction:: mitsuba.warp.square_to_bilinear_pdf
 
-.. autoclass:: mitsuba.python.tonemap.Thread
+.. autofunction:: mitsuba.warp.square_to_cosine_hemisphere
 
-.. autoclass:: mitsuba.python.tonemap.ThreadEnvironment
+.. autofunction:: mitsuba.warp.square_to_cosine_hemisphere_pdf
 
-.. autoclass:: mitsuba.python.tonemap.ThreadPoolExecutor
+.. autofunction:: mitsuba.warp.square_to_rough_fiber
 
-.. autofunction:: mitsuba.python.tonemap.te
+.. autofunction:: mitsuba.warp.square_to_rough_fiber_pdf
 
-.. autofunction:: mitsuba.python.tonemap.tonemap
+.. autofunction:: mitsuba.warp.square_to_std_normal
 
-.. autofunction:: mitsuba.python.chi2.BSDFAdapter
+.. autofunction:: mitsuba.warp.square_to_std_normal_pdf
 
-.. autoclass:: mitsuba.python.chi2.ChiSquareTest
+.. autofunction:: mitsuba.warp.square_to_tent
 
-.. autofunction:: mitsuba.python.chi2.EmitterAdapter
+.. autofunction:: mitsuba.warp.square_to_tent_pdf
 
-.. autoclass:: mitsuba.python.chi2.LineDomain
+.. autofunction:: mitsuba.warp.square_to_uniform_cone
 
-.. autofunction:: mitsuba.python.chi2.MicrofacetAdapter
+.. autofunction:: mitsuba.warp.square_to_uniform_cone_pdf
 
-.. autofunction:: mitsuba.python.chi2.PhaseFunctionAdapter
+.. autofunction:: mitsuba.warp.square_to_uniform_disk
 
-.. autoclass:: mitsuba.python.chi2.PlanarDomain
+.. autofunction:: mitsuba.warp.square_to_uniform_disk_concentric
 
-.. autofunction:: mitsuba.python.chi2.SpectrumAdapter
+.. autofunction:: mitsuba.warp.square_to_uniform_disk_concentric_pdf
 
-.. autoclass:: mitsuba.python.chi2.SphericalDomain
+.. autofunction:: mitsuba.warp.square_to_uniform_disk_pdf
 
-.. autoclass:: mitsuba.python.polvis.Bitmap
+.. autofunction:: mitsuba.warp.square_to_uniform_hemisphere
 
-.. autofunction:: mitsuba.python.polvis.Log
+.. autofunction:: mitsuba.warp.square_to_uniform_hemisphere_pdf
 
-.. autoclass:: mitsuba.python.polvis.LogLevel
+.. autofunction:: mitsuba.warp.square_to_uniform_sphere
 
-.. autoclass:: mitsuba.python.polvis.ScopedSetThreadEnvironment
+.. autofunction:: mitsuba.warp.square_to_uniform_sphere_pdf
 
-.. autoclass:: mitsuba.python.polvis.Struct
+.. autofunction:: mitsuba.warp.square_to_uniform_square_concentric
 
-.. autoclass:: mitsuba.python.polvis.Thread
+.. autofunction:: mitsuba.warp.square_to_uniform_triangle
 
-.. autoclass:: mitsuba.python.polvis.ThreadEnvironment
+.. autofunction:: mitsuba.warp.square_to_uniform_triangle_pdf
 
-.. autoclass:: mitsuba.python.polvis.ThreadPoolExecutor
+.. autofunction:: mitsuba.warp.square_to_von_mises_fisher
 
-.. autofunction:: mitsuba.python.polvis.polvis
+.. autofunction:: mitsuba.warp.square_to_von_mises_fisher_pdf
 
-.. autofunction:: mitsuba.python.polvis.te
+.. autofunction:: mitsuba.warp.tent_to_interval
 
-.. autoclass:: mitsuba.python.xml.Files
+.. autofunction:: mitsuba.warp.tent_to_square
 
-.. autoclass:: mitsuba.python.xml.WriteXML
+.. autofunction:: mitsuba.warp.uniform_cone_to_square
 
-.. autofunction:: mitsuba.python.xml.copy2
+.. autofunction:: mitsuba.warp.uniform_disk_to_square
 
-.. autofunction:: mitsuba.python.xml.dict_to_xml
+.. autofunction:: mitsuba.warp.uniform_disk_to_square_concentric
 
-.. autoclass:: mitsuba.python.util.Mapping
+.. autofunction:: mitsuba.warp.uniform_hemisphere_to_square
 
-.. autoclass:: mitsuba.python.util.SceneParameters
+.. autofunction:: mitsuba.warp.uniform_sphere_to_square
 
-.. autofunction:: mitsuba.python.util.annotations
+.. autofunction:: mitsuba.warp.uniform_triangle_to_square
 
-.. autofunction:: mitsuba.python.util.contextmanager
+.. autofunction:: mitsuba.warp.von_mises_fisher_to_square
 
-.. autofunction:: mitsuba.python.util.convert_to_bitmap
+.. autoclass:: mitsuba.xml.Files
 
-.. autofunction:: mitsuba.python.util.traverse
+.. autoclass:: mitsuba.xml.WriteXML
 
-.. autofunction:: mitsuba.python.util.write_bitmap
+.. autofunction:: mitsuba.xml.dict_to_xml
 
-.. autoclass:: mitsuba.python.ad.optimizers.Adam
-
-.. autoclass:: mitsuba.python.ad.optimizers.Optimizer
-
-.. autoclass:: mitsuba.python.ad.optimizers.SGD
-
-.. autofunction:: mitsuba.python.ad.optimizers.contextmanager
-
-.. autoclass:: mitsuba.python.ad.optimizers.defaultdict
-
-.. autofunction:: mitsuba.python.ad.torch.render_torch
-
-.. autofunction:: mitsuba.python.ad.reparam.Tuple
-
-.. autoclass:: mitsuba.python.ad.reparam._ReparameterizeOp
-
-.. autofunction:: mitsuba.python.ad.reparam._sample_warp_field
-
-.. autofunction:: mitsuba.python.ad.reparam.annotations
-
-.. autofunction:: mitsuba.python.ad.reparam.reparameterize_ray
-
-.. autoclass:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.Union
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.annotations
-
-.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.index_spectrum
-
-.. autoclass:: mitsuba.python.ad.integrators.prb.ADIntegrator
-
-.. autoclass:: mitsuba.python.ad.integrators.prb.PRBIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prb.annotations
-
-.. autofunction:: mitsuba.python.ad.integrators.prb.mis_weight
-
-.. autoclass:: mitsuba.python.ad.integrators.prb_basic.ADIntegrator
-
-.. autoclass:: mitsuba.python.ad.integrators.prb_basic.BasicPRBIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prb_basic.annotations
-
-.. autoclass:: mitsuba.python.ad.integrators.prb_reparam.ADIntegrator
-
-.. autoclass:: mitsuba.python.ad.integrators.prb_reparam.PRBReparamIntegrator
-
-.. autofunction:: mitsuba.python.ad.integrators.prb_reparam.annotations
-
-.. autofunction:: mitsuba.python.ad.integrators.prb_reparam.mis_weight
-
-.. autoclass:: mitsuba.python.ad.integrators.common.ADIntegrator
-
-.. autoclass:: mitsuba.python.ad.integrators.common._RenderOp
-
-.. autoclass:: mitsuba.python.ad.integrators.common._ReparamWrapper
-
-.. autofunction:: mitsuba.python.ad.integrators.common.annotations
-
-.. autofunction:: mitsuba.python.ad.integrators.common.mis_weight
-
-.. autofunction:: mitsuba.python.ad.integrators.common.render
-
-.. autoclass:: mitsuba.python.test.util._empty
-
-.. autofunction:: mitsuba.python.test.util.check_vectorization
-
-.. autofunction:: mitsuba.python.test.util.fresolver_append_path
-
-.. autofunction:: mitsuba.python.test.util.getframeinfo
-
-.. autofunction:: mitsuba.python.test.util.make_tmpfile
-
-.. autofunction:: mitsuba.python.test.util.signature
-
-.. autofunction:: mitsuba.python.test.util.stack
-
-.. autofunction:: mitsuba.python.test.util.tmpfile
-
-.. autofunction:: mitsuba.python.test.util.wraps
+.. autofunction:: mitsuba.xyz_to_srgb
 
