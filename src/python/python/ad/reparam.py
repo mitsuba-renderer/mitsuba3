@@ -1,9 +1,11 @@
-from __future__ import annotations # Delayed parsing of type annotations
+from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
 import drjit as dr
 import mitsuba as mi
 
-from typing import Tuple
+import typing
+if typing.TYPE_CHECKING:
+    from typing import Tuple
 
 def _sample_warp_field(scene: mi.Scene,
                        sample: mi.Point2f,
@@ -405,7 +407,7 @@ def reparameterize_ray(scene: mitsuba.Scene,
                        exponent: float=3.0,
                        antithetic: bool=False,
                        unroll: bool=False,
-                       active: Any[bool, mitsuba.Bool] = True
+                       active: Any[bool, mitsuba.Mask] = True
 ) -> Tuple[mitsuba.Vector3f, mitsuba.Float]:
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to

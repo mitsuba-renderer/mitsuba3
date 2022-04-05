@@ -1,4 +1,4 @@
-from __future__ import annotations # Delayed parsing of type annotations
+from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
 import mitsuba as mi
 import drjit as dr
