@@ -21563,17 +21563,134 @@
     Returns → mi.TensorXf:
         *no description available*
 
+.. py:class:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    This class implements a reparameterized direct illumination integrator.
+
+    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
+    'reparam_max_depth' are both set to be 2. But since direct illumination
+    tasks only have two ray segments, the overhead of relying on radiative
+    backpropagation is non-neglegible. This implementation builds on the
+    traditional ADIntegrator that does not require two passes during
+    gradient traversal.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.reparam(scene, rng, params, ray, depth, active)
+
+        Helper function to reparameterize rays internally and within ADIntegrator
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``rng`` (mi.PCG32):
+            *no description available*
+
+        Parameter ``params`` (Any):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``depth`` (mi.UInt32):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool):
+            Mask to specify active lanes.
+
+    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
+
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool, **kwargs):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+            *no description available*
+
+.. py:function:: mitsuba.ad.direct_reparam.annotations
+
+.. py:class:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    This class implements a reparameterized emission integrator.
+
+    It reparametrizes the camera ray to handle discontinuity issues
+    caused by moving emitters. This is mainly used for learning and
+    debugging purpose.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
+
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool, **kwargs):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+            *no description available*
+
+.. py:function:: mitsuba.ad.emission_reparam.annotations
+
 .. py:data:: mitsuba.ad.f
     :type: str
-    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/prb_basic.py
+    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/emission_reparam.py
+
+.. py:function:: mitsuba.ad.integrators.direct_reparam.annotations
+
+.. py:function:: mitsuba.ad.integrators.emission_reparam.annotations
 
 .. py:data:: mitsuba.ad.integrators.f
     :type: str
-    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/prb_basic.py
+    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/emission_reparam.py
 
 .. py:data:: mitsuba.ad.integrators.name
     :type: str
-    :value: prb_basic
+    :value: emission_reparam
 
 .. py:function:: mitsuba.ad.integrators.prb.annotations
 
@@ -21585,7 +21702,7 @@
 
 .. py:data:: mitsuba.ad.name
     :type: str
-    :value: prb_basic
+    :value: emission_reparam
 
 .. py:class:: mitsuba.ad.prb.ADIntegrator
 
