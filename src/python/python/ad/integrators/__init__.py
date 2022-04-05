@@ -13,7 +13,7 @@ do_reload = 'common' in globals()
 if do_reload:
     importlib.reload(globals()['common'])
 
-if not mitsuba.variant().startswith('scalar'):
+if mitsuba.variant() is not None and not mitsuba.variant().startswith('scalar'):
     for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
         if not os.path.isfile(f) or f.endswith('__init__.py'):
             continue
