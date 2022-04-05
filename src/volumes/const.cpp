@@ -81,7 +81,7 @@ public:
         return m_value->mean();
     }
 
-    ScalarFloat max() const override { NotImplementedError("max"); }
+    ScalarFloat max() const override { return m_value->max(); }
 
     std::string to_string() const override {
         std::ostringstream oss;
