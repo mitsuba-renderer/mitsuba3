@@ -9,11 +9,11 @@ import mitsuba.util
 
 do_reload = 'common' in globals()
 
-# Make sure `common.py` is reloaded before the integrators
-if do_reload:
-    importlib.reload(globals()['common'])
-
 if mitsuba.variant() is not None and not mitsuba.variant().startswith('scalar'):
+    # Make sure `common.py` is reloaded before the integrators
+    if do_reload:
+        importlib.reload(globals()['common'])
+
     for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
         if not os.path.isfile(f) or f.endswith('__init__.py'):
             continue
@@ -23,7 +23,5 @@ if mitsuba.variant() is not None and not mitsuba.variant().startswith('scalar'):
             importlib.reload(globals()[name])
         else:
             importlib.import_module('mitsuba.ad.integrators.' + name)
-
-from .common import render
 
 del os, glob, importlib, do_reload
