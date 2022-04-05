@@ -109,11 +109,29 @@ public:
     }
 };
 
+/**
+ * \brief Abstract integrator that should **exclusively** be used to trampoline
+ * Python AD integrators for primal renderings
+ */
+template <typename Float, typename Spectrum>
+class MI_EXPORT_LIB CppADIntegrator
+    : public SamplingIntegrator<Float, Spectrum> {
+    protected:
+    MI_IMPORT_BASE(SamplingIntegrator)
 
+    CppADIntegrator(const Properties &props) : Base(props) {}
+    virtual ~CppADIntegrator() {}
+
+    MI_DECLARE_CLASS()
+};
+
+MI_IMPLEMENT_CLASS_VARIANT(CppADIntegrator, SamplingIntegrator)
+MI_INSTANTIATE_CLASS(CppADIntegrator)
 
 MI_VARIANT class PyADIntegrator : public CppADIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(CppADIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
 
     PyADIntegrator(const Properties &props) : CppADIntegrator(props) {
         if constexpr (!dr::is_jit_array_v<Float>) {
@@ -184,6 +202,7 @@ public:
 MI_PY_EXPORT(Integrator) {
     MI_PY_IMPORT_TYPES()
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
+    using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
 
     MI_PY_CLASS(Integrator, Object)
@@ -234,8 +253,9 @@ MI_PY_EXPORT(Integrator) {
 
     MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    MI_PY_TRAMPOLINE_CLASS(PyADIntegrator, CppADIntegrator, SamplingIntegrator)
-        .def(py::init<const Properties&>());
+    py::class_<CppADIntegrator, SamplingIntegrator, ref<CppADIntegrator>,
+               PyADIntegrator>(m, "CppADIntegrator")
+        .def(py::init<const Properties &>());
 
     MI_PY_CLASS(AdjointIntegrator, Integrator)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
