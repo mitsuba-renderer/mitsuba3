@@ -83,6 +83,11 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     Bitmap::static_initialization();
     Profiler::static_initialization();
 
+#if defined(NDEBUG)
+    // Default log level in Python should be Warn (unless we compiled in debug)
+    Thread::thread()->logger()->set_log_level(mitsuba::LogLevel::Warn);
+#endif
+
     // Append the mitsuba directory to the FileResolver search path list
     ref<FileResolver> fr = Thread::thread()->file_resolver();
     fs::path base_path = util::library_path().parent_path();
