@@ -19,13 +19,19 @@ Quickstart
 .. nbgallery::
     :caption: Quickstart
 
-    tutorials/getting_started/quickstart/00_drjit_cheat_sheet
-    tutorials/getting_started/quickstart/01_rendering
-    tutorials/getting_started/quickstart/02_scene_modification
-    tutorials/getting_started/quickstart/03_multiple_sensors
-    tutorials/getting_started/quickstart/03_python_renderer
-    tutorials/getting_started/quickstart/07_custom_plugin
-    tutorials/getting_started/quickstart/08_polarized_rendering
+    tutorials/getting_started/quickstart/drjit_cheat_sheet
+    tutorials/getting_started/quickstart/rendering
+
+Rendering
+----------
+
+.. nbgallery::
+    :caption: Rendering
+
+    tutorials/getting_started/rendering/scene_modification
+    tutorials/getting_started/rendering/multiple_sensors
+    tutorials/getting_started/rendering/python_renderer
+    tutorials/getting_started/rendering/polarized_rendering
 
 
 Differentiable rendering
@@ -35,19 +41,20 @@ Differentiable rendering
 .. nbgallery::
     :caption: Differentiable rendering
 
-    tutorials/getting_started/inverse_rendering/01_gradient_based_opt
-    tutorials/getting_started/inverse_rendering/02_forward_ad_rendering
-    tutorials/getting_started/inverse_rendering/05_caustics_optimization
-    tutorials/getting_started/inverse_rendering/08_reparam_optimization
-    tutorials/getting_started/inverse_rendering/09_volume_optimization
-    tutorials/getting_started/inverse_rendering/06_polarizer_optimization
+    tutorials/getting_started/inverse_rendering/gradient_based_opt
+    tutorials/getting_started/inverse_rendering/forward_ad_rendering
+    tutorials/getting_started/inverse_rendering/caustics_optimization
+    tutorials/getting_started/inverse_rendering/reparam_optimization
+    tutorials/getting_started/inverse_rendering/volume_optimization
+    tutorials/getting_started/inverse_rendering/polarizer_optimization
 
 
-Other examples
---------------
+Other applications
+------------------
 
 .. nbgallery::
-    :caption: Other examples
+    :caption: Other applications
 
-    tutorials/getting_started/examples/bsdf_plot
-    tutorials/getting_started/examples/granular_phase_function
+    tutorials/getting_started/others/bsdf_plot
+    tutorials/getting_started/others/granular_phase_function
+    tutorials/getting_started/others/custom_plugin
