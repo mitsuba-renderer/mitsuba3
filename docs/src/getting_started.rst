@@ -49,4 +49,5 @@ Other examples
 .. nbgallery::
     :caption: Other examples
 
+    tutorials/getting_started/examples/bsdf_plot
     tutorials/getting_started/examples/granular_phase_function
