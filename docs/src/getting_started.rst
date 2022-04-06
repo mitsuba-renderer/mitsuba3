@@ -40,6 +40,7 @@ Differentiable rendering
     tutorials/getting_started/inverse_rendering/05_caustics_optimization
     tutorials/getting_started/inverse_rendering/08_reparam_optimization
     tutorials/getting_started/inverse_rendering/09_volume_optimization
+    tutorials/getting_started/inverse_rendering/06_polarizer_optimization
 
 
 Other examples
