@@ -24,4 +24,7 @@ if mitsuba.variant() is not None and not mitsuba.variant().startswith('scalar'):
         else:
             importlib.import_module('mitsuba.ad.integrators.' + name)
 
+        del name
+    del f
+
 del os, glob, importlib, do_reload

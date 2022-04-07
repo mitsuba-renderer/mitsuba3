@@ -90,8 +90,8 @@ autodoc_member_order = 'bysource'
 
 # Set Mitsuba variant for autodoc
 import mitsuba
-mitsuba.set_variant('llvm_rgb')
-variant_prefix = 'mitsuba.llvm_rgb.'
+mitsuba.set_variant('llvm_ad_rgb')
+variant_prefix = 'mitsuba.llvm_ad_rgb.'
 
 # -- Event callback for processing the docstring ----------------------------------------------
 
@@ -141,42 +141,85 @@ extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 
 
 # List of patterns defining element that shouldn't be added to the API documentation
-excluded_api = [r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager']
+excluded_api = [
+    r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager',
+    r'mitsuba.ad.(.*).annotations', r'mitsuba.ad.prb(.*)', r'mitsuba.ad.integrators.prb(.*)',
+    'mitsuba.float_dtype', 'mitsuba.casters', 'mitsuba.cast_object',
+    'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper'
+]
 
 # Define the structure of the generated reference pages for the different libraries.
 api_doc_structure = {
-        'Object': ['mitsuba.Object'],
-        'Properties': ['mitsuba.Properties'],
-        'Bitmap': ['mitsuba.Bitmap'],
-        'Warp': [r'mitsuba.warp.([\w]+)'],
-        'Distributions': [r'mitsuba.([\w]+)Distribution',
-                          r'mitsuba.Hierarchical2D\d',
-                          r'mitsuba.Marginal([\w]+)2D\d'],
-        'Math': [r'mitsuba.math.([\w]+)', r'mitsuba.spline.([\w]+)'],
-        'Log': [r'mitsuba.Log([\w]+)', 'mitsuba.Appender', ],
-        'Types': [r'mitsuba.Scalar([\w]+)',
-                  r'mitsuba.Vector([\w]+)',
-                  r'mitsuba.Point([\w]+)',
-                  r'mitsuba.Matrix([\w]+)',
-                  r'mitsuba.Bounding([\w]+)',
-                  r'mitsuba.Transform([\w]+)',
-                  r'mitsuba.AnimatedTransform'],
-        'BSDF': [r'mitsuba.BSDF([\w]+|)', 'mitsuba.TransportMode',
-                 r'mitsuba.Microfacet([\w]+|)'],
-        'Endpoint': ['mitsuba.Endpoint'],
-        'Emitter': [r'mitsuba.Emitter([\w]+|)'],
-        'Sensor': ['mitsuba.Sensor', 'mitsuba.ProjectiveCamera'],
-        'Medium': ['mitsuba.Medium', r'mitsuba.PhaseFunction([\w]+|)'],
-        'Shape': ['mitsuba.Shape', 'mitsuba.Mesh'],
-        'Texture': ['mitsuba.Texture'],
-        'Film': ['mitsuba.Film'],
-        'Sampler': ['mitsuba.Sampler'],
-        'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree'],
-        'Record': ['mitsuba.PositionSample3f', 'mitsuba.DirectionSample3f',
-                   r'mitsuba.([\w]+)Interaction3f'],
-        'Polarization': [r'mitsuba.mueller.([\w]+)'],
-        'Chi2': [r'mitsuba.chi2.([\w]+)'],
-        'Autodiff': [r'mitsuba.ad.([\w]+)'],
+    'Core': ['mitsuba.render', 'mitsuba.set_variant', 'mitsuba.variant',
+             'mitsuba.traverse', 'mitsuba.SceneParameters',
+             'mitsuba.variants', 'mitsuba.set_log_level',
+             'mitsuba.ArgParser', 'mitsuba.AtomicFloat',
+             'mitsuba.DefaultFormatter', r'mitsuba.([\w]*)Stream([\w]*)',
+             'mitsuba.FileResolver', 'mitsuba.Formatter', 'mitsuba.Log',
+             'mitsuba.Loop', 'mitsuba.MemoryMappedFile',
+             'mitsuba.ParamFlags', 'mitsuba.PluginManager', r'mitsuba.Scoped([\w]+)',
+             'mitsuba.Spiral', r'mitsuba.Struct([\w]*)',
+             r'mitsuba.Thread([\w]*)', 'mitsuba.Timer',
+             r'mitsuba.filesystem.([\w]+)', 'mitsuba.has_flag',
+             r'mitsuba.register_([\w]+)', 'mitsuba.TraversalCallback'],
+    'Parsing': [r'mitsuba.load_([\w]+)', r'mitsuba.xml.([\w]+)'],
+    'Object': [r'mitsuba.Object([\w]*)', 'mitsuba.Class'],
+    'Properties': ['mitsuba.Properties'],
+    'Bitmap': [r'mitsuba.Bitmap([\w]*)', 'mitsuba.Resampler'],
+    'Warp': [r'mitsuba.warp.([\w]+)'],
+    'Distributions': [r'mitsuba.([\w]*)Distribution([\w]*)',
+                      r'mitsuba.Hierarchical2D\d',
+                      r'mitsuba.Marginal([\w]+)2D\d'],
+    'Math': [r'mitsuba.math.([\w]+)', r'mitsuba.spline.([\w]+)', r'mitsuba.quad.([\w]+)',
+             'mitsuba.RadicalInverse', 'mitsuba.radical_inverse_2',
+             'mitsuba.coordinate_system', 'mitsuba.reflect', 'mitsuba.refract',
+             'mitsuba.fresnel(.*)', 'mitsuba.perspective_projection'],
+    'Random': [r'mitsuba.sample_tea_([\w]+)', 'mitsuba.PCG32',
+               r'mitsuba.permute([\w]*)', 'mitsuba.sobol_2'],
+    'Log': [r'mitsuba.Log([\w]+)', 'mitsuba.Appender', ],
+    'Types': [r'mitsuba.Scalar([\w]+)',
+              r'mitsuba.UInt([\w]*)',
+              r'mitsuba.Int([\w]*)',
+              r'mitsuba.Float([\w]*)',
+              r'mitsuba.Tensor([\w]+)',
+              r'mitsuba.Vector([\w]+)',
+              r'mitsuba.Point([\w]+)',
+              r'mitsuba.Normal([\w]+)',
+              r'mitsuba.Matrix([\w]+)',
+              r'mitsuba.Bounding([\w]+)',
+              r'mitsuba.Transform([\w]+)',
+              r'mitsuba.AnimatedTransform',
+              r'mitsuba.Frame([\w]+)',
+              r'mitsuba.Color([\w]+)',
+              r'mitsuba.Ray([\w]+)'],
+    'Constants': [r'mitsuba.MI_([\w]+)', r'mitsuba.is_([\w]+)', 'mitsuba.DEBUG'],
+    'BSDF': [r'mitsuba.BSDF([\w]*)', 'mitsuba.TransportMode',
+             r'mitsuba.Microfacet([\w]+)'],
+    'Integrator': [r'mitsuba.(.*)Integrator([\w]*)', 'mitsuba.ad.common.mis_weight'],
+    'Endpoint': ['mitsuba.Endpoint'],
+    'Emitter': [r'mitsuba.Emitter([\w]*)'],
+    'Sensor': ['mitsuba.Sensor([\w]+|)', 'mitsuba.ProjectiveCamera', 'mitsuba.parse_fov'],
+    'Medium': [r'mitsuba.Medium([\w]*)', r'mitsuba.PhaseFunction([\w]+)'],
+    'Shape': ['mitsuba.Shape([\w]+|)', 'mitsuba.Mesh([\w]+|)'],
+    'Texture': ['mitsuba.Texture'],
+    'Volume': [r'mitsuba.Volume([\w]*)'],
+    'PhaseFunction': [r'mitsuba.PhaseFunction([\w]*)'],
+    'Film': ['mitsuba.Film([\w]+|)', 'mitsuba.ImageBlock'],
+    'Filter': [r'mitsuba.([\w]*)Filter([\w]*)'],
+    'Sampler': ['mitsuba.Sampler'],
+    'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree'],
+    'Record': ['mitsuba.PositionSample3f', 'mitsuba.DirectionSample3f',
+               r'mitsuba.([\w]+)Interaction([\w]+)',
+               r'mitsuba.([\w]+)Intersection([\w]+)', ],
+    'Spectrum': [r'mitsuba.spectrum_([\w]+)', r'mitsuba.srgb_([\w]+)',
+                 r'mitsuba.cie1931([\w]+)', 'mitsuba.xyz_to_srgb',
+                 'mitsuba.pdf_rgb_spectrum', 'mitsuba.luminance',
+                 'mitsuba.eval_reflectance', 'mitsuba.linear_rgb_rec',
+                 'mitsuba.sample_rgb_spectrum'],
+    'Polarization': [r'mitsuba.mueller.([\w]+)', 'mitsuba.depolarizer', 'mitsuba.unpolarized_spectrum'],
+    'Util': [r'mitsuba.util.([\w]+)'],
+    'Chi2': [r'mitsuba.chi2.([\w]+)'],
+    'Autodiff': [r'mitsuba.ad.([\w]+)'],
 }
 
 
@@ -616,7 +659,7 @@ def write_rst_file_callback(app, exception):
     # Given a class/fucntion "block" name, add an RST 'include' directive with the
     # corresponding start/end-line to the output file.
     def write_block(f, block_name):
-        f.write('.. include:: extracted_rst_api.rst\n')
+        f.write('.. include:: generated/extracted_rst_api.rst\n')
         f.write('  :start-line: %i\n' % rst_block_range[block_name][0])
         f.write('  :end-line: %i\n' % rst_block_range[block_name][1])
         # Add a horizontal separator line
@@ -634,10 +677,6 @@ def write_rst_file_callback(app, exception):
     lib_api_filename = join(docs_path, 'generated/mitsuba_api.rst')
     with open(lib_api_filename, 'w') as f:
         print('Generate API RST file: %s' % (lib_api_filename))
-        f.write('.. _sec-api-mitsuba:\n\n')
-        f.write('%s API Reference\n' % 'mitsuba'.title())
-        f.write('=' * len('mitsuba') + '==============\n')
-        f.write('\n')
 
         # Keep track of the added block, so to add the rest in the 'Other' section
         added_block = []
@@ -722,7 +761,7 @@ def generate_list_api_callback(app):
             if hasattr(obj, '__module__') and hasattr(obj, '__name__'):
                 obj_module = str(obj.__module__)
                 obj_name = obj.__name__
-            else: 
+            else:
                 obj_module = 'mitsuba%s' % lib
                 obj_name = name
 

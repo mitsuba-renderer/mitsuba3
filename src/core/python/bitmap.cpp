@@ -284,5 +284,5 @@ MI_PY_EXPORT(Bitmap) {
         "array"_a,
         "pixel_format"_a = py::none(),
         "channel_names"_a = std::vector<std::string>(),
-        "Initialize a Bitmap from any array that implements __array_interface__");
+        "Initialize a Bitmap from any array that implements ``__array_interface__``");
 }
