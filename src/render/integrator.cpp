@@ -13,7 +13,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
-#include <drjit-thread/thread.h>
+#include <nanothread/nanothread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

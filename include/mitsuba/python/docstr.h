@@ -8746,7 +8746,7 @@ static const char *__doc_mitsuba_Thread_register_external_thread =
 R"doc(Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
 Returns true upon success.)doc";
 
-static const char *__doc_mitsuba_Thread_register_task = R"doc(Register drjit-thread Task to prevent internal resources leakage)doc";
+static const char *__doc_mitsuba_Thread_register_task = R"doc(Register nanothread Task to prevent internal resources leakage)doc";
 
 static const char *__doc_mitsuba_Thread_run = R"doc(The thread's run method)doc";
 
@@ -8803,7 +8803,7 @@ static const char *__doc_mitsuba_Thread_unregister_external_thread =
 R"doc(Unregister a thread (e.g. Dr.Jit, Python) from Mitsuba's thread
 system.)doc";
 
-static const char *__doc_mitsuba_Thread_wait_for_tasks = R"doc(Wait for previously registered drjit-thread tasks to complete)doc";
+static const char *__doc_mitsuba_Thread_wait_for_tasks = R"doc(Wait for previously registered nanothread tasks to complete)doc";
 
 static const char *__doc_mitsuba_Thread_yield = R"doc(Yield to another processor)doc";
 

@@ -1,5 +1,5 @@
 #include <embree3/rtcore.h>
-#include <drjit-thread/thread.h>
+#include <nanothread/nanothread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

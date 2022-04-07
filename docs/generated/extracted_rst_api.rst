@@ -208,7 +208,7 @@
         Parameter ``arg0`` (float):
             *no description available*
 
-        
+
 .. py:class:: mitsuba.core.Bitmap
 
     Base class: :py:obj:`mitsuba.core.Object`
@@ -2286,10 +2286,10 @@
     .. py:method:: __init__(self, p, mode=<EMode., ERead)
 
         Constructs a new FileStream by opening the file pointed by ``p``.
-        
+
         The file is opened in read-only or read/write mode as specified by
         ``mode``.
-        
+
         Throws if trying to open a non-existing file in with write disabled.
         Throws an exception if the file cannot be opened / created.
 
@@ -2302,7 +2302,7 @@
         Parameter ``ERead`` (0>):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.core.FileStream.EMode
 
         Members:
@@ -2656,15 +2656,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -2684,7 +2684,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2775,15 +2775,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -2803,7 +2803,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Hierarchical2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2894,15 +2894,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -2922,7 +2922,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Hierarchical2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3013,15 +3013,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -3041,7 +3041,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Hierarchical2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3361,7 +3361,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.core.LogLevel`):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Logger.add_appender(self, arg0)
 
         Add an appender to this logger
@@ -3597,15 +3597,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -3623,7 +3623,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3722,15 +3722,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -3748,7 +3748,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalContinuous2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3847,15 +3847,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -3873,7 +3873,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalContinuous2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3972,15 +3972,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -3998,7 +3998,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalContinuous2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -4097,15 +4097,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -4123,7 +4123,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -4222,15 +4222,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -4248,7 +4248,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalDiscrete2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -4347,15 +4347,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -4373,7 +4373,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalDiscrete2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -4472,15 +4472,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -4498,7 +4498,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MarginalDiscrete2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -4770,7 +4770,7 @@
         Parameter ``capacity`` (int):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.MemoryStream.capacity(self)
 
         Return the current capacity of the underlying memory buffer
@@ -5620,22 +5620,22 @@
 
         Create a new Resampler object that transforms between the specified
         resolutions
-        
+
         This constructor precomputes all information needed to efficiently
         perform the desired resampling operation. For that reason, it is most
         efficient if it can be used over and over again (e.g. to resample the
         equal-sized rows of a bitmap)
-        
+
         Parameter ``source_res`` (int):
             Source resolution
-        
+
         Parameter ``target_res`` (int):
             Desired target resolution
 
         Parameter ``rfilter`` (:py:obj:`mitsuba.render.ReconstructionFilter`):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.Resampler.boundary_condition(self)
 
         Return the boundary condition that should be used when looking up
@@ -6252,14 +6252,14 @@
     .. py:method:: __init__(self, arg0)
 
         Create a new stream appender
-        
+
         Remark:
             This constructor is not exposed in the Python bindings
 
         Parameter ``arg0`` (str):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.core.StreamAppender.logs_to_file(self)
 
         Does this appender log to a file
@@ -6300,16 +6300,16 @@
         Parameter ``HostByteOrder`` (2>):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.core.Struct.ByteOrder
 
         Members:
 
-            LittleEndian : 
+            LittleEndian :
 
-            BigEndian : 
+            BigEndian :
 
-            HostByteOrder : 
+            HostByteOrder :
 
         .. py:method:: __init__(self, value)
 
@@ -6438,29 +6438,29 @@
 
         Members:
 
-            Int8 : 
+            Int8 :
 
-            UInt8 : 
+            UInt8 :
 
-            Int16 : 
+            Int16 :
 
-            UInt16 : 
+            UInt16 :
 
-            Int32 : 
+            Int32 :
 
-            UInt32 : 
+            UInt32 :
 
-            Int64 : 
+            Int64 :
 
-            UInt64 : 
+            UInt64 :
 
-            Float16 : 
+            Float16 :
 
-            Float32 : 
+            Float32 :
 
-            Float64 : 
+            Float64 :
 
-            Invalid : 
+            Invalid :
 
 
         .. py:method:: __init__(self, value)
@@ -7169,31 +7169,31 @@
 
         .. py:data:: EIdlePriority
 
-            
+
 
         .. py:data:: ELowestPriority
 
-            
+
 
         .. py:data:: ELowPriority
 
-            
+
 
         .. py:data:: ENormalPriority
 
-            
+
 
         .. py:data:: EHighPriority
 
-            
+
 
         .. py:data:: EHighestPriority
 
-            
+
 
         .. py:data:: ERealtimePriority
 
-            
+
 
         .. py:method:: __init__(self, value)
 
@@ -7393,7 +7393,7 @@
 
     .. py:method:: mitsuba.core.Thread.wait_for_tasks()
 
-        Wait for previously registered drjit-thread tasks to complete
+        Wait for previously registered nanothread tasks to complete
 
         Returns → None:
             *no description available*
@@ -7900,7 +7900,7 @@
         Parameter ``level`` (int):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.core.ZStream.EStreamType
 
         Members:
@@ -12901,19 +12901,19 @@
 
     .. py:data:: None
 
-        
+
 
     .. py:data:: Isotropic
 
-        
+
 
     .. py:data:: Anisotropic
 
-        
+
 
     .. py:data:: Microflake
 
-        
+
 
     .. py:method:: __init__(self, value)
 
@@ -14445,7 +14445,7 @@
         Parameter ``passes`` (int):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.render.Spiral.block_count(self)
 
         Return the total number of blocks
@@ -16184,47 +16184,47 @@
     .. py:method:: __init__(*args, **kwargs)
 
         Overloaded function.
-        
+
         1. __init__(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, size: mitsuba::Vector<unsigned int, 2ul>, channel_count: int = 0, channel_names: List[str] = []) -> None
-        
+
         Create a bitmap of the specified type and allocate the necessary
         amount of memory
-        
+
         Parameter ``pixel_format``:
             Specifies the pixel format (e.g. RGBA or Luminance-only)
-        
+
         Parameter ``component_format``:
             Specifies how the per-pixel components are encoded (e.g. unsigned
             8 bit integers or 32-bit floating point values). The component
             format struct_type_v<Float> will be translated to the
             corresponding compile-time precision type (Float32 or Float64).
-        
+
         Parameter ``size``:
             Specifies the horizontal and vertical bitmap size in pixels
-        
+
         Parameter ``channel_count``:
             Channel count of the image. This parameter is only required when
             ``pixel_format`` = PixelFormat::MultiChannel
-        
+
         Parameter ``channel_names``:
             Channel names of the image. This parameter is optional, and only
             used when ``pixel_format`` = PixelFormat::MultiChannel
-        
+
         Parameter ``data``:
             External pointer to the image data. If set to ``nullptr``, the
             implementation will allocate memory itself.
-        
+
         2. __init__(self: :py:obj:`mitsuba.core.Bitmap`, arg0: :py:obj:`mitsuba.core.Bitmap`) -> None
-        
+
         3. __init__(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
-        
+
         4. __init__(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
-        
+
         5. __init__(self: :py:obj:`mitsuba.core.Bitmap`, array: :py:obj:`mitsuba.core.PyObjectWrapper`, pixel_format: object = None, channel_names: List[str] = []) -> None
-        
+
         Initialize a Bitmap from any array that implements __array_interface__
 
-        
+
     .. py:class:: mitsuba.python.tonemap.Bitmap.AlphaTransform(self: mitsuba.core.Bitmap.AlphaTransform, value: int)
 
         Members:
@@ -16768,16 +16768,16 @@
         Create a new ``Struct`` and indicate whether the contents are packed
         or aligned
 
-        
+
     .. py:class:: mitsuba.python.tonemap.Struct.ByteOrder(self: mitsuba.core.Struct.ByteOrder, value: int)
 
         Members:
 
-            LittleEndian : 
+            LittleEndian :
 
-            BigEndian : 
+            BigEndian :
 
-            HostByteOrder : 
+            HostByteOrder :
 
         .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.ByteOrder`, value: int)
 
@@ -16885,39 +16885,39 @@
 
         Members:
 
-            Int8 : 
+            Int8 :
 
-            UInt8 : 
+            UInt8 :
 
-            Int16 : 
+            Int16 :
 
-            UInt16 : 
+            UInt16 :
 
-            Int32 : 
+            Int32 :
 
-            UInt32 : 
+            UInt32 :
 
-            Int64 : 
+            Int64 :
 
-            UInt64 : 
+            UInt64 :
 
-            Float16 : 
+            Float16 :
 
-            Float32 : 
+            Float32 :
 
-            Float64 : 
+            Float64 :
 
-            Invalid : 
+            Invalid :
 
         .. py:method:: __init__(*args, **kwargs)
 
             Overloaded function.
-            
+
             1. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, value: int) -> None
-            
+
             2. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, dtype: dtype) -> None
 
-            
+
     .. py:method:: mitsuba.python.tonemap.Struct.Type.name
         :property:
 
@@ -16996,31 +16996,31 @@
 
         .. py:data:: EIdlePriority
 
-            
+
 
         .. py:data:: ELowestPriority
 
-            
+
 
         .. py:data:: ELowPriority
 
-            
+
 
         .. py:data:: ENormalPriority
 
-            
+
 
         .. py:data:: EHighPriority
 
-            
+
 
         .. py:data:: EHighestPriority
 
-            
+
 
         .. py:data:: ERealtimePriority
 
-            
+
 
         .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread.EPriority`, value: int)
 
@@ -17133,7 +17133,7 @@
 
     .. py:method:: mitsuba.python.tonemap.Thread.wait_for_tasks()
 
-        Wait for previously registered drjit-thread tasks to complete
+        Wait for previously registered nanothread tasks to complete
 
 .. py:class:: mitsuba.python.tonemap.ThreadEnvironment(self: mitsuba.core.ThreadEnvironment)
 
@@ -17363,47 +17363,47 @@
     .. py:method:: __init__(*args, **kwargs)
 
         Overloaded function.
-        
+
         1. __init__(self: :py:obj:`mitsuba.core.Bitmap`, pixel_format: :py:obj:`mitsuba.core.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.core.Struct.Type`, size: mitsuba::Vector<unsigned int, 2ul>, channel_count: int = 0, channel_names: List[str] = []) -> None
-        
+
         Create a bitmap of the specified type and allocate the necessary
         amount of memory
-        
+
         Parameter ``pixel_format``:
             Specifies the pixel format (e.g. RGBA or Luminance-only)
-        
+
         Parameter ``component_format``:
             Specifies how the per-pixel components are encoded (e.g. unsigned
             8 bit integers or 32-bit floating point values). The component
             format struct_type_v<Float> will be translated to the
             corresponding compile-time precision type (Float32 or Float64).
-        
+
         Parameter ``size``:
             Specifies the horizontal and vertical bitmap size in pixels
-        
+
         Parameter ``channel_count``:
             Channel count of the image. This parameter is only required when
             ``pixel_format`` = PixelFormat::MultiChannel
-        
+
         Parameter ``channel_names``:
             Channel names of the image. This parameter is optional, and only
             used when ``pixel_format`` = PixelFormat::MultiChannel
-        
+
         Parameter ``data``:
             External pointer to the image data. If set to ``nullptr``, the
             implementation will allocate memory itself.
-        
+
         2. __init__(self: :py:obj:`mitsuba.core.Bitmap`, arg0: :py:obj:`mitsuba.core.Bitmap`) -> None
-        
+
         3. __init__(self: :py:obj:`mitsuba.core.Bitmap`, path: :py:obj:`mitsuba.core.filesystem.path`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
-        
+
         4. __init__(self: :py:obj:`mitsuba.core.Bitmap`, stream: :py:obj:`mitsuba.core.Stream`, format: :py:obj:`mitsuba.core.Bitmap.FileFormat` = <FileFormat.Auto: 9>) -> None
-        
+
         5. __init__(self: :py:obj:`mitsuba.core.Bitmap`, array: :py:obj:`mitsuba.core.PyObjectWrapper`, pixel_format: object = None, channel_names: List[str] = []) -> None
-        
+
         Initialize a Bitmap from any array that implements __array_interface__
 
-        
+
     .. py:class:: mitsuba.python.polvis.Bitmap.AlphaTransform(self: mitsuba.core.Bitmap.AlphaTransform, value: int)
 
         Members:
@@ -17947,16 +17947,16 @@
         Create a new ``Struct`` and indicate whether the contents are packed
         or aligned
 
-        
+
     .. py:class:: mitsuba.python.polvis.Struct.ByteOrder(self: mitsuba.core.Struct.ByteOrder, value: int)
 
         Members:
 
-            LittleEndian : 
+            LittleEndian :
 
-            BigEndian : 
+            BigEndian :
 
-            HostByteOrder : 
+            HostByteOrder :
 
         .. py:method:: __init__(self: :py:obj:`mitsuba.core.Struct.ByteOrder`, value: int)
 
@@ -18064,39 +18064,39 @@
 
         Members:
 
-            Int8 : 
+            Int8 :
 
-            UInt8 : 
+            UInt8 :
 
-            Int16 : 
+            Int16 :
 
-            UInt16 : 
+            UInt16 :
 
-            Int32 : 
+            Int32 :
 
-            UInt32 : 
+            UInt32 :
 
-            Int64 : 
+            Int64 :
 
-            UInt64 : 
+            UInt64 :
 
-            Float16 : 
+            Float16 :
 
-            Float32 : 
+            Float32 :
 
-            Float64 : 
+            Float64 :
 
-            Invalid : 
+            Invalid :
 
         .. py:method:: __init__(*args, **kwargs)
 
             Overloaded function.
-            
+
             1. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, value: int) -> None
-            
+
             2. __init__(self: :py:obj:`mitsuba.core.Struct.Type`, dtype: dtype) -> None
 
-            
+
     .. py:method:: mitsuba.python.polvis.Struct.Type.name
         :property:
 
@@ -18175,31 +18175,31 @@
 
         .. py:data:: EIdlePriority
 
-            
+
 
         .. py:data:: ELowestPriority
 
-            
+
 
         .. py:data:: ELowPriority
 
-            
+
 
         .. py:data:: ENormalPriority
 
-            
+
 
         .. py:data:: EHighPriority
 
-            
+
 
         .. py:data:: EHighestPriority
 
-            
+
 
         .. py:data:: ERealtimePriority
 
-            
+
 
         .. py:method:: __init__(self: :py:obj:`mitsuba.core.Thread.EPriority`, value: int)
 
@@ -18312,7 +18312,7 @@
 
     .. py:method:: mitsuba.python.polvis.Thread.wait_for_tasks()
 
-        Wait for previously registered drjit-thread tasks to complete
+        Wait for previously registered nanothread tasks to complete
 
 .. py:class:: mitsuba.python.polvis.ThreadEnvironment(self: mitsuba.core.ThreadEnvironment)
 
@@ -18625,7 +18625,7 @@
         Private constructor (use
         :py:func:`mitsuba.python.util.traverse()` instead)
 
-        
+
     .. py:method:: mitsuba.python.util.SceneParameters.items()
 
     .. py:method:: mitsuba.python.util.SceneParameters.keys()
@@ -18731,20 +18731,20 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``beta_1``:
             controls the exponential averaging of first
             order gradient moments
-        
+
         Parameter ``beta_2``:
             controls the exponential averaging of second
             order gradient moments
-        
+
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
 
-        
+
     .. py:method:: mitsuba.python.ad.optimizers.Adam.step()
 
         Take a gradient step
@@ -18761,11 +18761,11 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
             Scene parameters dictionary containing the parameters to optimize.
 
-        
+
     .. py:method:: mitsuba.python.ad.optimizers.Optimizer.load(keys=None)
 
         Load a set of scene parameters to optimize.
@@ -18827,17 +18827,17 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``momentum``:
             momentum factor
-        
+
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
             See :py:class:`mitsuba.python.optimizers.Adam`'s documentation for more details.
 
-        
+
     .. py:method:: mitsuba.python.ad.optimizers.SGD.step()
 
         Take a gradient step

@@ -9,7 +9,7 @@
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
 
-#include <drjit-thread/thread.h>
+#include <nanothread/nanothread.h>
 #include <drjit/half.h>
 
 /* libpng */
@@ -898,7 +898,7 @@ private:
     ref<Stream> m_stream;
 };
 
-/// Dispatch parallel OpenEXR work via drjit-thread
+/// Dispatch parallel OpenEXR work via nanothread
 class EXRThreadPool : public IlmThread::ThreadPoolProvider {
 public:
     int numThreads() const override {

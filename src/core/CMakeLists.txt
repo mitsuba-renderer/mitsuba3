@@ -86,7 +86,7 @@ target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
   ${ZLIB_LIBRARY}
-  drjit-thread
+  nanothread
   # Link pugixml parser
   pugixml
   # Image libraries: link to libjpeg, libpng, OpenEXR

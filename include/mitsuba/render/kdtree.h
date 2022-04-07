@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <atomic>
 
-#include <drjit-thread/thread.h>
+#include <nanothread/nanothread.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>

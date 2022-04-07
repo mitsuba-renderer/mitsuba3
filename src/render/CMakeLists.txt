@@ -81,8 +81,8 @@ set_target_properties(mitsuba-render PROPERTIES
 set_target_properties(mitsuba-render PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 
-# Link to drjit-thread and rgb2spec
-target_link_libraries(mitsuba-render PRIVATE drjit-thread rgb2spec)
+# Link to nanothread and rgb2spec
+target_link_libraries(mitsuba-render PRIVATE nanothread rgb2spec)
 
 # Link to Embree
 if (MI_ENABLE_EMBREE)
