@@ -34,7 +34,7 @@ MI_PY_EXPORT(Bitmap) {
         .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
         .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
-    py::enum_<Bitmap::AlphaTransform>(bitmap, "AlphaTransform")
+    py::enum_<Bitmap::AlphaTransform>(bitmap, "AlphaTransform", D(Bitmap, AlphaTransform))
         .value("None",          Bitmap::AlphaTransform::Empty,
                 D(Bitmap, AlphaTransform, Empty))
         .value("Premultiply",   Bitmap::AlphaTransform::Premultiply,
