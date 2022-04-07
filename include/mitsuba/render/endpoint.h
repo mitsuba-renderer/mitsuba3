@@ -24,15 +24,15 @@ NAMESPACE_BEGIN(mitsuba)
  * the emission/response profile, and to compute probability densities
  * associated with the provided sampling techniques.
  *
- * In addition to \ref Endpoint::sample_ray(), which generates a sample from
- * the profile, subclasses also provide a specialized <em>direction
- * sampling</em> method in \ref Endpoint::sample_direction(). This is a
- * generalization of direct illumination techniques to both emitters \a and
- * sensors. A direction sampling method is given an arbitrary reference
- * position in the scene and samples a direction from the reference point
- * towards the endpoint (ideally proportional to the emission/sensitivity
- * profile). This reduces the sampling domain from 4D to 2D, which often
- * enables the construction of smarter specialized sampling techniques.
+ * In addition to :py:meth:`mitsuba.Endpoint.sample_ray`, which generates a
+ * sample from the profile, subclasses also provide a specialized <em>direction
+ * sampling</em> method in :py:meth:`mitsuba.Endpoint.sample_direction`. This is
+ * a generalization of direct illumination techniques to both emitters \a and
+ * sensors. A direction sampling method is given an arbitrary reference position
+ * in the scene and samples a direction from the reference point towards the
+ * endpoint (ideally proportional to the emission/sensitivity profile). This
+ * reduces the sampling domain from 4D to 2D, which often enables the
+ * construction of smarter specialized sampling techniques.
  *
  * When rendering scenes involving participating media, it is important to know
  * what medium surrounds the sensors and emitters. For this reason, every
