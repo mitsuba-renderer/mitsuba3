@@ -49,7 +49,7 @@ option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------
 
-if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/drjit/ext/drjit-core/ext/drjit-thread/ext/cmake-defaults")
+if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults")
   message(FATAL_ERROR "The Mitsuba 2 dependencies are missing! "
     "You probably did not clone the project with --recursive. It is possible to recover "
     "by invoking\n$ git submodule update --init --recursive")
@@ -75,7 +75,7 @@ endif()
 
 set(P "MI") # <-- prefix for CMake variables, used by the following script
 set(MI_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/mitsuba.h")
-include(ext/drjit/ext/drjit-core/ext/drjit-thread/ext/cmake-defaults/CMakeLists.txt)
+include(ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults/CMakeLists.txt)
 
 # ----------------------------------------------------------
 #  scikit-build: find installed version of dependencies
@@ -471,7 +471,7 @@ if (MI_ENABLE_EMBREE)
 endif()
 
 if (NOT SKBUILD)
-  list(APPEND MI_DEPEND drjit-thread)
+  list(APPEND MI_DEPEND nanothread)
 
   if (MI_ENABLE_JIT)
     list(APPEND MI_DEPEND drjit-core)

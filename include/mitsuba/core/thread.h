@@ -153,10 +153,10 @@ public:
     /// Unregister a thread (e.g. Dr.Jit, Python) from Mitsuba's thread system.
     static bool unregister_external_thread();
 
-    /// Register drjit-thread Task to prevent internal resources leakage
+    /// Register nanothread Task to prevent internal resources leakage
     static void register_task(Task *task);
 
-    /// Wait for previously registered drjit-thread tasks to complete
+    /// Wait for previously registered nanothread tasks to complete
     static void wait_for_tasks();
 
     MI_DECLARE_CLASS()

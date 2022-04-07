@@ -36,11 +36,11 @@ if (NOT SKBUILD)
   add_subdirectory(drjit)
 
   if (NOT MI_ENABLE_JIT)
-    add_subdirectory(drjit/ext/drjit-core/ext/drjit-thread)
-    set_target_properties(drjit-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drjit")
+    add_subdirectory(drjit/ext/drjit-core/ext/nanothread)
+    set_target_properties(nanothread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drjit")
   endif()
 
-  set_target_properties(drjit-thread PROPERTIES FOLDER "drjit")
+  set_target_properties(nanothread PROPERTIES FOLDER "drjit")
 
   if (MI_ENABLE_JIT)
     set_target_properties(drjit-core PROPERTIES FOLDER "drjit")

@@ -21,7 +21,7 @@
 #include <mitsuba/core/xml.h>
 #include <mitsuba/core/timer.h>
 #include <pugixml.hpp>
-#include <drjit-thread/thread.h>
+#include <nanothread/nanothread.h>
 
 /// Linux <sys/sysmacros.h> defines these as macros .. :(
 #if defined(major)
