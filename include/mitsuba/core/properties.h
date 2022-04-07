@@ -26,12 +26,13 @@ private:
  * the various type-dependent getters and setters. Instead, they
  * are accessed just like a normal Python map, e.g:
  *
- * TODO update
  * \code
  * myProps = mitsuba.core.Properties("plugin_name")
  * myProps["stringProperty"] = "hello"
  * myProps["spectrumProperty"] = mitsuba.core.Spectrum(1.0)
  * \endcode
+ *
+ * or using the ``get(key, default)`` method.
  */
 class MI_EXPORT_LIB Properties {
 public:

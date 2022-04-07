@@ -82,10 +82,10 @@
         Compatibility wrapper, which strips the mask argument and invokes
         eval()
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``unused`` (drjit.llvm.Bool):
+        Parameter ``unused`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4f`:
@@ -291,7 +291,7 @@
 
         Number of components this BSDF is comprised of.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → int:
@@ -323,7 +323,7 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -342,7 +342,7 @@
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -382,10 +382,10 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.BSDF.flags(overloaded)
@@ -398,7 +398,7 @@
             Parameter ``index`` (int):
                 *no description available*
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → int:
@@ -452,10 +452,10 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.BSDF.sample(self, ctx, si, sample1, sample2, active=True)
@@ -486,7 +486,7 @@
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the BSDF lobe in multi-lobe models.
 
@@ -494,7 +494,7 @@
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
@@ -713,7 +713,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.BSDFPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.eval(self, ctx, si, wo, active=True)
@@ -742,7 +742,7 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -761,7 +761,7 @@
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -801,17 +801,17 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.flags(self)
 
         Flags for all components combined.
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.gather_(arg0, arg1, arg2, arg3)
@@ -819,10 +819,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.BSDFPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -845,7 +845,7 @@
 
         Does the implementation require access to texture-space differentials?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.neq_(self, arg0)
@@ -853,7 +853,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.BSDFPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.pdf(self, ctx, si, wo, active=True)
@@ -883,15 +883,15 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             The outgoing direction
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.BSDFPtr`:
@@ -925,7 +925,7 @@
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the BSDF lobe in multi-lobe models.
 
@@ -933,7 +933,7 @@
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
@@ -948,7 +948,7 @@
 
     .. py:method:: mitsuba.BSDFPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.BSDFPtr`):
@@ -978,7 +978,7 @@
 
     .. py:method:: mitsuba.BSDFPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.BSDFPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.BSDFPtr`
 
 .. py:class:: mitsuba.BSDFSample3f
 
@@ -1114,7 +1114,7 @@
 
     .. py:method:: __init__(self, array, pixel_format=None, channel_names=[])
 
-        Initialize a Bitmap from any array that implements __array_interface__
+        Initialize a Bitmap from any array that implements ``__array_interface__``
 
         Parameter ``array`` (:py:obj:`mitsuba.PyObjectWrapper`):
             *no description available*
@@ -1899,7 +1899,7 @@
         Check whether this bounding box has collapsed to a point, line, or
         plane
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.contains(overloaded)
@@ -1923,7 +1923,7 @@
             Parameter ``strict`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
         .. py:method:: contains(self, bbox, strict=False)
@@ -1950,7 +1950,7 @@
             Parameter ``strict`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.corner(self, arg0)
@@ -1974,7 +1974,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.Point2f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: distance(self, arg0)
@@ -1985,7 +1985,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.BoundingBox2f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.expand(overloaded)
@@ -2016,7 +2016,7 @@
 
         Return the dimension index with the index associated side length
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.merge(arg0, arg1)
@@ -2036,7 +2036,7 @@
 
         Return the dimension index with the shortest associated side length
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.overlaps(self, bbox, strict=False)
@@ -2057,7 +2057,7 @@
         Parameter ``strict`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             ``True`` If overlap was detected.
 
     .. py:method:: mitsuba.BoundingBox2f.reset(self)
@@ -2081,7 +2081,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.Point2f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: squared_distance(self, arg0)
@@ -2092,14 +2092,14 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.BoundingBox2f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.surface_area(self)
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.valid(self)
@@ -2115,14 +2115,14 @@
 
         holds for each component ``i``.
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox2f.volume(self)
 
         Calculate the n-dimensional volume of the bounding box
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
 .. py:class:: mitsuba.BoundingBox3f
@@ -2207,7 +2207,7 @@
         Check whether this bounding box has collapsed to a point, line, or
         plane
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.contains(overloaded)
@@ -2231,7 +2231,7 @@
             Parameter ``strict`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
         .. py:method:: contains(self, bbox, strict=False)
@@ -2258,7 +2258,7 @@
             Parameter ``strict`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.corner(self, arg0)
@@ -2282,7 +2282,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.Point3f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: distance(self, arg0)
@@ -2293,7 +2293,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.BoundingBox3f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.expand(overloaded)
@@ -2324,7 +2324,7 @@
 
         Return the dimension index with the index associated side length
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.merge(arg0, arg1)
@@ -2344,7 +2344,7 @@
 
         Return the dimension index with the shortest associated side length
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.overlaps(self, bbox, strict=False)
@@ -2365,7 +2365,7 @@
         Parameter ``strict`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             ``True`` If overlap was detected.
 
     .. py:method:: mitsuba.BoundingBox3f.ray_intersect(self, ray)
@@ -2378,7 +2378,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.reset(self)
@@ -2402,7 +2402,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.Point3f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: squared_distance(self, arg0)
@@ -2413,14 +2413,14 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.BoundingBox3f`):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.surface_area(self)
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.valid(self)
@@ -2436,14 +2436,14 @@
 
         holds for each component ``i``.
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingBox3f.volume(self)
 
         Calculate the n-dimensional volume of the bounding box
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
 .. py:class:: mitsuba.BoundingSphere3f
@@ -2463,7 +2463,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Float):
+        Parameter ``arg1`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
@@ -2489,14 +2489,14 @@
         Parameter ``strict`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingSphere3f.empty(self)
 
         Return whether this bounding sphere has a radius of zero or less.
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BoundingSphere3f.expand(self, arg0)
@@ -2516,7 +2516,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.Class
@@ -2615,7 +2615,7 @@
         Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
             *no description available*
 
-        Parameter ``pdf`` (drjit.llvm.Float):
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.cdf(self)
@@ -2623,7 +2623,7 @@
         Return the unnormalized discrete cumulative distribution function over
         intervals
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.empty(self)
@@ -2638,13 +2638,13 @@
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.eval_cdf_normalized(self, x, active=True)
@@ -2652,13 +2652,13 @@
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.eval_pdf(self, x, active=True)
@@ -2666,13 +2666,13 @@
         Evaluate the unnormalized probability mass function (PDF) at position
         ``x``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.eval_pdf_normalized(self, x, active=True)
@@ -2680,20 +2680,20 @@
         Evaluate the normalized probability mass function (PDF) at position
         ``x``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.integral(self)
 
         Return the original integral of PDF entries before normalization
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.interval_resolution(self)
@@ -2707,14 +2707,14 @@
 
         Return the normalization factor (i.e. the inverse of sum())
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.pdf(self)
 
         Return the unnormalized discretized probability density function
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ContinuousDistribution.range(self)
@@ -2728,26 +2728,26 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The sampled position.
 
     .. py:method:: mitsuba.ContinuousDistribution.sample_pdf(self, value, active=True)
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             A tuple consisting of
 
         1. the sampled position. 2. the normalized probability density of the
@@ -2769,7 +2769,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -2904,19 +2904,19 @@
         Parameter ``uv`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``pdf`` (drjit.llvm.Float):
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``delta`` (drjit.llvm.Bool):
+        Parameter ``delta`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``dist`` (drjit.llvm.Float):
+        Parameter ``dist`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``emitter`` (:py:obj:`mitsuba.EmitterPtr`):
@@ -3001,14 +3001,14 @@
 
         Initialize from a given probability mass function
 
-        Parameter ``pmf`` (drjit.llvm.Float):
+        Parameter ``pmf`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.cdf(self)
 
         Return the unnormalized cumulative distribution function
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.empty(self)
@@ -3023,13 +3023,13 @@
         Evaluate the unnormalized cumulative distribution function (CDF) at
         index ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.eval_cdf_normalized(self, index, active=True)
@@ -3037,13 +3037,13 @@
         Evaluate the normalized cumulative distribution function (CDF) at
         index ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.eval_pmf(self, index, active=True)
@@ -3051,13 +3051,13 @@
         Evaluate the unnormalized probability mass function (PMF) at index
         ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.eval_pmf_normalized(self, index, active=True)
@@ -3065,53 +3065,53 @@
         Evaluate the normalized probability mass function (PMF) at index
         ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.normalization(self)
 
         Return the normalization factor (i.e. the inverse of sum())
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.pmf(self)
 
         Return the unnormalized probability mass function
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.sample(self, value, active=True)
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             The discrete index associated with the sample
 
     .. py:method:: mitsuba.DiscreteDistribution.sample_pmf(self, value, active=True)
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.UInt, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float]:
             A tuple consisting of
 
         1. the discrete index associated with the sample, and 2. the
@@ -3124,13 +3124,13 @@
         The original sample is value adjusted so that it can be reused as a
         uniform variate.
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.UInt, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float]:
             A tuple consisting of
 
         1. the discrete index associated with the sample, and 2. the re-scaled
@@ -3143,13 +3143,13 @@
         The original sample is value adjusted so that it can be reused as a
         uniform variate.
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.UInt, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             A tuple consisting of
 
         1. the discrete index associated with the sample 2. the re-scaled
@@ -3166,7 +3166,7 @@
 
         Return the original sum of PMF entries before normalization
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution.update(self)
@@ -3183,10 +3183,10 @@
         Parameter ``pos`` (:py:obj:`mitsuba.Point2u`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution2D.pdf(self, pos, active=True)
@@ -3194,10 +3194,10 @@
         Parameter ``pos`` (:py:obj:`mitsuba.Point2u`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.DiscreteDistribution2D.sample(self, sample, active=True)
@@ -3205,10 +3205,10 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2u`, drjit.llvm.Float, :py:obj:`mitsuba.Point2f`]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2u`, drjit.llvm.ad.Float, :py:obj:`mitsuba.Point2f`]:
             *no description available*
 
 .. py:class:: mitsuba.DummyStream
@@ -3231,7 +3231,7 @@
 
         Flags for all components combined.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → int:
@@ -3319,7 +3319,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.EmitterPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.eval(self, si, active=True)
@@ -3337,7 +3337,7 @@
             An intersect record that specfies both the query position and
             direction (using the ``si.wi`` field)
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -3347,7 +3347,7 @@
 
         Flags for all components combined.
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.gather_(arg0, arg1, arg2, arg3)
@@ -3355,10 +3355,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.EmitterPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -3376,7 +3376,7 @@
 
         Is this an environment map light emitter?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.label_(self)
@@ -3389,7 +3389,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.EmitterPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.pdf_direction(self, it, active=True)
@@ -3407,15 +3407,15 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.EmitterPtr`:
@@ -3450,7 +3450,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.DirectionSample`, :py:obj:`mitsuba.Color3f`]:
@@ -3464,16 +3464,16 @@
 
         The default implementation throws an exception.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position to be sampled.
 
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.PositionSample`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.PositionSample`, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
@@ -3490,10 +3490,10 @@
         are absorbed into a spectral importance weight that is returned along
         with the ray.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the ray to be sampled
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
@@ -3510,7 +3510,7 @@
             aperture of the sensor. This argument is ignored if
             ``needs_sample_3() == false``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
@@ -3543,10 +3543,10 @@
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A 1D uniformly distributed random variate
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
@@ -3558,7 +3558,7 @@
 
     .. py:method:: mitsuba.EmitterPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.EmitterPtr`):
@@ -3595,7 +3595,7 @@
 
     .. py:method:: mitsuba.EmitterPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.EmitterPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.EmitterPtr`
 
 .. py:class:: mitsuba.Endpoint
 
@@ -3667,7 +3667,7 @@
             An intersect record that specfies both the query position and
             direction (using the ``si.wi`` field)
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -3708,7 +3708,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -3752,10 +3752,10 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Endpoint.sample_direction(self, it, sample, active=True)
@@ -3787,7 +3787,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.DirectionSample`, :py:obj:`mitsuba.Color3f`]:
@@ -3807,10 +3807,10 @@
         are absorbed into a spectral importance weight that is returned along
         with the ray.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the ray to be sampled
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
@@ -3827,7 +3827,7 @@
             aperture of the sensor. This argument is ignored if
             ``needs_sample_3() == false``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
@@ -3860,10 +3860,10 @@
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A 1D uniformly distributed random variate
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
@@ -4096,7 +4096,7 @@
         Parameter ``raw`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.Film.flags(self)
@@ -4142,19 +4142,19 @@
             sensitivities of the film, which specifies the sample value for
             each channel.
 
-        Parameter ``weight`` (drjit.llvm.Float):
+        Parameter ``weight`` (drjit.llvm.ad.Float):
             Value to be added to the weight channel of the sample
 
-        Parameter ``alpha`` (drjit.llvm.Float):
+        Parameter ``alpha`` (drjit.llvm.ad.Float):
             Alpha value of the sample
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask indicating if the lanes are active
 
         Parameter ``nChannels`` (int):
             *no description available*
 
-        Returns → List[drjit.llvm.Float]:
+        Returns → List[drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Film.put_block(self, block)
@@ -4318,112 +4318,47 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.Float, *args) -> None
 
         Parameter ``arg0`` (drjit.llvm.Float):
             *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-    .. py:method:: __init__(self)
 
     .. py:method:: mitsuba.Float.abs_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Float.acos_(self)
-
-        Returns → drjit.llvm.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.acosh_(self)
-
-        Returns → drjit.llvm.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.add_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float):
-            *no description available*
-
-        Returns → drjit.llvm.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.and_(overloaded)
-
-
-        .. py:method:: and_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Float):
-                *no description available*
-
-            Returns → drjit.llvm.Float:
-                *no description available*
-
-        .. py:method:: and_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Bool):
-                *no description available*
-
-            Returns → drjit.llvm.Float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.andnot_(overloaded)
-
-
-        .. py:method:: andnot_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Float):
-                *no description available*
-
-            Returns → drjit.llvm.Float:
-                *no description available*
-
-        .. py:method:: andnot_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Bool):
-                *no description available*
-
-            Returns → drjit.llvm.Float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.arange_
-
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.Float
-
-    .. py:method:: mitsuba.Float.asin_(self)
-
-        Returns → drjit.llvm.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.asinh_(self)
-
-        Returns → drjit.llvm.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.assign(self, arg0)
+    .. py:method:: mitsuba.Float.accum_grad_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.Float):
             *no description available*
@@ -4431,22 +4366,114 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Float.atan2_(self, arg0)
+    .. py:method:: mitsuba.Float.acos_(self)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
-        Returns → drjit.llvm.Float:
+    .. py:method:: mitsuba.Float.acosh_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.add_edge_(src_index, dst_index, cb=None)
+
+        Parameter ``src_index`` (int):
+            *no description available*
+
+        Parameter ``dst_index`` (int):
+            *no description available*
+
+        Parameter ``cb`` (handle):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.and_(overloaded)
+
+
+        .. py:method:: and_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float:
+                *no description available*
+
+        .. py:method:: and_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float:
+                *no description available*
+
+    .. py:method:: mitsuba.Float.andnot_(overloaded)
+
+
+        .. py:method:: andnot_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float:
+                *no description available*
+
+        .. py:method:: andnot_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float:
+                *no description available*
+
+    .. py:method:: mitsuba.Float.arange_
+
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.Float
+
+    .. py:method:: mitsuba.Float.asin_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.asinh_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.atan2_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.atan_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.atanh_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.block_sum_(self, arg0)
@@ -4454,42 +4481,53 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.cbrt_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.ceil_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.copy_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.cos_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.cosh_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.cot_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.create_(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.Float):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.csc_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.data_(self)
@@ -4497,9 +4535,24 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.Float.dec_ref_(self)
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.detach_(self)
+
+        Returns → drjit.llvm.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.detach_ref_(self)
+
+        Returns → drjit.llvm.Float:
+            *no description available*
+
     .. py:method:: mitsuba.Float.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → float:
@@ -4507,10 +4560,18 @@
 
     .. py:method:: mitsuba.Float.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.enqueue_(self, arg0)
+
+        Parameter ``arg0`` (drjit.ADMode):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Float.entry_(self, arg0)
@@ -4523,83 +4584,98 @@
 
     .. py:method:: mitsuba.Float.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float.erf_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.erfinv_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.exp2_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.exp_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.floor_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Float):
+        Parameter ``arg1`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.full_
 
-        (arg0: float, arg1: int) -> drjit.llvm.Float
+        (arg0: float, arg1: int) -> drjit.llvm.ad.Float
 
     .. py:method:: mitsuba.Float.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.grad_(self)
+
+        Returns → drjit.llvm.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.grad_enabled_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.graphviz_()
+
+        Returns → str:
             *no description available*
 
     .. py:method:: mitsuba.Float.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float.hmax_(overloaded)
@@ -4617,7 +4693,7 @@
 
     .. py:method:: mitsuba.Float.hmax_async_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.hmin_(overloaded)
@@ -4635,7 +4711,7 @@
 
     .. py:method:: mitsuba.Float.hmin_async_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.hprod_(overloaded)
@@ -4653,7 +4729,7 @@
 
     .. py:method:: mitsuba.Float.hprod_async_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.hsum_(overloaded)
@@ -4671,15 +4747,15 @@
 
     .. py:method:: mitsuba.Float.hsum_async_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.iand_(overloaded)
@@ -4687,37 +4763,42 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -4735,18 +4816,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.is_evaluated_(self)
@@ -4761,18 +4842,18 @@
 
     .. py:method:: mitsuba.Float.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.itruediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.ixor_(overloaded)
@@ -4780,18 +4861,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.label_(self)
@@ -4801,20 +4882,20 @@
 
     .. py:method:: mitsuba.Float.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float.lgamma_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.linspace_
 
-        (arg0: float, arg1: float, arg2: int, arg3: bool) -> drjit.llvm.Float
+        (arg0: float, arg1: float, arg2: int, arg3: bool) -> drjit.llvm.ad.Float
 
     .. py:method:: mitsuba.Float.load_(arg0, arg1)
 
@@ -4824,25 +4905,25 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.log2_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.log_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float.map_(ptr, size, callback=None)
@@ -4856,15 +4937,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.migrate_(self, arg0)
@@ -4872,72 +4953,72 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.neg_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float.not_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.opaque_
 
-        (arg0: float, arg1: int) -> drjit.llvm.Float
+        (arg0: float, arg1: int) -> drjit.llvm.ad.Float
 
     .. py:method:: mitsuba.Float.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.pow_(overloaded)
@@ -4948,20 +5029,20 @@
             Parameter ``arg0`` (float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: pow_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.rcp_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.reinterpret_array_(overloaded)
@@ -4969,26 +5050,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt):
-                *no description available*
-
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.resize_(self, arg0)
@@ -5001,23 +5082,23 @@
 
     .. py:method:: mitsuba.Float.round_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.rsqrt_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.Float):
+        Parameter ``target`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -5031,13 +5112,32 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.Float):
+        Parameter ``target`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.scope_enter_(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.detail.ADScope):
+            *no description available*
+
+        Parameter ``arg1`` (List[int]):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.scope_leave_(arg0)
+
+        Parameter ``arg0`` (bool):
             *no description available*
 
         Returns → None:
@@ -5045,12 +5145,12 @@
 
     .. py:method:: mitsuba.Float.sec_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.Float, arg2: drjit.llvm.Float) -> drjit.llvm.Float
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.Float, arg2: drjit.llvm.ad.Float) -> drjit.llvm.ad.Float
 
     .. py:method:: mitsuba.Float.set_entry_(self, arg0, arg1)
 
@@ -5063,7 +5163,31 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Float.set_grad_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.Float):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.set_grad_enabled_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Float.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.set_index_ad_(self, arg0)
 
         Parameter ``arg0`` (int):
             *no description available*
@@ -5081,63 +5205,74 @@
 
     .. py:method:: mitsuba.Float.sin_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.sincos_(self)
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Float.sincosh_(self)
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Float.sinh_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.sqrt_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.tan_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.tanh_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.tgamma_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.traverse_(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.ADMode):
+            *no description available*
+
+        Parameter ``arg1`` (int):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Float.truediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.trunc_(self)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.xor_(overloaded)
@@ -5145,23 +5280,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.Float.zero_
 
-        (arg0: int) -> drjit.llvm.Float
+        (arg0: int) -> drjit.llvm.ad.Float
 
 .. py:class:: mitsuba.Float64
 
@@ -5178,112 +5313,47 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float):
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.Float64, *args) -> None
 
         Parameter ``arg0`` (drjit.llvm.Float64):
             *no description available*
-
-    .. py:method:: __init__(self)
 
     .. py:method:: mitsuba.Float64.abs_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.acos_(self)
-
-        Returns → drjit.llvm.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.acosh_(self)
-
-        Returns → drjit.llvm.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.add_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-        Returns → drjit.llvm.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.and_(overloaded)
-
-
-        .. py:method:: and_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Float64):
-                *no description available*
-
-            Returns → drjit.llvm.Float64:
-                *no description available*
-
-        .. py:method:: and_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Bool):
-                *no description available*
-
-            Returns → drjit.llvm.Float64:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.andnot_(overloaded)
-
-
-        .. py:method:: andnot_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Float64):
-                *no description available*
-
-            Returns → drjit.llvm.Float64:
-                *no description available*
-
-        .. py:method:: andnot_(self, arg0)
-
-            Parameter ``arg0`` (drjit.llvm.Bool):
-                *no description available*
-
-            Returns → drjit.llvm.Float64:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.arange_
-
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.Float64
-
-    .. py:method:: mitsuba.Float64.asin_(self)
-
-        Returns → drjit.llvm.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.asinh_(self)
-
-        Returns → drjit.llvm.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.assign(self, arg0)
+    .. py:method:: mitsuba.Float64.accum_grad_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.Float64):
             *no description available*
@@ -5291,22 +5361,114 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.atan2_(self, arg0)
+    .. py:method:: mitsuba.Float64.acos_(self)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+    .. py:method:: mitsuba.Float64.acosh_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.add_edge_(src_index, dst_index, cb=None)
+
+        Parameter ``src_index`` (int):
+            *no description available*
+
+        Parameter ``dst_index`` (int):
+            *no description available*
+
+        Parameter ``cb`` (handle):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.and_(overloaded)
+
+
+        .. py:method:: and_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float64:
+                *no description available*
+
+        .. py:method:: and_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float64:
+                *no description available*
+
+    .. py:method:: mitsuba.Float64.andnot_(overloaded)
+
+
+        .. py:method:: andnot_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float64:
+                *no description available*
+
+        .. py:method:: andnot_(self, arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float64:
+                *no description available*
+
+    .. py:method:: mitsuba.Float64.arange_
+
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.Float64
+
+    .. py:method:: mitsuba.Float64.asin_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.asinh_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.atan2_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.atan_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.atanh_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.block_sum_(self, arg0)
@@ -5314,42 +5476,53 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.cbrt_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.ceil_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.copy_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.cos_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.cosh_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.cot_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.create_(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.Float64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.csc_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.data_(self)
@@ -5357,9 +5530,24 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.Float64.dec_ref_(self)
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.detach_(self)
+
+        Returns → drjit.llvm.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.detach_ref_(self)
+
+        Returns → drjit.llvm.Float64:
+            *no description available*
+
     .. py:method:: mitsuba.Float64.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
         Returns → float:
@@ -5367,10 +5555,18 @@
 
     .. py:method:: mitsuba.Float64.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.enqueue_(self, arg0)
+
+        Parameter ``arg0`` (drjit.ADMode):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Float64.entry_(self, arg0)
@@ -5383,83 +5579,98 @@
 
     .. py:method:: mitsuba.Float64.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float64.erf_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.erfinv_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.exp2_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.exp_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.floor_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Float64):
+        Parameter ``arg1`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.full_
 
-        (arg0: float, arg1: int) -> drjit.llvm.Float64
+        (arg0: float, arg1: int) -> drjit.llvm.ad.Float64
 
     .. py:method:: mitsuba.Float64.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.grad_(self)
+
+        Returns → drjit.llvm.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.grad_enabled_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.graphviz_()
+
+        Returns → str:
             *no description available*
 
     .. py:method:: mitsuba.Float64.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float64.hmax_(overloaded)
@@ -5477,7 +5688,7 @@
 
     .. py:method:: mitsuba.Float64.hmax_async_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.hmin_(overloaded)
@@ -5495,7 +5706,7 @@
 
     .. py:method:: mitsuba.Float64.hmin_async_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.hprod_(overloaded)
@@ -5513,7 +5724,7 @@
 
     .. py:method:: mitsuba.Float64.hprod_async_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.hsum_(overloaded)
@@ -5531,15 +5742,15 @@
 
     .. py:method:: mitsuba.Float64.hsum_async_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.iand_(overloaded)
@@ -5547,37 +5758,42 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -5595,18 +5811,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.is_evaluated_(self)
@@ -5621,18 +5837,18 @@
 
     .. py:method:: mitsuba.Float64.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.itruediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.ixor_(overloaded)
@@ -5640,18 +5856,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.label_(self)
@@ -5661,20 +5877,20 @@
 
     .. py:method:: mitsuba.Float64.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float64.lgamma_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.linspace_
 
-        (arg0: float, arg1: float, arg2: int, arg3: bool) -> drjit.llvm.Float64
+        (arg0: float, arg1: float, arg2: int, arg3: bool) -> drjit.llvm.ad.Float64
 
     .. py:method:: mitsuba.Float64.load_(arg0, arg1)
 
@@ -5684,25 +5900,25 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.log2_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.log_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float64.map_(ptr, size, callback=None)
@@ -5716,15 +5932,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.migrate_(self, arg0)
@@ -5732,72 +5948,72 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.neg_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Float64.not_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.opaque_
 
-        (arg0: float, arg1: int) -> drjit.llvm.Float64
+        (arg0: float, arg1: int) -> drjit.llvm.ad.Float64
 
     .. py:method:: mitsuba.Float64.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.pow_(overloaded)
@@ -5808,20 +6024,20 @@
             Parameter ``arg0`` (float):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: pow_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.rcp_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.reinterpret_array_(overloaded)
@@ -5829,26 +6045,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt64):
-                *no description available*
-
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.resize_(self, arg0)
@@ -5861,23 +6077,23 @@
 
     .. py:method:: mitsuba.Float64.round_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.rsqrt_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.Float64):
+        Parameter ``target`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -5891,13 +6107,32 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.Float64):
+        Parameter ``target`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.scope_enter_(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.detail.ADScope):
+            *no description available*
+
+        Parameter ``arg1`` (List[int]):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.scope_leave_(arg0)
+
+        Parameter ``arg0`` (bool):
             *no description available*
 
         Returns → None:
@@ -5905,12 +6140,12 @@
 
     .. py:method:: mitsuba.Float64.sec_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.Float64, arg2: drjit.llvm.Float64) -> drjit.llvm.Float64
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.Float64, arg2: drjit.llvm.ad.Float64) -> drjit.llvm.ad.Float64
 
     .. py:method:: mitsuba.Float64.set_entry_(self, arg0, arg1)
 
@@ -5923,7 +6158,31 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Float64.set_grad_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.Float64):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.set_grad_enabled_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Float64.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.set_index_ad_(self, arg0)
 
         Parameter ``arg0`` (int):
             *no description available*
@@ -5941,63 +6200,74 @@
 
     .. py:method:: mitsuba.Float64.sin_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.sincos_(self)
 
-        Returns → Tuple[drjit.llvm.Float64, drjit.llvm.Float64]:
+        Returns → Tuple[drjit.llvm.ad.Float64, drjit.llvm.ad.Float64]:
             *no description available*
 
     .. py:method:: mitsuba.Float64.sincosh_(self)
 
-        Returns → Tuple[drjit.llvm.Float64, drjit.llvm.Float64]:
+        Returns → Tuple[drjit.llvm.ad.Float64, drjit.llvm.ad.Float64]:
             *no description available*
 
     .. py:method:: mitsuba.Float64.sinh_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.sqrt_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.tan_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.tanh_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.tgamma_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.traverse_(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.ADMode):
+            *no description available*
+
+        Parameter ``arg1`` (int):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Float64.truediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Float64):
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.trunc_(self)
 
-        Returns → drjit.llvm.Float64:
+        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.xor_(overloaded)
@@ -6005,23 +6275,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.Float64.zero_
 
-        (arg0: int) -> drjit.llvm.Float64
+        (arg0: int) -> drjit.llvm.ad.Float64
 
 .. py:class:: mitsuba.Formatter
 
@@ -6111,7 +6381,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.cos_phi_2(v)
@@ -6123,7 +6393,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.cos_theta(v)
@@ -6135,7 +6405,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.cos_theta_2(v)
@@ -6147,7 +6417,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sin_phi(v)
@@ -6158,7 +6428,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sin_phi_2(v)
@@ -6170,7 +6440,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sin_theta(v)
@@ -6182,7 +6452,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sin_theta_2(v)
@@ -6194,7 +6464,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sincos_phi(v)
@@ -6206,7 +6476,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.sincos_phi_2(v)
@@ -6218,7 +6488,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.tan_theta(v)
@@ -6230,7 +6500,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.tan_theta_2(v)
@@ -6242,7 +6512,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Frame3f.to_local(self, v)
@@ -6337,32 +6607,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D0.sample(self, sample, param=[], active=True)
@@ -6372,16 +6642,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.Hierarchical2D1
@@ -6456,32 +6726,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D1.invert(self, sample, param=[0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D1.sample(self, sample, param=[0.0], active=True)
@@ -6491,16 +6761,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.Hierarchical2D2
@@ -6575,32 +6845,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D2.invert(self, sample, param=[0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D2.sample(self, sample, param=[0.0, 0.0], active=True)
@@ -6610,16 +6880,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.Hierarchical2D3
@@ -6694,32 +6964,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D3.invert(self, sample, param=[0.0, 0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Hierarchical2D3.sample(self, sample, param=[0.0, 0.0, 0.0], active=True)
@@ -6729,16 +6999,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.ImageBlock
@@ -6801,7 +7071,7 @@
 
     .. py:method:: __init__(self, tensor, offset=[0, 0], rfilter=None, border=False, normalize=False, coalesce=True, warn_negative=False, warn_invalid=False)
 
-        Parameter ``tensor`` (drjit.llvm.TensorXf):
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
         Parameter ``offset`` (:py:obj:`mitsuba.ScalarPoint2i`):
@@ -6892,7 +7162,7 @@
             Parameter ``pos`` (:py:obj:`mitsuba.Point2f`):
                 Denotes the sample position in fractional pixel coordinates
 
-            Parameter ``values`` (List[drjit.llvm.Float]):
+            Parameter ``values`` (List[drjit.llvm.ad.Float]):
                 Points to an array of length channel_count(), which specifies the
                 sample value for each channel.
 
@@ -6902,13 +7172,13 @@
             Parameter ``value`` (:py:obj:`mitsuba.Color3f`):
                 *no description available*
 
-            Parameter ``alpha`` (drjit.llvm.Float):
+            Parameter ``alpha`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Parameter ``weight`` (drjit.llvm.Float):
+            Parameter ``weight`` (drjit.llvm.ad.Float):
                 *no description available*
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
         .. py:method:: put(self, pos, values, active=True)
@@ -6916,7 +7186,7 @@
             Parameter ``pos`` (:py:obj:`mitsuba.Point2f`):
                 *no description available*
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
     .. py:method:: mitsuba.ImageBlock.put_block(self, block)
@@ -6953,10 +7223,10 @@
         Parameter ``pos`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.Float]:
+        Returns → List[drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.ImageBlock.rfilter(self)
@@ -7041,7 +7311,7 @@
 
         Return the underlying image tensor
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.ImageBlock.warn_invalid(self)
@@ -7080,52 +7350,52 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.Int, *args) -> None
+
         Parameter ``arg0`` (drjit.llvm.Int):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.UInt):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Int64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.UInt64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        10. __init__(self: drjit.llvm.Int, *args) -> None
-
-        Parameter ``arg0`` (drjit::DiffArray<drjit::LLVMArray<int> >):
             *no description available*
 
     .. py:method:: mitsuba.Int.abs_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.add_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.and_(overloaded)
@@ -7133,18 +7403,18 @@
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.andnot_(overloaded)
@@ -7152,27 +7422,27 @@
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.arange_
 
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.Int
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.Int
 
     .. py:method:: mitsuba.Int.assign(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
         Returns → None:
@@ -7183,12 +7453,12 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.copy_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.data_(self)
@@ -7196,9 +7466,19 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.Int.detach_(self)
+
+        Returns → drjit.llvm.Int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.detach_ref_(self)
+
+        Returns → drjit.llvm.Int:
+            *no description available*
+
     .. py:method:: mitsuba.Int.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
         Returns → int:
@@ -7206,10 +7486,10 @@
 
     .. py:method:: mitsuba.Int.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.entry_(self, arg0)
@@ -7222,66 +7502,66 @@
 
     .. py:method:: mitsuba.Int.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.floordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Int):
+        Parameter ``arg1`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.full_
 
-        (arg0: int, arg1: int) -> drjit.llvm.Int
+        (arg0: int, arg1: int) -> drjit.llvm.ad.Int
 
     .. py:method:: mitsuba.Int.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.hmax_(overloaded)
@@ -7299,7 +7579,7 @@
 
     .. py:method:: mitsuba.Int.hmax_async_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.hmin_(overloaded)
@@ -7317,7 +7597,7 @@
 
     .. py:method:: mitsuba.Int.hmin_async_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.hprod_(overloaded)
@@ -7335,7 +7615,7 @@
 
     .. py:method:: mitsuba.Int.hprod_async_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.hsum_(overloaded)
@@ -7353,15 +7633,15 @@
 
     .. py:method:: mitsuba.Int.hsum_async_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.iand_(overloaded)
@@ -7369,45 +7649,50 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.ifloordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -7425,18 +7710,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.is_evaluated_(self)
@@ -7451,26 +7736,26 @@
 
     .. py:method:: mitsuba.Int.isl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.isr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.ixor_(overloaded)
@@ -7478,18 +7763,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.label_(self)
@@ -7499,15 +7784,15 @@
 
     .. py:method:: mitsuba.Int.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.linspace_
 
-        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.Int
+        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.ad.Int
 
     .. py:method:: mitsuba.Int.load_(arg0, arg1)
 
@@ -7517,20 +7802,20 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.lzcnt_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.map_(ptr, size, callback=None)
@@ -7544,15 +7829,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.migrate_(self, arg0)
@@ -7560,85 +7845,85 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.mulhi_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.neg_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int.not_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.opaque_
 
-        (arg0: int, arg1: int) -> drjit.llvm.Int
+        (arg0: int, arg1: int) -> drjit.llvm.ad.Int
 
     .. py:method:: mitsuba.Int.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.popcnt_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.reinterpret_array_(overloaded)
@@ -7646,26 +7931,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt):
-                *no description available*
-
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.resize_(self, arg0)
@@ -7678,13 +7963,13 @@
 
     .. py:method:: mitsuba.Int.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.Int):
+        Parameter ``target`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -7698,13 +7983,13 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.Int):
+        Parameter ``target`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Returns → None:
@@ -7712,7 +7997,7 @@
 
     .. py:method:: mitsuba.Int.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.Int, arg2: drjit.llvm.Int) -> drjit.llvm.Int
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.Int, arg2: drjit.llvm.ad.Int) -> drjit.llvm.ad.Int
 
     .. py:method:: mitsuba.Int.set_entry_(self, arg0, arg1)
 
@@ -7733,6 +8018,14 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Int.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Int.set_label_(self, arg0)
 
         Parameter ``arg0`` (str):
@@ -7743,31 +8036,31 @@
 
     .. py:method:: mitsuba.Int.sl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.sr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.tzcnt_(self)
 
-        Returns → drjit.llvm.Int:
+        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.xor_(overloaded)
@@ -7775,23 +8068,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int:
+            Returns → drjit.llvm.ad.Int:
                 *no description available*
 
     .. py:method:: mitsuba.Int.zero_
 
-        (arg0: int) -> drjit.llvm.Int
+        (arg0: int) -> drjit.llvm.ad.Int
 
 .. py:class:: mitsuba.Int64
 
@@ -7808,52 +8101,52 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.Int64, *args) -> None
 
         Parameter ``arg0`` (drjit.llvm.Int64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.UInt64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        10. __init__(self: drjit.llvm.Int64, *args) -> None
-
-        Parameter ``arg0`` (drjit::DiffArray<drjit::LLVMArray<long> >):
             *no description available*
 
     .. py:method:: mitsuba.Int64.abs_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.add_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.and_(overloaded)
@@ -7861,18 +8154,18 @@
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.andnot_(overloaded)
@@ -7880,27 +8173,27 @@
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.arange_
 
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.Int64
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.Int64
 
     .. py:method:: mitsuba.Int64.assign(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
         Returns → None:
@@ -7911,12 +8204,12 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.copy_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.data_(self)
@@ -7924,9 +8217,19 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.Int64.detach_(self)
+
+        Returns → drjit.llvm.Int64:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.detach_ref_(self)
+
+        Returns → drjit.llvm.Int64:
+            *no description available*
+
     .. py:method:: mitsuba.Int64.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
         Returns → int:
@@ -7934,10 +8237,10 @@
 
     .. py:method:: mitsuba.Int64.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.entry_(self, arg0)
@@ -7950,66 +8253,66 @@
 
     .. py:method:: mitsuba.Int64.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.floordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Int64):
+        Parameter ``arg1`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.full_
 
-        (arg0: int, arg1: int) -> drjit.llvm.Int64
+        (arg0: int, arg1: int) -> drjit.llvm.ad.Int64
 
     .. py:method:: mitsuba.Int64.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.hmax_(overloaded)
@@ -8027,7 +8330,7 @@
 
     .. py:method:: mitsuba.Int64.hmax_async_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.hmin_(overloaded)
@@ -8045,7 +8348,7 @@
 
     .. py:method:: mitsuba.Int64.hmin_async_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.hprod_(overloaded)
@@ -8063,7 +8366,7 @@
 
     .. py:method:: mitsuba.Int64.hprod_async_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.hsum_(overloaded)
@@ -8081,15 +8384,15 @@
 
     .. py:method:: mitsuba.Int64.hsum_async_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.iand_(overloaded)
@@ -8097,45 +8400,50 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.ifloordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -8153,18 +8461,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.is_evaluated_(self)
@@ -8179,26 +8487,26 @@
 
     .. py:method:: mitsuba.Int64.isl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.isr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.ixor_(overloaded)
@@ -8206,18 +8514,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.label_(self)
@@ -8227,15 +8535,15 @@
 
     .. py:method:: mitsuba.Int64.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.linspace_
 
-        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.Int64
+        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.ad.Int64
 
     .. py:method:: mitsuba.Int64.load_(arg0, arg1)
 
@@ -8245,20 +8553,20 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.lzcnt_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.map_(ptr, size, callback=None)
@@ -8272,15 +8580,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.migrate_(self, arg0)
@@ -8288,85 +8596,85 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.mulhi_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.neg_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Int64.not_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.opaque_
 
-        (arg0: int, arg1: int) -> drjit.llvm.Int64
+        (arg0: int, arg1: int) -> drjit.llvm.ad.Int64
 
     .. py:method:: mitsuba.Int64.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.popcnt_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.reinterpret_array_(overloaded)
@@ -8374,26 +8682,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt64):
-                *no description available*
-
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.resize_(self, arg0)
@@ -8406,13 +8714,13 @@
 
     .. py:method:: mitsuba.Int64.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.Int64):
+        Parameter ``target`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -8426,13 +8734,13 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.Int64):
+        Parameter ``target`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Returns → None:
@@ -8440,7 +8748,7 @@
 
     .. py:method:: mitsuba.Int64.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.Int64, arg2: drjit.llvm.Int64) -> drjit.llvm.Int64
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.Int64, arg2: drjit.llvm.ad.Int64) -> drjit.llvm.ad.Int64
 
     .. py:method:: mitsuba.Int64.set_entry_(self, arg0, arg1)
 
@@ -8461,6 +8769,14 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Int64.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Int64.set_label_(self, arg0)
 
         Parameter ``arg0`` (str):
@@ -8471,31 +8787,31 @@
 
     .. py:method:: mitsuba.Int64.sl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.sr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.tzcnt_(self)
 
-        Returns → drjit.llvm.Int64:
+        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.xor_(overloaded)
@@ -8503,23 +8819,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Int64:
+            Returns → drjit.llvm.ad.Int64:
                 *no description available*
 
     .. py:method:: mitsuba.Int64.zero_
 
-        (arg0: int) -> drjit.llvm.Int64
+        (arg0: int) -> drjit.llvm.ad.Int64
 
 .. py:class:: mitsuba.Integrator
 
@@ -8600,7 +8916,7 @@
             Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
         .. py:method:: render(self, scene, sensor=0, seed=0, spp=0, develop=True, evaluate=True)
@@ -8629,7 +8945,7 @@
             Parameter ``evaluate`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
     .. py:method:: mitsuba.Integrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
@@ -8820,10 +9136,10 @@
 
     .. py:method:: __init__(self, t, time, wavelengths, p, n=0)
 
-        Parameter ``t`` (drjit.llvm.Float):
+        Parameter ``t`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
@@ -8847,7 +9163,7 @@
 
         Is the current interaction valid?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Interaction3f.n
@@ -8954,10 +9270,10 @@
         Initialize from a given density function discretized on nodes
         ``nodes``
 
-        Parameter ``nodes`` (drjit.llvm.Float):
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``pdf`` (drjit.llvm.Float):
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.cdf(self)
@@ -8965,7 +9281,7 @@
         Return the unnormalized discrete cumulative distribution function over
         intervals
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.empty(self)
@@ -8980,13 +9296,13 @@
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.eval_cdf_normalized(self, x, active=True)
@@ -8994,13 +9310,13 @@
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.eval_pdf(self, x, active=True)
@@ -9008,13 +9324,13 @@
         Evaluate the unnormalized probability mass function (PDF) at position
         ``x``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.eval_pdf_normalized(self, x, active=True)
@@ -9022,20 +9338,20 @@
         Evaluate the normalized probability mass function (PDF) at position
         ``x``
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.integral(self)
 
         Return the original integral of PDF entries before normalization
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.interval_resolution(self)
@@ -9049,21 +9365,21 @@
 
         Return the nodes of the underlying discretization
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.normalization(self)
 
         Return the normalization factor (i.e. the inverse of sum())
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.pdf(self)
 
         Return the unnormalized discretized probability density function
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.range(self)
@@ -9077,26 +9393,26 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The sampled position.
 
     .. py:method:: mitsuba.IrregularContinuousDistribution.sample_pdf(self, value, active=True)
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on the interval [0, 1].
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             A tuple consisting of
 
         1. the sampled position. 2. the normalized probability density of the
@@ -9359,7 +9675,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: True
+    :value: False
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -9467,32 +9783,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D0.sample(self, sample, param=[], active=True)
@@ -9502,16 +9818,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalContinuous2D1
@@ -9592,32 +9908,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D1.invert(self, sample, param=[0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D1.sample(self, sample, param=[0.0], active=True)
@@ -9627,16 +9943,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalContinuous2D2
@@ -9717,32 +10033,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D2.invert(self, sample, param=[0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D2.sample(self, sample, param=[0.0, 0.0], active=True)
@@ -9752,16 +10068,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalContinuous2D3
@@ -9842,32 +10158,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D3.invert(self, sample, param=[0.0, 0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalContinuous2D3.sample(self, sample, param=[0.0, 0.0, 0.0], active=True)
@@ -9877,16 +10193,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalDiscrete2D0
@@ -9967,32 +10283,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D0.sample(self, sample, param=[], active=True)
@@ -10002,16 +10318,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array0f):
+        Parameter ``param`` (drjit.llvm.ad.Array0f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalDiscrete2D1
@@ -10092,32 +10408,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D1.invert(self, sample, param=[0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D1.sample(self, sample, param=[0.0], active=True)
@@ -10127,16 +10443,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array1f):
+        Parameter ``param`` (drjit.llvm.ad.Array1f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalDiscrete2D2
@@ -10217,32 +10533,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D2.invert(self, sample, param=[0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D2.sample(self, sample, param=[0.0, 0.0], active=True)
@@ -10252,16 +10568,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array2f):
+        Parameter ``param`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.MarginalDiscrete2D3
@@ -10342,32 +10658,32 @@
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
 
-        Parameter ``pos`` (drjit.llvm.Array2f):
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D3.invert(self, sample, param=[0.0, 0.0, 0.0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MarginalDiscrete2D3.sample(self, sample, param=[0.0, 0.0, 0.0], active=True)
@@ -10377,16 +10693,16 @@
 
         Returns the warped sample and associated probability density.
 
-        Parameter ``sample`` (drjit.llvm.Array2f):
+        Parameter ``sample`` (drjit.llvm.ad.Array2f):
             *no description available*
 
-        Parameter ``param`` (drjit.llvm.Array3f):
+        Parameter ``param`` (drjit.llvm.ad.Array3f):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.Matrix2f
@@ -10396,7 +10712,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array2f:
+        Returns → drjit.llvm.ad.Array2f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix2f.entry_ref_(self, arg0)
@@ -10404,7 +10720,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array2f:
+        Returns → drjit.llvm.ad.Array2f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix2f.set_entry_(self, arg0, arg1)
@@ -10412,7 +10728,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Array2f):
+        Parameter ``arg1`` (drjit.llvm.ad.Array2f):
             *no description available*
 
         Returns → None:
@@ -10425,7 +10741,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array3f:
+        Returns → drjit.llvm.ad.Array3f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix3f.entry_ref_(self, arg0)
@@ -10433,7 +10749,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array3f:
+        Returns → drjit.llvm.ad.Array3f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix3f.set_entry_(self, arg0, arg1)
@@ -10441,7 +10757,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Array3f):
+        Parameter ``arg1`` (drjit.llvm.ad.Array3f):
             *no description available*
 
         Returns → None:
@@ -10454,7 +10770,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array4f:
+        Returns → drjit.llvm.ad.Array4f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix4f.entry_ref_(self, arg0)
@@ -10462,7 +10778,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.Array4f:
+        Returns → drjit.llvm.ad.Array4f:
             *no description available*
 
     .. py:method:: mitsuba.Matrix4f.set_entry_(self, arg0, arg1)
@@ -10470,7 +10786,7 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Array4f):
+        Parameter ``arg1`` (drjit.llvm.ad.Array4f):
             *no description available*
 
         Returns → None:
@@ -10496,7 +10812,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
@@ -10509,7 +10825,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -10523,7 +10839,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
@@ -10550,7 +10866,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Medium.is_homogeneous(self)
@@ -10579,14 +10895,14 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             Ray, along which a distance should be sampled
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A uniformly distributed random sample
 
-        Parameter ``channel`` (drjit.llvm.UInt):
+        Parameter ``channel`` (drjit.llvm.ad.UInt):
             The channel according to which we will sample the free-flight
             distance. This argument is only used when rendering in RGB modes.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.MediumInteraction`:
@@ -10696,7 +11012,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.MediumPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.eval_tr_and_pdf(self, mi, active)
@@ -10715,7 +11031,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
@@ -10726,10 +11042,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.MediumPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -10745,7 +11061,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -10759,7 +11075,7 @@
         Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
@@ -10769,7 +11085,7 @@
 
         Returns whether this medium has a spectrally varying extinction
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.index(self)
@@ -10784,14 +11100,14 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.is_homogeneous(self)
 
         Returns whether this medium is homogeneous
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.label_(self)
@@ -10804,19 +11120,19 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.MediumPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.phase_function(self)
 
         Return the phase function of this medium
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.PhaseFunction` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.PhaseFunction` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.MediumPtr`:
@@ -10834,14 +11150,14 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             Ray, along which a distance should be sampled
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A uniformly distributed random sample
 
-        Parameter ``channel`` (drjit.llvm.UInt):
+        Parameter ``channel`` (drjit.llvm.ad.UInt):
             The channel according to which we will sample the free-flight
             distance. This argument is only used when rendering in RGB modes.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.MediumInteraction`:
@@ -10851,7 +11167,7 @@
 
     .. py:method:: mitsuba.MediumPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.MediumPtr`):
@@ -10883,12 +11199,12 @@
 
         Returns whether this specific medium instance uses emitter sampling
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.MediumPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.MediumPtr`
 
 .. py:class:: mitsuba.MemoryMappedFile
 
@@ -11028,9 +11344,9 @@
 
     Overloaded function.
 
-    1. __init__(self: :py:obj:`mitsuba.llvm_rgb.Mesh`, props: :py:obj:`mitsuba.llvm_rgb.Properties`) -> None
+    1. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties`) -> None
 
-    2. __init__(self: :py:obj:`mitsuba.llvm_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_rgb.Properties` = Properties[
+    2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties` = Properties[
       plugin_name = "",
       id = "",
       elements = {
@@ -11063,7 +11379,7 @@
         Parameter ``name`` (str):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.eval_parameterization(self, uv, ray_flags=14, active=True)
@@ -11074,7 +11390,7 @@
         Parameter ``ray_flags`` (int):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
@@ -11091,20 +11407,20 @@
 
         Returns the face indices associated with triangle ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Array3u:
+        Returns → drjit.llvm.ad.Array3u:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.faces_buffer(self)
 
         Return face indices buffer
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.has_vertex_normals(self)
@@ -11130,13 +11446,13 @@
 
     .. py:method:: mitsuba.Mesh.ray_intersect_triangle(self, index, ray, active=True)
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -11167,10 +11483,10 @@
 
         Returns the normal direction of the vertex with index ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Normal3f`:
@@ -11180,17 +11496,17 @@
 
         Return vertex normals buffer
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.vertex_position(self, index, active=True)
 
         Returns the world-space position of the vertex with index ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Point3f`:
@@ -11200,17 +11516,17 @@
 
         Return vertex positions buffer
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.vertex_texcoord(self, index, active=True)
 
         Returns the UV texture coordinates of the vertex with index ``index``
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Point2f`:
@@ -11220,7 +11536,7 @@
 
         Return vertex texcoords buffer
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.write_ply(self, filename)
@@ -11290,7 +11606,7 @@
         Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
             *no description available*
 
-        Parameter ``alpha`` (drjit.llvm.Float):
+        Parameter ``alpha`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``sample_visible`` (bool):
@@ -11301,10 +11617,10 @@
         Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
             *no description available*
 
-        Parameter ``alpha_u`` (drjit.llvm.Float):
+        Parameter ``alpha_u`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``alpha_v`` (drjit.llvm.Float):
+        Parameter ``alpha_v`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``sample_visible`` (bool):
@@ -11328,28 +11644,28 @@
         Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.alpha(self)
 
         Return the roughness (isotropic case)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.alpha_u(self)
 
         Return the roughness along the tangent direction
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.alpha_v(self)
 
         Return the roughness along the bitangent direction
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.eval(self, m)
@@ -11359,7 +11675,7 @@
         Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
             The microfacet normal
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.is_anisotropic(self)
@@ -11387,7 +11703,7 @@
         Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
             The microfacet normal
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.sample(self, wi, sample)
@@ -11402,7 +11718,7 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D sample
 
-        Returns → Tuple[:py:obj:`mitsuba.Normal3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Normal3f`, drjit.llvm.ad.Float]:
             A tuple consisting of the sampled microfacet normal and the
             associated solid angle density
 
@@ -11417,7 +11733,7 @@
 
         Visible normal sampling code for the alpha=1 case
 
-        Parameter ``cos_theta_i`` (drjit.llvm.Float):
+        Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
@@ -11430,7 +11746,7 @@
 
         Scale the roughness values by some constant
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → None:
@@ -11446,7 +11762,7 @@
         Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
             The microfacet normal
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.MicrofacetDistribution.type(self)
@@ -11674,7 +11990,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ObjectPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ObjectPtr.gather_(arg0, arg1, arg2, arg3)
@@ -11682,10 +11998,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ObjectPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -11709,12 +12025,12 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ObjectPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ObjectPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ObjectPtr`:
@@ -11722,7 +12038,7 @@
 
     .. py:method:: mitsuba.ObjectPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.ObjectPtr`):
@@ -11752,7 +12068,7 @@
 
     .. py:method:: mitsuba.ObjectPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.ObjectPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.ObjectPtr`
 
 .. py:class:: mitsuba.PCG32
 
@@ -11762,15 +12078,15 @@
         Parameter ``size`` (int):
             *no description available*
 
-        Parameter ``initstate`` (drjit.llvm.UInt64):
+        Parameter ``initstate`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``initseq`` (drjit.llvm.UInt64):
+        Parameter ``initseq`` (drjit.llvm.ad.UInt64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.PCG32):
+        Parameter ``arg0`` (drjit.llvm.ad.PCG32):
             *no description available*
 
     .. py:method:: mitsuba.PCG32.next_float32(overloaded)
@@ -11778,15 +12094,15 @@
 
         .. py:method:: next_float32(self)
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
         .. py:method:: next_float32(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float:
+            Returns → drjit.llvm.ad.Float:
                 *no description available*
 
     .. py:method:: mitsuba.PCG32.next_float64(overloaded)
@@ -11794,15 +12110,15 @@
 
         .. py:method:: next_float64(self)
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
         .. py:method:: next_float64(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.Float64:
+            Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
     .. py:method:: mitsuba.PCG32.next_uint32(overloaded)
@@ -11810,15 +12126,15 @@
 
         .. py:method:: next_uint32(self)
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: next_uint32(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.PCG32.next_uint32_bounded(self, bound, mask=True)
@@ -11826,10 +12142,10 @@
         Parameter ``bound`` (int):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.PCG32.next_uint64(overloaded)
@@ -11837,15 +12153,15 @@
 
         .. py:method:: next_uint64(self)
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: next_uint64(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.PCG32.next_uint64_bounded(self, bound, mask=True)
@@ -11853,10 +12169,10 @@
         Parameter ``bound`` (int):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.PCG32.seed(self, size=1, initstate=9600629759793949339, initseq=15726070495360670683)
@@ -11864,10 +12180,10 @@
         Parameter ``size`` (int):
             *no description available*
 
-        Parameter ``initstate`` (drjit.llvm.UInt64):
+        Parameter ``initstate`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``initseq`` (drjit.llvm.UInt64):
+        Parameter ``initseq`` (drjit.llvm.ad.UInt64):
             *no description available*
 
         Returns → None:
@@ -11913,7 +12229,7 @@
 
         Number of components this phase function is comprised of.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → int:
@@ -11938,10 +12254,10 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             An outgoing direction to evaluate.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The value of the phase function in direction wo
 
     .. py:method:: mitsuba.PhaseFunction.flags(overloaded)
@@ -11954,7 +12270,7 @@
             Parameter ``index`` (int):
                 *no description available*
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → int:
@@ -11964,7 +12280,7 @@
 
             Flags for this phase function.
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → int:
@@ -11981,7 +12297,7 @@
 
         Return the maximum projected area of the microflake distribution
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunction.projected_area(self, mi, active=True)
@@ -11997,10 +12313,10 @@
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The projected area in direction ``mi.wi`` at position ``mi.p``
 
     .. py:method:: mitsuba.PhaseFunction.sample(self, ctx, mi, sample1, sample2, active=True)
@@ -12018,7 +12334,7 @@
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the phase function component in multi-component models.
 
@@ -12026,10 +12342,10 @@
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.ad.Float]:
             A sampled direction wo
 
 .. py:class:: mitsuba.PhaseFunctionContext
@@ -12109,10 +12425,10 @@
 
         Number of components this phase function is comprised of.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
@@ -12128,7 +12444,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.eval(self, ctx, mi, wo, active=True)
@@ -12150,20 +12466,20 @@
         Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
             An outgoing direction to evaluate.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The value of the phase function in direction wo
 
     .. py:method:: mitsuba.PhaseFunctionPtr.flags(self, active=True)
 
         Flags for this phase function.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.gather_(arg0, arg1, arg2, arg3)
@@ -12171,10 +12487,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -12197,7 +12513,7 @@
 
         Return the maximum projected area of the microflake distribution
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.neq_(self, arg0)
@@ -12205,7 +12521,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.projected_area(self, mi, active=True)
@@ -12221,15 +12537,15 @@
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The projected area in direction ``mi.wi`` at position ``mi.p``
 
     .. py:method:: mitsuba.PhaseFunctionPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.PhaseFunctionPtr`:
@@ -12250,7 +12566,7 @@
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the phase function component in multi-component models.
 
@@ -12258,15 +12574,15 @@
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.ad.Float]:
             A sampled direction wo
 
     .. py:method:: mitsuba.PhaseFunctionPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
@@ -12296,7 +12612,7 @@
 
     .. py:method:: mitsuba.PhaseFunctionPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.PhaseFunctionPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.PhaseFunctionPtr`
 
 .. py:class:: mitsuba.PluginManager
 
@@ -12480,7 +12796,7 @@
         Parameter ``ray_flags`` (int):
             Flags specifying which information should be computed
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
@@ -12495,7 +12811,7 @@
 
         Is the current interaction valid?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.PreliminaryIntersection3f.prim_index
@@ -12769,8 +13085,6 @@
         Returns → bool:
             *no description available*
 
-.. py:class:: mitsuba.PyObjectWrapper
-
 .. py:class:: mitsuba.RadicalInverse
 
     Base class: :py:obj:`mitsuba.Object`
@@ -12826,11 +13140,11 @@
             radical inverse function (0 corresponds to 2, 1->3, 2->5, etc.).
             The value specified here must be between 0 and 1023.
 
-        Parameter ``index`` (drjit.llvm.UInt64):
+        Parameter ``index`` (drjit.llvm.ad.UInt64):
             Denotes the index that should be mapped through the radical
             inverse function
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.RadicalInverse.inverse_permutation(self, arg0)
@@ -12889,7 +13203,7 @@
         Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
@@ -12903,10 +13217,10 @@
         Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``maxt`` (drjit.llvm.Float):
+        Parameter ``maxt`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
@@ -12917,7 +13231,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Parameter ``maxt`` (drjit.llvm.Float):
+        Parameter ``maxt`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: mitsuba.Ray3f.assign(self, arg0)
@@ -12980,7 +13294,7 @@
         Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
@@ -12996,7 +13310,7 @@
 
     .. py:method:: mitsuba.RayDifferential3f.scale_differential(self, amount)
 
-        Parameter ``amount`` (drjit.llvm.Float):
+        Parameter ``amount`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → None:
@@ -13065,13 +13379,13 @@
 
         Evaluate the filter function
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ReconstructionFilter.eval_discretized(self, x, active=True)
@@ -13079,13 +13393,13 @@
         Evaluate a discretized version of the filter (generally faster than
         'eval')
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.ReconstructionFilter.is_box_filter(self)
@@ -13316,7 +13630,7 @@
 
         Register internal state of this sampler with a symbolic loop
 
-        Parameter ``loop`` (drjit.llvm.LoopBase):
+        Parameter ``loop`` (drjit.llvm.ad.LoopBase):
             *no description available*
 
         Returns → None:
@@ -13326,17 +13640,17 @@
 
         Retrieve the next component value from the current sample
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Sampler.next_2d(self, active=True)
 
         Retrieve the next two component values from the current sample
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Point2f`:
@@ -13446,10 +13760,10 @@
             guarantees that space for at least ``aov_names().size()`` entries
             has been allocated.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             A mask that indicates which SIMD lanes are active
 
-        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.Bool, List[drjit.llvm.Float]]:
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Bool, List[drjit.llvm.ad.Float]]:
             A pair containing a spectrum and a mask specifying whether a
             surface or medium interaction was sampled. False mask entries
             indicate that the ray "escaped" the scene, in which case the the
@@ -14020,7 +14334,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.ScalarBoundingBox3f.reset(self)
@@ -14158,7 +14472,7 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
 .. py:class:: mitsuba.ScalarColor0d
@@ -15098,7 +15412,7 @@
 
         Return the list of emitters as an Dr.Jit array
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.Scene.environment(self)
@@ -15140,7 +15454,7 @@
         Parameter ``ds``:
             A direction sampling record, which specifies the query location.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -15159,13 +15473,13 @@
         Evaluate the discrete probability of the sample_emitter() technique
         for the given a emitter index.
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Scene.pdf_emitter_direction(self, ref, active=True)
@@ -15185,10 +15499,10 @@
         Parameter ``ds``:
             A direction sampling record, which specifies the query location.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The solid angle density of the sample
 
     .. py:method:: mitsuba.Scene.ray_intersect(overloaded)
@@ -15218,7 +15532,7 @@
                 A detailed surface interaction record. Its ``is_valid()`` method
                 should be queried to check if an intersection was actually found.
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
         .. py:method:: ray_intersect(self, ray, ray_flags, coherent, active=True)
@@ -15278,7 +15592,7 @@
                 An integer combining flag bits from RayFlags (merged using binary
                 or).
 
-            Parameter ``coherent`` (drjit.llvm.Bool):
+            Parameter ``coherent`` (drjit.llvm.ad.Bool):
                 Setting this flag to ``True`` can noticeably improve performance
                 when ``ray`` contains a coherent set of rays (e.g. primary camera
                 rays), and when using ``llvm_*`` variants of the renderer along
@@ -15288,7 +15602,7 @@
                 A detailed surface interaction record. Its ``is_valid()`` method
                 should be queried to check if an intersection was actually found.
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
     .. py:method:: mitsuba.Scene.ray_intersect_preliminary(self, ray, coherent=False, active=True)
@@ -15332,13 +15646,13 @@
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
-        Parameter ``coherent`` (drjit.llvm.Bool):
+        Parameter ``coherent`` (drjit.llvm.ad.Bool):
             Setting this flag to ``True`` can noticeably improve performance
             when ``ray`` contains a coherent set of rays (e.g. primary camera
             rays), and when using ``llvm_*`` variants of the renderer along
             with Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -15372,10 +15686,10 @@
                 A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
                 information, which matters when the shapes are in motion
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 ``True`` if an intersection was found
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
         .. py:method:: ray_test(self, ray, coherent, active=True)
@@ -15403,16 +15717,16 @@
                 A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
                 information, which matters when the shapes are in motion
 
-            Parameter ``coherent`` (drjit.llvm.Bool):
+            Parameter ``coherent`` (drjit.llvm.ad.Bool):
                 Setting this flag to ``True`` can noticeably improve performance
                 when ``ray`` contains a coherent set of rays (e.g. primary camera
                 rays), and when using ``llvm_*`` variants of the renderer along
                 with Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 ``True`` if an intersection was found
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
     .. py:method:: mitsuba.Scene.sample_emitter(self, sample, active=True)
@@ -15423,13 +15737,13 @@
         Currently, the sampling scheme implemented by the Scene class is very
         simplistic (uniform).
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A uniformly distributed number in [0, 1).
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[drjit.llvm.UInt, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             The index of the chosen emitter along with the sampling weight
             (equal to the inverse PDF), and the transformed random sample for
             reuse.
@@ -15463,7 +15777,7 @@
             sampled emitter position and the reference point are mutually
             visible.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.DirectionSample`, :py:obj:`mitsuba.Color3f`]:
@@ -15498,7 +15812,7 @@
 
         Return the list of shapes as an Dr.Jit array
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Shape` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Shape` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.Scene.shapes_grad_enabled(self)
@@ -15612,10 +15926,10 @@
 
     .. py:method:: mitsuba.Sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
@@ -15624,7 +15938,7 @@
         Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
@@ -15687,7 +16001,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.SensorPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.SensorPtr.gather_(arg0, arg1, arg2, arg3)
@@ -15695,10 +16009,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.SensorPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -15722,7 +16036,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.SensorPtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.SensorPtr.pdf_direction(self, it, ds, active=True)
@@ -15740,15 +16054,15 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.SensorPtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.SensorPtr`:
@@ -15783,7 +16097,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
@@ -15797,16 +16111,16 @@
 
         The default implementation throws an exception.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position to be sampled.
 
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
@@ -15823,10 +16137,10 @@
         are absorbed into a spectral importance weight that is returned along
         with the ray.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the ray to be sampled
 
-        Parameter ``sample1`` (drjit.llvm.Float):
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
@@ -15843,7 +16157,7 @@
             aperture of the sensor. This argument is ignored if
             ``needs_sample_3() == false``.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
@@ -15876,10 +16190,10 @@
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A 1D uniformly distributed random variate
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
@@ -15891,7 +16205,7 @@
 
     .. py:method:: mitsuba.SensorPtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.SensorPtr`):
@@ -15928,7 +16242,7 @@
 
     .. py:method:: mitsuba.SensorPtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.SensorPtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.SensorPtr`
 
 .. py:class:: mitsuba.Shape
 
@@ -16019,7 +16333,7 @@
             Integer specifying the recursion depth for nested virtual function
             call to this method (e.g. used for instancing).
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
@@ -16057,7 +16371,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -16080,10 +16394,10 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
         The default implementation throws an exception.
@@ -16103,7 +16417,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -16178,10 +16492,10 @@
         Parameter ``ps``:
             A position record describing the sample in question
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The probability density per unit solid angle
 
     .. py:method:: mitsuba.Shape.pdf_position(self, ps, active=True)
@@ -16192,10 +16506,10 @@
         Parameter ``ps`` (:py:obj:`mitsuba.PositionSample`):
             A position record describing the sample in question
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The probability density per unit area
 
     .. py:method:: mitsuba.Shape.primitive_count(self)
@@ -16224,7 +16538,7 @@
         Parameter ``ray_flags`` (int):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
@@ -16248,7 +16562,7 @@
             Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
                 The ray to be tested for an intersection
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -16269,7 +16583,7 @@
             Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
                 The ray to be tested for an intersection
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -16290,10 +16604,10 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.Shape.sample_direction(self, it, sample, active=True)
@@ -16321,7 +16635,7 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.DirectionSample`:
@@ -16336,13 +16650,13 @@
         distribution as long as this is reflected in the returned probability
         density.
 
-        Parameter ``time`` (drjit.llvm.Float):
+        Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position sample
 
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.PositionSample`:
@@ -16364,7 +16678,7 @@
 
         The default implementation throws an exception.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
 .. py:class:: mitsuba.ShapePtr
@@ -16389,7 +16703,7 @@
 
         Return the shape's BSDF
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
@@ -16421,7 +16735,7 @@
             Integer specifying the recursion depth for nested virtual function
             call to this method (e.g. used for instancing).
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
@@ -16431,7 +16745,7 @@
 
         Return the area emitter associated with this shape (if any)
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.entry_(self, arg0)
@@ -16447,7 +16761,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ShapePtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.eval_attribute(self, name, si, active=True)
@@ -16464,7 +16778,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -16487,10 +16801,10 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
         The default implementation throws an exception.
@@ -16510,7 +16824,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
             Surface interaction associated with the query
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -16522,7 +16836,7 @@
 
         Return the medium that lies on the exterior of this shape
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.gather_(arg0, arg1, arg2, arg3)
@@ -16530,10 +16844,10 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ShapePtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
@@ -16551,28 +16865,28 @@
 
         Return the medium that lies on the interior of this shape
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.is_emitter(self)
 
         Is this shape also an area emitter?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.is_medium_transition(self)
 
         Does the surface of this shape mark a medium transition?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.is_sensor(self)
 
         Is this shape also an area sensor?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.label_(self)
@@ -16585,7 +16899,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.ShapePtr`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.ray_intersect(self, ray, ray_flags=14, active=True)
@@ -16604,7 +16918,7 @@
         Parameter ``ray_flags`` (int):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
@@ -16628,7 +16942,7 @@
             Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
                 The ray to be tested for an intersection
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -16649,7 +16963,7 @@
             Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
                 The ray to be tested for an intersection
 
-            Parameter ``active`` (drjit.llvm.Bool):
+            Parameter ``active`` (drjit.llvm.ad.Bool):
                 Mask to specify active lanes.
 
             Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
@@ -16670,15 +16984,15 @@
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.reinterpret_array_(arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ShapePtr`:
@@ -16686,7 +17000,7 @@
 
     .. py:method:: mitsuba.ShapePtr.select_(arg0, arg1, arg2)
 
-        Parameter ``arg0`` (drjit.llvm.Bool):
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.ShapePtr`):
@@ -16702,7 +17016,7 @@
 
         Return the area sensor associated with this shape (if any)
 
-        Returns → drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.set_index_(self, arg0)
@@ -16723,7 +17037,7 @@
 
     .. py:method:: mitsuba.ShapePtr.zero_
 
-        (arg0: int) -> :py:obj:`mitsuba.llvm_rgb.ShapePtr`
+        (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.ShapePtr`
 
 .. py:class:: mitsuba.Spiral
 
@@ -17807,12 +18121,12 @@
             Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
                 *no description available*
 
-            Returns → drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>:
+            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
                 *no description available*
 
         .. py:method:: bsdf(self)
 
-            Returns → drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>:
+            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
                 *no description available*
 
     .. py:method:: mitsuba.SurfaceInteraction3f.compute_uv_partials(self, ray)
@@ -17863,7 +18177,7 @@
         Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.EmitterPtr`:
@@ -17895,14 +18209,14 @@
 
         Does the surface mark a transition between two media?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.SurfaceInteraction3f.is_sensor(self)
 
         Is the intersected shape also a sensor?
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.SurfaceInteraction3f.prim_index
@@ -17944,7 +18258,7 @@
             Returns the exterior medium when ``cos_theta > 0`` and the interior
             medium when ``cos_theta <= 0``.
 
-            Parameter ``cos_theta`` (drjit.llvm.Float):
+            Parameter ``cos_theta`` (drjit.llvm.ad.Float):
                 *no description available*
 
             Returns → :py:obj:`mitsuba.MediumPtr`:
@@ -18053,12 +18367,12 @@
 
     .. py:method:: __init__(self, array)
 
-        Parameter ``array`` (drjit.llvm.Float):
+        Parameter ``array`` (drjit.llvm.ad.Float):
             *no description available*
 
     .. py:method:: __init__(self, array, shape)
 
-        Parameter ``array`` (drjit.llvm.Float):
+        Parameter ``array`` (drjit.llvm.ad.Float):
             *no description available*
 
         Parameter ``shape`` (List[int]):
@@ -18066,121 +18380,123 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXi):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXu):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXi64):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXu64):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        10. __init__(self: drjit.llvm.TensorXf, arg0: drjit.llvm.TensorXf64) -> None
+        10. __init__(self: drjit.llvm.ad.TensorXf, arg0: drjit.llvm.ad.TensorXf64) -> None
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        11. __init__(self: drjit.llvm.ad.TensorXf, arg0: drjit.llvm.TensorXf) -> None
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.abs_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.acos_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.acosh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.add_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.and_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.andnot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.asin_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.asinh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.atan2_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.atan_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.atanh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.cbrt_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.cos_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.cosh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.cot_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.csc_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.data_(self)
@@ -18190,78 +18506,78 @@
 
     .. py:method:: mitsuba.TensorXf.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.erf_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.erfinv_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.exp2_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.exp_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.fmadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.iand_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.index(self)
@@ -18269,122 +18585,127 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.TensorXf.ior_(self, arg0)
+    .. py:method:: mitsuba.TensorXf.index_ad(self)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Returns → int:
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+    .. py:method:: mitsuba.TensorXf.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.itruediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.ixor_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.lgamma_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.log2_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.log_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.neg_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXb:
+        Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.not_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.or_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.rcp_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.reinterpret_array_(overloaded)
@@ -18392,41 +18713,41 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.TensorXi):
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.TensorXu):
-                *no description available*
-
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.TensorXf):
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
     .. py:method:: mitsuba.TensorXf.rsqrt_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sec_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.select_
 
-        (arg0: drjit.llvm.TensorXb, arg1: drjit.llvm.TensorXf, arg2: drjit.llvm.TensorXf) -> drjit.llvm.TensorXf
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXf, arg2: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf
 
     .. py:method:: mitsuba.TensorXf.set_index_(self, arg0)
 
@@ -18436,68 +18757,76 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.TensorXf.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.TensorXf.sin_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sincos_(self)
 
-        Returns → Tuple[drjit.llvm.TensorXf, drjit.llvm.TensorXf]:
+        Returns → Tuple[drjit.llvm.ad.TensorXf, drjit.llvm.ad.TensorXf]:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sincosh_(self)
 
-        Returns → Tuple[drjit.llvm.TensorXf, drjit.llvm.TensorXf]:
+        Returns → Tuple[drjit.llvm.ad.TensorXf, drjit.llvm.ad.TensorXf]:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sinh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sqrt_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.tan_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.tanh_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.tgamma_(self)
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.truediv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
     .. py:method:: mitsuba.TensorXf.xor_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.TensorXf):
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Returns → drjit.llvm.TensorXf:
+        Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
 .. py:class:: mitsuba.Texture
@@ -18537,7 +18866,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             An interaction record describing the associated surface position
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -18556,10 +18885,10 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             An interaction record describing the associated surface position
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
     .. py:method:: mitsuba.Texture.eval_1_grad(self, si, active=True)
@@ -18570,7 +18899,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             An interaction record describing the associated surface position
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Vector2f`:
@@ -18590,7 +18919,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             An interaction record describing the associated surface position
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -18627,7 +18956,7 @@
         Even if the operation is provided, it may only return an
         approximation.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Texture.pdf_position(self, p, active=True)
@@ -18637,10 +18966,10 @@
         Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Texture.pdf_spectrum(self, si, active=True)
@@ -18654,7 +18983,7 @@
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             An interaction record describing the associated surface position
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color0f`:
@@ -18686,10 +19015,10 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A 2D vector of uniform variates
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+        Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
             1. A texture-space position in the range :math:`[0, 1]^2`
 
         2. The associated probability per unit area in UV space
@@ -18709,7 +19038,7 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
             A uniform variate for each desired wavelength.
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
@@ -19064,17 +19393,17 @@
         Initialize the transformation from the given matrix (and compute its
         inverse transpose)
 
-        Parameter ``arg0`` (drjit.llvm.Matrix3f):
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix3f):
             *no description available*
 
     .. py:method:: __init__(self, arg0, arg1)
 
         Initialize from a matrix and its inverse transpose
 
-        Parameter ``arg0`` (drjit.llvm.Matrix3f):
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix3f):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Matrix3f):
+        Parameter ``arg1`` (drjit.llvm.ad.Matrix3f):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
@@ -19101,7 +19430,7 @@
             whether ``M . M^T == I`` (where ``M`` is the matrix in question and
             ``I`` is the identity).
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
         .. py:method:: has_scale(self)
@@ -19110,7 +19439,7 @@
             whether ``M . M^T == I`` (where ``M`` is the matrix in question and
             ``I`` is the identity).
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
     .. py:method:: mitsuba.Transform3f.inverse(self)
@@ -19126,7 +19455,7 @@
         Create a rotation transformation in 2D. The angle is specified in
         degrees
 
-        Parameter ``angle`` (drjit.llvm.Float):
+        Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform3f`:
@@ -19221,17 +19550,17 @@
         Initialize the transformation from the given matrix (and compute its
         inverse transpose)
 
-        Parameter ``arg0`` (drjit.llvm.Matrix4f):
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix4f):
             *no description available*
 
     .. py:method:: __init__(self, arg0, arg1)
 
         Initialize from a matrix and its inverse transpose
 
-        Parameter ``arg0`` (drjit.llvm.Matrix4f):
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix4f):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.Matrix4f):
+        Parameter ``arg1`` (drjit.llvm.ad.Matrix4f):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
@@ -19276,7 +19605,7 @@
             whether ``M . M^T == I`` (where ``M`` is the matrix in question and
             ``I`` is the identity).
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
         .. py:method:: has_scale(self)
@@ -19285,7 +19614,7 @@
             whether ``M . M^T == I`` (where ``M`` is the matrix in question and
             ``I`` is the identity).
 
-            Returns → drjit.llvm.Bool:
+            Returns → drjit.llvm.ad.Bool:
                 *no description available*
 
     .. py:method:: mitsuba.Transform4f.inverse(self)
@@ -19317,10 +19646,10 @@
         Create an orthographic transformation, which maps Z to [0,1] and
         leaves the X and Y coordinates untouched.
 
-        Parameter ``near`` (drjit.llvm.Float):
+        Parameter ``near`` (drjit.llvm.ad.Float):
             Near clipping plane
 
-        Parameter ``far`` (drjit.llvm.Float):
+        Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
         Returns → :py:obj:`mitsuba.Transform4f`:
@@ -19337,13 +19666,13 @@
 
         Camera-space depths are not mapped linearly!
 
-        Parameter ``fov`` (drjit.llvm.Float):
+        Parameter ``fov`` (drjit.llvm.ad.Float):
             Field of view in degrees
 
-        Parameter ``near`` (drjit.llvm.Float):
+        Parameter ``near`` (drjit.llvm.ad.Float):
             Near clipping plane
 
-        Parameter ``far`` (drjit.llvm.Float):
+        Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
         Returns → :py:obj:`mitsuba.Transform4f`:
@@ -19357,7 +19686,7 @@
         Parameter ``axis`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``angle`` (drjit.llvm.Float):
+        Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4f`:
@@ -19489,52 +19818,52 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.UInt, *args) -> None
 
         Parameter ``arg0`` (drjit.llvm.UInt):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Int64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.UInt64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        10. __init__(self: drjit.llvm.UInt, *args) -> None
-
-        Parameter ``arg0`` (drjit::DiffArray<drjit::LLVMArray<unsigned int> >):
             *no description available*
 
     .. py:method:: mitsuba.UInt.abs_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.add_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.and_(overloaded)
@@ -19542,18 +19871,18 @@
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.andnot_(overloaded)
@@ -19561,27 +19890,27 @@
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.arange_
 
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.UInt
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.UInt
 
     .. py:method:: mitsuba.UInt.assign(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → None:
@@ -19592,12 +19921,12 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.copy_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.data_(self)
@@ -19605,9 +19934,19 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.UInt.detach_(self)
+
+        Returns → drjit.llvm.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.detach_ref_(self)
+
+        Returns → drjit.llvm.UInt:
+            *no description available*
+
     .. py:method:: mitsuba.UInt.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Returns → int:
@@ -19615,10 +19954,10 @@
 
     .. py:method:: mitsuba.UInt.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.entry_(self, arg0)
@@ -19631,66 +19970,66 @@
 
     .. py:method:: mitsuba.UInt.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.floordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.full_
 
-        (arg0: int, arg1: int) -> drjit.llvm.UInt
+        (arg0: int, arg1: int) -> drjit.llvm.ad.UInt
 
     .. py:method:: mitsuba.UInt.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.hmax_(overloaded)
@@ -19708,7 +20047,7 @@
 
     .. py:method:: mitsuba.UInt.hmax_async_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.hmin_(overloaded)
@@ -19726,7 +20065,7 @@
 
     .. py:method:: mitsuba.UInt.hmin_async_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.hprod_(overloaded)
@@ -19744,7 +20083,7 @@
 
     .. py:method:: mitsuba.UInt.hprod_async_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.hsum_(overloaded)
@@ -19762,15 +20101,15 @@
 
     .. py:method:: mitsuba.UInt.hsum_async_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.iand_(overloaded)
@@ -19778,45 +20117,50 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.ifloordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -19834,18 +20178,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.is_evaluated_(self)
@@ -19860,26 +20204,26 @@
 
     .. py:method:: mitsuba.UInt.isl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.isr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.ixor_(overloaded)
@@ -19887,18 +20231,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.label_(self)
@@ -19908,15 +20252,15 @@
 
     .. py:method:: mitsuba.UInt.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.linspace_
 
-        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.UInt
+        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.ad.UInt
 
     .. py:method:: mitsuba.UInt.load_(arg0, arg1)
 
@@ -19926,20 +20270,20 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.lzcnt_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.map_(ptr, size, callback=None)
@@ -19953,15 +20297,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.migrate_(self, arg0)
@@ -19969,85 +20313,85 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.mulhi_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.neg_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt.not_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.opaque_
 
-        (arg0: int, arg1: int) -> drjit.llvm.UInt
+        (arg0: int, arg1: int) -> drjit.llvm.ad.UInt
 
     .. py:method:: mitsuba.UInt.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.popcnt_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.reinterpret_array_(overloaded)
@@ -20055,26 +20399,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int):
+            Parameter ``arg0`` (drjit.llvm.ad.Int):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt):
-                *no description available*
-
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
@@ -20082,7 +20426,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.ObjectPtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
@@ -20090,7 +20434,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.ShapePtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
@@ -20098,7 +20442,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.MediumPtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
@@ -20106,7 +20450,7 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.EmitterPtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
@@ -20114,17 +20458,17 @@
             Parameter ``arg0`` (:py:obj:`mitsuba.BSDFPtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            10. reinterpret_array_(arg0: :py:obj:`mitsuba.llvm_rgb.SensorPtr`) -> drjit.llvm.UInt
+            10. reinterpret_array_(arg0: :py:obj:`mitsuba.llvm_ad_rgb.SensorPtr`) -> drjit.llvm.ad.UInt
 
             Parameter ``arg0`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.resize_(self, arg0)
@@ -20137,13 +20481,13 @@
 
     .. py:method:: mitsuba.UInt.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.UInt):
+        Parameter ``target`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -20157,13 +20501,13 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.UInt):
+        Parameter ``target`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Returns → None:
@@ -20171,7 +20515,7 @@
 
     .. py:method:: mitsuba.UInt.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.UInt, arg2: drjit.llvm.UInt) -> drjit.llvm.UInt
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.UInt, arg2: drjit.llvm.ad.UInt) -> drjit.llvm.ad.UInt
 
     .. py:method:: mitsuba.UInt.set_entry_(overloaded)
 
@@ -20200,6 +20544,14 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.UInt.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.UInt.set_label_(self, arg0)
 
         Parameter ``arg0`` (str):
@@ -20210,31 +20562,31 @@
 
     .. py:method:: mitsuba.UInt.sl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.sr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.tzcnt_(self)
 
-        Returns → drjit.llvm.UInt:
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.xor_(overloaded)
@@ -20242,23 +20594,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt:
+            Returns → drjit.llvm.ad.UInt:
                 *no description available*
 
     .. py:method:: mitsuba.UInt.zero_
 
-        (arg0: int) -> drjit.llvm.UInt
+        (arg0: int) -> drjit.llvm.ad.UInt
 
 .. py:class:: mitsuba.UInt64
 
@@ -20275,52 +20627,52 @@
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int):
+        Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.Int64):
+        Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.UInt64, *args) -> None
 
         Parameter ``arg0`` (drjit.llvm.UInt64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.Float64):
-            *no description available*
-
-    .. py:method:: __init__(self, arg0)
-
-        10. __init__(self: drjit.llvm.UInt64, *args) -> None
-
-        Parameter ``arg0`` (drjit::DiffArray<drjit::LLVMArray<unsigned long> >):
             *no description available*
 
     .. py:method:: mitsuba.UInt64.abs_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.add_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.and_(overloaded)
@@ -20328,18 +20680,18 @@
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: and_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.andnot_(overloaded)
@@ -20347,27 +20699,27 @@
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: andnot_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.arange_
 
-        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.UInt64
+        (arg0: int, arg1: int, arg2: int) -> drjit.llvm.ad.UInt64
 
     .. py:method:: mitsuba.UInt64.assign(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
         Returns → None:
@@ -20378,12 +20730,12 @@
         Parameter ``arg0`` (int):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.copy_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.data_(self)
@@ -20391,9 +20743,19 @@
         Returns → int:
             *no description available*
 
+    .. py:method:: mitsuba.UInt64.detach_(self)
+
+        Returns → drjit.llvm.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.detach_ref_(self)
+
+        Returns → drjit.llvm.UInt64:
+            *no description available*
+
     .. py:method:: mitsuba.UInt64.dot_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
         Returns → int:
@@ -20401,10 +20763,10 @@
 
     .. py:method:: mitsuba.UInt64.dot_async_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.entry_(self, arg0)
@@ -20417,66 +20779,66 @@
 
     .. py:method:: mitsuba.UInt64.eq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.floordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.fmadd_(self, arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt64):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.full_
 
-        (arg0: int, arg1: int) -> drjit.llvm.UInt64
+        (arg0: int, arg1: int) -> drjit.llvm.ad.UInt64
 
     .. py:method:: mitsuba.UInt64.gather_(arg0, arg1, arg2, arg3)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.UInt):
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.Bool):
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``arg3`` (bool):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.ge_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.gt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.hmax_(overloaded)
@@ -20494,7 +20856,7 @@
 
     .. py:method:: mitsuba.UInt64.hmax_async_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.hmin_(overloaded)
@@ -20512,7 +20874,7 @@
 
     .. py:method:: mitsuba.UInt64.hmin_async_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.hprod_(overloaded)
@@ -20530,7 +20892,7 @@
 
     .. py:method:: mitsuba.UInt64.hprod_async_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.hsum_(overloaded)
@@ -20548,15 +20910,15 @@
 
     .. py:method:: mitsuba.UInt64.hsum_async_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.iadd_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.iand_(overloaded)
@@ -20564,45 +20926,50 @@
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: iand_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.ifloordiv_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.imod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.imul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.index_ad(self)
 
         Returns → int:
             *no description available*
@@ -20620,18 +20987,18 @@
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: ior_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.is_evaluated_(self)
@@ -20646,26 +21013,26 @@
 
     .. py:method:: mitsuba.UInt64.isl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.isr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.isub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.ixor_(overloaded)
@@ -20673,18 +21040,18 @@
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: ixor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.label_(self)
@@ -20694,15 +21061,15 @@
 
     .. py:method:: mitsuba.UInt64.le_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.linspace_
 
-        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.UInt64
+        (arg0: int, arg1: int, arg2: int, arg3: bool) -> drjit.llvm.ad.UInt64
 
     .. py:method:: mitsuba.UInt64.load_(arg0, arg1)
 
@@ -20712,20 +21079,20 @@
         Parameter ``arg1`` (int):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.lt_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.lzcnt_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.map_(ptr, size, callback=None)
@@ -20739,15 +21106,15 @@
         Parameter ``callback`` (Callable[[], None]):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.max_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.migrate_(self, arg0)
@@ -20755,85 +21122,85 @@
         Parameter ``arg0`` (AllocType):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.min_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.mod_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.mul_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.mulhi_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.neg_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.neq_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.not_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.opaque_
 
-        (arg0: int, arg1: int) -> drjit.llvm.UInt64
+        (arg0: int, arg1: int) -> drjit.llvm.ad.UInt64
 
     .. py:method:: mitsuba.UInt64.or_(overloaded)
 
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: or_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.popcnt_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.reinterpret_array_(overloaded)
@@ -20841,26 +21208,26 @@
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Int64):
+            Parameter ``arg0`` (drjit.llvm.ad.Int64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
-                *no description available*
-
-        .. py:method:: reinterpret_array_(arg0)
-
-            Parameter ``arg0`` (drjit.llvm.UInt64):
-                *no description available*
-
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: reinterpret_array_(arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Float64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.resize_(self, arg0)
@@ -20873,13 +21240,13 @@
 
     .. py:method:: mitsuba.UInt64.scatter_(self, target, index, mask, permute)
 
-        Parameter ``target`` (drjit.llvm.UInt64):
+        Parameter ``target`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Parameter ``permute`` (bool):
@@ -20893,13 +21260,13 @@
         Parameter ``op`` (ReduceOp):
             *no description available*
 
-        Parameter ``target`` (drjit.llvm.UInt64):
+        Parameter ``target`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``index`` (drjit.llvm.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``mask`` (drjit.llvm.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
         Returns → None:
@@ -20907,7 +21274,7 @@
 
     .. py:method:: mitsuba.UInt64.select_
 
-        (arg0: drjit.llvm.Bool, arg1: drjit.llvm.UInt64, arg2: drjit.llvm.UInt64) -> drjit.llvm.UInt64
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.UInt64, arg2: drjit.llvm.ad.UInt64) -> drjit.llvm.ad.UInt64
 
     .. py:method:: mitsuba.UInt64.set_entry_(overloaded)
 
@@ -20936,6 +21303,14 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.UInt64.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.UInt64.set_label_(self, arg0)
 
         Parameter ``arg0`` (str):
@@ -20946,31 +21321,31 @@
 
     .. py:method:: mitsuba.UInt64.sl_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.sr_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.sub_(self, arg0)
 
-        Parameter ``arg0`` (drjit.llvm.UInt64):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.tzcnt_(self)
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.xor_(overloaded)
@@ -20978,23 +21353,23 @@
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.UInt64):
+            Parameter ``arg0`` (drjit.llvm.ad.UInt64):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
         .. py:method:: xor_(self, arg0)
 
-            Parameter ``arg0`` (drjit.llvm.Bool):
+            Parameter ``arg0`` (drjit.llvm.ad.Bool):
                 *no description available*
 
-            Returns → drjit.llvm.UInt64:
+            Returns → drjit.llvm.ad.UInt64:
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.zero_
 
-        (arg0: int) -> drjit.llvm.UInt64
+        (arg0: int) -> drjit.llvm.ad.UInt64
 
 .. py:class:: mitsuba.Vector0f
 
@@ -21057,7 +21432,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
@@ -21070,10 +21445,10 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Volume.eval_3(self, it, active=True)
@@ -21084,7 +21459,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Vector3f`:
@@ -21099,10 +21474,10 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.Float[6]]:
+        Returns → List[drjit.llvm.ad.Float[6]]:
             *no description available*
 
     .. py:method:: mitsuba.Volume.eval_gradient(self, it, active=True)
@@ -21113,7 +21488,7 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Vector3f`]:
@@ -21130,10 +21505,10 @@
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.Float]:
+        Returns → List[drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:method:: mitsuba.Volume.max(self)
@@ -21169,13 +21544,13 @@
 
     Overloaded function.
 
-    1. __init__(self: :py:obj:`mitsuba.llvm_rgb.VolumeGrid`, array: numpy.ndarray[numpy.float32], compute_max: bool = True) -> None
+    1. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.VolumeGrid`, array: numpy.ndarray[numpy.float32], compute_max: bool = True) -> None
 
     Initialize a VolumeGrid from a NumPy array
 
-    2. __init__(self: :py:obj:`mitsuba.llvm_rgb.VolumeGrid`, path: :py:obj:`mitsuba.filesystem.path`) -> None
+    2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.VolumeGrid`, path: :py:obj:`mitsuba.filesystem.path`) -> None
 
-    3. __init__(self: :py:obj:`mitsuba.llvm_rgb.VolumeGrid`, stream: :py:obj:`mitsuba.Stream`) -> None
+    3. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.VolumeGrid`, stream: :py:obj:`mitsuba.Stream`) -> None
 
     .. py:method:: mitsuba.VolumeGrid.buffer_size(self)
 
@@ -21469,242 +21844,7 @@
 
         Zero-initializes the internal state associated with a parameter
 
-.. py:function:: mitsuba.ad.common.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
-
-    This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Mi. The function returns a rendered image that
-    can be used in subsequent differentiable computation steps. At any later
-    point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``dr.forward()`` and
-    ``dr.backward()``).
-
-    Under the hood, the differentiation operation will be intercepted and
-    routed to ``Integrator.render_forward()`` or
-    ``Integrator.render_backward()``, which evaluate the derivative using
-    either naive AD or a more specialized differential simulation.
-
-    Note the default implementation of this functionality relies on naive
-    automatic differentiation (AD), which records a computation graph of the
-    primal rendering step that is subsequently traversed to propagate
-    derivatives. This tends to be relatively inefficient due to the need to
-    track intermediate program state. In particular, it means that
-    differentiation of nontrivial scenes at high sample counts will often run
-    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-    ``prb`` (Path Replay Backpropagation) that are specifically designed for
-    differentiation can be significantly more efficient.
-
-    Parameter ``scene`` (``mi.Scene``):
-        Reference to the scene being rendered in a differentiable manner.
-
-    Parameter ``params`` (Any):
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
-       must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired.
-
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
-
-    Parameter ``integrator`` (``mi.Integrator``):
-        Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description
-        will be used.
-
-    Parameter ``seed` (``int``)
-        This parameter controls the initialization of the random number
-        generator during the primal rendering step. It is crucial that you
-        specify different seeds (e.g., an increasing sequence) if subsequent
-        calls should produce statistically independent images (e.g. to
-        de-correlate gradient-based optimization steps).
-
-    Parameter ``seed_grad` (``int``)
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will automatically compute a suitable value from the primal ``seed``.
-
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        primal rendering step. The value provided within the original scene
-        specification takes precedence if ``spp=0``.
-
-    Parameter ``spp_grad`` (``int``):
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will copy the value from ``spp``.
-
-    Parameter ``scene`` (mi.Scene):
-        *no description available*
-
-    Parameter ``sensor`` (Union[int, mi.Sensor]):
-        *no description available*
-
-    Parameter ``integrator`` (mi.Integrator):
-        *no description available*
-
-    Parameter ``seed`` (int):
-        *no description available*
-
-    Parameter ``seed_grad`` (int):
-        *no description available*
-
-    Parameter ``spp`` (int):
-        *no description available*
-
-    Parameter ``spp_grad`` (int):
-        *no description available*
-
-    Returns → mi.TensorXf:
-        *no description available*
-
-.. py:class:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a reparameterized direct illumination integrator.
-
-    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
-    'reparam_max_depth' are both set to be 2. But since direct illumination
-    tasks only have two ray segments, the overhead of relying on radiative
-    backpropagation is non-neglegible. This implementation builds on the
-    traditional ADIntegrator that does not require two passes during
-    gradient traversal.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.reparam(scene, rng, params, ray, depth, active)
-
-        Helper function to reparameterize rays internally and within ADIntegrator
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``rng`` (mi.PCG32):
-            *no description available*
-
-        Parameter ``params`` (Any):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``depth`` (mi.UInt32):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool):
-            Mask to specify active lanes.
-
-    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.direct_reparam.annotations
-
-.. py:class:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a reparameterized emission integrator.
-
-    It reparametrizes the camera ray to handle discontinuity issues
-    caused by moving emitters. This is mainly used for learning and
-    debugging purpose.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.emission_reparam.annotations
-
-.. py:data:: mitsuba.ad.f
-    :type: str
-    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/emission_reparam.py
-
-.. py:function:: mitsuba.ad.integrators.direct_reparam.annotations
-
-.. py:function:: mitsuba.ad.integrators.emission_reparam.annotations
-
-.. py:data:: mitsuba.ad.integrators.f
-    :type: str
-    :value: /home/nroussel/rgl/mitsuba2-next/build/python/mitsuba/python/ad/integrators/emission_reparam.py
-
-.. py:data:: mitsuba.ad.integrators.name
-    :type: str
-    :value: emission_reparam
-
-.. py:function:: mitsuba.ad.integrators.prb.annotations
-
-.. py:function:: mitsuba.ad.integrators.prb_basic.annotations
-
-.. py:function:: mitsuba.ad.integrators.prb_reparam.annotations
-
-.. py:function:: mitsuba.ad.integrators.prbvolpath.annotations
-
-.. py:data:: mitsuba.ad.name
-    :type: str
-    :value: emission_reparam
-
-.. py:class:: mitsuba.ad.prb.ADIntegrator
+.. py:class:: mitsuba.ad.common.ADIntegrator
 
     Base class: :py:obj:`mitsuba.SamplingIntegrator`
 
@@ -21731,7 +21871,7 @@
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.render(overloaded)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render(overloaded)
 
 
         .. py:method:: render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
@@ -21774,7 +21914,7 @@
             Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
         .. py:method:: render(self, scene, sensor=0, seed=0, spp=0, develop=True, evaluate=True)
@@ -21803,10 +21943,10 @@
             Parameter ``evaluate`` (bool):
                 *no description available*
 
-            Returns → drjit.llvm.TensorXf:
+            Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
 
         Evaluates the forward-mode derivative of the rendering step.
 
@@ -21877,7 +22017,7 @@
         Returns → mi.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
 
         Evaluates the reverse-mode derivative of the rendering step.
 
@@ -21945,7 +22085,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
 
         Sample a 2D grid of primary rays for a given sensor
 
@@ -21976,7 +22116,7 @@
         Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
             *no description available*
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
+    .. py:method:: mitsuba.ad.common.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
 
         Given a sensor and a desired number of samples per pixel, this function
         computes the necessary number of Monte Carlo samples and then suitably
@@ -22013,7 +22153,7 @@
         Parameter ``aovs`` (list):
             *no description available*
 
-    .. py:method:: mitsuba.ad.prb.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, reparam, active)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, reparam, active)
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -22123,503 +22263,104 @@
         Returns → Tuple[mi.Spectrum, mi.Bool, Any]:
             *no description available*
 
-.. py:class:: mitsuba.ad.prb.PRBIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a basic Path Replay Backpropagation (PRB) integrator
-    with the following properties:
-
-    - Emitter sampling (a.k.a. next event estimation).
-
-    - Russian Roulette stopping criterion.
-
-    - No reparameterization. This means that the integrator cannot be used for
-      shape optimization (it will return incorrect/biased gradients for
-      geometric parameters like vertex positions.)
-
-    - Detached sampling. This means that the properties of ideal specular
-      objects (e.g., the IOR of a glass vase) cannot be optimized.
-
-    See 'prb_basic.py' for an even more reduced implementation that removes
-    the first two features.
-
-    See the papers
-
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
-
-    and
-
-      "Monte Carlo Estimators for Differential Light Transport"
-      (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
-      Iliyan Georgiev, and Wenzel Jakob
-
-    for details on PRB, attached/detached sampling, and reparameterizations.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.prb.PRBIntegrator.sample(mode, scene, sampler, ray, L, state_in, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f, δ):
-            *no description available*
-
-        Parameter ``L`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``state_in`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.prb.annotations
-
-.. py:function:: mitsuba.ad.prb.mis_weight()
+.. py:function:: mitsuba.ad.common.mis_weight()
 
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
 
-.. py:class:: mitsuba.ad.prb_basic.BasicPRBIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    Basic Path Replay Backpropagation-style integrator *without* next event
-    estimation, multiple importance sampling, Russian Roulette, and
-    reparameterization. The lack of all of these features means that gradients
-    are noisy and don't correctly account for visibility discontinuities. The
-    lack of a Russian Roulette stopping criterion means that generated light
-    paths may be unnecessarily long and costly to generate.
-
-    This class is not meant to be used in practice, but merely exists to
-    illustrate how a very basic rendering algorithm can be implemented in
-    Python along with efficient forward/reverse-mode derivatives. See the file
-    'prb.py' for a more feature-complete Path Replay Backpropagation
-    integrator, and 'prb_reparam.py' for one that also handles visibility.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.prb_basic.BasicPRBIntegrator.sample(mode, scene, sampler, ray, L, state_in, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f, δ):
-            *no description available*
-
-        Parameter ``L`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``state_in`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.prb_basic.annotations
-
-.. py:class:: mitsuba.ad.prb_reparam.PRBReparamIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a reparameterized Path Replay Backpropagation (PRB)
-    integrator with the following properties:
-
-    - Emitter sampling (a.k.a. next event estimation).
-
-    - Russian Roulette stopping criterion.
-
-    - The integrator reparameterizes the incident hemisphere to handle
-      visibility-induced discontinuities. This makes it possible to optimize
-      geometric parameters like vertex positions. Discontinuities observed
-      through ideal specular reflection/refraction are not supported and
-      produce biased gradients (see also the next point).
-
-    - Detached sampling. This means that the properties of ideal specular
-      objects (e.g., the IOR of a glass vase) cannot be optimized.
-
-    See 'prb.py' and 'prb_basic.py' for simplified implementations that remove
-    some of these features.
-
-    See the papers
-
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob.
-
-    and
-
-      "Monte Carlo Estimators for Differential Light Transport"
-      (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
-      Iliyan Georgiev, and Wenzel Jakob.
-
-    for details on PRB and attached/detached sampling. Reparameterizations
-    for differentiable rendering were proposed in
-
-      "Reparameterizing discontinuous integrands for differentiable rendering"
-      (Proceedings of SIGGRAPH Asia'19) by Guillaume Loubet,
-      Nicolas Holzschuch, and Wenzel Jakob.
-
-    The specific change of variables used in Mitsuba is described here:
-
-      "Unbiased Warped-Area Sampling for Differentiable Rendering"
-      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
-      Tzu-Mao Li, and Frédo Durand.
-
-    A few more technical details regarding the implementation: this integrator
-    uses detached sampling, hence the sampling process that generates the path
-    vertices (e.g., v₀, v₁, ..) and the computation of Monte Carlo sampling
-    densities is excluded from the derivative computation. However, the path
-    throughput that is then evaluated on top of these vertices does track
-    derivatives, and it also uses reparameterizations.
-
-    Consider the contribution 'L' of a path (v₀, v₁, v₂, v₃, v₄) where 'v₀' is
-    the sensor position, the 'f's capture BSDFs and cosine factors, and the
-    'E's represent emission.
-
-    L(v₀, v₁, v₂, v₃) = E₁(v₀, v₁) + f₁(v₀, v₁, v₂) *
-                            (E₂(v₁, v₂) + f₂(v₁, v₂, v₃) *
-                                (E₃(v₂, v₃) + f₃(v₂, v₃, v₄) * E₄(v₃, v₄)))
-
-    The derivative of this function with respect to a scene parameter 'π'
-    expands into a long sequence of terms via the product and chain rules.
-
-    ∂L =                       ______ Derivative of emission terms ______
-                               (∂E₁/∂π + ∂E₁/∂v₀ ∂v₀/∂π + ∂E₁/∂v₁ ∂v₁/∂π)
-     + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₁ ∂v₁/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂)                 (∂E₃/∂π + ∂E₃/∂v₂ ∂v₂/∂π + ∂E₃/∂v₃ ∂v₃/∂π)
-     + (f₁ f₂ f₃)              (∂E₄/∂π + ∂E₄/∂v₃ ∂v₃/∂π + ∂E₄/∂v₄ ∂v₄/∂π)
-
-                               ______________ Derivative of reflection terms _____________
-     + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂π + ∂f₁/∂v₀ ∂v₀/∂π + ∂f₁/∂v₁ ∂v₁/∂π + ∂f₁/∂v₂ ∂v₂/∂π)
-     + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₁ ∂v₁/∂π + ∂f₂/∂v₂ ∂v₂/∂π + ∂f₂/∂v₃ ∂v₃/∂π)
-     + (f₁ f₂ E₄             ) (∂f₃/∂π + ∂f₃/∂v₂ ∂v₂/∂π + ∂f₃/∂v₃ ∂v₃/∂π + ∂f₃/∂v₄ ∂v₄/∂π)
-
-    This expression sums over essentially the same terms, but it must account
-    for how each one could change as a consequence of internal dependencies
-    (e.g., ∂f₁/∂π) or due to the reparameterization (e.g., ∂f₁/∂v₁ ∂v₁/∂π).
-    It's tedious to do this derivative calculation manually, especially once
-    additional complications like direct illumination sampling and MIS are
-    taken into account. We prefer using automatic differentiation for this,
-    which will evaluate the chain/product rule automatically.
-
-    However, a nontrivial technical challenge here is that path tracing-style
-    integrators perform a loop over path vertices, while DrJit's loop
-    recording facilities do not permit the use of AD across loop iterations.
-    The loop must thus be designed so that use of AD is self-contained in each
-    iteration of the loop, while generating all the terms of ∂T iteratively
-    without omission or duplication.
-
-    We have chosen to implement this loop so that iteration 'i' computes all
-    derivative terms associated with the current vertex, meaning: Eᵢ/∂π, fᵢ/∂π,
-    as well as the parameterization-induced terms involving ∂vᵢ/∂π. To give a
-    more concrete example, filtering the previous example derivative ∂L to only
-    include terms for the interior vertex v₂ leaves:
-
-    ∂L₂ =                      __ Derivative of emission terms __
-     + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
-
-                               ___ Derivative of reflection terms __
-     + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
-     + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
-
-    Let's go through these one by one, starting with the easier ones:
-
-    ∂L₂ = (f₁              ) (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-        + (f₁ E₃ + f₁ f₃ E₄) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
-        + ...
-
-    These are the derivatives of local emission and reflection terms. They both
-    account for changes in the parameterization (∂v₂/∂π) and a potential
-    dependence of the reflection/emission model on the scene parameter being
-    differentiated (∂E₂/∂π, ∂f₂/∂π).
-
-    In the first line, the f₁ term corresponds to the path throughput (labeled
-    β in this class) in the general case, and the (f₁ E₃ + f₁ f₃ E₄) term is
-    the incident illumination (Lᵢ) at the current vertex.
-
-    Evaluating these terms using AD will look something like this:
-
-        with dr.resume_grad():
-            v₂' = reparameterize(v₂)
-            L₂ = β * E₂(v₁, v₂') + Lᵢ * f₂(v₁, v₂', v₃) + ...
-
-    with a later call to 'dr.backward(L₂)'. In practice, 'E' and 'f' are
-    directional functions, which means that these direction need to be
-    recomputed from positions using AD.
-
-    However, that leaves a few more terms in ∂L₂ that unfortunately add some
-    complications.
-
-    ∂L₂ = ...  + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
-               + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
-               + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
-
-    These are changes in emission or reflection terms at neighboring vertices
-    (v₁ and v₃) that arise due to the reparameterization at v₂. It's important
-    that the influence of the scene parameters on the emission or reflection
-    terms at these vertices is excluded: we are only interested in directional
-    derivatives that arise due to the reparametrization, which can be
-    accomplished using a more targeted version of 'dr.resume_grad()'.
-
-        with dr.resume_grad(v₂'):
-            L₂ += β * f₂ * E₃(v₂', v₃) # Emission at next vertex
-            L₂ += Lᵢ_prev * f₁(v₀, v₁, v₂') # BSDF at previous vertex
-            L₂ += Lᵢ_next * f₃(v₂', v₃, v₄) # BSDF at next vertex
-
-    To get the quantities for the next vertex, the path tracer must "run
-    ahead" by one bounce.
-
-    The loop begins each iteration being already provided with the previous
-    and current intersection in the form of a ``PreliminaryIntersection3f``.
-    It must still be turned into a full ``SurfaceInteraction3f`` which,
-    however, only involves a virtual function call and no ray tracing. It
-    computes the next intersection and passes that along to the subsequent
-    iteration. Each iteration reconstructs three surface interaction records
-    (prev, cur, next), of which only 'cur' tracks positional derivatives.
-
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.prb_reparam.PRBReparamIntegrator.reparam(scene, rng, params, ray, depth, active)
-
-        Helper function to reparameterize rays internally and within ADIntegrator
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``rng`` (mi.PCG32):
-            *no description available*
-
-        Parameter ``params`` (Any):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``depth`` (mi.UInt32):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool):
-            Mask to specify active lanes.
-
-    .. py:method:: mitsuba.ad.prb_reparam.PRBReparamIntegrator.sample(mode, scene, sampler, ray, L, state_in, reparam, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f, δ):
-            *no description available*
-
-        Parameter ``L`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``state_in`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.prb_reparam.annotations
-
-.. py:class:: mitsuba.ad.prbvolpath.PRBVolpathIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a volumetric Path Replay Backpropagation (PRB) integrator
-    with the following properties:
-
-    - Differentiable delta tracking for free-flight distance sampling
-
-    - Emitter sampling (a.k.a. next event estimation).
-
-    - Russian Roulette stopping criterion.
-
-    - No reparameterization. This means that the integrator cannot be used for
-      shape optimization (it will return incorrect/biased gradients for
-      geometric parameters like vertex positions.)
-
-    - Detached sampling. This means that the properties of ideal specular
-      objects (e.g., the IOR of a glass vase) cannot be optimized.
-
-    See the paper
-
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
-
-    for details on PRB and differentiable delta tracking.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.prbvolpath.PRBVolpathIntegrator.sample(mode, scene, sampler, ray, L, state_in, active)
-
-        This function does the main work of differentiable rendering and
-        remains unimplemented here. It is provided by subclasses of the
-        ``ADIntegrator`` interface.
-
-        In those concrete implementations, the function performs a Monte Carlo
-        random walk, implementing a number of different behaviors depending on
-        the ``mode`` argument. For example in primal mode (``mode ==
-        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
-        and estimates the radiance incident along ``ray``.
-
-        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
-        derivative of the incident radiance for a set of scene parameters being
-        differentiated. (This requires that these parameters are attached to
-        the AD graph and have gradients specified via ``dr.set_grad()``)
-
-        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
-        radiance ``δL`` and accumulates it into differentiable scene parameters.
-
-        You are normally *not* expected to directly call this function. Instead,
-        use ``mi.render()`` , which performs various necessary
-        setup steps to correctly use the functionality provided here.
-
-        The parameters of this function are as follows:
-
-        Parameter ``mode`` (``drjit.ADMode``)
-            Specifies whether the rendering algorithm should run in primal or
-            forward/backward derivative propagation mode
-
-        Parameter ``scene`` (``mi.Scene``):
-            Reference to the scene being rendered in a differentiable manner.
-
-        Parameter ``sampler`` (``mi.Sampler``):
-            A pre-seeded sample generator
-
-        Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
-            for forward/backward differentiable rendering phases that need to
-            obtain an incident radiance estimate. In this case, they may
-            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
-            depth.
-
-        Parameter ``δL`` (``mi.Spectrum``):
-            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
-            the ``δL`` parameter should specify the adjoint radiance associated
-            with each ray. Otherwise, it must be set to ``None``.
-
-        Parameter ``state_in`` (``Any``):
-            The primal phase of ``sample()`` returns a state vector as part of
-            its return value. The forward/backward differential phases expect
-            that this state vector is provided to them via this argument. When
-            invoked in primal mode, it should be set to ``None``.
-
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
-
-        Parameter ``active`` (``mi.Bool``):
-            This mask array can optionally be used to indicate that some of
-            the rays are disabled.
-
-        The function returns a tuple ``(spec, valid, state_out)`` where
-
-        Output ``spec`` (``mi.Spectrum``):
-            Specifies the estimated radiance and differential radiance in
-            primal and forward mode, respectively.
-
-        Output ``valid`` (``mi.Bool``):
-            Indicates whether the rays intersected a surface, which can be used
-            to compute an alpha channel.
-
-        Output ``state_out`` (``Any``):
-            When invoked in primal mode, this return argument provides an
-            unspecified state vector that is a required input of both
-            forward/backward differential phases.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f, δ):
-            *no description available*
-
-        Parameter ``L`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``state_in`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.prbvolpath.annotations
-
-.. py:function:: mitsuba.ad.prbvolpath.index_spectrum()
+.. py:function:: mitsuba.ad.common.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
+
+    This function provides a convenient high-level interface to differentiable
+    rendering algorithms in Mi. The function returns a rendered image that
+    can be used in subsequent differentiable computation steps. At any later
+    point, the entire computation graph can be differentiated end-to-end in
+    either forward or reverse mode (i.e., using ``dr.forward()`` and
+    ``dr.backward()``).
+
+    Under the hood, the differentiation operation will be intercepted and
+    routed to ``Integrator.render_forward()`` or
+    ``Integrator.render_backward()``, which evaluate the derivative using
+    either naive AD or a more specialized differential simulation.
+
+    Note the default implementation of this functionality relies on naive
+    automatic differentiation (AD), which records a computation graph of the
+    primal rendering step that is subsequently traversed to propagate
+    derivatives. This tends to be relatively inefficient due to the need to
+    track intermediate program state. In particular, it means that
+    differentiation of nontrivial scenes at high sample counts will often run
+    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+    ``prb`` (Path Replay Backpropagation) that are specifically designed for
+    differentiation can be significantly more efficient.
+
+    Parameter ``scene`` (``mi.Scene``):
+        Reference to the scene being rendered in a differentiable manner.
+
+    Parameter ``params`` (Any):
+       An arbitrary container of scene parameters that should receive
+       gradients. Typically this will be an instance of type
+       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+       also be a Python list/dict/object tree (DrJit will traverse it to find
+       all parameters). Gradient tracking must be explicitly enabled for each of
+       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
+       must be used to associate specific gradient values with parameters if
+       forward mode derivatives are desired.
+
+    Parameter ``sensor`` (``int``, ``mi.Sensor``):
+        Specify a sensor or a (sensor index) to render the scene from a
+        different viewpoint. By default, the first sensor within the scene
+        description (index 0) will take precedence.
+
+    Parameter ``integrator`` (``mi.Integrator``):
+        Optional parameter to override the rendering technique to be used. By
+        default, the integrator specified in the original scene description
+        will be used.
+
+    Parameter ``seed` (``int``)
+        This parameter controls the initialization of the random number
+        generator during the primal rendering step. It is crucial that you
+        specify different seeds (e.g., an increasing sequence) if subsequent
+        calls should produce statistically independent images (e.g. to
+        de-correlate gradient-based optimization steps).
+
+    Parameter ``seed_grad` (``int``)
+        This parameter is analogous to the ``seed`` parameter but targets the
+        differential simulation phase. If not specified, the implementation
+        will automatically compute a suitable value from the primal ``seed``.
+
+    Parameter ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel for the
+        primal rendering step. The value provided within the original scene
+        specification takes precedence if ``spp=0``.
+
+    Parameter ``spp_grad`` (``int``):
+        This parameter is analogous to the ``seed`` parameter but targets the
+        differential simulation phase. If not specified, the implementation
+        will copy the value from ``spp``.
+
+    Parameter ``scene`` (mi.Scene):
+        *no description available*
+
+    Parameter ``sensor`` (Union[int, mi.Sensor]):
+        *no description available*
+
+    Parameter ``integrator`` (mi.Integrator):
+        *no description available*
+
+    Parameter ``seed`` (int):
+        *no description available*
+
+    Parameter ``seed_grad`` (int):
+        *no description available*
+
+    Parameter ``spp`` (int):
+        *no description available*
+
+    Parameter ``spp_grad`` (int):
+        *no description available*
+
+    Returns → mi.TensorXf:
+        *no description available*
 
 .. py:function:: mitsuba.ad.reparameterize_ray(scene, rng, params, ray, num_rays=4, kappa=100000.0, exponent=3.0, antithetic=False, unroll=False, active=True)
 
@@ -22694,28 +22435,6 @@
 
     Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`]:
         *no description available*
-
-.. py:function:: mitsuba.cast_object
-
-    Capsule objects let you wrap a C "void *" pointer in a Python
-    object.  They're a way of passing data through the Python interpreter
-    without creating your own custom type.
-
-    Capsules are used for communication between extension modules.
-    They provide a way for an extension module to export a C interface
-    to other extension modules, so that extension modules can use the
-    Python import mechanism to link to one another.
-
-.. py:function:: mitsuba.casters
-
-    Capsule objects let you wrap a C "void *" pointer in a Python
-    object.  They're a way of passing data through the Python interpreter
-    without creating your own custom type.
-
-    Capsules are used for communication between extension modules.
-    They provide a way for an extension module to export a C interface
-    to other extension modules, so that extension modules can use the
-    Python import mechanism to link to one another.
 
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
@@ -22884,7 +22603,7 @@
     Evaluate the CIE 1931 XYZ color matching functions given a wavelength
     in nanometers
 
-    Parameter ``wavelength`` (drjit.llvm.Float):
+    Parameter ``wavelength`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Color3f`:
@@ -22895,10 +22614,10 @@
     Evaluate the CIE 1931 Y color matching function given a wavelength in
     nanometers
 
-    Parameter ``wavelength`` (drjit.llvm.Float):
+    Parameter ``wavelength`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.coordinate_system(n)
@@ -22936,7 +22655,7 @@
     Parameter ``eta`` (float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.filesystem.absolute(arg0)
@@ -23169,25 +22888,21 @@
     Returns → bool:
         *no description available*
 
-.. py:data:: mitsuba.float_dtype
-    :type: str
-    :value: f
-
 .. py:function:: mitsuba.fresnel(cos_theta_i, eta)
 
     Calculates the unpolarized Fresnel reflection coefficient at a planar
     interface between two dielectrics
 
-    Parameter ``cos_theta_i`` (drjit.llvm.Float):
+    Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
         Cosine of the angle between the surface normal and the incident
         ray
 
-    Parameter ``eta`` (drjit.llvm.Float):
+    Parameter ``eta`` (drjit.llvm.ad.Float):
         Relative refractive index of the interface. A value greater than
         1.0 means that the surface normal is pointing into the region of
         lower density.
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float, drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (F, cos_theta_t, eta_it, eta_ti) consisting of
 
     F Fresnel reflection coefficient.
@@ -23212,14 +22927,14 @@
         from *outside* of the conducting layer (generally a reasonable
         assumption unless very thin layers are being simulated)
 
-    Parameter ``cos_theta_i`` (drjit.llvm.Float):
+    Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
         Cosine of the angle between the surface normal and the incident
         ray
 
-    Parameter ``eta`` (drjit.llvm.Complex2f):
+    Parameter ``eta`` (drjit.llvm.ad.Complex2f):
         Relative refractive index (complex-valued)
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         The unpolarized Fresnel reflection coefficient.
 
 .. py:function:: mitsuba.fresnel_polarized(cos_theta_i, eta)
@@ -23233,16 +22948,16 @@
     cost of transcendental function evaluations in the complex-valued
     arithmetic)
 
-    Parameter ``cos_theta_i`` (drjit.llvm.Float):
+    Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
         Cosine of the angle between the surface normal and the incident
         ray
 
-    Parameter ``eta`` (drjit.llvm.Complex2f):
+    Parameter ``eta`` (drjit.llvm.ad.Complex2f):
         Complex-valued relative refractive index of the interface. In the
         real case, a value greater than 1.0 case means that the surface
         normal points into the region of lower density.
 
-    Returns → Tuple[drjit.llvm.Complex2f, drjit.llvm.Complex2f, drjit.llvm.Float, drjit.llvm.Complex2f, drjit.llvm.Complex2f]:
+    Returns → Tuple[drjit.llvm.ad.Complex2f, drjit.llvm.ad.Complex2f, drjit.llvm.ad.Float, drjit.llvm.ad.Complex2f, drjit.llvm.ad.Complex2f]:
         A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
 
     a_s Perpendicularly polarized wave amplitude and phase shift.
@@ -23259,32 +22974,18 @@
     the scale factor that must be applied to the X and Y component of the
     refracted direction.
 
-.. py:function:: mitsuba.get_property(ptr, type, parent)
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``type`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
 .. py:function:: mitsuba.has_flag(overloaded)
 
 
     .. py:function:: has_flag(arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.EmitterFlags`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:function:: has_flag(arg0, arg1)
@@ -23300,13 +23001,13 @@
 
     .. py:function:: has_flag(arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.BSDFFlags`):
             *no description available*
 
-        Returns → drjit.llvm.Bool:
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:function:: has_flag(arg0, arg1)
@@ -23322,7 +23023,7 @@
 
     .. py:function:: has_flag(arg0, arg1)
 
-        Parameter ``arg0`` (drjit.llvm.UInt):
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.PhaseFunctionFlags`):
@@ -23352,7 +23053,7 @@
     Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
     given a wavelength in nanometers
 
-    Parameter ``wavelength`` (drjit.llvm.Float):
+    Parameter ``wavelength`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Color3f`:
@@ -23417,10 +23118,10 @@
         Parameter ``wavelengths`` (:py:obj:`mitsuba.Color3f`):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.Bool):
+        Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:function:: luminance(c)
@@ -23428,7 +23129,7 @@
         Parameter ``c`` (:py:obj:`mitsuba.Color3f`):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
 .. py:data:: mitsuba.math.RayEpsilon
@@ -23509,10 +23210,10 @@
     Parameter ``size`` (int):
         *no description available*
 
-    Parameter ``pred`` (Callable[[drjit.llvm.UInt], drjit.llvm.Bool]):
+    Parameter ``pred`` (Callable[[drjit.llvm.ad.UInt], drjit.llvm.ad.Bool]):
         *no description available*
 
-    Returns → drjit.llvm.UInt:
+    Returns → drjit.llvm.ad.UInt:
         *no description available*
 
 .. py:function:: mitsuba.math.is_power_of_two(arg0)
@@ -23535,10 +23236,10 @@
         Parameter ``l`` (int):
             *no description available*
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:function:: legendre_p(l, m, x)
@@ -23551,10 +23252,10 @@
         Parameter ``m`` (int):
             *no description available*
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
 .. py:function:: mitsuba.math.legendre_pd(l, x)
@@ -23565,10 +23266,10 @@
     Parameter ``l`` (int):
         *no description available*
 
-    Parameter ``x`` (drjit.llvm.Float):
+    Parameter ``x`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         *no description available*
 
 .. py:function:: mitsuba.math.legendre_pd_diff(l, x)
@@ -23578,52 +23279,52 @@
     Parameter ``l`` (int):
         *no description available*
 
-    Parameter ``x`` (drjit.llvm.Float):
+    Parameter ``x`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         *no description available*
 
 .. py:function:: mitsuba.math.linear_to_srgb(arg0)
 
     Applies the sRGB gamma curve to the given argument.
 
-    Parameter ``arg0`` (drjit.llvm.Float):
+    Parameter ``arg0`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.math.morton_decode2(m)
 
-    Parameter ``m`` (drjit.llvm.UInt):
+    Parameter ``m`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Returns → drjit.llvm.Array2u:
+    Returns → drjit.llvm.ad.Array2u:
         *no description available*
 
 .. py:function:: mitsuba.math.morton_decode3(m)
 
-    Parameter ``m`` (drjit.llvm.UInt):
+    Parameter ``m`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Returns → drjit.llvm.Array3u:
+    Returns → drjit.llvm.ad.Array3u:
         *no description available*
 
 .. py:function:: mitsuba.math.morton_encode2(v)
 
-    Parameter ``v`` (drjit.llvm.Array2u):
+    Parameter ``v`` (drjit.llvm.ad.Array2u):
         *no description available*
 
-    Returns → drjit.llvm.UInt:
+    Returns → drjit.llvm.ad.UInt:
         *no description available*
 
 .. py:function:: mitsuba.math.morton_encode3(v)
 
-    Parameter ``v`` (drjit.llvm.Array3u):
+    Parameter ``v`` (drjit.llvm.ad.Array3u):
         *no description available*
 
-    Returns → drjit.llvm.UInt:
+    Returns → drjit.llvm.ad.UInt:
         *no description available*
 
 .. py:function:: mitsuba.math.rlgamma()
@@ -23644,26 +23345,26 @@
 
     Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 
-    Parameter ``a`` (drjit.llvm.Float):
+    Parameter ``a`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``b`` (drjit.llvm.Float):
+    Parameter ``b`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``c`` (drjit.llvm.Float):
+    Parameter ``c`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         ``True`` if a solution could be found
 
 .. py:function:: mitsuba.math.srgb_to_linear(arg0)
 
     Applies the inverse sRGB gamma curve to the given argument.
 
-    Parameter ``arg0`` (drjit.llvm.Float):
+    Parameter ``arg0`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.math.ulpdiff(arg0, arg1)
@@ -23687,10 +23388,10 @@
 
         Constructs the Mueller matrix of an ideal absorber
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             The amount of absorption.
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: absorber(value)
@@ -23710,10 +23411,10 @@
 
         Constructs the Mueller matrix of an ideal depolarizer
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             The value of the (0, 0) element
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: depolarizer(value=1.0)
@@ -23735,13 +23436,13 @@
         attenuates the electric field components at 0 and 90 degrees by 'x'
         and 'y', * respectively.
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``y`` (drjit.llvm.Float):
+        Parameter ``y`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: diattenuator(x, y)
@@ -23769,11 +23470,11 @@
 
         "Polarized Light" by Edward Collett, Ch. 5 eq. (13)
 
-        Parameter ``value`` (drjit.llvm.Float):
+        Parameter ``value`` (drjit.llvm.ad.Float):
             The amount of attenuation of the transmitted component (1
             corresponds to an ideal polarizer).
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: linear_polarizer(value=1.0)
@@ -23806,10 +23507,10 @@
         (6.43) (Note that the fast and slow axis were flipped in the first
         edition by Edward Collett.)
 
-        Parameter ``phase`` (drjit.llvm.Float):
+        Parameter ``phase`` (drjit.llvm.ad.Float):
             The phase difference between the fast and slow axis
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: linear_retarder(phase)
@@ -23844,7 +23545,7 @@
         'out_basis_current' but instead want to re-express it as a Mueller
         matrix that operates from 'in_basis_target' to 'out_basis_target'.
 
-        Parameter ``M`` (drjit.llvm.Matrix4f):
+        Parameter ``M`` (drjit.llvm.ad.Matrix4f):
             The current Mueller matrix that operates from ``in_basis_current``
             to ``out_basis_current``.
 
@@ -23870,7 +23571,7 @@
             Target (normalized) input Stokes basis. Must be orthogonal to
             ``out_forward``.
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             New Mueller matrix that operates from ``in_basis_target`` to
             ``out_basis_target``.
 
@@ -23927,7 +23628,7 @@
         'basis_current' but instead want to re-express it as a Mueller matrix
         that operates from 'basis_target' to 'basis_target'.
 
-        Parameter ``M`` (drjit.llvm.Matrix4f):
+        Parameter ``M`` (drjit.llvm.ad.Matrix4f):
             The current Mueller matrix that operates from ``basis_current`` to
             ``basis_current``.
 
@@ -23942,7 +23643,7 @@
             Target (normalized) input Stokes basis. Must be orthogonal to
             ``forward``.
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             New Mueller matrix that operates from ``basis_target`` to
             ``basis_target``.
 
@@ -24001,7 +23702,7 @@
     Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Matrix4f:
+    Returns → drjit.llvm.ad.Matrix4f:
         Mueller matrix that performs the desired change of reference
         frames.
 
@@ -24043,13 +23744,13 @@
         Applies a counter-clockwise rotation to the mueller matrix of a given
         element.
 
-        Parameter ``theta`` (drjit.llvm.Float):
+        Parameter ``theta`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``M`` (drjit.llvm.Matrix4f):
+        Parameter ``M`` (drjit.llvm.ad.Matrix4f):
             *no description available*
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: rotated_element(theta, M)
@@ -24082,10 +23783,10 @@
 
         "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
 
-        Parameter ``theta`` (drjit.llvm.Float):
+        Parameter ``theta`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: rotator(theta)
@@ -24115,16 +23816,16 @@
         Calculates the Mueller matrix of a specular reflection at an interface
         between two dielectrics or conductors.
 
-        Parameter ``cos_theta_i`` (drjit.llvm.Float):
+        Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
             Cosine of the angle between the surface normal and the incident
             ray
 
-        Parameter ``eta`` (drjit.llvm.Complex2f):
+        Parameter ``eta`` (drjit.llvm.ad.Complex2f):
             Complex-valued relative refractive index of the interface. In the
             real case, a value greater than 1.0 case means that the surface
             normal points into the region of lower density.
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: specular_reflection(cos_theta_i, eta)
@@ -24152,16 +23853,16 @@
         Calculates the Mueller matrix of a specular transmission at an
         interface between two dielectrics or conductors.
 
-        Parameter ``cos_theta_i`` (drjit.llvm.Float):
+        Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
             Cosine of the angle between the surface normal and the incident
             ray
 
-        Parameter ``eta`` (drjit.llvm.Float):
+        Parameter ``eta`` (drjit.llvm.ad.Float):
             Complex-valued relative refractive index of the interface. A value
             greater than 1.0 in the real case means that the surface normal is
             pointing into the region of lower density.
 
-        Returns → drjit.llvm.Matrix4f:
+        Returns → drjit.llvm.ad.Matrix4f:
             *no description available*
 
     .. py:function:: specular_transmission(cos_theta_i, eta)
@@ -24209,7 +23910,7 @@
     Parameter ``b`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.parse_fov(props, aspect)
@@ -24235,10 +23936,10 @@
         (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
         the PDF is returned per wavelength.
 
-        Parameter ``wavelengths`` (drjit.llvm.Float):
+        Parameter ``wavelengths`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:function:: pdf_rgb_spectrum(wavelengths)
@@ -24268,7 +23969,7 @@
     Parameter ``size`` (int):
         Length of the permutation vector
 
-    Parameter ``seed`` (drjit.llvm.UInt):
+    Parameter ``seed`` (drjit.llvm.ad.UInt):
         Seed value used as second input to the Tiny Encryption Algorithm.
         Can be used to generate different permutation vectors.
 
@@ -24276,10 +23977,10 @@
         How many rounds should be executed by the Tiny Encryption
         Algorithm? The default is 2.
 
-    Parameter ``value`` (drjit.llvm.UInt):
+    Parameter ``value`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Returns → drjit.llvm.UInt:
+    Returns → drjit.llvm.ad.UInt:
         The index corresponding to the input index in the pseudorandom
         permutation vector.
 
@@ -24303,19 +24004,19 @@
         Seed value used as second input to the Tiny Encryption Algorithm.
         Can be used to generate different permutation vectors.
 
-    Parameter ``i`` (drjit.llvm.UInt):
+    Parameter ``i`` (drjit.llvm.ad.UInt):
         *no description available*
 
     Parameter ``l`` (int):
         *no description available*
 
-    Parameter ``p`` (drjit.llvm.UInt):
+    Parameter ``p`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Parameter ``active`` (drjit.llvm.Bool):
+    Parameter ``active`` (drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
-    Returns → drjit.llvm.UInt:
+    Returns → drjit.llvm.ad.UInt:
         The index corresponding to the input index in the pseudorandom
         permutation vector.
 
@@ -24333,13 +24034,13 @@
     Parameter ``crop_offset`` (:py:obj:`mitsuba.ScalarVector2i`):
         *no description available*
 
-    Parameter ``fov_x`` (drjit.llvm.Float):
+    Parameter ``fov_x`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``near_clip`` (drjit.llvm.Float):
+    Parameter ``near_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``far_clip`` (drjit.llvm.Float):
+    Parameter ``far_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Transform4f`:
@@ -24355,7 +24056,7 @@
     Parameter ``n`` (int):
         Desired number of points
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.quad.composite_simpson(n)
@@ -24372,7 +24073,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -24390,7 +24091,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -24412,7 +24113,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -24436,7 +24137,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+    Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -24444,13 +24145,13 @@
 
     Van der Corput radical inverse in base 2
 
-    Parameter ``index`` (drjit.llvm.UInt):
+    Parameter ``index`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Parameter ``scramble`` (drjit.llvm.UInt):
+    Parameter ``scramble`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.reflect(overloaded)
@@ -24492,10 +24193,10 @@
         Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
 
-        Parameter ``cos_theta_t`` (drjit.llvm.Float):
+        Parameter ``cos_theta_t`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``eta_ti`` (drjit.llvm.Float):
+        Parameter ``eta_ti`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Vector3f`:
@@ -24511,11 +24212,11 @@
         Parameter ``m`` (:py:obj:`mitsuba.Normal3f`):
             Surface normal
 
-        Parameter ``cos_theta_t`` (drjit.llvm.Float):
+        Parameter ``cos_theta_t`` (drjit.llvm.ad.Float):
             Cosine of the angle between the normal the transmitted ray, as
             computed e.g. by fresnel.
 
-        Parameter ``eta_ti`` (drjit.llvm.Float):
+        Parameter ``eta_ti`` (drjit.llvm.ad.Float):
             Relative index of refraction (transmitted / incident)
 
         Returns → :py:obj:`mitsuba.Vector3f`:
@@ -24757,10 +24458,10 @@
 
         Returns a tuple with the sampled wavelength and inverse PDF
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
     .. py:function:: sample_rgb_spectrum(sample)
@@ -24812,10 +24513,10 @@
         For details, refer to "GPU Random Numbers via the Tiny Encryption
         Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
 
-        Parameter ``v0`` (drjit.llvm.UInt):
+        Parameter ``v0`` (drjit.llvm.ad.UInt):
             First input value to be encrypted (could be the sample index)
 
-        Parameter ``v1`` (drjit.llvm.UInt):
+        Parameter ``v1`` (drjit.llvm.ad.UInt):
             Second input value to be encrypted (e.g. the requested random
             number dimension)
 
@@ -24823,7 +24524,7 @@
             How many rounds should be executed? The default for random number
             generation is 4.
 
-        Returns → Tuple[drjit.llvm.UInt, drjit.llvm.UInt]:
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.UInt]:
             Two uniformly distributed 32-bit integers
 
 .. py:function:: mitsuba.sample_tea_64(overloaded)
@@ -24859,10 +24560,10 @@
         For details, refer to "GPU Random Numbers via the Tiny Encryption
         Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
 
-        Parameter ``v0`` (drjit.llvm.UInt):
+        Parameter ``v0`` (drjit.llvm.ad.UInt):
             First input value to be encrypted (could be the sample index)
 
-        Parameter ``v1`` (drjit.llvm.UInt):
+        Parameter ``v1`` (drjit.llvm.ad.UInt):
             Second input value to be encrypted (e.g. the requested random
             number dimension)
 
@@ -24870,7 +24571,7 @@
             How many rounds should be executed? The default for random number
             generation is 4.
 
-        Returns → drjit.llvm.UInt64:
+        Returns → drjit.llvm.ad.UInt64:
             A uniformly distributed 64-bit integer
 
 .. py:function:: mitsuba.sample_tea_float
@@ -24901,7 +24602,7 @@
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
 
-    2. sample_tea_float64(v0: drjit.llvm.UInt, v1: drjit.llvm.UInt, rounds: int = 4) -> drjit.llvm.Float64
+    2. sample_tea_float64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float64
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -24958,10 +24659,10 @@
         This function uses sample_tea to return single precision floating
         point numbers on the interval ``[0, 1)``
 
-        Parameter ``v0`` (drjit.llvm.UInt):
+        Parameter ``v0`` (drjit.llvm.ad.UInt):
             First input value to be encrypted (could be the sample index)
 
-        Parameter ``v1`` (drjit.llvm.UInt):
+        Parameter ``v1`` (drjit.llvm.ad.UInt):
             Second input value to be encrypted (e.g. the requested random
             number dimension)
 
@@ -24969,27 +24670,13 @@
             How many rounds should be executed? The default for random number
             generation is 4.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             A uniformly distributed floating point number on the interval
             ``[0, 1)``
 
 .. py:function:: mitsuba.set_log_level(arg0)
 
     Parameter ``arg0`` (mitsuba::LogLevel):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.set_property(ptr, type, value)
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``type`` (capsule):
-        *no description available*
-
-    Parameter ``value`` (handle):
         *no description available*
 
     Returns → None:
@@ -25008,13 +24695,13 @@
 
     Sobol' radical inverse in base 2
 
-    Parameter ``index`` (drjit.llvm.UInt):
+    Parameter ``index`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Parameter ``scramble`` (drjit.llvm.UInt):
+    Parameter ``scramble`` (drjit.llvm.ad.UInt):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.spectrum_from_file(filename)
@@ -25105,7 +24792,7 @@
         Parameter ``size``:
             Denotes the size of the ``values`` array
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             Evaluation point
 
         Remark:
@@ -25116,7 +24803,7 @@
             The Python API provides a vectorized version which evaluates the
             function for many arguments ``x``.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The interpolated value or zero when ``Extrapolate=false`` and
             ``x`` lies outside of [``min``, ``max``]
 
@@ -25145,7 +24832,7 @@
         Parameter ``size``:
             Denotes the size of the ``nodes`` and ``values`` array
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             Evaluation point
 
         Remark:
@@ -25156,7 +24843,7 @@
             The Python API provides a vectorized version which evaluates the
             function for many arguments ``x``.
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The interpolated value or zero when ``Extrapolate=false`` and
             ``x`` lies outside of \a [``min``, ``max``]
 
@@ -25194,10 +24881,10 @@
         Consecutive entries of this array correspond to increments in the
         ``X`` coordinate.
 
-    Parameter ``x`` (drjit.llvm.Float):
+    Parameter ``x`` (drjit.llvm.ad.Float):
         ``X`` coordinate of the evaluation point
 
-    Parameter ``y`` (drjit.llvm.Float):
+    Parameter ``y`` (drjit.llvm.ad.Float):
         ``Y`` coordinate of the evaluation point
 
     Remark:
@@ -25207,7 +24894,7 @@
     Parameter ``nodes2`` (numpy.ndarray[numpy.float32]):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         The interpolated value or zero when ``Extrapolate=false``tt> and
         ``(x,y)`` lies outside of the node range
 
@@ -25309,7 +24996,7 @@
         Parameter ``size`` (int):
             Denotes the number of function samples
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             Evaluation point
 
         Parameter ``weights``:
@@ -25319,7 +25006,7 @@
             In the Python API, the ``offset`` and ``weights`` parameters are
             returned as the second and third elements of a triple.
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Int, List[drjit.llvm.Float]]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Int, List[drjit.llvm.ad.Float]]:
             A boolean set to ``True`` on success and ``False`` when
             ``Extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
             and an offset into the function samples associated with weights[0]
@@ -25346,7 +25033,7 @@
         Parameter ``size``:
             Denotes the size of the ``nodes`` array
 
-        Parameter ``x`` (drjit.llvm.Float):
+        Parameter ``x`` (drjit.llvm.ad.Float):
             Evaluation point
 
         Parameter ``weights``:
@@ -25358,7 +25045,7 @@
             ``weights`` parameters are returned as the second and third
             elements of a triple.
 
-        Returns → Tuple[drjit.llvm.Bool, drjit.llvm.Int, List[drjit.llvm.Float]]:
+        Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Int, List[drjit.llvm.ad.Float]]:
             A boolean set to ``True`` on success and ``False`` when
             ``Extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
             and an offset into the function samples associated with weights[0]
@@ -25452,13 +25139,13 @@
         Parameter ``size``:
             Denotes the size of the ``values`` array
 
-        Parameter ``y`` (drjit.llvm.Float):
+        Parameter ``y`` (drjit.llvm.ad.Float):
             Input parameter for the inversion
 
         Parameter ``eps`` (float):
             Error tolerance (default: 1e-6f)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The spline parameter ``t`` such that ``eval_1d(..., t)=y``
 
         Parameter ``max_`` (float):
@@ -25481,13 +25168,13 @@
         Parameter ``size``:
             Denotes the size of the ``values`` array
 
-        Parameter ``y`` (drjit.llvm.Float):
+        Parameter ``y`` (drjit.llvm.ad.Float):
             Input parameter for the inversion
 
         Parameter ``eps`` (float):
             Error tolerance (default: 1e-6f)
 
-        Returns → drjit.llvm.Float:
+        Returns → drjit.llvm.ad.Float:
             The spline parameter ``t`` such that ``eval_1d(..., t)=y``
 
 .. py:function:: mitsuba.spline.sample_1d(overloaded)
@@ -25515,13 +25202,13 @@
         Parameter ``size``:
             Denotes the size of the ``values`` array
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A uniformly distributed random sample in the interval ``[0,1]``
 
         Parameter ``eps`` (float):
             Error tolerance (default: 1e-6f)
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             1. The sampled position 2. The value of the spline evaluated at
             the sampled position 3. The probability density at the sampled
             position (which only differs from item 2. when the function does
@@ -25548,13 +25235,13 @@
         Parameter ``size``:
             Denotes the size of the ``values`` array
 
-        Parameter ``sample`` (drjit.llvm.Float):
+        Parameter ``sample`` (drjit.llvm.ad.Float):
             A uniformly distributed random sample in the interval ``[0,1]``
 
         Parameter ``eps`` (float):
             Error tolerance (default: 1e-6f)
 
-        Returns → Tuple[drjit.llvm.Float, drjit.llvm.Float, drjit.llvm.Float]:
+        Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             1. The sampled position 2. The value of the spline evaluated at
             the sampled position 3. The probability density at the sampled
             position (which only differs from item 2. when the function does
@@ -25562,7 +25249,7 @@
 
 .. py:function:: mitsuba.srgb_model_eval(arg0, arg1)
 
-    Parameter ``arg0`` (drjit.llvm.Array3f):
+    Parameter ``arg0`` (drjit.llvm.ad.Array3f):
         *no description available*
 
     Parameter ``arg1`` (:py:obj:`mitsuba.Color0f`):
@@ -25586,10 +25273,10 @@
 
 .. py:function:: mitsuba.srgb_model_mean(arg0)
 
-    Parameter ``arg0`` (drjit.llvm.Array3f):
+    Parameter ``arg0`` (drjit.llvm.ad.Array3f):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.srgb_to_xyz(rgb, active=True)
@@ -25599,7 +25286,7 @@
     Parameter ``rgb`` (:py:obj:`mitsuba.Color3f`):
         *no description available*
 
-    Parameter ``active`` (drjit.llvm.Bool):
+    Parameter ``active`` (drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
     Returns → :py:obj:`mitsuba.Color3f`:
@@ -25698,7 +25385,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``alpha`` (drjit.llvm.Float):
+    Parameter ``alpha`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Point2f`:
@@ -25708,22 +25395,22 @@
 
     Inverse of square_to_bilinear
 
-    Parameter ``v00`` (drjit.llvm.Float):
+    Parameter ``v00`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v10`` (drjit.llvm.Float):
+    Parameter ``v10`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v01`` (drjit.llvm.Float):
+    Parameter ``v01`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v11`` (drjit.llvm.Float):
+    Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
     Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+    Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
         *no description available*
 
 .. py:function:: mitsuba.warp.cosine_hemisphere_to_square(v)
@@ -25745,16 +25432,16 @@
     uniformly distributed input sample ``sample`` so that the resulting
     probability distribution matches the linear interpolant.
 
-    Parameter ``v0`` (drjit.llvm.Float):
+    Parameter ``v0`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v1`` (drjit.llvm.Float):
+    Parameter ``v1`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``sample`` (drjit.llvm.Float):
+    Parameter ``sample`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.interval_to_nonuniform_tent(a, b, c, d)
@@ -25762,45 +25449,45 @@
     Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
     distribution with nodes ``{a, b, c}``
 
-    Parameter ``a`` (drjit.llvm.Float):
+    Parameter ``a`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``b`` (drjit.llvm.Float):
+    Parameter ``b`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``c`` (drjit.llvm.Float):
+    Parameter ``c`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``d`` (drjit.llvm.Float):
+    Parameter ``d`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.interval_to_tent(sample)
 
     Warp a uniformly distributed sample on [0, 1] to a tent distribution
 
-    Parameter ``sample`` (drjit.llvm.Float):
+    Parameter ``sample`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.linear_to_interval(v0, v1, sample)
 
     Inverse of interval_to_linear
 
-    Parameter ``v0`` (drjit.llvm.Float):
+    Parameter ``v0`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v1`` (drjit.llvm.Float):
+    Parameter ``v1`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``sample`` (drjit.llvm.Float):
+    Parameter ``sample`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_beckmann(sample, alpha)
@@ -25810,7 +25497,7 @@
     Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Parameter ``alpha`` (drjit.llvm.Float):
+    Parameter ``alpha`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Vector3f`:
@@ -25823,10 +25510,10 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``alpha`` (drjit.llvm.Float):
+    Parameter ``alpha`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_bilinear(v00, v10, v01, v11, sample)
@@ -25845,42 +25532,42 @@
 
     Returns the sampled point and PDF for convenience.
 
-    Parameter ``v00`` (drjit.llvm.Float):
+    Parameter ``v00`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v10`` (drjit.llvm.Float):
+    Parameter ``v10`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v01`` (drjit.llvm.Float):
+    Parameter ``v01`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v11`` (drjit.llvm.Float):
+    Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
     Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.Float]:
+    Returns → Tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_bilinear_pdf(v00, v10, v01, v11, sample)
 
-    Parameter ``v00`` (drjit.llvm.Float):
+    Parameter ``v00`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v10`` (drjit.llvm.Float):
+    Parameter ``v10`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v01`` (drjit.llvm.Float):
+    Parameter ``v01`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``v11`` (drjit.llvm.Float):
+    Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
     Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_cosine_hemisphere(sample)
@@ -25901,7 +25588,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_rough_fiber(sample, wi, tangent, kappa)
@@ -25940,7 +25627,7 @@
     Parameter ``kappa`` (float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_std_normal(v)
@@ -25959,7 +25646,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_tent(sample)
@@ -25979,7 +25666,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_cone(v, cos_cutoff)
@@ -25987,7 +25674,7 @@
     Uniformly sample a vector that lies within a given cone of angles
     around the Z axis
 
-    Parameter ``cos_cutoff`` (drjit.llvm.Float):
+    Parameter ``cos_cutoff`` (drjit.llvm.ad.Float):
         Cosine of the cutoff angle
 
     Parameter ``sample``:
@@ -26003,13 +25690,13 @@
 
     Density of square_to_uniform_cone per unit area.
 
-    Parameter ``cos_cutoff`` (drjit.llvm.Float):
+    Parameter ``cos_cutoff`` (drjit.llvm.ad.Float):
         Cosine of the cutoff angle
 
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_disk(sample)
@@ -26039,7 +25726,7 @@
     Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_disk_pdf(p)
@@ -26049,7 +25736,7 @@
     Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_hemisphere(sample)
@@ -26070,7 +25757,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_sphere(sample)
@@ -26091,7 +25778,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_uniform_square_concentric(sample)
@@ -26123,7 +25810,7 @@
     Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.square_to_von_mises_fisher(sample, kappa)
@@ -26134,7 +25821,7 @@
     Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
         *no description available*
 
-    Parameter ``kappa`` (drjit.llvm.Float):
+    Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Vector3f`:
@@ -26147,20 +25834,20 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``kappa`` (drjit.llvm.Float):
+    Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.tent_to_interval(value)
 
     Warp a uniformly distributed sample on [0, 1] to a tent distribution
 
-    Parameter ``value`` (drjit.llvm.Float):
+    Parameter ``value`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → drjit.llvm.Float:
+    Returns → drjit.llvm.ad.Float:
         *no description available*
 
 .. py:function:: mitsuba.warp.tent_to_square(value)
@@ -26180,7 +25867,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``cos_cutoff`` (drjit.llvm.Float):
+    Parameter ``cos_cutoff`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Point2f`:
@@ -26243,7 +25930,7 @@
     Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``kappa`` (drjit.llvm.Float):
+    Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Point2f`:
@@ -26483,7 +26170,7 @@
     Parameter ``rgb`` (:py:obj:`mitsuba.Color3f`):
         *no description available*
 
-    Parameter ``active`` (drjit.llvm.Bool):
+    Parameter ``active`` (drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
     Returns → :py:obj:`mitsuba.Color3f`:

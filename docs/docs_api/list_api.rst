@@ -226,8 +226,6 @@
 
 .. autoclass:: mitsuba.Properties
 
-.. autoclass:: mitsuba.PyObjectWrapper
-
 .. autoclass:: mitsuba.RadicalInverse
 
 .. autoclass:: mitsuba.Ray3f
@@ -422,63 +420,13 @@
 
 .. autoclass:: mitsuba.ad.SGD
 
+.. autoclass:: mitsuba.ad.common.ADIntegrator
+
+.. autofunction:: mitsuba.ad.common.mis_weight
+
 .. autofunction:: mitsuba.ad.common.render
 
-.. autoclass:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
-
-.. autofunction:: mitsuba.ad.direct_reparam.annotations
-
-.. autoclass:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
-
-.. autofunction:: mitsuba.ad.emission_reparam.annotations
-
-.. autofunction:: mitsuba.ad.f
-
-.. autofunction:: mitsuba.ad.integrators.direct_reparam.annotations
-
-.. autofunction:: mitsuba.ad.integrators.emission_reparam.annotations
-
-.. autofunction:: mitsuba.ad.integrators.f
-
-.. autofunction:: mitsuba.ad.integrators.name
-
-.. autofunction:: mitsuba.ad.integrators.prb.annotations
-
-.. autofunction:: mitsuba.ad.integrators.prb_basic.annotations
-
-.. autofunction:: mitsuba.ad.integrators.prb_reparam.annotations
-
-.. autofunction:: mitsuba.ad.integrators.prbvolpath.annotations
-
-.. autofunction:: mitsuba.ad.name
-
-.. autoclass:: mitsuba.ad.prb.ADIntegrator
-
-.. autoclass:: mitsuba.ad.prb.PRBIntegrator
-
-.. autofunction:: mitsuba.ad.prb.annotations
-
-.. autofunction:: mitsuba.ad.prb.mis_weight
-
-.. autoclass:: mitsuba.ad.prb_basic.BasicPRBIntegrator
-
-.. autofunction:: mitsuba.ad.prb_basic.annotations
-
-.. autoclass:: mitsuba.ad.prb_reparam.PRBReparamIntegrator
-
-.. autofunction:: mitsuba.ad.prb_reparam.annotations
-
-.. autoclass:: mitsuba.ad.prbvolpath.PRBVolpathIntegrator
-
-.. autofunction:: mitsuba.ad.prbvolpath.annotations
-
-.. autofunction:: mitsuba.ad.prbvolpath.index_spectrum
-
 .. autofunction:: mitsuba.ad.reparameterize_ray
-
-.. autofunction:: mitsuba.cast_object
-
-.. autofunction:: mitsuba.casters
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -532,15 +480,11 @@
 
 .. autofunction:: mitsuba.filesystem.resize_file
 
-.. autofunction:: mitsuba.float_dtype
-
 .. autofunction:: mitsuba.fresnel
 
 .. autofunction:: mitsuba.fresnel_conductor
 
 .. autofunction:: mitsuba.fresnel_polarized
-
-.. autofunction:: mitsuba.get_property
 
 .. autofunction:: mitsuba.has_flag
 
@@ -689,8 +633,6 @@
 .. autofunction:: mitsuba.sample_tea_float32
 
 .. autofunction:: mitsuba.set_log_level
-
-.. autofunction:: mitsuba.set_property
 
 .. autofunction:: mitsuba.set_variant
 

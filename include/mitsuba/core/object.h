@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * \brief Object base class with builtin reference counting
  *
- * This class (in conjunction with the 'ref' reference counter) constitutes the
+ * This class (in conjunction with the ``ref`` reference counter) constitutes the
  * foundation of an efficient reference-counted object hierarchy. The
  * implementation here is an alternative to standard mechanisms for reference
  * counting such as ``std::shared_ptr`` from the STL.
