@@ -25,9 +25,10 @@ EXCLUDE_FOLDERS = [
 JIT_EXCLUDE_FOLDERS = [
 ]
 
-# List of test scene folders to exclude for symbolic modes
-SYMBOLIC_EXCLUDE_FOLDERS = [
-    # all working now, yay
+# List of test scene folders that are only enabled with virtual call recordings
+# and loop recordings in JIT variants
+JIT_FORCE_RECORD_FOLDERS = [
+    'participating_media',
 ]
 
 POLARIZED_EXCLUDE_FOLDERS = {
@@ -45,8 +46,7 @@ POLARIZED_EXCLUDE_INTEGRATORS = {
 INTEGRATOR_MAPPING = {
     'direct' : ['direct_reparam'],
     'path' : ['prb', 'prb_reparam'],
-    'volpath' : ['prbvolpath'],
-    'volpathmis' : ['prbvolpath']
+    'volpath' : ['volpathmis', 'prbvolpath'],
 }
 
 if hasattr(dr, 'JitFlag'):
@@ -86,8 +86,16 @@ def list_all_render_test_configs():
                 configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))
             else:
                 for k, v in JIT_FLAG_OPTIONS.items():
-                    if v.get(dr.JitFlag.VCallRecord, 0) and any(ex in scene_fname for ex in SYMBOLIC_EXCLUDE_FOLDERS):
+                    if k == 'scalar':
                         continue
+
+                    has_vcall_recording = v.get(dr.JitFlag.VCallRecord, 0)
+                    has_loop_recording = v.get(dr.JitFlag.LoopRecord, 0)
+                    if any(
+                        folder in scene_fname for folder in JIT_FORCE_RECORD_FOLDERS
+                    ) and (not has_loop_recording or not has_vcall_recording):
+                        continue
+
                     configs.append((variant, scene_fname, scene_integrator_type, k))
 
                 for integrator_type in INTEGRATOR_MAPPING.get(scene_integrator_type, []):
