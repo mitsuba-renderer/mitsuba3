@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import ADIntegrator, mis_weight
+from .common import RBIntegrator, mis_weight
 
 def index_spectrum(spec, idx):
     m = spec[0]
@@ -12,7 +12,7 @@ def index_spectrum(spec, idx):
         m[dr.eq(idx, 2)] = spec[2]
     return m
 
-class PRBVolpathIntegrator(ADIntegrator):
+class PRBVolpathIntegrator(RBIntegrator):
     """
     This class implements a volumetric Path Replay Backpropagation (PRB) integrator
     with the following properties:

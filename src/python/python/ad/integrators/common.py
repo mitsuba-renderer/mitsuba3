@@ -566,6 +566,10 @@ class ADIntegrator(mi.CppADIntegrator):
 
 
 class RBIntegrator(ADIntegrator):
+    """
+        Abstract base class of radiative-backpropagation style differentiable
+        integrators.
+    """
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
