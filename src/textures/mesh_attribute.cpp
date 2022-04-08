@@ -19,7 +19,7 @@ Mesh attribute texture (:monosp:`mesh_attribute`)
    - Name of the attribute to evaluate. It should always start with ``"vertex_"`` or ``"face_"``.
  * - scale
    - |float|
-   - Scaling factor applied to the interpolated attribute value during evalutation.
+   - Scaling factor applied to the interpolated attribute value during evaluation.
      (Default: 1.0)
    - |exposed|
 
