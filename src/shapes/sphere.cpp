@@ -271,9 +271,8 @@ public:
         }
 
         // Compute UV coordinates
-        Float rd_2  = dr::sqr(local.x()) + dr::sqr(local.y()),
-                theta = unit_angle_z(local),
-                phi   = dr::atan2(local.y(), local.x());
+        Float theta = unit_angle_z(local),
+              phi   = dr::atan2(local.y(), local.x());
         dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
         result.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
 
