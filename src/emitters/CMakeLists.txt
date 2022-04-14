@@ -1,6 +1,7 @@
 set(MI_PLUGIN_PREFIX "emitters")
 
 add_plugin(area            area.cpp)
+add_plugin(smootharea      smootharea.cpp)
 add_plugin(point           point.cpp)
 add_plugin(constant        constant.cpp)
 add_plugin(envmap          envmap.cpp)
