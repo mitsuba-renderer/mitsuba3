@@ -213,7 +213,7 @@ public:
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
 
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
-        DirectionSample3f ds;
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         ds.p       = m_to_world.value().translation();
         ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;

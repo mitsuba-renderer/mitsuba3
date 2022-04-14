@@ -219,7 +219,6 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
-
     Ray3f ray;
     Spectrum weight;
     EmitterPtr emitter;
@@ -256,7 +255,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
     Point2f sample(sample_);
-    DirectionSample3f ds;
+    DirectionSample3f ds = dr::zero<DirectionSample3f>();
     Spectrum spec;
 
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)

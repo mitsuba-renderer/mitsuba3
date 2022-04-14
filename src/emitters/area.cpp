@@ -124,7 +124,7 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
-        DirectionSample3f ds;
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         SurfaceInteraction3f si;
 
         // One of two very different strategies is used depending on 'm_radiance'
@@ -212,7 +212,7 @@ public:
         Assert(m_shape, "Cannot sample from an area emitter without an associated Shape.");
 
         // Two strategies to sample the spatial component based on 'm_radiance'
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zero<PositionSample3f>();
         if (!m_radiance->is_spatially_varying()) {
             // Radiance not spatially varying, use area-based sampling of shape
             ps = m_shape->sample_position(time, sample, active);

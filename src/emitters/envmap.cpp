@@ -363,7 +363,7 @@ public:
 
         d = m_to_world.value().transform_affine(d);
 
-        DirectionSample3f ds;
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         ds.p       = it.p + d * dist;
         ds.n       = -d;
         ds.uv      = uv;

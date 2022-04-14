@@ -82,7 +82,7 @@ The two declarations below are equivalent.
             'bsdf': {
                 'type': 'diffuse'
             }
-        }, 
+        },
 
         'sphere_2': {
             'type': 'sphere',
@@ -181,7 +181,7 @@ public:
 
         Point3f local = warp::square_to_uniform_sphere(sample);
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zero<PositionSample3f>();
         ps.p = dr::fmadd(local, m_radius.value(), m_center.value());
         ps.n = local;
 
@@ -212,6 +212,8 @@ public:
                                                (1.f + math::RayEpsilon<Float>) :
                                                (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > dr::sqr(radius_adj);
+
+        Vector3f local;
         if (likely(dr::any_or<true>(outside_mask))) {
             Float inv_dc            = dr::rsqrt(dc_2),
                   sin_theta_max     = m_radius.value() * inv_dc,
@@ -233,31 +235,31 @@ public:
 
             auto [sin_phi, cos_phi] = dr::sincos(sample.y() * (2.f * dr::Pi<Float>));
 
-            Vector3f d = Frame3f(dc_v * -inv_dc).to_world(Vector3f(
+            local = Frame3f(dc_v * -inv_dc).to_world(Vector3f(
                 cos_phi * sin_alpha,
                 sin_phi * sin_alpha,
                 cos_alpha));
 
             DirectionSample3f ds = dr::zero<DirectionSample3f>();
-            ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
-            ds.n        = d;
+            ds.p        = dr::fmadd(local, m_radius.value(), m_center.value());
+            ds.n        = local;
             ds.d        = ds.p - it.p;
 
             Float dist2 = dr::squared_norm(ds.d);
             ds.dist     = dr::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = warp::square_to_uniform_cone_pdf(dr::zero<Vector3f>(), cos_theta_max);
-            dr::masked(ds.pdf, dr::eq(ds.dist, 0.f)) = 0.f;
 
+            dr::masked(ds.pdf, dr::eq(ds.dist, 0.f)) = 0.f;
             dr::masked(result, outside_mask) = ds;
         }
 
         Mask inside_mask = dr::andnot(active, outside_mask);
         if (unlikely(dr::any_or<true>(inside_mask))) {
-            Vector3f d = warp::square_to_uniform_sphere(sample);
+            local = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = dr::zero<DirectionSample3f>();
-            ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
-            ds.n        = d;
+            ds.p        = dr::fmadd(local, m_radius.value(), m_center.value());
+            ds.n        = local;
             ds.d        = ds.p - it.p;
 
             Float dist2 = dr::squared_norm(ds.d);
@@ -267,6 +269,13 @@ public:
 
             dr::masked(result, inside_mask) = ds;
         }
+
+        // Compute UV coordinates
+        Float rd_2  = dr::sqr(local.x()) + dr::sqr(local.y()),
+                theta = unit_angle_z(local),
+                phi   = dr::atan2(local.y(), local.x());
+        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
+        result.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
 
         result.time = it.time;
         result.delta = m_radius.value() == 0.f;

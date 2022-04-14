@@ -182,7 +182,7 @@ public:
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        DirectionSample3f ds;
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         ds.p        = m_to_world.value().translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;

@@ -171,11 +171,12 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    //! @{ \name Constructors, methods, etc.
     // =============================================================
 
     /**
-     * Construct from a position sample.
+     * \brief Construct from a position sample.
+     *
      * Unavailable fields such as `wi` and the partial derivatives are left
      * uninitialized.
      * The `shape` pointer is left uninitialized because we can't guarantee that
@@ -413,6 +414,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
+
     using Float    = Float_;
     using Spectrum = Spectrum_;
     MI_IMPORT_RENDER_BASIC_TYPES()
@@ -421,6 +423,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     // Make parent fields/functions visible
     MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+
     //! @}
     // =============================================================
 
@@ -560,6 +563,9 @@ struct PreliminaryIntersection {
     using Ray3f = typename Shape_::Ray3f;
     using Spectrum = typename Ray3f::Spectrum;
 
+    using Interaction3f = Interaction<Float, Spectrum>;
+    using PositionSample3f = PositionSample<Float, Spectrum>;
+
     //! @}
     // =============================================================
 
@@ -589,8 +595,22 @@ struct PreliminaryIntersection {
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    //! @{ \name Constructors, methods, etc.
     // =============================================================
+
+    /**
+     * \brief Create a preliminary intersection from a position sample and a
+     * reference point.
+     *
+     * This is useful to compute surface interaction information on an endpoint
+     * after sampling a position or a direction.
+     */
+    PreliminaryIntersection(const Interaction3f &ref,
+                            const PositionSample3f &ps, const ShapePtr &shape)
+        : prim_uv(ps.prim_uv), prim_index(ps.prim_index), shape_index(0),
+          shape(shape), instance(nullptr) {
+        t = dr::norm(ref.p - ps.p);
+    }
 
     /**
      * This callback method is invoked by dr::zero<>, and takes care of fields that deviate

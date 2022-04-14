@@ -530,11 +530,13 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     Vector3f e0 = p1 - p0, e1 = p2 - p0;
     Point2f b = warp::square_to_uniform_triangle(sample);
 
-    PositionSample3f ps;
+    PositionSample3f ps = dr::zero<PositionSample3f>();
     ps.p     = dr::fmadd(e0, b.x(), dr::fmadd(e1, b.y(), p0));
     ps.time  = time;
     ps.pdf   = m_area_pmf.normalization();
     ps.delta = false;
+    ps.prim_index = face_idx;
+    ps.prim_uv = b;
 
     if (has_vertex_texcoords()) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
@@ -643,12 +645,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     if constexpr (IsDiff) {
         /* On a high level, the computed surface interaction has gradients
-           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected 
+           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected
            triangle.
-           Moeller and Trumbore method bridges the gradients at 'ray' and the 
+           Moeller and Trumbore method bridges the gradients at 'ray' and the
            computed surface interaction. But the effects of the third part
-           remains ambigious. 'DetachShape' explicitly detaches the three 
-           vertices, which is equivalent to computing a 'hit point' of a laser 
+           remains ambiguous. 'DetachShape' explicitly detaches the three
+           vertices, which is equivalent to computing a 'hit point' of a laser
            characterized by 'ray'. 'FollowShape' on the other hand first finds
            the 'hit point', then glues the interaction point with the
            intersected triangle. For this reason, it no longer tracks

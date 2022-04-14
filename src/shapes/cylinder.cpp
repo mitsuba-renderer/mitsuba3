@@ -254,12 +254,13 @@ public:
         if (m_flip_normals)
             n *= -1;
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zero<PositionSample3f>();
         ps.p     = m_to_world.value().transform_affine(p);
         ps.n     = dr::normalize(n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
+
         return ps;
     }
 

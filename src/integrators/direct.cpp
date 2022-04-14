@@ -147,9 +147,7 @@ public:
         if (dr::any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
                 Mask active_e = sample_emitter;
-                DirectionSample3f ds;
-                Spectrum emitter_val;
-                std::tie(ds, emitter_val) = scene->sample_emitter_direction(
+                auto [ds, emitter_val] = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
                 active_e &= dr::neq(ds.pdf, 0.f);
                 if (dr::none_or<false>(active_e))

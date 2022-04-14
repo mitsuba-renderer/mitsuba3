@@ -59,6 +59,12 @@ struct PositionSample {
     /// Set if the sample was drawn from a degenerate (Dirac delta) distribution
     Mask delta;
 
+    /// 2D coordinates on the primitive surface parameterization (if applicable)
+    Point2f prim_uv;
+
+    /// Primitive index, e.g. the triangle ID (if applicable)
+    UInt32 prim_index;
+
     //! @}
     // =============================================================
 
@@ -75,17 +81,18 @@ struct PositionSample {
      */
     PositionSample(const SurfaceInteraction3f &si)
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
-          delta(false) { }
+          delta(false), prim_uv(0), prim_index(0) { }
 
     /// Basic field constructor
     PositionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                    Float time, Float pdf, Mask delta)
-        : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta) { }
+        : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta), prim_uv(0),
+          prim_index(0) {}
 
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(PositionSample, p, n, uv, time, pdf, delta)
+    DRJIT_STRUCT(PositionSample, p, n, uv, time, pdf, delta, prim_uv, prim_index)
 };
 
 // -----------------------------------------------------------------------------
@@ -114,7 +121,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     using Float    = Float_;
     using Spectrum = Spectrum_;
 
-    MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
+    MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta, prim_uv, prim_index)
     MI_IMPORT_RENDER_BASIC_TYPES()
 
     using Interaction3f        = typename RenderAliases::Interaction3f;
@@ -191,7 +198,8 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
+    DRJIT_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, prim_uv,
+                 prim_index, d, dist, emitter)
 };
 
 // -----------------------------------------------------------------------------
@@ -206,6 +214,8 @@ std::ostream &operator<<(std::ostream &os,
        << "  time = " << ps.time << "," << std::endl
        << "  pdf = " << ps.pdf << "," << std::endl
        << "  delta = " << ps.delta << "," << std::endl
+       << "  prim_uv = " << ps.prim_uv << "," << std::endl
+       << "  prim_index = " << ps.prim_index << "," << std::endl
        <<  "]";
     return os;
 }
@@ -220,6 +230,8 @@ std::ostream &operator<<(std::ostream &os,
        << "  time = " << ds.time << "," << std::endl
        << "  pdf = " << ds.pdf << "," << std::endl
        << "  delta = " << ds.delta << "," << std::endl
+       << "  prim_uv = " << ds.prim_uv << "," << std::endl
+       << "  prim_index = " << ds.prim_index << "," << std::endl
        << "  emitter = " << string::indent(ds.emitter) << "," << std::endl
        << "  d = " << string::indent(ds.d, 6) << "," << std::endl
        << "  dist = " << ds.dist << std::endl

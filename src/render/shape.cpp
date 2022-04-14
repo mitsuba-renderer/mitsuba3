@@ -370,8 +370,8 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
-                                                        const DirectionSample3f &ds,
-                                                        Mask active) const {
+                                                       const DirectionSample3f &ds,
+                                                       Mask active) const {
     MI_MASK_ARGUMENT(active);
 
     Float pdf = pdf_position(ds, active),

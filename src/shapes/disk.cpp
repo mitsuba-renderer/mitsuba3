@@ -153,7 +153,7 @@ public:
 
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zero<PositionSample3f>();
         ps.p    = m_to_world.value().transform_affine(Point3f(p.x(), p.y(), 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;

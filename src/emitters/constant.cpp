@@ -119,7 +119,7 @@ public:
         Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
               dist   = 2.f * radius;
 
-        DirectionSample3f ds;
+        DirectionSample3f ds = dr::zero<DirectionSample3f>();
         ds.p       = dr::fmadd(d, dist, it.p);
         ds.n       = -d;
         ds.uv      = sample;
