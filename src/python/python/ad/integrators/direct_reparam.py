@@ -8,7 +8,7 @@ from .common import ADIntegrator, mis_weight
 class DirectReparamIntegrator(ADIntegrator):
     """
     This class implements a reparameterized direct illumination integrator.
-    
+
     It is functionally equivalent with 'prb_reparam' when 'max_depth' and
     'reparam_max_depth' are both set to be 2. But since direct illumination
     tasks only have two ray segments, the overhead of relying on radiative
@@ -96,15 +96,16 @@ class DirectReparamIntegrator(ADIntegrator):
         pi = scene.ray_intersect_preliminary(ray_reparam, active)
         si = pi.compute_surface_interaction(ray_reparam)
 
-        # Differentiable evaluation of intersected emitter / envmap
+        # Differentiable evaluation of intersected emitter or environment emitter
         L += si.emitter(scene).eval(si)
-
-        # ------------------ Emitter sampling -------------------
 
         # Should we continue tracing to reach one more vertex?
         active_next = si.is_valid()
+
         # Get the BSDF. Potentially computes texture-space differentials.
         bsdf = si.bsdf(ray_reparam)
+
+        # ------------------ Emitter sampling -------------------
 
         # Detached emitter sample
         active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
@@ -112,12 +113,11 @@ class DirectReparamIntegrator(ADIntegrator):
             ds, weight_em = scene.sample_emitter_direction(
                 si, sampler.next_2d(), True, active_em)
         active_em &= dr.neq(ds.pdf, 0.0)
+
         # Re-compute attached `weight_em` to enable emitter optimization
         if not primal:
-            ds.d = dr.normalize(ds.p - si.p)
             val_em = scene.eval_emitter_direction(si, ds, active_em)
-            weight_em = dr.select(dr.neq(ds.pdf, 0), val_em / ds.pdf, 0)
-            dr.disable_grad(ds.d)
+            weight_em = dr.select(active_em, val_em / ds.pdf, 0)
 
         # Reparameterize the ray
         ray_em_det = 1.0
@@ -139,13 +139,13 @@ class DirectReparamIntegrator(ADIntegrator):
         L += bsdf_value_em * weight_em * ray_em_det * mis_em
 
         # ------------------ BSDF sampling -------------------
-
         # Detached BSDF sample
         with dr.suspend_grad():
             bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
                                                    sampler.next_2d(active_next), active_next)
-            ray_bsdf = si.spawn_ray(si.to_world(bsdf_sample.wo))
+        ray_bsdf = si.spawn_ray(si.to_world(bsdf_sample.wo))
         active_bsdf = active_next & dr.any(dr.neq(bsdf_weight, 0.0))
+
         # Re-compute attached `bsdf_weight`
         if not primal:
             wo = si.to_local(ray_bsdf.d)
@@ -158,13 +158,13 @@ class DirectReparamIntegrator(ADIntegrator):
             ray_bsdf.d, ray_bsdf_det = reparam(
                 si_follow.spawn_ray(ray_bsdf.d), depth=1, active=active_bsdf)
 
-        # Illumination
-        si_bsdf = scene.ray_intersect(ray_bsdf, active_bsdf)
-        L_bsdf = si_bsdf.emitter(scene).eval(si_bsdf, active_bsdf)
+            # Illumination
+            si_emitter = scene.ray_intersect(ray_bsdf, active_bsdf)
+            L_bsdf = si_emitter.emitter(scene).eval(si_emitter, active_bsdf)
 
         # Compute MIS
         with dr.suspend_grad():
-            ds = mi.DirectionSample3f(scene, si_bsdf, si)
+            ds = mi.DirectionSample3f(scene, si_emitter, si)
             delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
             emitter_pdf = scene.pdf_emitter_direction(si, ds, active_bsdf & ~delta)
             mis_bsdf = mis_weight(bsdf_sample.pdf, emitter_pdf)
