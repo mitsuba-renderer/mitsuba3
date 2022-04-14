@@ -197,7 +197,7 @@ public:
                 if (dr::grad_enabled(si.p)) {
                     ds.d = dr::normalize(ds.p - si.p);
                     Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
-                    em_weight = dr::select(dr::neq(ds.pdf, 0), em_val / ds.pdf, 0);
+                    em_weight = dr::select(dr::neq(ds.pdf, 0), em_val / dr::detach(ds.pdf), 0);
                 }
 
                 // Evaluate BSDF * cos(theta)
