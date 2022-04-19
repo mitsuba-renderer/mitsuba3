@@ -131,9 +131,9 @@ MI_INSTANTIATE_CLASS(CppADIntegrator)
 MI_VARIANT class PyADIntegrator : public CppADIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
-    using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
+    using Base = CppADIntegrator<Float, Spectrum>;
 
-    PyADIntegrator(const Properties &props) : CppADIntegrator(props) {
+    PyADIntegrator(const Properties &props) : Base(props) {
         if constexpr (!dr::is_jit_array_v<Float>) {
             Log(Warn, "ADIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
@@ -153,7 +153,7 @@ public:
         if (render_override) {
             return render_override(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
         } else {
-            return CppADIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
+            return Base::render(scene, sensor, seed, spp, develop, evaluate);
         }
     }
 
@@ -191,11 +191,11 @@ public:
     }
 
     std::vector<std::string> aov_names() const override {
-        PYBIND11_OVERRIDE(std::vector<std::string>, CppADIntegrator, aov_names, );
+        PYBIND11_OVERRIDE(std::vector<std::string>, Base, aov_names, );
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERRIDE(std::string, CppADIntegrator, to_string, );
+        PYBIND11_OVERRIDE(std::string, Base, to_string, );
     }
 };
 
