@@ -1,10 +1,13 @@
-from __future__ import annotations # Delayed parsing of type annotations
+from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
 from collections.abc import Mapping
-from contextlib import contextmanager
 
 import drjit as dr
 import mitsuba as mi
+
+import typing
+if typing.TYPE_CHECKING:
+    from typing import Any, Optional
 
 class SceneParameters(Mapping):
     """
@@ -23,7 +26,8 @@ class SceneParameters(Mapping):
         """
         self.properties = properties if properties is not None else {}
         self.hierarchy  = hierarchy  if hierarchy  is not None else {}
-        self.update_list = {}
+        self.update_candidates = {}
+        self.nodes_to_update = {}
 
         self.set_property = mi.set_property
         self.get_property = mi.get_property
@@ -38,15 +42,39 @@ class SceneParameters(Mapping):
 
     def __getitem__(self, key: str):
         value, value_type, node, _ = self.properties[key]
-        if value_type is None:
-            return value
-        else:
-            return self.get_property(value, value_type, node)
+        if value_type is not None:
+            value = self.get_property(value, value_type, node)
+
+        if key not in self.update_candidates:
+            self.update_candidates[key] = _jit_id_hash(value)
+
+        return value
 
     def __setitem__(self, key: str, value):
-        cur, value_type, node, _ = self.set_dirty(key)
+        cur, value_type, node, _ = self.properties[key]
+        if value_type is not None:
+            cur = self.get_property(cur, value_type, node)
+
+        if _jit_id_hash(cur) == _jit_id_hash(value) and cur == value:
+            # Turn this into a no-op when the set value is identical to the new value
+            return
+
+        self.set_dirty(key)
+
         if value_type is None:
-            cur.assign(value)
+            try:
+                cur.assign(value)
+            except AttributeError as e:
+                if "has no attribute 'assign'" in str(e):
+                    mi.Log(
+                        mi.LogLevel.Warn,
+                        f"Parameter '{key}' cannot be modified! This usually "
+                        "happens when the parameter is not a Mitsuba type."
+                        "Please use non-scalar Mitsuba types in your custom "
+                        "plugins."
+                    )
+                else:
+                    raise e
         else:
             self.set_property(cur, value_type, value)
 
@@ -105,39 +133,75 @@ class SceneParameters(Mapping):
         """
         Marks a specific parameter and its parent objects as dirty. A subsequent call
         to :py:meth:`~mitsuba.SceneParameters.update()` will refresh their internal
-        state. This function is automatically called when overwriting a parameter using
-        :py:meth:`~mitsuba.SceneParameters.__setitem__()`.
+        state.
+
+        This method should rarely be called explicitly. The
+        py:class:`~mitsuba.SceneParameters` will detect most operations on
+        its values and automatically flag them as dirty. A common exception to
+        the detection mechanism is the :py:meth:`~drjit.scatter` operation which
+        needs an explicit call to :py:meth:`~mitsuba.SceneParameters.set_dirty()`.
         """
-        item = self.properties[key]
-        node = item[2]
+        value, _, node, flags = self.properties[key]
+
+        is_nondifferentiable = (flags & mi.ParamFlags.NonDifferentiable.value)
+        if is_nondifferentiable and dr.grad_enabled(value):
+            mi.Log(
+                mi.LogLevel.Warn,
+                f"Parameter '{key}' is marked as non-differentiable but has "
+                "gradients enabled, unexpected results may occur!"
+            )
+
+        node_key = key
         while node is not None:
             parent, depth = self.hierarchy[node]
 
-            name = key
+            name = node_key
             if parent is not None:
-                key, name = key.rsplit('.', 1)
+                node_key, name = node_key.rsplit('.', 1)
 
-            self.update_list.setdefault((depth, node), [])
-            self.update_list[(depth, node)].append(name)
+            self.nodes_to_update.setdefault((depth, node), set())
+            self.nodes_to_update[(depth, node)].add(name)
 
             node = parent
 
-        return item
+        return self.properties[key]
 
-    def update(self) -> None:
+    def update(self) -> list[tuple[Any, set]]:
         """
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
         objects and their parent objects that they should refresh their
         internal state. For instance, the scene may rebuild the kd-tree
         when a shape was modified, etc.
+
+        The return value of this function is a list of tuples where each tuple
+        corresponds to a Mitsuba node/object that is updated. The tuple's first
+        element is the node itself. The second element is the set of keys that
+        the node is being updated for.
         """
-        work_list = [(d, n, k) for (d, n), k in self.update_list.items()]
+        update_candidate_keys = list(self.update_candidates.keys())
+        for key in update_candidate_keys:
+            # Candidate objects might have been modified inplace, we must check
+            # the JIT identifiers to see if the object has truly changed.
+            if _jit_id_hash(self[key]) == self.update_candidates[key]:
+                continue
+
+            self.set_dirty(key)
+
+        # Notify nodes from bottom to top
+        work_list = [(d, n, k) for (d, n), k in self.nodes_to_update.items()]
         work_list = reversed(sorted(work_list, key=lambda x: x[0]))
-        for depth, node, keys in work_list:
-            node.parameters_changed(keys)
-        self.update_list.clear()
+        out = []
+        for _, node, keys in work_list:
+            node.parameters_changed(list(keys))
+            out.append((node, keys))
+
+        self.nodes_to_update.clear()
+        self.update_candidates.clear()
         dr.eval()
+
+        return out
+
 
     def keep(self, keys: list) -> None:
         """
@@ -151,6 +215,40 @@ class SceneParameters(Mapping):
             k: v for k, v in self.properties.items() if k in keys
         }
 
+def _jit_id_hash(value: Any) -> int:
+    """
+    Recursively retrieves all JIT identifiers of the input and returns them in
+    a list of tuples where each tuple is: `(JIT identifier, AD identifier)`.
+    Any non-JIT object referenced by the input will also be added to the list,
+    its corresponding tuple is: `(object value, None)`.
+    """
+
+    def jit_ids(value: Any) -> list[tuple[int, Optional[int]]]:
+        ids = []
+
+        if dr.is_static_array_v(value):
+            for i in range(len(value)):
+                ids.extend(jit_ids(value[i]))
+        elif dr.is_diff_array_v(value):
+            ids.append((value.index(), value.index_ad()))
+        elif dr.is_jit_array_v(value):
+            if dr.is_tensor_v(value):
+                ids.extend(jit_ids(value.array))
+            else:
+                ids.append((value.index(), 0))
+        elif dr.is_drjit_struct_v(value):
+            for k, v in value.DRJIT_STRUCT.items():
+                ids.extend(jit_ids(getattr(value, k)))
+        else:
+            # Scalars: None is used to differentiate from non-diff JIT array case
+            try:
+                ids.append((hash(value), None))
+            except TypeError as e:
+                ids.append((id(value), None))
+
+        return ids
+
+    return hash(tuple(jit_ids(value)))
 
 def traverse(node: mi.Object) -> SceneParameters:
     """
