@@ -36,7 +36,7 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2u, uint32_t> Spiral::next_block() {
         }
     }
 
-    // Calculate a unique identifer per block
+    // Calculate a unique identifier per block
     uint32_t block_id =
         m_block_counter + (m_passes_left - 1) * m_block_count;
 

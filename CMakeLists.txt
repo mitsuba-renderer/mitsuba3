@@ -35,7 +35,7 @@ option(MI_ENABLE_GUI     "Build the graphical user interface?" OFF)
 #   export LD_LIBRARY_PATH=<path to libasan.so>
 
 option(MI_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
-option(MI_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
+option(MI_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of uninitialized memory
 
 option(MI_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
 if(MI_THROW_TRAPS_DEBUGGER)

@@ -395,7 +395,7 @@ DRJIT_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index
  * Given a floating point value \c x on the interval <tt>[0, 1]</tt> return a
  * floating point array with values <tt>[x, x+offset, x+2*offset, ...]</tt>,
  * where \c offset is the reciprocal of the array size. Entries that become
- * greater than 1.0 wrap around to the other side of the unit inteval.
+ * greater than 1.0 wrap around to the other side of the unit interval.
  *
  * This operation is useful to implement a type of correlated stratification in
  * the context of Monte Carlo integration.
