@@ -29,13 +29,13 @@ std::string escape_html(const std::string& data) {
 class JupyterNotebookAppender : public Appender {
 public:
     JupyterNotebookAppender() {
-        py::module ipywidgets = py::module::import("ipywidgets");
+        py::module_ ipywidgets = py::module_::import("ipywidgets");
         m_float_progress = ipywidgets.attr("FloatProgress");
         m_html = ipywidgets.attr("HTML");
         m_layout = ipywidgets.attr("Layout");
         m_vbox = ipywidgets.attr("VBox");
-        py::module display = py::module::import("IPython.display");
-        m_flush = py::module::import("sys").attr("stdout").attr("flush");
+        py::module_ display = py::module_::import("IPython.display");
+        m_flush = py::module_::import("sys").attr("stdout").attr("flush");
         m_display = display.attr("display");
         m_display_html = display.attr("display_html");
         m_label = m_bar = py::none();
@@ -118,7 +118,7 @@ private:
 MI_PY_EXPORT(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
      * running within Jupyter notebook */
-    py::object modules = py::module::import("sys").attr("modules");
+    py::object modules = py::module_::import("sys").attr("modules");
     if (!modules.contains("ipykernel"))
         return;
 
