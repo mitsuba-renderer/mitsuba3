@@ -189,14 +189,14 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
-        // When dp_du is invalid, use orthonormal basis
-        Vector3f d = dp_du;
-        Mask singularity_mask = dr::all(dr::eq(d, 0.f));
-        if (unlikely(dr::any_or<true>(singularity_mask)))
-            d[singularity_mask] = coordinate_system(sh_frame.n).first;
-
         sh_frame.s = dr::normalize(
-            dr::fnmadd(sh_frame.n, dr::dot(sh_frame.n, d), d));
+            dr::fmadd(sh_frame.n, -dr::dot(sh_frame.n, dp_du), dp_du));
+
+        // When dp_du is invalid, use an orthonormal basis
+        Mask singularity_mask = dr::all(dr::eq(dp_du, 0.f));
+        if (unlikely(dr::any_or<true>(singularity_mask)))
+            sh_frame.s[singularity_mask] = coordinate_system(sh_frame.n).first;
+
         sh_frame.t = dr::cross(sh_frame.n, sh_frame.s);
     }
 
