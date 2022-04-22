@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This sampling record is used to implement techniques that draw a position
  * from a point, line, surface, or volume domain in 3D and furthermore provide
- * auxilary information about the sample.
+ * auxiliary information about the sample.
  *
  * Apart from returning the position and (optionally) the surface normal, the
  * responsible sampling method must annotate the record with the associated

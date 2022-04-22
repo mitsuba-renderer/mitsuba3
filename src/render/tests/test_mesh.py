@@ -573,7 +573,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
                        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
-    # To increase si.dp_dv along the y-axis, we need to strech the right edge of the rectangle
+    # To increase si.dp_dv along the y-axis, we need to stretch the right edge of the rectangle
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_dv.y)

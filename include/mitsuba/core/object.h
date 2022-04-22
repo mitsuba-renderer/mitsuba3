@@ -77,7 +77,7 @@ public:
      * \brief Update internal state after applying changes to parameters
      *
      * This function should be invoked when attributes (obtained via \ref
-     * traverse) are modified in some way. The obect can then update its
+     * traverse) are modified in some way. The object can then update its
      * internal state so that derived quantities are consistent with the
      * change.
      *

@@ -315,7 +315,7 @@ template <typename T> constexpr Struct::Type struct_type_v = detail::struct_type
 MI_DECLARE_ENUM_OPERATORS(Struct::Flags)
 
 /**
- * \brief This class solves the any-to-any problem: effiently converting from
+ * \brief This class solves the any-to-any problem: efficiently converting from
  * one kind of structured data representation to another
  *
  * Graphics applications often need to convert from one kind of structured

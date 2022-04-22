@@ -28,7 +28,7 @@ template <typename Value> struct DiscreteDistribution {
     using ScalarVector2u = dr::Array<uint32_t, 2>;
 
 public:
-    /// Create an unitialized DiscreteDistribution instance
+    /// Create an uninitialized DiscreteDistribution instance
     DiscreteDistribution() { }
 
     /// Initialize from a given probability mass function
@@ -272,7 +272,7 @@ template <typename Value> struct ContinuousDistribution {
     using ScalarVector2u = Vector<uint32_t, 2>;
 
 public:
-    /// Create an unitialized ContinuousDistribution instance
+    /// Create an uninitialized ContinuousDistribution instance
     ContinuousDistribution() { }
 
     /// Initialize from a given density function on the interval \c range
@@ -557,7 +557,7 @@ template <typename Value> struct IrregularContinuousDistribution {
     using ScalarVector2u = dr::Array<uint32_t, 2>;
 
 public:
-    /// Create an unitialized IrregularContinuousDistribution instance
+    /// Create an uninitialized IrregularContinuousDistribution instance
     IrregularContinuousDistribution() { }
 
     /// Initialize from a given density function discretized on nodes \c nodes

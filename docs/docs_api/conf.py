@@ -120,7 +120,7 @@ block_line_start = 0
 # Keep track of the current block name
 last_block_name = None
 
-# Dictionary of {'block_name' : [start_line, end_line], ...} storeing the range of each block
+# Dictionary of {'block_name' : [start_line, end_line], ...} storing the range of each block
 # in the extracted RST text list.
 rst_block_range = {}
 
@@ -496,7 +496,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         if cached_signature == '(overloaded)':
             process_overload_block(lines, what)
         else:
-            # Find where to insert next parameter if necessary
+            # Find where to insert next parameter if neccessary
             # For this we look for the 'Returns:', otherwise we insert at the end
             next_idx = len(lines)
             for i, l in enumerate(lines):
@@ -609,7 +609,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             else:
                 extracted_rst.append(doc_indent + l + '\n')
 
-    # Keep track of last class name (to distingush the two callbacks)
+    # Keep track of last class name (to distinguish the two callbacks)
     last_class_name = name
 
 

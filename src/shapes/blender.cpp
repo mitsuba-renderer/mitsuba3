@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(blender)
     /// Smooth shading flag
     static const int ME_SMOOTH = 1 << 0;
 
-    /// Triangle tesselation of the mesh, contains references to 3 MLoop and the "real" face
+    /// Triangle tessellation of the mesh, contains references to 3 MLoop and the "real" face
     struct MLoopTri {
         unsigned int tri[3];
         unsigned int poly;
@@ -143,7 +143,7 @@ public:
             }
         }
         // Temporary buffers for vertices, normals, etc.
-        std::vector<std::array<InputFloat, 3>> tmp_vertices; // Store as vector for alignement issues
+        std::vector<std::array<InputFloat, 3>> tmp_vertices; // Store as vector for alignment issues
         std::vector<std::array<InputFloat, 3>> tmp_normals; // Same here
         std::vector<InputVector2f> tmp_uvs;
         std::vector<std::vector<InputFloat>> tmp_cols; // And same here

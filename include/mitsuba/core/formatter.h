@@ -13,7 +13,7 @@ public:
      * \brief Turn a log message into a human-readable format
      * \param level     The importance of the debug message
      * \param class_    Originating class or \c nullptr
-     * \param thread    Thread, which is reponsible for creating the message
+     * \param thread    Thread, which is responsible for creating the message
      * \param file      File, which is responsible for creating the message
      * \param line      Associated line within the source file
      * \param msg       Text content associated with the log message
