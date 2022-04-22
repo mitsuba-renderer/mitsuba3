@@ -517,6 +517,9 @@ protected:
     /// Virtual destructor
     virtual ~Scene();
 
+    /// Unmarks all shapes as dirty
+    void clear_shapes_dirty();
+
     /// Create the ray-intersection acceleration data structure
     void accel_init_cpu(const Properties &props);
     void accel_init_gpu(const Properties &props);
