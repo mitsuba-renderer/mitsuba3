@@ -357,6 +357,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             },
             (void *) m_accel
         );
+
+        clear_shapes_dirty();
     }
 }
 
