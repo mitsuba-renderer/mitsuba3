@@ -126,11 +126,11 @@ template <typename Float, typename Spectrum>
 class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, add_attribute,
-                    m_face_normals, has_vertex_normals,
-                    has_vertex_texcoords, recompute_vertex_normals,
-                    initialize)
+                   m_face_count, m_vertex_positions, m_vertex_normals,
+                   m_vertex_texcoords, m_faces, add_attribute,
+                   m_face_normals, has_vertex_normals,
+                   has_vertex_texcoords, recompute_vertex_normals,
+                   initialize)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -417,7 +417,7 @@ public:
 
                 m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
             } else {
-                Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
+                Log(Warn, "\"%s\": skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + el.struct_->size() * el.count);
             }
         }
@@ -488,17 +488,17 @@ private:
                 continue;
             } else if (token == "ply") {
                 if (ply_tag_seen)
-                    Throw("invalid PLY header: duplicate \"ply\" tag");
+                    Throw("\"%s\": invalid PLY header: duplicate \"ply\" tag", m_name);
                 ply_tag_seen = true;
                 if (iss >> token)
-                    Throw("invalid PLY header: excess tokens after \"ply\"");
+                    Throw("\"%s\": invalid PLY header: excess tokens after \"ply\"", m_name);
             } else if (token == "format") {
                 if (!ply_tag_seen)
-                    Throw("invalid PLY header: \"format\" before \"ply\" tag");
+                    Throw("\"%s\": invalid PLY header: \"format\" before \"ply\" tag", m_name);
                 if (header_processed)
-                    Throw("invalid PLY header: duplicate \"format\" tag");
+                    Throw("\"%s\": invalid PLY header: duplicate \"format\" tag", m_name);
                 if (!(iss >> token))
-                    Throw("invalid PLY header: missing token after \"format\"");
+                    Throw("\"%s\": invalid PLY header: missing token after \"format\"", m_name);
                 if (token == "ascii")
                     header.ascii = true;
                 else if (token == "binary_little_endian")
@@ -506,47 +506,47 @@ private:
                 else if (token == "binary_big_endian")
                     byte_order = Struct::ByteOrder::BigEndian;
                 else
-                    Throw("invalid PLY header: invalid token after \"format\"");
+                    Throw("\"%s\": invalid PLY header: invalid token after \"format\"", m_name);
                 if (!(iss >> token))
-                    Throw("invalid PLY header: missing version number after \"format\"");
+                    Throw("\"%s\": invalid PLY header: missing version number after \"format\"", m_name);
                 if (token != "1.0")
-                    Throw("PLY file has unknown version number \"%s\"", token);
+                    Throw("\"%s\": PLY file has unknown version number \"%s\"", m_name, token);
                 if (iss >> token)
-                    Throw("invalid PLY header: excess tokens after \"format\"");
+                    Throw("\"%s\": invalid PLY header: excess tokens after \"format\"", m_name);
                 header_processed = true;
             } else if (token == "element") {
                 if (!(iss >> token))
-                    Throw("invalid PLY header: missing token after \"element\"");
+                    Throw("\"%s\": invalid PLY header: missing token after \"element\"", m_name);
                 header.elements.emplace_back();
                 auto &element = header.elements.back();
                 element.name = token;
                 if (!(iss >> token))
-                    Throw("invalid PLY header: missing token after \"element\"");
+                    Throw("\"%s\": invalid PLY header: missing token after \"element\"", m_name);
                 element.count = (size_t) stoull(token);
                 struct_ = element.struct_ = new Struct(true, byte_order);
             } else if (token == "property") {
                 if (!header_processed)
-                    Throw("invalid PLY header: encountered \"property\" before \"format\"");
+                    Throw("\"%s\": invalid PLY header: encountered \"property\" before \"format\"", m_name);
                 if (header.elements.empty())
-                    Throw("invalid PLY header: encountered \"property\" before \"element\"");
+                    Throw("\"%s\": invalid PLY header: encountered \"property\" before \"element\"", m_name);
                 if (!(iss >> token))
-                    Throw("invalid PLY header: missing token after \"property\"");
+                    Throw("\"%s\": invalid PLY header: missing token after \"property\"", m_name);
 
                 if (token == "list") {
                     if (!(iss >> token))
-                        Throw("invalid PLY header: missing token after \"property list\"");
+                        Throw("\"%s\": invalid PLY header: missing token after \"property list\"", m_name);
                     auto it1 = fmt_map.find(token);
                     if (it1 == fmt_map.end())
-                        Throw("invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("\"%s\": invalid PLY header: unknown format type \"%s\"", m_name, token);
 
                     if (!(iss >> token))
-                        Throw("invalid PLY header: missing token after \"property list\"");
+                        Throw("\"%s\": invalid PLY header: missing token after \"property list\"", m_name);
                     auto it2 = fmt_map.find(token);
                     if (it2 == fmt_map.end())
-                        Throw("invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("\"%s\": invalid PLY header: unknown format type \"%s\"", m_name, token);
 
                     if (!(iss >> token))
-                        Throw("invalid PLY header: missing token after \"property list\"");
+                        Throw("\"%s\": invalid PLY header: missing token after \"property list\"", m_name);
 
                     struct_->append(token + ".count", it1->second, +Struct::Flags::Assert, 3);
                     for (int i = 0; i<3; ++i)
@@ -554,9 +554,9 @@ private:
                 } else {
                     auto it = fmt_map.find(token);
                     if (it == fmt_map.end())
-                        Throw("invalid PLY header: unknown format type \"%s\"", token);
+                        Throw("\"%s\": invalid PLY header: unknown format type \"%s\"", m_name, token);
                     if (!(iss >> token))
-                        Throw("invalid PLY header: missing token after \"property\"");
+                        Throw("\"%s\": invalid PLY header: missing token after \"property\"", m_name);
                     uint32_t flags = +Struct::Flags::Empty;
                     if (it->second >= Struct::Type::Int8 &&
                         it->second <= Struct::Type::UInt64)
@@ -565,17 +565,17 @@ private:
                 }
 
                 if (iss >> token)
-                    Throw("invalid PLY header: excess tokens after \"property\"");
+                    Throw("\"%s\": invalid PLY header: excess tokens after \"property\"", m_name);
             } else if (token == "end_header") {
                 if (iss >> token)
-                    Throw("invalid PLY header: excess tokens after \"end_header\"");
+                    Throw("\"%s\": invalid PLY header: excess tokens after \"end_header\"", m_name);
                 break;
             } else {
-                Throw("invalid PLY header: unknown token \"%s\"", token);
+                Throw("\"%s\": invalid PLY header: unknown token \"%s\"", m_name, token);
             }
         }
         if (!header_processed)
-            Throw("invalid PLY file: no header information");
+            Throw("\"%s\": invalid PLY file: no header information", m_name);
         return header;
     }
 
@@ -588,9 +588,9 @@ private:
                     switch (field.type) {
                         case Struct::Type::Int8: {
                                 int value;
-                                if (!(is >> value)) Throw("Could not parse \"char\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"char\" value for field %s", m_name, field.name);
                                 if (value < -128 || value > 127)
-                                    Throw("Could not parse \"char\" value for field %s", field.name);
+                                    Throw("\"%s\": could not parse \"char\" value for field %s", m_name, field.name);
                                 out->write((int8_t) value);
                             }
                             break;
@@ -598,85 +598,85 @@ private:
                         case Struct::Type::UInt8: {
                                 int value;
                                 if (!(is >> value))
-                                    Throw("Could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", field.name);
+                                    Throw("\"%s\": could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", m_name, field.name);
                                 if (value < 0 || value > 255)
-                                    Throw("Could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", field.name);
+                                    Throw("\"%s\": could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", m_name, field.name);
                                 out->write((uint8_t) value);
                             }
                             break;
 
                         case Struct::Type::Int16: {
                                 int16_t value;
-                                if (!(is >> value)) Throw("Could not parse \"short\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"short\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::UInt16: {
                                 uint16_t value;
-                                if (!(is >> value)) Throw("Could not parse \"ushort\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"ushort\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::Int32: {
                                 int32_t value;
-                                if (!(is >> value)) Throw("Could not parse \"int\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"int\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::UInt32: {
                                 uint32_t value;
-                                if (!(is >> value)) Throw("Could not parse \"uint\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"uint\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::Int64: {
                                 int64_t value;
-                                if (!(is >> value)) Throw("Could not parse \"long\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"long\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::UInt64: {
                                 uint64_t value;
-                                if (!(is >> value)) Throw("Could not parse \"ulong\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"ulong\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::Float16: {
                                 float value;
-                                if (!(is >> value)) Throw("Could not parse \"half\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"half\" value for field %s", m_name, field.name);
                                 out->write(dr::half::float32_to_float16(value));
                             }
                             break;
 
                         case Struct::Type::Float32: {
                                 float value;
-                                if (!(is >> value)) Throw("Could not parse \"float\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"float\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         case Struct::Type::Float64: {
                                 double value;
-                                if (!(is >> value)) Throw("Could not parse \"double\" value for field %s", field.name);
+                                if (!(is >> value)) Throw("\"%s\": could not parse \"double\" value for field %s", m_name, field.name);
                                 out->write(value);
                             }
                             break;
 
                         default:
-                            Throw("internal error");
+                            Throw("\"%s\": internal error", m_name);
                     }
                 }
             }
         }
         std::string token;
         if (is >> token)
-            Throw("Trailing tokens after end of PLY file");
+            Throw("\"%s\": trailing tokens after end of PLY file", m_name);
         out->seek(0);
         return out;
     }
@@ -707,8 +707,8 @@ private:
             vertex_attributes_descriptors.push_back({ type + "color", field_count, std::vector<InputFloat>() });
 
             if (!ref_struct->field("r").is_float())
-                Log(Warn, "Mesh attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
-                    (type + "color").c_str());
+                Log(Warn, "\"%s\": Mesh attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
+                    m_name, (type + "color").c_str());
         }
 
         reserved_names.insert({ "r", "g", "b", "a" });
@@ -741,15 +741,15 @@ private:
         };
         auto flush_attribute = [&]() {
             if (current_postfix_level_index != 1 && current_postfix_level_index != 3) {
-                Log(Warn, "Attribute must have either 1 or 3 fields (had %d) : attribute \"%s\" ignored",
-                    current_postfix_level_index, (type + current_prefix).c_str());
+                Log(Warn, "\"%s\": attribute must have either 1 or 3 fields (had %d) : attribute \"%s\" ignored",
+                    m_name, current_postfix_level_index, (type + current_prefix).c_str());
                 ignore_attribute();
                 return;
             }
 
             if (!Struct::is_float(current_type) && current_postfix_level_index == 3)
-                Log(Warn, "Attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
-                    (type + current_prefix).c_str());
+                Log(Warn, "\"%s\": attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
+                    m_name, (type + current_prefix).c_str());
 
             for(size_t i = 0; i < current_postfix_level_index; ++i)
                 target_struct->append(current_prefix + "_" + postfixes[i][current_postfix_index],
@@ -775,7 +775,7 @@ private:
 
             auto pos = field.name.find_last_of('_');
             if (pos == std::string::npos) {
-                Log(Warn, "Attributes without postfix are not handled for now: attribute \"%s\" ignored.", field.name.c_str());
+                Log(Warn, "\"%s\": attributes without postfix are not handled for now: attribute \"%s\" ignored.", m_name, field.name.c_str());
                 if (reading_attribute)
                     flush_attribute();
                 continue; // Don't do anything with attributes without postfix (for now)
@@ -783,7 +783,7 @@ private:
 
             const std::string postfix = field.name.substr(pos+1);
             if (postfix.size() != 1) {
-                Log(Warn, "Attribute postfix can only be one letter long.");
+                Log(Warn, "\"%s\": attribute postfix can only be one letter long.");
                 if (reading_attribute)
                     flush_attribute();
                 continue;
@@ -794,7 +794,7 @@ private:
                 flush_attribute();
 
             if (!reading_attribute && prefixes_encountered.find(prefix) != prefixes_encountered.end()) {
-                Log(Warn, "Attribute prefix has already been encountered: attribute \"%s\" ignored.", field.name.c_str());
+                Log(Warn, "\"%s\": attribute prefix has already been encountered: attribute \"%s\" ignored.", m_name, field.name.c_str());
                 while(i < field_count && ref_struct->operator[](i).name.find(prefix) == 0) ++i;
                 if (i == field_count)
                     break;
@@ -812,7 +812,7 @@ private:
                     }
                 }
                 if (postfix_index == -1) {
-                    Log(Warn, "Attribute can't start with postfix %c.", chpostfix);
+                    Log(Warn, "\"%s\": attribute can't start with postfix %c.", m_name, chpostfix);
                     continue;
                 }
                 reading_attribute = true;
@@ -820,7 +820,7 @@ private:
                 current_prefix = prefix;
             } else { // otherwise the postfix sequence should follow the naming rules
                 if (chpostfix != postfixes[current_postfix_level_index][current_postfix_index]) {
-                    Log(Warn, "Attribute postfix sequence is invalid: attribute \"%s\" ignored.", current_prefix.c_str());
+                    Log(Warn, "\"%s\": attribute postfix sequence is invalid: attribute \"%s\" ignored.", m_name, current_prefix.c_str());
                     ignore_attribute();
                     while(i < field_count && ref_struct->operator[](i).name.find(prefix) == 0) ++i;
                     if (i == field_count)
