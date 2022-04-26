@@ -126,6 +126,7 @@ MI_PY_EXPORT(PreliminaryIntersection) {
     MI_PY_IMPORT_TYPES()
 
     m.def("has_flag", [](uint32_t f0, RayFlags f1) { return has_flag(f0, f1); });
+    m.def("has_flag", [](UInt32   f0, RayFlags f1) { return has_flag(f0, f1); });
 
     auto pi =
         py::class_<PreliminaryIntersection3f>(m, "PreliminaryIntersection3f",

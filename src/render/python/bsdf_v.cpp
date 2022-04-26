@@ -6,7 +6,8 @@
 MI_PY_EXPORT(BSDFSample) {
     MI_PY_IMPORT_TYPES()
 
-    m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
+    m.def("has_flag", [](uint32_t flags, BSDFFlags f) { return has_flag(flags, f); });
+    m.def("has_flag", [](UInt32   flags, BSDFFlags f) { return has_flag(flags, f); });
 
     auto bs = py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
         .def(py::init<>())
