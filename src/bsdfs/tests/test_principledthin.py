@@ -2,6 +2,35 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
+
+def test00_construction_and_lobes(variant_scalar_rgb):
+    # By default the BSDF should only have 2 lobes, no anisotropic / transmission
+    b = mi.load_dict({
+        'type': 'principledthin',
+    })
+    assert b.component_count() == 3
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.DiffuseReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyReflection)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.GlossyTransmission)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+    # Adding anisotropy via the traverse mechanism
+    p = mi.traverse(b)
+    p['anisotropic.value'] = 0.5
+    p.update()
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+    b = mi.load_dict({
+        'type': 'principledthin',
+        'spec_trans': 0.5,
+    })
+    assert b.component_count() == 4
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.DiffuseReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyTransmission)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+
 def test01_chi2_thin_front_side(variants_vec_backends_once_rgb):
     # front_side thin
     xml = """<float name="roughness" value="0.6"/>

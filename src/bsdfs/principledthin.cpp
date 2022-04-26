@@ -187,26 +187,42 @@ public:
         m_diff_refl_srate =
                 props.get("diffuse_reflectance_sampling_rate", 1.0f);
 
+        initialize_lobes();
+
+        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                        m_diff_trans, m_eta_thin, m_diff_refl_srate,
+                        m_spec_refl_srate, m_spec_trans_srate,
+                        m_diff_trans_srate);
+    }
+
+    void initialize_lobes() {
         // Diffuse reflection lobe
         m_components.push_back(BSDFFlags::DiffuseReflection |
                                BSDFFlags::FrontSide | BSDFFlags::BackSide);
         // Specular diffuse lobe
         m_components.push_back(BSDFFlags::DiffuseTransmission |
                                BSDFFlags::FrontSide | BSDFFlags::BackSide);
+
         // Specular transmission lobe
-        m_components.push_back(BSDFFlags::GlossyTransmission |
-                               BSDFFlags::FrontSide | BSDFFlags::BackSide |
-                               BSDFFlags::Anisotropic);
+        if (m_has_spec_trans) {
+            uint32_t f = BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
+                         BSDFFlags::BackSide;
+            if (m_has_anisotropic)
+                f = f | BSDFFlags::Anisotropic;
+            m_components.push_back(f);
+        }
+
         // Main specular reflection lobe
-        m_components.push_back(BSDFFlags::GlossyReflection |
-                               BSDFFlags::FrontSide | BSDFFlags::BackSide |
-                               BSDFFlags::Anisotropic);
+        uint32_t f = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
+                     BSDFFlags::BackSide;
+        if (m_has_anisotropic)
+            f = f | BSDFFlags::Anisotropic;
+        m_components.push_back(f);
 
-        m_flags = m_components[0] | m_components[1] | m_components[2] |
-                  m_components[3];
+        for (auto c : m_components)
+            m_flags |= c;
         dr::set_attr(this, "flags", m_flags);
-
-        parameters_changed();
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -244,6 +260,9 @@ public:
             m_has_flatness = true;
         if (string::contains(keys, "spec_tint"))
             m_has_spec_tint = true;
+
+        initialize_lobes();
+
         dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
                         m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                         m_diff_trans, m_eta_thin, m_diff_refl_srate,

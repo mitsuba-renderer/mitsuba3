@@ -209,15 +209,13 @@ public:
         m_clearcoat_gloss = props.texture<Texture>("clearcoat_gloss", 0.0f);
         m_spec_srate = props.get("main_specular_sampling_rate", 1.0f);
         m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
-        m_diff_refl_srate =
-                props.get("diffuse_reflectance_sampling_rate", 1.0f);
+        m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 1.0f);
 
         /*Eta and specular has one to one correspondence, both of them can
          * not be specified. */
         if (props.has_property("eta") && props.has_property("specular")) {
             Throw("Specified an invalid index of refraction property  "
-                  "\"%s\", either use "
-                  "\"eta\" or \"specular\" !");
+                  "\"%s\", either use \"eta\" or \"specular\" !");
         } else if (props.has_property("eta")) {
             m_eta_specular = true;
             m_eta = props.get<float>("eta");
@@ -227,33 +225,51 @@ public:
             m_eta_specular = false;
             m_specular = props.get<float>("specular", 0.5f);
             // zero specular is not plausible for transmission
-            dr::masked(m_specular, m_has_spec_trans && m_specular == 0.f) =
-                    1e-3f;
-            m_eta =
-                    2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
+            dr::masked(m_specular, m_has_spec_trans && m_specular == 0.f) = 1e-3f;
+            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
         }
 
-        // Diffuse reflection lobe in brdf lobe
+        initialize_lobes();
+
+        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
+                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                        m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
+                        m_diff_refl_srate, m_spec_srate, m_clearcoat_srate);
+
+        if (!m_eta_specular)
+            dr::make_opaque(m_specular);
+    }
+
+    void initialize_lobes() {
+        // Diffuse reflection lobe
         m_components.push_back(BSDFFlags::DiffuseReflection |
                                BSDFFlags::FrontSide);
+
         // Clearcoat lobe
-        m_components.push_back(BSDFFlags::GlossyReflection |
-                               BSDFFlags::FrontSide);
-        // Specular transmission lobe in bsdf lobe
-        m_components.push_back(BSDFFlags::GlossyTransmission |
-                               BSDFFlags::FrontSide | BSDFFlags::BackSide |
-                               BSDFFlags::NonSymmetric |
-                               BSDFFlags::Anisotropic);
+        if (m_has_clearcoat) {
+            m_components.push_back(BSDFFlags::GlossyReflection |
+                                   BSDFFlags::FrontSide);
+        }
+
+        // Specular transmission lobe
+        if (m_has_spec_trans) {
+            uint32_t f = BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
+                         BSDFFlags::BackSide | BSDFFlags::NonSymmetric;
+            if (m_has_anisotropic)
+                f = f | BSDFFlags::Anisotropic;
+            m_components.push_back(f);
+        }
+
         // Main specular reflection lobe
-        m_components.push_back(BSDFFlags::GlossyReflection |
-                               BSDFFlags::FrontSide | BSDFFlags::BackSide |
-                               BSDFFlags::Anisotropic);
+        uint32_t f = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
+                     BSDFFlags::BackSide;
+        if (m_has_anisotropic)
+            f = f | BSDFFlags::Anisotropic;
+        m_components.push_back(f);
 
-        m_flags = m_components[0] | m_components[1] | m_components[2] |
-                  m_components[3];
+        for (auto c : m_components)
+            m_flags |= c;
         dr::set_attr(this, "flags", m_flags);
-
-        parameters_changed();
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -298,21 +314,26 @@ public:
             m_has_spec_tint = true;
         if (string::contains(keys, "flatness"))
             m_has_flatness = true;
+
         if (!m_eta_specular && string::contains(keys, "specular")) {
             /* Specular=0 is corresponding to eta=1 which is not plausible
                for transmission. */
             dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
-            m_eta =
-                    2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
+            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
         }
+
         if (m_eta_specular && string::contains(keys, "eta")) {
             // Eta = 1 is not plausible for transmission.
             dr::masked(m_eta, m_eta == 1.0f) = 1.001f;
         }
+
+        initialize_lobes();
+
         dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
                         m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                         m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
                         m_diff_refl_srate, m_spec_srate, m_clearcoat_srate);
+
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
     }
