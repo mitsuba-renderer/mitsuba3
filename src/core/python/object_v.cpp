@@ -28,8 +28,8 @@
 /// Implementation detail of mitsuba.core.get_property
 #define GET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0)                            \
-    return py::cast((T *) ptr, py::return_value_policy::reference_internal,    \
-                    parent)
+      return py::cast((T *) ptr, py::return_value_policy::reference_internal,  \
+                      parent)
 
 #define SET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0) {                          \
