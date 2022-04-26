@@ -51,7 +51,8 @@ MI_PY_EXPORT(Emitter) {
     MI_PY_IMPORT_TYPES()
     using PyEmitter = PyEmitter<Float, Spectrum>;
 
-    m.def("has_flag", [](UInt32 flags, EmitterFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
 
     auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
         .def(py::init<const Properties&>())

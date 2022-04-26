@@ -75,7 +75,8 @@ MI_PY_EXPORT(PhaseFunction) {
     MI_PY_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext, PhaseFunctionPtr)
     using PyPhaseFunction = PyPhaseFunction<Float, Spectrum>;
 
-    m.def("has_flag", [](UInt32 flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
+    m.def("has_flag", [](uint32_t flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
+    m.def("has_flag", [](UInt32   flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
 
     py::class_<PhaseFunctionContext>(m, "PhaseFunctionContext", D(PhaseFunctionContext))
         .def(py::init<Sampler*, TransportMode>(), "sampler"_a,

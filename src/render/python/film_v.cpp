@@ -70,6 +70,7 @@ MI_PY_EXPORT(Film) {
     using PyFilm = PyFilm<Float, Spectrum>;
 
     m.def("has_flag", [](uint32_t flags, FilmFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](UInt32   flags, FilmFlags f) {return has_flag(flags, f);});
 
     py::class_<Film, PyFilm, Object, ref<Film>>(m, "Film", D(Film))
         .def_method(Film, prepare, "aovs"_a)
