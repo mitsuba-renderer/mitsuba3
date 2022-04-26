@@ -3,6 +3,45 @@ import drjit as dr
 import mitsuba as mi
 
 
+def test00_construction_and_lobes(variant_scalar_rgb):
+    # By default the BSDF should only have 2 lobes, no anisotropic / transmission
+    b = mi.load_dict({
+        'type': 'principled',
+    })
+    assert b.component_count() == 2
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.DiffuseReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyReflection)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.GlossyTransmission)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+    # Adding anisotropy via the traverse mechanism
+    p = mi.traverse(b)
+    p['anisotropic.value'] = 0.5
+    p.update()
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+    b = mi.load_dict({
+        'type': 'principled',
+        'spec_trans': 0.5,
+    })
+    assert b.component_count() == 3
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.DiffuseReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyTransmission)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+    b = mi.load_dict({
+        'type': 'principled',
+        'clearcoat': 0.5,
+        'anisotropic': 0.5,
+    })
+    assert b.component_count() == 3
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.DiffuseReflection)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.GlossyReflection)
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.GlossyTransmission)
+    assert mi.has_flag(b.flags(), mi.BSDFFlags.Anisotropic)
+
+
 def test01_chi2_principled_normal(variants_vec_backends_once_rgb):
     # without spectrans
     xml = """<float name="roughness" value="0.6"/>
