@@ -52,10 +52,12 @@ class SceneParameters(Mapping):
 
     def __setitem__(self, key: str, value):
         cur, value_type, node, _ = self.properties[key]
-        if value_type is not None:
-            cur = self.get_property(cur, value_type, node)
 
-        if _jit_id_hash(cur) == _jit_id_hash(value) and cur == value:
+        cur_value = cur
+        if value_type is not None:
+            cur_value = self.get_property(cur, value_type, node)
+
+        if _jit_id_hash(cur_value) == _jit_id_hash(value) and cur_value == value:
             # Turn this into a no-op when the set value is identical to the new value
             return
 
