@@ -94,7 +94,7 @@ public:
     /** \brief Seeks to a position inside the stream.
      *
      * Seeking beyond the size of the buffer will not modify the length of
-     * its contents. However, a subsequent write should start at the seeked
+     * its contents. However, a subsequent write should start at the sought
      * position and update the size appropriately.
      */
     virtual void seek(size_t pos) = 0;

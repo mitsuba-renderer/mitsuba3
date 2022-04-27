@@ -279,7 +279,7 @@ enum class ParamFlags : uint32_t {
     /// Tracking gradients w.r.t. this parameter is not allowed
     NonDifferentiable = 0x1,
 
-    /// Tracking gradients w.r.t. this parameter will introduce discontinuties
+    /// Tracking gradients w.r.t. this parameter will introduce discontinuities
     Discontinuous = 0x2,
 };
 

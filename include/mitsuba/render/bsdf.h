@@ -275,7 +275,7 @@ public:
      * density, and multiplied by the cosine foreshortening factor (if needed
      * --- it is omitted for degenerate BSDFs like smooth mirrors/dielectrics).
      *
-     * If the supplied context data strutcures selects subset of components in
+     * If the supplied context data structures selects subset of components in
      * a multi-lobe BRDF model, the sampling is restricted to this subset.
      * Depending on the provided transport type, either the BSDF or its adjoint
      * version is sampled.

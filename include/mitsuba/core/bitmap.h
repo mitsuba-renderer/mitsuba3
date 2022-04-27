@@ -506,7 +506,7 @@ public:
      *
      * \ref srgb_gamma
      *      Specifies whether a sRGB gamma ramp should be applied to
-     *      the ouutput values.
+     *      the output values.
      */
     ref<Bitmap> convert(PixelFormat pixel_format,
                         Struct::Type component_format,

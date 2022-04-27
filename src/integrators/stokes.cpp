@@ -98,7 +98,7 @@ public:
         if constexpr (is_polarized_v<Spectrum>) {
             /* The Stokes vector that comes from the integrator is still aligned
                with the implicit Stokes frame used for the ray direction. Apply
-               one last rotation here s.t. it alignes with the sensor's x-axis. */
+               one last rotation here s.t. it aligns with the sensor's x-axis. */
             auto sensor = scene->sensors()[0];
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
             Vector3f vertical = sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);

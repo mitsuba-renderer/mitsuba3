@@ -13,7 +13,7 @@ class MI_EXPORT_LIB Medium : public Object {
 public:
     MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
-    /// Intersets a ray with the medium's bounding box
+    /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f &ray) const = 0;
 

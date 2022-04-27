@@ -44,7 +44,7 @@ NAMESPACE_BEGIN(mitsuba)
  * vectors</em> encoding the polarization state of light, while sensors are
  * characterized by 4x4 <em>Mueller matrices</em> that transform the incident
  * polarization prior to measurement. We sidestep this non-symmetry by simply
- * using Mueller matrices everywere: in the case of emitters, only the first
+ * using Mueller matrices everywhere: in the case of emitters, only the first
  * column will be used (the remainder being filled with zeros). This API
  * simplification comes at a small extra cost in terms of register usage and
  * arithmetic. The JIT (LLVM, CUDA) variants of Mitsuba can recognize
@@ -69,7 +69,7 @@ public:
      *
      * For this, the input 1D sample is first replicated into
      * <tt>Spectrum::Size</tt> separate samples using simple arithmetic
-     * tranformations (see \ref math::sample_shifted()), which can be interpreted
+     * transformations (see \ref math::sample_shifted()), which can be interpreted
      * as a type of Quasi-Monte-Carlo integration scheme. Following this, a
      * standard technique (e.g. inverse transform sampling) is used to find the
      * corresponding wavelengths. Any discrepancies between ideal and actual
@@ -306,7 +306,7 @@ public:
      * is not implemented.
      *
      * \param si
-     *    An intersect record that specfies both the query position
+     *    An intersect record that specifies both the query position
      *    and direction (using the <tt>si.wi</tt> field)
      * \return
      *    The emitted radiance or importance

@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief This enumeration is used to classify phase functions into different types,
  * i.e. into isotropic, anisotropic and microflake phase functions.
  *
- * This can be used to optimize implementatons to for example have less overhead
+ * This can be used to optimize implementations to for example have less overhead
  * if the phase function is not a microflake phase function.
  */
 enum class PhaseFunctionFlags : uint32_t {
