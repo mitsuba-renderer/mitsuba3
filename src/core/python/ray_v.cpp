@@ -9,7 +9,7 @@ void bind_ray(py::module &m, const char *name) {
 
     MI_PY_CHECK_ALIAS(Ray, name) {
         auto ray = py::class_<Ray>(m, name, D(Ray))
-            .def(py::init<>(), "Create an unitialized ray")
+            .def(py::init<>(), "Create an uninitialized ray")
             .def(py::init<const Ray &>(), "Copy constructor", "other"_a)
             .def(py::init<Point, Vector, Float, const Wavelength &>(),
                  D(Ray, Ray, 5),
@@ -38,7 +38,7 @@ MI_PY_EXPORT(Ray) {
 
     {
         auto raydiff = py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
-            .def(py::init<>(), "Create an unitialized ray")
+            .def(py::init<>(), "Create an uninitialized ray")
             .def(py::init<const Ray3f &>(), "ray"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
                  "Initialize without differentials.",

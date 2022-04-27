@@ -145,7 +145,7 @@ public:
     static void set_thread_count(size_t);
 
     /**
-     * \brief Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
+     * \brief Register a new thread (e.g. Dr.Jit, Python) with Mitsuba thread system.
      * Returns true upon success.
      */
     static bool register_external_thread(const std::string &prefix);

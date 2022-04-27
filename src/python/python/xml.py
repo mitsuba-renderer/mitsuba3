@@ -247,7 +247,7 @@ class WriteXML:
         ------
 
         name: Name of the tag (emitter, bsdf, shape...)
-        attributes: Additional fileds to add to the opening tag (e.g. name, type...)
+        attributes: Additional fields to add to the opening tag (e.g. name, type...)
         file: File to write to
         '''
         if file is not None:

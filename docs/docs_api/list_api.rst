@@ -30,9 +30,15 @@
 
 .. autoclass:: mitsuba.Class
 
+.. autoclass:: mitsuba.Color0d
+
 .. autoclass:: mitsuba.Color0f
 
+.. autoclass:: mitsuba.Color1d
+
 .. autoclass:: mitsuba.Color1f
+
+.. autoclass:: mitsuba.Color3d
 
 .. autoclass:: mitsuba.Color3f
 
@@ -144,9 +150,15 @@
 
 .. autoclass:: mitsuba.Mask
 
+.. autoclass:: mitsuba.Matrix2d
+
 .. autoclass:: mitsuba.Matrix2f
 
+.. autoclass:: mitsuba.Matrix3d
+
 .. autoclass:: mitsuba.Matrix3f
+
+.. autoclass:: mitsuba.Matrix4d
 
 .. autoclass:: mitsuba.Matrix4f
 
@@ -168,6 +180,8 @@
 
 .. autoclass:: mitsuba.MonteCarloIntegrator
 
+.. autoclass:: mitsuba.Normal3d
+
 .. autoclass:: mitsuba.Normal3f
 
 .. autoclass:: mitsuba.Object
@@ -188,11 +202,15 @@
 
 .. autoclass:: mitsuba.PluginManager
 
+.. autoclass:: mitsuba.Point0d
+
 .. autoclass:: mitsuba.Point0f
 
 .. autoclass:: mitsuba.Point0i
 
 .. autoclass:: mitsuba.Point0u
+
+.. autoclass:: mitsuba.Point1d
 
 .. autoclass:: mitsuba.Point1f
 
@@ -200,17 +218,23 @@
 
 .. autoclass:: mitsuba.Point1u
 
+.. autoclass:: mitsuba.Point2d
+
 .. autoclass:: mitsuba.Point2f
 
 .. autoclass:: mitsuba.Point2i
 
 .. autoclass:: mitsuba.Point2u
 
+.. autoclass:: mitsuba.Point3d
+
 .. autoclass:: mitsuba.Point3f
 
 .. autoclass:: mitsuba.Point3i
 
 .. autoclass:: mitsuba.Point3u
+
+.. autoclass:: mitsuba.Point4d
 
 .. autoclass:: mitsuba.Point4f
 
@@ -227,6 +251,8 @@
 .. autoclass:: mitsuba.Properties
 
 .. autoclass:: mitsuba.RadicalInverse
+
+.. autoclass:: mitsuba.Ray2f
 
 .. autoclass:: mitsuba.Ray3f
 
@@ -260,7 +286,11 @@
 
 .. autoclass:: mitsuba.ScalarColor3f
 
+.. autoclass:: mitsuba.ScalarNormal3d
+
 .. autoclass:: mitsuba.ScalarNormal3f
+
+.. autoclass:: mitsuba.ScalarPoint0d
 
 .. autoclass:: mitsuba.ScalarPoint0f
 
@@ -268,11 +298,15 @@
 
 .. autoclass:: mitsuba.ScalarPoint0u
 
+.. autoclass:: mitsuba.ScalarPoint1d
+
 .. autoclass:: mitsuba.ScalarPoint1f
 
 .. autoclass:: mitsuba.ScalarPoint1i
 
 .. autoclass:: mitsuba.ScalarPoint1u
+
+.. autoclass:: mitsuba.ScalarPoint2d
 
 .. autoclass:: mitsuba.ScalarPoint2f
 
@@ -280,11 +314,15 @@
 
 .. autoclass:: mitsuba.ScalarPoint2u
 
+.. autoclass:: mitsuba.ScalarPoint3d
+
 .. autoclass:: mitsuba.ScalarPoint3f
 
 .. autoclass:: mitsuba.ScalarPoint3i
 
 .. autoclass:: mitsuba.ScalarPoint3u
+
+.. autoclass:: mitsuba.ScalarPoint4d
 
 .. autoclass:: mitsuba.ScalarPoint4f
 
@@ -300,11 +338,15 @@
 
 .. autoclass:: mitsuba.ScalarTransform4f
 
+.. autoclass:: mitsuba.ScalarVector0d
+
 .. autoclass:: mitsuba.ScalarVector0f
 
 .. autoclass:: mitsuba.ScalarVector0i
 
 .. autoclass:: mitsuba.ScalarVector0u
+
+.. autoclass:: mitsuba.ScalarVector1d
 
 .. autoclass:: mitsuba.ScalarVector1f
 
@@ -312,17 +354,23 @@
 
 .. autoclass:: mitsuba.ScalarVector1u
 
+.. autoclass:: mitsuba.ScalarVector2d
+
 .. autoclass:: mitsuba.ScalarVector2f
 
 .. autoclass:: mitsuba.ScalarVector2i
 
 .. autoclass:: mitsuba.ScalarVector2u
 
+.. autoclass:: mitsuba.ScalarVector3d
+
 .. autoclass:: mitsuba.ScalarVector3f
 
 .. autoclass:: mitsuba.ScalarVector3i
 
 .. autoclass:: mitsuba.ScalarVector3u
+
+.. autoclass:: mitsuba.ScalarVector4d
 
 .. autoclass:: mitsuba.ScalarVector4f
 
@@ -356,6 +404,8 @@
 
 .. autoclass:: mitsuba.SurfaceInteraction3f
 
+.. autoclass:: mitsuba.TensorXd
+
 .. autoclass:: mitsuba.TensorXf
 
 .. autoclass:: mitsuba.Texture
@@ -366,7 +416,11 @@
 
 .. autoclass:: mitsuba.Timer
 
+.. autoclass:: mitsuba.Transform3d
+
 .. autoclass:: mitsuba.Transform3f
+
+.. autoclass:: mitsuba.Transform4d
 
 .. autoclass:: mitsuba.Transform4f
 
@@ -378,11 +432,15 @@
 
 .. autoclass:: mitsuba.UInt64
 
+.. autoclass:: mitsuba.Vector0d
+
 .. autoclass:: mitsuba.Vector0f
 
 .. autoclass:: mitsuba.Vector0i
 
 .. autoclass:: mitsuba.Vector0u
+
+.. autoclass:: mitsuba.Vector1d
 
 .. autoclass:: mitsuba.Vector1f
 
@@ -390,17 +448,23 @@
 
 .. autoclass:: mitsuba.Vector1u
 
+.. autoclass:: mitsuba.Vector2d
+
 .. autoclass:: mitsuba.Vector2f
 
 .. autoclass:: mitsuba.Vector2i
 
 .. autoclass:: mitsuba.Vector2u
 
+.. autoclass:: mitsuba.Vector3d
+
 .. autoclass:: mitsuba.Vector3f
 
 .. autoclass:: mitsuba.Vector3i
 
 .. autoclass:: mitsuba.Vector3u
+
+.. autoclass:: mitsuba.Vector4d
 
 .. autoclass:: mitsuba.Vector4f
 
@@ -413,20 +477,6 @@
 .. autoclass:: mitsuba.VolumeGrid
 
 .. autoclass:: mitsuba.ZStream
-
-.. autoclass:: mitsuba.ad.Adam
-
-.. autoclass:: mitsuba.ad.Optimizer
-
-.. autoclass:: mitsuba.ad.SGD
-
-.. autoclass:: mitsuba.ad.common.ADIntegrator
-
-.. autofunction:: mitsuba.ad.common.mis_weight
-
-.. autofunction:: mitsuba.ad.common.render
-
-.. autofunction:: mitsuba.ad.reparameterize_ray
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 

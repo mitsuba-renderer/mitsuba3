@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * A \a sampler provides a convenient abstraction around methods that generate
  * uniform pseudo- or quasi-random points within a conceptual
  * infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves two
- * main operations: by quering successive component values of such an
+ * main operations: by querying successive component values of such an
  * infinite-dimensional point (\ref next_1d(), \ref next_2d()), or by
  * discarding the current point and generating another one (\ref advance()).
  *
@@ -81,7 +81,7 @@ public:
      * Subsequent calls to the cloned sampler will produce the same
      * random numbers as the original sampler.
      *
-     * \remark This method relies on the overload of the copy construtor.
+     * \remark This method relies on the overload of the copy constructor.
      *
      * May throw an exception if not supported.
      */

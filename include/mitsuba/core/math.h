@@ -292,7 +292,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
  * are pooled into larger groups that are above the threshold before their
  * contents are added to the Chi^2 statistic.
  *
- * The function returns the statistic value, degrees of freedom, below-treshold
+ * The function returns the statistic value, degrees of freedom, below-threshold
  * entries and resulting number of pooled regions.
  *
  */

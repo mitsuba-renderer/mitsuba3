@@ -249,7 +249,7 @@
         Parameter ``arg0`` (float):
             *no description available*
 
-
+        
 .. py:class:: mitsuba.BSDF
 
     Base class: :py:obj:`mitsuba.Object`
@@ -1127,13 +1127,21 @@
 
     .. py:class:: mitsuba.Bitmap.AlphaTransform
 
+        Type of alpha transformation
+
         Members:
 
-            None : No transformation (default)
+        .. py:data:: None
 
-            Premultiply : No transformation (default)
+            No transformation (default)
 
-            Unpremultiply : No transformation (default)
+        .. py:data:: Premultiply
+
+            No transformation (default)
+
+        .. py:data:: Unpremultiply
+
+            No transformation (default)
 
         .. py:method:: __init__(self, value)
 
@@ -1446,7 +1454,7 @@
             component_format Specifies the desired component format
 
             srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
-            the ouutput values.
+            the output values.
 
             Parameter ``pixel_format`` (object):
                 *no description available*
@@ -2566,9 +2574,15 @@
         Returns → str:
             *no description available*
 
+.. py:class:: mitsuba.Color0d
+
 .. py:class:: mitsuba.Color0f
 
+.. py:class:: mitsuba.Color1d
+
 .. py:class:: mitsuba.Color1f
+
+.. py:class:: mitsuba.Color3d
 
 .. py:class:: mitsuba.Color3f
 
@@ -2875,7 +2889,7 @@
 
     .. py:method:: __init__(self)
 
-        Construct an unitialized direct sample
+        Construct an uninitialized direct sample
 
     .. py:method:: __init__(self, other)
 
@@ -3334,7 +3348,7 @@
         method is not implemented.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
-            An intersect record that specfies both the query position and
+            An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -3529,7 +3543,7 @@
 
         For this, the input 1D sample is first replicated into
         ``Spectrum::Size`` separate samples using simple arithmetic
-        tranformations (see math::sample_shifted()), which can be interpreted
+        transformations (see math::sample_shifted()), which can be interpreted
         as a type of Quasi-Monte-Carlo integration scheme. Following this, a
         standard technique (e.g. inverse transform sampling) is used to find
         the corresponding wavelengths. Any discrepancies between ideal and
@@ -3617,16 +3631,16 @@
     sample the emission/response profile, and to compute probability
     densities associated with the provided sampling techniques.
 
-    In addition to Endpoint::sample_ray(), which generates a sample from
-    the profile, subclasses also provide a specialized *direction
-    sampling* method in Endpoint::sample_direction(). This is a
-    generalization of direct illumination techniques to both emitters
-    *and* sensors. A direction sampling method is given an arbitrary
-    reference position in the scene and samples a direction from the
-    reference point towards the endpoint (ideally proportional to the
-    emission/sensitivity profile). This reduces the sampling domain from
-    4D to 2D, which often enables the construction of smarter specialized
-    sampling techniques.
+    In addition to :py:meth:`mitsuba.Endpoint.sample_ray`, which generates
+    a sample from the profile, subclasses also provide a specialized
+    *direction sampling* method in
+    :py:meth:`mitsuba.Endpoint.sample_direction`. This is a generalization
+    of direct illumination techniques to both emitters *and* sensors. A
+    direction sampling method is given an arbitrary reference position in
+    the scene and samples a direction from the reference point towards the
+    endpoint (ideally proportional to the emission/sensitivity profile).
+    This reduces the sampling domain from 4D to 2D, which often enables
+    the construction of smarter specialized sampling techniques.
 
     When rendering scenes involving participating media, it is important
     to know what medium surrounds the sensors and emitters. For this
@@ -3638,7 +3652,7 @@
     *Stokes vectors* encoding the polarization state of light, while
     sensors are characterized by 4x4 *Mueller matrices* that transform the
     incident polarization prior to measurement. We sidestep this non-
-    symmetry by simply using Mueller matrices everywere: in the case of
+    symmetry by simply using Mueller matrices everywhere: in the case of
     emitters, only the first column will be used (the remainder being
     filled with zeros). This API simplification comes at a small extra
     cost in terms of register usage and arithmetic. The JIT (LLVM, CUDA)
@@ -3664,7 +3678,7 @@
         method is not implemented.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
-            An intersect record that specfies both the query position and
+            An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -3846,7 +3860,7 @@
 
         For this, the input 1D sample is first replicated into
         ``Spectrum::Size`` separate samples using simple arithmetic
-        tranformations (see math::sample_shifted()), which can be interpreted
+        transformations (see math::sample_shifted()), which can be interpreted
         as a type of Quasi-Monte-Carlo integration scheme. Following this, a
         standard technique (e.g. inverse transform sampling) is used to find
         the corresponding wavelengths. Any discrepancies between ideal and
@@ -3979,10 +3993,10 @@
     .. py:method:: __init__(self, p, mode=<EMode., ERead)
 
         Constructs a new FileStream by opening the file pointed by ``p``.
-
+        
         The file is opened in read-only or read/write mode as specified by
         ``mode``.
-
+        
         Throws if trying to open a non-existing file in with write disabled.
         Throws an exception if the file cannot be opened / created.
 
@@ -3995,7 +4009,7 @@
         Parameter ``ERead`` (0>):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.FileStream.EMode
 
         Members:
@@ -6573,15 +6587,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -6601,7 +6615,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -6692,15 +6706,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -6720,7 +6734,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -6811,15 +6825,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -6839,7 +6853,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -6930,15 +6944,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -6958,7 +6972,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -9496,7 +9510,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.LogLevel`):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Logger.add_appender(self, arg0)
 
         Add an appender to this logger
@@ -9675,7 +9689,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -9751,15 +9765,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -9777,7 +9791,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -9876,15 +9890,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -9902,7 +9916,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10001,15 +10015,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10027,7 +10041,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10126,15 +10140,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10152,7 +10166,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10251,15 +10265,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10277,7 +10291,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10376,15 +10390,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10402,7 +10416,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10501,15 +10515,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10527,7 +10541,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10626,15 +10640,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10652,7 +10666,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11323,7 +11337,7 @@
         Parameter ``capacity`` (int):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MemoryStream.capacity(self)
 
         Return the current capacity of the underlying memory buffer
@@ -11808,13 +11822,15 @@
     techniques: the maximum path depth, and the depth at which the Russian
     Roulette path termination technique should start to become active.
 
+.. py:class:: mitsuba.Normal3d
+
 .. py:class:: mitsuba.Normal3f
 
 .. py:class:: mitsuba.Object
 
     Object base class with builtin reference counting
 
-    This class (in conjunction with the 'ref' reference counter)
+    This class (in conjunction with the ``ref`` reference counter)
     constitutes the foundation of an efficient reference-counted object
     hierarchy. The implementation here is an alternative to standard
     mechanisms for reference counting such as ``std::shared_ptr`` from the
@@ -11902,7 +11918,7 @@
         Update internal state after applying changes to parameters
 
         This function should be invoked when attributes (obtained via
-        traverse) are modified in some way. The obect can then update its
+        traverse) are modified in some way. The object can then update its
         internal state so that derived quantities are consistent with the
         change.
 
@@ -12210,7 +12226,8 @@
 
     .. py:data:: Discontinuous
 
-        Tracking gradients w.r.t. this parameter will introduce discontinuties
+        Tracking gradients w.r.t. this parameter will introduce
+        discontinuities
 
     .. py:method:: __init__(self, value)
 
@@ -12373,26 +12390,26 @@
     types, i.e. into isotropic, anisotropic and microflake phase
     functions.
 
-    This can be used to optimize implementatons to for example have less
+    This can be used to optimize implementations to for example have less
     overhead if the phase function is not a microflake phase function.
 
     Members:
 
     .. py:data:: Empty
 
-
+        
 
     .. py:data:: Isotropic
 
-
+        
 
     .. py:data:: Anisotropic
 
-
+        
 
     .. py:data:: Microflake
 
-
+        
 
     .. py:method:: __init__(self, value)
 
@@ -12428,7 +12445,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
@@ -12645,11 +12662,15 @@
         Returns → :py:obj:`mitsuba.PluginManager`:
             *no description available*
 
+.. py:class:: mitsuba.Point0d
+
 .. py:class:: mitsuba.Point0f
 
 .. py:class:: mitsuba.Point0i
 
 .. py:class:: mitsuba.Point0u
+
+.. py:class:: mitsuba.Point1d
 
 .. py:class:: mitsuba.Point1f
 
@@ -12657,17 +12678,23 @@
 
 .. py:class:: mitsuba.Point1u
 
+.. py:class:: mitsuba.Point2d
+
 .. py:class:: mitsuba.Point2f
 
 .. py:class:: mitsuba.Point2i
 
 .. py:class:: mitsuba.Point2u
 
+.. py:class:: mitsuba.Point3d
+
 .. py:class:: mitsuba.Point3f
 
 .. py:class:: mitsuba.Point3i
 
 .. py:class:: mitsuba.Point3u
+
+.. py:class:: mitsuba.Point4d
 
 .. py:class:: mitsuba.Point4f
 
@@ -12681,7 +12708,7 @@
 
     This sampling record is used to implement techniques that draw a
     position from a point, line, surface, or volume domain in 3D and
-    furthermore provide auxilary information about the sample.
+    furthermore provide auxiliary information about the sample.
 
     Apart from returning the position and (optionally) the surface normal,
     the responsible sampling method must annotate the record with the
@@ -12690,7 +12717,7 @@
 
     .. py:method:: __init__(self)
 
-        Construct an unitialized position sample
+        Construct an uninitialized position sample
 
     .. py:method:: __init__(self, other)
 
@@ -12898,14 +12925,14 @@
     various type-dependent getters and setters. Instead, they are accessed
     just like a normal Python map, e.g:
 
-    TODO update
-
     .. code-block:: c
 
         myProps = mitsuba.core.Properties("plugin_name")
         myProps["stringProperty"] = "hello"
         myProps["spectrumProperty"] = mitsuba.core.Spectrum(1.0)
 
+
+    or using the ``get(key, default)`` method.
 
 
     .. py:method:: __init__(self)
@@ -12925,6 +12952,41 @@
 
         Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
             *no description available*
+
+    .. py:class:: mitsuba.Properties.Type
+
+        Members:
+
+            Bool
+
+            Long
+
+            Float
+
+            Array3f
+
+            Transform
+
+            AnimatedTransform
+
+            Color
+
+            String
+
+            NamedReference
+
+            Object
+
+            Pointer
+
+        .. py:method:: __init__(self, value)
+
+            Parameter ``value`` (int):
+                *no description available*
+
+
+    .. py:method:: mitsuba.Properties.Type.name
+        :property:
 
     .. py:method:: mitsuba.Properties.animated_transform(self, arg0, arg1)
 
@@ -13011,6 +13073,11 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Properties.named_references(self)
+
+        Returns → List[Tuple[str, str]]:
+            *no description available*
+
     .. py:method:: mitsuba.Properties.plugin_name(self)
 
         Get the associated plugin name
@@ -13066,6 +13133,17 @@
             *no description available*
 
         Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.Properties.type(self, arg0)
+
+        Returns the type of an existing property. If no property exists under
+        that name, an error is logged and type ``void`` is returned.
+
+        Parameter ``arg0`` (str):
+            *no description available*
+
+        Returns → mitsuba::Properties::Type:
             *no description available*
 
     .. py:method:: mitsuba.Properties.unqueried(self)
@@ -13175,18 +13253,110 @@
         Returns → int:
             *no description available*
 
+.. py:class:: mitsuba.Ray2f
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+
+    .. py:method:: __init__(self)
+
+        Create an uninitialized ray
+
+    .. py:method:: __init__(self, other)
+
+        Copy constructor
+
+        Parameter ``other`` (:py:obj:`mitsuba.Ray2f`):
+            *no description available*
+
+    .. py:method:: __init__(self, o, d, time=0.0, wavelengths=[])
+
+        Parameter ``o`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``d`` (:py:obj:`mitsuba.Vector2f`):
+            *no description available*
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+            *no description available*
+
+    .. py:method:: __init__(self, o, d, maxt, time, wavelengths)
+
+        Parameter ``o`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``d`` (:py:obj:`mitsuba.Vector2f`):
+            *no description available*
+
+        Parameter ``maxt`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+            *no description available*
+
+    .. py:method:: __init__(self, other, maxt)
+
+        Parameter ``other`` (:py:obj:`mitsuba.Ray2f`):
+            *no description available*
+
+        Parameter ``maxt`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: mitsuba.Ray2f.assign(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Ray2f`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Ray2f.d
+        :property:
+
+        < Ray direction
+
+    .. py:method:: mitsuba.Ray2f.maxt
+        :property:
+
+        < Maximum position on the ray segment
+
+    .. py:method:: mitsuba.Ray2f.o
+        :property:
+
+        < Ray origin
+
+    .. py:method:: mitsuba.Ray2f.time
+        :property:
+
+        < Time value associated with this ray
+
+    .. py:method:: mitsuba.Ray2f.wavelengths
+        :property:
+
+        < Wavelength associated with the ray
+
 .. py:class:: mitsuba.Ray3f
 
     Simple n-dimensional ray segment data structure
 
     Along with the ray origin and direction, this data structure
     additionally stores a maximum ray position ``maxt``, a time value
-    ``time`` as well a the wavelegnth information associated with the ray.
+    ``time`` as well a the wavelength information associated with the ray.
 
 
     .. py:method:: __init__(self)
 
-        Create an unitialized ray
+        Create an uninitialized ray
 
     .. py:method:: __init__(self, other)
 
@@ -13277,7 +13447,7 @@
 
     .. py:method:: __init__(self)
 
-        Create an unitialized ray
+        Create an uninitialized ray
 
     .. py:method:: __init__(self, ray)
 
@@ -13429,22 +13599,22 @@
 
         Create a new Resampler object that transforms between the specified
         resolutions
-
+        
         This constructor precomputes all information needed to efficiently
         perform the desired resampling operation. For that reason, it is most
         efficient if it can be used over and over again (e.g. to resample the
         equal-sized rows of a bitmap)
-
+        
         Parameter ``source_res`` (int):
             Source resolution
-
+        
         Parameter ``target_res`` (int):
             Desired target resolution
 
         Parameter ``rfilter`` (:py:obj:`mitsuba.ReconstructionFilter`):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Resampler.boundary_condition(self)
 
         Return the boundary condition that should be used when looking up
@@ -13540,8 +13710,8 @@
     A *sampler* provides a convenient abstraction around methods that
     generate uniform pseudo- or quasi-random points within a conceptual
     infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves
-    two main operations: by quering successive component values of such an
-    infinite-dimensional point (next_1d(), next_2d()), or by discarding
+    two main operations: by querying successive component values of such
+    an infinite-dimensional point (next_1d(), next_2d()), or by discarding
     the current point and generating another one (advance()).
 
     Scalar and vectorized rendering algorithms interact with the sampler
@@ -13607,7 +13777,7 @@
         numbers as the original sampler.
 
         Remark:
-            This method relies on the overload of the copy construtor.
+            This method relies on the overload of the copy constructor.
 
         May throw an exception if not supported.
 
@@ -14487,7 +14657,11 @@
 
 .. py:class:: mitsuba.ScalarColor3f
 
+.. py:class:: mitsuba.ScalarNormal3d
+
 .. py:class:: mitsuba.ScalarNormal3f
+
+.. py:class:: mitsuba.ScalarPoint0d
 
 .. py:class:: mitsuba.ScalarPoint0f
 
@@ -14495,11 +14669,15 @@
 
 .. py:class:: mitsuba.ScalarPoint0u
 
+.. py:class:: mitsuba.ScalarPoint1d
+
 .. py:class:: mitsuba.ScalarPoint1f
 
 .. py:class:: mitsuba.ScalarPoint1i
 
 .. py:class:: mitsuba.ScalarPoint1u
+
+.. py:class:: mitsuba.ScalarPoint2d
 
 .. py:class:: mitsuba.ScalarPoint2f
 
@@ -14507,11 +14685,15 @@
 
 .. py:class:: mitsuba.ScalarPoint2u
 
+.. py:class:: mitsuba.ScalarPoint3d
+
 .. py:class:: mitsuba.ScalarPoint3f
 
 .. py:class:: mitsuba.ScalarPoint3i
 
 .. py:class:: mitsuba.ScalarPoint3u
+
+.. py:class:: mitsuba.ScalarPoint4d
 
 .. py:class:: mitsuba.ScalarPoint4f
 
@@ -14621,7 +14803,7 @@
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2d`):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ScalarTransform3d`:
@@ -14635,10 +14817,10 @@
             Transform a 3D vector/point/normal/ray by a transformation that is
             known to be an affine 3D transformation (i.e. no perspective)
 
-            Parameter ``p`` (:py:obj:`mitsuba.Point`):
+            Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2d`):
                 *no description available*
 
-            Returns → :py:obj:`mitsuba.Point`:
+            Returns → :py:obj:`mitsuba.ScalarPoint2d`:
                 *no description available*
 
         .. py:method:: transform_affine(self, v)
@@ -14646,17 +14828,17 @@
             Transform a 3D vector/point/normal/ray by a transformation that is
             known to be an affine 3D transformation (i.e. no perspective)
 
-            Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+            Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2d`):
                 *no description available*
 
-            Returns → :py:obj:`mitsuba.Vector`:
+            Returns → :py:obj:`mitsuba.ScalarVector2d`:
                 *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3d.translate(v)
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2d`):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ScalarTransform3d`:
@@ -14666,7 +14848,7 @@
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector`:
+        Returns → :py:obj:`mitsuba.ScalarVector2d`:
             *no description available*
 
 .. py:class:: mitsuba.ScalarTransform3f
@@ -14924,17 +15106,17 @@
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.look_at(origin)
+    .. py:method:: mitsuba.ScalarTransform4d.look_at(origin, target, up)
 
         Create a look-at camera transformation
 
-        Parameter ``origin`` (:py:obj:`mitsuba.Point`):
+        Parameter ``origin`` (:py:obj:`mitsuba.ScalarPoint3d`):
             Camera position
 
-        Parameter ``target``:
+        Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3d`):
             Target vector
 
-        Parameter ``up``:
+        Parameter ``up`` (:py:obj:`mitsuba.ScalarVector3d`):
             Up vector
 
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
@@ -14982,7 +15164,7 @@
         Create a rotation transformation around an arbitrary axis in 3D. The
         angle is specified in degrees
 
-        Parameter ``axis`` (:py:obj:`mitsuba.Vector`):
+        Parameter ``axis`` (:py:obj:`mitsuba.ScalarVector3d`):
             *no description available*
 
         Parameter ``angle`` (float):
@@ -14995,7 +15177,7 @@
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3d`):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
@@ -15020,10 +15202,10 @@
             Transform a 3D vector/point/normal/ray by a transformation that is
             known to be an affine 3D transformation (i.e. no perspective)
 
-            Parameter ``p`` (:py:obj:`mitsuba.Point`):
+            Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3d`):
                 *no description available*
 
-            Returns → :py:obj:`mitsuba.Point`:
+            Returns → :py:obj:`mitsuba.ScalarPoint3d`:
                 *no description available*
 
         .. py:method:: transform_affine(self, ray)
@@ -15042,10 +15224,10 @@
             Transform a 3D vector/point/normal/ray by a transformation that is
             known to be an affine 3D transformation (i.e. no perspective)
 
-            Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+            Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3d`):
                 *no description available*
 
-            Returns → :py:obj:`mitsuba.Vector`:
+            Returns → :py:obj:`mitsuba.ScalarVector3d`:
                 *no description available*
 
         .. py:method:: transform_affine(self, n)
@@ -15053,17 +15235,17 @@
             Transform a 3D vector/point/normal/ray by a transformation that is
             known to be an affine 3D transformation (i.e. no perspective)
 
-            Parameter ``n`` (:py:obj:`mitsuba.Normal`):
+            Parameter ``n`` (:py:obj:`mitsuba.ScalarNormal3d`):
                 *no description available*
 
-            Returns → :py:obj:`mitsuba.Normal`:
+            Returns → :py:obj:`mitsuba.ScalarNormal3d`:
                 *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.translate(v)
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3d`):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
@@ -15073,7 +15255,7 @@
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector`:
+        Returns → :py:obj:`mitsuba.ScalarVector3d`:
             *no description available*
 
 .. py:class:: mitsuba.ScalarTransform4f
@@ -15333,11 +15515,15 @@
         Returns → :py:obj:`mitsuba.ScalarVector3f`:
             *no description available*
 
+.. py:class:: mitsuba.ScalarVector0d
+
 .. py:class:: mitsuba.ScalarVector0f
 
 .. py:class:: mitsuba.ScalarVector0i
 
 .. py:class:: mitsuba.ScalarVector0u
+
+.. py:class:: mitsuba.ScalarVector1d
 
 .. py:class:: mitsuba.ScalarVector1f
 
@@ -15345,17 +15531,23 @@
 
 .. py:class:: mitsuba.ScalarVector1u
 
+.. py:class:: mitsuba.ScalarVector2d
+
 .. py:class:: mitsuba.ScalarVector2f
 
 .. py:class:: mitsuba.ScalarVector2i
 
 .. py:class:: mitsuba.ScalarVector2u
 
+.. py:class:: mitsuba.ScalarVector3d
+
 .. py:class:: mitsuba.ScalarVector3f
 
 .. py:class:: mitsuba.ScalarVector3i
 
 .. py:class:: mitsuba.ScalarVector3u
+
+.. py:class:: mitsuba.ScalarVector4d
 
 .. py:class:: mitsuba.ScalarVector4f
 
@@ -15844,7 +16036,7 @@
         Private constructor (use
         :py:func:`mitsuba.traverse()` instead)
 
-
+        
     .. py:method:: mitsuba.SceneParameters.items()
 
         Returns → a set-like object providing a view on D's items:
@@ -16176,7 +16368,7 @@
 
         For this, the input 1D sample is first replicated into
         ``Spectrum::Size`` separate samples using simple arithmetic
-        tranformations (see math::sample_shifted()), which can be interpreted
+        transformations (see math::sample_shifted()), which can be interpreted
         as a type of Quasi-Monte-Carlo integration scheme. Following this, a
         standard technique (e.g. inverse transform sampling) is used to find
         the corresponding wavelengths. Any discrepancies between ideal and
@@ -17063,7 +17255,7 @@
         Parameter ``passes`` (int):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Spiral.block_count(self)
 
         Return the total number of blocks
@@ -17608,14 +17800,14 @@
     .. py:method:: __init__(self, arg0)
 
         Create a new stream appender
-
+        
         Remark:
             This constructor is not exposed in the Python bindings
 
         Parameter ``arg0`` (str):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.StreamAppender.logs_to_file(self)
 
         Does this appender log to a file
@@ -17656,16 +17848,16 @@
         Parameter ``HostByteOrder`` (2>):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.Struct.ByteOrder
 
         Members:
 
-            LittleEndian :
+            LittleEndian : 
 
-            BigEndian :
+            BigEndian : 
 
-            HostByteOrder :
+            HostByteOrder : 
 
         .. py:method:: __init__(self, value)
 
@@ -17794,29 +17986,29 @@
 
         Members:
 
-            Int8 :
+            Int8 : 
 
-            UInt8 :
+            UInt8 : 
 
-            Int16 :
+            Int16 : 
 
-            UInt16 :
+            UInt16 : 
 
-            Int32 :
+            Int32 : 
 
-            UInt32 :
+            UInt32 : 
 
-            Int64 :
+            Int64 : 
 
-            UInt64 :
+            UInt64 : 
 
-            Float16 :
+            Float16 : 
 
-            Float32 :
+            Float32 : 
 
-            Float64 :
+            Float64 : 
 
-            Invalid :
+            Invalid : 
 
 
         .. py:method:: __init__(self, value)
@@ -17961,7 +18153,7 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    This class solves the any-to-any problem: effiently converting from
+    This class solves the any-to-any problem: efficiently converting from
     one kind of structured data representation to another
 
     Graphics applications often need to convert from one kind of
@@ -19091,31 +19283,31 @@
 
         .. py:data:: EIdlePriority
 
-
+            
 
         .. py:data:: ELowestPriority
 
-
+            
 
         .. py:data:: ELowPriority
 
-
+            
 
         .. py:data:: ENormalPriority
 
-
+            
 
         .. py:data:: EHighPriority
 
-
+            
 
         .. py:data:: EHighestPriority
 
-
+            
 
         .. py:data:: ERealtimePriority
 
-
+            
 
         .. py:method:: __init__(self, value)
 
@@ -19315,7 +19507,7 @@
 
     .. py:method:: mitsuba.Thread.wait_for_tasks()
 
-        Wait for previously registered drjit-thread tasks to complete
+        Wait for previously registered nanothread tasks to complete
 
         Returns → None:
             *no description available*
@@ -19354,6 +19546,163 @@
     .. py:method:: mitsuba.Timer.value(self)
 
         Returns → int:
+            *no description available*
+
+.. py:class:: mitsuba.Transform3d
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+
+    .. py:method:: __init__(self)
+
+        Initialize with the identity matrix
+
+    .. py:method:: __init__(self, arg0)
+
+        Copy constructor
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform3d`):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (numpy.ndarray):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Initialize the transformation from the given matrix (and compute its
+        inverse transpose)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix3f64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1)
+
+        Initialize from a matrix and its inverse transpose
+
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix3f64):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.Matrix3f64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Broadcast constructor
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform`):
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.assign(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform3d`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.has_scale(overloaded)
+
+
+        .. py:method:: has_scale(self)
+
+            Test for a scale component in each transform matrix by checking
+            whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+            ``I`` is the identity).
+
+            Returns → drjit.llvm.ad.Bool:
+                *no description available*
+
+        .. py:method:: has_scale(self)
+
+            Test for a scale component in each transform matrix by checking
+            whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+            ``I`` is the identity).
+
+            Returns → drjit.llvm.ad.Bool:
+                *no description available*
+
+    .. py:method:: mitsuba.Transform3d.inverse(self)
+
+        Compute the inverse of this transformation (involves just shuffles, no
+        arithmetic)
+
+        Returns → :py:obj:`mitsuba.Transform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.rotate(angle)
+
+        Create a rotation transformation in 2D. The angle is specified in
+        degrees
+
+        Parameter ``angle`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.scale(v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Vector2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.transform_affine(overloaded)
+
+
+        .. py:method:: transform_affine(self, p)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Point2d`:
+                *no description available*
+
+        .. py:method:: transform_affine(self, v)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``v`` (:py:obj:`mitsuba.Vector2d`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Vector2d`:
+                *no description available*
+
+    .. py:method:: mitsuba.Transform3d.translate(v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Vector2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform3d.translation(self)
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector2d`:
             *no description available*
 
 .. py:class:: mitsuba.Transform3f
@@ -19511,6 +19860,270 @@
         Get the translation part of a matrix
 
         Returns → :py:obj:`mitsuba.Vector2f`:
+            *no description available*
+
+.. py:class:: mitsuba.Transform4d
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+
+    .. py:method:: __init__(self)
+
+        Initialize with the identity matrix
+
+    .. py:method:: __init__(self, arg0)
+
+        Copy constructor
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform4d`):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (numpy.ndarray):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Initialize the transformation from the given matrix (and compute its
+        inverse transpose)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix4f64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1)
+
+        Initialize from a matrix and its inverse transpose
+
+        Parameter ``arg0`` (drjit.llvm.ad.Matrix4f64):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.Matrix4f64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Broadcast constructor
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform`):
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.assign(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Transform4d`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.extract(self)
+
+        Extract a lower-dimensional submatrix
+
+        Returns → :py:obj:`mitsuba.Transform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.from_frame(frame)
+
+        Creates a transformation that converts from 'frame' to the standard
+        basis
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.has_scale(overloaded)
+
+
+        .. py:method:: has_scale(self)
+
+            Test for a scale component in each transform matrix by checking
+            whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+            ``I`` is the identity).
+
+            Returns → drjit.llvm.ad.Bool:
+                *no description available*
+
+        .. py:method:: has_scale(self)
+
+            Test for a scale component in each transform matrix by checking
+            whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+            ``I`` is the identity).
+
+            Returns → drjit.llvm.ad.Bool:
+                *no description available*
+
+    .. py:method:: mitsuba.Transform4d.inverse(self)
+
+        Compute the inverse of this transformation (involves just shuffles, no
+        arithmetic)
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.look_at(origin, target, up)
+
+        Create a look-at camera transformation
+
+        Parameter ``origin`` (:py:obj:`mitsuba.Point3d`):
+            Camera position
+
+        Parameter ``target`` (:py:obj:`mitsuba.Point3d`):
+            Target vector
+
+        Parameter ``up`` (:py:obj:`mitsuba.Vector3d`):
+            Up vector
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.orthographic(near, far)
+
+        Create an orthographic transformation, which maps Z to [0,1] and
+        leaves the X and Y coordinates untouched.
+
+        Parameter ``near`` (drjit.llvm.ad.Float64):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float64):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.perspective(fov, near, far)
+
+        Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+        Projects vectors in camera space onto a plane at z=1:
+
+        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
+        near))
+
+        Camera-space depths are not mapped linearly!
+
+        Parameter ``fov`` (drjit.llvm.ad.Float64):
+            Field of view in degrees
+
+        Parameter ``near`` (drjit.llvm.ad.Float64):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float64):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.rotate(axis, angle)
+
+        Create a rotation transformation around an arbitrary axis in 3D. The
+        angle is specified in degrees
+
+        Parameter ``axis`` (:py:obj:`mitsuba.Vector3d`):
+            *no description available*
+
+        Parameter ``angle`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.scale(v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Vector3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.to_frame(frame)
+
+        Creates a transformation that converts from the standard basis to
+        'frame'
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.transform_affine(overloaded)
+
+
+        .. py:method:: transform_affine(self, p)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Point3d`:
+                *no description available*
+
+        .. py:method:: transform_affine(self, ray)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``ray`` (:py:obj:`mitsuba.Ray`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Ray`:
+                *no description available*
+
+        .. py:method:: transform_affine(self, v)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``v`` (:py:obj:`mitsuba.Vector3d`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Vector3d`:
+                *no description available*
+
+        .. py:method:: transform_affine(self, n)
+
+            Transform a 3D vector/point/normal/ray by a transformation that is
+            known to be an affine 3D transformation (i.e. no perspective)
+
+            Parameter ``n`` (:py:obj:`mitsuba.Normal3d`):
+                *no description available*
+
+            Returns → :py:obj:`mitsuba.Normal3d`:
+                *no description available*
+
+    .. py:method:: mitsuba.Transform4d.translate(v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Vector3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Transform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Transform4d.translation(self)
+
+        Get the translation part of a matrix
+
+        Returns → :py:obj:`mitsuba.Vector3d`:
             *no description available*
 
 .. py:class:: mitsuba.Transform4f
@@ -21371,11 +21984,15 @@
 
         (arg0: int) -> drjit.llvm.ad.UInt64
 
+.. py:class:: mitsuba.Vector0d
+
 .. py:class:: mitsuba.Vector0f
 
 .. py:class:: mitsuba.Vector0i
 
 .. py:class:: mitsuba.Vector0u
+
+.. py:class:: mitsuba.Vector1d
 
 .. py:class:: mitsuba.Vector1f
 
@@ -21383,17 +22000,23 @@
 
 .. py:class:: mitsuba.Vector1u
 
+.. py:class:: mitsuba.Vector2d
+
 .. py:class:: mitsuba.Vector2f
 
 .. py:class:: mitsuba.Vector2i
 
 .. py:class:: mitsuba.Vector2u
 
+.. py:class:: mitsuba.Vector3d
+
 .. py:class:: mitsuba.Vector3f
 
 .. py:class:: mitsuba.Vector3i
 
 .. py:class:: mitsuba.Vector3u
+
+.. py:class:: mitsuba.Vector4d
 
 .. py:class:: mitsuba.Vector4f
 
@@ -21665,7 +22288,7 @@
         Parameter ``level`` (int):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.ZStream.EStreamType
 
         Members:
@@ -21693,748 +22316,6 @@
 
         Returns → object:
             *no description available*
-
-.. py:class:: mitsuba.ad.Adam
-
-    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
-
-    Implements the Adam optimizer presented in the paper *Adam: A Method for
-    Stochastic Optimization* by Kingman and Ba, ICLR 2015.
-
-    When optimizing many variables (e.g. a high resolution texture) with
-    momentum enabled, it may be beneficial to restrict state and variable
-    updates to the entries that received nonzero gradients in the current
-    iteration (``mask_updates=True``).
-    In the context of differentiable Monte Carlo simulations, many of those
-    variables may not be observed at each iteration, e.g. when a surface is
-    not visible from the current camera. Gradients for unobserved variables
-    will remain at zero by default.
-    If we do not take special care, at each new iteration:
-
-    1. Momentum accumulated at previous iterations (potentially very noisy)
-       will keep being applied to the variable.
-    2. The optimizer's state will be updated to incorporate ``gradient = 0``,
-       even though it is not an actual gradient value but rather lack of one.
-
-    Enabling ``mask_updates`` avoids these two issues. This is similar to
-    `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
-
-    .. py:method:: __init__()
-
-        Parameter ``lr``:
-            learning rate
-
-        Parameter ``beta_1``:
-            controls the exponential averaging of first
-            order gradient moments
-
-        Parameter ``beta_2``:
-            controls the exponential averaging of second
-            order gradient moments
-
-        Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only be updated in a
-            given iteration if it received nonzero gradients in that iteration
-
-
-    .. py:method:: mitsuba.ad.Adam.step()
-
-        Take a gradient step
-
-    .. py:method:: mitsuba.ad.Adam.reset()
-
-        Zero-initializes the internal state associated with a parameter
-
-.. py:class:: mitsuba.ad.Optimizer
-
-    Base class of all gradient-based optimizers.
-
-    .. py:method:: __init__()
-
-        Parameter ``lr``:
-            learning rate
-
-        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
-            Scene parameters dictionary containing the parameters to optimize.
-
-
-    .. py:method:: mitsuba.ad.Optimizer.load()
-
-        Load a set of scene parameters to optimize.
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be loaded. Regex are supported to define
-            a subset of parameters at once. If set to ``None``, all differentiable
-            scene parameters will be loaded.
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.Optimizer.update()
-
-        Propagate updates of the parameters being optimized back to the scene state.
-
-        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
-            Scene parameters dictionary
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be updated. Regex are supported to update
-            a subset of parameters at once. If set to ``None``, all scene parameters will
-            be update.
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
-
-        Set the learning rate.
-
-        Parameter ``lr`` (``float``, ``dict``):
-            The new learning rate. A ``dict`` can be provided instead to
-            specify the learning rate for specific parameters.
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.Optimizer.reset()
-
-        Resets the internal state associated with a parameter, if any (e.g. momentum).
-
-.. py:class:: mitsuba.ad.SGD
-
-    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
-
-    Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum :cite:`Sutskever2013Importance` (0.9 is a typical
-    parameter value for the ``momentum`` parameter).
-
-    The momentum-based SGD uses the update equation
-
-    .. math::
-
-        v_{i+1} = \mu \cdot v_i +  g_{i+1}
-
-    .. math::
-        p_{i+1} = p_i + \varepsilon \cdot v_{i+1},
-
-    where :math:`v` is the velocity, :math:`p` are the positions,
-    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
-    the momentum parameter.
-
-    .. py:method:: __init__()
-
-        Parameter ``lr``:
-            learning rate
-
-        Parameter ``momentum``:
-            momentum factor
-
-        Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only be updated
-            in a given iteration if it received nonzero gradients in that iteration.
-            This only has an effect if momentum is enabled.
-            See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
-
-
-    .. py:method:: mitsuba.ad.SGD.step()
-
-        Take a gradient step
-
-    .. py:method:: mitsuba.ad.SGD.reset()
-
-        Zero-initializes the internal state associated with a parameter
-
-.. py:class:: mitsuba.ad.common.ADIntegrator
-
-    Base class: :py:obj:`mitsuba.SamplingIntegrator`
-
-    Abstract base class of numerous differentiable integrators in Mitsuba
-
-    .. pluginparameters::
-
-     * - max_depth
-         - |int|
-         - Specifies the longest path depth in the generated output image (where -1
-           corresponds to :math:`\infty`). A value of |1| will only render directly
-           visible light sources. |2| will lead to single-bounce (direct-only)
-           illumination, and so on. (Default: |-1|)
-     * - rr_depth
-         - |int|
-         - Specifies the path depth, at which the implementation will begin to use
-           the *russian roulette* path termination criterion. For example, if set to
-           |1|, then path generation many randomly cease after encountering directly
-           visible surfaces. (Default: |5|)
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.render(overloaded)
-
-
-        .. py:method:: render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
-
-            Render the scene
-
-            This function renders the scene from the viewpoint of ``sensor``. All
-            other parameters are optional and control different aspects of the
-            rendering process. In particular:
-
-            Parameter ``seed`` (int):
-                This parameter controls the initialization of the random number
-                generator. It is crucial that you specify different seeds (e.g.,
-                an increasing sequence) if subsequent ``render``() calls should
-                produce statistically independent images.
-
-            Parameter ``spp`` (int):
-                Set this parameter to a nonzero value to override the number of
-                samples per pixel. This value then takes precedence over whatever
-                was specified in the construction of ``sensor->sampler()``. This
-                parameter may be useful in research applications where an image
-                must be rendered multiple times using different quality levels.
-
-            Parameter ``develop`` (bool):
-                If set to ``True``, the implementation post-processes the data
-                stored in ``sensor->film()``, returning the resulting image as a
-                TensorXf. Otherwise, it returns an empty tensor.
-
-            Parameter ``evaluate`` (bool):
-                This parameter is only relevant for JIT variants of Mitsuba (LLVM,
-                CUDA). If set to ``True``, the rendering step evaluates the
-                generated image and waits for its completion. A log message also
-                denotes the rendering time. Otherwise, the returned tensor
-                (``develop=true``) or modified film (``develop=false``) represent
-                the rendering task as an unevaluated computation graph.
-
-            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-                *no description available*
-
-            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
-                *no description available*
-
-            Returns → drjit.llvm.ad.TensorXf:
-                *no description available*
-
-        .. py:method:: render(self, scene, sensor=0, seed=0, spp=0, develop=True, evaluate=True)
-
-            Render the scene
-
-            This function is just a thin wrapper around the previous render()
-            overload. It accepts a sensor *index* instead and renders the scene
-            using sensor 0 by default.
-
-            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-                *no description available*
-
-            Parameter ``sensor`` (int):
-                *no description available*
-
-            Parameter ``seed`` (int):
-                *no description available*
-
-            Parameter ``spp`` (int):
-                *no description available*
-
-            Parameter ``develop`` (bool):
-                *no description available*
-
-            Parameter ``evaluate`` (bool):
-                *no description available*
-
-            Returns → drjit.llvm.ad.TensorXf:
-                *no description available*
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
-
-        Evaluates the forward-mode derivative of the rendering step.
-
-        Forward-mode differentiation propagates gradients from scene parameters
-        through the simulation, producing a *gradient image* (i.e., the derivative
-        of the rendered image with respect to those scene parameters). The gradient
-        image is very helpful for debugging, for example to inspect the gradient
-        variance or visualize the region of influence of a scene parameter. It is
-        not particularly useful for simultaneous optimization of many parameters,
-        since multiple differentiation passes are needed to obtain separate
-        derivatives for each scene parameter. See ``Integrator.render_backward()``
-        for an efficient way of obtaining all parameter derivatives at once, or
-        simply use the ``mi.render()`` abstraction that hides both
-        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
-        a unified interface.
-
-        Before calling this function, you must first enable gradient tracking and
-        furthermore associate concrete input gradients with one or more scene
-        parameters, or the function will just return a zero-valued gradient image.
-        This is typically done by invoking ``dr.enable_grad()`` and
-        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-        that can be obtained obtained via a call to
-        ``mi.traverse()``.
-
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
-
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
-           could also be a Python list/dict/object tree (DrJit will traverse it
-           to find all parameters). Gradient tracking must be explicitly enabled
-           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
-           (i.e. ``render_forward()`` will not do this for you). Furthermore,
-           ``dr.set_grad(...)`` must be used to associate specific gradient values
-           with each parameter.
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
-
-        Parameter ``seed`` (int):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Returns → mi.TensorXf:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
-
-        Evaluates the reverse-mode derivative of the rendering step.
-
-        Reverse-mode differentiation transforms image-space gradients into scene
-        parameter gradients, enabling simultaneous optimization of scenes with
-        millions of free parameters. The function is invoked with an input
-        *gradient image* (``grad_in``) and transforms and accumulates these into
-        the gradient arrays of scene parameters that previously had gradient
-        tracking enabled.
-
-        Before calling this function, you must first enable gradient tracking for
-        one or more scene parameters, or the function will not do anything. This is
-        typically done by invoking ``dr.enable_grad()`` on elements of the
-        ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mi.traverse()``. Use ``dr.grad()`` to query the
-        resulting gradients of these parameters once ``render_backward()`` returns.
-
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
-
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
-           could also be a Python list/dict/object tree (DrJit will traverse it
-           to find all parameters). Gradient tracking must be explicitly enabled
-           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
-           (i.e. ``render_backward()`` will not do this for you).
-
-        Parameter ``grad_in`` (``mi.TensorXf``):
-            Gradient image that should be back-propagated.
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``grad_in`` (mi.TensorXf):
-            *no description available*
-
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
-
-        Parameter ``seed`` (int):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
-
-        Sample a 2D grid of primary rays for a given sensor
-
-        Returns a tuple containing
-
-        - the set of sampled rays
-        - a ray weight (usually 1 if the sensor's response function is sampled
-          perfectly)
-        - the continuous 2D image-space positions associated with each ray
-
-        When a reparameterization function is provided via the 'reparam'
-        argument, it will be applied to the returned image-space position (i.e.
-        the sample positions will be moving). The other two return values
-        remain detached.
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sensor`` (mi.Sensor):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``reparam`` (Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]):
-            *no description available*
-
-        Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
-
-        Given a sensor and a desired number of samples per pixel, this function
-        computes the necessary number of Monte Carlo samples and then suitably
-        seeds the sampler underlying the sensor.
-
-        Returns the created sampler and the final number of samples per pixel
-        (which may differ from the requested amount depending on the type of
-        ``Sampler`` being used)
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor to render the scene from a different viewpoint.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator during the primal rendering step. It is crucial that you
-            specify different seeds (e.g., an increasing sequence) if subsequent
-            calls should produce statistically independent images (e.g. to
-            de-correlate gradient-based optimization steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            primal rendering step. The value provided within the original scene
-            specification takes precedence if ``spp=0``.
-
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
-            *no description available*
-
-        Parameter ``seed`` (int):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Parameter ``aovs`` (list):
-            *no description available*
-
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, reparam, active)
-
-        This function does the main work of differentiable rendering and
-        remains unimplemented here. It is provided by subclasses of the
-        ``ADIntegrator`` interface.
-
-        In those concrete implementations, the function performs a Monte Carlo
-        random walk, implementing a number of different behaviors depending on
-        the ``mode`` argument. For example in primal mode (``mode ==
-        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
-        and estimates the radiance incident along ``ray``.
-
-        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
-        derivative of the incident radiance for a set of scene parameters being
-        differentiated. (This requires that these parameters are attached to
-        the AD graph and have gradients specified via ``dr.set_grad()``)
-
-        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
-        radiance ``δL`` and accumulates it into differentiable scene parameters.
-
-        You are normally *not* expected to directly call this function. Instead,
-        use ``mi.render()`` , which performs various necessary
-        setup steps to correctly use the functionality provided here.
-
-        The parameters of this function are as follows:
-
-        Parameter ``mode`` (``drjit.ADMode``)
-            Specifies whether the rendering algorithm should run in primal or
-            forward/backward derivative propagation mode
-
-        Parameter ``scene`` (``mi.Scene``):
-            Reference to the scene being rendered in a differentiable manner.
-
-        Parameter ``sampler`` (``mi.Sampler``):
-            A pre-seeded sample generator
-
-        Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
-            for forward/backward differentiable rendering phases that need to
-            obtain an incident radiance estimate. In this case, they may
-            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
-            depth.
-
-        Parameter ``δL`` (``mi.Spectrum``):
-            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
-            the ``δL`` parameter should specify the adjoint radiance associated
-            with each ray. Otherwise, it must be set to ``None``.
-
-        Parameter ``state_in`` (``Any``):
-            The primal phase of ``sample()`` returns a state vector as part of
-            its return value. The forward/backward differential phases expect
-            that this state vector is provided to them via this argument. When
-            invoked in primal mode, it should be set to ``None``.
-
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
-
-        Parameter ``active`` (``mi.Bool``):
-            This mask array can optionally be used to indicate that some of
-            the rays are disabled.
-
-        The function returns a tuple ``(spec, valid, state_out)`` where
-
-        Output ``spec`` (``mi.Spectrum``):
-            Specifies the estimated radiance and differential radiance in
-            primal and forward mode, respectively.
-
-        Output ``valid`` (``mi.Bool``):
-            Indicates whether the rays intersected a surface, which can be used
-            to compute an alpha channel.
-
-        Output ``state_out`` (``Any``):
-            When invoked in primal mode, this return argument provides an
-            unspecified state vector that is a required input of both
-            forward/backward differential phases.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``depth`` (mi.UInt32, δ):
-            *no description available*
-
-        Parameter ``L`` (Optional[mi.Spectrum]):
-            *no description available*
-
-        Parameter ``state_in`` (Any):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, Any]:
-            *no description available*
-
-.. py:function:: mitsuba.ad.common.mis_weight()
-
-    Compute the Multiple Importance Sampling (MIS) weight given the densities
-    of two sampling strategies according to the power heuristic.
-
-.. py:function:: mitsuba.ad.common.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
-
-    This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Mi. The function returns a rendered image that
-    can be used in subsequent differentiable computation steps. At any later
-    point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``dr.forward()`` and
-    ``dr.backward()``).
-
-    Under the hood, the differentiation operation will be intercepted and
-    routed to ``Integrator.render_forward()`` or
-    ``Integrator.render_backward()``, which evaluate the derivative using
-    either naive AD or a more specialized differential simulation.
-
-    Note the default implementation of this functionality relies on naive
-    automatic differentiation (AD), which records a computation graph of the
-    primal rendering step that is subsequently traversed to propagate
-    derivatives. This tends to be relatively inefficient due to the need to
-    track intermediate program state. In particular, it means that
-    differentiation of nontrivial scenes at high sample counts will often run
-    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-    ``prb`` (Path Replay Backpropagation) that are specifically designed for
-    differentiation can be significantly more efficient.
-
-    Parameter ``scene`` (``mi.Scene``):
-        Reference to the scene being rendered in a differentiable manner.
-
-    Parameter ``params`` (Any):
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
-       must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired.
-
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
-
-    Parameter ``integrator`` (``mi.Integrator``):
-        Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description
-        will be used.
-
-    Parameter ``seed` (``int``)
-        This parameter controls the initialization of the random number
-        generator during the primal rendering step. It is crucial that you
-        specify different seeds (e.g., an increasing sequence) if subsequent
-        calls should produce statistically independent images (e.g. to
-        de-correlate gradient-based optimization steps).
-
-    Parameter ``seed_grad` (``int``)
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will automatically compute a suitable value from the primal ``seed``.
-
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        primal rendering step. The value provided within the original scene
-        specification takes precedence if ``spp=0``.
-
-    Parameter ``spp_grad`` (``int``):
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will copy the value from ``spp``.
-
-    Parameter ``scene`` (mi.Scene):
-        *no description available*
-
-    Parameter ``sensor`` (Union[int, mi.Sensor]):
-        *no description available*
-
-    Parameter ``integrator`` (mi.Integrator):
-        *no description available*
-
-    Parameter ``seed`` (int):
-        *no description available*
-
-    Parameter ``seed_grad`` (int):
-        *no description available*
-
-    Parameter ``spp`` (int):
-        *no description available*
-
-    Parameter ``spp_grad`` (int):
-        *no description available*
-
-    Returns → mi.TensorXf:
-        *no description available*
-
-.. py:function:: mitsuba.ad.reparameterize_ray(scene, rng, params, ray, num_rays=4, kappa=100000.0, exponent=3.0, antithetic=False, unroll=False, active=True)
-
-    Reparameterize given ray by "attaching" the derivatives of its direction to
-    moving geometry in the scene.
-
-    Parameter ``scene`` (``mitsuba.Scene``):
-        Scene containing all shapes.
-
-    Parameter ``rng`` (``mitsuba.PCG32``):
-        Random number generator used to sample auxiliary ray directions.
-
-    Parameter ``ray`` (``mitsuba.RayDifferential3f``):
-        Ray to be reparameterized
-
-    Parameter ``params`` (``mitsuba.util.SceneParameters``):
-        Scene parameters
-
-    Parameter ``num_rays`` (``int``):
-        Number of auxiliary rays to trace when performing the convolution.
-
-    Parameter ``kappa`` (``float``):
-        Kappa parameter of the von Mises Fisher distribution used to sample the
-        auxiliary rays.
-
-    Parameter ``exponent`` (``float``):
-        Exponent used in the computation of the harmonic weights
-
-    Parameter ``antithetic`` (``bool``):
-        Should antithetic sampling be enabled to improve convergence?
-        (Default: False)
-
-    Parameter ``unroll`` (``bool``):
-        Should the loop tracing auxiliary rays be unrolled? (Default: False)
-
-    Parameter ``active`` (``mitsuba.Bool``):
-        Boolean array specifying the active lanes
-
-    Returns → (:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`):
-        Returns the reparameterized ray direction and the Jacobian
-        determinant of the change of variables.
-
-    Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-        *no description available*
-
-    Parameter ``rng`` (:py:obj:`mitsuba.PCG32`):
-        *no description available*
-
-    Parameter ``params`` (Any):
-        *no description available*
-
-    Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
-        *no description available*
-
-    Parameter ``num_rays`` (int):
-        *no description available*
-
-    Parameter ``kappa`` (float):
-        *no description available*
-
-    Parameter ``exponent`` (float):
-        *no description available*
-
-    Parameter ``antithetic`` (bool):
-        *no description available*
-
-    Parameter ``unroll`` (bool):
-        *no description available*
-
-    Parameter ``active`` (Any[bool, :py:obj:`mitsuba.Mask`]):
-        Mask to specify active lanes.
-
-    Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`]:
-        *no description available*
 
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
@@ -23678,7 +23559,7 @@
 
 .. py:function:: mitsuba.mueller.rotate_stokes_basis(wi, basis_current, basis_target)
 
-    Gives the Mueller matrix that alignes the reference frames (defined by
+    Gives the Mueller matrix that aligns the reference frames (defined by
     their respective basis vectors) of two collinear stokes vectors.
 
     If we have a stokes vector s_current expressed in 'basis_current', we
@@ -23708,7 +23589,7 @@
 
 .. py:function:: mitsuba.mueller.rotate_stokes_basis_m(wi, basis_current, basis_target)
 
-    Gives the Mueller matrix that alignes the reference frames (defined by
+    Gives the Mueller matrix that aligns the reference frames (defined by
     their respective basis vectors) of two collinear stokes vectors.
 
     If we have a stokes vector s_current expressed in 'basis_current', we
@@ -24070,7 +23951,7 @@
     polynomials of degree three or less.
 
     Parameter ``n`` (int):
-        Desired number of evalution points. Must be an odd number bigger
+        Desired number of evaluation points. Must be an odd number bigger
         than 3.
 
     Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
@@ -24088,7 +23969,7 @@
     polynomials of degree four or less.
 
     Parameter ``n`` (int):
-        Desired number of evalution points. Must be an odd number bigger
+        Desired number of evaluation points. Must be an odd number bigger
         than 3.
 
     Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
@@ -24111,7 +23992,7 @@
     integration scheme will be superior for large :math:`n`.
 
     Parameter ``n`` (int):
-        Desired number of evalution points
+        Desired number of evaluation points
 
     Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
@@ -24135,7 +24016,7 @@
     integration scheme will be superior for large :math:`n`.
 
     Parameter ``n`` (int):
-        Desired number of evalution points
+        Desired number of evaluation points
 
     Returns → Tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         A tuple (nodes, weights) storing the nodes and weights of the
@@ -26037,7 +25918,7 @@
         ------
 
         name: Name of the tag (emitter, bsdf, shape...)
-        attributes: Additional fileds to add to the opening tag (e.g. name, type...)
+        attributes: Additional fields to add to the opening tag (e.g. name, type...)
         file: File to write to
 
     .. py:method:: mitsuba.xml.WriteXML.close_element()

@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * Along with the ray origin and direction, this data structure additionally
  * stores a maximum ray position \c maxt, a time value \c time as well a the
- * wavelegnth information associated with the ray.
+ * wavelength information associated with the ray.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = dr::array_size_v<Point_>;

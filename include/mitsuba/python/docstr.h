@@ -824,7 +824,7 @@ density, and multiplied by the cosine foreshortening factor (if needed
 --- it is omitted for degenerate BSDFs like smooth
 mirrors/dielectrics).
 
-If the supplied context data strutcures selects subset of components
+If the supplied context data structures selects subset of components
 in a multi-lobe BRDF model, the sampling is restricted to this subset.
 Depending on the provided transport type, either the BSDF or its
 adjoint version is sampled.
@@ -1133,7 +1133,7 @@ pixel_format Specifies the desired pixel format
 component_format Specifies the desired component format
 
 srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
-the ouutput values.)doc";
+the output values.)doc";
 
 static const char *__doc_mitsuba_Bitmap_convert_2 = R"doc()doc";
 
@@ -2265,16 +2265,16 @@ Subclasses of this interface must implement functions to evaluate and
 sample the emission/response profile, and to compute probability
 densities associated with the provided sampling techniques.
 
-In addition to Endpoint::sample_ray(), which generates a sample from
-the profile, subclasses also provide a specialized *direction
-sampling* method in Endpoint::sample_direction(). This is a
-generalization of direct illumination techniques to both emitters
-*and* sensors. A direction sampling method is given an arbitrary
-reference position in the scene and samples a direction from the
-reference point towards the endpoint (ideally proportional to the
-emission/sensitivity profile). This reduces the sampling domain from
-4D to 2D, which often enables the construction of smarter specialized
-sampling techniques.
+In addition to :py:meth:`mitsuba.Endpoint.sample_ray`, which generates
+a sample from the profile, subclasses also provide a specialized
+*direction sampling* method in
+:py:meth:`mitsuba.Endpoint.sample_direction`. This is a generalization
+of direct illumination techniques to both emitters *and* sensors. A
+direction sampling method is given an arbitrary reference position in
+the scene and samples a direction from the reference point towards the
+endpoint (ideally proportional to the emission/sensitivity profile).
+This reduces the sampling domain from 4D to 2D, which often enables
+the construction of smarter specialized sampling techniques.
 
 When rendering scenes involving participating media, it is important
 to know what medium surrounds the sensors and emitters. For this
@@ -2286,7 +2286,7 @@ emitters and sensors technically breaks down: the former emit 4D
 *Stokes vectors* encoding the polarization state of light, while
 sensors are characterized by 4x4 *Mueller matrices* that transform the
 incident polarization prior to measurement. We sidestep this non-
-symmetry by simply using Mueller matrices everywere: in the case of
+symmetry by simply using Mueller matrices everywhere: in the case of
 emitters, only the first column will be used (the remainder being
 filled with zeros). This API simplification comes at a small extra
 cost in terms of register usage and arithmetic. The JIT (LLVM, CUDA)
@@ -2320,7 +2320,7 @@ The default implementation throws an exception, which states that the
 method is not implemented.
 
 Parameter ``si``:
-    An intersect record that specfies both the query position and
+    An intersect record that specifies both the query position and
     direction (using the ``si.wi`` field)
 
 Returns:
@@ -2522,7 +2522,7 @@ spectral sensitivity/emission profile.
 
 For this, the input 1D sample is first replicated into
 ``Spectrum::Size`` separate samples using simple arithmetic
-tranformations (see math::sample_shifted()), which can be interpreted
+transformations (see math::sample_shifted()), which can be interpreted
 as a type of Quasi-Monte-Carlo integration scheme. Following this, a
 standard technique (e.g. inverse transform sampling) is used to find
 the corresponding wavelengths. Any discrepancies between ideal and
@@ -3951,7 +3951,7 @@ static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns 
 
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
 
-static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersets a ray with the medium's bounding box)doc";
+static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersects a ray with the medium's bounding box)doc";
 
 static const char *__doc_mitsuba_Medium_is_homogeneous = R"doc(Returns whether this medium is homogeneous)doc";
 
@@ -4594,7 +4594,7 @@ static const char *__doc_mitsuba_Normal_operator_assign_2 = R"doc()doc";
 static const char *__doc_mitsuba_Object =
 R"doc(Object base class with builtin reference counting
 
-This class (in conjunction with the 'ref' reference counter)
+This class (in conjunction with the ``ref`` reference counter)
 constitutes the foundation of an efficient reference-counted object
 hierarchy. The implementation here is an alternative to standard
 mechanisms for reference counting such as ``std::shared_ptr`` from the
@@ -4747,7 +4747,9 @@ those might introduce discontinuities in the Monte Carlo simulation.)doc";
 
 static const char *__doc_mitsuba_ParamFlags_Differentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 
-static const char *__doc_mitsuba_ParamFlags_Discontinuous = R"doc(Tracking gradients w.r.t. this parameter will introduce discontinuties)doc";
+static const char *__doc_mitsuba_ParamFlags_Discontinuous =
+R"doc(Tracking gradients w.r.t. this parameter will introduce
+discontinuities)doc";
 
 static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 
@@ -4794,7 +4796,7 @@ R"doc(This enumeration is used to classify phase functions into different
 types, i.e. into isotropic, anisotropic and microflake phase
 functions.
 
-This can be used to optimize implementatons to for example have less
+This can be used to optimize implementations to for example have less
 overhead if the phase function is not a microflake phase function.)doc";
 
 static const char *__doc_mitsuba_PhaseFunctionFlags_Anisotropic = R"doc()doc";
@@ -5248,13 +5250,13 @@ Note that the Python bindings for this class do not implement the
 various type-dependent getters and setters. Instead, they are accessed
 just like a normal Python map, e.g:
 
-TODO update
-
 ```
 myProps = mitsuba.core.Properties("plugin_name")
 myProps["stringProperty"] = "hello"
 myProps["spectrumProperty"] = mitsuba.core.Spectrum(1.0)
-```)doc";
+```
+
+or using the ``get(key, default)`` method.)doc";
 
 static const char *__doc_mitsuba_Properties_Properties = R"doc(Construct an empty property container)doc";
 
@@ -5539,7 +5541,7 @@ R"doc(Simple n-dimensional ray segment data structure
 
 Along with the ray origin and direction, this data structure
 additionally stores a maximum ray position ``maxt``, a time value
-``time`` as well a the wavelegnth information associated with the ray.)doc";
+``time`` as well a the wavelength information associated with the ray.)doc";
 
 static const char *__doc_mitsuba_RayDifferential =
 R"doc(Ray differential -- enhances the basic ray class with offset rays for
@@ -5816,8 +5818,8 @@ R"doc(Base class of all sample generators.
 A *sampler* provides a convenient abstraction around methods that
 generate uniform pseudo- or quasi-random points within a conceptual
 infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves
-two main operations: by quering successive component values of such an
-infinite-dimensional point (next_1d(), next_2d()), or by discarding
+two main operations: by querying successive component values of such
+an infinite-dimensional point (next_1d(), next_2d()), or by discarding
 the current point and generating another one (advance()).
 
 Scalar and vectorized rendering algorithms interact with the sampler
@@ -5888,7 +5890,7 @@ Subsequent calls to the cloned sampler will produce the same random
 numbers as the original sampler.
 
 Remark:
-    This method relies on the overload of the copy construtor.
+    This method relies on the overload of the copy constructor.
 
 May throw an exception if not supported.)doc";
 
@@ -7433,7 +7435,7 @@ static const char *__doc_mitsuba_Stream_seek =
 R"doc(Seeks to a position inside the stream.
 
 Seeking beyond the size of the buffer will not modify the length of
-its contents. However, a subsequent write should start at the seeked
+its contents. However, a subsequent write should start at the sought
 position and update the size appropriately.)doc";
 
 static const char *__doc_mitsuba_Stream_set_byte_order =
@@ -8657,8 +8659,8 @@ static const char *__doc_mitsuba_Thread_parent_2 = R"doc(Return the parent threa
 static const char *__doc_mitsuba_Thread_priority = R"doc(Return the thread priority)doc";
 
 static const char *__doc_mitsuba_Thread_register_external_thread =
-R"doc(Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
-Returns true upon success.)doc";
+R"doc(Register a new thread (e.g. Dr.Jit, Python) with Mitsuba thread
+system. Returns true upon success.)doc";
 
 static const char *__doc_mitsuba_Thread_register_task = R"doc(Register nanothread Task to prevent internal resources leakage)doc";
 
@@ -9822,7 +9824,7 @@ that are above the threshold before their contents are added to the
 Chi^2 statistic.
 
 The function returns the statistic value, degrees of freedom, below-
-treshold entries and resulting number of pooled regions.)doc";
+threshold entries and resulting number of pooled regions.)doc";
 
 static const char *__doc_mitsuba_math_find_interval =
 R"doc(Find an interval in an ordered set
@@ -10007,7 +10009,7 @@ Returns:
     ``basis_target``.)doc";
 
 static const char *__doc_mitsuba_mueller_rotate_stokes_basis =
-R"doc(Gives the Mueller matrix that alignes the reference frames (defined by
+R"doc(Gives the Mueller matrix that aligns the reference frames (defined by
 their respective basis vectors) of two collinear stokes vectors.
 
 If we have a stokes vector s_current expressed in 'basis_current', we
@@ -10088,7 +10090,7 @@ Parameter ``forward``:
 
 Returns:
     The (implicitly defined) reference coordinate system basis for the
-    Stokes vector travelling along forward.)doc";
+    Stokes vector traveling along forward.)doc";
 
 static const char *__doc_mitsuba_operator_add = R"doc()doc";
 
@@ -10329,7 +10331,7 @@ into :math:`(n-1) / 2` sub-intervals with overlapping endpoints. A
 polynomials of degree three or less.
 
 Parameter ``n``:
-    Desired number of evalution points. Must be an odd number bigger
+    Desired number of evaluation points. Must be an odd number bigger
     than 3.
 
 Returns:
@@ -10346,7 +10348,7 @@ into :math:`(n-1) / 3` sub-intervals with overlapping endpoints. A
 polynomials of degree four or less.
 
 Parameter ``n``:
-    Desired number of evalution points. Must be an odd number bigger
+    Desired number of evaluation points. Must be an odd number bigger
     than 3.
 
 Returns:
@@ -10368,7 +10370,7 @@ idea to go much higher---in any case, a composite or adaptive
 integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
-    Desired number of evalution points
+    Desired number of evaluation points
 
 Returns:
     A tuple (nodes, weights) storing the nodes and weights of the
@@ -10391,7 +10393,7 @@ idea to go much higher---in any case, a composite or adaptive
 integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
-    Desired number of evalution points
+    Desired number of evaluation points
 
 Returns:
     A tuple (nodes, weights) storing the nodes and weights of the

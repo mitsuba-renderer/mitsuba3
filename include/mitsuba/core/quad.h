@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(quad)
  * adaptive integration scheme will be superior for large \f$n\f$.
  *
  * \param n
- *     Desired number of evalution points
+ *     Desired number of evaluation points
  *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
@@ -102,7 +102,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
  * adaptive integration scheme will be superior for large \f$n\f$.
  *
  * \param n
- *     Desired number of evalution points
+ *     Desired number of evaluation points
  *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
@@ -178,7 +178,7 @@ std::pair<Float, Float> gauss_lobatto(int n) {
  * degree three or less.
  *
  * \param n
- *     Desired number of evalution points. Must be an odd number bigger than 3.
+ *     Desired number of evaluation points. Must be an odd number bigger than 3.
  *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
@@ -226,7 +226,7 @@ std::pair<Float, Float> composite_simpson(int n) {
  * degree four or less.
  *
  * \param n
- *     Desired number of evalution points. Must be an odd number bigger than 3.
+ *     Desired number of evaluation points. Must be an odd number bigger than 3.
  *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the

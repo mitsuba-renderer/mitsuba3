@@ -242,7 +242,7 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
  *
  * \return
  *      The (implicitly defined) reference coordinate system basis for the
- *      Stokes vector travelling along \ref forward.
+ *      Stokes vector traveling along \ref forward.
  *
  */
 template <typename Vector3>
@@ -251,7 +251,7 @@ Vector3 stokes_basis(const Vector3 &forward) {
 }
 
 /**
- * \brief Gives the Mueller matrix that alignes the reference frames (defined by
+ * \brief Gives the Mueller matrix that aligns the reference frames (defined by
  * their respective basis vectors) of two collinear stokes vectors.
  *
  * If we have a stokes vector s_current expressed in 'basis_current', we can
