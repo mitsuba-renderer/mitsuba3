@@ -1,5 +1,9 @@
 .. _sec-api:
 
+.. image:: ../../resources/data/docs/images/banners/banner_05.png
+    :width: 100%
+    :align: center
+
 API reference
 =============
 

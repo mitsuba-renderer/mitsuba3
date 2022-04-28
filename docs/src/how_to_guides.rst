@@ -1,8 +1,11 @@
+.. image:: ../../resources/data/docs/images/banners/banner_04.png
+    :width: 100%
+    :align: center
+
 How-to Guides
 =============
 
 Unlike the Getting Started tutorials, the How-to Guides wont take the reader by the hand to complete a project from A to Z. They will focus on a specific concept, task, abstraction of the Mitsuba library and are dedicated only to users with some experience.
-
 
 .. nbgallery::
 
