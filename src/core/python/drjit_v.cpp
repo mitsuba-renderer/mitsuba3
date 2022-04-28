@@ -153,6 +153,28 @@ MI_PY_EXPORT(DrJit) {
             drjit_scalar.attr(dr_name.c_str());
     }
 
+    // Quaternion type aliases
+    {
+        std::string name = "Quaternion4",
+                    dr_name  = name + "f";
+        if constexpr (std::is_same_v<double, ScalarFloat>)
+            dr_name += "64";
+
+        m.attr((name + "f").c_str()) =
+            drjit_variant.attr(dr_name.c_str());
+        m.attr(("Scalar" + name + "f").c_str()) =
+            drjit_scalar.attr(dr_name.c_str());
+
+        if constexpr (!std::is_same_v<double, ScalarFloat>)
+            dr_name += "64";
+
+        m.attr((name + "d").c_str()) =
+            drjit_variant.attr(dr_name.c_str());
+        m.attr(("Scalar" + name + "d").c_str()) =
+            drjit_scalar.attr(dr_name.c_str());
+    }
+
+    // Tensor type aliases
     if constexpr (std::is_same_v<float, ScalarFloat>)
         m.attr("TensorXf") = drjit_variant.attr("TensorXf");
     else
