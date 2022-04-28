@@ -96,7 +96,7 @@ public:
         std::vector<std::string> necessary_fields = {"name", "mat_nr", "vert_count", "loop_tri_count", "loops", "loop_tris", "polys", "verts"};
         for (auto &s : necessary_fields) {
             if (!props.has_property(s))
-                fail("Missing property \"%s\"!", s);
+                fail("missing property \"%s\"!", s);
         }
 
         m_name     = props.string("name");
@@ -142,6 +142,7 @@ public:
                 break;
             }
         }
+
         // Temporary buffers for vertices, normals, etc.
         std::vector<std::array<InputFloat, 3>> tmp_vertices; // Store as vector for alignment issues
         std::vector<std::array<InputFloat, 3>> tmp_normals; // Same here
@@ -244,7 +245,7 @@ public:
                     // Store per vertex normals if the face is smooth or if the mesh is globally flat
                     normal = m_to_world.scalar().transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
                     if(unlikely(dr::all(dr::eq(normal, 0.f))))
-                        fail("Mesh has invalid normals!");
+                        fail("invalid normals!");
                     else
                         normal = dr::normalize(normal);
                     vert_key.smooth = true;
