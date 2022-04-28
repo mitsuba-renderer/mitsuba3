@@ -343,6 +343,11 @@ class _RenderOp(dr.CustomOp):
             )
 
     def forward(self):
+        if not isinstance(self.params, mi.SceneParameters):
+            raise Exception('An instance of mi.SceneParameter containing the '
+                            'scene parameter to be differentiated should be '
+                            'provided to mi.render() if forward derivatives are '
+                            'desired!')
         self.set_grad_out(
             self.integrator.render_forward(self.scene, self.params, self.sensor,
                                            self.seed[1], self.spp[1]))
@@ -364,16 +369,16 @@ def render(scene: mi.Scene,
            spp_grad: int = 0) -> mi.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Mi. The function returns a rendered image that
-    can be used in subsequent differentiable computation steps. At any later
-    point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``dr.forward()`` and
+    rendering algorithms in Mi. The function returns a rendered image that can
+    be used in subsequent differentiable computation steps. At any later point,
+    the entire computation graph can be differentiated end-to-end in either
+    forward or reverse mode (i.e., using ``dr.forward()`` and
     ``dr.backward()``).
 
-    Under the hood, the differentiation operation will be intercepted and
-    routed to ``Integrator.render_forward()`` or
-    ``Integrator.render_backward()``, which evaluate the derivative using
-    either naive AD or a more specialized differential simulation.
+    Under the hood, the differentiation operation will be intercepted and routed
+    to ``Integrator.render_forward()`` or ``Integrator.render_backward()``,
+    which evaluate the derivative using either naive AD or a more specialized
+    differential simulation.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -389,15 +394,18 @@ def render(scene: mi.Scene,
         Reference to the scene being rendered in a differentiable manner.
 
     Parameter ``params``:
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       An optional container of scene parameters that should receive gradients.
+       This argument isn't optional when computing forward mode derivatives. It
+       should be an instance of type ``mi.SceneParameters`` obtained via
+       ``mi.traverse()``. Gradient tracking must be explicitly enabled on these
+       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
        must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired.
+       forward mode derivatives are desired. When the scene parameters are
+       derived from other variables that have gradient tracking enabled,
+       gradient values should be propagated to the scene parameters by calling
+       ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling this
+       function.
 
     Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -406,8 +414,8 @@ def render(scene: mi.Scene,
 
     Parameter ``integrator`` (``mi.Integrator``):
         Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description
-        will be used.
+        default, the integrator specified in the original scene description will
+        be used.
 
     Parameter ``seed` (``int``)
         This parameter controls the initialization of the random number
@@ -418,8 +426,8 @@ def render(scene: mi.Scene,
 
     Parameter ``seed_grad` (``int``)
         This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will automatically compute a suitable value from the primal ``seed``.
+        differential simulation phase. If not specified, the implementation will
+        automatically compute a suitable value from the primal ``seed``.
 
     Parameter ``spp`` (``int``):
         Optional parameter to override the number of samples per pixel for the
@@ -428,9 +436,12 @@ def render(scene: mi.Scene,
 
     Parameter ``spp_grad`` (``int``):
         This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will copy the value from ``spp``.
+        differential simulation phase. If not specified, the implementation will
+        copy the value from ``spp``.
     """
+
+    if params is not None and not isinstance(params, mi.SceneParameters):
+        raise Exception('params should be an instance of mi.SceneParameter!')
 
     assert isinstance(scene, mi.Scene)
 
