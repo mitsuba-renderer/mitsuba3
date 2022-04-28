@@ -238,3 +238,24 @@ def test02_traverse_update(variants_vec_backends_once_rgb):
             "non-differentiable but has gradients enabled, unexpected results "
             "may occur!")
     reset_update_keys()
+
+
+def test03_render_fwd_assert(variants_all_ad_rgb):
+    scene = mi.load_dict({
+        'type': 'scene',
+        'shape': {
+            'type': 'sphere'
+        }
+    })
+
+    with pytest.raises(Exception) as e:
+        mi.render(scene, params=[])
+
+    params = mi.traverse(scene)
+    key = 'shape.bsdf.reflectance.value'
+    dr.enable_grad(params[key])
+    params.update()
+
+    with pytest.raises(Exception) as e:
+        img = mi.render(scene)
+        dr.forward_to(img)
