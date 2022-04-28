@@ -1,12 +1,10 @@
 Gallery
 =======
 
-
 Mitsuba 3
 ++++++++++
 
 .. panels::
-    :img-top-cls: pl-5 pr-5
     :header: text-center font-weight-bold
     :body: text-center
     :footer: p-0 m-0
@@ -17,7 +15,7 @@ Mitsuba 3
 
     Banner 1
     ^^^^^^^^^^
-    .. image:: ../../resources/data/docs/images/banners/banner_01.png
+    .. image:: ../resources/data/docs/images/banners/banner_01.png
         :height: 90
         :align: center
 
@@ -25,7 +23,7 @@ Mitsuba 3
 
     Banner 2
     ^^^^^^^^^^
-    .. image:: ../../resources/data/docs/images/banners/banner_02.png
+    .. image:: ../resources/data/docs/images/banners/banner_02.png
         :height: 90
         :align: center
 
@@ -33,7 +31,7 @@ Mitsuba 3
 
     Banner 3
     ^^^^^^^^^^
-    .. image:: ../../resources/data/docs/images/banners/banner_03.png
+    .. image:: ../resources/data/docs/images/banners/banner_03.png
         :height: 90
         :align: center
 
@@ -41,7 +39,7 @@ Mitsuba 3
 
     Banner 4
     ^^^^^^^^^^
-    .. image:: ../../resources/data/docs/images/banners/banner_04.png
+    .. image:: ../resources/data/docs/images/banners/banner_04.png
         :height: 90
         :align: center
 
