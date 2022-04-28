@@ -249,3 +249,7 @@ img {
 .card-body.text-center {
     padding: 0.01rem;
 }
+
+.theme-toggle-container {
+    display: none;
+}
