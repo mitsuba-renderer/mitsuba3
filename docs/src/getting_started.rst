@@ -1,7 +1,11 @@
+.. image:: ../../resources/data/docs/images/banners/banner_03.png
+    :width: 100%
+    :align: center
+
 Getting Started
 ===============
 
-Welcome to the Getting Started page of the Mitsuba 3 documentation. Before
+WWelcome to the Getting Started page of the Mitsuba 3 documentation. Before
 getting our hands dirty, you will need to install the Mitsuba 3 and DrJit libraries
 in our python environnement if it is not already done. Both libraries are distributed
 on `PyPI <https://pypi.org/project/mitsuba/>`_ and can easily be installed with

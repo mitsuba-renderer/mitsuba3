@@ -2,9 +2,16 @@
 
 .. only:: not latex
 
-    .. image:: images/mitsuba-logo-white-bg.png
-        :width: 75%
+.. .. image:: images/mitsuba-logo-white-bg.png
+..     :width: 75%
+..     :align: center
+
+.. image:: ../../resources/data/docs/images/banners/banner_01.png
+        :width: 100%
         :align: center
+
+Mitsuba 3
+=========
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse
 simulation. It consists of a small set of core libraries and a wide variety of
@@ -133,5 +140,6 @@ different set of goals.
     :caption: Miscellaneous
     :hidden:
 
+    src/gallery
     release_notes
     zz_bibliography
