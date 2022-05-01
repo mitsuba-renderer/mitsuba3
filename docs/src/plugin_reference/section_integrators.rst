@@ -53,7 +53,7 @@ This section gives an overview of the available choices along with their paramet
 
 Almost all integrators use the concept of *path depth*. Here, a path refers to
 a chain of scattering events that starts at the light source and ends at the
-camera. It is oten useful to limit the path depth when rendering scenes for
+camera. It is often useful to limit the path depth when rendering scenes for
 preview purposes, since this reduces the amount of computation that is necessary
 per pixel. Furthermore, such renderings usually converge faster and therefore
 need fewer samples per pixel. Then reference-quality is desired, one should always

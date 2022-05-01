@@ -105,7 +105,7 @@ The Principled BSDF (:monosp:`principled`)
    - The rate of the secondary specular reflection in sampling. (Default:0.0)
    - |exposed|
 
-The principled BSDF is a complex BSDF with numerous reflective and transmitive
+The principled BSDF is a complex BSDF with numerous reflective and transmissive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
 artist-friendly and do not directly correspond to physical units.

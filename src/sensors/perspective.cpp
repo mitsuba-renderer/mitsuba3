@@ -77,7 +77,7 @@ Perspective pinhole camera (:monosp:`perspective`)
 .. subfigend::
    :label: fig-perspective
 
-This plugin implements a simple idealizied perspective camera model, which
+This plugin implements a simple idealized perspective camera model, which
 has an infinitely small aperture. This creates an infinite depth of field,
 i.e. no optical blurring occurs.
 

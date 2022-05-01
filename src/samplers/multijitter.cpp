@@ -37,7 +37,7 @@ variation along one axis of the sampling domain than the other.
 This sampler achieves this by first placing samples in a canonical arrangement that is stratified in
 both 2D and 1D. It then shuffles the x-coordinate of the samples in every columns and the
 y-coordinate in every rows. Fortunately, this process doesn't break the 2D and 1D stratification.
-Kensler's method futher reduces sample clumpiness by correlating the shuffling applied to the
+Kensler's method further reduces sample clumpiness by correlating the shuffling applied to the
 columns and the rows.
 
 .. subfigstart::

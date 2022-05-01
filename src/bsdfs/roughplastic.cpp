@@ -74,7 +74,7 @@ Rough plastic material (:monosp:`roughplastic`)
 
  * - eta
    - |float|
-   - Relative index of refreaction from the exterior to the interior
+   - Relative index of refraction from the exterior to the interior
    - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a realistic microfacet scattering model for rendering
