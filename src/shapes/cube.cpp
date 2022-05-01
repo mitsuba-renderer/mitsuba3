@@ -13,15 +13,55 @@ Cube (:monosp:`cube`)
 
 .. pluginparameters::
 
- * - to_world
-   - |transform|
-   - Specifies an optional linear object-to-world transformation.
-     (Default: none (i.e. object space = world space))
-
  * - flip_normals
    - |bool|
    - Is the cube inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
+ * - vertex_count
+   - |int|
+   - Total number of vertices
+   - |exposed|
+
+ * - face_count
+   - |int|
+   - Total number of faces
+   - |exposed|
+
+ * - faces
+   - :paramtype:`uint32[]`
+   - Face indices buffer (flatten)
+   - |exposed|
+
+ * - vertex_positions
+   - :paramtype:`float[]`
+   - Vertex positions buffer (flatten) pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_normals
+   - :paramtype:`float[]`
+   - Vertex normals buffer (flatten)  pre-multiplied by the object-to-world transformation.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - vertex_texcoords
+   - :paramtype:`float[]`
+   - Vertex texcoords buffer (flatten)
+   - |exposed|, |differentiable|
+
+ * - (Mesh attribute)
+   - :paramtype:`float[]`
+   - Mesh attribute buffer (flatten)
+   - |exposed|, |differentiable|
+
+ * - (Mesh attribute)
+   - :paramtype:`float[]`
+   - Mesh attribute buffer (flatten)
+   - |exposed|, |differentiable|
+
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none (i.e. object space = world space))
 
 This shape plugin describes a cube intersection primitive, based on the triangle
 mesh class.  By default, it creates a cube between the world-space positions
