@@ -62,7 +62,7 @@ Internally, this is implemented as a forward-facing Dirac delta distribution.
 Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
 but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
 
-In *unpolarized* rendering modes, the behaviour defaults to non-polarizing
+In *unpolarized* rendering modes, the behavior defaults to non-polarizing
 transparent material similar to the :ref:`null <bsdf-null>` BSDF plugin.
 
 */

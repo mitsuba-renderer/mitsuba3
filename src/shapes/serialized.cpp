@@ -115,7 +115,7 @@ follows:
             - :code:`0x0001`: The mesh data includes per-vertex normals
             - :code:`0x0002`: The mesh data includes texture coordinates
             - :code:`0x0008`: The mesh data includes vertex colors
-            - :code:`0x0010`: Use face normals instead of smothly interpolated vertex normals.
+            - :code:`0x0010`: Use face normals instead of smoothly interpolated vertex normals.
               Equivalent to specifying :monosp:`face_normals=true` to the plugin.
             - :code:`0x1000`: The subsequent content is represented in single precision
             - :code:`0x2000`: The subsequent content is represented in double precision
@@ -150,7 +150,7 @@ file. This is done by simply concatenating their data streams,
 where every one is structured according to the above description.
 Hence, after each mesh, the stream briefly reverts back to an
 uncompressed format, followed by an uncompressed header, and so on.
-This is neccessary for efficient read access to arbitrary sub-meshes.
+This is necessary for efficient read access to arbitrary sub-meshes.
 
 End-of-file dictionary
 **********************

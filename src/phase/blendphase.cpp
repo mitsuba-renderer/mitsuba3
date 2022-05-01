@@ -17,7 +17,7 @@ Blended phase function (:monosp:`blendphase`)
    - |float| or |texture|
    - A floating point value or texture with values between zero and one.
      The extreme values zero and one activate the first and second nested phase
-     function respectively, and inbetween values interpolate accordingly.
+     function respectively, and in-between values interpolate accordingly.
      (Default: 0.5)
    - |exposed|, |differentiable|
 

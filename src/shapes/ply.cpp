@@ -95,11 +95,11 @@ Consecutive attributes with names sharing a common prefix and using one of the f
 
 ``{prefix}_{x|y|z|w}``, ``{prefix}_{r|g|b|a}``, ``{prefix}_{0|1|2|3}``, ``{prefix}_{1|2|3|4}``
 
-will be group together under a single multidimentional attribute named ``{vertex|face}_{prefix}``.
+will be group together under a single multidimensional attribute named ``{vertex|face}_{prefix}``.
 
 RGB color attributes can also be defined without a prefix, following the naming scheme ``{r|g|b|a}``
 or ``{red|green|blue|alpha}``. Those attributes will be group together under a single
-multidimentional attribute named ``{vertex|face}_color``.
+multidimensional attribute named ``{vertex|face}_color``.
 
 .. tabs::
     .. code-tab:: xml
@@ -118,7 +118,7 @@ multidimentional attribute named ``{vertex|face}_color``.
 
 .. note::
 
-    Values stored in a RBG color attribute will automatically be converted into spectal model
+    Values stored in a RBG color attribute will automatically be converted into spectral model
     coefficients when using a spectral variant of the renderer.
  */
 

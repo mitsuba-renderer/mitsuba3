@@ -86,7 +86,7 @@ with channels `0` and `1`. Also, note that the different extinction and albedo s
 if they share the suffix.
 
 The following snippet describes a heterogenous spectral medium composed of a mixture of two
-purely-absorbing spectra, and a isotrophic phase function.
+purely-absorbing spectra, and a isotropic phase function.
 
 .. tabs::
     .. code-tab::  xml

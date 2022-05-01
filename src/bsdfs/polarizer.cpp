@@ -31,7 +31,7 @@ Linear polarizer material (:monosp:`polarizer`)
      even in polarized render modes. (Default: |true|, i.e. act as polarizer)
 
 This material simulates an ideal linear polarizer useful to test polarization aware
-light transport or to conduct virtual optical experiments. The aborbing axis of the
+light transport or to conduct virtual optical experiments. The absorbing axis of the
 polarizer is aligned with the *V*-direction of the underlying surface parameterization.
 To rotate the polarizer, either the parameter ``theta`` can be used, or alternative
 a rotation can be applied directly to the associated shape.
@@ -40,7 +40,7 @@ a rotation can be applied directly to the associated shape.
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_aligned.jpg
    :caption: Two aligned polarizers. The average intensity is reduced by a factor of 2.
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_absorbing.jpg
-   :caption: Two polarizers offset by 90 degrees. All trasmitted light is aborbed.
+   :caption: Two polarizers offset by 90 degrees. All transmitted light is absorbed.
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_middle.jpg
    :caption: Two polarizers offset by 90 degrees, with a third polarizer in between at 45 degrees. Some light is transmitted again.
 .. subfigend::
@@ -71,7 +71,7 @@ Internally, this is implemented as a forward-facing Dirac delta distribution.
 Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
 but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
 
-In *unpolarized* rendering modes, the behaviour defaults to a non-polarizing
+In *unpolarized* rendering modes, the behavior defaults to a non-polarizing
 transmitting material that absorbs 50% of the incident illumination.
 
 */

@@ -71,7 +71,7 @@ Bitmap texture (:monosp:`bitmap`)
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
-     loss of precision (not exactly 32-bit arithmethic). (Default: true)
+     loss of precision (not exactly 32-bit arithmetic). (Default: true)
 
  * - data
    - |tensor|

@@ -468,7 +468,7 @@
         --- it is omitted for degenerate BSDFs like smooth
         mirrors/dielectrics).
 
-        If the supplied context data strutcures selects subset of components
+        If the supplied context data structures selects subset of components
         in a multi-lobe BRDF model, the sampling is restricted to this subset.
         Depending on the provided transport type, either the BSDF or its
         adjoint version is sampled.
@@ -907,7 +907,7 @@
         --- it is omitted for degenerate BSDFs like smooth
         mirrors/dielectrics).
 
-        If the supplied context data strutcures selects subset of components
+        If the supplied context data structures selects subset of components
         in a multi-lobe BRDF model, the sampling is restricted to this subset.
         Depending on the provided transport type, either the BSDF or its
         adjoint version is sampled.
@@ -2783,7 +2783,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -6328,7 +6328,7 @@
             Originating class or ``nullptr``
 
         Parameter ``thread`` (mitsuba::Thread):
-            Thread, which is reponsible for creating the message
+            Thread, which is responsible for creating the message
 
         Parameter ``file`` (str):
             File, which is responsible for creating the message
@@ -10875,7 +10875,7 @@
 
     .. py:method:: mitsuba.Medium.intersect_aabb(self, ray)
 
-        Intersets a ray with the medium's bounding box
+        Intersects a ray with the medium's bounding box
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
@@ -11109,7 +11109,7 @@
 
     .. py:method:: mitsuba.MediumPtr.intersect_aabb(self, ray)
 
-        Intersets a ray with the medium's bounding box
+        Intersects a ray with the medium's bounding box
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             *no description available*
@@ -17534,7 +17534,7 @@
         Seeks to a position inside the stream.
 
         Seeking beyond the size of the buffer will not modify the length of
-        its contents. However, a subsequent write should start at the seeked
+        its contents. However, a subsequent write should start at the sought
         position and update the size appropriately.
 
         Parameter ``arg0`` (int):
@@ -19394,8 +19394,8 @@
 
     .. py:method:: mitsuba.Thread.register_external_thread(arg0)
 
-        Register a new thread (e.g. Dr.Jit, Python) with Mituba thread system.
-        Returns true upon success.
+        Register a new thread (e.g. Dr.Jit, Python) with Mitsuba thread
+        system. Returns true upon success.
 
         Parameter ``arg0`` (str):
             *no description available*
@@ -23041,7 +23041,7 @@
     Chi^2 statistic.
 
     The function returns the statistic value, degrees of freedom, below-
-    treshold entries and resulting number of pooled regions.
+    threshold entries and resulting number of pooled regions.
 
     Parameter ``arg0`` (drjit.scalar.ArrayXf64):
         *no description available*
@@ -23781,7 +23781,7 @@
 
     Returns → :py:obj:`mitsuba.Vector3f`:
         The (implicitly defined) reference coordinate system basis for the
-        Stokes vector travelling along forward.
+        Stokes vector traveling along forward.
 
 .. py:function:: mitsuba.mueller.unit_angle(a, b)
 

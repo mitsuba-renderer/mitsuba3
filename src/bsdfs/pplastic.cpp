@@ -85,7 +85,7 @@ a more ad-hoc way:
    conceptually some subsurface scattering occurs in between that causes the light to escape in a diffused
    way.
 
-This is illusrated in the following diagram:
+This is illustrated in the following diagram:
 
 .. figure:: ../../resources/data/docs/images/bsdf/pplastic.svg
         :alt: Polarized plastic diagram
@@ -135,7 +135,7 @@ The following XML snippet describes the purple material from the test scene abov
 
     .. code-tab:: python
 
-        'type': 'ppplastic',
+        'type': 'pplastic',
         'diffuse_reflectance': {
             'type': 'rgb',
             'value': [0.05, 0.03, 0.1]
