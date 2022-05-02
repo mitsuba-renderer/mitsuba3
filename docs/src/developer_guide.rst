@@ -5,6 +5,53 @@
 Developer's Guide
 =================
 
+Overview
+--------
+
+This section is addressed to the users interesting in modifying the core of the
+system or even contributing to the codebase.
+
+New developers will want to begin by thoroughly reading the documentation of
+Dr.Jit before looking at any Mitsuba code. Dr.Jit is a Just-In-Time compiler
+that constitutes the foundation of Mitsuba 3. It drives the code transformations
+that enable systematic vectorization and automatic differentiation of the
+renderer.
+
+Code structure
+--------------
+
+The Mitsuba codebase is split into 3 basic support folders:
+
+* The core folder (in `src/libcore`) implements basic functionality such as
+  cross-platform file and bitmap I/O, data structures, scheduling, as well as
+  logging and plugin management.
+
+* The rendering folder (in `src/librender``) contains abstractions needed to
+  load and represent scenes containing light sources, shapes, materials, and
+  participating media.
+
+* The python folder (in `src/python`) contains components of the system that are
+  written in Python, and which access Mitsuba through bindings. This includes
+  statistical tests (Chi^2, etc.) and tooling for differentiable rendering.
+
+Coding style
+------------
+
+We've essentially imported Python's PEP 8 into the C++ side (which does not
+specify a recommended naming convention), ensuring that code that uses
+functionality from both languages looks natural.
+
+Contributing
+------------
+
+All contributions, bug reports, bug fixes, documentation improvements,
+enhancements, and ideas are welcome. If you are brand new to Mitsuba or
+open-source development, we recommend going through the GitHub “issues” tracker
+to find issues that interest you.
+
+Going further
+-------------
+
 .. toctree::
     :maxdepth: 1
     :glob:

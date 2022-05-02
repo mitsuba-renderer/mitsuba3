@@ -253,3 +253,14 @@ img {
 .theme-toggle-container {
     display: none;
 }
+
+#plugin-reference .toctree-wrapper { column-count: 2; }
+
+#plugin-reference .toctree-wrapper > ul { margin: 0; }
+
+#plugin-reference .toctree-l1 {
+    margin: 0;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid-column;
+}

@@ -9,13 +9,14 @@ Plugin reference
 
 .. toctree::
     :maxdepth: 1
-    :caption: Plugin reference
     :glob:
 
     generated/plugins_*
 
+Overview
+--------
 
-The following subsections describe the available Mitsuba 3 plugins, usually along with example
+The subsections above describe the available Mitsuba 3 plugins, usually along with example
 renderings and a description of what each parameter does. They are separated into subsections
 covering textures, surface scattering models, etc.
 
@@ -97,5 +98,3 @@ then it can be instantiated e.g. as follows:
                 'filename': 'cute.jpg'
             }
         }
-
-    }

@@ -23,6 +23,9 @@ HTML5Translator.visit_reference = replacement
 if not os.path.exists('src/tutorials'):
     os.symlink('../../tutorials', 'src/tutorials', target_is_directory=True)
 
+if not os.path.exists('src/getting_started/tutorials/'):
+    os.symlink('../../tutorials/getting_started', 'src/getting_started/tutorials', target_is_directory=True)
+
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
 
