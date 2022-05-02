@@ -7,6 +7,9 @@
 API reference
 =============
 
+Overview
+--------
+
 This API reference documentation was automatically generated using the `Autodoc
 <http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.htm>`_ Sphinx
 extension.

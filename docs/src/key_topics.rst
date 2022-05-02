@@ -5,6 +5,16 @@
 Key Topics
 ==========
 
+Overview
+--------
+
+The following document aim at clarifying a particular part of the system or the
+background theory. They will often be referred by the tutorials and guides for
+in depth knowledge about a specific subject.
+
+Topics
+------
+
 .. toctree::
     :maxdepth: 1
     :glob:

@@ -5,11 +5,22 @@
 How-to Guides
 =============
 
-Unlike the Getting Started tutorials, the How-to Guides wont take the reader by the hand to complete a project from A to Z. They will focus on a specific concept, task, abstraction of the Mitsuba library and are dedicated only to users with some experience.
+Overview
+--------
 
-.. nbgallery::
+The following guides explain important features of the library in details and
+are dedicated to users with some experience. Unlike the :ref:`sec-api <reference
+API>`, they are by step-by-step guide that explore what it is possible to do
+with specific abstractions of Mitsuba.
 
-    tutorials/how_to_guides/use_optimizers
+Guides
+------
+
+.. toctree::
+    :maxdepth: 1
+    :glob:
+
+    tutorials/how_to_guides/geometry_toolbox
     tutorials/how_to_guides/use_bitmap
     tutorials/how_to_guides/mesh_manipulation
-    tutorials/how_to_guides/geometry_toolbox
+    tutorials/how_to_guides/use_optimizers
