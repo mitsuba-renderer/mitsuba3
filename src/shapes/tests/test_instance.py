@@ -9,7 +9,7 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
     from mitsuba import ScalarTransform4f as T
 
-    to_world = T.translate(translate) * T.rotate([0, 1, 0], angle) * T.scale(scale)
+    to_world = T.translate(translate) @ T.rotate([0, 1, 0], angle) @ T.scale(scale)
 
     shape2 = shape.copy()
     shape2['to_world'] = to_world
@@ -157,7 +157,7 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'to_world' : T.translate([-0.5, -0.5, 0.0]) * T.scale(0.5)
+            'to_world' : T.translate([-0.5, -0.5, 0.0]) @ T.scale(0.5)
         },
 
         'instance_01' : {
@@ -166,7 +166,7 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'to_world' : T.translate([-0.5, 0.5, 0.0]) * T.scale(0.5)
+            'to_world' : T.translate([-0.5, 0.5, 0.0]) @ T.scale(0.5)
         },
 
         'instance_10' : {
@@ -175,12 +175,12 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'to_world' : T.translate([0.5, -0.5, 0.0]) * T.scale(0.5)
+            'to_world' : T.translate([0.5, -0.5, 0.0]) @ T.scale(0.5)
         },
 
         'shape' : {
             'type' : 'rectangle',
-            'to_world' : T.translate([0.5, 0.5, 0.0]) * T.scale(0.5)
+            'to_world' : T.translate([0.5, 0.5, 0.0]) @ T.scale(0.5)
         }
     })
 

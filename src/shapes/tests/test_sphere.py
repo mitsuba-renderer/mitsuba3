@@ -25,7 +25,7 @@ def test01_create(variant_scalar_rgb):
 
     s2 = mi.load_dict({
         "type" : "sphere",
-        "to_world" : rot * mi.ScalarTransform4f.translate([1, 0, 0]) * mi.ScalarTransform4f.scale(2)
+        "to_world" : rot @ mi.ScalarTransform4f.translate([1, 0, 0]) @ mi.ScalarTransform4f.scale(2)
     })
 
     assert str(s1) == str(s2)
@@ -51,7 +51,7 @@ def test03_ray_intersect_transform(variant_scalar_rgb):
         s = mi.load_dict({
             "type" : "sphere",
             "radius" : r,
-            "to_world": mi.Transform4f.translate([0, 1, 0]) * mi.Transform4f.rotate([0, 1, 0], 30.0)
+            "to_world": mi.Transform4f.translate([0, 1, 0]) @ mi.Transform4f.rotate([0, 1, 0], 30.0)
         })
 
         # grid size
