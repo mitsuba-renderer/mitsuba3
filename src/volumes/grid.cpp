@@ -207,18 +207,18 @@ public:
             m_max = (float) max;
 
             size_t shape[4] = {
-                (size_t) res.x(),
-                (size_t) res.y(),
                 (size_t) res.z(),
+                (size_t) res.y(),
+                (size_t) res.x(),
                 4
             };
             m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
                                   m_accel, filter_mode, wrap_mode);
         } else {
             size_t shape[4] = {
-                (size_t) res.x(),
-                (size_t) res.y(),
                 (size_t) res.z(),
+                (size_t) res.y(),
+                (size_t) res.x(),
                 m_volume_grid->channel_count()
             };
             m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
@@ -369,8 +369,8 @@ public:
     }
 
     ScalarVector3i resolution() const override {
-        auto shape = m_texture.shape();
-        return { (int) shape[0], (int) shape[1], (int) shape[2] };
+        const size_t *shape = m_texture.shape();
+        return { (int) shape[2], (int) shape[1], (int) shape[0] };
     };
 
     std::string to_string() const override {
