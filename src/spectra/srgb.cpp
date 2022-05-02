@@ -82,18 +82,22 @@ public:
             return m_value;
     }
 
+    Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        return mean();
+    }
+
     std::pair<Wavelength, UnpolarizedSpectrum>
-    sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
+    sample_spectrum(const SurfaceInteraction3f &_si,
+                    const Wavelength &sample,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             // TODO: better sampling strategy
             SurfaceInteraction3f si(_si);
-            si.wavelengths = MI_CIE_MIN +
-                             (MI_CIE_MAX - MI_CIE_MIN) * sample;
-            return { si.wavelengths, eval(si, active) * (MI_CIE_MAX -
-                                                         MI_CIE_MIN) };
+            si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+            return { si.wavelengths, eval(si, active) * (MI_CIE_MAX - MI_CIE_MIN) };
         } else {
             DRJIT_MARK_USED(sample);
             UnpolarizedSpectrum value = eval(_si, active);
@@ -103,9 +107,9 @@ public:
 
     Float mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::hmean(srgb_model_mean(m_value));
+            return dr::hmean_async(srgb_model_mean(m_value));
         else
-            return dr::hmean(hmean(m_value));
+            return dr::hmean_async(dr::hmean(m_value));
     }
 
     std::string to_string() const override {
