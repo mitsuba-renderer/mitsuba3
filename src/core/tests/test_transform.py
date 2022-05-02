@@ -110,8 +110,8 @@ def test03_matmul(variant_scalar_rgb):
     B = np.array([[1, -2, 3, -4], [5, -6, 7, -8], [9, -10, 11, -12], [13, -14, 15, -16]])
     At = mi.Transform4f(A)
     Bt = mi.Transform4f(B)
-    assert dr.allclose(np.dot(A, B), (At*Bt).matrix)
-    assert dr.allclose(np.dot(B, A), (Bt*At).matrix)
+    assert dr.allclose(np.dot(A, B), (At@Bt).matrix)
+    assert dr.allclose(np.dot(B, A), (Bt@At).matrix)
 
 
 def test04_transform_point(variant_scalar_rgb):

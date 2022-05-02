@@ -38,7 +38,13 @@ void bind_transform3(py::module &m, const char *name) {
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self * py::self)
+        .def("__mul__", [](const Transform3f &, const Transform3f &) {
+            throw std::runtime_error("mul(): please use the matrix "
+                "multiplication operator '@' instead.");
+        }, py::is_operator())
+        .def("__matmul__", [](const Transform3f &a, const Transform3f &b) {
+            return a * b;
+        }, py::is_operator())
         .def("__matmul__", [](const Transform3f &a, const Point2f &b) {
             return a * b;
         }, py::is_operator())
@@ -109,7 +115,13 @@ void bind_transform4(py::module &m, const char *name) {
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
-        .def(py::self * py::self)
+        .def("__mul__", [](const Transform4f &, const Transform4f &) {
+            throw std::runtime_error("mul(): please use the matrix "
+                "multiplication operator '@' instead.");
+        }, py::is_operator())
+        .def("__matmul__", [](const Transform4f &a, const Transform4f &b) {
+            return a * b;
+        }, py::is_operator())
         .def("__matmul__", [](const Transform4f &a, const Point3f &b) {
             return a * b;
         }, py::is_operator())

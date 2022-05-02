@@ -19,7 +19,7 @@ def test02_bbox(variant_scalar_rgb):
                           mi.Vector3f([-10000, 3.0, 31])]:
             s = mi.load_dict({
                 "type" : "rectangle",
-                "to_world" : mi.Transform4f.translate(translate) * mi.Transform4f.scale((sx, sy, 1.0))
+                "to_world" : mi.Transform4f.translate(translate) @ mi.Transform4f.scale((sx, sy, 1.0))
             })
             b = s.bbox()
 

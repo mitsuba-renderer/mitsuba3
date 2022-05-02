@@ -26,7 +26,7 @@ def test01_create(variant_scalar_rgb):
 
     s2 = mi.load_dict({
         "type" : "cylinder",
-        "to_world" : rot * T.translate([1, -1, -1]) * T.rotate([1.0, 0.0, 0.0], -45) * T.scale([0.5, 0.5, dr.sqrt(8)])
+        "to_world" : rot @ T.translate([1, -1, -1]) @ T.rotate([1.0, 0.0, 0.0], -45) @ T.scale([0.5, 0.5, dr.sqrt(8)])
     })
 
     assert str(s1) == str(s2)
