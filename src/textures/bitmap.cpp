@@ -258,7 +258,7 @@ public:
 
         size_t channels = m_bitmap->channel_count();
         ScalarVector2i res = ScalarVector2i(m_bitmap->size());
-        size_t shape[3] = { (size_t) res.x(), (size_t) res.y(), channels };
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
                               filter_mode, wrap_mode);
     }
@@ -551,7 +551,7 @@ public:
 
     ScalarVector2i resolution() const override {
         const size_t *shape = m_texture.shape();
-        return { (int) shape[0], (int) shape[1] };
+        return { (int) shape[1], (int) shape[0] };
     }
 
     Float mean() const override { return m_mean; }
