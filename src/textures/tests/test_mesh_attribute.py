@@ -5,16 +5,19 @@ import mitsuba as mi
 
 def create_rectangle():
     mesh = mi.Mesh("rectangle", 4, 2, has_vertex_texcoords = True)
-    mesh.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0,
-                                         1.0, 0.0, 0.0,
-                                         0.0, 1.0, 0.0,
-                                         1.0, 1.0, 0.0]
-    mesh.vertex_texcoords_buffer()[:] = [0.0, 0.0,
-                                         1.0, 0.0,
-                                         0.0, 1.0,
-                                         1.0, 1.0]
-    mesh.faces_buffer()[:] = [0, 1, 2, 1, 3, 2]
-    mesh.parameters_changed()
+
+    params = mi.traverse(mesh)
+
+    params['vertex_positions'] = [0.0, 0.0, 0.0,
+                                  1.0, 0.0, 0.0,
+                                  0.0, 1.0, 0.0,
+                                  1.0, 1.0, 0.0]
+    params['vertex_texcoords'] = [0.0, 0.0,
+                                  1.0, 0.0,
+                                  0.0, 1.0,
+                                  1.0, 1.0]
+    params['faces'] = [0, 1, 2, 1, 3, 2]
+    params.update()
 
     mesh.add_attribute("vertex_mono", 1, [1.0, 2.0, 3.0, 4.0])
     mesh.add_attribute("vertex_color", 3, [0.0, 0.0, 0.0,
