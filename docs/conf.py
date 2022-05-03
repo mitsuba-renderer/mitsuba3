@@ -217,10 +217,12 @@ nbsphinx_prolog = """
     </script>
 """
 
-extensions.append( 'sphinx_gallery.load_style')
+extensions.append('sphinx_gallery.load_style')
 nbsphinx_thumbnails = {
     'src/tutorials/getting_started/quickstart/drjit_cheat_sheet': '_static/drjit-logo-dark.png',
 }
+
+extensions.append('sphinx_copybutton')
 
 # Add bibfile
 bibtex_bibfiles = ['references.bib']

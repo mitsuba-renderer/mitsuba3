@@ -6,3 +6,4 @@ nbsphinx
 furo
 sphinx-panels
 sphinx-gallery
+sphinx-copybutton
