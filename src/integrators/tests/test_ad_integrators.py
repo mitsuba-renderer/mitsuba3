@@ -150,7 +150,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
                         'value': [0.1, 1.0, 0.1]
                     }
                 },
-                'to_world': T.translate([1.25, 0.0, 1.0]) * T.rotate([0, 1, 0], -90),
+                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
             },
             'light': { 'type': 'constant', 'radiance': 3.0 }
         }
@@ -178,7 +178,7 @@ class AreaLightRadianceConfig(ConfigBase):
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': T.translate([1.25, 0.0, 1.0]) * T.rotate([0, 1, 0], -90),
+                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -454,7 +454,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
+                'to_world': T.translate([2.0, 0.0, 2.0]) @ T.scale(0.25),
             },
             'light': {
                 'type': 'obj',
@@ -463,7 +463,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
-                'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
+                'to_world': T.translate([4.0, 0.0, 4.0]) @ T.scale(0.05)
             }
         }
         self.ref_fd_epsilon = 2e-4
@@ -493,7 +493,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
+                'to_world': T.translate([2.0, 0.0, 2.0]) @ T.scale(0.25),
             },
             # 'light': {
             #     'type': 'obj',
@@ -502,7 +502,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             #         'type': 'area',
             #         'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
             #     },
-            #     'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.05)
+            #     'to_world': T.translate([4.0, 0.0, 4.0]) @ T.scale(0.05)
             # }
             'light': { 'type': 'constant' }
         }
@@ -563,7 +563,7 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
-                'to_world': T.translate([-1, 0, 0.5]) * T.rotate([0, 1, 0], 90) * T.scale(1.0),
+                'to_world': T.translate([-1, 0, 0.5]) @ T.rotate([0, 1, 0], 90) @ T.scale(1.0),
             },
             'light': {
                 'type': 'point',
@@ -608,7 +608,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'type': 'roughconductor',
                     'alpha': 0.025,
                 },
-                'to_world': T.translate([0, 1.5, 0]) *  T.rotate([1, 0, 0], -45) * T.scale(4),
+                'to_world': T.translate([0, 1.5, 0]) @ T.rotate([1, 0, 0], -45) @ T.scale(4),
             },
             'sphere': {
                 'type': 'obj',
@@ -617,7 +617,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'reflectance': {'type': 'rgb', 'value': [1.0, 0.5, 0.0]}
                 },
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([0.5, 2.0, 1.5]) * T.scale(1.0),
+                'to_world': T.translate([0.5, 2.0, 1.5]) @ T.scale(1.0),
             },
             'light': { 'type': 'constant', 'radiance': 1.0 },
         }
@@ -756,7 +756,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     dr.set_label(theta, 'theta')
     config.update(theta)
     # We call dr.forward() here to propagate the gradient from the latent variable into
-    # the scene parameter. This prevents dr.forward_to() in integrator.render_forward() 
+    # the scene parameter. This prevents dr.forward_to() in integrator.render_forward()
     # to trace gradients outside the dr.Loop().
     dr.forward(theta, dr.ADFlag.ClearEdges)
 
