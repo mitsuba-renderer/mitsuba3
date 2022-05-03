@@ -1,6 +1,6 @@
 .. _sec-api:
 
-.. image:: ../resources/data/docs/images/banners/banner_05.png
+.. image:: ../resources/data/docs/images/banners/banner_07.png
     :width: 100%
     :align: center
 
