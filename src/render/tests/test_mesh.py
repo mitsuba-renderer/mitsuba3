@@ -7,9 +7,12 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 def test01_create_mesh(variant_scalar_rgb):
     m = mi.Mesh("MyMesh", 3, 2)
-    m.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
-    m.faces_buffer()[:] = [0, 1, 2, 1, 2, 0]
-    m.parameters_changed()
+
+    params = mi.traverse(m)
+    params['vertex_positions'] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
+    params['faces'] = [0, 1, 2, 1, 2, 0]
+    params.update()
+
     m.surface_area()  # Ensure surface area computed
 
     assert str(m) == """Mesh[
@@ -35,8 +38,9 @@ def test02_ply_triangle(variant_scalar_rgb):
         "face_normals" : True
     })
 
-    positions = m.vertex_positions_buffer()
-    faces = m.faces_buffer()
+    params = mi.traverse(m)
+    positions = params['vertex_positions']
+    faces = params['faces']
 
     assert not m.has_vertex_normals()
     assert dr.width(positions) == 9
@@ -57,7 +61,9 @@ def test03_ply_computed_normals(variant_scalar_rgb):
         "type" : "ply",
         "filename" : "data/triangle.ply",
     })
-    normals = shape.vertex_normals_buffer()
+    params = mi.traverse(shape)
+    normals = params['vertex_normals']
+
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
     assert dr.allclose(normals[0:3], [-1, 0, 0])
@@ -71,11 +77,10 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
     """Tests the weighting scheme that is used to compute surface normals."""
     m = mi.Mesh("MyMesh", 5, 2, has_vertex_normals=True)
 
-    vertices = m.vertex_positions_buffer()
-    normals = m.vertex_normals_buffer()
+    params = mi.traverse(m)
 
     a, b = 1.0, 0.5
-    vertices[:] = [0, 0, 0, -a, 1, 0, a, 1, 0, -b, 0, 1, b, 0, 1]
+    params['vertex_positions'] = [0, 0, 0, -a, 1, 0, a, 1, 0, -b, 0, 1, b, 0, 1]
 
     n0 = mi.Vector3f(0.0, 0.0, -1.0)
     n1 = mi.Vector3f(0.0, 1.0, 0.0)
@@ -85,11 +90,11 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
     n2 /= dr.norm(n2)
     n = np.vstack([n2, n0, n0, n1, n1]).transpose()
 
-    m.faces_buffer()[:] = [0, 1, 2, 0, 3, 4]
+    params['faces'] = [0, 1, 2, 0, 3, 4]
+    params.update()
 
-    m.recompute_vertex_normals()
     for i in range(5):
-        assert dr.allclose(normals[i*3:(i+1)*3], n[:, i], 5e-4)
+        assert dr.allclose(params['vertex_normals'][i*3:(i+1)*3], n[:, i], 5e-4)
 
 
 @fresolver_append_path
@@ -101,8 +106,9 @@ def test05_load_simple_mesh(variant_scalar_rgb):
             "filename" : f"resources/data/tests/{mesh_format}/cbox_smallbox.{mesh_format}",
         })
 
-        positions = shape.vertex_positions_buffer()
-        faces = shape.faces_buffer()
+        params = mi.traverse(shape)
+        positions = params['vertex_positions']
+        faces = params['faces']
 
         assert shape.has_vertex_normals()
         assert dr.width(positions) == 72
@@ -126,10 +132,11 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
         })
         assert shape.has_vertex_normals() == (not face_normals)
 
-        positions = shape.vertex_positions_buffer()
-        normals = shape.vertex_normals_buffer()
-        texcoords = shape.vertex_texcoords_buffer()
-        faces = shape.faces_buffer()
+        params = mi.traverse(shape)
+        positions = params['vertex_positions']
+        normals = params['vertex_normals']
+        texcoords = params['vertex_texcoords']
+        faces = params['faces']
 
         (v0, v2, v3) = [positions[i*3:(i+1)*3] for i in [0, 2, 3]]
 
@@ -183,9 +190,11 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
 
 def test08_mesh_add_attribute(variant_scalar_rgb):
     m = mi.Mesh("MyMesh", 3, 2)
-    m.vertex_positions_buffer()[:] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
-    m.faces_buffer()[:] = [0, 1, 2, 1, 2, 0]
-    m.parameters_changed()
+
+    params = mi.traverse(m)
+    params['vertex_positions'] = [0.0, 0.0, 0.0, 1.0, 0.2, 0.0, 0.2, 1.0, 0.0]
+    params['faces'] = [0, 1, 2, 1, 2, 0]
+    params.update()
 
     m.add_attribute("vertex_color", 3, [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0])
 
@@ -229,7 +238,7 @@ def test09_eval_parameterization(variants_all_rgb):
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -305,7 +314,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
     dr.set_flag(dr.JitFlag.VCallRecord, False)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -356,7 +365,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
         dr.set_flag(k, v)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -401,7 +410,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
         dr.set_flag(k, v)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -434,7 +443,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
         dr.set_flag(k, v)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -512,7 +521,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
         dr.set_flag(k, v)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",
@@ -650,7 +659,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
         dr.set_flag(k, v)
 
     scene = mi.load_dict({
-        "type" : "scene", 
+        "type" : "scene",
         "meshes": {
             "type" : "obj",
             "id" : "rect",

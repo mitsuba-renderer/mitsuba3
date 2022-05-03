@@ -148,26 +148,8 @@ MI_PY_EXPORT(Shape) {
         .def_method(Mesh, face_count)
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
-        .def_method(Mesh, recompute_vertex_normals)
-        .def_method(Mesh, recompute_bbox)
         .def("write_ply", &Mesh::write_ply, "filename"_a,
              "Export mesh as a binary PLY file")
-        .def("vertex_positions_buffer",
-             py::overload_cast<>(&Mesh::vertex_positions_buffer),
-             D(Mesh, vertex_positions_buffer),
-             py::return_value_policy::reference_internal)
-        .def("vertex_normals_buffer",
-             py::overload_cast<>(&Mesh::vertex_normals_buffer),
-             D(Mesh, vertex_normals_buffer),
-             py::return_value_policy::reference_internal)
-        .def("vertex_texcoords_buffer",
-             py::overload_cast<>(&Mesh::vertex_texcoords_buffer),
-             D(Mesh, vertex_texcoords_buffer),
-             py::return_value_policy::reference_internal)
-        .def("faces_buffer", py::overload_cast<>(&Mesh::faces_buffer),
-             D(Mesh, faces_buffer), py::return_value_policy::reference_internal)
-        .def("attribute_buffer", &Mesh::attribute_buffer, "name"_a,
-             D(Mesh, attribute_buffer), py::return_value_policy::reference_internal)
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute), py::return_value_policy::reference_internal)
         .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {

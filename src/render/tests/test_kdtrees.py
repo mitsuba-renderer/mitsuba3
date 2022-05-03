@@ -2,10 +2,40 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from .mesh_generation import create_stairs
-
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
+# Generate stairs in a 1x1x1 bbox, going up the Z axis along the X axis
+def create_stairs(num_steps):
+    size_step = 1.0 / num_steps
+
+    m = mi.Mesh("stairs", 4 * num_steps, 4 * num_steps - 2)
+
+    v = dr.zero(mi.TensorXf, [4 * num_steps, 3])
+    f = dr.zero(mi.TensorXf, [4 * num_steps - 2, 3])
+
+    for i in range(num_steps):
+        h  = i * size_step
+        s1 = i * size_step
+        s2 = (i + 1) * size_step
+        k = 4 * i
+
+        v[k + 0] = [0.0, s1, h]
+        v[k + 1] = [1.0, s1, h]
+        v[k + 2] = [0.0, s2, h]
+        v[k + 3] = [1.0, s2, h]
+
+        f[k]   = [k, k + 1, k + 2]
+        f[k + 1] = [k + 1, k + 3, k + 2]
+        if i < num_steps - 1:
+            f[k + 2] = [k + 2, k + 3, k + 5]
+            f[k + 3] = [k + 5, k + 4, k + 2]
+
+    params = mi.traverse(m)
+    params['vertex_positions'] = v.array
+    params['faces'] = f.array
+    params.update()
+
+    return m
 
 def make_synthetic_scene(n_steps):
     props = mi.Properties("scene")
