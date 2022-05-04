@@ -1,6 +1,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/stream.h>
+#include <mitsuba/core/mstream.h>
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
@@ -285,4 +286,13 @@ MI_PY_EXPORT(Bitmap) {
         "pixel_format"_a = py::none(),
         "channel_names"_a = std::vector<std::string>(),
         "Initialize a Bitmap from any array that implements ``__array_interface__``");
+
+    bitmap.def("_repr_png_", [](Bitmap &bitmap) {
+        ref<MemoryStream> s = new MemoryStream(bitmap.buffer_size());
+        bitmap.write(s, Bitmap::FileFormat::PNG);
+        s->seek(0);
+        std::unique_ptr<char> tmp(new char[s->size()]);
+        s->read((void *) tmp.get(), s->size());
+        return py::bytes(tmp.get(), s->size());
+    });
 }
