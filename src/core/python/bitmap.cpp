@@ -289,9 +289,13 @@ MI_PY_EXPORT(Bitmap) {
         "channel_names"_a = std::vector<std::string>(),
         "Initialize a Bitmap from any array that implements ``__array_interface__``");
 
-    bitmap.def("_repr_html_", [](Bitmap &bitmap) {
-        ref<MemoryStream> s = new MemoryStream(bitmap.buffer_size());
-        bitmap.write(s, Bitmap::FileFormat::PNG);
+    bitmap.def("_repr_html_", [](const Bitmap &_bitmap) -> py::object {
+        if (_bitmap.pixel_format() == Bitmap::PixelFormat::MultiChannel)
+            return py::none();
+
+        ref<Bitmap> bitmap = _bitmap.convert(Bitmap::PixelFormat::RGB, Struct::Type::UInt16, true);
+        ref<MemoryStream> s = new MemoryStream(bitmap->buffer_size());
+        bitmap->write(s, Bitmap::FileFormat::PNG);
         s->seek(0);
         std::unique_ptr<char> tmp(new char[s->size()]);
         s->read((void *) tmp.get(), s->size());
@@ -307,6 +311,6 @@ MI_PY_EXPORT(Bitmap) {
         out << "width=\"250vm\"";
         out << " />";
 
-        return out.str();
+        return py::str(out.str());
     });
 }

@@ -44,7 +44,7 @@ def run_notebook(notebook_path, tmp_dir=None):
 
 
 tutorials_dir = realpath(join(dirname(__file__), '../../../tutorials'))
-tutorials = glob.glob(join(tutorials_dir, '*', '**.ipynb'))
+tutorials = glob.glob(join(tutorials_dir, '*', './**/*.ipynb'), recursive=True)
 
 
 @pytest.mark.slow
