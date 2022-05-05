@@ -46,6 +46,8 @@
 
 .. autoclass:: mitsuba.ContinuousDistribution
 
+.. autoclass:: mitsuba.CppADIntegrator
+
 .. autofunction:: mitsuba.DEBUG
 
 .. autoclass:: mitsuba.DefaultFormatter
@@ -255,6 +257,10 @@
 .. autoclass:: mitsuba.ProjectiveCamera
 
 .. autoclass:: mitsuba.Properties
+
+.. autoclass:: mitsuba.Quaternion4d
+
+.. autoclass:: mitsuba.Quaternion4f
 
 .. autoclass:: mitsuba.RadicalInverse
 

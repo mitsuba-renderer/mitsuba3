@@ -3093,6 +3093,10 @@
         Returns → None:
             *no description available*
 
+.. py:class:: mitsuba.CppADIntegrator
+
+    Base class: :py:obj:`mitsuba.SamplingIntegrator`
+
 .. py:data:: mitsuba.DEBUG
     :type: bool
     :value: False
@@ -11698,16 +11702,6 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.attribute_buffer(self, name)
-
-        Return the mesh attribute associated with ``name``
-
-        Parameter ``name`` (str):
-            *no description available*
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
     .. py:method:: mitsuba.Mesh.eval_parameterization(self, uv, ray_flags=14, active=True)
 
         Parameter ``uv`` (:py:obj:`mitsuba.Point2f`):
@@ -11740,13 +11734,6 @@
             Mask to specify active lanes.
 
         Returns → drjit.llvm.ad.Array3u:
-            *no description available*
-
-    .. py:method:: mitsuba.Mesh.faces_buffer(self)
-
-        Return face indices buffer
-
-        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.has_vertex_normals(self)
@@ -11784,20 +11771,6 @@
         Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.recompute_bbox(self)
-
-        Recompute the bounding box (e.g. after modifying the vertex positions)
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Mesh.recompute_vertex_normals(self)
-
-        Compute smooth vertex normals and replace the current normal values
-
-        Returns → None:
-            *no description available*
-
     .. py:method:: mitsuba.Mesh.vertex_count(self)
 
         Return the total number of vertices
@@ -11818,13 +11791,6 @@
         Returns → :py:obj:`mitsuba.Normal3f`:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_normals_buffer(self)
-
-        Return vertex normals buffer
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
     .. py:method:: mitsuba.Mesh.vertex_position(self, index, active=True)
 
         Returns the world-space position of the vertex with index ``index``
@@ -11838,13 +11804,6 @@
         Returns → :py:obj:`mitsuba.Point3f`:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_positions_buffer(self)
-
-        Return vertex positions buffer
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
     .. py:method:: mitsuba.Mesh.vertex_texcoord(self, index, active=True)
 
         Returns the UV texture coordinates of the vertex with index ``index``
@@ -11856,13 +11815,6 @@
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Point2f`:
-            *no description available*
-
-    .. py:method:: mitsuba.Mesh.vertex_texcoords_buffer(self)
-
-        Return vertex texcoords buffer
-
-        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.write_ply(self, filename)
@@ -13473,6 +13425,35 @@
             *no description available*
 
         Returns → bool:
+            *no description available*
+
+.. py:class:: mitsuba.Quaternion4f
+
+    .. py:method:: mitsuba.Quaternion4f.entry_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Quaternion4f.entry_ref_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Quaternion4f.set_entry_(self, arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.RadicalInverse
@@ -16370,8 +16351,13 @@
 
         Marks a specific parameter and its parent objects as dirty. A subsequent call
         to :py:meth:`~:py:obj:`mitsuba.SceneParameters.update`()` will refresh their internal
-        state. This function is automatically called when overwriting a parameter using
-        :py:meth:`~:py:obj:`mitsuba.SceneParameters.__setitem__``.
+        state.
+
+        This method should rarely be called explicitly. The
+        py:class:`~:py:obj:`mitsuba.SceneParameters`` will detect most operations on
+        its values and automatically flag them as dirty. A common exception to
+        the detection mechanism is the :py:meth:`~drjit.scatter` operation which
+        needs an explicit call to :py:meth:`~:py:obj:`mitsuba.SceneParameters.set_dirty`()`.
 
         Parameter ``key`` (str):
             *no description available*
@@ -16384,7 +16370,12 @@
         internal state. For instance, the scene may rebuild the kd-tree
         when a shape was modified, etc.
 
-        Returns → None:
+        The return value of this function is a list of tuples where each tuple
+        corresponds to a Mitsuba node/object that is updated. The tuple's first
+        element is the node itself. The second element is the set of keys that
+        the node is being updated for.
+
+        Returns → list[tuple[Any, set]]:
             *no description available*
 
     .. py:method:: mitsuba.SceneParameters.keep(keys)
@@ -22781,7 +22772,7 @@
 
 .. py:class:: mitsuba.ad.common.ADIntegrator
 
-    Base class: :py:obj:`mitsuba.SamplingIntegrator`
+    Base class: :py:obj:`mitsuba.CppADIntegrator`
 
     Abstract base class of numerous differentiable integrators in Mitsuba
 
@@ -24095,6 +24086,17 @@
 
     .. py:function:: has_flag(arg0, arg1)
 
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.EmitterFlags`):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
@@ -24110,6 +24112,28 @@
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.RayFlags`):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.RayFlags`):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.BSDFFlags`):
             *no description available*
 
         Returns → bool:
@@ -24140,6 +24164,19 @@
     .. py:function:: has_flag(arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.FilmFlags`):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        10. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> bool
+
+        Parameter ``arg0`` (int):
             *no description available*
 
         Parameter ``arg1`` (:py:obj:`mitsuba.PhaseFunctionFlags`):
@@ -25470,16 +25507,16 @@
 .. py:function:: mitsuba.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
 
     This function provides a convenient high-level interface to differentiable
-    rendering algorithms in Mi. The function returns a rendered image that
-    can be used in subsequent differentiable computation steps. At any later
-    point, the entire computation graph can be differentiated end-to-end in
-    either forward or reverse mode (i.e., using ``dr.forward()`` and
+    rendering algorithms in Mi. The function returns a rendered image that can
+    be used in subsequent differentiable computation steps. At any later point,
+    the entire computation graph can be differentiated end-to-end in either
+    forward or reverse mode (i.e., using ``dr.forward()`` and
     ``dr.backward()``).
 
-    Under the hood, the differentiation operation will be intercepted and
-    routed to ``Integrator.render_forward()`` or
-    ``Integrator.render_backward()``, which evaluate the derivative using
-    either naive AD or a more specialized differential simulation.
+    Under the hood, the differentiation operation will be intercepted and routed
+    to ``Integrator.render_forward()`` or ``Integrator.render_backward()``,
+    which evaluate the derivative using either naive AD or a more specialized
+    differential simulation.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -25495,15 +25532,18 @@
         Reference to the scene being rendered in a differentiable manner.
 
     Parameter ``params`` (Any):
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+       An optional container of scene parameters that should receive gradients.
+       This argument isn't optional when computing forward mode derivatives. It
+       should be an instance of type ``mi.SceneParameters`` obtained via
+       ``mi.traverse()``. Gradient tracking must be explicitly enabled on these
+       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
        ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
        must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired.
+       forward mode derivatives are desired. When the scene parameters are
+       derived from other variables that have gradient tracking enabled,
+       gradient values should be propagated to the scene parameters by calling
+       ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling this
+       function.
 
     Parameter ``sensor`` (``int``, ``mi.Sensor``):
         Specify a sensor or a (sensor index) to render the scene from a
@@ -25512,8 +25552,8 @@
 
     Parameter ``integrator`` (``mi.Integrator``):
         Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description
-        will be used.
+        default, the integrator specified in the original scene description will
+        be used.
 
     Parameter ``seed` (``int``)
         This parameter controls the initialization of the random number
@@ -25524,8 +25564,8 @@
 
     Parameter ``seed_grad` (``int``)
         This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will automatically compute a suitable value from the primal ``seed``.
+        differential simulation phase. If not specified, the implementation will
+        automatically compute a suitable value from the primal ``seed``.
 
     Parameter ``spp`` (``int``):
         Optional parameter to override the number of samples per pixel for the
@@ -25534,8 +25574,8 @@
 
     Parameter ``spp_grad`` (``int``):
         This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation
-        will copy the value from ``spp``.
+        differential simulation phase. If not specified, the implementation will
+        copy the value from ``spp``.
 
     Parameter ``scene`` (mi.Scene):
         *no description available*
