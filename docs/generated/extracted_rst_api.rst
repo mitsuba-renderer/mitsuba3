@@ -1832,6 +1832,318 @@
         Returns → float:
             *no description available*
 
+.. py:class:: mitsuba.Bool
+
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.Bool):
+            *no description available*
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: mitsuba.Bool.all_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.any_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.compress_(self)
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.copy_(self)
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.count_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.detach_(self)
+
+        Returns → drjit.llvm.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.detach_ref_(self)
+
+        Returns → drjit.llvm.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.entry_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.full_
+
+        (arg0: bool, arg1: int) -> drjit.llvm.ad.Bool
+
+    .. py:method:: mitsuba.Bool.gather_(arg0, arg1, arg2, arg3)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Parameter ``arg3`` (bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.index(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.index_ad(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.init_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.is_evaluated_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.is_literal_(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.label_(self)
+
+        Returns → str:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.load_(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.map_(ptr, size, callback=None)
+
+        Parameter ``ptr`` (int):
+            *no description available*
+
+        Parameter ``size`` (int):
+            *no description available*
+
+        Parameter ``callback`` (Callable[[], None]):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.migrate_(self, arg0)
+
+        Parameter ``arg0`` (AllocType):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.not_(self)
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.opaque_
+
+        (arg0: bool, arg1: int) -> drjit.llvm.ad.Bool
+
+    .. py:method:: mitsuba.Bool.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.resize_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.scatter_(self, target, index, mask, permute)
+
+        Parameter ``target`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Parameter ``index`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Parameter ``permute`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.select_
+
+        (arg0: drjit.llvm.ad.Bool, arg1: drjit.llvm.ad.Bool, arg2: drjit.llvm.ad.Bool) -> drjit.llvm.ad.Bool
+
+    .. py:method:: mitsuba.Bool.set_entry_(self, arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.set_label_(self, arg0)
+
+        Parameter ``arg0`` (str):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Bool.zero_
+
+        (arg0: int) -> drjit.llvm.ad.Bool
+
 .. py:class:: mitsuba.BoundingBox2f
 
     Generic n-dimensional bounding box data structure
@@ -2783,7 +3095,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -22317,6 +22629,929 @@
         Returns → object:
             *no description available*
 
+.. py:class:: mitsuba.ad.Adam
+
+    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
+
+    Implements the Adam optimizer presented in the paper *Adam: A Method for
+    Stochastic Optimization* by Kingman and Ba, ICLR 2015.
+
+    When optimizing many variables (e.g. a high resolution texture) with
+    momentum enabled, it may be beneficial to restrict state and variable
+    updates to the entries that received nonzero gradients in the current
+    iteration (``mask_updates=True``).
+    In the context of differentiable Monte Carlo simulations, many of those
+    variables may not be observed at each iteration, e.g. when a surface is
+    not visible from the current camera. Gradients for unobserved variables
+    will remain at zero by default.
+    If we do not take special care, at each new iteration:
+
+    1. Momentum accumulated at previous iterations (potentially very noisy)
+       will keep being applied to the variable.
+    2. The optimizer's state will be updated to incorporate ``gradient = 0``,
+       even though it is not an actual gradient value but rather lack of one.
+
+    Enabling ``mask_updates`` avoids these two issues. This is similar to
+    `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
+
+    .. py:method:: __init__()
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``beta_1``:
+            controls the exponential averaging of first
+            order gradient moments
+        
+        Parameter ``beta_2``:
+            controls the exponential averaging of second
+            order gradient moments
+        
+        Parameter ``mask_updates``:
+            if enabled, parameters and state variables will only be updated in a
+            given iteration if it received nonzero gradients in that iteration
+
+        
+    .. py:method:: mitsuba.ad.Adam.step()
+
+        Take a gradient step
+
+    .. py:method:: mitsuba.ad.Adam.reset()
+
+        Zero-initializes the internal state associated with a parameter
+
+.. py:class:: mitsuba.ad.Optimizer
+
+    Base class of all gradient-based optimizers.
+
+    .. py:method:: __init__()
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
+            Scene parameters dictionary containing the parameters to optimize.
+
+        
+    .. py:method:: mitsuba.ad.Optimizer.load()
+
+        Load a set of scene parameters to optimize.
+
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be loaded. Regex are supported to define
+            a subset of parameters at once. If set to ``None``, all differentiable
+            scene parameters will be loaded.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.Optimizer.update()
+
+        Propagate updates of the parameters being optimized back to the scene state.
+
+        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
+            Scene parameters dictionary
+
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be updated. Regex are supported to update
+            a subset of parameters at once. If set to ``None``, all scene parameters will
+            be update.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
+
+        Set the learning rate.
+
+        Parameter ``lr`` (``float``, ``dict``):
+            The new learning rate. A ``dict`` can be provided instead to
+            specify the learning rate for specific parameters.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.Optimizer.reset()
+
+        Resets the internal state associated with a parameter, if any (e.g. momentum).
+
+.. py:class:: mitsuba.ad.SGD
+
+    Base class: :py:obj:`mitsuba.ad.optimizers.Optimizer`
+
+    Implements basic stochastic gradient descent with a fixed learning rate
+    and, optionally, momentum :cite:`Sutskever2013Importance` (0.9 is a typical
+    parameter value for the ``momentum`` parameter).
+
+    The momentum-based SGD uses the update equation
+
+    .. math::
+
+        v_{i+1} = \mu \cdot v_i +  g_{i+1}
+
+    .. math::
+        p_{i+1} = p_i + \varepsilon \cdot v_{i+1},
+
+    where :math:`v` is the velocity, :math:`p` are the positions,
+    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
+    the momentum parameter.
+
+    .. py:method:: __init__()
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``momentum``:
+            momentum factor
+        
+        Parameter ``mask_updates``:
+            if enabled, parameters and state variables will only be updated
+            in a given iteration if it received nonzero gradients in that iteration.
+            This only has an effect if momentum is enabled.
+            See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
+
+        
+    .. py:method:: mitsuba.ad.SGD.step()
+
+        Take a gradient step
+
+    .. py:method:: mitsuba.ad.SGD.reset()
+
+        Zero-initializes the internal state associated with a parameter
+
+.. py:class:: mitsuba.ad.common.ADIntegrator
+
+    Base class: :py:obj:`mitsuba.SamplingIntegrator`
+
+    Abstract base class of numerous differentiable integrators in Mitsuba
+
+    .. pluginparameters::
+
+     * - max_depth
+         - |int|
+         - Specifies the longest path depth in the generated output image (where -1
+           corresponds to :math:`\infty`). A value of |1| will only render directly
+           visible light sources. |2| will lead to single-bounce (direct-only)
+           illumination, and so on. (Default: |-1|)
+     * - rr_depth
+         - |int|
+         - Specifies the path depth, at which the implementation will begin to use
+           the *russian roulette* path termination criterion. For example, if set to
+           |1|, then path generation many randomly cease after encountering directly
+           visible surfaces. (Default: |5|)
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render(overloaded)
+
+
+        .. py:method:: render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
+
+            Render the scene
+
+            This function renders the scene from the viewpoint of ``sensor``. All
+            other parameters are optional and control different aspects of the
+            rendering process. In particular:
+
+            Parameter ``seed`` (int):
+                This parameter controls the initialization of the random number
+                generator. It is crucial that you specify different seeds (e.g.,
+                an increasing sequence) if subsequent ``render``() calls should
+                produce statistically independent images.
+
+            Parameter ``spp`` (int):
+                Set this parameter to a nonzero value to override the number of
+                samples per pixel. This value then takes precedence over whatever
+                was specified in the construction of ``sensor->sampler()``. This
+                parameter may be useful in research applications where an image
+                must be rendered multiple times using different quality levels.
+
+            Parameter ``develop`` (bool):
+                If set to ``True``, the implementation post-processes the data
+                stored in ``sensor->film()``, returning the resulting image as a
+                TensorXf. Otherwise, it returns an empty tensor.
+
+            Parameter ``evaluate`` (bool):
+                This parameter is only relevant for JIT variants of Mitsuba (LLVM,
+                CUDA). If set to ``True``, the rendering step evaluates the
+                generated image and waits for its completion. A log message also
+                denotes the rendering time. Otherwise, the returned tensor
+                (``develop=true``) or modified film (``develop=false``) represent
+                the rendering task as an unevaluated computation graph.
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+        .. py:method:: render(self, scene, sensor=0, seed=0, spp=0, develop=True, evaluate=True)
+
+            Render the scene
+
+            This function is just a thin wrapper around the previous render()
+            overload. It accepts a sensor *index* instead and renders the scene
+            using sensor 0 by default.
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Parameter ``develop`` (bool):
+                *no description available*
+
+            Parameter ``evaluate`` (bool):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+
+        Evaluates the forward-mode derivative of the rendering step.
+
+        Forward-mode differentiation propagates gradients from scene parameters
+        through the simulation, producing a *gradient image* (i.e., the derivative
+        of the rendered image with respect to those scene parameters). The gradient
+        image is very helpful for debugging, for example to inspect the gradient
+        variance or visualize the region of influence of a scene parameter. It is
+        not particularly useful for simultaneous optimization of many parameters,
+        since multiple differentiation passes are needed to obtain separate
+        derivatives for each scene parameter. See ``Integrator.render_backward()``
+        for an efficient way of obtaining all parameter derivatives at once, or
+        simply use the ``mi.render()`` abstraction that hides both
+        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+        a unified interface.
+
+        Before calling this function, you must first enable gradient tracking and
+        furthermore associate concrete input gradients with one or more scene
+        parameters, or the function will just return a zero-valued gradient image.
+        This is typically done by invoking ``dr.enable_grad()`` and
+        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
+        that can be obtained obtained via a call to ``mi.traverse()``.
+
+        Note the default implementation of this functionality relies on naive
+        automatic differentiation (AD), which records a computation graph of the
+        primal rendering step that is subsequently traversed to propagate
+        derivatives. This tends to be relatively inefficient due to the need to
+        track intermediate program state. In particular, it means that
+        differentiation of nontrivial scenes at high sample counts will often run
+        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+        ``prb`` (Path Replay Backpropagation) that are specifically designed for
+        differentiation can be significantly more efficient.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+           also be a Python list/dict/object tree (DrJit will traverse it to find
+           all parameters). Gradient tracking must be explicitly enabled for each of
+           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+           ``render_forward()`` will not do this for you). Furthermore,
+           ``dr.set_grad(...)`` must be used to associate specific gradient values
+           with each parameter.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (Union[int, mi.Sensor]):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → mi.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
+        these parameters once ``render_backward()`` returns.
+
+        Note the default implementation of this functionality relies on naive
+        automatic differentiation (AD), which records a computation graph of the
+        primal rendering step that is subsequently traversed to propagate
+        derivatives. This tends to be relatively inefficient due to the need to
+        track intermediate program state. In particular, it means that
+        differentiation of nontrivial scenes at high sample counts will often run
+        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+        ``prb`` (Path Replay Backpropagation) that are specifically designed for
+        differentiation can be significantly more efficient.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+           also be a Python list/dict/object tree (DrJit will traverse it to find
+           all parameters). Gradient tracking must be explicitly enabled for each of
+           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+           ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``grad_in`` (mi.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (Union[int, mi.Sensor]):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
+
+        Sample a 2D grid of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous 2D image-space positions associated with each ray
+
+        When a reparameterization function is provided via the 'reparam'
+        argument, it will be applied to the returned image-space position (i.e.
+        the sample positions will be moving). The other two return values
+        remain detached.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (mi.Sensor):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``reparam`` (Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]):
+            *no description available*
+
+        Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
+
+        Given a sensor and a desired number of samples per pixel, this function
+        computes the necessary number of Monte Carlo samples and then suitably
+        seeds the sampler underlying the sensor.
+
+        Returns the created sampler and the final number of samples per pixel
+        (which may differ from the requested amount depending on the type of
+        ``Sampler`` being used)
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor to render the scene from a different viewpoint.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator during the primal rendering step. It is crucial that you
+            specify different seeds (e.g., an increasing sequence) if subsequent
+            calls should produce statistically independent images (e.g. to
+            de-correlate gradient-based optimization steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            primal rendering step. The value provided within the original scene
+            specification takes precedence if ``spp=0``.
+
+        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Parameter ``aovs`` (list):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, reparam, active)
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``reparam`` (see above):
+            If provided, this callable takes a ray and a mask of active SIMD
+            lanes and returns a reparameterized ray and Jacobian determinant.
+            The implementation of the ``sample`` function should then use it to
+            correctly account for visibility-induced discontinuities during
+            differentiation.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``depth`` (mi.UInt32, δ):
+            *no description available*
+
+        Parameter ``L`` (Optional[mi.Spectrum]):
+            *no description available*
+
+        Parameter ``state_in`` (Any):
+            *no description available*
+
+        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool]:
+            *no description available*
+
+.. py:class:: mitsuba.ad.common.RBIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    Abstract base class of radiative-backpropagation style differentiable
+    integrators.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.common.RBIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+
+        Evaluates the forward-mode derivative of the rendering step.
+
+        Forward-mode differentiation propagates gradients from scene parameters
+        through the simulation, producing a *gradient image* (i.e., the derivative
+        of the rendered image with respect to those scene parameters). The gradient
+        image is very helpful for debugging, for example to inspect the gradient
+        variance or visualize the region of influence of a scene parameter. It is
+        not particularly useful for simultaneous optimization of many parameters,
+        since multiple differentiation passes are needed to obtain separate
+        derivatives for each scene parameter. See ``Integrator.render_backward()``
+        for an efficient way of obtaining all parameter derivatives at once, or
+        simply use the ``mi.render()`` abstraction that hides both
+        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+        a unified interface.
+
+        Before calling this function, you must first enable gradient tracking and
+        furthermore associate concrete input gradients with one or more scene
+        parameters, or the function will just return a zero-valued gradient image.
+        This is typically done by invoking ``dr.enable_grad()`` and
+        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
+        that can be obtained obtained via a call to
+        ``mi.traverse()``.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_forward()`` will not do this for you). Furthermore,
+           ``dr.set_grad(...)`` must be used to associate specific gradient values
+           with each parameter.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (Union[int, mi.Sensor]):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → mi.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.RBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``grad_in`` (mi.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (Union[int, mi.Sensor]):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:function:: mitsuba.ad.common.mis_weight()
+
+    Compute the Multiple Importance Sampling (MIS) weight given the densities
+    of two sampling strategies according to the power heuristic.
+
+.. py:class:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    This class implements a reparameterized direct illumination integrator.
+
+    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
+    'reparam_max_depth' are both set to be 2. But since direct illumination
+    tasks only have two ray segments, the overhead of relying on radiative
+    backpropagation is non-neglegible. This implementation builds on the
+    traditional ADIntegrator that does not require two passes during
+    gradient traversal.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.reparam(scene, rng, params, ray, depth, active)
+
+        Helper function to reparameterize rays internally and within ADIntegrator
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``rng`` (mi.PCG32):
+            *no description available*
+
+        Parameter ``params`` (Any):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``depth`` (mi.UInt32):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool):
+            Mask to specify active lanes.
+
+    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
+
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool, **kwargs):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+            *no description available*
+
+.. py:class:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    This class implements a reparameterized emission integrator.
+
+    It reparametrizes the camera ray to handle discontinuity issues
+    caused by moving emitters. This is mainly used for learning and
+    debugging purpose.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
+
+        See ``ADIntegrator.sample()`` for a description of this interface and
+        the role of the various parameters and return values.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
+            *no description available*
+
+        Parameter ``active`` (mi.Bool, **kwargs):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+            *no description available*
+
+.. py:function:: mitsuba.ad.reparameterize_ray(scene, rng, params, ray, num_rays=4, kappa=100000.0, exponent=3.0, antithetic=False, unroll=False, active=True)
+
+    Reparameterize given ray by "attaching" the derivatives of its direction to
+    moving geometry in the scene.
+
+    Parameter ``scene`` (``mitsuba.Scene``):
+        Scene containing all shapes.
+
+    Parameter ``rng`` (``mitsuba.PCG32``):
+        Random number generator used to sample auxiliary ray directions.
+
+    Parameter ``params`` (``mitsuba.SceneParameters``):
+        Scene parameters
+
+    Parameter ``ray`` (``mitsuba.RayDifferential3f``):
+        Ray to be reparameterized
+
+    Parameter ``num_rays`` (``int``):
+        Number of auxiliary rays to trace when performing the convolution.
+
+    Parameter ``kappa`` (``float``):
+        Kappa parameter of the von Mises Fisher distribution used to sample the
+        auxiliary rays.
+
+    Parameter ``exponent`` (``float``):
+        Exponent used in the computation of the harmonic weights
+
+    Parameter ``antithetic`` (``bool``):
+        Should antithetic sampling be enabled to improve convergence?
+        (Default: False)
+
+    Parameter ``unroll`` (``bool``):
+        Should the loop tracing auxiliary rays be unrolled? (Default: False)
+
+    Parameter ``active`` (``mitsuba.Bool``):
+        Boolean array specifying the active lanes
+
+    Returns → (:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`):
+        Returns the reparameterized ray direction and the Jacobian
+        determinant of the change of variables.
+
+    Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        *no description available*
+
+    Parameter ``rng`` (:py:obj:`mitsuba.PCG32`):
+        *no description available*
+
+    Parameter ``params`` (:py:obj:`mitsuba.SceneParameters`):
+        *no description available*
+
+    Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
+        *no description available*
+
+    Parameter ``num_rays`` (int):
+        *no description available*
+
+    Parameter ``kappa`` (float):
+        *no description available*
+
+    Parameter ``exponent`` (float):
+        *no description available*
+
+    Parameter ``antithetic`` (bool):
+        *no description available*
+
+    Parameter ``unroll`` (bool):
+        *no description available*
+
+    Parameter ``active`` (:py:obj:`mitsuba.Bool`):
+        Mask to specify active lanes.
+
+    Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`]:
+        *no description available*
+
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -24552,6 +25787,55 @@
             generation is 4.
 
         Returns → drjit.llvm.ad.Float:
+            A uniformly distributed floating point number on the interval
+            ``[0, 1)``
+
+.. py:function:: mitsuba.sample_tea_float64(overloaded)
+
+
+    .. py:function:: sample_tea_float64(v0, v1, rounds=4)
+
+        Generate fast and reasonably good pseudorandom numbers using the Tiny
+        Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+        This function uses sample_tea to return double precision floating
+        point numbers on the interval ``[0, 1)``
+
+        Parameter ``v0`` (int):
+            First input value to be encrypted (could be the sample index)
+
+        Parameter ``v1`` (int):
+            Second input value to be encrypted (e.g. the requested random
+            number dimension)
+
+        Parameter ``rounds`` (int):
+            How many rounds should be executed? The default for random number
+            generation is 4.
+
+        Returns → float:
+            A uniformly distributed floating point number on the interval
+            ``[0, 1)``
+
+    .. py:function:: sample_tea_float64(v0, v1, rounds=4)
+
+        Generate fast and reasonably good pseudorandom numbers using the Tiny
+        Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+        This function uses sample_tea to return double precision floating
+        point numbers on the interval ``[0, 1)``
+
+        Parameter ``v0`` (drjit.llvm.ad.UInt):
+            First input value to be encrypted (could be the sample index)
+
+        Parameter ``v1`` (drjit.llvm.ad.UInt):
+            Second input value to be encrypted (e.g. the requested random
+            number dimension)
+
+        Parameter ``rounds`` (int):
+            How many rounds should be executed? The default for random number
+            generation is 4.
+
+        Returns → drjit.llvm.ad.Float64:
             A uniformly distributed floating point number on the interval
             ``[0, 1)``
 

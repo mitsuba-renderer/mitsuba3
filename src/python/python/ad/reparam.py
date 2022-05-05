@@ -400,14 +400,14 @@ class _ReparameterizeOp(dr.CustomOp):
 
 def reparameterize_ray(scene: mitsuba.Scene,
                        rng: mitsuba.PCG32,
-                       params: Any,
-                       ray: mitsuba.Ray3f,
+                       params: mitsuba.SceneParameters,
+                       ray: mitsuba.RayDifferential3f,
                        num_rays: int=4,
                        kappa: float=1e5,
                        exponent: float=3.0,
                        antithetic: bool=False,
                        unroll: bool=False,
-                       active: Any[bool, mitsuba.Mask] = True
+                       active: mitsuba.Bool = True
 ) -> Tuple[mitsuba.Vector3f, mitsuba.Float]:
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to
@@ -419,11 +419,11 @@ def reparameterize_ray(scene: mitsuba.Scene,
     Parameter ``rng`` (``mitsuba.PCG32``):
         Random number generator used to sample auxiliary ray directions.
 
+    Parameter ``params`` (``mitsuba.SceneParameters``):
+        Scene parameters
+
     Parameter ``ray`` (``mitsuba.RayDifferential3f``):
         Ray to be reparameterized
-
-    Parameter ``params`` (``mitsuba.util.SceneParameters``):
-        Scene parameters
 
     Parameter ``num_rays`` (``int``):
         Number of auxiliary rays to trace when performing the convolution.

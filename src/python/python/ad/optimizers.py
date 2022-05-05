@@ -12,7 +12,7 @@ class Optimizer:
         Parameter ``lr``:
             learning rate
 
-        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
+        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
             Scene parameters dictionary containing the parameters to optimize.
         """
         self.lr = defaultdict(lambda: self.lr_default)
@@ -112,7 +112,7 @@ class Optimizer:
         """
         Propagate updates of the parameters being optimized back to the scene state.
 
-        Parameter ``params`` (:py:class:`mitsuba.util.SceneParameters`):
+        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
             Scene parameters dictionary
 
         Parameter ``keys`` (``None``, ``str``, ``[str]``):
