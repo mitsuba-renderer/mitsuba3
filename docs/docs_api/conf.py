@@ -92,6 +92,7 @@ autodoc_member_order = 'bysource'
 import mitsuba
 mitsuba.set_variant('llvm_ad_rgb')
 variant_prefix = 'mitsuba.llvm_ad_rgb.'
+drjit_variant_alias = 'drjit.llvm'
 
 # -- Event callback for processing the docstring ----------------------------------------------
 
@@ -178,6 +179,7 @@ api_doc_structure = {
                r'mitsuba.permute([\w]*)', 'mitsuba.sobol_2'],
     'Log': [r'mitsuba.Log([\w]+)', 'mitsuba.Appender', ],
     'Types': [r'mitsuba.Scalar([\w]+)',
+              r'mitsuba.Bool([\w]*)',
               r'mitsuba.UInt([\w]*)',
               r'mitsuba.Int([\w]*)',
               r'mitsuba.Float([\w]*)',
@@ -725,9 +727,9 @@ def generate_list_api_callback(app):
         elif re.match(r'_[a-zA-Z\_0-9]+', name):
             # Skip private attributes
             return
-        elif ((isclass(obj) and obj.__module__.startswith('drjit.llvm')) or
-              (ismethod(obj) and obj.__module__.startswith('drjit.llvm')) or
-              (isfunction(obj) and obj.__module__.startswith('drjit.llvm'))):
+        elif ((isclass(obj) and obj.__module__.startswith(drjit_variant_alias)) or
+              (ismethod(obj) and obj.__module__.startswith(drjit_variant_alias)) or
+              (isfunction(obj) and obj.__module__.startswith(drjit_variant_alias))):
             # Do not ignore "aliased" DrJit imports
             pass
         elif ((ismodule(obj) and not obj.__name__.startswith('mitsuba.')) or
@@ -765,13 +767,13 @@ def generate_list_api_callback(app):
                 obj_module = 'mitsuba%s' % lib
                 obj_name = name
 
-            key = (obj_module, obj_name)
+            key = (obj_module, obj_name, name)
             if key in list_api:
                 previous_full_name = list_api[key][1]
                 if len(previous_full_name) < len(full_name):
                     full_name = previous_full_name
 
-            list_api[(obj_module, obj_name)] = (obj, full_name)
+            list_api[(obj_module, obj_name, name)] = (obj, full_name)
 
 
     print('Generate API list file: %s' % list_api_filename)

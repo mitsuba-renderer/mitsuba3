@@ -22,6 +22,8 @@
 
 .. autoclass:: mitsuba.BitmapReconstructionFilter
 
+.. autoclass:: mitsuba.Bool
+
 .. autoclass:: mitsuba.BoundingBox2f
 
 .. autoclass:: mitsuba.BoundingBox3f
@@ -76,6 +78,8 @@
 
 .. autoclass:: mitsuba.Float
 
+.. autoclass:: mitsuba.Float32
+
 .. autoclass:: mitsuba.Float64
 
 .. autoclass:: mitsuba.Formatter
@@ -93,6 +97,8 @@
 .. autoclass:: mitsuba.ImageBlock
 
 .. autoclass:: mitsuba.Int
+
+.. autoclass:: mitsuba.Int32
 
 .. autoclass:: mitsuba.Int64
 
@@ -392,6 +398,8 @@
 
 .. autoclass:: mitsuba.ShapePtr
 
+.. autoclass:: mitsuba.Spectrum
+
 .. autoclass:: mitsuba.Spiral
 
 .. autoclass:: mitsuba.Stream
@@ -430,7 +438,11 @@
 
 .. autoclass:: mitsuba.UInt
 
+.. autoclass:: mitsuba.UInt32
+
 .. autoclass:: mitsuba.UInt64
+
+.. autoclass:: mitsuba.UnpolarizedSpectrum
 
 .. autoclass:: mitsuba.Vector0d
 
@@ -477,6 +489,24 @@
 .. autoclass:: mitsuba.VolumeGrid
 
 .. autoclass:: mitsuba.ZStream
+
+.. autoclass:: mitsuba.ad.Adam
+
+.. autoclass:: mitsuba.ad.Optimizer
+
+.. autoclass:: mitsuba.ad.SGD
+
+.. autoclass:: mitsuba.ad.common.ADIntegrator
+
+.. autoclass:: mitsuba.ad.common.RBIntegrator
+
+.. autofunction:: mitsuba.ad.common.mis_weight
+
+.. autoclass:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
+
+.. autoclass:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
+
+.. autofunction:: mitsuba.ad.reparameterize_ray
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -681,6 +711,8 @@
 .. autofunction:: mitsuba.sample_tea_float
 
 .. autofunction:: mitsuba.sample_tea_float32
+
+.. autofunction:: mitsuba.sample_tea_float64
 
 .. autofunction:: mitsuba.set_log_level
 
