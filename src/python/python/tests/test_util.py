@@ -86,7 +86,7 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
     ), "Discontinuities don't matter if the parameter is non-differentiable!"
 
 
-def test02_traverse_update(variants_vec_backends_once_rgb):
+def test02_traverse_update(variants_all_ad_rgb):
     class MyBSDF(mi.BSDF):
         update_keys = []
 
