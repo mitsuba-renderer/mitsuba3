@@ -40,7 +40,7 @@ class PRBVolpathIntegrator(RBIntegrator):
     """
     def __init__(self, props=mi.Properties()):
         super().__init__(props)
-        self.max_depth = props.get('max_depth', 4)
+        self.max_depth = props.get('max_depth', -1)
         self.rr_depth = props.get('rr_depth', 5)
         self.hide_emitters = props.get('hide_emitters', False)
 
