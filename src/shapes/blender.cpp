@@ -38,13 +38,28 @@ NAMESPACE_BEGIN(blender)
         char flag, _pad;
     };
 
-    struct MVert {
+    // Vertex data structure for Blender 2.xx
+    struct MVertBlender2 {
         // Position
         float co[3];
         // Normal
         short no[3];
         char flag, bweight;
     };
+
+    // Vertex data structure for Blender 3.xx
+    struct MVertBlender3 {
+        // Position
+        float co[3];
+        char flag, bweight;
+        char padding[2];
+    };
+
+    // Vertex normal data structure for Blender 3.xx
+    struct MVertNormal {
+        float no[3];
+    };
+
 NAMESPACE_END(blender)
 
 NAMESPACE_BEGIN(mitsuba)
@@ -109,8 +124,18 @@ public:
             reinterpret_cast<const blender::MLoopTri *>(props.get<int64_t>("loop_tris"));
         const blender::MPoly *polygons =
             reinterpret_cast<const blender::MPoly *>(props.get<int64_t>("polys"));
-        const blender::MVert *verts =
-            reinterpret_cast<const blender::MVert *>(props.get<int64_t>("verts"));
+
+        // The type of vertex buffer will depend on the version of blender used.
+        void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
+        const blender::MVertBlender2 *verts_blender2 = (const blender::MVertBlender2 *) verts_ptr;
+        const blender::MVertBlender3 *verts_blender3 = (const blender::MVertBlender3 *) verts_ptr;
+
+        const blender::MVertNormal *normals_blender3 =
+            reinterpret_cast<const blender::MVertNormal *>(props.get<int64_t>("normals", 0));
+
+        // Blender 3.xx uses a slightly different memory layout for storing
+        // vertices information. E.g. vertex normals are stored in a separate buffer.
+        bool blender_3 = normals_blender3 != nullptr;
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
@@ -209,14 +234,21 @@ public:
 
             ScalarIndex3 triangle;
 
-            const blender::MVert &v0 = verts[loops[tri_loop.tri[0]].v];
-            const blender::MVert &v1 = verts[loops[tri_loop.tri[1]].v];
-            const blender::MVert &v2 = verts[loops[tri_loop.tri[2]].v];
+            const float *co_0, *co_1, *co_2;
+            if (blender_3) {
+                co_0 = verts_blender3[loops[tri_loop.tri[0]].v].co;
+                co_1 = verts_blender3[loops[tri_loop.tri[1]].v].co;
+                co_2 = verts_blender3[loops[tri_loop.tri[2]].v].co;
+            } else {
+                co_0 = verts_blender2[loops[tri_loop.tri[0]].v].co;
+                co_1 = verts_blender2[loops[tri_loop.tri[1]].v].co;
+                co_2 = verts_blender2[loops[tri_loop.tri[2]].v].co;
+            }
 
             dr::Array<InputPoint3f, 3> face_points;
-            face_points[0] = InputPoint3f(v0.co[0], v0.co[1], v0.co[2]);
-            face_points[1] = InputPoint3f(v1.co[0], v1.co[1], v1.co[2]);
-            face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
+            face_points[0] = InputPoint3f(co_0[0], co_0[1], co_0[2]);
+            face_points[1] = InputPoint3f(co_1[0], co_1[1], co_1[2]);
+            face_points[2] = InputPoint3f(co_2[0], co_2[1], co_2[2]);
 
             InputNormal3f normal(0.f);
             if (!(blender::ME_SMOOTH & face.flag) && !m_face_normals) {
@@ -238,12 +270,18 @@ public:
                 if (unlikely((vert_index >= vertex_count)))
                     fail("reference to invalid vertex %i!", vert_index);
 
-                const blender::MVert &vert = verts[vert_index];
-
                 Key vert_key;
                 if (blender::ME_SMOOTH & face.flag || m_face_normals) {
-                    // Store per vertex normals if the face is smooth or if the mesh is globally flat
-                    normal = m_to_world.scalar().transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
+                    if (!blender_3) {
+                        const short *no = verts_blender2[vert_index].no;
+                        // Store per vertex normals if the face is smooth or if the mesh is globally flat
+                        normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
+                    } else {
+                        const float *no = normals_blender3[vert_index].no;
+                        // Store per vertex normals if the face is smooth or if the mesh is globally flat
+                        normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
+                    }
+
                     if(unlikely(dr::all(dr::eq(normal, 0.f))))
                         fail("invalid normals!");
                     else
