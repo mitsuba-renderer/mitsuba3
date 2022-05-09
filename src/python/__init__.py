@@ -91,9 +91,9 @@ class MitsubaVariantModule(types.ModuleType):
                 super().__setattr__('_modules', modules)
             except ImportError as e:
                 if str(e).startswith('No module named'):
-                    raise ImportError('Mitsuba variant "%s" not found.' % variant)
+                    raise AttributeError('Mitsuba variant "%s" not found.' % variant)
                 else:
-                    raise
+                    raise AttributeError(e)
 
         submodule = super().__getattribute__('_submodule')
         sub_suffix = '' if submodule is None else f'.{submodule}'
