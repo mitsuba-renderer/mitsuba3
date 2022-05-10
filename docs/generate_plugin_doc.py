@@ -52,6 +52,7 @@ EMITTER_ORDERING = [
 ]
 
 SENSOR_ORDERING = [
+    'orthographic',
     'perspective',
     'thinlens'
 ]
