@@ -643,12 +643,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     if constexpr (IsDiff) {
         /* On a high level, the computed surface interaction has gradients
-           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected 
+           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected
            triangle.
-           Moeller and Trumbore method bridges the gradients at 'ray' and the 
+           Moeller and Trumbore method bridges the gradients at 'ray' and the
            computed surface interaction. But the effects of the third part
-           remains ambigious. 'DetachShape' explicitly detaches the three 
-           vertices, which is equivalent to computing a 'hit point' of a laser 
+           remains ambigious. 'DetachShape' explicitly detaches the three
+           vertices, which is equivalent to computing a 'hit point' of a laser
            characterized by 'ray'. 'FollowShape' on the other hand first finds
            the 'hit point', then glues the interaction point with the
            intersected triangle. For this reason, it no longer tracks
@@ -853,8 +853,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
-                                                      size_t dim,
-                                                      const std::vector<InputFloat>& data) {
+                                                     size_t dim,
+                                                     const std::vector<InputFloat>& data) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute != m_mesh_attributes.end())
         Throw("add_attribute(): attribute %s already exists.", name.c_str());
@@ -887,8 +887,12 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
                                       const SurfaceInteraction3f &si,
                                       Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end())
-        Throw("Invalid attribute requested %s.", name.c_str());
+    if (it == m_mesh_attributes.end()) {
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
 
     const auto& attr = it->second;
     if (attr.size == 1)
@@ -900,7 +904,10 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
         else
             return result;
     } else {
-        Throw("eval_attribute(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("eval_attribute(): Attribute \"%s\" requested but had size %u.", name, attr.size);
     }
 }
 
@@ -909,14 +916,22 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end())
-        Throw("Invalid attribute requested %s.", name.c_str());
+    if (it == m_mesh_attributes.end()) {
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
 
     const auto& attr = it->second;
-    if (attr.size == 1)
+    if (attr.size == 1) {
         return interpolate_attribute<1, true>(attr.type, attr.buf, si, active);
-    else
-        Throw("eval_attribute_1(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+    } else {
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("eval_attribute_1(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+    }
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Color3f
@@ -924,14 +939,22 @@ Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end())
-        Throw("Invalid attribute requested %s.", name.c_str());
+    if (it == m_mesh_attributes.end()) {
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
 
     const auto& attr = it->second;
     if (attr.size == 3) {
         return interpolate_attribute<3, true>(attr.type, attr.buf, si, active);
-    } else
-        Throw("eval_attribute_3(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+    } else {
+        if constexpr (dr::is_jit_array_v<Float>)
+            return 0.f;
+        else
+            Throw("eval_attribute_3(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+    }
 }
 
 namespace {

@@ -35,8 +35,7 @@ def test02_eval_1(variants_vec_backends_once, tmpdir):
     assert dr.allclose(texture.eval_1(si), [0.9, 0.0, 0.0])
 
 
-def test03_eval_3(variants_vec_backends_once, tmpdir):
-
+def test03_eval_3(variants_vec_backends_once_rgb, tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.vol")
     grid = dr.full(mi.TensorXf, 0.9, [3, 3, 3, 3])
     grid[..., 1] = 0.4

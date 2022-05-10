@@ -447,20 +447,35 @@ MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
 Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
                                        const SurfaceInteraction3f & /*si*/,
                                        Mask /*active*/) const {
-    NotImplementedError("eval_attribute");
+    /* When virtual function calls are recorded in symbolic mode,
+       we can't throw an exception here. */
+    if constexpr (dr::is_jit_array_v<Float>)
+        return 0.f;
+    else
+        NotImplementedError("eval_attribute");
 }
 
 MI_VARIANT Float
 Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
                                          const SurfaceInteraction3f &/*si*/,
                                          Mask /*active*/) const {
-    NotImplementedError("eval_attribute_1");
+    /* When virtual function calls are recorded in symbolic mode,
+       we can't throw an exception here. */
+    if constexpr (dr::is_jit_array_v<Float>)
+        return 0.f;
+    else
+        NotImplementedError("eval_attribute_1");
 }
 MI_VARIANT typename Shape<Float, Spectrum>::Color3f
 Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
                                          const SurfaceInteraction3f &/*si*/,
                                          Mask /*active*/) const {
-    NotImplementedError("eval_attribute_3");
+    /* When virtual function calls are recorded in symbolic mode,
+       we can't throw an exception here. */
+    if constexpr (dr::is_jit_array_v<Float>)
+        return 0.f;
+    else
+        NotImplementedError("eval_attribute_3");
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
