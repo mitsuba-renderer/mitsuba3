@@ -24,6 +24,7 @@ if os.name == 'nt':
 
 try:
     _import('mitsuba.mitsuba_ext')
+    sys.modules.pop('mitsuba.mitsuba_ext', None)
     _tls = threading.local()
     _tls.cache = {}
 except (ImportError, ModuleNotFoundError) as e:
@@ -89,6 +90,11 @@ class MitsubaVariantModule(types.ModuleType):
                     _import('mitsuba.mitsuba_' + variant + '_ext'),
                 )
                 super().__setattr__('_modules', modules)
+
+                # Remove those modules from sys.modules as only the
+                # MitsubaVariantModule instance should hold a reference to them.
+                sys.modules.pop('mitsuba.mitsuba_ext', None)
+                sys.modules.pop('mitsuba.mitsuba_' + variant + '_ext', None)
             except ImportError as e:
                 if str(e).startswith('No module named'):
                     raise AttributeError('Mitsuba variant "%s" not found.' % variant)
@@ -324,6 +330,14 @@ for submodule in submodules:
     else:
         sys.modules[name] = MitsubaModule(name, submodule)
 
+# Pre-import all symbols from the python submodules to prevent the size of
+# sys.modules to change during a call to __getattribute__().
+_import(f'mitsuba.python')
+for submodule in submodules:
+    try:
+        _import(f'mitsuba.python.{submodule}')
+    except Exception:
+        pass
 
 # Cleanup
 del MitsubaModule

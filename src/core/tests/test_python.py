@@ -106,3 +106,16 @@ def test07_reload():
     mitsuba.set_variant('scalar_rgb')
     mitsuba.Float()
     assert mitsuba.variant() == 'scalar_rgb'
+
+
+def test08_sys_module_size():
+    # Make sure the size of sys.modules doesn't change when importing from mitsuba
+    import sys
+
+    import mitsuba as mi
+    mi.set_variant("scalar_rgb")
+
+    for k, v in sys.modules.items():
+        getattr(v, "foo", False)
+
+    assert True
