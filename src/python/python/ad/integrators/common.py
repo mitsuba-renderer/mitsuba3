@@ -380,7 +380,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     "motion due to differentiable shape or camera pose "
                     "parameters. This is, however, incompatible with the box "
                     "reconstruction filter that is currently used. Please "
-                    "specify a a smooth reconstruction filter in your scene "
+                    "specify a smooth reconstruction filter in your scene "
                     "description (e.g. 'gaussian', which is actually the "
                     "default)")
 

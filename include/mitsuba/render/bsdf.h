@@ -463,7 +463,8 @@ public:
     void set_id(const std::string& id) override { m_id = id; };
 
     /// Return the diffuse reflectance value (if any)
-    virtual Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active = true) const;
+    virtual Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                             Mask active = true) const;
 
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
