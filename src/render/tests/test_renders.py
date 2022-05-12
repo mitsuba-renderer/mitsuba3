@@ -18,7 +18,6 @@ SCENES = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 # List of test scene folders to exclude
 EXCLUDE_FOLDERS = [
-    'orthographic_sensor', #TODO remove this after rebase onto master
 ]
 
 # List of test scene folders to exclude for JIT modes
