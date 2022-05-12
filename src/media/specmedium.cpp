@@ -135,6 +135,8 @@ public:
                     m_phase_function)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume, VolumeGrid)
 
+    using FloatStorage = DynamicBuffer<Float>;
+
     SpectralMedium(const Properties &props) : Base(props) {
         if constexpr (!is_spectral_v<Spectrum>)
             Log(Error, "This media can only be used in Mitsuba variants that "
@@ -146,12 +148,6 @@ public:
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = true;
 
-        std::vector<ScalarFloat> max_proportions_grid(m_proportions->channel_count());
-        if (max_proportions_grid.size() == 0)
-            Log(Error, "This plugins needs a volume that supports per-channel queries");
-        m_proportions->max_per_channel(max_proportions_grid.data());
-        ScalarFloat max_density = 0.f;
-
         uint32_t index = 0;
         // Load all spectrum data
         for (auto &[name, obj] : props.objects(false)) {
@@ -161,7 +157,6 @@ public:
                     m_spectra_sigma_t.push_back(srf);
                     m_names_sigma_t.push_back(name);
                     props.mark_queried(name);
-                    max_density += max_proportions_grid[index] * srf->max();
                     index++;
                 } else if (string::starts_with(name, "albedo_")) {
                     m_spectra_albedo.push_back(srf);
@@ -173,10 +168,11 @@ public:
             }
         }
 
-        m_max_density = dr::opaque<Float>(m_scale * max_density);
-
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
+
+        // Compute spectral majorant
+        compute_spectral_majorant();
     }
 
 
@@ -190,10 +186,12 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f & /* mi */,
-                            Mask active) const override {
+    get_majorant(const MediumInteraction3f &mi, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return m_max_density;
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        si.wavelengths = mi.wavelengths;
+        UnpolarizedSpectrum full_majorant = m_spectral_majorant->eval(si, active);
+        return m_scale * full_majorant;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -227,8 +225,54 @@ public:
             proportions[i].~Float();
 
         UnpolarizedSpectrum sigma_s = sigma_t * albedo;
-        UnpolarizedSpectrum sigma_n = m_max_density - sigma_t;
+        UnpolarizedSpectrum sigma_n = get_majorant(mi, active) - sigma_t;
         return { sigma_s, sigma_n, sigma_t };
+    }
+
+    void compute_spectral_majorant() {
+        ScalarFloat resolution = dr::Infinity<ScalarFloat>;
+        ScalarVector2f range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
+        for (auto srf : m_spectra_sigma_t) {
+            range.x() = dr::min(range.x(), srf->wavelength_range().x());
+            range.y() = dr::max(range.y(), srf->wavelength_range().y());
+            resolution = dr::min(resolution, srf->spectral_resolution());
+        }
+
+        size_t n_points = (size_t) dr::ceil((range.y() - range.x()) / resolution);
+        FloatStorage spectral_majorant = dr::zero<FloatStorage>(n_points);
+        Float majorant_wavelengths = dr::linspace<Float>(range.x(), range.y(), n_points);
+
+        // Compute maximum proportion per grid channel
+        std::vector<ScalarFloat> max_proportions_grid(m_proportions->channel_count());
+        if (max_proportions_grid.size() == 0)
+            Log(Error, "This plugins needs a volume that supports per-channel queries");
+        m_proportions->max_per_channel(max_proportions_grid.data());
+
+        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        si.wavelengths = majorant_wavelengths;
+
+        uint32_t index = 0;
+        for (auto srf : m_spectra_sigma_t) {
+            UnpolarizedSpectrum values = max_proportions_grid[index] * srf->eval(si);
+            spectral_majorant += values.x();
+            index++;
+        }
+
+        // Conversion needed because Properties::Float is always double
+        using DoubleStorage = dr::float64_array_t<FloatStorage>;
+        DoubleStorage spectral_majorant_dbl = DoubleStorage(spectral_majorant);
+
+        auto && storage = dr::migrate(spectral_majorant_dbl, AllocType::Host);
+        if constexpr (dr::is_jit_array_v<Float>)
+            dr::sync_thread();
+
+        // Store majorant information
+        auto props = Properties("regular");
+        props.set_pointer("values", storage.data());
+        props.set_long("size", n_points);
+        props.set_float("lambda_min", (double) range.x());
+        props.set_float("lambda_max", (double) range.y());
+        m_spectral_majorant = PluginManager::instance()->create_object<Texture>(props);
     }
 
     std::tuple<Mask, Float, Float>
@@ -237,14 +281,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        std::vector<ScalarFloat> max_proportions_grid(m_proportions->channel_count());
-        m_proportions->max_per_channel(max_proportions_grid.data());
-
-        ScalarFloat max_density = 0.f;
-        for (size_t i = 0; i < max_proportions_grid.size(); ++i)
-            max_density += max_proportions_grid[i] * m_spectra_sigma_t[i]->max();
-
-        m_max_density = dr::opaque<Float>(m_scale * max_density);
+        compute_spectral_majorant();
     }
 
     std::string to_string() const override {
@@ -252,7 +289,7 @@ public:
         oss << "Spectral Medium[" << std::endl
             << "  proportions = " << string::indent(m_proportions) << "," << std::endl
             << "  scale   = " << string::indent(m_scale) << "," << std::endl
-            << "  max_density = " << string::indent(m_max_density) << "," << std::endl;
+            << "  max_density = " << string::indent(m_spectral_majorant->max()) << "," << std::endl;
 
         oss << "  sigmat = [";
         for (size_t i=0; i<m_names_sigma_t.size()-1; ++i) {
@@ -275,12 +312,12 @@ public:
     MI_DECLARE_CLASS()
 private:
     ScalarFloat m_scale;
-    Float m_max_density;
     std::vector<ref<Texture>> m_spectra_sigma_t;
     std::vector<ref<Texture>> m_spectra_albedo;
     std::vector<std::string> m_names_sigma_t;
     std::vector<std::string> m_names_albedo;
     ref<Volume> m_proportions;
+    ref<Texture> m_spectral_majorant;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SpectralMedium, Medium)
