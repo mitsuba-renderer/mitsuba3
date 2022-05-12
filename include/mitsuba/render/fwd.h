@@ -8,6 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct BSDFContext;
 template <typename Float, typename Spectrum> class BSDF;
+template <typename Float, typename Spectrum> class Denoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
@@ -81,6 +82,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<FloatU, SpectrumU>;
     using AdjointIntegrator      = mitsuba::AdjointIntegrator<FloatU, SpectrumU>;
     using BSDF                   = mitsuba::BSDF<FloatU, SpectrumU>;
+    using Denoiser               = mitsuba::Denoiser<FloatU, SpectrumU>;
     using Sensor                 = mitsuba::Sensor<FloatU, SpectrumU>;
     using ProjectiveCamera       = mitsuba::ProjectiveCamera<FloatU, SpectrumU>;
     using Emitter                = mitsuba::Emitter<FloatU, SpectrumU>;
@@ -167,6 +169,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MonteCarloIntegrator   = typename RenderAliases::MonteCarloIntegrator;                   \
     using AdjointIntegrator      = typename RenderAliases::AdjointIntegrator;                      \
     using BSDF                   = typename RenderAliases::BSDF;                                   \
+    using Denoiser               = typename RenderAliases::Denoiser;                               \
     using Sensor                 = typename RenderAliases::Sensor;                                 \
     using ProjectiveCamera       = typename RenderAliases::ProjectiveCamera;                       \
     using Emitter                = typename RenderAliases::Emitter;                                \

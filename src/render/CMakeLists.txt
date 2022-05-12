@@ -44,6 +44,7 @@ add_library(mitsuba-render OBJECT
   ${INC_DIR}/records.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
+  denoiser.cpp     ${INC_DIR}/denoiser.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h

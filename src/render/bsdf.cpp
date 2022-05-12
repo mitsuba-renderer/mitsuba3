@@ -25,7 +25,7 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::get_diffuse_reflectance(
     const SurfaceInteraction3f &si, Mask active) const {
     Vector3f placeholder = Vector3f(0.0f, 0.0f, 1.0f);
     BSDFContext ctx;
-    return eval(ctx, si, placeholder, active) * 3.14159265358979323846; //M_PI
+    return eval(ctx, si, placeholder, active) * dr::Pi<Float>;
 }
 
 template <typename Index>

@@ -299,7 +299,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
 
         accel_parameters_changed_gpu();
 
-         Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
+        Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
     }
 }
 

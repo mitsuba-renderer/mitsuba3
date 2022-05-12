@@ -113,11 +113,73 @@ static const char *__doc_OptixBuildInputTriangleArray_vertexStrideInBytes = R"do
 
 static const char *__doc_OptixBuildInput_type = R"doc()doc";
 
+static const char *__doc_OptixDenoiserGuideLayer = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_albedo = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_flow = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_normal = R"doc()doc";
+
+static const char *__doc_OptixDenoiserLayer = R"doc()doc";
+
+static const char *__doc_OptixDenoiserLayer_input = R"doc()doc";
+
+static const char *__doc_OptixDenoiserLayer_output = R"doc()doc";
+
+static const char *__doc_OptixDenoiserLayer_previousOutput = R"doc()doc";
+
+static const char *__doc_OptixDenoiserModelKind = R"doc()doc";
+
+static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR = R"doc()doc";
+
+static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_TEMPORAL = R"doc()doc";
+
+static const char *__doc_OptixDenoiserOptions = R"doc()doc";
+
+static const char *__doc_OptixDenoiserOptions_guideAlbedo = R"doc()doc";
+
+static const char *__doc_OptixDenoiserOptions_guideNormal = R"doc()doc";
+
+static const char *__doc_OptixDenoiserParams = R"doc()doc";
+
+static const char *__doc_OptixDenoiserParams_blendFactor = R"doc()doc";
+
+static const char *__doc_OptixDenoiserParams_denoiseAlpha = R"doc()doc";
+
+static const char *__doc_OptixDenoiserParams_hdrAverageColor = R"doc()doc";
+
+static const char *__doc_OptixDenoiserParams_hdrIntensity = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_overlapWindowSizeInPixels = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_stateSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_withOverlapScratchSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_withoutOverlapScratchSizeInBytes = R"doc()doc";
+
 static const char *__doc_OptixHitGroupData = R"doc(Stores information about a Shape on the Optix side)doc";
 
 static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory region of Shape data (e.g. ``OptixSphereData`` ))doc";
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Dr.Jit's pointer registry)doc";
+
+static const char *__doc_OptixImage2D = R"doc()doc";
+
+static const char *__doc_OptixImage2D_data = R"doc()doc";
+
+static const char *__doc_OptixImage2D_format = R"doc()doc";
+
+static const char *__doc_OptixImage2D_height = R"doc()doc";
+
+static const char *__doc_OptixImage2D_pixelStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixImage2D_rowStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixImage2D_width = R"doc()doc";
 
 static const char *__doc_OptixInstance = R"doc()doc";
 
@@ -182,6 +244,24 @@ static const char *__doc_OptixPipelineCompileOptions_traversableGraphFlags = R"d
 static const char *__doc_OptixPipelineCompileOptions_usesMotionBlur = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions_usesPrimitiveTypeFlags = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_FLOAT2 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_FLOAT3 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_FLOAT4 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_HALF2 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_HALF3 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_HALF4 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR3 = R"doc()doc";
+
+static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR4 = R"doc()doc";
 
 static const char *__doc_OptixProgramGroupDesc = R"doc()doc";
 
@@ -713,6 +793,8 @@ Parameter ``wo``:
 static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
 static const char *__doc_mitsuba_BSDF_flags_2 = R"doc(Flags for a specific component of this BSDF.)doc";
+
+static const char *__doc_mitsuba_BSDF_get_diffuse_reflectance = R"doc(Return the diffuse reflectance value (if any))doc";
 
 static const char *__doc_mitsuba_BSDF_id = R"doc(Return a string identifier)doc";
 
@@ -1783,6 +1865,52 @@ static const char *__doc_mitsuba_DefaultFormatter_set_has_date = R"doc(Should da
 static const char *__doc_mitsuba_DefaultFormatter_set_has_log_level = R"doc(Should log level information be included? The default is yes.)doc";
 
 static const char *__doc_mitsuba_DefaultFormatter_set_has_thread = R"doc(Should thread information be included? The default is yes.)doc";
+
+static const char *__doc_mitsuba_Denoiser = R"doc(OptiX Denoiser)doc";
+
+static const char *__doc_mitsuba_Denoiser_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_Denoiser = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_denoise = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_denoise1 = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_albedo_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_denoiser = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_flow_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_hdr_intensity = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_input_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_normal_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_options = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_output_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_previous_output_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_scratch = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_scratch_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_state = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_state_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_m_temporal = R"doc()doc";
+
+static const char *__doc_mitsuba_Denoiser_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample =
 R"doc(Record for solid-angle based area sampling techniques
