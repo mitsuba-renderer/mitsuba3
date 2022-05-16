@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/vector.h>
 #include <drjit/complex.h>
+#include <drjit/math.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -329,35 +330,28 @@ Float fresnel_diffuse_reflectance(Float eta) {
        for the eta<1 and eta>1 cases. An evaluation of the accuracy led to the
        following scheme, which cherry-picks fits from two papers where they are
        best. */
-    Float result(0.f);
-    dr::mask_t<Float> eta_l_1 = (eta < 1.f);
+    Float inv_eta = dr::rcp(eta);
+
     /* Fit by Egan and Hilgeman (1973). Works reasonably well for
        "normal" IOR values (<2).
        Max rel. error in 1.0 - 1.5 : 0.1%
        Max rel. error in 1.5 - 2   : 0.6%
        Max rel. error in 2.0 - 5   : 9.5%
     */
-    dr::masked(result, eta_l_1) = -1.4399f * (eta * eta)
-                              + 0.7099f * eta
-                              + 0.6681f
-                              + 0.0636f / eta;
+    Float approx_1 =
+        dr::fmadd(0.0636f, inv_eta,
+                  dr::fmadd(eta, dr::fmadd(eta, -1.4399f, 0.7099f), 0.6681f));
+
     /* Fit by d'Eon and Irving (2011)
 
        Maintains a good accuracy even for unrealistic IOR values.
 
        Max rel. error in 1.0 - 2.0   : 0.1%
        Max rel. error in 2.0 - 10.0  : 0.2%  */
-    Float inv_eta   = dr::rcp(eta),
-          inv_eta_2 = inv_eta   * inv_eta,
-          inv_eta_3 = inv_eta_2 * inv_eta,
-          inv_eta_4 = inv_eta_3 * inv_eta,
-          inv_eta_5 = inv_eta_4 * inv_eta;
-    dr::masked(result, !eta_l_1) = 0.919317f - 3.4793f * inv_eta
-                               + 6.75335f * inv_eta_2
-                               - 7.80989f * inv_eta_3
-                               + 4.98554f * inv_eta_4
-                               - 1.36881f * inv_eta_5;
-    return result;
+    Float approx_2 = dr::horner(inv_eta, 0.919317f, -3.4793f, 6.75335f,
+                                -7.80989f, 4.98554f, -1.36881f);
+
+    return dr::select(eta < 1.f, approx_1, approx_2);
 }
 
 NAMESPACE_END(mitsuba)
