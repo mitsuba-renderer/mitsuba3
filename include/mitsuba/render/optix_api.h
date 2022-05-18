@@ -46,7 +46,7 @@ using OptixDeviceContext     = void*;
 #define OPTIX_COMPILE_OPTIMIZATION_DEFAULT       0
 #define OPTIX_COMPILE_OPTIMIZATION_LEVEL_0       0x2340
 #define OPTIX_COMPILE_DEBUG_LEVEL_NONE           0x2350
-#define OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO       0x2351
+#define OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL        0x2351
 
 #define OPTIX_BUILD_FLAG_ALLOW_COMPACTION  2
 #define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE 4
@@ -154,12 +154,19 @@ struct OptixInstance {
     unsigned int pad[2];
 };
 
+struct OptixPayloadType {
+    unsigned int numPayloadValues;
+    const unsigned int *payloadSemantics;
+};
+
 struct OptixModuleCompileOptions {
     int maxRegisterCount;
     int optLevel;
     int debugLevel;
     const void *boundValues;
     unsigned int numBoundValues;
+    unsigned int numPayloadTypes;
+    OptixPayloadType *payloadTypes;
 };
 
 struct OptixPipelineCompileOptions {
@@ -204,7 +211,7 @@ struct OptixProgramGroupDesc {
 };
 
 struct OptixProgramGroupOptions {
-    int placeholder;
+    OptixPayloadType *payloadType;
 };
 
 struct OptixShaderBindingTable {

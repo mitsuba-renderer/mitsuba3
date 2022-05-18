@@ -79,7 +79,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     #else
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
     #endif
 
         config.pipeline_compile_options.usesMotionBlur     = false;
