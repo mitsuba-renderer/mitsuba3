@@ -15,6 +15,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+#define MI_OPTIX_ENABLE_BBOX_FASTPATH
+
 #if !defined(NDEBUG)
 #  define MI_OPTIX_DEBUG 1
 #endif
@@ -510,8 +512,54 @@ MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
+#if defined(MI_OPTIX_ENABLE_BBOX_FASTPATH)
+        // Attempt a fast path for scenes that are only made of a single AABB.
+        if (m_use_bbox_fast_path) {
+            SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+
+            const ref<Shape> shape = m_shapes[0];
+            const ScalarBoundingBox3f bbox = shape->bbox();
+
+            auto [hit, mint, maxt] = bbox.ray_intersect(ray);
+            Mask starts_outside = mint > 0.f;
+            Float t = dr::select(starts_outside, mint, maxt);
+            hit &= active && (t <= ray.maxt) && (t > math::RayEpsilon<Float>);
+            si.t = dr::select(hit, t, dr::Infinity<Float>);
+
+            si.time = ray.time;
+            si.wavelengths = ray.wavelengths;
+            si.p = ray(si.t);
+
+            // Normal vector: assuming axis-aligned bbox, figure
+            // out the normal direction based on the relative position
+            // of the intersection point to the bbox's center.
+            Point3f p_local = (si.p - bbox.center()) / bbox.extents();
+            // The axis with the largest local coordinate (magnitude)
+            // is the axis of the normal vector.
+            Point3f p_local_abs = dr::abs(p_local);
+            Float vmax = dr::hmax(p_local_abs);
+            Normal3f n(dr::eq(p_local_abs.x(), vmax), dr::eq(p_local_abs.y(), vmax),
+                    dr::eq(p_local_abs.z(), vmax));
+            // Normal always points to the outside of the bbox, independently
+            // of the ray direction.
+            n = dr::normalize(dr::sign(p_local) * n);
+            si.n = dr::select(hit, n, -ray.d);
+
+            si.shape = dr::select(hit, dr::opaque<ShapePtr>(shape.get()), dr::zero<ShapePtr>());
+            si.uv = 0.f;  // TODO: proper UVs
+            si.sh_frame.n = si.n;
+            if (has_flag(ray_flags, RayFlags::ShadingFrame))
+                si.initialize_sh_frame();
+            si.wi = dr::select(hit, si.to_local(-ray.d), -ray.d);
+            return si;
+        } else {
+            PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+            return pi.compute_surface_interaction(ray, ray_flags, active);
+        }
+#else
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
+#endif
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(ray_flags);
@@ -523,46 +571,64 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        OptixSceneState &s = *(OptixSceneState *) m_accel;
-        const OptixConfig &config = optix_configs[s.config_index];
+#if defined(MI_OPTIX_ENABLE_BBOX_FASTPATH)
+        if (m_use_bbox_fast_path) {
+#else
+        if (false) {
+#endif
+            // Attempt a fast path for scenes that are only made of a single AABB.
+            SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
 
-        // Override optix configuration in drjit-core.
-        // TODO This could be problematic when raytracing calls on other scenes are still pending.
-        jit_optix_configure(
-            &config.pipeline_compile_options,
-            &s.sbt,
-            config.program_groups, ProgramGroupCount
-        );
+            const ref<Shape> shape         = m_shapes[0];
+            const ScalarBoundingBox3f bbox = shape->bbox();
 
-        UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
-                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+            auto [hit, mint, maxt] = bbox.ray_intersect(ray);
+            Mask starts_outside    = mint > 0.f;
+            Float t                = dr::select(starts_outside, mint, maxt);
+            return active && hit && (t <= ray.maxt) &&
+                   (t > math::RayEpsilon<Float>);
+        } else {
+            OptixSceneState &s = *(OptixSceneState *) m_accel;
+            const OptixConfig &config = optix_configs[s.config_index];
 
-        UInt32 payload_hit(1);
+            // Override optix configuration in drjit-core.
+            // TODO This could be problematic when raytracing calls on other scenes are still pending.
+            jit_optix_configure(
+                &config.pipeline_compile_options,
+                &s.sbt,
+                config.program_groups, ProgramGroupCount
+            );
 
-        using Single = dr::float32_array_t<Float>;
-        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
+            UInt32 ray_mask(255),
+                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                            OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        // Be careful with 'ray.maxt' in double precision variants
-        if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
+            UInt32 payload_hit(1);
 
-        uint32_t trace_args[] {
-            m_accel_handle.index(),
-            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
-            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-            ray_mint.index(), ray_maxt.index(), ray_time.index(),
-            ray_mask.index(), ray_flags.index(),
-            sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index(), payload_hit.index()
-        };
+            using Single = dr::float32_array_t<Float>;
+            dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+            Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index());
+            // Be careful with 'ray.maxt' in double precision variants
+            if constexpr (!std::is_same_v<Single, Float>)
+                ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
-        return active && dr::eq(UInt32::steal(trace_args[15]), 1);
+            uint32_t trace_args[] {
+                m_accel_handle.index(),
+                ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
+                ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
+                ray_mint.index(), ray_maxt.index(), ray_time.index(),
+                ray_mask.index(), ray_flags.index(),
+                sbt_offset.index(), sbt_stride.index(),
+                miss_sbt_index.index(), payload_hit.index()
+            };
+
+            jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
+                                trace_args, active.index());
+
+            return active && dr::eq(UInt32::steal(trace_args[15]), 1);
+        }
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
