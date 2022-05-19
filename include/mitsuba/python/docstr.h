@@ -6120,7 +6120,7 @@ static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emi
 
 static const char *__doc_mitsuba_Scene_emitters_dr = R"doc(Return the list of emitters as an Dr.Jit array)doc";
 
-static const char *__doc_mitsuba_Scene_sensors_ek = R"doc(Return the list of sensors as an Enoki array)doc";
+static const char *__doc_mitsuba_Scene_sensors_dr = R"doc(Return the list of sensors as an Enoki array)doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 

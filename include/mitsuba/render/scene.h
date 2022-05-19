@@ -36,7 +36,7 @@ template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Scene : public Object {
 public:
     MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
-                     ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
+                    ShapeGroup, Sensor, SensorPtr, Integrator, Medium, MediumPtr)
 
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
@@ -477,9 +477,11 @@ public:
 
     /// Return the list of emitters as an Dr.Jit array
     const DynamicBuffer<EmitterPtr> &emitters_dr() const { return m_emitters_dr; }
-
+    /// Return the list of sensors as an Dr.Jit array
+    const DynamicBuffer<SensorPtr> &sensors_dr() const { return m_sensors_dr; }
     /// Return the list of shapes as an Dr.Jit array
     const DynamicBuffer<ShapePtr> &shapes_dr() const { return m_shapes_dr; }
+
 
     //! @}
     // =============================================================
@@ -576,6 +578,7 @@ protected:
     DynamicBuffer<ShapePtr> m_shapes_dr;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
+    DynamicBuffer<SensorPtr> m_sensors_dr;
     std::vector<ref<Object>> m_children;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;

@@ -77,6 +77,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
     m_emitters_dr = dr::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
+    m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(
+        m_sensors.data(), m_sensors.size());
 
     m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / m_emitters.size());
 
