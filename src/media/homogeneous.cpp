@@ -135,8 +135,9 @@ public:
 
     HomogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = true;
-        m_albedo = props.volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_albedo         = props.volume<Volume>("albedo", 0.75f);
+        m_sigmat         = props.volume<Volume>("sigma_t", 1.f);
+        m_emission       = props.volume<Volume>("emission", 0.f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
@@ -149,6 +150,7 @@ public:
         callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
         callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
         callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
+        callback->put_object("emission",  m_emission.get(), +ParamFlags::Differentiable);
         Base::traverse(callback);
     }
 
@@ -174,6 +176,13 @@ public:
         return value & active;
     }
 
+    UnpolarizedSpectrum get_emission(const MediumInteraction3f &mi,
+                                     Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        auto value = m_emission->eval(mi, active);
+        return value & active;
+    }
+
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
@@ -193,16 +202,17 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HomogeneousMedium[" << std::endl
-            << "  albedo = " << string::indent(m_albedo) << "," << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << "," << std::endl
-            << "  scale = " << string::indent(m_scale)  << std::endl
+            << "  albedo   = " << string::indent(m_albedo) << "," << std::endl
+            << "  sigma_t  = " << string::indent(m_sigmat) << "," << std::endl
+            << "  emission = " << string::indent(m_emission) << "," << std::endl
+            << "  scale    = " << string::indent(m_scale)  << std::endl
             << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS()
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Volume> m_sigmat, m_albedo, m_emission;
     ScalarFloat m_scale;
 };
 

@@ -7,8 +7,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
-
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
     for (auto &[name, obj] : props.objects(false)) {
