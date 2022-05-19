@@ -323,3 +323,136 @@ class Adam(Optimizer):
                 '  eps = %g\n'
                 ']' % (list(self.keys()), dict(self.lr, default=self.lr_default),
                        self.beta_1, self.beta_2, self.epsilon))
+
+
+
+
+class AdaBound(Optimizer):
+    """
+    Implements the AdaBound algorithm.
+    It has been proposed in `Adaptive Gradient Methods with Dynamic Bound of Learning Rate`_.
+    Arguments:
+        params (iterable): iterable of parameters to optimize or dicts defining
+            parameter groups
+        lr (float, optional): Adam learning rate (default: 1e-3)
+        betas (Tuple[float, float], optional): coefficients used for computing
+            running averages of gradient and its square (default: (0.9, 0.999))
+        final_lr (float, optional): final (SGD) learning rate (default: 0.1)
+        gamma (float, optional): convergence speed of the bound functions (default: 1e-3)
+        eps (float, optional): term added to the denominator to improve
+            numerical stability (default: 1e-8)
+        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
+        amsbound (boolean, optional): whether to use the AMSBound variant of this algorithm
+    .. Adaptive Gradient Methods with Dynamic Bound of Learning Rate:
+        https://openreview.net/forum?id=Bkg3g2R9FX
+
+    Code adapted from:
+    https://github.com/Luolc/AdaBound/blob/2e928c3007a2fc44af0e4c97e343e1fed6986e44/adabound/adabound.py
+    """
+    def __init__(self, lr, beta_1=0.9, beta_2=0.999, final_lr=0.1, gamma=1e-3,
+                 epsilon=1e-8, params=None, amsbound=False):
+        """
+        Parameters:
+            params (iterable): iterable of parameters to optimize or dicts defining
+                parameter groups
+            lr (float, optional): Adam learning rate (default: 1e-3)
+            betas (Tuple[float, float], optional): coefficients used for computing
+                running averages of gradient and its square (default: (0.9, 0.999))
+            final_lr (float, optional): final (SGD) learning rate (default: 0.1)
+            gamma (float, optional): convergence speed of the bound functions (default: 1e-3)
+            eps (float, optional): term added to the denominator to improve
+                numerical stability (default: 1e-8)
+            weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
+            amsbound (boolean, optional): whether to use the AMSBound variant of this algorithm
+        """
+        super().__init__(lr, params)
+
+        assert 0 <= beta_1 < 1 and 0 <= beta_2 < 1 \
+            and lr >= 0 and epsilon > 0
+
+        self.beta_1 = beta_1
+        self.beta_2 = beta_2
+        self.final_lr = final_lr
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.amsbound = amsbound
+
+    def step(self):
+        """Take a gradient step"""
+        from mitsuba.core import Float
+
+        for k, p in self.variables.items():
+            g_p = ek.grad(p)
+            shape = ek.shape(g_p)
+
+            if shape == 0:
+                continue
+            elif shape != ek.shape(self.state[k]['exp_avg']):
+                # Reset state if data size has changed
+                self.reset(k)
+            state = self.state[k]
+
+            # Decay the first and second moment running average coefficient
+            state['step'] += 1
+            state['exp_avg'] = self.beta_1 * state['exp_avg'] + (1 - self.beta_1) * g_p
+            state['exp_avg_sq'] = self.beta_2 * state['exp_avg_sq'] \
+                                  + (1 - self.beta_2) * g_p * g_p
+            ek.schedule(state['exp_avg'], state['exp_avg_sq'])
+            if self.amsbound:
+                # Maintains the maximum of all 2nd moment running avg. till now
+                state['max_exp_avg_sq'] = ek.max(
+                    state['max_exp_avg_sq'], state['exp_avg_sq'])
+                ek.schedule(state['max_exp_avg_sq'])
+                # Use the max. for normalizing running avg. of gradient
+                denom = ek.sqrt(state['max_exp_avg_sq']) + self.epsilon
+            else:
+                denom = ek.sqrt(state['exp_avg_sq']) + self.epsilon
+
+            bias_correction1 = 1 - self.beta_1 ** state['step']
+            bias_correction2 = 1 - self.beta_2 ** state['step']
+            scaled_lr = ek.sqrt(bias_correction2) / bias_correction1
+            scaled_lr = self.lr_v[k] * ek.opaque(ek.detached_t(Float), scaled_lr)
+
+            # Applies bounds on actual learning rate
+            lower_bound = self.final_lr * (1 - 1 / (self.gamma * state['step'] + 1))
+            upper_bound = self.final_lr * (1 + 1 / (self.gamma * state['step']))
+            lower_bound = ek.opaque(ek.detached_t(Float), lower_bound)
+            upper_bound = ek.opaque(ek.detached_t(Float), upper_bound)
+
+            step_size = ek.clamp(scaled_lr / denom,
+                                 lower_bound, upper_bound) * state['exp_avg']
+
+            u = ek.detach(p, True) - step_size
+            # TODO: do we really need this?
+            u = type(p)(u)
+            ek.enable_grad(u)
+            self.variables[k] = u
+            ek.schedule(self.variables[k])
+
+        ek.eval()
+
+    def reset(self, key):
+        """Zero-initializes the internal state associated with a parameter"""
+        p = self.variables[key]
+        shape = ek.shape(p) if p.IsTensor else ek.width(p)
+        d_tp = ek.detached_t(p)
+        self.state[key] = {
+            'step': 0,
+            'exp_avg': ek.zero(d_tp, shape),
+            'exp_avg_sq': ek.zero(d_tp, shape),
+        }
+        if self.amsbound:
+            self.state[key]['max_exp_avg_sq'] = ek.zero(d_tp, shape)
+
+    def __repr__(self):
+        return ('Adam[\n'
+                '  params = %s,\n'
+                '  lr = %s,\n'
+                '  betas = (%g, %g),\n'
+                '  final_lr = %g,\n'
+                '  gamma = %g,\n'
+                '  eps = %g\n'
+                '  amsbound = %g\n'
+                ']' % (list(self.keys()), dict(self.lr, default=self.lr_default),
+                       self.beta_1, self.beta_2, self.final_lr, self.gamma,
+                       self.epsilon, self.amsbound))
