@@ -11,6 +11,35 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+enum class ActivationType : uint32_t {
+    None = 0,
+    Exponential,
+    SoftPlus,
+    ReLU,
+};
+ActivationType activation_type_from_string(const std::string &str) {
+    if (str == "none" || str == "")
+        return ActivationType::None;
+    if (str == "exponential" || str == "exp")
+        return ActivationType::Exponential;
+    if (str == "softplus" || str == "SoftPlus")
+        return ActivationType::SoftPlus;
+    if (str == "relu" || str == "ReLU")
+        return ActivationType::ReLU;
+    Throw("Unsupported activation type: '%s'", str);
+}
+std::string activation_type_to_string(ActivationType tp) {
+    switch (tp) {
+        case ActivationType::None: return "none";
+        case ActivationType::Exponential: return "exponential";
+        case ActivationType::SoftPlus: return "softplus";
+        case ActivationType::ReLU: return "relu";
+
+        default:
+            Throw("Unsupported activation type: %s", (uint32_t) tp);
+    };
+}
+
 
 /**!
 
@@ -157,6 +186,24 @@ public:
         m_sigmat         = props.volume<Volume>("sigma_t", 1.f);
         m_emission       = props.volume<Volume>("emission", 0.f);
 
+        m_density_activation = activation_type_from_string(
+            props.string("density_activation", "none"));
+        ScalarFloat default_param = dr::NaN<ScalarFloat>;
+        if (m_density_activation == ActivationType::SoftPlus) {
+            // Suggested value: 1e-6 for "coarse" model initialization,
+            //                  1e-2 for "fine" model initialization.
+            const ScalarFloat a = 1e-2f;
+            // Approximate size of a voxel in world coordinates
+            ScalarFloat voxel_size = dr::hmax(m_sigmat->voxel_size());
+            default_param = dr::log(dr::pow(1.f - a, -1.f / voxel_size) - 1.f);
+        }
+        m_density_activation_parameter =
+            props.get<float>("density_activation_parameter", default_param);
+        if (m_density_activation != ActivationType::None) {
+            Log(Info, "Heterogeneous medium using density activation '%s', parameter %s",
+                activation_type_to_string(m_density_activation),
+                m_density_activation_parameter);
+        }
 
         ScalarFloat scale = props.get<float>("scale", 1.0f);
         m_has_spectral_extinction =
@@ -181,11 +228,11 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         ScalarFloat scale;
         if constexpr (dr::is_jit_array_v<Float>) {
-            if (dr::width(m_scale) != 1)
+            if (dr::width(m_scale.value()) != 1)
                 Throw("Expected a single number for `m_scale`, found: %s", m_scale);
-            scale = m_scale[0];
+            scale = m_scale.scalar();
         } else {
-            scale = m_scale;
+            scale = m_scale.scalar();
         }
         m_max_density = dr::opaque<Float>(
             dr::max(1e-6f, scale * m_sigmat->max()));
@@ -217,13 +264,32 @@ public:
                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-        auto sigmat = m_scale * m_sigmat->eval(mi, active);
+        auto sigmat =
+            density_activation(m_scale.value() * m_sigmat->eval(mi, active));
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigmat *= m_phase_function->projected_area(mi, active);
 
         auto sigmas = sigmat * m_albedo->eval(mi, active);
         auto sigman = m_max_density - sigmat;
         return { sigmas, sigman, sigmat };
+    }
+
+    template <typename Value>
+    Value density_activation(const Value &v) const {
+        switch (m_density_activation) {
+            case ActivationType::None:
+                return v;
+            case ActivationType::Exponential:
+                return dr::exp(v);
+            case ActivationType::SoftPlus:
+                return dr::log(1.f +
+                               dr::exp(v + m_density_activation_parameter));
+            case ActivationType::ReLU:
+                return dr::max(v, 0.f);
+            default:
+                Throw("Unsupported activation type: %s",
+                      (uint32_t) m_density_activation);
+        };
     }
 
     std::tuple<Mask, Float, Float>
@@ -237,7 +303,9 @@ public:
             << "  albedo   = " << string::indent(m_albedo) << std::endl
             << "  sigma_t  = " << string::indent(m_sigmat) << std::endl
             << "  emission = " << string::indent(m_emission) << std::endl
-            << "  scale    = " << string::indent(m_scale) << std::endl
+            << "  scale    = " << string::indent(m_scale.scalar()) << std::endl
+            << "  density_activation = " << activation_type_to_string(m_density_activation) << std::endl
+            << "  density_activation_parameter = " << m_density_activation_parameter << std::endl
             << "]";
         return oss.str();
     }
@@ -245,7 +313,9 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo, m_emission;
-    Float m_scale;
+    field<Float> m_scale;
+    ActivationType m_density_activation;
+    ScalarFloat m_density_activation_parameter;
 
     Float m_max_density;
 };
