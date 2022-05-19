@@ -25,6 +25,7 @@ MI_PY_EXPORT(Endpoint) {
         .def("sample_wavelengths", &Endpoint::sample_wavelengths,
              "si"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_wavelengths))
         .def_method(Endpoint, world_transform)
+        .def_method(Endpoint, set_world_transform, "to_world"_a)
         .def_method(Endpoint, needs_sample_2)
         .def_method(Endpoint, needs_sample_3)
         .def("shape",  py::overload_cast<>(&Endpoint::shape, py::const_),  D(Endpoint, shape))

@@ -2571,6 +2571,10 @@ static const char *__doc_mitsuba_Endpoint_traverse = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
+static const char *__doc_mitsuba_Endpoint_set_world_transform = R"doc(Update the local space to world space transformation.
+Warning: as implemented, some cached quantities may not
+be updated. May not be valid for all types of endpoints.)doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -3968,11 +3972,27 @@ May not be supported by all media.
 Becomes necessary when we need to evaluate the albedo at a
 location where sigma_t = 0.)doc";
 
+static const char *__doc_mitsuba_Medium_get_emission =
+R"doc(Returns the medium's emission at the queried location.)doc";
+
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";
 
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
+
+static const char *__doc_mitsuba_Medium_majorant_grid = R"doc(Returns a reference to the majorant supegrid, if any.)doc";
+
+static const char *__doc_mitsuba_Medium_majorant_resolution_factor = R"doc(Returns the current majorant supergrid resolution factor w.r.t. the sigma_t grid resolution..)doc";
+
+static const char *__doc_mitsuba_Medium_set_majorant_resolution_factor = R"doc(Set the majorant supergrid resolution factor w.r.t. the sigma_t grid resolution.
+One should call \ref parameters_changed() to ensure that the supergrid is regenerated.)doc";
+
+static const char *__doc_mitsuba_Medium_has_majorant_grid = R"doc(Return true if a majorant supergrid is available.)doc";
+
+static const char *__doc_mitsuba_Medium_majorant_grid_voxel_size = R"doc(Return the majorant grid, if any)doc";
+
+static const char *__doc_mitsuba_Medium_set_control_density = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
 
@@ -6099,6 +6119,8 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
 
 static const char *__doc_mitsuba_Scene_emitters_dr = R"doc(Return the list of emitters as an Dr.Jit array)doc";
+
+static const char *__doc_mitsuba_Scene_sensors_ek = R"doc(Return the list of sensors as an Enoki array)doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
@@ -9042,6 +9064,8 @@ R"doc(Returns the number of channels stored in the volume
 
 When the channel count is zero, it indicates that the volume does not
 support per-channel queries.)doc";
+
+static const char *__doc_mitsuba_Volume_voxel_size = R"doc(If applicable, returns the dimensions of one grid cell in world space.)doc";
 
 static const char *__doc_mitsuba_Volume_class = R"doc()doc";
 
