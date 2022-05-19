@@ -192,6 +192,11 @@ MI_PY_EXPORT(Medium) {
 
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
             .def(py::init<const Properties &>())
+            .def_method(Medium, majorant_grid)
+            .def_method(Medium, majorant_resolution_factor)
+            .def_method(Medium, set_majorant_resolution_factor, "factor"_a)
+            .def_method(Medium, has_majorant_grid)
+            .def_method(Medium, majorant_grid_voxel_size)
             .def_method(Medium, id)
             .def("__repr__", &Medium::to_string);
 
