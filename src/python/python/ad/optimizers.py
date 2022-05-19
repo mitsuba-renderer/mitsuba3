@@ -146,7 +146,7 @@ class SGD(Optimizer):
             Optional dictionary-like object containing parameters to optimize.
         """
         assert momentum >= 0 and momentum < 1
-        assert lr > 0
+        assert lr >= 0
         self.momentum = momentum
         self.mask_updates = mask_updates
         super().__init__(lr, params)
@@ -250,7 +250,7 @@ class Adam(Optimizer):
             Optional dictionary-like object containing parameters to optimize.
         """
         assert 0 <= beta_1 < 1 and 0 <= beta_2 < 1 \
-            and lr > 0 and epsilon > 0
+            and lr >= 0 and epsilon > 0
 
         self.beta_1 = beta_1
         self.beta_2 = beta_2
