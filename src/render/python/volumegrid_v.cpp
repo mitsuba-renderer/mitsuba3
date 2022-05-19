@@ -37,6 +37,7 @@ MI_PY_EXPORT(VolumeGrid) {
             volumegrid->set_max_per_channel(max_per_channel.data());
             return volumegrid;
         }), "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a NumPy array")
+        .def(py::init<const fs::path &>())
 
         .def_method(VolumeGrid, size)
         .def_method(VolumeGrid, channel_count)
