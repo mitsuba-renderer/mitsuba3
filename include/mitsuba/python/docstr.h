@@ -7013,7 +7013,7 @@ R"doc(Fills the OptixBuildInput associated with this shape.
 Parameter ``build_input``:
     A reference to the build input to be filled. The field
     build_input.type has to be set, along with the associated members.
-    For now, Mistuba only supports the types
+    For now, Mitsuba only supports the types
     OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES and
     OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
 

@@ -25,3 +25,10 @@ the metadata of that cell:
     {
         "nbsphinx": "hidden"
     }
+
+Before building the documentation, make sure to install `pandoc <https://pandoc.org/installing.html>`_
+as well as the required libraries:
+
+.. code-block:: bash
+
+    pip install -r docs/requirements.txt
