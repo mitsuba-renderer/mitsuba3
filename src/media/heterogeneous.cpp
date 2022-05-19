@@ -156,24 +156,36 @@ public:
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
 
-        m_scale = props.get<ScalarFloat>("scale", 1.0f);
-        m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
-
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        ScalarFloat scale = props.get<float>("scale", 1.0f);
+        m_has_spectral_extinction =
+            props.get<bool>("has_spectral_extinction", true);
+        m_max_density =
+            dr::opaque<Float>(dr::max(1e-6f, scale * m_sigmat->max()));
+        m_scale = scale;
+        Log(Info, "Heterogeneous max density: %s", m_max_density);
 
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
+        callback->put_parameter("scale", m_scale,        +ParamFlags::Differentiable);
         callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
         callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        ScalarFloat scale;
+        if constexpr (dr::is_jit_array_v<Float>) {
+            if (dr::width(m_scale) != 1)
+                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
+            scale = m_scale[0];
+        } else {
+            scale = m_scale;
+        }
+        m_max_density = dr::opaque<Float>(
+            dr::max(1e-6f, scale * m_sigmat->max()));
     }
 
     UnpolarizedSpectrum
@@ -222,7 +234,7 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo;
-    ScalarFloat m_scale;
+    Float m_scale;
 
     Float m_max_density;
 };
