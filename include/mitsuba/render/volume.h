@@ -1,7 +1,8 @@
 #pragma once
 
-#include <mitsuba/core/spectrum.h>
+#include <drjit/tensor.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
@@ -60,8 +61,16 @@ public:
      */
     virtual void max_per_channel(ScalarFloat *out) const;
 
+    /// Returns the local to world transform
+    ScalarTransform4f world_transform() const {
+        return m_to_local.inverse();
+    }
+
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
+
+    /// If applicable, returns the dimensions of one grid cell in world space.
+    ScalarVector3f voxel_size() const;
 
     /**
      * \brief Returns the resolution of the volume, assuming that it is based

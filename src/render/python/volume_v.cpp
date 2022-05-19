@@ -85,7 +85,9 @@ MI_PY_EXPORT(Volume) {
                 return evaluation;
             },
             "it"_a, "active"_a = true,
-            D(Volume, eval_n));
+            D(Volume, eval_n))
+        .def("world_transform", &Volume::world_transform)
+        .def("voxel_size", &Volume::voxel_size, D(Volume, voxel_size));
 
     MI_PY_REGISTER_OBJECT("register_volume", Volume)
 }
