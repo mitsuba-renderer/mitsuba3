@@ -45,6 +45,14 @@ public:
 
     VolumeGrid(ScalarVector3u size, ScalarUInt32 channel_count);
 
+    /**
+     * Creates a VolumeGrid instance with the desired metadata, but
+     * no associated storage.
+     */
+    static ref<VolumeGrid> empty(ScalarVector3u size,
+                                 ScalarUInt32 channel_count,
+                                 ScalarBoundingBox3f bbox, ScalarFloat max);
+
     /// Return a pointer to the underlying volume storage
     ScalarFloat *data() { return m_data.get(); }
 
@@ -53,6 +61,13 @@ public:
 
     /// Return the resolution of the voxel grid
     ScalarVector3u size() const { return m_size; }
+
+    /// Reinterprets the data with the given size.
+    void set_size(ScalarVector3u sz) {
+        if (dr::hprod(sz) != dr::hprod(m_size))
+            Throw("The new size %s doesn't match the entry count of old size %s", sz, m_size);
+        m_size = sz;
+    }
 
     /// Return the number of channels
     size_t channel_count() const { return m_channel_count; }
@@ -108,6 +123,9 @@ public:
     MI_DECLARE_CLASS()
 
 protected:
+    /// Creates an invalid volume grid.
+    VolumeGrid();
+
     void read(Stream *stream);
 
 protected:
