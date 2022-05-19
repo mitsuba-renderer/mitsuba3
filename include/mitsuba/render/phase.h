@@ -19,7 +19,8 @@ enum class PhaseFunctionFlags : uint32_t {
     Empty       = 0x00,
     Isotropic   = 0x01,
     Anisotropic = 0x02,
-    Microflake  = 0x04
+    Microflake  = 0x04,
+    Delta       = 0x08
 };
 
 constexpr uint32_t operator|(PhaseFunctionFlags f1, PhaseFunctionFlags f2) {
