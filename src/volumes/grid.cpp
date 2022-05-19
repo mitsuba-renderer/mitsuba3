@@ -258,6 +258,13 @@ public:
             m_fixed_max = true;
             m_max = props.get<ScalarFloat>("max_value");
         }
+
+        // In the context of an optimization, we might want to keep the majorant
+        // fixed to an initial value computed from the reference data, for convenience.
+        if (props.has_property("fixed_max")) {
+            m_fixed_max = props.get<bool>("fixed_max");
+            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
+        }
     }
 
     void traverse(TraversalCallback *callback) override {
