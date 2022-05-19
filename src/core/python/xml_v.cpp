@@ -1,11 +1,12 @@
+#include <map>
+
 #include <mitsuba/core/filesystem.h>
-#include <mitsuba/core/xml.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/xml.h>
 #include <mitsuba/python/python.h>
-#include <map>
 
 using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
@@ -159,10 +160,15 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
         Properties::Color3f color(0.f);
         for (auto& [k2, value2] : dict) {
             std::string key2 = k2.template cast<std::string>();
-            if (key2 == "value")
-                color = value2.template cast<Properties::Color3f>();
-            else if (key2 != "type")
+            if (key2 == "value") {
+                // Not sure if this is really needed
+                using ScalarColor3f = mitsuba::Color<double, 3>;
+                ScalarColor3f tmp = value2.template cast<ScalarColor3f>();
+                color = tmp;
+            }
+            else if (key2 != "type") {
                 Throw("Unexpected key in rgb dictionary: %s", key2);
+            }
         }
         // Update the properties struct
         obj = mitsuba::xml::detail::create_texture_from_rgb(
