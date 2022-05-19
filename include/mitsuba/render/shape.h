@@ -458,7 +458,7 @@ public:
      * \param build_input
      *     A reference to the build input to be filled. The field
      *     build_input.type has to be set, along with the associated members. For
-     *     now, Mistuba only supports the types \ref OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES
+     *     now, Mitsuba only supports the types \ref OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES
      *     and \ref OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
      *
      * The default implementation assumes that an implicit Shape (custom primitive

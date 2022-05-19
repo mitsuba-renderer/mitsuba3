@@ -1,9 +1,11 @@
 sphinx>=2.4
 pygments-mathematica
-sphinxcontrib-bibtex<2.0.0
 pybtex
 nbsphinx
 furo
+sphinxcontrib-bibtex<2.0.0
 sphinx-panels
 sphinx-gallery
 sphinx-copybutton
+sphinx-hoverxref
+sphinx_tabs
