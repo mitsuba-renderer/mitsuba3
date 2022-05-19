@@ -298,20 +298,30 @@ public:
 
         if (props.has_property("max_value")) {
             m_fixed_max = true;
-            m_max = props.get<ScalarFloat>("max_value");
+            m_max       = props.get<ScalarFloat>("max_value");
+            Throw("This feature should probably not be used until more correctness checks are in place");
         }
 
         // In the context of an optimization, we might want to keep the majorant
         // fixed to an initial value computed from the reference data, for convenience.
         if (props.has_property("fixed_max")) {
             m_fixed_max = props.get<bool>("fixed_max");
-            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
+            // It's easy to get incorrect results by e.g.:
+            // 1. Loading the scene with some data X with fixed_max = true
+            // 2. From Python, overwriting the grid data with Y > X
+            // 3. The medium majorant will not get updated, which is incorrect.
+            if (m_fixed_max)
+                Throw("This feature should probably not be used until more correctness checks are in place");
         }
+
+        if (m_fixed_max)
+            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
+        m_max_dirty = !dr::isfinite(m_max);
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_texture.tensor(), +ParamFlags::Differentiable);
         Base::traverse(callback);
+        callback->put_parameter("data", m_texture.tensor(), +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -325,7 +335,7 @@ public:
             m_texture.set_tensor(m_texture.tensor());
 
             if (!m_fixed_max)
-                m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+                m_max_dirty = true;
         }
     }
 
@@ -430,7 +440,19 @@ public:
         }
     }
 
-    ScalarFloat max() const override { return m_max; }
+    ScalarFloat max() const override {
+        if (m_max_dirty)
+            update_max();
+        return m_max;
+    }
+
+    void update_max() const {
+        if (m_max_dirty) {
+            m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+            Log(Info, "Grid max value was updated to: %s", m_max);
+            m_max_dirty = false;
+        }
+    }
 
     void max_per_channel(ScalarFloat *out) const override {
         for (size_t i=0; i<m_max_per_channel.size(); ++i)
@@ -717,8 +739,11 @@ protected:
     bool m_accel;
     bool m_raw;
     ref<VolumeGrid> m_volume_grid;
+
+    // Mutable so that we can do lazy updates
+    mutable ScalarFloat m_max;
+    mutable bool m_max_dirty;
     bool m_fixed_max = false;
-    ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
 };
 
