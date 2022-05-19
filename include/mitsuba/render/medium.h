@@ -22,6 +22,16 @@ public:
     get_majorant(const MediumInteraction3f &mi,
                  Mask active = true) const = 0;
 
+    /**
+     * Returns the medium's albedo, independently of other quantities.
+     * May not be supported by all media.
+     *
+     * Becomes necessary when we need to evaluate the albedo at a
+     * location where sigma_t = 0.
+     */
+    virtual UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
+                                           Mask active = true) const = 0;
+
     /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
     /// at a given MediumInteraction mi
     virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum,
@@ -123,6 +133,8 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_GETTER(is_homogeneous, bool)
     DRJIT_VCALL_GETTER(has_spectral_extinction, bool)
     DRJIT_VCALL_METHOD(get_majorant)
+    DRJIT_VCALL_METHOD(get_albedo)
+    DRJIT_VCALL_METHOD(get_scattering_coefficients)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
     DRJIT_VCALL_METHOD(eval_tr_and_pdf)
