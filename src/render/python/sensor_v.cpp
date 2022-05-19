@@ -56,7 +56,7 @@ public:
 };
 
 MI_PY_EXPORT(Sensor) {
-    MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
+    MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint, SensorPtr)
     using PySensor = PySensor<Float, Spectrum>;
 
     py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
@@ -70,6 +70,27 @@ MI_PY_EXPORT(Sensor) {
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler))
         .def_readwrite("m_needs_sample_2", &PySensor::m_needs_sample_2)
         .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3);
+
+    if constexpr (dr::is_array_v<SensorPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
+
+        py::class_<SensorPtr> cls(m, "SensorPtr", dr_array);
+        cls.def(
+               "sample_ray_differential",
+               [](SensorPtr ptr, Float time, Float sample1,
+                  const Point2f &sample2, const Point2f &sample3, Mask active) {
+                   return ptr->sample_ray_differential(time, sample1, sample2,
+                                                       sample3, active);
+               },
+               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a,
+               "active"_a = true, D(Sensor, sample_ray_differential))
+            .def(
+                "my_world_transform",
+                [](SensorPtr ptr) { return ptr->my_world_transform(); });
+
+        bind_drjit_ptr_array(cls);
+    }
 
     MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 

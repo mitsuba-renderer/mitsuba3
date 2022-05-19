@@ -18,7 +18,7 @@ template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Film, Sampler, Texture)
-    MI_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
+    MI_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3, m_to_world)
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -94,6 +94,11 @@ public:
     // =============================================================
     //! @{ \name Additional query functions
     // =============================================================
+
+    /// Return the local space to world space transformation
+    Transform4f my_world_transform() const {
+        return m_to_world.value();
+    }
 
     /// Return the time value of the shutter opening event
     ScalarFloat shutter_open() const { return m_shutter_open; }
@@ -313,11 +318,13 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_VCALL_METHOD(sample_ray)
+    DRJIT_VCALL_METHOD(sample_ray_differential)
     DRJIT_VCALL_METHOD(sample_direction)
     DRJIT_VCALL_METHOD(pdf_direction)
     DRJIT_VCALL_METHOD(eval_direction)
     DRJIT_VCALL_METHOD(sample_position)
     DRJIT_VCALL_METHOD(sample_wavelengths)
+    DRJIT_VCALL_METHOD(my_world_transform)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     DRJIT_VCALL_GETTER(shape, const typename Class::Shape *)
     DRJIT_VCALL_GETTER(medium, const typename Class::Medium *)
