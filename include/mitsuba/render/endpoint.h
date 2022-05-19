@@ -319,6 +319,14 @@ public:
         return m_to_world.value();
     }
 
+    /** Update the local space to world space transformation.
+     * Warning: as implemented, some cached quantities may not
+     * be updated. May not be valid for all types of endpoints.
+     */
+    void set_world_transform(const ScalarTransform4f &to_world) {
+        m_to_world = to_world;
+    }
+
     /**
      * \brief Does the method \ref sample_ray() require a uniformly distributed
      * 2D sample for the \c sample2 parameter?
