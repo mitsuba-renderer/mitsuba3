@@ -56,6 +56,11 @@ Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
     NotImplementedError("max_per_channel");
 }
 
+MI_VARIANT typename Volume<Float, Spectrum>::TensorXf
+Volume<Float, Spectrum>::local_majorants(size_t /*resolution_factor*/, ScalarFloat /*value_scale*/) {
+    NotImplementedError("local_majorants");
+}
+
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3f
 Volume<Float, Spectrum>::voxel_size() const {
     // Extract the scale from the to_world matrix, assuming an affine transformation.

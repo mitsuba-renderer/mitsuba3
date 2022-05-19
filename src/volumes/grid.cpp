@@ -1,3 +1,6 @@
+#include <drjit/dynamic.h>
+#include <drjit/tensor.h>
+#include <drjit/texture.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
@@ -6,11 +9,50 @@
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
-#include <drjit/dynamic.h>
-#include <drjit/texture.h>
+
+// TODO: rewrite this to be more general and move to Dr.Jit
+NAMESPACE_BEGIN(drjit)
+template <typename T>
+std::tuple<T, T, T> meshgrid(const T &x, const T &y, const T &z,
+                             bool index_xy = true) {
+    static_assert(array_depth_v<T> == 1 && is_dynamic_array_v<T>,
+                  "meshgrid(): requires three 1D dynamic DrJit arrays as input!");
+
+    uint32_t lx = (uint32_t) x.size(),
+             ly = (uint32_t) y.size(),
+             lz = (uint32_t) z.size();
+
+    if (lx == 1 || ly == 1 || lz == 1) {
+        // TODO: not sure if this case is correct
+        return { x, y, z };
+    } else {
+        using UInt32 = uint32_array_t<T>;
+        size_t total = lx * ly * lz;
+        UInt32 index = arange<UInt32>(total);
+
+        T inputs[3];
+        inputs[0] = index_xy ? y : x;
+        inputs[1] = index_xy ? x : y;
+        inputs[2] = z;
+
+        // TODO: possible to make this faster with `idivmod`?
+        T result[3];
+        for (size_t k = 0; k < 3; ++k) {
+            total /= inputs[k].size();
+            UInt32 index_v = index / total;
+            index -= index_v * total;
+            result[k] = gather<T>(inputs[k], index_v);
+        }
+
+        if (index_xy)
+            return { result[1], result[0], result[2] };
+        else
+            return { result[0], result[1], result[2] };
+    }
+}
+NAMESPACE_END(drjit)
 
 NAMESPACE_BEGIN(mitsuba)
-
 
 /**!
 .. _volume-gridvolume:
@@ -506,6 +548,98 @@ protected:
         }
     }
 
+    TensorXf local_majorants(size_t resolution_factor, ScalarFloat value_scale) override {
+        MI_IMPORT_TYPES()
+        using Value   = mitsuba::DynamicBuffer<Float>;
+        using Index   = mitsuba::DynamicBuffer<UInt32>;
+        using Index3i = mitsuba::Vector<mitsuba::DynamicBuffer<Int32>, 3>;
+
+        if (m_accel)
+            NotImplementedError("local_majorants() with m_accel");
+
+        if (m_texture.shape()[3] != 1)
+            NotImplementedError("local_majorants() when Channels != 1");
+
+        if constexpr (dr::is_jit_array_v<Float>) {
+            dr::eval(m_texture.value());
+            dr::sync_thread();
+        }
+
+        // This is the real (user-facing) resolution, but recall
+        // that the layout in memory is (Z, Y, X, C).
+        const ScalarVector3i full_resolution = resolution();
+        if ((full_resolution.x() % resolution_factor) != 0 ||
+            (full_resolution.y() % resolution_factor) != 0 ||
+            (full_resolution.z() % resolution_factor) != 0) {
+            Throw("Supergrid construction: grid resolution %s must be divisible by %s",
+                full_resolution, resolution_factor);
+        }
+        const ScalarVector3i resolution(
+            full_resolution.x() / resolution_factor,
+            full_resolution.y() / resolution_factor,
+            full_resolution.z() / resolution_factor
+        );
+
+        Log(Debug, "Constructing supergrid of resolution %s from full grid of resolution %s",
+            resolution, full_resolution);
+        size_t n = dr::hprod(resolution);
+        Value result = dr::full<Value>(-dr::Infinity<Float>, n);
+
+        // Z is the slowest axis, X is the fastest.
+        auto [Z, Y, X] = dr::meshgrid(
+            dr::arange<Index>(resolution.z()), dr::arange<Index>(resolution.y()),
+            dr::arange<Index>(resolution.x()), /*index_xy*/ false);
+        Index3i cell_indices = resolution_factor * Index3i(X, Y, Z);
+
+        // We have to include all values that participate in interpolated
+        // lookups if we want the true maximum over a region.
+        int32_t begin_offset, end_offset;
+        switch (m_texture.filter_mode()) {
+            case dr::FilterMode::Nearest: {
+                begin_offset = 0;
+                end_offset = resolution_factor;
+                break;
+            }
+            case dr::FilterMode::Linear: {
+                begin_offset = -1;
+                end_offset = resolution_factor + 1;
+                break;
+            }
+        };
+
+        Value scaled_data = value_scale * dr::detach(m_texture.value());
+
+        // TODO: any way to do this without the many operations?
+        for (int32_t dz = begin_offset; dz < end_offset; ++dz) {
+            for (int32_t dy = begin_offset; dy < end_offset; ++dy) {
+                for (int32_t dx = begin_offset; dx < end_offset; ++dx) {
+                    // Ensure valid lookups with clamping
+                    Index3i offset_indices = Index3i(
+                        dr::clamp(cell_indices.x() + dx, 0, full_resolution.x() - 1),
+                        dr::clamp(cell_indices.y() + dy, 0, full_resolution.y() - 1),
+                        dr::clamp(cell_indices.z() + dz, 0, full_resolution.z() - 1)
+                    );
+                    // Linearize indices
+                    const Index idx =
+                        offset_indices.x() +
+                        offset_indices.y() * full_resolution.x() +
+                        offset_indices.z() * full_resolution.x() *
+                            full_resolution.y();
+
+                    Value values =
+                        dr::gather<Value>(scaled_data, idx);
+                    result = dr::max(result, values);
+                }
+            }
+        }
+
+        size_t shape[4] = { (size_t) resolution.z(),
+                            (size_t) resolution.y(),
+                            (size_t) resolution.x(),
+                            1 };
+        return TensorXf(result, 4, shape);
+    }
+
     /**
      * \brief Evaluates the volume at the given interaction
      *
@@ -513,7 +647,6 @@ protected:
      */
     MI_INLINE Float interpolate_1(const Interaction3f &it, Mask active) const {
         MI_MASK_ARGUMENT(active);
-
         Point3f p = m_to_local * it.p;
         Float result;
         if (m_accel)
