@@ -218,6 +218,26 @@ class SceneParameters(Mapping):
 
         return out
 
+
+    def put(self, key: str, value, value_type=None, node=None, parent=None) -> None:
+        """
+        Add a differentiable parameter.
+        Useful for parameters that are not part of the Scene hierarchy.
+
+        Inputs:
+            value_type: if the value is a C++ object that must be updated in place,
+                     pass its type here.
+            node: Mitsuba object holding this parameter, if any
+            node: parent object holding `node`, if any
+        """
+        if key in self.properties:
+            raise KeyError(f'Key already present in scene parameters: {key}')
+        # TODO: we probably no longer need this method with the new Optimizer API
+        # TODO: this is probably incorrect / incomplete
+        self.properties[key] = (value, value_type, node)
+        self.hierarchy[node] = (parent, 0)
+
+
     def keep(self, keys: None | str | list[str]) -> None:
         """
         Reduce the size of the dictionary by only keeping elements,
