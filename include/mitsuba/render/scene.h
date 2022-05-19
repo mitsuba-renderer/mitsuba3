@@ -561,6 +561,14 @@ protected:
     UInt64 m_accel_handle;
 
     ScalarBoundingBox3f m_bbox;
+    /**
+     * Try bypassing OptiX by assuming the only shape in the scene
+     * is an axis-aligned bounding box. Avoiding OptiX entirely for
+     * ray tracing allows large speedups.
+     * The assumption is not checked, so this option should only
+     * be enabled when confident it is verified.
+     */
+    bool m_use_bbox_fast_path = false;
 
     std::vector<ref<Emitter>> m_emitters;
     DynamicBuffer<EmitterPtr> m_emitters_dr;
