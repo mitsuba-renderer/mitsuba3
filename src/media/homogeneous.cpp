@@ -163,7 +163,7 @@ public:
     get_majorant(const MediumInteraction3f &mi,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        UnpolarizedSpectrum majorant = dr::max(1e-6f, eval_sigmat(mi, active));
+        UnpolarizedSpectrum majorant = dr::maximum(1e-6f, eval_sigmat(mi, active));
         return majorant & active;
     }
 

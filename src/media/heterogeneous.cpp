@@ -160,7 +160,7 @@ public:
         m_has_spectral_extinction =
             props.get<bool>("has_spectral_extinction", true);
         m_max_density =
-            dr::opaque<Float>(dr::max(1e-6f, scale * m_sigmat->max()));
+            dr::opaque<Float>(dr::maximum(1e-6f, scale * m_sigmat->max()));
         m_scale = scale;
         Log(Info, "Heterogeneous max density: %s", m_max_density);
 

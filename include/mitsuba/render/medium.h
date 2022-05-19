@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Medium : public Object {
 public:
-    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Texture);
 
     /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -61,6 +61,34 @@ public:
                                            UInt32 channel, Mask active) const;
 
     /**
+     * Similar to \ref sample_interaction, but ensures that a real interaction
+     * is sampled.
+     */
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_real(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                            Mask active) const;
+
+    /**
+     * Sample an interaction with Differential Ratio Tracking.
+     * Intended for adjoint integration.
+     *
+     * Returns the interaction record and a sampling weight.
+     */
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                           Mask active) const;
+
+    /**
+     * Sample an interaction with Differential Residual Ratio Tracking.
+     * Intended for adjoint integration.
+     *
+     * Returns the interaction record and a sampling weight.
+     */
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drrt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                            Mask active) const;
+
+    /**
      * \brief Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain
@@ -78,6 +106,14 @@ public:
     std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     eval_tr_and_pdf(const MediumInteraction3f &mi,
                     const SurfaceInteraction3f &si, Mask active) const;
+
+    /**
+     * Compute the ray-medium overlap range and prepare a
+     * medium interaction to be filled by a sampling routine.
+     * Exposed as part of the API to enable testing.
+     */
+    std::tuple<MediumInteraction3f, Float, Float, Mask>
+    prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
 
     /// Return the phase function of this medium
     MI_INLINE const PhaseFunction *phase_function() const {
@@ -112,6 +148,8 @@ protected:
     Medium(const Properties &props);
     virtual ~Medium();
 
+    static Float extract_channel(Spectrum value, UInt32 channel);
+
 protected:
     ref<PhaseFunction> m_phase_function;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
@@ -137,8 +175,11 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_METHOD(get_scattering_coefficients)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
+    DRJIT_VCALL_METHOD(sample_interaction_real)
+    DRJIT_VCALL_METHOD(sample_interaction_drt)
+    DRJIT_VCALL_METHOD(sample_interaction_drrt)
     DRJIT_VCALL_METHOD(eval_tr_and_pdf)
-    DRJIT_VCALL_METHOD(get_scattering_coefficients)
+    DRJIT_VCALL_METHOD(prepare_interaction_sampling)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

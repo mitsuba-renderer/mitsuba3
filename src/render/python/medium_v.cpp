@@ -20,6 +20,10 @@ public:
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_majorant, mi, active);
     }
 
+    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_albedo, mi, active);
+    }
+
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
         using Return = std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>;
@@ -65,12 +69,30 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->sample_interaction(ray, sample, channel, active); },
             "ray"_a, "sample"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction))
+       .def("sample_interaction_real",
+            [](Ptr ptr, const Ray3f &ray, Sampler *sampler, UInt32 channel, Mask active) {
+                return ptr->sample_interaction_real(ray, sampler, channel, active); },
+            "ray"_a, "sampler"_a, "channel"_a, "active"_a,
+            D(Medium, sample_interaction_real))
+       .def("sample_interaction_drt",
+            [](Ptr ptr, const Ray3f &ray, Sampler *sampler, UInt32 channel, Mask active) {
+                return ptr->sample_interaction_drt(ray, sampler, channel, active); },
+            "ray"_a, "sampler"_a, "channel"_a, "active"_a,
+            D(Medium, sample_interaction_drt))
+       .def("sample_interaction_drrt",
+            [](Ptr ptr, const Ray3f &ray, Sampler *sampler, UInt32 channel, Mask active) {
+                return ptr->sample_interaction_drrt(ray, sampler, channel, active); },
+            "ray"_a, "sampler"_a, "channel"_a, "active"_a)
        .def("eval_tr_and_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
                 return ptr->eval_tr_and_pdf(mi, si, active); },
             "mi"_a, "si"_a, "active"_a,
             D(Medium, eval_tr_and_pdf))
+       .def("prepare_interaction_sampling",
+            [](Ptr ptr, const Ray3f &ray, Mask active) {
+                return ptr->prepare_interaction_sampling(ray, active); },
+            "ray"_a, "active"_a)
        .def("get_albedo",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_albedo(mi, active); },
