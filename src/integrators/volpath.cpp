@@ -184,17 +184,19 @@ public:
                 active_medium &= mei.is_valid();
 
                 // Handle null and real scatter events
+                const Float majorant = index_spectrum(mei.combined_extinction, channel);
                 Mask null_scatter =
                     sampler->next_1d(active_medium) >=
-                    (index_spectrum(mei.sigma_t, channel) /
-                     index_spectrum(mei.combined_extinction, channel));
+                    dr::select(dr::neq(majorant, 0),
+                               index_spectrum(mei.sigma_t, channel) / majorant,
+                               0);
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
 
                 if (dr::any_or<true>(is_spectral && act_null_scatter))
                     dr::masked(throughput, is_spectral && act_null_scatter) *=
-                        mei.sigma_n * index_spectrum(mei.combined_extinction, channel) /
+                        mei.sigma_n * majorant /
                         index_spectrum(mei.sigma_n, channel);
 
                 dr::masked(depth, act_medium_scatter) += 1;
@@ -400,7 +402,9 @@ public:
                     if (dr::any_or<true>(is_spectral))
                         dr::masked(transmittance, is_spectral) *= mei.sigma_n;
                     if (dr::any_or<true>(not_spectral))
-                        dr::masked(transmittance, not_spectral) *= mei.sigma_n / mei.combined_extinction;
+                        dr::masked(transmittance, not_spectral) *=
+                            dr::select(dr::neq(mei.combined_extinction, 0),
+                                       mei.sigma_n / mei.combined_extinction, 0);
                 }
             }
 
