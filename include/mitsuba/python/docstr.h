@@ -3961,6 +3961,13 @@ Returns:
 
 static const char *__doc_mitsuba_Medium_get_majorant = R"doc(Returns the medium's majorant used for delta tracking)doc";
 
+static const char *__doc_mitsuba_Medium_get_albedo =
+R"doc(Returns the medium's albedo, independently of other quantities.
+May not be supported by all media.
+
+Becomes necessary when we need to evaluate the albedo at a
+location where sigma_t = 0.)doc";
+
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";
@@ -3992,6 +3999,12 @@ static const char *__doc_mitsuba_Medium_operator_new = R"doc()doc";
 static const char *__doc_mitsuba_Medium_operator_new_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
+
+static const char *__doc_mitsuba_Medium_sample_interaction_real = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_sample_interaction_drt = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_sample_interaction_drrt = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.

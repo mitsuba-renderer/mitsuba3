@@ -55,7 +55,7 @@ Depending on how it is used, its value can either be a scalar or a color spectru
 template <typename Float, typename Spectrum>
 class ConstVolume final : public Volume<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Volume, m_to_local)
+    MI_IMPORT_BASE(Volume, m_to_local, m_bbox)
     MI_IMPORT_TYPES(Texture)
 
     ConstVolume(const Properties &props) : Base(props) {
@@ -86,8 +86,9 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ConstVolume[" << std::endl
-            << "  to_local = " << string::indent(m_to_local, 13) << "," << std::endl
-            << "  value = " << string::indent(m_value, 4) << std::endl
+            << "  to_local = " << string::indent(m_to_local) << "," << std::endl
+            << "  bbox = " << string::indent(m_bbox) << ","  << std::endl
+            << "  value = " << string::indent(m_value) << std::endl
             << "]";
         return oss.str();
     }
