@@ -44,8 +44,8 @@ For the new users, we put together absolute beginner's tutorials for both DrJit 
 
 .. nbgallery::
 
-    tutorials/getting_started/quickstart/drjit_cheat_sheet
-    tutorials/getting_started/quickstart/rendering
+    tutorials/getting_started/quickstart/drjit_quickstart
+    tutorials/getting_started/quickstart/mitsuba_quickstart
 
 Once you have gone through the two tutorials above, you should be in good shape
 to dive deeper in the library. The following tutorials are organized in 3

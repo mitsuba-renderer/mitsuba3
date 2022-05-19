@@ -6,5 +6,5 @@ Rendering tutorials
 
     tutorials/rendering/scene_modification
     tutorials/rendering/multiple_sensors
-    tutorials/rendering/python_renderer
+    tutorials/rendering/scripting_renderer
     tutorials/rendering/polarized_rendering
