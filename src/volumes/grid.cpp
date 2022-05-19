@@ -218,7 +218,7 @@ public:
                   wrap_mode_st);
 
         if (props.has_property("grid")) {
-            // Creates a Bitmap texture directly from an existing Bitmap object
+            // Creates a texture directly from an existing object
             if (props.has_property("filename"))
                 Throw("Cannot specify both \"grid\" and \"filename\".");
             Log(Debug, "Loading volume grid from memory...");
@@ -266,7 +266,6 @@ public:
                 ptr += 3;
                 scaled_data_ptr += 4;
             }
-            m_max = (float) max;
 
             size_t shape[4] = {
                 (size_t) res.z(),
