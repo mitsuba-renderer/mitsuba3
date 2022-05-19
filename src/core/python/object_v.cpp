@@ -1,8 +1,9 @@
-#include <mitsuba/core/transform.h>
-#include <mitsuba/core/frame.h>
-#include <mitsuba/python/python.h>
 #include <drjit/dynamic.h>
 #include <drjit/tensor.h>
+#include <drjit/texture.h>
+#include <mitsuba/core/frame.h>
+#include <mitsuba/core/transform.h>
+#include <mitsuba/python/python.h>
 
 /// Defines a list of types that plugins can expose as tweakable/differentiable parameters
 #define APPLY_FOR_EACH(T) \
@@ -31,10 +32,28 @@
       return py::cast((T *) ptr, py::return_value_policy::reference_internal,  \
                       parent)
 
+#define GET_TEXTURE_D(dim)                                                     \
+    {                                                                          \
+        using Texture = dr::Texture<Float, dim>;                               \
+        if (strcmp(type.name(), typeid(Texture).name()) == 0) {                \
+            TensorXf &tensor = ((Texture *) ptr)->tensor();                    \
+            return py::cast(                                                   \
+                tensor, py::return_value_policy::reference_internal, parent);  \
+        }                                                                      \
+    }
 #define SET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0) {                          \
         *((T *) ptr) = py::cast<T>(value);                                     \
         return;                                                                \
+    }
+
+#define SET_TEXTURE_D(dim)                                                     \
+    {                                                                          \
+        using Texture = dr::Texture<Float, dim>;                               \
+        if (strcmp(type.name(), typeid(Texture).name()) == 0) {                \
+            ((Texture *) ptr)->set_tensor(py::cast<TensorXf>(value));          \
+            return;                                                            \
+        }                                                                      \
     }
 
 MI_PY_EXPORT(Object) {
@@ -45,6 +64,10 @@ MI_PY_EXPORT(Object) {
         [](const void *ptr, void *type_, py::handle parent) -> py::object {
             const std::type_info &type = *(const std::type_info *) type_;
             APPLY_FOR_EACH(GET_PROPERTY_T);
+            GET_TEXTURE_D(2);
+            GET_TEXTURE_D(3);
+
+            // Failed to cast
             std::string name(type.name());
             py::detail::clean_type_id(name);
             Throw("get_property(): unsupported type \"%s\"!", name);
@@ -56,6 +79,10 @@ MI_PY_EXPORT(Object) {
         [](const void *ptr, void *type_, py::handle value) {
             const std::type_info &type = *(const std::type_info *) type_;
             APPLY_FOR_EACH(SET_PROPERTY_T);
+            SET_TEXTURE_D(2);
+            SET_TEXTURE_D(3);
+
+            // Failed to cast
             std::string name(type.name());
             py::detail::clean_type_id(name);
             Throw("set_property(): unsupported type \"%s\"!", name);
