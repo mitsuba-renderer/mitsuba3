@@ -1,7 +1,7 @@
-from contextlib import contextmanager
 from collections import defaultdict
 import drjit as dr
 import mitsuba as mi
+
 
 class Optimizer:
     """
@@ -35,7 +35,7 @@ class Optimizer:
     def __getitem__(self, key: str):
         return self.variables[key]
 
-    def __setitem__(self, key: str, value):
+    def __setitem__(self, key: str, value, copy=True):
         """
         Overwrite the value of a parameter.
 
@@ -51,10 +51,13 @@ class Optimizer:
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
         needs_reset = (key not in self.variables) or dr.shape(self.variables[key]) != dr.shape(value)
 
-        self.variables[key] = dr.detach(value, True)
+        self.variables[key] = type(value)(dr.detach(value, True)) if copy else value
         dr.enable_grad(self.variables[key])
         if needs_reset:
             self.reset(key)
+
+    def set(self, key: str, value, copy):
+        return self.__setitem__(key, value, copy=copy)
 
     def __delitem__(self, key: str) -> None:
         del self.variables[key]
@@ -81,8 +84,10 @@ class Optimizer:
         return OptimizerItemIterator(self.variables)
 
     def set_learning_rate(self, lr) -> None:
-        """
-        Set the learning rate.
+        """Set the learning rate.
+
+        Parameter ``lr``:
+            The new learning rate
 
         Parameter ``lr`` (``float``, ``dict``):
             The new learning rate. A ``dict`` can be provided instead to
@@ -176,7 +181,7 @@ class SGD(Optimizer):
             else:
                 value = dr.detach(p) - self.lr_v[k] * g_p
 
-
+            # TODO: do we really need this?
             value = type(p)(value)
             dr.enable_grad(value)
             self.variables[k] = value
@@ -293,7 +298,8 @@ class Adam(Optimizer):
                 step = lr_t * m_t / (dr.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
                 step = dr.select(nonzero, step, 0.)
-            u = dr.detach(p) - step
+            u = dr.detach(p, True) - step
+            # TODO: do we really need this?
             u = type(p)(u)
             dr.enable_grad(u)
             self.variables[k] = u
