@@ -228,7 +228,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale,          +ParamFlags::Differentiable);
+        // callback->put_parameter("scale", m_scale,          +ParamFlags::Differentiable);
         callback->put_object("albedo",   m_albedo.get(),   +ParamFlags::Differentiable);
         callback->put_object("sigma_t",  m_sigmat.get(),   +ParamFlags::Differentiable);
         callback->put_object("emission", m_emission.get(), +ParamFlags::Differentiable);
@@ -236,7 +236,6 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-
         if (m_majorant_resolution_factor > 0) {
             // TODO: make this more configurable (could be slow)
             update_majorant_supergrid();
