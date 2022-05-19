@@ -177,7 +177,8 @@ template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
+                   m_phase_function, m_majorant_grid,
+                   m_majorant_resolution_factor, m_majorant_factor)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
@@ -208,10 +209,19 @@ public:
         ScalarFloat scale = props.get<float>("scale", 1.0f);
         m_has_spectral_extinction =
             props.get<bool>("has_spectral_extinction", true);
-        m_max_density =
-            dr::opaque<Float>(dr::maximum(1e-6f, scale * m_sigmat->max()));
         m_scale = scale;
-        Log(Info, "Heterogeneous max density: %s", m_max_density);
+
+        update_majorant_supergrid();
+        if (m_majorant_resolution_factor > 0) {
+            Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
+            m_max_density = dr::NaN<Float>;
+        } else {
+            const ScalarFloat vmax =
+                density_activation(m_majorant_factor * scale * m_sigmat->max());
+            m_max_density = dr::opaque<Float>(dr::maximum(1e-6f, vmax));
+            Log(Info, "Heterogeneous medium will use majorant: %s (majorant factor: %s)",
+                m_max_density, m_majorant_factor);
+        }
 
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
@@ -226,23 +236,29 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ScalarFloat scale;
-        if constexpr (dr::is_jit_array_v<Float>) {
-            if (dr::width(m_scale.value()) != 1)
-                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
-            scale = m_scale.scalar();
+
+        if (m_majorant_resolution_factor > 0) {
+            // TODO: make this more configurable (could be slow)
+            update_majorant_supergrid();
         } else {
-            scale = m_scale.scalar();
+            // TODO: make this really optional if we never need max_density
+            const ScalarFloat vmax = density_activation(
+                m_majorant_factor * m_scale.scalar() * m_sigmat->max());
+            m_max_density = dr::opaque<Float>(dr::max(1e-6f, vmax));
+            m_majorant_grid = nullptr;
+            Log(Debug, "Heterogeneous medium majorant updated to: %s (majorant factor: %s)",
+                m_max_density, m_majorant_factor);
         }
-        m_max_density = dr::opaque<Float>(
-            dr::max(1e-6f, scale * m_sigmat->max()));
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f & /* mi */,
+    get_majorant(const MediumInteraction3f & mei,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return m_max_density;
+        if (m_majorant_resolution_factor > 0)
+            return m_majorant_grid->eval_1(mei, active);
+        else
+            return m_max_density;
     }
 
     UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
@@ -270,7 +286,13 @@ public:
             sigmat *= m_phase_function->projected_area(mi, active);
 
         auto sigmas = sigmat * m_albedo->eval(mi, active);
-        auto sigman = m_max_density - sigmat;
+
+        UnpolarizedSpectrum local_majorant =
+            (m_majorant_resolution_factor > 0)
+                ? m_majorant_grid->eval_1(mi, active)
+                : m_max_density;
+        auto sigman = local_majorant - sigmat;
+
         return { sigmas, sigman, sigmat };
     }
 
@@ -297,14 +319,40 @@ public:
         return m_sigmat->bbox().ray_intersect(ray);
     }
 
+    void update_majorant_supergrid() {
+        if (m_majorant_resolution_factor <= 0)
+            return;
+
+        // Build a majorant grid, with the scale factor baked-in for convenience
+        TensorXf majorants = density_activation(
+            m_sigmat->local_majorants(m_majorant_resolution_factor,
+                                      m_majorant_factor * m_scale.scalar()));
+        dr::eval(majorants);
+
+        Properties props("gridvolume");
+        props.set_string("filter_type", "nearest");
+        props.set_transform("to_world", m_sigmat->world_transform());
+        props.set_pointer("data", &majorants);
+        m_majorant_grid = (Volume *) PluginManager::instance()
+                              ->create_object<Volume>(props)
+                              ->expand()
+                              .front()
+                              .get();
+        Log(Info, "Majorant supergrid updated (resolution: %s)", m_majorant_grid->resolution());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo   = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t  = " << string::indent(m_sigmat) << std::endl
-            << "  emission = " << string::indent(m_emission) << std::endl
-            << "  scale    = " << string::indent(m_scale.scalar()) << std::endl
-            << "  density_activation = " << activation_type_to_string(m_density_activation) << std::endl
+            << "  albedo          = " << string::indent(m_albedo) << std::endl
+            << "  sigma_t         = " << string::indent(m_sigmat) << std::endl
+            << "  emission        = " << string::indent(m_emission) << std::endl
+            << "  scale           = " << string::indent(m_scale) << std::endl
+            << "  max_density     = " << string::indent(m_max_density) << std::endl
+            << "  majorant_factor = " << string::indent(m_majorant_factor) << std::endl
+            << "  majorant_resolution_factor   = " << string::indent(m_majorant_resolution_factor) << std::endl
+            << "  majorant_grid                = " << string::indent(m_majorant_grid) << std::endl
+            << "  density_activation           = " << activation_type_to_string(m_density_activation) << std::endl
             << "  density_activation_parameter = " << m_density_activation_parameter << std::endl
             << "]";
         return oss.str();
@@ -314,10 +362,9 @@ public:
 private:
     ref<Volume> m_sigmat, m_albedo, m_emission;
     field<Float> m_scale;
+    Float m_max_density;
     ActivationType m_density_activation;
     ScalarFloat m_density_activation_parameter;
-
-    Float m_max_density;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)

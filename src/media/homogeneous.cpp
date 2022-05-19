@@ -130,7 +130,9 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
+                   m_phase_function, m_majorant_resolution_factor,
+                   m_majorant_grid, m_majorant_factor)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -141,6 +143,9 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
+
+        if (m_majorant_resolution_factor > 0 || m_majorant_grid)
+            Throw("Not supoprted: majorant grid for a homogeneous medium.");
 
         dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
         dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
@@ -162,10 +167,11 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f &mi,
+    get_majorant(const MediumInteraction3f &mei,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        UnpolarizedSpectrum majorant = dr::maximum(1e-6f, eval_sigmat(mi, active));
+        UnpolarizedSpectrum majorant =
+            dr::maximum(1e-6f, m_majorant_factor * eval_sigmat(mei, active));
         return majorant & active;
     }
 

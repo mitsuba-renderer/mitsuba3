@@ -1,17 +1,18 @@
 #pragma once
 
+#include <drjit/vcall.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/render/fwd.h>
-#include <drjit/vcall.h>
+#include <mitsuba/render/volume.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Medium : public Object {
 public:
-    MI_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Texture, Volume);
 
     /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -119,9 +120,52 @@ public:
     std::tuple<MediumInteraction3f, Float, Float, Mask>
     prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
 
+    /**
+     * Pre-computes quantities needed for a DDA traversal of the given grid.
+     *
+     * Returns (initial t, tmax, tdelta).
+     */
+    std::tuple<Float, Vector3f, Vector3f>
+    prepare_dda_traversal(const Volume *majorant_grid, const Ray3f &ray,
+                          Float mint, Float maxt, Mask active) const;
+
     /// Return the phase function of this medium
     MI_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();
+    }
+
+    /**
+     * Returns the current majorant supergrid resolution factor
+     * w.r.t. the sigma_t grid resolution.
+     */
+    MI_INLINE size_t majorant_resolution_factor() const {
+        return m_majorant_resolution_factor;
+    }
+    /**
+     * Set the majorant supergrid resolution factor
+     * w.r.t. the sigma_t grid resolution.
+     * One should call \ref parameters_changed() to ensure
+     * that the supergrid is regenerated.
+     */
+    MI_INLINE void set_majorant_resolution_factor(size_t factor) {
+        m_majorant_resolution_factor = factor;
+    }
+
+    /// Returns a reference to the majorant supegrid, if any
+    MI_INLINE ref<Volume> majorant_grid() const {
+        return m_majorant_grid;
+    }
+    /// Return true if a majorant supergrid is available.
+    MI_INLINE bool has_majorant_grid() const {
+        return (bool) m_majorant_grid;
+    }
+
+    /// Return the size of a voxel in the majorant grid, if any
+    MI_INLINE Vector3f majorant_grid_voxel_size() const {
+        if (m_majorant_grid)
+            return m_majorant_grid->voxel_size();
+        else
+            return dr::zero<Vector3f>();
     }
 
     /// Returns whether this specific medium instance uses emitter sampling
@@ -156,6 +200,16 @@ protected:
 protected:
     ref<PhaseFunction> m_phase_function;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
+
+    size_t m_majorant_resolution_factor;
+    ref<Volume> m_majorant_grid;
+    /* Factor to apply to the majorant, helps ensure that we are not using
+     * a majorant that is exactly equal to the max density, which can be
+     * problematic for Path Replay. */
+    ScalarFloat m_majorant_factor;
+
+    /// Used by differential residual ratio tracking (DRRT)
+    ScalarFloat m_control_density;
 
     /// Identifier (if available)
     std::string m_id;
