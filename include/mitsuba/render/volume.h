@@ -86,7 +86,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Volume[" << std::endl
-            << "  to_local = " << m_to_local << std::endl
+            << "  to_local = " << m_to_local << "," << std::endl
+            << "  bbox = " << string::indent(m_bbox) << std::endl
             << "]";
         return oss.str();
     }

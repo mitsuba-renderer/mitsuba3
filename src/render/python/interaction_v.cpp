@@ -53,7 +53,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
 
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
-        .def(py::init<const SurfaceInteraction3f &>(), "Copy constructor")
+        .def(py::init<const SurfaceInteraction3f &>(), D(SurfaceInteraction, SurfaceInteraction), "other"_a)
         .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
         .def("initialize_sh_frame", &SurfaceInteraction3f::initialize_sh_frame,
@@ -112,7 +112,7 @@ MI_PY_EXPORT(MediumInteraction) {
 
         // Methods
         .def(py::init<>(), D(MediumInteraction, MediumInteraction))
-        .def(py::init<const MediumInteraction3f &>(), "Copy constructor")
+        .def(py::init<const MediumInteraction3f &>(), D(MediumInteraction, MediumInteraction))
         .def("to_world", &MediumInteraction3f::to_world, "v"_a, D(MediumInteraction, to_world))
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);

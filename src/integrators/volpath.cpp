@@ -184,7 +184,10 @@ public:
                 active_medium &= mei.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                Mask null_scatter =
+                    sampler->next_1d(active_medium) >=
+                    (index_spectrum(mei.sigma_t, channel) /
+                     index_spectrum(mei.combined_extinction, channel));
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
