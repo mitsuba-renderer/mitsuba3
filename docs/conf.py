@@ -169,6 +169,7 @@ html_logo = "images/logo.png"
 html_title = "Mitsuba 3"
 html_theme = 'furo'
 html_static_path = ['_static']
+html_js_files = ['override-theme.js']
 
 # Register the theme as an extension to generate a sitemap.xml
 extensions = []
@@ -219,7 +220,7 @@ nbsphinx_prolog = """
 
 extensions.append('sphinx_gallery.load_style')
 nbsphinx_thumbnails = {
-    'src/tutorials/getting_started/quickstart/drjit_cheat_sheet': '_static/drjit-logo-dark.png',
+    'src/tutorials/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
 }
 
 extensions.append('sphinx_copybutton')
