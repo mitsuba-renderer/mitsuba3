@@ -45,6 +45,29 @@ Mitsuba 3
 
     ---
 
+    Banner 5
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_05.png
+        :height: 90
+        :align: center
+
+    ---
+
+    Banner 6
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_06.png
+        :height: 90
+        :align: center
+
+    ---
+
+    Banner 7
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_07.png
+        :height: 90
+        :align: center
+
+
 Benedikt Bitterli scenes
 ++++++++++++++++++++++++
 
@@ -184,5 +207,3 @@ Benedikt Bitterli scenes
     .. link-button:: https://benedikt-bitterli.me/resources/
         :text:
         :classes: btn-link stretched-link
-
-    ---

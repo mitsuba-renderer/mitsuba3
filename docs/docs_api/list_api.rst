@@ -570,6 +570,8 @@
 
 .. autofunction:: mitsuba.fresnel_conductor
 
+.. autofunction:: mitsuba.fresnel_diffuse_reflectance
+
 .. autofunction:: mitsuba.fresnel_polarized
 
 .. autofunction:: mitsuba.has_flag
