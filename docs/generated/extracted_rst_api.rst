@@ -24044,6 +24044,20 @@
     Returns → drjit.llvm.ad.Float:
         The unpolarized Fresnel reflection coefficient.
 
+.. py:function:: mitsuba.fresnel_diffuse_reflectance(eta)
+
+    Computes the diffuse unpolarized Fresnel reflectance of a dielectric
+    material (sometimes referred to as "Fdr").
+
+    This value quantifies what fraction of diffuse incident illumination
+    will, on average, be reflected at a dielectric material boundary
+
+    Parameter ``eta`` (drjit.llvm.ad.Float):
+        Relative refraction coefficient
+
+    Returns → drjit.llvm.ad.Float:
+        F, the unpolarized Fresnel coefficient.
+
 .. py:function:: mitsuba.fresnel_polarized(cos_theta_i, eta)
 
     Calculates the polarized Fresnel reflection coefficient at a planar
