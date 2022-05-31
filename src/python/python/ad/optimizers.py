@@ -382,12 +382,12 @@ class AdaBound(Optimizer):
         from mitsuba.core import Float
 
         for k, p in self.variables.items():
-            g_p = ek.grad(p)
-            shape = ek.shape(g_p)
+            g_p = dr.grad(p)
+            shape = dr.shape(g_p)
 
             if shape == 0:
                 continue
-            elif shape != ek.shape(self.state[k]['exp_avg']):
+            elif shape != dr.shape(self.state[k]['exp_avg']):
                 # Reset state if data size has changed
                 self.reset(k)
             state = self.state[k]
@@ -397,52 +397,52 @@ class AdaBound(Optimizer):
             state['exp_avg'] = self.beta_1 * state['exp_avg'] + (1 - self.beta_1) * g_p
             state['exp_avg_sq'] = self.beta_2 * state['exp_avg_sq'] \
                                   + (1 - self.beta_2) * g_p * g_p
-            ek.schedule(state['exp_avg'], state['exp_avg_sq'])
+            dr.schedule(state['exp_avg'], state['exp_avg_sq'])
             if self.amsbound:
                 # Maintains the maximum of all 2nd moment running avg. till now
-                state['max_exp_avg_sq'] = ek.max(
+                state['max_exp_avg_sq'] = dr.max(
                     state['max_exp_avg_sq'], state['exp_avg_sq'])
-                ek.schedule(state['max_exp_avg_sq'])
+                dr.schedule(state['max_exp_avg_sq'])
                 # Use the max. for normalizing running avg. of gradient
-                denom = ek.sqrt(state['max_exp_avg_sq']) + self.epsilon
+                denom = dr.sqrt(state['max_exp_avg_sq']) + self.epsilon
             else:
-                denom = ek.sqrt(state['exp_avg_sq']) + self.epsilon
+                denom = dr.sqrt(state['exp_avg_sq']) + self.epsilon
 
             bias_correction1 = 1 - self.beta_1 ** state['step']
             bias_correction2 = 1 - self.beta_2 ** state['step']
-            scaled_lr = ek.sqrt(bias_correction2) / bias_correction1
-            scaled_lr = self.lr_v[k] * ek.opaque(ek.detached_t(Float), scaled_lr)
+            scaled_lr = dr.sqrt(bias_correction2) / bias_correction1
+            scaled_lr = self.lr_v[k] * dr.opaque(dr.detached_t(Float), scaled_lr)
 
             # Applies bounds on actual learning rate
             lower_bound = self.final_lr * (1 - 1 / (self.gamma * state['step'] + 1))
             upper_bound = self.final_lr * (1 + 1 / (self.gamma * state['step']))
-            lower_bound = ek.opaque(ek.detached_t(Float), lower_bound)
-            upper_bound = ek.opaque(ek.detached_t(Float), upper_bound)
+            lower_bound = dr.opaque(dr.detached_t(Float), lower_bound)
+            upper_bound = dr.opaque(dr.detached_t(Float), upper_bound)
 
-            step_size = ek.clamp(scaled_lr / denom,
+            step_size = dr.clamp(scaled_lr / denom,
                                  lower_bound, upper_bound) * state['exp_avg']
 
-            u = ek.detach(p, True) - step_size
+            u = dr.detach(p, True) - step_size
             # TODO: do we really need this?
             u = type(p)(u)
-            ek.enable_grad(u)
+            dr.enable_grad(u)
             self.variables[k] = u
-            ek.schedule(self.variables[k])
+            dr.schedule(self.variables[k])
 
-        ek.eval()
+        dr.eval()
 
     def reset(self, key):
         """Zero-initializes the internal state associated with a parameter"""
         p = self.variables[key]
-        shape = ek.shape(p) if p.IsTensor else ek.width(p)
-        d_tp = ek.detached_t(p)
+        shape = dr.shape(p) if p.IsTensor else dr.width(p)
+        d_tp = dr.detached_t(p)
         self.state[key] = {
             'step': 0,
-            'exp_avg': ek.zero(d_tp, shape),
-            'exp_avg_sq': ek.zero(d_tp, shape),
+            'exp_avg': dr.zero(d_tp, shape),
+            'exp_avg_sq': dr.zero(d_tp, shape),
         }
         if self.amsbound:
-            self.state[key]['max_exp_avg_sq'] = ek.zero(d_tp, shape)
+            self.state[key]['max_exp_avg_sq'] = dr.zero(d_tp, shape)
 
     def __repr__(self):
         return ('Adam[\n'
