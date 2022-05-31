@@ -90,9 +90,9 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             Throw("Attempted to enable bbox fast path, but there were %s > 1 "
                   "shapes in the scene.",
                   m_shapes.size());
-#if !defined(MTS_OPTIX_ENABLE_BBOX_FASTPATH)
+#if !defined(MI_OPTIX_ENABLE_BBOX_FASTPATH)
         Throw("Attempted to enable bbox fast path, but the compile-time option "
-              "`MTS_OPTIX_ENABLE_BBOX_FASTPATH` was disabled.");
+              "`MI_OPTIX_ENABLE_BBOX_FASTPATH` was disabled.");
 #endif
     }
     Log(Info, "Ray tracing: bbox fast path %s",
