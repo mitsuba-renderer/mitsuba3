@@ -29,8 +29,8 @@ NAMESPACE_BEGIN(mitsuba)
  * In addition to receiving samples via the \ref put() method, the image block
  * can also be queried via the \ref read() method, in which case the
  * reconstruction filter is used to compute suitable interpolation weights.
- * This is feature is useful for differentiable rendering, where we one needs
- * to evaluate the reverse-mode derivative of the \ref put() method.
+ * This is feature is useful for differentiable rendering, where one needs to
+ * evaluate the reverse-mode derivative of the \ref put() method.
  */
 
 template <typename Float, typename Spectrum>
