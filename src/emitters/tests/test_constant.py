@@ -79,9 +79,9 @@ def test03_sample_direction(variants_vec_spectral):
     samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
     ds, res = emitter.sample_direction(it, samples)
 
-    assert dr.allclose(ds.pdf, dr.InvFourPi)
+    assert dr.allclose(ds.pdf, dr.inv_four_pi)
     assert dr.allclose(ds.d, mi.warp.square_to_uniform_sphere(samples))
-    assert dr.allclose(emitter.pdf_direction(it, ds), dr.InvFourPi)
+    assert dr.allclose(emitter.pdf_direction(it, ds), dr.inv_four_pi)
     assert dr.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)
