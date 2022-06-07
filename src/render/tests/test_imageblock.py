@@ -76,7 +76,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
                     eval_method = rfilter.eval_discretized
 
                 out = ref.array
-                for i in range(dr.hprod(size)):
+                for i in range(dr.prod(size)):
                     out[i] = eval_method(-p[0][i]) * \
                              eval_method(-p[1][i])
             else:
@@ -177,7 +177,7 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                     eval_method = rfilter.eval_discretized
 
                 weights = ref = 0
-                for i in range(dr.hprod(size)):
+                for i in range(dr.prod(size)):
                     weight = eval_method(-p[0][i]) * eval_method(-p[1][i])
                     ref = dr.fmadd(src[i], weight, ref)
                     weights += weight

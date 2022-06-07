@@ -194,7 +194,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
 
     # Compute spp budget
     sample_budget = int(2e6)
-    pixel_count = dr.hprod(ref_bmp.size())
+    pixel_count = dr.prod(ref_bmp.size())
     spp = sample_budget // pixel_count
 
     # Load and render

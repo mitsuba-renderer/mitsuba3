@@ -163,7 +163,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     block = mi.ImageBlock(res, [0, 0], (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
 
     if dr.is_jit_array_v(mi.Float):
-        pixel_idx = dr.arange(mi.UInt32, dr.hprod(res))
+        pixel_idx = dr.arange(mi.UInt32, dr.prod(res))
         x = pixel_idx % res[0]
         y = pixel_idx // res[0]
 
@@ -189,7 +189,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
 
     image = film.develop()
 
-    assert dr.hprod(image.shape) == dr.hprod(res) * (len(output_channels))
+    assert dr.prod(image.shape) == dr.prod(res) * (len(output_channels))
 
     data_bitmap = mi.Bitmap(image, mi.Bitmap.PixelFormat.MultiChannel, output_channels)
     bitmap = film.bitmap()

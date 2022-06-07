@@ -150,7 +150,7 @@ class ChiSquareTest:
                                   mi.Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
-        self.histogram = dr.zeros(mi.Float, dr.hprod(self.res))
+        self.histogram = dr.zeros(mi.Float, dr.prod(self.res))
 
         dr.scatter_reduce(
             dr.ReduceOp.Add,
@@ -206,9 +206,9 @@ class ChiSquareTest:
         p += (sample_index_2d + 1e-4) * (1-2e-4) * sample_spacing
 
         # Trapezoid rule integration weights
-        weights = dr.hprod(dr.select(dr.eq(sample_index_2d, 0) |
+        weights = dr.prod(dr.select(dr.eq(sample_index_2d, 0) |
                                      dr.eq(sample_index_2d, self.ires - 1), 0.5, 1))
-        weights *= dr.hprod(sample_spacing) * self.sample_count
+        weights *= dr.prod(sample_spacing) * self.sample_count
 
         # Remap onto the target domain
         p = self.domain.map_forward(p)
