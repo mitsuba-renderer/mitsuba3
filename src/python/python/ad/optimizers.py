@@ -41,7 +41,7 @@ class Optimizer:
         different optimization run), the previous momentum value is meaningless
         and calling `reset()` is advisable.
         """
-        if not (dr.is_diff_v(value) and dr.is_floating_point_v(value)):
+        if not (dr.is_diff_v(value) and dr.is_float_v(value)):
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
         needs_reset = (key not in self.variables) or dr.shape(self.variables[key]) != dr.shape(value)
 
@@ -105,7 +105,7 @@ class Optimizer:
 
         for k in Optimizer.__match(keys, self.params):
             value = self.params[k]
-            if dr.is_diff_v(value) and dr.is_floating_point_v(value):
+            if dr.is_diff_v(value) and dr.is_float_v(value):
                 self[k] = value
 
     def update(self, keys=None) -> None:
