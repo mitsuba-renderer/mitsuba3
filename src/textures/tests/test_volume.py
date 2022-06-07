@@ -16,7 +16,7 @@ def test01_eval(variants_vec_backends_once, tmpdir):
     })
     si = dr.zeros(mi.SurfaceInteraction3f)
     si.p = mi.Point3f([0.4, 0.4, 0.3], [0.5, 0.0, -0.5], [0.5, 0.4, 0.5])
-    assert dr.allclose(dr.hmean(texture.eval(si)), [0.9, 0.0, 0.0])
+    assert dr.allclose(dr.mean(texture.eval(si)), [0.9, 0.0, 0.0])
     assert dr.allclose(texture.max(), 0.9)
 
 
