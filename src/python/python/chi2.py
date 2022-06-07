@@ -159,7 +159,7 @@ class ChiSquareTest:
             xy.x + xy.y * self.res.x,
         )
 
-        histogram_min = dr.hmin(self.histogram)
+        histogram_min = dr.min(self.histogram)
         if not histogram_min >= 0:
             self._log('Encountered a cell with negative sample '
                       'weights: %f' % histogram_min)
@@ -223,7 +223,7 @@ class ChiSquareTest:
             dr.resize(self.pdf, dr.width(p))
 
         # A few sanity checks
-        pdf_min = dr.hmin(self.pdf) / self.sample_count
+        pdf_min = dr.min(self.pdf) / self.sample_count
         if not pdf_min >= 0:
             self._log('Failure: Encountered a cell with a '
                       'negative PDF value: %f' % pdf_min)
