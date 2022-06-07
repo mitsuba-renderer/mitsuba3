@@ -56,7 +56,7 @@ def test02_eval_all(variant_scalar_rgb):
     ctx = mi.BSDFContext()
 
     # Evaluate the blend of both components
-    expected = (1 - weight) * 0.0 * dr.InvPi + weight * 1.0 * dr.InvPi
+    expected = (1 - weight) * 0.0 * dr.inv_pi + weight * 1.0 * dr.inv_pi
     value    = bsdf.eval(ctx, si, wo)
     assert dr.allclose(value, expected)
 
@@ -91,12 +91,12 @@ def test03_eval_components(variant_scalar_rgb):
 
     ctx.component = 0
     value0 = bsdf.eval(ctx, si, wo)
-    expected0 = (1-weight) * 0.0*dr.InvPi
+    expected0 = (1-weight) * 0.0*dr.inv_pi
     assert dr.allclose(value0, expected0)
 
     ctx.component = 1
     value1 = bsdf.eval(ctx, si, wo)
-    expected1 = weight * 1.0*dr.InvPi
+    expected1 = weight * 1.0*dr.inv_pi
     assert dr.allclose(value1, expected1)
 
 
