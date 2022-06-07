@@ -224,7 +224,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     ctx = mi.BSDFContext()
 
-    theta = 0.5 * (dr.Pi / 2)
+    theta = 0.5 * (dr.pi / 2)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
 
     # Evaluate BSDF (using vcalls)
@@ -319,7 +319,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
     ctx = mi.BSDFContext()
 
-    theta = 0.5 * (dr.Pi / 2)
+    theta = 0.5 * (dr.pi / 2)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
 
     # Evaluate BSDF (using vcalls)

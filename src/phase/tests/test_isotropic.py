@@ -13,12 +13,12 @@ def test02_eval(variant_scalar_rgb):
     ctx = mi.PhaseFunctionContext(None)
     mei = mi.MediumInteraction3f()
 
-    theta  = dr.linspace(mi.Float, dr.Pi / 2, 4)
-    ph  = dr.linspace(mi.Float, 0, dr.Pi, 4)
+    theta  = dr.linspace(mi.Float, dr.pi / 2, 4)
+    ph  = dr.linspace(mi.Float, 0, dr.pi, 4)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
     v_eval = p.eval(ctx, mei, wo)
 
-    assert dr.allclose(v_eval, 1.0 / (4 * dr.Pi))
+    assert dr.allclose(v_eval, 1.0 / (4 * dr.pi))
 
 
 def test03_chi2(variants_vec_backends_once_rgb):

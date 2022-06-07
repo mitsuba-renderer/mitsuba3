@@ -418,7 +418,7 @@ class SphericalDomain:
     'Maps between the unit sphere and a [cos(theta), phi] parameterization.'
 
     def bounds(self):
-        return mi.ScalarBoundingBox2f([-dr.Pi, -1], [dr.Pi, 1])
+        return mi.ScalarBoundingBox2f([-dr.pi, -1], [dr.pi, 1])
 
     def aspect(self):
         return 2
@@ -566,7 +566,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     def instantiate(args):
         wi = [0, 0, 1]
         if len(args) == 1:
-            angle = args[0] * dr.Pi / 180
+            angle = args[0] * dr.pi / 180
             wi = [dr.sin(angle), 0, dr.cos(angle)]
         return mi.MicrofacetDistribution(md_type, alpha, sample_visible), wi
 

@@ -136,7 +136,7 @@ def test03_eval_pdf_thin(variant_scalar_rgb):
     pdf = []
     evaluate = []
     for i in range(20):
-        theta = i / 19.0 * (dr.Pi / 2)
+        theta = i / 19.0 * (dr.pi / 2)
         wo = [dr.sin(theta), 0, dr.cos(theta)]
         assert dr.allclose(bsdf.pdf(ctx, si, wo=wo), pdf_true[i])
         assert dr.allclose(bsdf.eval(ctx, si, wo=wo)[0], evaluate_true[i])

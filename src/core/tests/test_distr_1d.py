@@ -194,7 +194,7 @@ def test13_cont_func(variants_vec_backends_once):
     y = dr.exp(-dr.sqr(x))
 
     d = mi.ContinuousDistribution([-2, 2], y)
-    assert dr.allclose(d.integral(), dr.sqrt(dr.Pi) * dr.erf(2.0))
+    assert dr.allclose(d.integral(), dr.sqrt(dr.pi) * dr.erf(2.0))
     assert dr.allclose(d.eval_pdf([1]), [dr.exp(-1)])
     assert dr.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
 

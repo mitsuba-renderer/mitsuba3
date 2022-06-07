@@ -22,8 +22,8 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
     assert not mdf_i.is_anisotropic()
 
     steps = 20
-    theta = dr.linspace(mi.Float, 0, dr.Pi, steps)
-    phi = dr.full(mi.Float, dr.Pi / 2, steps)
+    theta = dr.linspace(mi.Float, 0, dr.pi, steps)
+    phi = dr.full(mi.Float, dr.pi / 2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -67,7 +67,7 @@ def test02_eval_pdf_beckmann(variants_vec_backends_once):
                 -0.00000000e+00,  -0.00000000e+00])
 
     theta = dr.full(mi.Float, 0.1, steps)
-    phi = dr.linspace(mi.Float, 0, 2*dr.Pi, steps)
+    phi = dr.linspace(mi.Float, 0, 2*dr.pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -93,9 +93,9 @@ def test03_smith_g1_beckmann(variants_vec_backends_once):
     mdf   = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, 0.3, False)
     mdf_i = mi.MicrofacetDistribution(mi.MicrofacetType.Beckmann, 0.1, False)
     steps = 20
-    theta = dr.linspace(mi.Float, dr.Pi/3, dr.Pi/2, steps)
+    theta = dr.linspace(mi.Float, dr.pi/3, dr.pi/2, steps)
 
-    phi = dr.full(mi.Float, dr.Pi/2, steps)
+    phi = dr.full(mi.Float, dr.pi/2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -114,8 +114,8 @@ def test03_smith_g1_beckmann(variants_vec_backends_once):
                 9.8627287e-01, 9.5088160e-01, 8.5989666e-01, 6.2535185e-01, 5.7592310e-06], atol=1e-5)
 
     steps = 20
-    theta = dr.full(mi.Float, dr.Pi / 2 * 0.98, steps)
-    phi = dr.linspace(mi.Float, 0, 2 * dr.Pi, steps)
+    theta = dr.full(mi.Float, dr.pi / 2 * 0.98, steps)
+    phi = dr.linspace(mi.Float, 0, 2 * dr.pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -196,8 +196,8 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
     mdf   = mi.MicrofacetDistribution(mi.MicrofacetType.GGX, 0.1, 0.3, False)
     mdf_i = mi.MicrofacetDistribution(mi.MicrofacetType.GGX, 0.1, False)
     steps = 20
-    theta = dr.linspace(mi.Float, dr.Pi/3, dr.Pi/2, steps)
-    phi = dr.full(mi.Float, dr.Pi/2, steps)
+    theta = dr.linspace(mi.Float, dr.pi/3, dr.pi/2, steps)
+    phi = dr.full(mi.Float, dr.pi/2, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
@@ -215,8 +215,8 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
                         9.6378750e-01, 9.5463598e-01, 9.4187391e-01, 9.2344058e-01, 8.9569420e-01,
                         8.5189372e-01, 7.7902949e-01, 6.5144652e-01, 4.1989169e-01, 3.2584082e-06], atol=1e-5)
 
-    theta = dr.full(mi.Float, dr.Pi / 2 * 0.98, steps)
-    phi = dr.linspace(mi.Float, 0, 2 * dr.Pi, steps)
+    theta = dr.full(mi.Float, dr.pi / 2 * 0.98, steps)
+    phi = dr.linspace(mi.Float, 0, 2 * dr.pi, steps)
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]

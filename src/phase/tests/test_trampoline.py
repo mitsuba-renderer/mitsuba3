@@ -31,10 +31,10 @@ def test01_create_and_eval(variants_vec_rgb):
 
     ctx = mi.PhaseFunctionContext(None)
     mei = mi.MediumInteraction3f()
-    theta = dr.linspace(mi.Float, 0, dr.Pi / 2, 4)
-    ph = dr.linspace(mi.Float, 0, dr.Pi, 4)
+    theta = dr.linspace(mi.Float, 0, dr.pi / 2, 4)
+    ph = dr.linspace(mi.Float, 0, dr.pi, 4)
 
     wo = [dr.sin(theta), 0, dr.cos(theta)]
     v_eval = p.eval(ctx, mei, wo)
 
-    assert dr.allclose(v_eval, 1.0 / (4 * dr.Pi))
+    assert dr.allclose(v_eval, 1.0 / (4 * dr.pi))

@@ -136,7 +136,7 @@ def test04_sample_specific_component(variant_scalar_rgb):
 
 
 def test05_spot_check(variant_scalar_rgb):
-    angle = 80 * dr.Pi / 180
+    angle = 80 * dr.pi / 180
     ctx = mi.BSDFContext()
     si = mi.SurfaceInteraction3f()
     wi = [dr.sin(angle), 0, dr.cos(angle)]
@@ -148,7 +148,7 @@ def test05_spot_check(variant_scalar_rgb):
     assert dr.allclose(bs.wo, [-dr.sin(angle), 0, dr.cos(angle)])
 
     bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
-    angle = 41.03641052520335 * dr.Pi / 180
+    angle = 41.03641052520335 * dr.pi / 180
     assert dr.allclose(bs.pdf, 1 - 0.387704354691473)
     assert dr.allclose(bs.wo, [-dr.sin(angle), 0, -dr.cos(angle)])
 

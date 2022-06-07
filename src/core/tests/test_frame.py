@@ -25,8 +25,8 @@ def test01_construction(variant_scalar_rgb):
 
 
 def test02_unit_frame(variant_scalar_rgb):
-    for theta in [30 * dr.Pi / 180, 95 * dr.Pi / 180]:
-        phi = 73 * dr.Pi / 180
+    for theta in [30 * dr.pi / 180, 95 * dr.pi / 180]:
+        phi = 73 * dr.pi / 180
         sin_theta, cos_theta = dr.sin(theta), dr.cos(theta)
         sin_phi, cos_phi = dr.sin(phi), dr.cos(phi)
 

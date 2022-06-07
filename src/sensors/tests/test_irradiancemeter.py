@@ -110,7 +110,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
             intersection.emitter(scene).eval(intersection)
     power_density_avg = power_density_cum / float(num_samples)
 
-    assert dr.allclose(power_density_avg, mi.Spectrum(dr.Pi * radiance))
+    assert dr.allclose(power_density_avg, mi.Spectrum(dr.pi * radiance))
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
@@ -139,4 +139,4 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     img = film.bitmap(raw=True).convert(mi.Bitmap.PixelFormat.Y,
                                         mi.Struct.Type.Float32, srgb_gamma=False)
 
-    assert dr.allclose(mi.TensorXf(img), (radiance * dr.Pi))
+    assert dr.allclose(mi.TensorXf(img), (radiance * dr.pi))

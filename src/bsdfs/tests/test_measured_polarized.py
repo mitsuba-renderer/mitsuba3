@@ -21,8 +21,8 @@ def test01_evaluation(variant_scalar_spectral_polarized):
         'filename': 'resources/data/tests/pbsdf/spectralon_lowres.pbsdf'
     })
 
-    phi_i   = 30 * dr.Pi / 180.0
-    theta_i = 10 * dr.Pi / 180.0
+    phi_i   = 30 * dr.pi / 180.0
+    theta_i = 10 * dr.pi / 180.0
     wi = mi.Vector3f([dr.sin(theta_i) * dr.cos(phi_i),
                       dr.sin(theta_i) * dr.sin(phi_i),
                       dr.cos(theta_i)])
@@ -34,8 +34,8 @@ def test01_evaluation(variant_scalar_spectral_polarized):
     si.sh_frame = mi.Frame3f([0, 0, 1])
     si.wavelengths = [500, 500, 500, 500]
 
-    phi_o   = 200 * dr.Pi / 180.0
-    theta_o = 3 * dr.Pi / 180.0
+    phi_o   = 200 * dr.pi / 180.0
+    theta_o = 3 * dr.pi / 180.0
     wi = mi.Vector3f([dr.sin(theta_o) * dr.cos(phi_o),
                       dr.sin(theta_o) * dr.sin(phi_o),
                       dr.cos(theta_o)])
