@@ -21,9 +21,9 @@ public:
     ~Denoiser();
 
     TensorXf denoise(const TensorXf &noisy, const TensorXf *albedo = nullptr,
-                      const TensorXf *normals = nullptr,
-                      const TensorXf *previous_denoised = nullptr,
-                      const TensorXf *flow = nullptr);
+                     const TensorXf *normals = nullptr,
+                     const TensorXf *previous_denoised = nullptr,
+                     const TensorXf *flow = nullptr);
 
     ref<Bitmap> denoise(const ref<Bitmap> &noisy,
                         const std::string &albedo_ch = "",
@@ -36,6 +36,7 @@ public:
 
     MI_DECLARE_CLASS()
 private:
+    ScalarVector2u m_input_size;
     CUdeviceptr m_state;
     uint32_t m_state_size;
     CUdeviceptr m_scratch;

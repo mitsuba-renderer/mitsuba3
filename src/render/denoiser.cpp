@@ -19,7 +19,7 @@ static OptixImage2D optixImage2DfromTensor(
 MI_VARIANT Denoiser<Float, Spectrum>::Denoiser(const ScalarVector2u &input_size,
                                                bool albedo, bool normals,
                                                bool temporal)
-    : m_temporal(temporal) {
+    : m_input_size(input_size), m_temporal(temporal) {
     if (normals && !albedo)
         Throw("The denoiser cannot use normals to guide its process without "
               "also providing albedo information!");
@@ -64,14 +64,29 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
     const TensorXf *previous_denoised, const TensorXf *flow) {
     using Array = typename TensorXf::Array;
 
-    // TODO check that input matches current state
+    if ((albedo == nullptr) && m_options.guideAlbedo)
+        Throw("The Denoiser was created with albedo guiding enabled. An albedo "
+              "layer must be specified!");
+    if ((normals == nullptr) && m_options.guideNormal)
+        Throw("The Denoiser was created with normals guiding enabled. A normal"
+              "layer must be specified!");
+    if (((flow == nullptr) || (previous_denoised == nullptr)) && m_temporal)
+        Throw("The Denoiser was created with temporal denoising enabled. Both "
+              "the optical flow and the denoised previous frame must be "
+              "specified!");
+    if (m_input_size.x() != noisy.shape(1) ||
+        m_input_size.y() != noisy.shape(0))
+        Throw("The Denoiser was created for inputs of size %u x %u (width x "
+              "height). You must create a new Denoiser object for inputs of "
+              "different sizes!",
+              m_input_size.x(), m_input_size.y());
 
     OptixDenoiserLayer layers = {};
     OptixPixelFormat input_pixel_format = (noisy.shape(2) == 3)
                                               ? OPTIX_PIXEL_FORMAT_FLOAT3
                                               : OPTIX_PIXEL_FORMAT_FLOAT4;
-    layers.input = optixImage2DfromTensor<Float, Spectrum>(
-        noisy, input_pixel_format);
+    layers.input =
+        optixImage2DfromTensor<Float, Spectrum>(noisy, input_pixel_format);
 
     layers.output = layers.input;
     Array output_data = dr::empty<Array>(noisy.size());
@@ -100,6 +115,8 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
         // Z=forward) to a right-handed system  with (X=right, Y=up, Z=backward)
         corrected_normals = std::make_unique<TensorXf>(*normals);
 
+        // TODO: Understand if this is necessary or not
+        /*
         UInt32 x_idx = dr::arange<UInt32>(0, corrected_normals->size(), 3);
         Float x_values = dr::gather<Float>(corrected_normals->array(), x_idx);
         dr::scatter(corrected_normals->array(), -x_values, x_idx);
@@ -107,6 +124,7 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
         UInt32 z_idx = dr::arange<UInt32>(2, corrected_normals->size(), 3);
         Float z_values = dr::gather<Float>(corrected_normals->array(), z_idx);
         dr::scatter(corrected_normals->array(), -z_values, z_idx);
+        */
 
         guide_layer.normal = optixImage2DfromTensor<Float, Spectrum>(
             *corrected_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
@@ -132,9 +150,9 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
     const ref<Bitmap> &noisy_, const std::string &albedo_ch,
     const std::string &normals_ch, const std::string &flow_ch,
     const std::string &previous_denoised_ch, const std::string &noisy_ch) {
-    size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
-                                     noisy_->channel_count() };
     if (noisy_->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
+        size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
+                                         noisy_->channel_count() };
         TensorXf noisy_tensor(noisy_->data(), 3, noisy_tensor_shape);
         TensorXf denoised =
             denoise(noisy_tensor, nullptr, nullptr, nullptr, nullptr);
@@ -154,40 +172,40 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
     const Bitmap *albedo_bmp = nullptr;
     const Bitmap *normals_bmp = nullptr;
     const Bitmap *flow_bmp = nullptr;
-    const Bitmap *previous_denoised_bmp = nullptr;
+    const Bitmap *prev_denoised_bmp = nullptr;
 
     bool found_albedo = albedo_ch == "";
     bool found_normals = normals_ch == "";
     bool found_flow = flow_ch == "";
-    bool found_previous_denoised = previous_denoised_ch == "";
+    bool found_prev_denoised = previous_denoised_ch == "";
 
+    // Search for each layer
     std::vector<std::pair<std::string, ref<Bitmap>>> res = noisy_->split();
-    for (const auto &pair : res) {
+    auto find_channel = [](const std::pair<std::string, ref<Bitmap>> &layer,
+                           const std::string &channel_name, bool &flag,
+                           const Bitmap *&bmp) {
+        if (!flag && layer.first == channel_name) {
+            flag = true;
+            bmp = layer.second.get();
+        }
+    };
+    for (auto &layer : res) {
         if (found_albedo && found_normals && found_flow &&
-            found_previous_denoised && noisy_bmp != nullptr)
+            found_prev_denoised && noisy_bmp != nullptr)
             break;
-        if (!found_albedo && pair.first == albedo_ch) {
-            found_albedo = true;
-            albedo_bmp = pair.second.get();
-        }
-        if (!found_normals && pair.first == normals_ch) {
-            found_normals = true;
-            normals_bmp = pair.second.get();
-        }
-        if (!found_flow && pair.first == flow_ch) {
-            found_flow = true;
-            flow_bmp = pair.second.get();
-        }
-        if (!found_previous_denoised && pair.first == previous_denoised_ch) {
-            found_previous_denoised = true;
-            previous_denoised_bmp = pair.second.get();
-        }
-        if (noisy_bmp == nullptr && pair.first == noisy_ch)
-            noisy_bmp = pair.second.get();
+        if (noisy_bmp == nullptr && layer.first == noisy_ch)
+            noisy_bmp = layer.second.get();
+
+        find_channel(layer, albedo_ch, found_albedo, albedo_bmp);
+        find_channel(layer, normals_ch, found_normals, normals_bmp);
+        find_channel(layer, flow_ch, found_flow, flow_bmp);
+        find_channel(layer, previous_denoised_ch, found_prev_denoised,
+                     prev_denoised_bmp);
     }
 
-    const auto throw_missing_channel = [&](const std::string &channel) {
-        Throw("Could not find rendered image with channel name '%s' in:\n%s",
+    // Check that no layer is missing
+    auto throw_missing_channel = [&](const std::string &channel) {
+        Throw("Could not find layer with channel name '%s' in Bitmap:\n%s",
               channel, noisy_->to_string());
     };
     if (noisy_bmp == nullptr)
@@ -198,48 +216,46 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
         throw_missing_channel(normals_ch);
     if (!found_flow)
         throw_missing_channel(flow_ch);
-    if (!found_previous_denoised)
+    if (!found_prev_denoised)
         throw_missing_channel(previous_denoised_ch);
 
-    noisy_tensor_shape[2] = noisy_bmp->channel_count();
+    // Transfer every layer into a TensorXf object
+    size_t noisy_channel_count = noisy_bmp->channel_count();
+    size_t noisy_tensor_shape[3] = { noisy_bmp->height(), noisy_bmp->width(),
+                                     noisy_channel_count };
     TensorXf noisy_tensor(noisy_bmp->data(), 3, noisy_tensor_shape);
-
+    auto setup_tensor = [](const Bitmap *bmp, std::unique_ptr<TensorXf> &tensor,
+                           size_t channel_count) {
+        if (bmp != nullptr) {
+            size_t shape[3] = { bmp->height(), bmp->width(), channel_count };
+            tensor = std::make_unique<TensorXf>(bmp->data(), 3, shape);
+        }
+    };
     std::unique_ptr<TensorXf> albedo_tensor = nullptr;
-    if (albedo_bmp != nullptr) {
-        size_t shape[3] = { noisy_->height(), noisy_->width(), 3 };
-        albedo_tensor =
-            std::make_unique<TensorXf>(albedo_bmp->data(), 3, shape);
-    }
+    setup_tensor(albedo_bmp, albedo_tensor, 3);
     std::unique_ptr<TensorXf> normals_tensor = nullptr;
-    if (normals_bmp != nullptr) {
-        size_t shape[3] = { noisy_->height(), noisy_->width(), 3 };
-        normals_tensor =
-            std::make_unique<TensorXf>(normals_bmp->data(), 3, shape);
-    }
+    setup_tensor(normals_bmp, normals_tensor, 3);
     std::unique_ptr<TensorXf> flow_tensor = nullptr;
-    if (flow_bmp != nullptr) {
-        size_t flow_shape[3] = { noisy_->height(), noisy_->width(), 2 };
-        flow_tensor =
-            std::make_unique<TensorXf>(flow_bmp->data(), 3, flow_shape);
-    }
-    std::unique_ptr<TensorXf> previous_denoised_tensor = nullptr;
-    if (previous_denoised_bmp!= nullptr)
-        previous_denoised_tensor = std::make_unique<TensorXf>(
-            previous_denoised_bmp->data(), 3, noisy_tensor_shape);
+    setup_tensor(flow_bmp, flow_tensor, 2);
+    std::unique_ptr<TensorXf> prev_denoised_tensor = nullptr;
+    setup_tensor(prev_denoised_bmp, prev_denoised_tensor, noisy_channel_count);
 
+    // Generate output
     TensorXf denoised =
         denoise(noisy_tensor, albedo_tensor.get(), normals_tensor.get(),
-                flow_tensor.get(), previous_denoised_tensor.get());
-
+                flow_tensor.get(), prev_denoised_tensor.get());
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
-    jit_sync_thread();
+    ref<Bitmap> output = new Bitmap(
+        (noisy_channel_count = 3) ? Bitmap::PixelFormat::RGB
+                                  : Bitmap::PixelFormat::RGBA,
+        Struct::Type::Float32, { denoised.shape(1), denoised.shape(0) },
+        denoised.shape(2), {});
+    jit_sync_thread(); // Wait for `denoised_data` to be ready
+    memcpy(output->data(), denoised_data, output->buffer_size());
+    jit_free(denoised_data);
 
-    return new Bitmap((denoised.shape(2) == 3) ? Bitmap::PixelFormat::RGB
-                                               : Bitmap::PixelFormat::RGBA,
-                      Struct::Type::Float32,
-                      { denoised.shape(1), denoised.shape(0) },
-                      denoised.shape(2), {}, (uint8_t *) denoised_data);
+    return output;
 }
 
 MI_VARIANT
