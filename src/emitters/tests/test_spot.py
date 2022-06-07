@@ -43,7 +43,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
-    cutoff_angle_rad = cutoff_angle / 180 * dr.Pi
+    cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
     emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
@@ -95,7 +95,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
 
-    cutoff_angle_rad = cutoff_angle / 180 * dr.Pi
+    cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     cos_cutoff_angle_rad = dr.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)

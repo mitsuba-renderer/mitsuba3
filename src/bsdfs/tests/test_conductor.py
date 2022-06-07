@@ -30,7 +30,7 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
         'k': eta.imag,
     })
 
-    theta_i = 45 * dr.Pi / 180.0
+    theta_i = 45 * dr.pi / 180.0
     wi = mi.Vector3f([-dr.sin(theta_i), 0, dr.cos(theta_i)])
 
     ctx = mi.BSDFContext()

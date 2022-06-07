@@ -691,19 +691,19 @@ class WriteXML:
             params['rotate_x'] = {
                 'type': 'rotate',
                 'x': '1',
-                'angle': rot[0] * 180 / dr.Pi
+                'angle': rot[0] * 180 / dr.pi
             }
         if rot[1] != 0.0:
             params['rotate_y'] = {
                 'type': 'rotate',
                 'y': '1',
-                'angle': rot[1] * 180 / dr.Pi
+                'angle': rot[1] * 180 / dr.pi
             }
         if rot[2] != 0.0:
             params['rotate_z'] = {
                 'type': 'rotate',
                 'z': '1',
-                'angle': rot[2] * 180 / dr.Pi
+                'angle': rot[2] * 180 / dr.pi
             }
         if export_scale and scale != 1.0:
             params['scale'] = {

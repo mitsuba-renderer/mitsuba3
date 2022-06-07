@@ -9,7 +9,7 @@ def test01_create(variant_scalar_rgb):
     s = mi.load_dict({"type" : "disk"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert dr.allclose(s.surface_area(), dr.Pi)
+    assert dr.allclose(s.surface_area(), dr.pi)
 
 
 def test02_bbox(variant_scalar_rgb):
@@ -23,7 +23,7 @@ def test02_bbox(variant_scalar_rgb):
             })
             b = s.bbox()
 
-            assert dr.allclose(s.surface_area(), sx * sy * dr.Pi)
+            assert dr.allclose(s.surface_area(), sx * sy * dr.pi)
 
             assert b.valid()
             assert dr.allclose(b.center(), translate)
@@ -148,7 +148,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     si = shape.ray_intersect(ray)
     si.uv *= 1.0
     dr.forward(ray.o.y)
-    assert dr.allclose(dr.grad(si.uv), [0, 0.5 / dr.Pi], atol=1e-5)
+    assert dr.allclose(dr.grad(si.uv), [0, 0.5 / dr.pi], atol=1e-5)
 
     # If the ray origin is shifted tangent to the disk, si.dp_dv will also have a component is x
     si = shape.ray_intersect(ray)

@@ -290,9 +290,9 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     )
 
     surface_area = 4.0 * surface_scale**2  # Area of square surface
-    l_o = l_e * cos_theta_e * rho / dr.Pi
+    l_o = l_e * cos_theta_e * rho / dr.pi
     expected = {  # Special expected values for some cases (when rays are "lost")
-        "default": l_o * (2.0 / dr.Pi) * cos_theta_o,
+        "default": l_o * (2.0 / dr.pi) * cos_theta_o,
         "target_square_large": l_o * 0.25,
     }
     expected_value = expected.get(sensor_setup, l_o)
@@ -379,5 +379,5 @@ def test_checkerboard(variants_all_rgb):
     scene = mi.load_dict(scene_dict)
     data = mi.render(scene)
 
-    expected = l_o * 0.5 * (rho0 + rho1) / dr.Pi
+    expected = l_o * 0.5 * (rho0 + rho1) / dr.pi
     assert dr.allclose(data, expected, atol=1e-3)

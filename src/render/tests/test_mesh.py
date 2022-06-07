@@ -84,7 +84,7 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
     n0 = mi.Vector3f(0.0, 0.0, -1.0)
     n1 = mi.Vector3f(0.0, 1.0, 0.0)
-    angle_0 = dr.Pi / 2.0
+    angle_0 = dr.pi / 2.0
     angle_1 = dr.acos(3.0 / 5.0)
     n2 = n0 * angle_0 + n1 * angle_1
     n2 /= dr.norm(n2)
@@ -509,7 +509,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     apply_transformation(lambda v : mi.Transform4f.rotate([0, 0, 1], v.x))
     si = pi.compute_surface_interaction(ray)
     dr.forward(diff_vector.x)
-    du = 0.5 * dr.sin(2 * dr.Pi / 360.0)
+    du = 0.5 * dr.sin(2 * dr.pi / 360.0)
     assert dr.allclose(dr.grad(si.uv), [-du, du], atol=1e-6)
 
 

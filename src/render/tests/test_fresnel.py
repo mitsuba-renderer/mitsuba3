@@ -14,23 +14,23 @@ def test01_fresnel(variant_scalar_rgb):
 
     # Spot check at 45 deg (1 -> 1.5)
     # Source: http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/freseq.html
-    F, cos_theta_t, _, scale = mi.fresnel(dr.cos(45 * dr.Pi / 180), 1.5)
-    cos_theta_t_ref = -dr.cos(28.1255057020557 * dr.Pi / 180)
+    F, cos_theta_t, _, scale = mi.fresnel(dr.cos(45 * dr.pi / 180), 1.5)
+    cos_theta_t_ref = -dr.cos(28.1255057020557 * dr.pi / 180)
     F_ref = 0.5 * (0.09201336304552442**2 + 0.3033370452904235**2)
-    L = (scale * dr.sqrt(1 - dr.cos(45 * dr.Pi / 180)**2))**2 + cos_theta_t**2
+    L = (scale * dr.sqrt(1 - dr.cos(45 * dr.pi / 180)**2))**2 + cos_theta_t**2
     assert dr.allclose(L, 1)
     assert dr.allclose(cos_theta_t, cos_theta_t_ref)
     assert dr.allclose(F, F_ref)
 
     # 1.5 -> 1
-    F, cos_theta_t, _, _ = mi.fresnel(dr.cos(45 * dr.Pi / 180), 1 / 1.5)
+    F, cos_theta_t, _, _ = mi.fresnel(dr.cos(45 * dr.pi / 180), 1 / 1.5)
     assert dr.allclose(F, 1)
     assert dr.allclose(cos_theta_t, 0)
 
-    F, cos_theta_t, _, scale = mi.fresnel(dr.cos(10 * dr.Pi / 180), 1 / 1.5)
-    cos_theta_t_ref = -dr.cos(15.098086605159006 * dr.Pi / 180)
+    F, cos_theta_t, _, scale = mi.fresnel(dr.cos(10 * dr.pi / 180), 1 / 1.5)
+    cos_theta_t_ref = -dr.cos(15.098086605159006 * dr.pi / 180)
     F_ref = 0.5 * (0.19046797197779405**2 + 0.20949431963852014**2)
-    L = (scale * dr.sqrt(1 - dr.cos(10 * dr.Pi / 180)**2))**2 + cos_theta_t**2
+    L = (scale * dr.sqrt(1 - dr.cos(10 * dr.pi / 180)**2))**2 + cos_theta_t**2
     assert dr.allclose(L, 1)
     assert dr.allclose(cos_theta_t, cos_theta_t_ref)
     assert dr.allclose(F, F_ref)
@@ -38,7 +38,7 @@ def test01_fresnel(variant_scalar_rgb):
 
 def test02_fresnel_polarized(variant_scalar_rgb):
     # Brewster's angle
-    angle = dr.cos(56.3099 * dr.Pi / 180)
+    angle = dr.cos(56.3099 * dr.pi / 180)
 
     a_s, a_p, cos_theta_t, _, scale = mi.fresnel_polarized(angle, 1.5)
 
@@ -55,7 +55,7 @@ def test02_fresnel_polarized_vec(variants_vec_backends_once):
 
 def test03_fresnel_conductor(variants_vec_backends_once):
     # The conductive and diel. variants should agree given a real-valued IOR
-    cos_theta_i = dr.cos(dr.linspace(mi.Float, 0, dr.Pi / 2, 20))
+    cos_theta_i = dr.cos(dr.linspace(mi.Float, 0, dr.pi / 2, 20))
 
     r, cos_theta_t, _, scale = mi.fresnel(cos_theta_i, 1.5)
     r_2 = mi.fresnel_conductor(cos_theta_i, 1.5)
@@ -68,7 +68,7 @@ def test03_fresnel_conductor(variants_vec_backends_once):
 
 def test04_snell(variants_vec_backends_once):
     # Snell's law
-    theta_i = dr.linspace(mi.Float, 0, dr.Pi / 2, 20)
+    theta_i = dr.linspace(mi.Float, 0, dr.pi / 2, 20)
     F, cos_theta_t, _, _ = mi.fresnel(dr.cos(theta_i), 1.5)
     theta_t = dr.acos(cos_theta_t)
 
@@ -84,12 +84,12 @@ def test05_amplitudes_external_reflection(variant_scalar_rgb):
     # Perpendicularly arriving light: check signs and relative phase shift 180 deg.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(1, 1.5)
     assert dr.real(a_s) < 0 and dr.real(a_p) > 0 and dr.imag(a_s) == 0 and dr.imag(a_p) == 0
-    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.Pi, atol=1e-5)
+    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.pi, atol=1e-5)
 
     # Just below Brewster's angle: same as above still.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(dr.cos(brewster - 0.01), 1.5)
     assert dr.real(a_s) < 0 and dr.real(a_p) > 0 and dr.imag(a_s) == 0 and dr.imag(a_p) == 0
-    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.Pi)
+    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.pi)
 
     # At Brewster's angle: p-polarized light is zero.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(dr.cos(brewster), 1.5)
@@ -117,12 +117,12 @@ def test06_amplitudes_internal_reflection(variant_scalar_rgb):
     # Perpendicularly arriving light: check signs and relative phase shift 180 deg.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(1, 1/1.5)
     assert dr.real(a_s) > 0 and dr.real(a_p) < 0 and dr.imag(a_s) == 0 and dr.imag(a_p) == 0
-    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.Pi, atol=1e-5)
+    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.pi, atol=1e-5)
 
     # Just below Brewster's angle: same as above still.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(dr.cos(brewster - 0.01), 1/1.5)
     assert dr.real(a_s) > 0 and dr.real(a_p) < 0 and dr.imag(a_s) == 0 and dr.imag(a_p) == 0
-    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.Pi, atol=1e-5)
+    assert dr.allclose(dr.abs(dr.arg(a_p) - dr.arg(a_s)), dr.pi, atol=1e-5)
 
     # At Brewster's angle: p-polarized light is zero.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(dr.cos(brewster), 1/1.5)
@@ -155,8 +155,8 @@ def test06_phase_tir(variant_scalar_rgb):
 
     # At grazing angle: both phases are 180 deg.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(0, eta)
-    assert dr.allclose(dr.arg(a_s), dr.Pi, atol=1e-5)
-    assert dr.allclose(dr.arg(a_p), dr.Pi, atol=1e-5)
+    assert dr.allclose(dr.arg(a_s), dr.pi, atol=1e-5)
+    assert dr.allclose(dr.arg(a_p), dr.pi, atol=1e-5)
 
     # Location of the maximal phase difference
     # Azzam, Eq. (11)

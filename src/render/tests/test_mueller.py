@@ -12,15 +12,15 @@ def test01_depolarizer(variant_scalar_rgb):
 def test02_rotator(variant_scalar_rgb):
     # Start with horizontally linear polarized light [1,1,0,0] and ..
     # .. rotate the Stokes frame by +45˚
-    assert dr.allclose(mi.mueller.rotator( 45 * dr.Pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, -1, 0], atol=1e-5)
+    assert dr.allclose(mi.mueller.rotator( 45 * dr.pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, -1, 0], atol=1e-5)
     # .. rotate the Stokes frame by -45˚
-    assert dr.allclose(mi.mueller.rotator(-45 * dr.Pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, +1, 0], atol=1e-5)
+    assert dr.allclose(mi.mueller.rotator(-45 * dr.pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, +1, 0], atol=1e-5)
 
 
 
 def test03_linear_polarizer(variant_scalar_rgb):
     # Malus' law
-    angle = 30 * dr.Pi/180
+    angle = 30 * dr.pi/180
     value_malus = dr.cos(angle)**2
     polarizer = mi.mueller.rotated_element(angle, mi.mueller.linear_polarizer(1.0))
 
@@ -33,7 +33,7 @@ def test04_linear_polarizer_rotated(variant_scalar_rgb):
     # The closed-form expression for a rotated linear polarizer is available
     # in many textbooks and should match the behavior of manually rotating the
     # optical element.
-    angle = 33 * dr.Pi/180
+    angle = 33 * dr.pi/180
     s, c = dr.sin(2*angle), dr.cos(2*angle)
     M_ref = dr.scalar.Matrix4f([[1, c, s, 0],
                                 [c, c*c, s*c, 0],
@@ -49,8 +49,8 @@ def test05_specular_reflection(variant_scalar_rgb):
     import numpy as np
 
     # Perpendicular incidence: 180 deg phase shift
-    assert dr.allclose(mi.mueller.specular_reflection(1, 1.5),   mi.mueller.linear_retarder(dr.Pi)*0.04)
-    assert dr.allclose(mi.mueller.specular_reflection(1, 1/1.5), mi.mueller.linear_retarder(dr.Pi)*0.04)
+    assert dr.allclose(mi.mueller.specular_reflection(1, 1.5),   mi.mueller.linear_retarder(dr.pi)*0.04)
+    assert dr.allclose(mi.mueller.specular_reflection(1, 1/1.5), mi.mueller.linear_retarder(dr.pi)*0.04)
 
     # Just before Brewster's angle: 180 deg phase shift
     M = mi.mueller.specular_reflection(dr.cos(dr.atan(1.5) - 0.01), 1.5)
@@ -154,7 +154,7 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
         return mi.Transform4f.rotate(axis, angle) @ v
 
     # As reference, rotate the element directly by -45˚
-    M_rotated_element = mi.mueller.rotated_element(-45 * dr.Pi/180, M)
+    M_rotated_element = mi.mueller.rotated_element(-45 * dr.pi/180, M)
 
     # Now rotate the two reference bases by 45˚ instead and make sure results are
     # equivalent.

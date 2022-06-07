@@ -218,7 +218,7 @@ def test12_eval_pdf(variant_scalar_rgb):
     ctx = mi.BSDFContext()
 
     for i in range(20):
-        theta = i / 19.0 * (dr.Pi / 2)
+        theta = i / 19.0 * (dr.pi / 2)
         wo = [dr.sin(theta), 0, dr.cos(theta)]
 
         v_pdf  = bsdf.pdf(ctx, si, wo=wo)

@@ -11,7 +11,7 @@ def test01_create(variant_scalar_rgb):
     s = mi.load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert dr.allclose(s.surface_area(), 2*dr.Pi)
+    assert dr.allclose(s.surface_area(), 2*dr.pi)
 
     # Test transforms order in constructor
     rot = T.rotate([1.0, 0.0, 0.0], 35)
@@ -41,7 +41,7 @@ def test02_bbox(variant_scalar_rgb):
             })
             b = s.bbox()
 
-            assert dr.allclose(s.surface_area(), 2*dr.Pi*r*l)
+            assert dr.allclose(s.surface_area(), 2*dr.pi*r*l)
             assert b.valid()
             assert dr.allclose(b.min, -mi.Vector3f([r, r, 0.0]))
             assert dr.allclose(b.max,  mi.Vector3f([r, r, l]))
@@ -153,7 +153,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     si = pi.compute_surface_interaction(ray)
     si.uv *= 1.0
     dr.forward(ray.o.x)
-    assert dr.allclose(dr.grad(si.uv), [1 / (2 * dr.Pi), 0])
+    assert dr.allclose(dr.grad(si.uv), [1 / (2 * dr.pi), 0])
 
     # If the ray origin is shifted along the cylinder length, si.uv.y move by 1
     si = pi.compute_surface_interaction(ray)

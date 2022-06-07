@@ -143,7 +143,7 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
 
     def check_fov(camera, sample):
         ray, _ = camera.sample_ray(0, 0, sample, 0)
-        assert dr.allclose(dr.acos(dr.dot(ray.d, direction)) * 180 / dr.Pi, fov / 2)
+        assert dr.allclose(dr.acos(dr.dot(ray.d, direction)) * 180 / dr.pi, fov / 2)
 
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:

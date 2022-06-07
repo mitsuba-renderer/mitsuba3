@@ -76,5 +76,5 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     ray, w = emitter.sample_ray(0, 0, sample, sample_2)
     si.wi = ray.d
     ds.d = -ray.d
-    w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * dr.Pi
+    w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * dr.pi
     assert dr.allclose(w4, w, rtol=1e-3)

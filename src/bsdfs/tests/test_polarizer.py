@@ -347,7 +347,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
 
     # Check that Malus' law holds
     for i in range(len(angles)):
-        theta = angles[i] * dr.Pi/180
+        theta = angles[i] * dr.pi/180
         malus = dr.cos(theta)**2
         malus *= radiance[0]
         assert dr.allclose(malus, radiance[i], atol=1e-2)

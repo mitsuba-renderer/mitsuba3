@@ -10,7 +10,7 @@ def test01_create(variant_scalar_rgb):
     s = mi.load_dict({"type" : "sphere"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert dr.allclose(s.surface_area(), 4 * dr.Pi)
+    assert dr.allclose(s.surface_area(), 4 * dr.pi)
 
     # Test transforms order in constructor
 
@@ -115,7 +115,7 @@ def test05_sample_direct(variant_scalar_rgb):
     def sample_cone(sample, cos_theta_max):
         cos_theta = (1 - sample[1]) + sample[1] * cos_theta_max
         sin_theta = dr.sqrt(1 - cos_theta * cos_theta)
-        phi = 2 * dr.Pi * sample[0]
+        phi = 2 * dr.pi * sample[0]
         s, c = dr.sin(phi), dr.cos(phi)
         return [c * sin_theta, s * sin_theta, cos_theta]
 
@@ -173,14 +173,14 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     si = shape.ray_intersect(ray)
     si.uv *= 1.0
     dr.forward(ray.o.x)
-    assert dr.allclose(dr.grad(si.uv), [1 / (2.0 * dr.Pi), 0])
+    assert dr.allclose(dr.grad(si.uv), [1 / (2.0 * dr.pi), 0])
 
     # If the ray origin is shifted tangent to the sphere (inclination), so si.uv.y move by 2 / 2pi
     dr.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     si.uv *= 1.0
     dr.forward(ray.o.z)
-    assert dr.allclose(dr.grad(si.uv), [0, -2 / (2.0 * dr.Pi)])
+    assert dr.allclose(dr.grad(si.uv), [0, -2 / (2.0 * dr.pi)])
 
     # # If the ray origin is shifted along the x-axis, so does si.n
     dr.enable_grad(ray.o)
@@ -226,7 +226,7 @@ def test08_si_singularity(variants_all_rgb):
     print(f"si: {si}")
 
     assert dr.allclose(si.dp_du, [0, 0, 0])
-    assert dr.allclose(si.dp_dv, [dr.Pi, 0, 0])
+    assert dr.allclose(si.dp_dv, [dr.pi, 0, 0])
     assert dr.allclose(si.sh_frame.s, [1, 0, 0])
     assert dr.allclose(si.sh_frame.t, [0, -1, 0])
     assert dr.allclose(si.sh_frame.n, [0, 0, -1])
