@@ -145,7 +145,7 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
 
     src = Array1f(np.float32(np.random.rand(size_b[0]*size_b[1])))
 
-    if dr.is_diff_array_v(mi.Float) and enable_ad:
+    if dr.is_diff_v(mi.Float) and enable_ad:
         dr.enable_grad(src)
 
     source_tensor = mi.TensorXf(array=src, shape=(size_b[0], size_b[1], 1))
