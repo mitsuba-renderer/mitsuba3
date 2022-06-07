@@ -103,7 +103,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         if mi.is_rgb: # Sample a color channel to sample free-flight distances
             n_channels = dr.array_size_v(mi.Spectrum)
-            channel = dr.min(n_channels * sampler.next_1d(active), n_channels - 1)
+            channel = dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1)
 
         loop = mi.Loop(name=f"Path Replay Backpropagation ({mode.name})",
                     state=lambda: (sampler, active, depth, ray, medium, si,
@@ -112,7 +112,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                                    last_scatter_direction_pdf, valid_ray))
         while loop(active):
             active &= dr.any(dr.neq(throughput, 0.0))
-            q = dr.min(dr.hmax(throughput) * dr.sqr(η), 0.99)
+            q = dr.minimum(dr.maximum(throughput) * dr.sqr(η), 0.99)
             perform_rr = (depth > self.rr_depth)
             active &= (sampler.next_1d(active) < q) | ~perform_rr
             throughput[perform_rr] = throughput * dr.rcp(q)
@@ -321,7 +321,7 @@ class PRBVolpathIntegrator(RBIntegrator):
             # Special case for homogeneous media: directly advance to the next surface / end of the segment
             if self.nee_handle_homogeneous:
                 active_homogeneous = active_medium & medium.is_homogeneous()
-                mei.t[active_homogeneous] = dr.min(remaining_dist, si.t)
+                mei.t[active_homogeneous] = dr.minimum(remaining_dist, si.t)
                 tr_multiplier[active_homogeneous] = medium.eval_tr_and_pdf(mei, si, active_homogeneous)[0]
                 mei.t[active_homogeneous] = dr.inf
 

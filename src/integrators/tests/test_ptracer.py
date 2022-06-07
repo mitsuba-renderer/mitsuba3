@@ -214,7 +214,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
         image = integrator.render(scene, seed=0, spp=64)
 
     dr.enable_grad(image)
-    loss = dr.hmean_async(image)
+    loss = dr.mean(image)
     dr.backward(loss)
     adjoint = dr.grad(image)
     dr.set_grad(image, 0.0)

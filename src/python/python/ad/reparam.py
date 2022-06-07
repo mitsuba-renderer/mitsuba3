@@ -104,16 +104,16 @@ def _sample_warp_field(scene: mi.Scene,
         B = dr.select(hit, si.boundary_test, 1.0)
 
         # Inverse of vMF density without normalization constant
-        # inv_vmf_density = dr.exp(dr.fnmadd(omega_local.z, kappa, kappa))
+        # inv_vmf_density = dr.exp(dr.fma(-omega_local.z, kappa, kappa))
 
         # Better version (here, dr.exp() is constant). However, assumes a
         # specific implementation in mi.warp.square_to_von_mises_fisher() (TODO)
-        inv_vmf_density = dr.rcp(dr.fmadd(sample.y, dr.exp(-2 * kappa), 1 - sample.y))
+        inv_vmf_density = dr.rcp(dr.fma(sample.y, dr.exp(-2 * kappa), 1 - sample.y))
 
         # Compute harmonic weight, being wary of division by near-zero values
         w_denom = inv_vmf_density - 1 + B
         w_denom_rcp = dr.select(w_denom > 1e-4, dr.rcp(w_denom), 0.0)  # 1 / (D + B)
-        w = dr.pow(w_denom_rcp, exponent) * inv_vmf_density
+        w = dr.power(w_denom_rcp, exponent) * inv_vmf_density
 
         # Analytic weight gradient w.r.t. `ray.d` (detaching inv_vmf_density gradient)
         tmp1 = inv_vmf_density * w * w_denom_rcp * kappa * exponent
@@ -154,12 +154,12 @@ class _ReparameterizeOp(dr.CustomOp):
 
     def forward(self):
         """
-        Propagate the gradients in the forward direction to 'ray.d' and the 
-        jacobian determinant 'det'. From a warp field point of view, the 
-        derivative of 'ray.d' is the warp field direction at 'ray', and 
+        Propagate the gradients in the forward direction to 'ray.d' and the
+        jacobian determinant 'det'. From a warp field point of view, the
+        derivative of 'ray.d' is the warp field direction at 'ray', and
         the derivative of 'det' is the divergence of the warp field at 'ray'.
         """
-        
+
         # Initialize some accumulators
         Z = mi.Float(0.0)
         dZ = mi.Vector3f(0.0)

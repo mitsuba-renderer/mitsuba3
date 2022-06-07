@@ -91,8 +91,8 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_repr(SurfaceInteraction3f);
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
-                        shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                        duv_dy, wi, prim_index, instance, boundary_test)
+                       shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+                       duv_dy, wi, prim_index, instance, boundary_test)
 }
 
 MI_PY_EXPORT(MediumInteraction) {
