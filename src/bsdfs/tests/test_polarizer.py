@@ -340,7 +340,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         v = value[0,0]
 
         # Avoid occasional rounding problems
-        v = dr.max(0.0, v)
+        v = dr.maximum(0.0, v)
 
         # Keep track of observed radiance
         radiance.append(v)

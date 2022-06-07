@@ -706,7 +706,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    error = dr.abs(image - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
+    error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.hmean(error)
     error_max = dr.hmax(error)
 
@@ -765,7 +765,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         config.scene, seed=0, spp=config.spp, params=theta)
     image_fwd = dr.detach(image_fwd)
 
-    error = dr.abs(image_fwd - image_fwd_ref) / dr.max(dr.abs(image_fwd_ref), 2e-1)
+    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
     error_mean = dr.hmean(error)
     error_max = dr.hmax(error)
 
@@ -823,7 +823,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     grad = dr.grad(theta)[0] / dr.width(image_fwd_ref)
     grad_ref = dr.hmean(image_fwd_ref)
 
-    error = dr.abs(grad - grad_ref) / dr.max(dr.abs(grad_ref), 1e-3)
+    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
@@ -859,7 +859,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
 
     image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
-    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.max(dr.abs(image_primal_ref), 2e-2)
+    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.hmean(error)
     error_max = dr.hmax(error)
 
@@ -883,7 +883,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
     grad = dr.grad(theta)[0]
     grad_ref = dr.hmean(image_fwd_ref)
 
-    error = dr.abs(grad - grad_ref) / dr.max(dr.abs(grad_ref), 1e-3)
+    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
@@ -903,7 +903,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
 
     image_fwd = dr.grad(image_primal)
 
-    error = dr.abs(image_fwd - image_fwd_ref) / dr.max(dr.abs(image_fwd_ref), 2e-1)
+    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
     error_mean = dr.hmean(error)
     error_max = dr.hmax(error)
 

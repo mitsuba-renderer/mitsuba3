@@ -88,7 +88,7 @@ class ChiSquareTest:
         if domain.aspect() is None:
             self.res = mi.ScalarVector2u(res, 1)
         else:
-            self.res = dr.max(mi.ScalarVector2u(
+            self.res = dr.maximum(mi.ScalarVector2u(
                 int(res / domain.aspect()), res), 1)
         self.ires = ires
         self.seed = seed
