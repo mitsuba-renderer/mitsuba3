@@ -54,7 +54,7 @@ def test02_eval_all(variant_scalar_rgb):
     ctx = mi.PhaseFunctionContext(None)
 
     # Evaluate the blend of both components
-    expected = (1.0 - weight) * dr.InvFourPi + weight * dr.InvFourPi * (1.0 - g) / (
+    expected = (1.0 - weight) * dr.inv_four_pi + weight * dr.inv_four_pi * (1.0 - g) / (
         1.0 + g
     ) ** 2
     value = phase.eval(ctx, mei, wo)
@@ -86,12 +86,12 @@ def test03_sample_all(variant_scalar_rgb):
     # components are chosen.
 
     # -- Sample above weight: first component (isotropic) is selected
-    expected_a = dr.InvFourPi
+    expected_a = dr.inv_four_pi
     wo_a, pdf_a = phase.sample(ctx, mei, 0.3, [0.5, 0.5])
     assert dr.allclose(pdf_a, expected_a)
 
     # -- Sample below weight: second component (HG) is selected
-    expected_b = dr.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_b = dr.inv_four_pi * (1 - g) / (1 + g) ** 2
     wo_b, pdf_b = phase.sample(ctx, mei, 0.1, [0, 0])
     assert dr.allclose(pdf_b, expected_b)
 
@@ -122,12 +122,12 @@ def test04_eval_components(variant_scalar_rgb):
 
     ctx.component = 0
     value0 = phase.eval(ctx, mei, wo)
-    expected0 = (1 - weight) * dr.InvFourPi
+    expected0 = (1 - weight) * dr.inv_four_pi
     assert dr.allclose(value0, expected0)
 
     ctx.component = 1
     value1 = phase.eval(ctx, mei, wo)
-    expected1 = weight * dr.InvFourPi * (1.0 - g) / (1.0 + g) ** 2
+    expected1 = weight * dr.inv_four_pi * (1.0 - g) / (1.0 + g) ** 2
     assert dr.allclose(value1, expected1)
 
 
@@ -158,21 +158,21 @@ def test05_sample_components(variant_scalar_rgb):
     # -- Select component 0: first component is always sampled
     ctx.component = 0
 
-    expected_a = (1 - weight) *  dr.InvFourPi
+    expected_a = (1 - weight) *  dr.inv_four_pi
     wo_a, pdf_a = phase.sample(ctx, mei, 0.3, [0.5, 0.5])
     assert dr.allclose(pdf_a, expected_a)
 
-    expected_b = (1 - weight) *  dr.InvFourPi
+    expected_b = (1 - weight) *  dr.inv_four_pi
     wo_b, pdf_b = phase.sample(ctx, mei, 0.1, [0.5, 0.5])
     assert dr.allclose(pdf_b, expected_b)
 
     # -- Select component 1: second component is always sampled
     ctx.component = 1
 
-    expected_a = weight *  dr.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_a = weight *  dr.inv_four_pi * (1 - g) / (1 + g) ** 2
     wo_a, pdf_a = phase.sample(ctx, mei, 0.3, [0.0, 0.0])
     assert dr.allclose(pdf_a, expected_a)
 
-    expected_b = weight * dr.InvFourPi * (1 - g) / (1 + g) ** 2
+    expected_b = weight * dr.inv_four_pi * (1 - g) / (1 + g) ** 2
     wo_b, pdf_b = phase.sample(ctx, mei, 0.1, [0.0, 0.0])
     assert dr.allclose(pdf_b, expected_b)

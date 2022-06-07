@@ -132,7 +132,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 si[intersect] = si_new
 
                 needs_intersection &= ~active_medium
-                mei.t[active_medium & (si.t < mei.t)] = dr.Infinity
+                mei.t[active_medium & (si.t < mei.t)] = dr.inf
 
                 # Evaluate ratio of transmittance and free-flight PDF
                 tr, free_flight_pdf = medium.eval_tr_and_pdf(mei, si, active_medium)
@@ -313,7 +313,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
             # Handle medium interactions / transmittance
             mei = medium.sample_interaction(ray, sampler.next_1d(active_medium), channel, active_medium)
-            mei.t[active_medium & (si.t < mei.t)] = dr.Infinity
+            mei.t[active_medium & (si.t < mei.t)] = dr.inf
             mei.t = dr.detach(mei.t)
 
             tr_multiplier = mi.Spectrum(1.0)
@@ -323,7 +323,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 active_homogeneous = active_medium & medium.is_homogeneous()
                 mei.t[active_homogeneous] = dr.min(remaining_dist, si.t)
                 tr_multiplier[active_homogeneous] = medium.eval_tr_and_pdf(mei, si, active_homogeneous)[0]
-                mei.t[active_homogeneous] = dr.Infinity
+                mei.t[active_homogeneous] = dr.inf
 
             escaped_medium = active_medium & ~mei.is_valid()
 
