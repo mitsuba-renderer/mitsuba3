@@ -70,7 +70,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
 
     assert dr.allclose(w, w2, rtol=1e-3)
     assert dr.allclose(w, w3, rtol=1e-3)
-    assert dr.min(w[0]) > 0.018 and dr.hmax(w[0]) < 0.02
+    assert dr.min(w[0])[0] > 0.018 and dr.max(w[0])[0] < 0.02
 
     # Test the sample_ray() interface
     ray, w = emitter.sample_ray(0, 0, sample, sample_2)

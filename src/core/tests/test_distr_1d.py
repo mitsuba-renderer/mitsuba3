@@ -101,7 +101,7 @@ def test06_discr_bruteforce(variants_vec_backends_once):
     for size in range(2, 20, 5):
         for i in range(2, 50, 5):
             density = mi.Float(rng.next_uint32_bounded(i)[0:size])
-            if dr.hsum(density) == 0:
+            if dr.sum(density)[0] == 0:
                 continue
             ddistr = mi.DiscreteDistribution(density)
 
