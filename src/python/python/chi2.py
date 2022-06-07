@@ -160,15 +160,16 @@ class ChiSquareTest:
         )
 
         histogram_min = dr.min(self.histogram)
-        if not histogram_min >= 0:
+        print(f"{histogram_min=}")
+        if not histogram_min[0] >= 0:
             self._log('Encountered a cell with negative sample '
                       'weights: %f' % histogram_min)
             self.fail = True
 
-        self.histogram_sum = dr.hsum(self.histogram) / self.sample_count
-        if self.histogram_sum > 1.1:
+        self.histogram_sum = dr.sum(self.histogram) / self.sample_count
+        if self.histogram_sum[0] > 1.1:
             self._log('Sample weights add up to a value greater '
-                      'than 1.0: %f' % self.histogram_sum)
+                      'than 1.0: %f' % self.histogram_sum[0])
             self.fail = True
 
         self.pdf_end = time.time()
@@ -224,15 +225,15 @@ class ChiSquareTest:
 
         # A few sanity checks
         pdf_min = dr.min(self.pdf) / self.sample_count
-        if not pdf_min >= 0:
+        if not pdf_min[0] >= 0:
             self._log('Failure: Encountered a cell with a '
                       'negative PDF value: %f' % pdf_min)
             self.fail = True
 
-        self.pdf_sum = dr.hsum(self.pdf) / self.sample_count
-        if self.pdf_sum > 1.1:
+        self.pdf_sum = dr.sum(self.pdf) / self.sample_count
+        if self.pdf_sum[0] > 1.1:
             self._log('Failure: PDF integrates to a value greater '
-                      'than 1.0: %f' % self.pdf_sum)
+                      'than 1.0: %f' % self.pdf_sum[0])
             self.fail = True
 
         self.histogram_end = time.time()
@@ -291,7 +292,7 @@ class ChiSquareTest:
         histogram_time = (self.histogram_end - self.histogram_start) * 1000
 
         self._log('Histogram sum = %f (%.2f ms), PDF sum = %f (%.2f ms)' %
-                  (self.histogram_sum, histogram_time, self.pdf_sum, pdf_time))
+                  (self.histogram_sum[0], histogram_time, self.pdf_sum[0], pdf_time))
 
         self._log('Chi^2 statistic = %f (d.o.f = %i)' % (chi2val, dof))
 
@@ -425,7 +426,7 @@ class SphericalDomain:
 
     def map_forward(self, p):
         cos_theta = -p.y
-        sin_theta = dr.safe_sqrt(dr.fnmadd(cos_theta, cos_theta, 1))
+        sin_theta = dr.safe_sqrt(dr.fma(-cos_theta, cos_theta, 1))
         sin_phi, cos_phi = dr.sincos(p.x)
 
         return mi.Vector3f(
