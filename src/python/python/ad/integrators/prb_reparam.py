@@ -382,12 +382,12 @@ class PRBReparamIntegrator(RBIntegrator):
             # -------------------- Stopping criterion ---------------------
 
             # Don't run another iteration if the throughput has reached zero
-            β_max = dr.hmax(β)
+            β_max = dr.max(β)
             active_next &= dr.neq(β_max, 0)
 
             # Russian roulette stopping probability (must cancel out ior^2
             # to obtain unitless throughput, enforces a minimum probability)
-            rr_prob = dr.min(β_max * η**2, .95)
+            rr_prob = dr.minimum(β_max * η**2, .95)
 
             # Apply only further along the path since, this introduces variance
             rr_active = depth >= self.rr_depth

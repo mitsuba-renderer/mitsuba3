@@ -336,7 +336,7 @@ class ADIntegrator(mi.CppADIntegrator):
         # Compute the position on the image plane
         pos = mi.Vector2i()
         pos.y = idx // film_size[0]
-        pos.x = dr.fnmadd(film_size[0], pos.y, idx)
+        pos.x = dr.fma(-film_size[0], pos.y, idx)
 
         if film.sample_border():
             pos -= border_size
@@ -349,7 +349,7 @@ class ADIntegrator(mi.CppADIntegrator):
         # Re-scale the position to [0, 1]^2
         scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
         offset = -mi.ScalarVector2f(film.crop_offset()) * scale
-        pos_adjusted = dr.fmadd(pos_f, scale, offset)
+        pos_adjusted = dr.fma(pos_f, scale, offset)
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
@@ -455,7 +455,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
         wavefront_size = dr.prod(film_size) * spp
 
-        is_llvm = dr.is_llvm_array_v(mi.Float)
+        is_llvm = dr.is_llvm_v(mi.Float)
         wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000
 
         if wavefront_size >  wavefront_size_limit:
@@ -1220,4 +1220,4 @@ def mis_weight(pdf_a, pdf_b):
     of two sampling strategies according to the power heuristic.
     """
     a2 = dr.sqr(pdf_a)
-    return dr.detach(dr.select(pdf_a > 0, a2 / dr.fmadd(pdf_b, pdf_b, a2), 0), True)
+    return dr.detach(dr.select(pdf_a > 0, a2 / dr.fma(pdf_b, pdf_b, a2), 0), True)

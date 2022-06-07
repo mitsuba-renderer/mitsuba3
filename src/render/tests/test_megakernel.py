@@ -218,7 +218,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
             # Compute adjoint image
             dr.enable_grad(image)
-            ob_val = dr.hsum_async(dr.sqr(image - image_ref)) / len(image)
+            ob_val = dr.sum(dr.sqr(image - image_ref)) / len(image)
             dr.backward(ob_val)
             image_adj = dr.grad(image)
             dr.set_grad(image, 0.0)

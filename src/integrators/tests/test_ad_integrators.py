@@ -707,8 +707,8 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
     error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.hmean(error)
-    error_max = dr.hmax(error)
+    error_mean = dr.mean(error)[0]
+    error_max = dr.max(error)[0]
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
     # print(f'-> write current image: {filename}')
@@ -766,8 +766,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     image_fwd = dr.detach(image_fwd)
 
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.hmean(error)
-    error_max = dr.hmax(error)
+    error_mean = dr.mean(error)[0]
+    error_max = dr.max(error)[0]
 
     # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
     # print(f'-> write current image: {filename}')
@@ -785,8 +785,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         print(f'-> write error image: {filename}')
         mi.util.write_bitmap(filename, error)
 
-        # print(f"dr.hmean(image_fwd_ref): {dr.hmean(image_fwd_ref)}")
-        # print(f"dr.hmean(image_fwd):     {dr.hmean(image_fwd)}")
+        # print(f"dr.mean(image_fwd_ref): {dr.mean(image_fwd_ref)}")
+        # print(f"dr.mean(image_fwd):     {dr.mean(image_fwd)}")
         assert False
 
 
@@ -821,7 +821,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         config.scene, grad_in=image_adj, seed=0, spp=config.spp, params=theta)
 
     grad = dr.grad(theta)[0] / dr.width(image_fwd_ref)
-    grad_ref = dr.hmean(image_fwd_ref)
+    grad_ref = dr.mean(image_fwd_ref)[0]
 
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
@@ -860,8 +860,8 @@ def test04_render_custom_op(variants_all_ad_rgb):
     image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
 
     error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.hmean(error)
-    error_max = dr.hmax(error)
+    error_mean = dr.mean(error)[0]
+    error_max = dr.max(error)[0]
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -877,11 +877,11 @@ def test04_render_custom_op(variants_all_ad_rgb):
     mi.util.write_bitmap(filename, image_primal)
 
     # Backward comparison
-    obj = dr.hmean_async(image_primal)
+    obj = dr.mean(image_primal)
     dr.backward(obj)
 
     grad = dr.grad(theta)[0]
-    grad_ref = dr.hmean(image_fwd_ref)
+    grad_ref = dr.mean(image_fwd_ref)[0]
 
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold:
@@ -904,8 +904,8 @@ def test04_render_custom_op(variants_all_ad_rgb):
     image_fwd = dr.grad(image_primal)
 
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.hmean(error)
-    error_max = dr.hmax(error)
+    error_mean = dr.mean(error)[0]
+    error_max = dr.max(error)[0]
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
