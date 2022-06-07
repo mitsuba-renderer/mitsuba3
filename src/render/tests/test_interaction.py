@@ -3,15 +3,15 @@ import drjit as dr
 import mitsuba as mi
 
 def test01_interaction_invalid_init(variants_all_backends_once):
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     assert dr.none(si.is_valid())
 
-    si = dr.zero(mi.SurfaceInteraction3f, 4)
+    si = dr.zeros(mi.SurfaceInteraction3f, 4)
     assert dr.none(si.is_valid())
 
 
 def test02_intersection_construction(variant_scalar_rgb):
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     assert not si.is_valid()
 
     si.shape = None

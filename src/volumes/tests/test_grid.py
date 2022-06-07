@@ -16,7 +16,7 @@ def test01_grid_construct(variant_scalar_rgb, tmpdir):
         'type' : 'gridvolume',
         'filename' : tmp_file
     })
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
 
     assert vol is not None
     assert dr.allclose(vol.eval(it), mi.Vector3f(1.5, 0.5, 0.0))
@@ -34,7 +34,7 @@ def test02_nearest_interpolation(variants_all, tmpdir):
         'filter_type' : 'nearest'
     })
     assert vol is not None
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert dr.allclose(vol.eval(it), 0.0)
     it.p = mi.Point3f(1.0) * 1/6
     assert dr.allclose(vol.eval(it), 0.0)
@@ -50,7 +50,7 @@ def test03_trilinear_interpolation(variants_all, tmpdir):
         'type' : 'gridvolume',
         'filename' : tmp_file,
     })
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert vol is not None
     assert dr.allclose(vol.eval(it), 0.0)
     it.p = mi.Point3f(1.0) / 3
@@ -70,7 +70,7 @@ def test04_trilinear_interpolation_boundary(variants_all, tmpdir):
         'type' : 'gridvolume',
         'filename' : tmp_file,
     })
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert vol is not None
     it.p = mi.Point3f(0.2, 1.0, 0.7)
     assert dr.allclose(vol.eval(it), 0.55)
@@ -89,7 +89,7 @@ def test05_trilinear_interpolation_6_channels(variants_all_rgb, tmpdir):
         'type' : 'gridvolume',
         'filename' : tmp_file,
     })
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert vol is not None
     assert dr.allclose(vol.eval_6(it), 0.0)
     it.p = mi.Point3f(1.0) / 3
@@ -107,7 +107,7 @@ def test06_eval_per_channel(variants_all_rgb, tmpdir):
         'type' : 'gridvolume',
         'filename' : tmp_file,
     })
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert vol is not None
     print(vol.eval_n(it))
     assert dr.allclose(vol.eval_n(it), [0.0] * 6)

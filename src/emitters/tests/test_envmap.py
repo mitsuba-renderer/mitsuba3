@@ -12,7 +12,7 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 
     if iteration == 0:
         # Sparse image with 1 pixel turned on
-        img = dr.zero(mi.TensorXf, [100, 10])
+        img = dr.zeros(mi.TensorXf, [100, 10])
         img[40, 5] = 1
     elif iteration == 1:
         # High res constant image
@@ -52,7 +52,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     fname = os.path.join(tempdir.name, 'out.exr')
 
     # Sparse image with 1 pixel turned on
-    img = dr.zero(mi.TensorXf, [100, 10])
+    img = dr.zeros(mi.TensorXf, [100, 10])
     img[40, 5] = 1
     mi.Bitmap(img).write(fname)
 
@@ -62,7 +62,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     })
 
     # Test the sample_direction() interface
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     ds, w = emitter.sample_direction(si, sample)
     si.wi = -ds.d
     w2 = emitter.eval(si) / emitter.pdf_direction(si, ds)

@@ -59,7 +59,7 @@ def test05_specular_reflection(variant_scalar_rgb):
     assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] < 0 and M[3, 3] < 0
 
     # Brewster's angle: perfect linear polarization
-    M = dr.zero(mi.TensorXf, [4, 4])
+    M = dr.zeros(mi.TensorXf, [4, 4])
     M = np.zeros((4, 4))
     M[0:2, 0:2] = 0.0739645
     assert dr.allclose(mi.mueller.specular_reflection(dr.cos(dr.atan(1/1.5)), 1/1.5), M, atol=1e-6)
@@ -86,10 +86,10 @@ def test05_specular_reflection(variant_scalar_rgb):
 
 def test06_specular_transmission(variant_scalar_rgb):
     assert dr.allclose(mi.mueller.specular_transmission(1, 1/1.5), dr.identity(mi.Matrix4f) * 0.96, atol=1e-5)
-    assert dr.allclose(mi.mueller.specular_transmission(1e-7, 1.5), dr.zero(mi.Matrix4f), atol=1e-5)
-    assert dr.allclose(mi.mueller.specular_transmission(1e-7, 1/1.5), dr.zero(mi.Matrix4f), atol=1e-5)
-    assert dr.allclose(mi.mueller.specular_transmission(0, 1.5), dr.zero(mi.Matrix4f), atol=1e-5)
-    assert dr.allclose(mi.mueller.specular_transmission(0, 1/1.5), dr.zero(mi.Matrix4f), atol=1e-5)
+    assert dr.allclose(mi.mueller.specular_transmission(1e-7, 1.5), dr.zeros(mi.Matrix4f), atol=1e-5)
+    assert dr.allclose(mi.mueller.specular_transmission(1e-7, 1/1.5), dr.zeros(mi.Matrix4f), atol=1e-5)
+    assert dr.allclose(mi.mueller.specular_transmission(0, 1.5), dr.zeros(mi.Matrix4f), atol=1e-5)
+    assert dr.allclose(mi.mueller.specular_transmission(0, 1/1.5), dr.zeros(mi.Matrix4f), atol=1e-5)
 
     ref = dr.scalar.Matrix4f([[ 0.9260355 , -0.07396451,  0.        ,  0.        ],
                               [-0.07396451,  0.9260355 ,  0.        ,  0.        ],

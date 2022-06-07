@@ -73,7 +73,7 @@ class PRBIntegrator(RBIntegrator):
         active = mi.Bool(active)                      # Active SIMD lanes
 
         # Variables caching information from the previous bounce
-        prev_si         = dr.zero(mi.SurfaceInteraction3f)
+        prev_si         = dr.zeros(mi.SurfaceInteraction3f)
         prev_bsdf_pdf   = mi.Float(1.0)
         prev_bsdf_delta = mi.Bool(True)
 

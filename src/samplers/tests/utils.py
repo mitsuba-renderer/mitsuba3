@@ -32,8 +32,8 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
 
     sampler.seed(0, sample_count)
 
-    hist_1d = dr.zero(mi.UInt32, res)
-    hist_2d = dr.zero(mi.UInt32, res * res)
+    hist_1d = dr.zeros(mi.UInt32, res)
+    hist_2d = dr.zeros(mi.UInt32, res * res)
 
     v_1d = dr.clamp(sampler.next_1d() * res, 0, res)
     dr.scatter_reduce(

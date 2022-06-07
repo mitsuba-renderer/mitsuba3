@@ -69,7 +69,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
 
             import numpy as np
             if scalar:
-                ref = dr.zero(mi.TensorXf, block.tensor().shape)
+                ref = dr.zeros(mi.TensorXf, block.tensor().shape)
                 if filter_name == 'box':
                     eval_method = rfilter.eval
                 else:

@@ -49,7 +49,7 @@ def test02_fresnel_polarized(variant_scalar_rgb):
 def test02_fresnel_polarized_vec(variants_vec_backends_once):
     cos_theta_i = dr.linspace(mi.Float, -1, 1, 20)
     F, cos_theta_t, _, scale = mi.fresnel(cos_theta_i, 1)
-    assert dr.all(F == dr.zero(mi.Float, 20))
+    assert dr.all(F == dr.zeros(mi.Float, 20))
     assert dr.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
@@ -72,7 +72,7 @@ def test04_snell(variants_vec_backends_once):
     F, cos_theta_t, _, _ = mi.fresnel(dr.cos(theta_i), 1.5)
     theta_t = dr.acos(cos_theta_t)
 
-    assert dr.allclose(dr.sin(theta_i) - 1.5 * dr.sin(theta_t), dr.zero(mi.Float, 20), atol=1e-5)
+    assert dr.allclose(dr.sin(theta_i) - 1.5 * dr.sin(theta_t), dr.zeros(mi.Float, 20), atol=1e-5)
 
 
 def test05_amplitudes_external_reflection(variant_scalar_rgb):

@@ -28,6 +28,6 @@ def test02_constant_eval(variant_scalar_rgb):
         }
     })
 
-    it = dr.zero(mi.Interaction3f, 1)
+    it = dr.zeros(mi.Interaction3f, 1)
     assert dr.allclose(vol.eval(it), mi.Color3f(0.5, 1.0, 0.3))
     assert vol.bbox() == mi.BoundingBox3f([0, 0, 0], [1, 1, 1])

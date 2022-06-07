@@ -239,7 +239,7 @@ class SGD(Optimizer):
             return
         p = self.variables[key]
         shape = dr.shape(p) if p.IsTensor else dr.width(p)
-        self.state[key] = dr.zero(dr.detached_t(p), shape)
+        self.state[key] = dr.zeros(dr.detached_t(p), shape)
 
     def __repr__(self):
         return ('SGD[\n'
@@ -344,8 +344,8 @@ class Adam(Optimizer):
         """Zero-initializes the internal state associated with a parameter"""
         p = self.variables[key]
         shape = dr.shape(p) if p.IsTensor else dr.width(p)
-        self.state[key] = (dr.zero(dr.detached_t(p), shape),
-                           dr.zero(dr.detached_t(p), shape))
+        self.state[key] = (dr.zeros(dr.detached_t(p), shape),
+                           dr.zeros(dr.detached_t(p), shape))
         self.t[key] = 0
 
     def __repr__(self):

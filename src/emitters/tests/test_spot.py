@@ -51,7 +51,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     trafo = mi.Transform4f(emitter.world_transform())
 
     # Create a surface iteration
-    it = dr.zero(mi.SurfaceInteraction3f)
+    it = dr.zeros(mi.SurfaceInteraction3f)
     it.p = it_pos
     it.time = eval_t
 
@@ -118,7 +118,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
         eval_t, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(mi.SurfaceInteraction3f)
+    it = dr.zeros(mi.SurfaceInteraction3f)
     wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
     it.wavelengths = wav
     spec = spec * dr.select(angle <= beam_width_rad,
@@ -145,6 +145,6 @@ def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
         lookat, cutoff_angle, spectrum_key)
 
     # Check that incident direction in the illuminated direction is zero (because hitting a delta light is impossible)
-    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    it = dr.zeros(mi.SurfaceInteraction3f, 3)
     it.wi = [0, 1, 0]
     assert dr.allclose(emitter.eval(it), 0.)
