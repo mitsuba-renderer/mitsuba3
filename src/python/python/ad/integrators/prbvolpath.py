@@ -102,7 +102,7 @@ class PRBVolpathIntegrator(RBIntegrator):
         specular_chain = mi.Bool(True)
 
         if mi.is_rgb: # Sample a color channel to sample free-flight distances
-            n_channels = dr.array_size_v(mi.Spectrum)
+            n_channels = dr.size_v(mi.Spectrum)
             channel = dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1)
 
         loop = mi.Loop(name=f"Path Replay Backpropagation ({mode.name})",
