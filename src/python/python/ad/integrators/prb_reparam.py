@@ -482,8 +482,8 @@ class PRBReparamIntegrator(RBIntegrator):
                                                    bsdf_sample_next.wo)
 
                     extra = mi.Spectrum(Le_next)
-                    extra[~first_vertex]      += L_prev * bsdf_val_prev / dr.max(1e-8, dr.detach(bsdf_val_prev))
-                    extra[si_next.is_valid()] += L_next * bsdf_val_next / dr.max(1e-8, dr.detach(bsdf_val_next))
+                    extra[~first_vertex]      += L_prev * bsdf_val_prev / dr.maximum(1e-8, dr.detach(bsdf_val_prev))
+                    extra[si_next.is_valid()] += L_next * bsdf_val_next / dr.maximum(1e-8, dr.detach(bsdf_val_next))
 
                 with dr.resume_grad():
                     # 'L' stores the indirectly reflected radiance at the

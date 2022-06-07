@@ -168,7 +168,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 mei = dr.detach(mei)
                 if not is_primal and dr.grad_enabled(weight):
-                    Lo = dr.detach(dr.select(active_medium | escaped_medium, L / dr.max(1e-8, weight), 0.0))
+                    Lo = dr.detach(dr.select(active_medium | escaped_medium, L / dr.maximum(1e-8, weight), 0.0))
                     dr.backward(δL * weight * Lo)
 
                 phase_ctx = mi.PhaseFunctionContext(sampler)
@@ -248,7 +248,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 bsdf_eval = bsdf.eval(ctx, si, bs.wo, active_surface)
 
                 if not is_primal and dr.grad_enabled(bsdf_eval):
-                    Lo = bsdf_eval * dr.detach(dr.select(active, L / dr.max(1e-8, bsdf_eval), 0.0))
+                    Lo = bsdf_eval * dr.detach(dr.select(active, L / dr.maximum(1e-8, bsdf_eval), 0.0))
                     if mode == dr.ADMode.Backward:
                         dr.backward_from(δL * Lo)
                     else:

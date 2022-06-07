@@ -208,7 +208,7 @@ class _ReparameterizeOp(dr.CustomOp):
             grad_div_lhs += dr.grad(div_lhs_i)
             it += 1
 
-        inv_Z = dr.rcp(dr.max(Z, 1e-8))
+        inv_Z = dr.rcp(dr.maximum(Z, 1e-8))
         V_theta  = grad_V * inv_Z
         div_V_theta = (grad_div_lhs - dr.dot(V_theta, dZ)) * inv_Z
 
@@ -270,7 +270,7 @@ class _ReparameterizeOp(dr.CustomOp):
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
-        Z = dr.max(Z, 1e-8)
+        Z = dr.maximum(Z, 1e-8)
         V_theta = V / Z
         divergence = (div_V_1 - dr.dot(V_theta, dZ)) / Z
         direction = dr.normalize(self.ray.d + V_theta)
@@ -362,7 +362,7 @@ class _ReparameterizeOp(dr.CustomOp):
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
-        Z = dr.max(Z, 1e-8)
+        Z = dr.maximum(Z, 1e-8)
         V_theta = V / Z
         divergence = (div_V_1 - dr.dot(V_theta, dZ)) / Z
         direction = dr.normalize(self.ray.d + V_theta)
