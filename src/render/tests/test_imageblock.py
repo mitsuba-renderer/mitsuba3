@@ -85,8 +85,8 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
                                   block.tensor().shape)
 
             if normalize:
-                value = dr.hsum(ref)
-                if value > 0:
+                value = dr.sum(ref)
+                if dr.all(value > 0):
                     ref /= value
             match = dr.allclose(block.tensor(), ref, atol=1e-5)
 
@@ -179,16 +179,16 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                 weights = ref = 0
                 for i in range(dr.prod(size)):
                     weight = eval_method(-p[0][i]) * eval_method(-p[1][i])
-                    ref = dr.fmadd(src[i], weight, ref)
+                    ref = dr.fma(src[i], weight, ref)
                     weights += weight
 
                 if weights > 0 and normalize:
                     ref /= weights
             else:
                 weight = rfilter.eval(-p[0]) * rfilter.eval(-p[1])
-                ref = dr.hsum(weight * dr.detach(source_tensor.array))
+                ref = dr.sum(weight * dr.detach(source_tensor.array))
 
                 if normalize:
-                    ref /= dr.hsum(weight)
+                    ref /= dr.sum(weight)
 
             assert dr.allclose(value, ref, atol=1e-5)
