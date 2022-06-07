@@ -234,7 +234,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     dr.set_label(v_eval, "v_eval")
 
     # Check against reference value
-    v = mi.Float(dr.cos(theta) * dr.InvPi)
+    v = mi.Float(dr.cos(theta) * dr.inv_pi)
     v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0))
     assert dr.allclose(v_eval, v_ref)
 
@@ -329,7 +329,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     dr.set_label(v_eval, "v_eval")
 
     # Check against reference value
-    v = dr.cos(theta) * dr.InvPi
+    v = dr.cos(theta) * dr.inv_pi
     v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0, 0, v))
     assert dr.allclose(v_eval, v_ref)
 

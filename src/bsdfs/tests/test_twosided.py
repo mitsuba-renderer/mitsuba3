@@ -39,7 +39,7 @@ def test02_pdf(variant_scalar_rgb):
     si.wi = [0, 0, 1]
     ctx = mi.BSDFContext()
     p_pdf = bsdf.pdf(ctx, si, [0, 0, 1])
-    assert dr.allclose(p_pdf, dr.InvPi)
+    assert dr.allclose(p_pdf, dr.inv_pi)
 
     p_pdf = bsdf.pdf(ctx, si, [0, 0, -1])
     assert dr.allclose(p_pdf, 0.0)
@@ -76,7 +76,7 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
 
                     if dr.any(s_value > 0):
                         # Multiply by square_to_cosine_hemisphere_theta
-                        s_value *= bs.wo[2] * dr.InvPi
+                        s_value *= bs.wo[2] * dr.inv_pi
                         if not up:
                             s_value *= -1
 
