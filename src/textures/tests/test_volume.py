@@ -14,7 +14,7 @@ def test01_eval(variants_vec_backends_once, tmpdir):
         'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.p = mi.Point3f([0.4, 0.4, 0.3], [0.5, 0.0, -0.5], [0.5, 0.4, 0.5])
     assert dr.allclose(dr.hmean(texture.eval(si)), [0.9, 0.0, 0.0])
     assert dr.allclose(texture.max(), 0.9)
@@ -30,7 +30,7 @@ def test02_eval_1(variants_vec_backends_once, tmpdir):
         'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.p = mi.Point3f([0.4, 0.4, 0.3], [0.5, 0.0, -0.5], [0.5, 0.4, 0.5])
     assert dr.allclose(texture.eval_1(si), [0.9, 0.0, 0.0])
 
@@ -47,7 +47,7 @@ def test03_eval_3(variants_vec_backends_once_rgb, tmpdir):
         'type': 'volume',
         'volume': {'type': 'gridvolume', 'filename': tmp_file},
     })
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.p = mi.Point3f([0.4, 0.4, 0.3], [0.5, 0.0, -0.5], [0.5, 0.4, 0.5])
     ref_values = mi.Color3f([0.9, 0.0, 0.0], [0.4, 0.0, 0.0], [0.2, 0.0, 0.0])
     assert dr.allclose(texture.eval_3(si), ref_values)

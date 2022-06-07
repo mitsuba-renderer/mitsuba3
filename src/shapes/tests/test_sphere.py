@@ -119,7 +119,7 @@ def test05_sample_direct(variant_scalar_rgb):
         s, c = dr.sin(phi), dr.cos(phi)
         return [c * sin_theta, s * sin_theta, cos_theta]
 
-    it = dr.zero(mi.Interaction3f)
+    it = dr.zeros(mi.Interaction3f)
     it.p = [0, 0, -3]
     it.t = 0
     sin_cone_angle = 1.0 / it.p[2]

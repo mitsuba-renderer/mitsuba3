@@ -67,7 +67,7 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
     def eval_ranges(range_x, range_y):
         xv, yv = dr.meshgrid(range_x, range_y)
 
-        si = dr.zero(mi.SurfaceInteraction3f)
+        si = dr.zeros(mi.SurfaceInteraction3f)
         si.uv = [xv, yv]
 
         return bitmap.eval_3(si)
@@ -145,7 +145,7 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     x = (1 / x_res) * 7 + (1 / (2 * x_res))
     y = (1 / y_res) * 1 + (1 / (2 * y_res))
 
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.uv = [x, y]
 
     mono = bitmap.eval_1(si)
@@ -168,7 +168,7 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     x = (1 / x_res) * 0 + (1 / (2 * x_res))
     y = (1 / y_res) * 15 + (1 / (2 * y_res))
 
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.uv = [x, y]
 
     mono = bitmap.eval_1(si)
@@ -195,7 +195,7 @@ def test05_eval_spectral(variants_vec_backends_once_spectral):
     x = (1 / x_res) * 7 + (1 / (2 * x_res))
     y = (1 / y_res) * 1 + (1 / (2 * y_res))
 
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.wavelengths = np.linspace(mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
     si.uv = [x, y]
 
@@ -219,7 +219,7 @@ def test05_eval_spectral(variants_vec_backends_once_spectral):
     x = (1 / x_res) * 0 + (1 / (2 * x_res))
     y = (1 / y_res) * 15 + (1 / (2 * y_res))
 
-    si = dr.zero(mi.SurfaceInteraction3f)
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.uv = [x, y]
 
     mono = bitmap.eval_1(si)

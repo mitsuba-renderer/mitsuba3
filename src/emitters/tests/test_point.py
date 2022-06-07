@@ -46,7 +46,7 @@ def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    it = dr.zeros(mi.SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
 
     assert dr.allclose(res, spec * 4 * dr.pi)
@@ -64,7 +64,7 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = dr.zero(mi.SurfaceInteraction3f)
+    it = dr.zeros(mi.SurfaceInteraction3f)
     it.p = [0.0, -2.0, 4.5]  # Some position
     it.time = 0.3
 
@@ -93,7 +93,7 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = dr.zero(mi.SurfaceInteraction3f, 3)
+    it = dr.zeros(mi.SurfaceInteraction3f, 3)
     it.p = [[0.0, 0.0, 0.0], [-2.0, 0.0, -2.0],
             [4.5, 4.5, 0.0]]  # Some positions
     it.time = [0.3, 0.3, 0.3]

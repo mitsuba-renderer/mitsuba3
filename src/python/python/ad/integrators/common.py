@@ -400,7 +400,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
                 # Create a fake interaction along the sampled ray and use it to the
                 # position with derivative tracking
-                it = dr.zero(mi.Interaction3f)
+                it = dr.zeros(mi.Interaction3f)
                 it.p = ray.o + reparam_d
                 ds, _ = sensor.sample_direction(it, aperture_sample)
 

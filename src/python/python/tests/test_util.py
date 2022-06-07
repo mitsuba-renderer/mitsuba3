@@ -14,16 +14,16 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
             callback.put_object("bsdf_tex_nondiff", self.tex2, mi.ParamFlags.NonDifferentiable)
 
         def sample(self, *args, **kwargs):
-            return (dr.zero(mi.BSDFSample3f), dr.zero(mi.Color3f))
+            return (dr.zeros(mi.BSDFSample3f), dr.zeros(mi.Color3f))
 
         def eval(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def pdf(self, *args, **kwargs):
             return 0
 
         def eval_pdf(self, *args, **kwargs):
-            return (dr.zero(mi.Color3f), 0)
+            return (dr.zeros(mi.Color3f), 0)
 
         def to_string(self, *args, **kwargs):
             return "MyBSDF[]"
@@ -41,16 +41,16 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
             )
 
         def eval(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def eval_1(self, *args, **kwargs):
             return 0
 
         def eval_1_grad(self, *args, **kwargs):
-            return dr.zero(mi.Vector2f)
+            return dr.zeros(mi.Vector2f)
 
         def eval_3(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def mean(self, *args, **kwargs):
             return 0
@@ -102,16 +102,16 @@ def test02_traverse_update(variants_all_ad_rgb):
             MyBSDF.update_keys = keys
 
         def sample(self, *args, **kwargs):
-            return (dr.zero(mi.BSDFSample3f), dr.zero(mi.Color3f))
+            return (dr.zeros(mi.BSDFSample3f), dr.zeros(mi.Color3f))
 
         def eval(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def pdf(self, *args, **kwargs):
             return 0
 
         def eval_pdf(self, *args, **kwargs):
-            return (dr.zero(mi.Color3f), 0)
+            return (dr.zeros(mi.Color3f), 0)
 
         def to_string(self, *args, **kwargs):
             return "MyBSDF[]"
@@ -131,16 +131,16 @@ def test02_traverse_update(variants_all_ad_rgb):
             MyTexture.update_keys = keys
 
         def eval(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def eval_1(self, *args, **kwargs):
             return 0
 
         def eval_1_grad(self, *args, **kwargs):
-            return dr.zero(mi.Vector2f)
+            return dr.zeros(mi.Vector2f)
 
         def eval_3(self, *args, **kwargs):
-            return dr.zero(mi.Color3f)
+            return dr.zeros(mi.Color3f)
 
         def mean(self, *args, **kwargs):
             return 0

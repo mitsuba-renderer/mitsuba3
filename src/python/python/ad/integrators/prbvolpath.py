@@ -87,14 +87,14 @@ class PRBVolpathIntegrator(RBIntegrator):
         η = mi.Float(1)                               # Index of refraction
         active = mi.Bool(active)
 
-        si = dr.zero(mi.SurfaceInteraction3f)
+        si = dr.zeros(mi.SurfaceInteraction3f)
         needs_intersection = mi.Bool(True)
-        last_scatter_event = dr.zero(mi.Interaction3f)
+        last_scatter_event = dr.zeros(mi.Interaction3f)
         last_scatter_direction_pdf = mi.Float(1.0)
 
         # TODO: Support sensors inside media
         # medium = mi.MediumPtr(medium)
-        medium = dr.zero(mi.MediumPtr)
+        medium = dr.zeros(mi.MediumPtr)
 
         channel = 0
         depth = mi.UInt32(0)
@@ -173,7 +173,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 phase_ctx = mi.PhaseFunctionContext(sampler)
                 phase = mei.medium.phase_function()
-                phase[~act_medium_scatter] = dr.zero(mi.PhaseFunctionPtr)
+                phase[~act_medium_scatter] = dr.zeros(mi.PhaseFunctionPtr)
 
                 valid_ray |= act_medium_scatter
                 with dr.suspend_grad():
@@ -219,7 +219,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                     specular_chain |= act_medium_scatter & ~sample_emitters
                     active_e_medium = act_medium_scatter & sample_emitters
                     active_e = active_e_surface | active_e_medium
-                    ref_interaction = dr.zero(mi.Interaction3f)
+                    ref_interaction = dr.zeros(mi.Interaction3f)
                     ref_interaction[act_medium_scatter] = mei
                     ref_interaction[active_surface] = si
                     nee_sampler = sampler if is_primal else sampler.clone()
@@ -282,7 +282,7 @@ class PRBVolpathIntegrator(RBIntegrator):
         is_primal = mode == dr.ADMode.Primal
 
         active = mi.Bool(active)
-        medium = dr.select(active, medium, dr.zero(mi.MediumPtr))
+        medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
 
         ds, emitter_val = scene.sample_emitter_direction(ref_interaction, sampler.next_2d(active), False, active)
         ds = dr.detach(ds)
@@ -292,7 +292,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         ray = ref_interaction.spawn_ray(ds.d)
         total_dist = mi.Float(0.0)
-        si = dr.zero(mi.SurfaceInteraction3f)
+        si = dr.zeros(mi.SurfaceInteraction3f)
         needs_intersection = mi.Bool(True)
         transmittance = mi.Spectrum(1.0)
         loop = mi.Loop(name=f"PRB Next Event Estimation ({mode.name})",

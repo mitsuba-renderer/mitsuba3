@@ -10,8 +10,8 @@ def create_stairs(num_steps):
 
     m = mi.Mesh("stairs", 4 * num_steps, 4 * num_steps - 2)
 
-    v = dr.zero(mi.TensorXf, [4 * num_steps, 3])
-    f = dr.zero(mi.TensorXf, [4 * num_steps - 2, 3])
+    v = dr.zeros(mi.TensorXf, [4 * num_steps, 3])
+    f = dr.zeros(mi.TensorXf, [4 * num_steps - 2, 3])
 
     for i in range(num_steps):
         h  = i * size_step

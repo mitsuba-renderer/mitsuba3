@@ -128,7 +128,7 @@ class ChiSquareTest:
         if type(samples_out) is tuple:
             weights_out = samples_out[1]
             samples_out = samples_out[0]
-            assert dr.array_depth_v(weights_out) == 1
+            assert dr.depth_v(weights_out) == 1
         else:
             weights_out = mi.Float(1.0)
 
@@ -150,7 +150,7 @@ class ChiSquareTest:
                                   mi.Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
-        self.histogram = dr.zero(mi.Float, dr.hprod(self.res))
+        self.histogram = dr.zeros(mi.Float, dr.hprod(self.res))
 
         dr.scatter_reduce(
             dr.ReduceOp.Add,
@@ -388,7 +388,7 @@ class LineDomain:
         return p.x
 
     def map_backward(self, p):
-        return mi.Vector2f(p.x, dr.zero(mi.Float, len(p.x)))
+        return mi.Vector2f(p.x, dr.zeros(mi.Float, len(p.x)))
 
 
 class PlanarDomain:
@@ -462,13 +462,13 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        si = dr.zero(mi.SurfaceInteraction3f, dr.width(sample))
+        si = dr.zeros(mi.SurfaceInteraction3f, dr.width(sample))
         wavelength, weight = plugin.sample_spectrum(si, mi.sample_shifted(sample[0]))
         return mi.Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
-        si = dr.zero(mi.SurfaceInteraction3f, dr.width(w))
+        si = dr.zeros(mi.SurfaceInteraction3f, dr.width(w))
         si.wavelengths = w
         return plugin.pdf_spectrum(si)[0]
 
@@ -493,7 +493,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = mi.BSDFContext()
 
     def make_context(n):
-        si = dr.zero(mi.SurfaceInteraction3f, n)
+        si = dr.zeros(mi.SurfaceInteraction3f, n)
         si.wi = wi
         return (si, ctx)
 
@@ -542,15 +542,15 @@ def EmitterAdapter(emitter_type, extra):
     def sample_functor(sample, *args):
         n = dr.width(sample)
         plugin = instantiate(args)
-        si = dr.zero(mi.Interaction3f)
+        si = dr.zeros(mi.Interaction3f)
         ds, w = plugin.sample_direction(si, sample)
         return ds.d
 
     def pdf_functor(wo, *args):
         n = dr.width(wo)
         plugin = instantiate(args)
-        si = dr.zero(mi.Interaction3f)
-        ds = dr.zero(mi.DirectionSample3f)
+        si = dr.zeros(mi.Interaction3f)
+        ds = dr.zeros(mi.DirectionSample3f)
         ds.d = wo
         return plugin.pdf_direction(si, ds)
 
@@ -600,7 +600,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = mi.PhaseFunctionContext(None)
 
     def make_context(n):
-        mei = dr.zero(mi.MediumInteraction3f, n)
+        mei = dr.zeros(mi.MediumInteraction3f, n)
         mei.wi = wi
         mei.sh_frame = mi.Frame3f(mei.wi)
         mei.p = mi.Point3f(0, 0, 0)

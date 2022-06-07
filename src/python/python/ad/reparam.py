@@ -265,8 +265,8 @@ class _ReparameterizeOp(dr.CustomOp):
                 it += 1
 
         # Un-normalized values
-        V = dr.zero(mi.Vector3f, dr.width(Z))
-        div_V_1 = dr.zero(mi.Float, dr.width(Z))
+        V = dr.zeros(mi.Vector3f, dr.width(Z))
+        div_V_1 = dr.zeros(mi.Float, dr.width(Z))
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
@@ -321,7 +321,7 @@ class _ReparameterizeOp(dr.CustomOp):
             ray_grad_o += dr.grad(ray.o)
             it += 1
 
-        ray_grad = dr.detach(dr.zero(type(self.ray)))
+        ray_grad = dr.detach(dr.zeros(type(self.ray)))
         ray_grad.o = ray_grad_o
         self.set_grad_in('ray', ray_grad)
 
@@ -357,8 +357,8 @@ class _ReparameterizeOp(dr.CustomOp):
             dZ += dZ_i
 
         # Un-normalized values
-        V = dr.zero(mi.Vector3f, dr.width(Z))
-        div_V_1 = dr.zero(mi.Float, dr.width(Z))
+        V = dr.zeros(mi.Vector3f, dr.width(Z))
+        div_V_1 = dr.zeros(mi.Float, dr.width(Z))
         dr.enable_grad(V, div_V_1)
 
         # Compute normalized values
@@ -382,7 +382,7 @@ class _ReparameterizeOp(dr.CustomOp):
 
         dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
-        ray_grad = dr.detach(dr.zero(type(self.ray)))
+        ray_grad = dr.detach(dr.zeros(type(self.ray)))
         ray_grad.o = dr.grad(ray.o)
         self.set_grad_in('ray', ray_grad)
 

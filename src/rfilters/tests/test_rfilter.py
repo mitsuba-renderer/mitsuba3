@@ -50,7 +50,7 @@ def test07_resampler_box(variant_scalar_rgb):
     f = mi.load_dict({'type': 'box'})
 
     a = dr.linspace(Float, 0, 1, 5)
-    b = dr.zero(Float, 5)
+    b = dr.zeros(Float, 5)
 
     # Resample to same size
     resampler = mi.Resampler(f, 5, 5)
@@ -59,7 +59,7 @@ def test07_resampler_box(variant_scalar_rgb):
 
     # # Resample to same size
     resampler = mi.Resampler(f, 5, 3)
-    b = dr.zero(Float, 3)
+    b = dr.zeros(Float, 3)
     assert resampler.taps() == 2
     resampler.resample(a, 1, b, 1, 1)
     assert dr.all(b == [0.125, 0.5, 0.875])
@@ -73,7 +73,7 @@ def test08_resampler_boundary_conditions(variant_scalar_rgb):
     })
 
     a = dr.linspace(Float, 0, 1, 5)
-    b = dr.zero(Float, 3)
+    b = dr.zeros(Float, 3)
 
     w0 = f.eval(0.8) / (f.eval(0.8) + f.eval(0.2) + f.eval(0.4))
     w1 = f.eval(0.4) / (f.eval(0.8) + f.eval(0.2) + f.eval(0.4))
@@ -108,7 +108,7 @@ def test09_resampler_filter_only(variant_scalar_rgb):
     resampler.set_boundary_condition(mi.FilterBoundaryCondition.Repeat)
     assert resampler.taps() == 3
     a = dr.linspace(Float, 0, 1, 3)
-    b = dr.zero(Float, 3)
+    b = dr.zeros(Float, 3)
     resampler.resample(a, 1, b, 1, 1)
     assert dr.allclose(b[0], (G(0) * a[0] + G(1) * (a[1] + a[2])) / (G(0) + 2*G(1)), atol=1e-4)
     assert dr.allclose(b[1], (G(0) * a[1] + G(1) * (a[0] + a[2])) / (G(0) + 2*G(1)), atol=1e-4)

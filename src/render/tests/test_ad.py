@@ -213,9 +213,9 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     bsdf_params.update()
 
     mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
-    bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf), dr.zero(mi.BSDFPtr))
+    bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf), dr.zeros(mi.BSDFPtr))
 
-    si    = dr.zero(mi.SurfaceInteraction3f, N)
+    si    = dr.zeros(mi.SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]
@@ -310,7 +310,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
     bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf1), mi.BSDFPtr(bsdf2))
 
-    si    = dr.zero(mi.SurfaceInteraction3f, N)
+    si    = dr.zeros(mi.SurfaceInteraction3f, N)
     si.t  = 0.0
     si.p  = [0, 0, 0]
     si.n  = [0, 0, 1]

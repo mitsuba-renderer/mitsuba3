@@ -229,7 +229,7 @@ def test05_spectrum_sampling(variants_vec_spectral):
         "type": "thinlens",
         "aperture_radius": 1.0,
     })
-    wavelengths, _ =  camera.sample_wavelengths(dr.zero(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zeros(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
     assert (dr.all_nested((wavelengths >= mi.MI_CIE_MIN) & (wavelengths <= mi.MI_CIE_MAX)))
 
     # Check custom SRF wavelength sampling
@@ -241,7 +241,7 @@ def test05_spectrum_sampling(variants_vec_spectral):
             "value": [(1200,1.0), (1400,1.0)]
         }
     })
-    wavelengths, _ =  camera.sample_wavelengths(dr.zero(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
+    wavelengths, _ =  camera.sample_wavelengths(dr.zeros(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
     assert (dr.all_nested((wavelengths >= 1200) & (wavelengths <= 1400)))
 
     # Check error if double SRF is defined
