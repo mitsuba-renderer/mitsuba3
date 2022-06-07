@@ -25,7 +25,7 @@ def test01_basics(variants_all_backends_once):
     assert dr.allclose(mi.Transform4f(m2).matrix, m2)
     assert dr.allclose(mi.Transform4f(m3).matrix, m3)
 
-    if dr.is_jit_array_v(mi.Matrix4f):
+    if dr.is_jit_v(mi.Matrix4f):
         assert(
             repr(mi.Transform4f(mi.Matrix4f(m1))) ==
             "[[[1, 2, 3, 4],\n  [5, 6, 7, 8],\n  [9, 10, 11, 12],\n  [13, 14, 15, 16]]]"

@@ -162,7 +162,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     res = film.size()
     block = mi.ImageBlock(res, [0, 0], (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
 
-    if dr.is_jit_array_v(mi.Float):
+    if dr.is_jit_v(mi.Float):
         pixel_idx = dr.arange(mi.UInt32, dr.prod(res))
         x = pixel_idx % res[0]
         y = pixel_idx // res[0]

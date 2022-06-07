@@ -233,12 +233,12 @@ def _jit_id_hash(value: Any) -> int:
                 ids.extend(jit_ids(value[i]))
         elif dr.is_diff_v(value):
             ids.append((value.index(), value.index_ad()))
-        elif dr.is_jit_array_v(value):
+        elif dr.is_jit_v(value):
             if dr.is_tensor_v(value):
                 ids.extend(jit_ids(value.array))
             else:
                 ids.append((value.index(), 0))
-        elif dr.is_drjit_struct_v(value):
+        elif dr.is_struct_v(value):
             for k, v in value.DRJIT_STRUCT.items():
                 ids.extend(jit_ids(getattr(value, k)))
         else:

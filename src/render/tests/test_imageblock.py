@@ -107,7 +107,7 @@ def test03_put_boundary(variants_all_rgb, filter_name):
     im = mi.ImageBlock([3, 3], [0, 0], 1, rfilter=rfilter, warn_negative=False, border=False)
     im.clear()
     im.put([1.5, 1.5], [1.0])
-    if dr.is_jit_array_v(mi.Float):
+    if dr.is_jit_v(mi.Float):
         a = dr.slice(rfilter.eval(0))
         b = dr.slice(rfilter.eval(1))
         c = b**2
