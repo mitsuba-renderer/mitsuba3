@@ -73,7 +73,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
     img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Backward pass and gradient descent step
-    loss = dr.hsum_async(img_1)
+    loss = dr.sum(img_1)
     dr.backward(loss)
 
     grad = dr.grad(params[key])
@@ -85,7 +85,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
     # Forward rendering - second time
     img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
-    new_loss = dr.hsum_async(img_2)
+    new_loss = dr.sum(img_2)
 
     assert dr.allclose(loss, new_loss - lr * grad[0])
 
@@ -164,7 +164,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         dr.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'
-        ob_val = dr.hsum_async(dr.sqr(image - image_ref)) / len(image)
+        ob_val = dr.sum(dr.sqr(image - image_ref)) / len(image)
         dr.set_label(ob_val, 'ob_val')
 
         # print(dr.graphviz_str(Float(1)))
@@ -178,7 +178,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         # Optimizer: Update the scene parameters
         opt.update()
 
-        err_ref = dr.hsum(dr.detach(dr.sqr(param_ref - params[key])))[0]
+        err_ref = dr.sum(dr.detach(dr.sqr(param_ref - params[key])))[0]
         print('Iteration %03i: error=%g' % (it, err_ref))
 
         if it >= N - W:
@@ -238,7 +238,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0))
     assert dr.allclose(v_eval, v_ref)
 
-    loss = dr.hsum(v_eval)
+    loss = dr.sum(v_eval)
 
     # Backpropagate through vcall
     if eval_grad:
@@ -254,7 +254,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     # Check gradients
     grad = dr.grad(bsdf_params['reflectance.value'])
 
-    assert dr.allclose(grad, v * dr.hsum(dr.select(mask, loss_grad, 0.0)))
+    assert dr.allclose(grad, v * dr.sum(dr.select(mask, loss_grad, 0.0)))
 
     # Forward propagate gradients to loss
     dr.forward(bsdf_params['reflectance.value'], dr.ADFlag.ClearVertices)
@@ -299,7 +299,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         p2 = mi.Color3f(1e-10, 1e-10, 1)
         dr.enable_grad(p2)
         dr.set_label(p2, "albedo_2_indirect")
-        p2_2 = dr.min(p2, mi.Color3f(100))
+        p2_2 = dr.minimum(p2, mi.Color3f(100))
         bsdf2_params['reflectance.value'] = p2_2
     else:
         p2 = bsdf2_params['reflectance.value']
@@ -338,7 +338,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     mult2 = mi.Float(4.0)
     v_eval *= dr.select(mask, mult1, mult2)
 
-    loss = dr.hsum(v_eval)
+    loss = dr.sum(v_eval)
     dr.set_label(loss, "loss")
 
     if mode == "backward":
@@ -356,8 +356,8 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         grad1 = dr.grad(p1)
         grad2 = dr.grad(p2)
 
-        assert dr.allclose(grad1, v * mult1 * dr.hsum(dr.select(mask,  loss_grad, 0.0)))
-        assert dr.allclose(grad2, v * mult2 * dr.hsum(dr.select(~mask, loss_grad, 0.0)))
+        assert dr.allclose(grad1, v * mult1 * dr.sum(dr.select(mask,  loss_grad, 0.0)))
+        assert dr.allclose(grad2, v * mult2 * dr.sum(dr.select(~mask, loss_grad, 0.0)))
 
     if mode == "forward":
         # Forward propagate gradients to loss, one BSDF at a time
