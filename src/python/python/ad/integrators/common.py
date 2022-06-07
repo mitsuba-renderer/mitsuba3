@@ -324,7 +324,7 @@ class ADIntegrator(mi.CppADIntegrator):
         spp = sampler.sample_count()
 
         # Compute discrete sample position
-        idx = dr.arange(mi.UInt32, dr.hprod(film_size) * spp)
+        idx = dr.arange(mi.UInt32, dr.prod(film_size) * spp)
 
         # Try to avoid a division by an unknown constant if we can help it
         log_spp = dr.log2i(spp)
@@ -453,7 +453,7 @@ class ADIntegrator(mi.CppADIntegrator):
         if film.sample_border():
             film_size += 2 * film.rfilter().border_size()
 
-        wavefront_size = dr.hprod(film_size) * spp
+        wavefront_size = dr.prod(film_size) * spp
 
         is_llvm = dr.is_llvm_array_v(mi.Float)
         wavefront_size_limit = 0xffffffff if is_llvm else 0x40000000

@@ -780,7 +780,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     film_size = mi.ScalarVector2i(res)
 
     # Sample a wavefront of rays (one per pixel and spp)
-    total_sample_count = dr.hprod(film_size) * spp
+    total_sample_count = dr.prod(film_size) * spp
     pos = dr.arange(mi.UInt32, total_sample_count)
     pos //= spp
     scale = dr.rcp(mi.Vector2f(film_size))
@@ -825,7 +825,7 @@ def test19_update_geometry(variants_vec_rgb):
         params.update()
 
     film_size = mi.ScalarVector2i([4, 4])
-    total_sample_count = dr.hprod(film_size)
+    total_sample_count = dr.prod(film_size)
     pos = dr.arange(mi.UInt32, total_sample_count)
     scale = dr.rcp(mi.Vector2f(film_size))
     pos = mi.Vector2f(mi.Float(pos %  int(film_size[0])),

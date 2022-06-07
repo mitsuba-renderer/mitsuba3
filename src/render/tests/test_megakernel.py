@@ -79,13 +79,13 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
             assert [e['uses_optix'] for e in history_3] == [True, False]
 
         # Check rendering wavefront size
-        render_wavefront_size = dr.hprod(film_size) * spp
+        render_wavefront_size = dr.prod(film_size) * spp
         assert history_1[0]['size'] == render_wavefront_size
         assert history_2[0]['size'] == render_wavefront_size
         assert history_3[0]['size'] == render_wavefront_size
 
         # Check film development wavefront size
-        film_wavefront_size = dr.hprod(film_size) * 3 #(RGB)
+        film_wavefront_size = dr.prod(film_size) * 3 #(RGB)
         assert history_1[1]['size'] == film_wavefront_size
         assert history_2[1]['size'] == film_wavefront_size
         assert history_3[1]['size'] == film_wavefront_size
@@ -143,13 +143,13 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
             assert [e['uses_optix'] for e in history_3] == [True, False]
 
         # Check rendering wavefront size
-        render_wavefront_size = dr.hprod(film_size) * spp
+        render_wavefront_size = dr.prod(film_size) * spp
         assert history_1[0]['size'] == render_wavefront_size
         assert history_2[0]['size'] == render_wavefront_size
         assert history_3[0]['size'] == render_wavefront_size
 
         # Check film development wavefront size
-        film_wavefront_size = dr.hprod(film_size) * 3 #(RGB)
+        film_wavefront_size = dr.prod(film_size) * 3 #(RGB)
         assert history_1[1]['size'] == film_wavefront_size
         assert history_2[1]['size'] == film_wavefront_size
         assert history_3[1]['size'] == film_wavefront_size
@@ -165,8 +165,8 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     film_size = scene.sensors()[0].film().crop_size()
     spp = 4
 
-    film_wavefront_size = dr.hprod(film_size) * 3 #(RGB)
-    wavefront_size = dr.hprod(film_size) * spp
+    film_wavefront_size = dr.prod(film_size) * 3 #(RGB)
+    wavefront_size = dr.prod(film_size) * spp
 
     integrator = mi.load_dict({
         'type': 'prb',
@@ -197,7 +197,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
 
         # Use a different spp for the optimization loop (produce different kernels)
         spp = 2
-        wavefront_size = dr.hprod(film_size) * spp
+        wavefront_size = dr.prod(film_size) * spp
 
         histories = []
         for it in range(3):
