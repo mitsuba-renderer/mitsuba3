@@ -231,7 +231,7 @@ def _jit_id_hash(value: Any) -> int:
         if dr.is_static_array_v(value):
             for i in range(len(value)):
                 ids.extend(jit_ids(value[i]))
-        elif dr.is_diff_array_v(value):
+        elif dr.is_diff_v(value):
             ids.append((value.index(), value.index_ad()))
         elif dr.is_jit_array_v(value):
             if dr.is_tensor_v(value):
