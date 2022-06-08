@@ -205,7 +205,6 @@ class SceneParameters(Mapping):
 
         return out
 
-
     def keep(self, keys: list) -> None:
         """
         Reduce the size of the dictionary by only keeping elements,
