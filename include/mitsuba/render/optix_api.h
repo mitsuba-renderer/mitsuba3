@@ -24,6 +24,7 @@ using OptixTransformFormat   = int;
 using OptixAccelPropertyType = int;
 using OptixProgramGroupKind  = int;
 using OptixDeviceContext     = void*;
+using OptixTask              = void*;
 
 // =====================================================
 //            Commonly used OptiX constants
@@ -74,6 +75,8 @@ using OptixDeviceContext     = void*;
 #define OPTIX_RAY_FLAG_NONE                   0
 #define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
 #define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
+
+#define OPTIX_MODULE_COMPILE_STATE_COMPLETED 0x2364
 
 // =====================================================
 //          Commonly used OptiX data structures
@@ -244,10 +247,12 @@ D(optixAccelComputeMemoryUsage, OptixDeviceContext,
 D(optixAccelBuild, OptixDeviceContext, CUstream, const OptixAccelBuildOptions *,
   const OptixBuildInput *, unsigned int, CUdeviceptr, size_t, CUdeviceptr,
   size_t, OptixTraversableHandle *, const OptixAccelEmitDesc *, unsigned int);
-D(optixModuleCreateFromPTX, OptixDeviceContext,
+D(optixModuleCreateFromPTXWithTasks, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
-  const char *, size_t, char *, size_t *, OptixModule *);
+  const char *, size_t, char *, size_t *, OptixModule *, OptixTask *);
+D(optixModuleGetCompilationState, OptixModule, int *);
 D(optixModuleDestroy, OptixModule);
+D(optixTaskExecute, OptixTask, OptixTask *, unsigned int, unsigned int *);
 D(optixProgramGroupCreate, OptixDeviceContext, const OptixProgramGroupDesc *,
   unsigned int, const OptixProgramGroupOptions *, char *, size_t *,
   OptixProgramGroup *);
