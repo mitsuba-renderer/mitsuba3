@@ -112,7 +112,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                                    last_scatter_direction_pdf, valid_ray))
         while loop(active):
             active &= dr.any(dr.neq(throughput, 0.0))
-            q = dr.minimum(dr.maximum(throughput) * dr.sqr(η), 0.99)
+            q = dr.minimum(dr.max(throughput) * dr.sqr(η), 0.99)
             perform_rr = (depth > self.rr_depth)
             active &= (sampler.next_1d(active) < q) | ~perform_rr
             throughput[perform_rr] = throughput * dr.rcp(q)
