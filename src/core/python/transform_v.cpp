@@ -5,10 +5,24 @@
 #include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
+/// This class extends Transform to add support for chaining methods such as
+/// scale, translate, rotate, ...
+template <typename Float, int Dimension>
+struct ChainTransform : Transform<Point<Float, Dimension>> {
+    using Base = Transform<Point<Float, Dimension>>;
+    using Base::matrix;
+    using Base::inverse_transpose;
+    ChainTransform(const Base &t) : Base(t) { }
+    ChainTransform(Base &&t) {
+        matrix = std::move(t.matrix);
+        inverse_transpose = std::move(t.inverse_transpose);
+    }
+};
 
 template <typename Float>
 void bind_transform3(py::module &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
+    using ChainTransform3f = ChainTransform<Float, 3>;
 
     auto trans3 = py::class_<Transform3f>(m, name, D(Transform))
         .def(py::init<>(), "Initialize with the identity matrix")
@@ -30,10 +44,17 @@ void bind_transform3(py::module &m, const char *name) {
         }))
         .def(py::init<Matrix3f>(), D(Transform, Transform))
         .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
-        .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
-        .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
-        .def_static("rotate", &Transform3f::template rotate<3>,
-                    "angle"_a, D(Transform, rotate, 2))
+
+        .def_static("translate", [](const Point2f &v) {
+            return ChainTransform3f(Transform3f::translate(v));
+        }, "v"_a, D(Transform, translate))
+        .def_static("scale", [](const Point2f &v) {
+            return ChainTransform3f(Transform3f::scale(v));
+        }, "v"_a, D(Transform, scale))
+        .def_static("rotate", [](const Float &a) {
+            return ChainTransform3f(Transform3f::template rotate<3>(a));
+        }, "angle"_a, D(Transform, rotate, 2))
+
         .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
         /// Operators
         .def(py::self == py::self)
@@ -69,12 +90,28 @@ void bind_transform3(py::module &m, const char *name) {
         trans3.def(py::init<const ScalarTransform3f &>(), "Broadcast constructor");
 
     MI_PY_DRJIT_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
+
+    std::string chain_name = std::string("Chain") + std::string(name);
+    py::class_<ChainTransform3f, Transform3f>(m, chain_name.c_str(), D(Transform))
+        .def("translate", [](const ChainTransform3f &t, const Point2f &v) {
+            return ChainTransform3f(t * Transform3f::translate(v));
+        }, "v"_a, D(Transform, translate))
+        .def("scale", [](const ChainTransform3f &t, const Point2f &v) {
+            return ChainTransform3f(t * Transform3f::scale(v));
+        }, "v"_a, D(Transform, scale))
+        .def("rotate", [](const ChainTransform3f &t, const Float &a) {
+            return ChainTransform3f(t * Transform3f::template rotate<3>(a));
+        }, "angle"_a, D(Transform, rotate, 2));
+
+    py::implicitly_convertible<ChainTransform3f, Transform3f>();
 }
 
 template <typename Float, typename Spectrum>
 void bind_transform4(py::module &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point<Float, 3>, Spectrum>;
+    using ChainTransform4f = ChainTransform<Float, 4>;
+
     auto trans4 = py::class_<Transform4f>(m, name, D(Transform))
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
@@ -95,20 +132,32 @@ void bind_transform4(py::module &m, const char *name) {
         }))
         .def(py::init<Matrix4f>(), D(Transform, Transform))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
-        .def_static("translate", &Transform4f::translate, "v"_a, D(Transform, translate))
-        .def_static("scale", &Transform4f::scale, "v"_a, D(Transform, scale))
-        .def_static("rotate", &Transform4f::template rotate<4>,
-            "axis"_a, "angle"_a, D(Transform, rotate))
-        .def_static("perspective", &Transform4f::template perspective<4>,
-            "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
-        .def_static("orthographic", &Transform4f::template orthographic<4>,
-            "near"_a, "far"_a, D(Transform, orthographic))
-        .def_static("look_at", &Transform4f::template look_at<4>,
-            "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
-        .def_static("from_frame", &Transform4f::template from_frame<Float>,
-            "frame"_a, D(Transform, from_frame))
-        .def_static("to_frame", &Transform4f::template to_frame<Float>,
-            "frame"_a, D(Transform, to_frame))
+
+        .def_static("translate", [](const Point3f &v) {
+            return ChainTransform4f(Transform4f::translate(v));
+        }, "v"_a, D(Transform, translate))
+        .def_static("scale", [](const Point3f &v) {
+            return ChainTransform4f(Transform4f::scale(v));
+        }, "v"_a, D(Transform, scale))
+        .def_static("rotate", [](const Point3f &v, const Float &a) {
+            return ChainTransform4f(Transform4f::rotate(v, a));
+        }, "axis"_a, "angle"_a, D(Transform, rotate))
+        .def_static("perspective", [](const Float &fov, const Float &near, const Float &far) {
+            return ChainTransform4f(Transform4f::template perspective<4>(fov, near, far));
+        }, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
+        .def_static("orthographic", [](const Float &near, const Float &far) {
+            return ChainTransform4f(Transform4f::orthographic(near, far));
+        }, "near"_a, "far"_a, D(Transform, orthographic))
+        .def_static("look_at", [](const Point3f &origin, const Point3f &target, const Point3f &up) {
+            return ChainTransform4f(Transform4f::template look_at<4>(origin, target, up));
+        }, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
+        .def_static("from_frame", [](const Frame3f &f) {
+            return ChainTransform4f(Transform4f::template from_frame<Float>(f));
+        }, "frame"_a, D(Transform, from_frame))
+        .def_static("to_frame", [](const Frame3f &f) {
+            return ChainTransform4f(Transform4f::template to_frame<Float>(f));
+        }, "frame"_a, D(Transform, to_frame))
+
         .def("translation", &Transform4f::translation, D(Transform, translation))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
         .def("extract", &Transform4f::template extract<3>, D(Transform, extract))
@@ -157,6 +206,35 @@ void bind_transform4(py::module &m, const char *name) {
         trans4.def(py::init<const ScalarTransform4f &>(), "Broadcast constructor");
 
     MI_PY_DRJIT_STRUCT(trans4, Transform4f, matrix, inverse_transpose)
+
+    std::string chain_name = std::string("Chain") + std::string(name);
+    py::class_<ChainTransform4f, Transform4f>(m, chain_name.c_str(), D(Transform))
+        .def("translate", [](const ChainTransform4f &t, const Point3f &v) {
+            return ChainTransform4f(t * Transform4f::translate(v));
+        }, "v"_a, D(Transform, translate))
+        .def("scale", [](const ChainTransform4f &t, const Point3f &v) {
+            return ChainTransform4f(t * Transform4f::scale(v));
+        }, "v"_a, D(Transform, scale))
+        .def("rotate", [](const ChainTransform4f &t, const Point3f &v, const Float &a) {
+            return ChainTransform4f(t * Transform4f::rotate(v, a));
+        }, "axis"_a, "angle"_a, D(Transform, rotate))
+        .def("perspective", [](const ChainTransform4f &t, const Float &fov, const Float &near, const Float &far) {
+            return ChainTransform4f(t * Transform4f::template perspective<4>(fov, near, far));
+        }, "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
+        .def("orthographic", [](const ChainTransform4f &t, const Float &near, const Float &far) {
+            return ChainTransform4f(t * Transform4f::orthographic(near, far));
+        }, "near"_a, "far"_a, D(Transform, orthographic))
+        .def("look_at", [](const ChainTransform4f &t, const Point3f &origin, const Point3f &target, const Point3f &up) {
+            return ChainTransform4f(t * Transform4f::template look_at<4>(origin, target, up));
+        }, "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
+        .def("from_frame", [](const ChainTransform4f &t, const Frame3f &f) {
+            return ChainTransform4f(t * Transform4f::template from_frame<Float>(f));
+        }, "frame"_a, D(Transform, from_frame))
+        .def("to_frame", [](const ChainTransform4f &t, const Frame3f &f) {
+            return ChainTransform4f(t * Transform4f::template to_frame<Float>(f));
+        }, "frame"_a, D(Transform, to_frame));
+
+    py::implicitly_convertible<ChainTransform4f, Transform4f>();
 }
 
 MI_PY_EXPORT(Transform) {
