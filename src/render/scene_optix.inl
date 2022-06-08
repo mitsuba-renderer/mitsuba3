@@ -5,6 +5,8 @@
 
 #include <drjit-core/optix.h>
 
+#include <nanothread/nanothread.h>
+
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/shapes.h>
 #include <mitsuba/render/optix_api.h>
@@ -132,7 +134,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         // Create Optix module from supplemental PTX code
         // =====================================================
 
-        check_log(optixModuleCreateFromPTX(
+        OptixTask task;
+        check_log(optixModuleCreateFromPTXWithTasks(
             config.context,
             &module_compile_options,
             &config.pipeline_compile_options,
@@ -140,8 +143,38 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             optix_rt_ptx_size,
             optix_log,
             &optix_log_size,
-            &config.module
+            &config.module,
+            &task
         ));
+
+        std::function<void(OptixTask)> execute_task = [&](OptixTask task) {
+            size_t max_new_tasks = pool_size();
+
+            std::unique_ptr<OptixTask[]> new_tasks =
+                std::make_unique<OptixTask[]>(max_new_tasks);
+            unsigned int new_task_count = 0;
+            optixTaskExecute(task, new_tasks.get(), max_new_tasks,
+                             &new_task_count);
+
+            parallel_for(
+                drjit::blocked_range<size_t>(0, new_task_count, 1),
+                [&](const drjit::blocked_range<size_t> &range) {
+                    for (auto i = range.begin(); i != range.end(); ++i) {
+                        OptixTask new_task = new_tasks[i];
+                        execute_task(new_task);
+                    }
+                }
+            );
+        };
+        execute_task(task);
+
+        int compilation_state = 0;
+        check_log(
+            optixModuleGetCompilationState(config.module, &compilation_state));
+        if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
+            Throw("Optix configuration initialization failed! The OptiX module "
+                  "compilation did not complete succesfully. The module's "
+                  "compilation state is: %#06x", compilation_state);
 
         // =====================================================
         // Create program groups (raygen provided by Dr.Jit..)

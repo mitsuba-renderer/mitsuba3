@@ -20,8 +20,10 @@ void optix_initialize() {
     L(optixAccelComputeMemoryUsage);
     L(optixAccelBuild);
     L(optixAccelCompact);
-    L(optixModuleCreateFromPTX);
+    L(optixModuleCreateFromPTXWithTasks);
+    L(optixModuleGetCompilationState);
     L(optixModuleDestroy)
+    L(optixTaskExecute);
     L(optixProgramGroupCreate);
     L(optixProgramGroupDestroy)
     L(optixSbtRecordPackHeader);
