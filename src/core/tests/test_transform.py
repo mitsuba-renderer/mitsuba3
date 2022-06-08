@@ -167,6 +167,25 @@ def test07_transform_has_scale(variant_scalar_rgb):
     assert not mi.Transform4f().has_scale()
 
 
+def test08_transform_chain(variants_all_rgb):
+    T = mi.Transform3f
+    assert T.scale(4.0).scale(6.0) == T.scale(4.0) @ T.scale(6.0)
+    assert T.scale(4.0).rotate(6.0) == T.scale(4.0) @ T.rotate(6.0)
+    assert T.rotate(6.0).scale(4.0) == T.rotate(6.0) @ T.scale(4.0)
+    assert T.translate([6.0, 1.0]).scale(4.0) == T.translate([6.0, 1.0]) @ T.scale(4.0)
+
+    T = mi.Transform4f
+    assert T.scale(4.0).scale(6.0) == T.scale(4.0) @ T.scale(6.0)
+    assert T.scale(4.0).rotate([1, 0, 0], 6.0) == T.scale(4.0) @ T.rotate([1, 0, 0], 6.0)
+    assert T.rotate([1, 0, 0], 6.0).scale(4.0) == T.rotate([1, 0, 0], 6.0) @ T.scale(4.0)
+    assert T.translate([6.0, 1.0, 0.0]).scale(4.0) == T.translate([6.0, 1.0, 0.0]) @ T.scale(4.0)
+    assert T.perspective(0.5, 0.5, 1.5).scale(4.0) == T.perspective(0.5, 0.5, 1.5) @ T.scale(4.0)
+    assert T.orthographic(0.5, 1.5).scale(4.0) == T.orthographic(0.5, 1.5) @ T.scale(4.0)
+    assert T.look_at([0, 0, 0], [0, 1, 0], [1, 0, 0]).scale(4.0) == T.look_at([0, 0, 0], [0, 1, 0], [1, 0, 0]) @ T.scale(4.0)
+    assert T.from_frame(mi.Frame3f([1, 0, 0])).scale(4.0) == T.from_frame(mi.Frame3f([1, 0, 0])) @ T.scale(4.0)
+    assert T.to_frame(mi.Frame3f([1, 0, 0])).scale(4.0) == T.to_frame(mi.Frame3f([1, 0, 0])) @ T.scale(4.0)
+
+
 # def test08_atransform_construct(variant_scalar_rgb):
 #     t = mi.Transform4f.rotate([1, 0, 0], 30)
 #     a = AnimatedTransform(t)
