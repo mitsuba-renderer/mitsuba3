@@ -193,7 +193,7 @@ def museum_plane_scene():
 @fresolver_append_path
 def make_museum_plane_scene(spp = 16, roughness = 0.01):
     scene = mitsuba.load_string("""
-        <scene version="2.0.0">
+        <scene version="3.0.0">
             <sensor type="perspective">
                 <float name="fov" value="50"/>
                 <float name="near_clip" value="0.1"/>

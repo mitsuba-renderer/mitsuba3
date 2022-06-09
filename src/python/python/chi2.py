@@ -499,7 +499,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         return (si, ctx)
 
     def instantiate(args):
-        xml = """<bsdf version="2.0.0" type="%s">
+        xml = """<bsdf version="3.0.0" type="%s">
             %s
         </bsdf>""" % (bsdf_type, extra)
         return mi.load_string(xml % args)
@@ -535,7 +535,7 @@ def EmitterAdapter(emitter_type, extra):
     """
 
     def instantiate(args):
-        xml = """<emitter version="2.0.0" type="%s">
+        xml = """<emitter version="3.0.0" type="%s">
             %s
         </emitter>""" % (emitter_type, extra)
         return mi.load_string(xml % args)
@@ -608,7 +608,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         return mei, ctx
 
     def instantiate(args):
-        xml = """<phase version="2.0.0" type="%s">
+        xml = """<phase version="3.0.0" type="%s">
             %s
         </phase>""" % (phase_type, extra)
         return mi.load_string(xml % args)

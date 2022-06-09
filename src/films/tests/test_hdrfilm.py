@@ -53,7 +53,7 @@ def test02_crops(variant_scalar_rgb):
 
     # Crop size doesn't adjust its size, so an error should be raised if the
     # resulting crop window goes out of bounds.
-    incomplete = """<film version="2.0.0" type="hdrfilm">
+    incomplete = """<film version="3.0.0" type="hdrfilm">
             <integer name="width" value="32"/>
             <integer name="height" value="21"/>
             <integer name="crop_offset_x" value="30"/>
