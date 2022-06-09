@@ -59,7 +59,7 @@ def clean_up():
 
     if hasattr(dr, 'sync_thread'):
         dr.sync_thread()
-        dr.registry_trim()
+        dr.registry_clear()
         dr.set_flags(dr.JitFlag.Default)
 
 
