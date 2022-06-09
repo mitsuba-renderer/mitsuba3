@@ -156,9 +156,9 @@ public:
 
 public:  // Type-specific getters and setters ----------------------------------
 
-    /// Generic getter method to retrive properties. (throw an error if type isn't supported)
+    /// Generic getter method to retrieve properties. (throw an error if type isn't supported)
     template <typename T> T get(const std::string &name) const;
-    /// Generic getter method to retrive properties. (use default value if no entry exists)
+    /// Generic getter method to retrieve properties. (use default value if no entry exists)
     template <typename T> T get(const std::string &name, const T &def_val) const;
 
     /// Store a boolean value in the Properties instance

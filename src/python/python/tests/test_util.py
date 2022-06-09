@@ -58,13 +58,13 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
     mi.register_bsdf("mybsdf", MyBSDF)
     mi.register_texture("mytexture", MyTexture)
 
-    scene = mi.load_dict({
+    bsdf = mi.load_dict({
         "type": "mybsdf",
         "texture1": {"type": "mytexture"},
         "texture2": {"type": "mytexture"},
     })
 
-    params = mi.traverse(scene)
+    params = mi.traverse(bsdf)
 
     assert len(params) == 4
 
@@ -153,13 +153,13 @@ def test02_traverse_update(variants_all_ad_rgb):
     mi.register_bsdf("mybsdf", MyBSDF)
     mi.register_texture("mytexture", MyTexture)
 
-    scene = mi.load_dict({
+    bsdf = mi.load_dict({
         "type": "mybsdf",
         "texture1": {"type": "mytexture"},
         "texture2": {"type": "mytexture"},
     })
 
-    params = mi.traverse(scene)
+    params = mi.traverse(bsdf)
     assert len(params) == 3
 
     # Normal usage

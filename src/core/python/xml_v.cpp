@@ -13,7 +13,7 @@ extern Caster cast_object;
 // Forward declaration
 template <typename Float, typename Spectrum>
 std::vector<ref<Object>> load_dict(
-        const std::string &dict_key, 
+        const std::string &dict_key,
         const py::dict &dict,
         std::map<std::string, ref<Object>> &instances
 );
