@@ -13,7 +13,7 @@ def test01_dict_plugins(variants_all):
 
     for p_name, p_type in plugins:
         o1 = mi.load_dict({ "type": p_type })
-        o2 = mi.load_string("""<%s type="%s" version="2.0.0"/>""" % (p_name, p_type))
+        o2 = mi.load_string("""<%s type="%s" version="3.0.0"/>""" % (p_name, p_type))
         assert str(o1) == str(o2)
 
 
@@ -58,7 +58,7 @@ def test03_dict_simple_field(variants_all):
     })
 
     s5 = mi.load_string("""
-        <shape type="sphere" version="2.0.0">
+        <shape type="sphere" version="3.0.0">
             <point name="center" value="0.0 0.0 -10.0"/>
             <float name="radius" value="10.0"/>
             <boolean name="flip_normals" value="false"/>
@@ -80,7 +80,7 @@ def test04_dict_nested(variants_all):
     })
 
     s2 = mi.load_string("""
-        <shape type="sphere" version="2.0.0">
+        <shape type="sphere" version="3.0.0">
             <emitter type="area"/>
         </shape>
     """)
@@ -118,7 +118,7 @@ def test04_dict_nested(variants_all):
     })
 
     s2 = mi.load_string("""
-        <shape type="sphere" version="2.0.0">
+        <shape type="sphere" version="3.0.0">
             <bsdf type="roughdielectric">
                 <texture type="checkerboard" name="specular_reflectance">
                     <rgb name="color0" value="0.0 0.8 0.0"/>
@@ -144,7 +144,7 @@ def test05_dict_nested_object(variants_all):
     })
 
     s2 = mi.load_string("""
-        <shape type="sphere" version="2.0.0">
+        <shape type="sphere" version="3.0.0">
             <bsdf type="diffuse"/>
         </shape>
     """)
@@ -170,7 +170,7 @@ def test06_dict_rgb(variants_all_scalar):
     })
 
     e3 = mi.load_string("""
-        <emitter type="point" version="2.0.0">
+        <emitter type="point" version="3.0.0">
             <rgb name="intensity" value="0.5, 0.2, 0.5"/>
         </emitter>
     """)
@@ -187,7 +187,7 @@ def test06_dict_rgb(variants_all_scalar):
     })
 
     e2 = mi.load_string("""
-        <emitter type="point" version="2.0.0">
+        <emitter type="point" version="3.0.0">
             <rgb name="intensity" value="0.5"/>
         </emitter>
     """)
@@ -205,7 +205,7 @@ def test07_dict_spectrum(variants_all_scalar):
     })
 
     e2 = mi.load_string("""
-        <emitter type="point" version="2.0.0">
+        <emitter type="point" version="3.0.0">
             <spectrum name="intensity" value="400:0.1 500:0.2 600:0.4 700:0.1"/>
         </emitter>
     """)
@@ -221,7 +221,7 @@ def test07_dict_spectrum(variants_all_scalar):
     })
 
     e2 = mi.load_string("""
-        <emitter type="point" version="2.0.0">
+        <emitter type="point" version="3.0.0">
             <spectrum name="intensity" value="0.44"/>
         </emitter>
     """)
@@ -433,7 +433,7 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
     })
 
     b1 = mi.load_string("""
-        <bsdf type="diffuse" version="2.0.0">
+        <bsdf type="diffuse" version="3.0.0">
             <spectrum version='2.0.0' type='d65' name="reflectance"/>
         </bsdf>
     """)

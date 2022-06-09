@@ -78,7 +78,7 @@ def test03_crops(variant_scalar_spectral):
 
     # Crop size doesn't adjust its size, so an error should be raised if the
     # resulting crop window goes out of bounds.
-    incomplete = """<film version="2.0.0" type="specfilm">
+    incomplete = """<film version="3.0.0" type="specfilm">
             <spectrum name="srf_test" value="500:1.0 700:2.0 750:3.0"/>
             <integer name="width" value="32"/>
             <integer name="height" value="21"/>
