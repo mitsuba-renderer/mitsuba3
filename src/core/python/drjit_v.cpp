@@ -181,7 +181,24 @@ MI_PY_EXPORT(DrJit) {
         m.attr("TensorXf") = drjit_variant.attr("TensorXf64");
     m.attr("TensorXd") = drjit_variant.attr("TensorXf64");
 
+    // Texture type aliases
+    if constexpr (std::is_same_v<float, ScalarFloat>) {
+        m.attr("Texture1f") = drjit_variant.attr("Texture1f");
+        m.attr("Texture2f") = drjit_variant.attr("Texture2f");
+        m.attr("Texture3f") = drjit_variant.attr("Texture3f");
+    } else {
+        m.attr("Texture1f") = drjit_variant.attr("Texture1f64");
+        m.attr("Texture2f") = drjit_variant.attr("Texture2f64");
+        m.attr("Texture3f") = drjit_variant.attr("Texture3f64");
+    }
+    m.attr("Texture1d") = drjit_variant.attr("Texture1f64");
+    m.attr("Texture2d") = drjit_variant.attr("Texture2f64");
+    m.attr("Texture3d") = drjit_variant.attr("Texture3f64");
+
+    // PCG32 type alias
     m.attr("PCG32") = drjit_variant.attr("PCG32");
+
+    // Loop type alias
     m.attr("Loop") = drjit_variant.attr("Loop");
 }
 
