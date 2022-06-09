@@ -233,7 +233,7 @@ public:
                 4
             };
             m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
-                                  m_accel, filter_mode, wrap_mode);
+                                  m_accel, m_accel, filter_mode, wrap_mode);
         } else {
             size_t shape[4] = {
                 (size_t) res.z(),
@@ -242,7 +242,7 @@ public:
                 m_volume_grid->channel_count()
             };
             m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
-                                  m_accel, filter_mode, wrap_mode);
+                                  m_accel, m_accel, filter_mode, wrap_mode);
             m_max = m_volume_grid->max();
             m_max_per_channel.resize(m_volume_grid->channel_count());
             m_volume_grid->max_per_channel(m_max_per_channel.data());

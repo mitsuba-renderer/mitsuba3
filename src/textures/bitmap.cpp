@@ -260,7 +260,7 @@ public:
         ScalarVector2i res = ScalarVector2i(m_bitmap->size());
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
-                              filter_mode, wrap_mode);
+                              m_accel, filter_mode, wrap_mode);
     }
 
     void traverse(TraversalCallback *callback) override {
