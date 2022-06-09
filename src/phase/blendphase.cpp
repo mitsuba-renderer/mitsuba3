@@ -33,22 +33,31 @@ combinations of two phase function instances. Any phase function in Mitsuba 3
 manner. This is of particular interest when mixing components in a participating
 medium (*e.g.* accounting for the presence of aerosols in a Rayleigh-scattering
 atmosphere).
+The association of nested Phase plugins with the two positions in the 
+interpolation is based on the alphanumeric order of their identifiers.
 
 .. tabs::
     .. code-tab:: xml
 
         <phase type="blendphase">
             <float name="weight" value="0.5"/>
-            <phase type="isotropic" />
-            <phase type="hg">
+            <phase name="phase_0" type="isotropic" />
+            <phase name="phase_1" type="hg">
                 <float name="g" value="0.2"/>
             </phase>
         </phase>
 
     .. code-tab:: python
 
-        'type': 'hg',
-        'g': 0.1
+        'type': 'blendphase',
+        'weight': 0.5,
+        'phase_0': {
+            'type': 'isotropic'
+        },
+        'phase_1': {
+            'type': 'hg',
+            'g': 0.2
+        }
 
 */
 
