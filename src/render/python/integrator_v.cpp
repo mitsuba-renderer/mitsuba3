@@ -114,7 +114,7 @@ public:
  * Python AD integrators for primal renderings
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB CppADIntegrator
+class CppADIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
     protected:
     MI_IMPORT_BASE(SamplingIntegrator)
