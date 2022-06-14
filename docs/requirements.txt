@@ -3,7 +3,7 @@ pygments-mathematica
 pybtex
 nbsphinx
 furo
-sphinxcontrib-bibtex<2.0.0
+sphinxcontrib-bibtex
 sphinx-panels
 sphinx-gallery
 sphinx-copybutton
