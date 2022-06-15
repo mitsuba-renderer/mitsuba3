@@ -141,8 +141,14 @@ def bitmap_extract(bmp, require_variance=True):
             b_root = b_root.convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
         return np.array(b_root, copy=True), None
     else:
-        img = np.array(split[1][1], copy=False)
+        img    = np.array(split[1][1], copy=False)
         img_m2 = np.array(split[2][1], copy=False)
+
+        if len(img.shape) == 2:
+            img = img[..., np.newaxis]
+        if len(img_m2.shape) == 2:
+            img_m2 = img_m2[..., np.newaxis]
+
         return img, img_m2 - img * img
 
 
