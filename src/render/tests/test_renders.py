@@ -132,6 +132,7 @@ def bitmap_extract(bmp, require_variance=True):
     # AVOs from the moment integrator are in XYZ (float32)
     split = bmp.split()
     if len(split) == 1:
+        print('hello!')
         if require_variance:
             raise RuntimeError(
                 'Could not extract variance image from bitmap. '
@@ -139,7 +140,12 @@ def bitmap_extract(bmp, require_variance=True):
         b_root = split[0][1]
         if b_root.channel_count() >= 3 and b_root.pixel_format() != mi.Bitmap.PixelFormat.XYZ:
             b_root = b_root.convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
-        return np.array(b_root, copy=True), None
+        img = np.array(b_root, copy=True)
+
+        if len(img.shape) == 2:
+            img = img[..., np.newaxis]
+
+        return img, None
     else:
         img    = np.array(split[1][1], copy=False)
         img_m2 = np.array(split[2][1], copy=False)
