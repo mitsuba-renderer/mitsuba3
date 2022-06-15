@@ -171,8 +171,12 @@ MI_PY_EXPORT(Bitmap) {
                 return py::none();
             auto field = bitmap.struct_()->operator[](0);
             py::dict result;
-            result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
-                                             bitmap.channel_count());
+
+            if (bitmap.channel_count() == 1)
+                result["shape"] = py::make_tuple(bitmap.height(), bitmap.width());
+            else
+                result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
+                                                 bitmap.channel_count());
 
             std::string code(3, '\0');
             #if defined(LITTLE_ENDIAN)
