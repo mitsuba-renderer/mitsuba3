@@ -149,10 +149,10 @@ def test_read_write_jpeg(variant_scalar_rgb, tmpdir, np_rng):
 
     b = mi.Bitmap(mi.Bitmap.PixelFormat.Y, mi.Struct.Type.UInt8, [10, 10])
     ref = np.uint8(np_rng.random((10, 10))*255)
-    np.array(b, copy=False)[:] = ref[..., np.newaxis]
+    np.array(b, copy=False)[:] = ref[...]
     b.write(tmp_file, quality=50)
     b2 = mi.Bitmap(tmp_file)
-    assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
+    assert np.sum(np.abs(np.float32(np.array(b2)[:, :])-ref)) / (10*10*255) < 0.07
 
     b = mi.Bitmap(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, [10, 10])
     ref = np.uint8(np_rng.random((10, 10, 3))*255)
@@ -169,10 +169,10 @@ def test_read_write_png(variant_scalar_rgb, tmpdir, np_rng):
 
     b = mi.Bitmap(mi.Bitmap.PixelFormat.Y, mi.Struct.Type.UInt8, [10, 10])
     ref = np.uint8(np_rng.random((10, 10))*255)
-    np.array(b, copy=False)[:] = ref[..., np.newaxis]
+    np.array(b, copy=False)[:] = ref[...]
     b.write(tmp_file)
     b2 = mi.Bitmap(tmp_file)
-    assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
+    assert np.sum(np.abs(np.float32(np.array(b2)[:, :])-ref)) == 0
 
     b = mi.Bitmap(mi.Bitmap.PixelFormat.RGBA, mi.Struct.Type.UInt8, [10, 10])
     ref = np.uint8(np_rng.random((10, 10, 4))*255)

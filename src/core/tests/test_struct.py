@@ -365,11 +365,12 @@ def test15_test_dither():
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.Float32, [10, 256])
     value = np.linspace(0, 1 / 255.0, 10)
-    np.array(b, copy=False)[:, :, 0] = np.tile(value, (256, 1))
+    np.array(b, copy=False)[:, :] = np.tile(value, (256, 1))
     b = b.convert(Bitmap.PixelFormat.Y, Struct.Type.UInt8, False)
     b = b.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, False)
-    err = la.norm(np.mean(np.array(b, copy=False), axis=(0, 2)) - value)
+    err = la.norm(np.mean(np.array(b, copy=False), axis=(0)) - value)
     assert(err < 5e-4)
+
 
 def test16_alpha_1():
     """Tests alpha (un)premultiplication for linear floating point structs"""
@@ -385,6 +386,7 @@ def test16_alpha_1():
     check_conversion(s, '@fff', '@fff',
                      (0.5, 0.8, 0.5), (1.0, 0.4, 0.5))
 
+
 def test17_alpha_2():
     """Tests that alpha (un)premultiplication does not allow multiple alpha channels"""
     src_struct = Struct() \
@@ -398,6 +400,7 @@ def test17_alpha_2():
     with pytest.raises(RuntimeError):
         s = StructConverter(src_struct, dst_struct)
         check_conversion(s, '@fff', '@fff', (0.5, 0.8, 0.6))
+
 
 def test18_alpha_3():
     """Tests that multiple alpha channels are allowed if no conversion is requested"""
@@ -414,6 +417,7 @@ def test18_alpha_3():
     s = StructConverter(src_struct, dst_struct)
     check_conversion(s, '@ffff', '@ffff',
                      (0.5, 0.8, 0.5, 0.7))
+
 
 def test19_alpha_4():
     src_struct = Struct() \
