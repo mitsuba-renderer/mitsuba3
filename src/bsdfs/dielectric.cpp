@@ -284,8 +284,8 @@ public:
                                                       UInt32(+BSDFFlags::DeltaTransmission));
 
         bs.wo = dr::select(selected_r,
-                       reflect(si.wi),
-                       refract(si.wi, cos_theta_t, eta_ti));
+                           reflect(si.wi),
+                           refract(si.wi, cos_theta_t, eta_ti));
 
         bs.eta = dr::select(selected_r, Float(1.f), eta_it);
 
@@ -295,7 +295,7 @@ public:
         if (m_specular_transmittance)
             transmittance = m_specular_transmittance->eval(si, selected_t);
 
-        Spectrum weight;
+        Spectrum weight(0.f);
         if constexpr (is_polarized_v<Spectrum>) {
             /* Due to the coordinate system rotations for polarization-aware
                pBSDFs below we need to know the propagation direction of light.
