@@ -57,7 +57,7 @@ def test02_shapes(variant_scalar_rgb):
             "type" : "obj",
             "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
         },
-        "sphere" : { 
+        "sphere" : {
             "type" : "sphere"
         }
     })
@@ -76,7 +76,7 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
             "type" : "obj",
             "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
         },
-        "sphere" : { 
+        "sphere" : {
             "type" : "sphere"
         }
     })
