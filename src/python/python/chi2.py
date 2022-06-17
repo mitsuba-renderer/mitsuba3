@@ -160,7 +160,7 @@ class ChiSquareTest:
         )
 
         histogram_min = dr.min(self.histogram)
-        print(f"{histogram_min=}")
+
         if not histogram_min[0] >= 0:
             self._log('Encountered a cell with negative sample '
                       'weights: %f' % histogram_min)

@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
@@ -28,7 +30,10 @@ MI_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
 
 MI_VARIANT void Endpoint<Float, Spectrum>::set_scene(const Scene *) { }
 
+static std::mutex set_dependency_lock;
+
 MI_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape *shape) {
+    std::unique_lock<std::mutex> guard(set_dependency_lock);
     if (m_shape)
         Throw("An endpoint can be only be attached to a single shape.");
 
@@ -37,6 +42,7 @@ MI_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape *shape) {
 }
 
 MI_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
+    std::unique_lock<std::mutex> guard(set_dependency_lock);
     if (m_medium)
         Throw("An endpoint can be only be attached to a single medium.");
 
