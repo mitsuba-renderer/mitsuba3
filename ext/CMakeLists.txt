@@ -298,27 +298,6 @@ else()
   endif()
 endif()
 
-# if (MI_ENABLE_GUI)
-#     set(NANOGUI_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
-#     set(NANOGUI_BUILD_SHARED   ON  CACHE BOOL " " FORCE)
-#     set(NANOGUI_BUILD_PYTHON   ${MI_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-#     set(NANOGUI_INSTALL        OFF CACHE BOOL " " FORCE)
-#     set(NANOGUI_PYBIND11_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/pybind11")
-#     add_subdirectory(nanogui)
-#
-#     set_property(TARGET glfw glfw_objects nanogui PROPERTY FOLDER "dependencies")
-#     set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
-#     set(NANOGUI_INCLUDE_DIRS
-#     ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/include
-#     ${NANOGUI_EXTRA_INCS}
-#     PARENT_SCOPE)
-#     set(NANOGUI_EXTRA_DEFS ${NANOGUI_EXTRA_DEFS} PARENT_SCOPE)
-#
-#     if (MI_ENABLE_PYTHON)
-#         set_target_properties(nanogui-python PROPERTIES FOLDER "dependencies")
-#     endif()
-# endif()
-
 # ----------------------------------------------------------
 #  pugixml XML parser
 # ----------------------------------------------------------

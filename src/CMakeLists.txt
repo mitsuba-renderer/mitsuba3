@@ -16,22 +16,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
 endif()
 
 # ----------------------------------------------------------
-#  Other libraries
-# ----------------------------------------------------------
-
-if (MI_ENABLE_GUI)
-  add_subdirectory(libui)
-endif()
-
-# ----------------------------------------------------------
-#  Mitsuba executables
+#  Mitsuba executable
 # ----------------------------------------------------------
 
 add_subdirectory(mitsuba)
-
-if (MI_ENABLE_GUI)
-  add_subdirectory(mtsgui)
-endif()
 
 # ----------------------------------------------------------
 #  Plugins
