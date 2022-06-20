@@ -24,9 +24,6 @@ option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?
 # precision arithmetic.
 option(MI_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 
-# Build the graphical user interface? (Note that this feature remains incomplete)
-option(MI_ENABLE_GUI     "Build the graphical user interface?" OFF)
-
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
 # On OSX:

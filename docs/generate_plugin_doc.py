@@ -154,7 +154,7 @@ def process(path, target, ordering):
         suffix = os.path.split(dirname)[1]
         if 'lib' in suffix or suffix == 'tests' \
                 or suffix == 'mitsuba' or suffix == 'utils' \
-                or suffix == 'converter' or suffix == 'mtsgui':
+                or suffix == 'converter':
             return
         for filename in files:
             if '.cpp' == os.path.splitext(filename)[1]:
