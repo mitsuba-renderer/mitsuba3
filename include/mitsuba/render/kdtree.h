@@ -2126,7 +2126,7 @@ class MI_EXPORT_LIB ShapeKDTree : public TShapeKDTree<BoundingBox<Point<dr::scal
 public:
     MI_IMPORT_TYPES(Shape, Mesh)
 
-    using ScalarRay3f = Ray<Point<ScalarFloat, 3>, Spectrum>;
+    using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
 
     using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
     using Size                   = uint32_t;
