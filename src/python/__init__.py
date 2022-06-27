@@ -8,8 +8,8 @@ from importlib import import_module as _import, reload as _reload
 import drjit as dr
 import os
 
-if sys.version_info < (3, 6):
-    raise ImportError("Mitsuba requires Python 3.6 or greater.")
+if sys.version_info < (3, 8):
+    raise ImportError("Mitsuba requires Python 3.8 or greater.")
 
 if os.name == 'nt':
     # Specify DLL search path for windows (no rpath on this platform..)
