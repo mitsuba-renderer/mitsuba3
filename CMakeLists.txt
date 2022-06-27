@@ -455,12 +455,10 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
   set(MI_DEPEND ${MI_DEPEND} asmjit)
 endif()
 
-if (WIN32 OR APPLE)
-  list(APPEND MI_DEPEND png jpeg)
+list(APPEND MI_DEPEND png jpeg)
 
-  if (WIN32)
-    list(APPEND MI_DEPEND zlib)
-  endif()
+if (WIN32)
+list(APPEND MI_DEPEND zlib)
 endif()
 
 if (MI_ENABLE_EMBREE)

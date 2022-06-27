@@ -229,76 +229,50 @@ mark_as_advanced(
 )
 
 # ----------------------------------------------------------
-#  libpng (On Windows & MacOS)
+#  libpng
 # ----------------------------------------------------------
 
-if (WIN32 OR APPLE)
-  set(PNG_SHARED ON CACHE BOOL " " FORCE)
-  set(PNG_STATIC OFF CACHE BOOL " " FORCE)
-  set(PNG_TESTS OFF CACHE BOOL " " FORCE)
-  set(PNG_SKIP_INSTALL_ALL TRUE)
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-    set(PNG_ARM_NEON "on" CACHE STRING " " FORCE)
-  endif()
-  add_subdirectory(libpng)
-  set_property(TARGET png genfiles PROPERTY FOLDER "dependencies")
-  set_property(TARGET png PROPERTY OUTPUT_NAME "png-mitsuba")
-
-  set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
-  set(PNG_LIBRARIES    "png" PARENT_SCOPE)
-  set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
-
-  mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
-    PNG_PREFIX PNG_SHARED PNG_STATIC PNG_TESTS PNG_BUILD_ZLIB PNG_DEBUG
-    PNG_INTEL_SSE ld-version-script)
-else()
-  # Find system libpng
-  find_package(PNG)
-  if (PNG_FOUND)
-    set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
-    set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
-  else()
-    message(WARNING "\n${BoldRed}libpng could not be found: Mitsuba will "
-            "not be able to read/write PNG files!${ColorReset}")
-  endif()
+set(PNG_SHARED ON CACHE BOOL " " FORCE)
+set(PNG_STATIC OFF CACHE BOOL " " FORCE)
+set(PNG_TESTS OFF CACHE BOOL " " FORCE)
+set(PNG_SKIP_INSTALL_ALL TRUE)
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+set(PNG_ARM_NEON "on" CACHE STRING " " FORCE)
 endif()
+add_subdirectory(libpng)
+set_property(TARGET png genfiles PROPERTY FOLDER "dependencies")
+set_property(TARGET png PROPERTY OUTPUT_NAME "png-mitsuba")
+
+set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
+set(PNG_LIBRARIES    "png" PARENT_SCOPE)
+set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
+
+mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
+  PNG_PREFIX PNG_SHARED PNG_STATIC PNG_TESTS PNG_BUILD_ZLIB PNG_DEBUG
+  PNG_INTEL_SSE ld-version-script)
 
 # ----------------------------------------------------------
-#  libjpeg 7 (On Windows & MacOS)
+#  libjpeg 7
 # ----------------------------------------------------------
 
-if (WIN32 OR APPLE)
-  set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
-  set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
-  add_subdirectory(libjpeg)
-  set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
-  set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
+set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
+set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
+add_subdirectory(libjpeg)
+set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
+set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
 
-  set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
-  set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
-  set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
+set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
+set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
+set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 
-  # Give libpng & libjpeg a name that's guaranteeed not to match other
-  # libraries that may already be loaded (e.g. into a Python interpreter)
-  set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
+# Give libpng & libjpeg a name that's guaranteeed not to match other
+# libraries that may already be loaded (e.g. into a Python interpreter)
+set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 
-  mark_as_advanced(
-    LIBJPEG_BUILD_EXECUTABLES
-    LIBJPEG_BUILD_SHARED
-  )
-else()
-  # Find system libjpeg
-  find_package(JPEG)
-  if (JPEG_FOUND)
-    set(JPEG_LIBRARIES    ${JPEG_LIBRARIES} PARENT_SCOPE)
-    set(JPEG_INCLUDE_DIRS ${JPEG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
-  else()
-    message(WARNING "\n${BoldRed}libjpeg could not be found: Mitsuba will "
-            "not be able to read/write JPEG files!${ColorReset}")
-  endif()
-endif()
+mark_as_advanced(
+  LIBJPEG_BUILD_EXECUTABLES
+  LIBJPEG_BUILD_SHARED
+)
 
 # ----------------------------------------------------------
 #  pugixml XML parser
