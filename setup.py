@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-import sys, re, os
+import sys, re, os, pathlib
 
 try:
     from skbuild import setup
@@ -27,6 +27,9 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 long_description = long_description[long_description.find('## Introduction'):]
+mi_cmake_toolchain_file = os.environ.get("MI_CMAKE_TOOLCHAIN_FILE", "")
+mi_drjit_cmake_dir = os.environ.get("MI_DRJIT_CMAKE_DIR", "")
+pathlib.Path("./mitsuba").mkdir(exist_ok=True)
 
 setup(
     name="mitsuba",
@@ -42,9 +45,12 @@ setup(
         '-DCMAKE_INSTALL_LIBDIR=mitsuba',
         '-DCMAKE_INSTALL_BINDIR=mitsuba',
         '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
-        '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data'
+        '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data',
+        f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
+        f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}'
     ],
-    scripts=['resources/mitsuba'],
+    install_requires=["drjit"],
     packages=['mitsuba'],
+    scripts=['resources/mitsuba'],
     python_requires=">=3.8"
 )
