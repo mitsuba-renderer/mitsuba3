@@ -1,8 +1,12 @@
 import os
+import sys
 from shutil import copy2
-import numpy as np
 import mitsuba.scalar_rgb as mi
 import drjit as dr
+try:
+    import numpy as np
+except ImportError as e:
+    pass
 
 class Files:
     '''
@@ -463,7 +467,9 @@ class WriteXML:
                 raise ValueError("Invalid entry of type rgb: %s" % entry)
             elif isinstance(entry['value'], (float, int)):
                 entry['value'] = "%f" % entry['value']
-            elif isinstance(entry['value'], (list, mi.Color3f, np.ndarray)) and len(entry['value']) == 3:
+            elif (isinstance(entry['value'], (list, mi.Color3f, np.ndarray)
+                  if 'numpy' in sys.modules else (list, mi.Color3f)) and
+                  len(entry['value']) == 3):
                 entry['value'] = "%f %f %f" % tuple(entry['value'])
             else:
                 raise ValueError("Invalid value for type rgb: %s" % entry)
@@ -595,7 +601,8 @@ class WriteXML:
                 self.element('integer', {'name':key, 'value': '%d' % value})
             elif isinstance(value, float):
                 self.element('float', {'name':key, 'value': '%f' % value})
-            elif any(isinstance(value, x) for x in [list, mi.Point3f, np.ndarray]):
+            elif (isinstance(value, (list, mi.Point3f, np.ndarray)
+                  if 'numpy' in sys.modules else (list, mi.Point3f))):
                 # Cast to point
                 if len(value) == 3:
                     args = {'name': key, 'x' : value[0] , 'y' :  value[1] , 'z' :  value[2]}
