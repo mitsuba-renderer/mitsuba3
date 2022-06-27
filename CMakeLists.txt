@@ -79,13 +79,19 @@ include(ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults/CMakeLists.tx
 # ----------------------------------------------------------
 
 if (SKBUILD)
-  execute_process(
-    COMMAND
-    "${PYTHON_EXECUTABLE}" -c
-    "import drjit; print(drjit.get_cmake_dir())"
-    OUTPUT_VARIABLE _tmp_dir
-    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
-  list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+  set(MI_DRJIT_CMAKE_DIR "" CACHE STRING "Location of Dr.Jit's CMake directory that should be used instead of the output of `drjit.get_cmake_dir()` when building with scikit-build.")
+  mark_as_advanced(MI_DRJIT_CMAKE_DIR)
+
+  if("${MI_DRJIT_CMAKE_DIR}" STREQUAL "")
+    execute_process(
+      COMMAND
+      "${PYTHON_EXECUTABLE}" -c
+      "import drjit; print(drjit.get_cmake_dir())"
+      OUTPUT_VARIABLE MI_DRJIT_CMAKE_DIR
+      OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+  endif()
+
+  list(APPEND CMAKE_PREFIX_PATH "${MI_DRJIT_CMAKE_DIR}")
   find_package(drjit CONFIG REQUIRED)
 endif()
 
@@ -382,7 +388,9 @@ function(add_plugin)
   )
   install(
     TARGETS ${TARGET}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
     LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
   )
 endfunction(add_plugin)
 
@@ -513,9 +521,13 @@ install(
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mitsuba/core
 )
 
-ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
+if (SKBUILD)
+  ro_copy(${CMAKE_CURRENT_SOURCE_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff)
+else()
+  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
+endif()
 install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/data/srgb.coeff
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )
 
@@ -523,12 +535,12 @@ add_custom_target(copy-resources ALL DEPENDS ${MI_COPY_FILES})
 
 file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
 add_custom_command(
-    TARGET copy-resources DEPENDS IOR_FILES
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
-    "${MI_BINARY_DIR}/data/ior"
+  TARGET copy-resources DEPENDS IOR_FILES
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
+  "${MI_BINARY_DIR}/data/ior"
 )
 install(
-  DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/ior
+  DIRECTORY ${MI_BINARY_DIR}/data/ior
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )

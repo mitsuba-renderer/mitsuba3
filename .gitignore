@@ -12,6 +12,7 @@
 # Python
 __pycache__
 *.pyc
+/wheelhouse
 
 # macOS
 \.DS_Store
