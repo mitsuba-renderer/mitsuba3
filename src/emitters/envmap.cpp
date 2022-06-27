@@ -215,7 +215,19 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
+
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
+
+            if constexpr (dr::is_jit_array_v<Float>) {
+                // Enforce horizontal continuity
+                UInt32 row_index = dr::arange<UInt32>(res.y());
+                Vector4f v0 = dr::gather<Vector4f>(m_data.array(), row_index);
+                Vector4f v1 = dr::gather<Vector4f>(m_data.array(), row_index + (res.x() - 1));
+                Vector4f v01 = .5f * (v0 + v1);
+                dr::scatter(m_data.array(), v01, row_index);
+                dr::scatter(m_data.array(), v01, row_index + (res.x() - 1));
+            }
+
             auto&& data = dr::migrate(m_data.array(), AllocType::Host);
 
             if constexpr (dr::is_jit_v<Float>)
@@ -231,13 +243,15 @@ public:
             for (size_t y = 0; y < res.y(); ++y) {
                 ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
-                // Enforce horizontal continuity
-                ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
-                ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
-                               v1  = dr::load_aligned<ScalarVector4f>(ptr2),
-                               v01 = .5f * (v0 + v1);
-                dr::store_aligned(ptr, v01),
-                dr::store_aligned(ptr2, v01);
+                if constexpr (!dr::is_jit_array_v<Float>) {
+                    // Enforce horizontal continuity
+                    ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
+                    ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
+                                   v1  = dr::load_aligned<ScalarVector4f>(ptr2),
+                                   v01 = .5f * (v0 + v1);
+                    dr::store_aligned(ptr, v01),
+                    dr::store_aligned(ptr2, v01);
+                }
 
                 for (size_t x = 0; x < res.x(); ++x) {
                     ScalarVector4f coeff = dr::load_aligned<ScalarVector4f>(ptr);
@@ -258,11 +272,6 @@ public:
             }
 
             m_warp = Warp(luminance.get(), res);
-
-            if constexpr (dr::is_jit_v<Float>)
-                m_data.array() = dr::migrate(data, dr::is_cuda_v<Float>
-                                                       ? AllocType::Device
-                                                       : AllocType::HostAsync);
         }
     }
 
