@@ -45,5 +45,6 @@ setup(
         '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data'
     ],
     scripts=['resources/mitsuba'],
-    packages=['mitsuba']
+    packages=['mitsuba'],
+    python_requires=">=3.8"
 )
