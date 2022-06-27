@@ -293,7 +293,7 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
         def put_object(self, name, node, flags):
-            if node in self.hierarchy:
+            if node is None or node in self.hierarchy:
                 return
             cb = SceneTraversal(
                 node=node,

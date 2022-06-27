@@ -76,6 +76,19 @@ public:
         dr::make_opaque(m_to_world, m_to_object);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+        }
+        Base::parameters_changed();
+    }
+
     ScalarBoundingBox3f bbox() const override {
         const ScalarBoundingBox3f &bbox = m_shapegroup->bbox();
 
