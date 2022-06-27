@@ -1,6 +1,5 @@
 import mitsuba as mi
 import drjit as dr
-import numpy as np
 import time
 
 class ChiSquareTest:
@@ -257,15 +256,14 @@ class ChiSquareTest:
             rejected.
 
         """
-
         if self.histogram is None:
             self.tabulate_histogram()
 
         if self.pdf is None:
             self.tabulate_pdf()
 
-        index = mi.UInt32(np.array([i[0] for i in sorted(enumerate(self.pdf.numpy()),
-                                                         key=lambda x: x[1])]))
+        index = mi.UInt32([i[0] for i in sorted(enumerate(self.pdf.numpy()),
+                                                key=lambda x: x[1])])
 
         # Sort entries by expected frequency (increasing)
         pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
