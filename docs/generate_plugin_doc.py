@@ -128,7 +128,7 @@ def find_order_id(filename, ordering):
         return 1000
 
 def extract(target, filename):
-    f = open(filename)
+    f = open(filename, encoding='utf-8')
     inheader = False
     for line in f.readlines():
         match = re.match(r'^/\*\*! ?(.*)$', line)
@@ -176,7 +176,7 @@ def process_src(target, src_subdir, ordering=None):
     section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
-    with open('src/plugin_reference/' + section + '.rst', 'r') as f:
+    with open('src/plugin_reference/' + section + '.rst', 'r', encoding='utf-8') as f:
         target.write(f.read())
     process('../src/{0}'.format(src_subdir), target, ordering)
 
@@ -202,7 +202,7 @@ def generate(build_dir):
     ]
 
     for section, ordering in sections:
-        with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w') as f:
+        with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w', encoding='utf-8') as f:
             process_src(f, section, ordering)
 
     os.chdir(original_wd)
