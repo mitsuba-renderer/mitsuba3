@@ -670,14 +670,14 @@ def write_rst_file_callback(app, exception):
         f.write('\n')
 
     # Write extracted RST to file
-    with open(extracted_rst_filename, 'w') as f:
+    with open(extracted_rst_filename, 'w', encoding='utf-8') as f:
         print('Extract API doc into: %s' % extracted_rst_filename)
         for l in extracted_rst:
             f.write(l)
 
     # Generate API Reference RST according to the api_doc_structure description
     lib_api_filename = join(docs_path, 'generated/mitsuba_api.rst')
-    with open(lib_api_filename, 'w') as f:
+    with open(lib_api_filename, 'w', encoding='utf-8') as f:
         print('Generate API RST file: %s' % (lib_api_filename))
 
         # Keep track of the added block, so to add the rest in the 'Other' section
@@ -781,7 +781,7 @@ def generate_list_api_callback(app):
     for x in dir(module):
         process(getattr(module, x), '', x)
 
-    with open(list_api_filename, 'w') as f:
+    with open(list_api_filename, 'w', encoding='utf-8') as f:
         for k in dict(sorted(list_api.items(), key=lambda item: item[1][1])):
             obj, full_name = list_api[k]
             f.write('.. auto%s:: %s\n\n' %
