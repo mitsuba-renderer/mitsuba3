@@ -328,7 +328,7 @@ set_target_properties(rgb2spec rgb2spec_opt rgb2spec_opt_run PROPERTIES FOLDER "
 #  Fast floating point parser (interface library)
 # ----------------------------------------------------------
 
-add_subdirectory(fastfloat)
+add_subdirectory(fastfloat EXCLUDE_FROM_ALL)
 mark_as_advanced(
   FASTFLOAT_SANITIZE
   FASTFLOAT_TEST
