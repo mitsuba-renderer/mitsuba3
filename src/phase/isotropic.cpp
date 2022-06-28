@@ -31,7 +31,11 @@ public:
     MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
     MI_IMPORT_TYPES(PhaseFunctionContext)
 
-    IsotropicPhaseFunction(const Properties & props) : Base(props) {
+    IsotropicPhaseFunction(const Properties &props) : Base(props) {
+        // TODO: just for convenience, we don't actually need this
+        if (props.has_property("g") && props.get<ScalarFloat>("g") != 0.f)
+            Throw("Not supported: g = %s", props.get<ScalarFloat>("g"));
+
         m_flags = +PhaseFunctionFlags::Isotropic;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
