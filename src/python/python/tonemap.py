@@ -10,7 +10,9 @@ if __name__ == '__main__':
     def tonemap(fname, scale):
         with mi.ScopedSetThreadEnvironment(te):
             try:
-                img_in = mi.Bitmap(mi.TensorXf(mi.Bitmap(fname)) * scale)
+                img_in = mi.Bitmap(fname)
+                if scale != 1:
+                    img_in = mi.Bitmap(mi.TensorXf(img_in) * scale)
                 img_out = img_in.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True)
                 fname_out = fname.replace('.exr', '.png')
                 img_out.write(fname_out)
