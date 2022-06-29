@@ -30,6 +30,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                 Throw("Instancing of sensors is not supported");
             else {
                 m_shapes.push_back(shape);
+                shape->mark_as_instance();
 
 #if defined(MI_ENABLE_EMBREE) || defined(MI_ENABLE_CUDA)
                 m_bbox.expand(shape->bbox());
@@ -131,6 +132,9 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          Mask active) const {
     MI_MASK_ARGUMENT(active);
 
+    if (recursion_depth > 0)
+        return dr::zero<SurfaceInteraction3f>();
+
     ShapePtr shape = pi.shape;
 
     if constexpr (!dr::is_cuda_array_v<Float>) {
@@ -143,9 +147,6 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 #endif
         }
     }
-
-    if (recursion_depth > 0)
-        return dr::zero<SurfaceInteraction3f>();
 
     return shape->compute_surface_interaction(ray, pi, ray_flags, 1, active);
 }

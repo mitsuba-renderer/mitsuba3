@@ -148,6 +148,10 @@ public:
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
+        // Nested instancing is not supported
+        if (recursion_depth > 0)
+            return dr::zero<SurfaceInteraction3f>();
+
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
             m_to_object.value().transform_affine(ray), pi, ray_flags, recursion_depth, active);
 
