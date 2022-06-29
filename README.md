@@ -1,26 +1,26 @@
-<img src="https://github.com/mitsuba-renderer/mitsuba2/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo">
+<img src="https://github.com/mitsuba-renderer/mitsuba3/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo">
 
-# Mitsuba Renderer 2
+# Mitsuba Renderer 3
 <!--
 | Documentation   | Linux             | Windows             |
 |      :---:      |       :---:       |        :---:        |
 | [![docs][1]][2] | [![rgl-ci][3]][4] | [![appveyor][5]][6] |
 
 
-[1]: https://readthedocs.org/projects/mitsuba2/badge/?version=master
-[2]: https://mitsuba2.readthedocs.io/en/latest/src/getting_started/intro.html
+[1]: https://readthedocs.org/projects/mitsuba3/badge/?version=master
+[2]: https://mitsuba3.readthedocs.io/en/latest/src/getting_started/intro.html
 [3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba2_Build)/statusIcon.svg
 [4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba2_Build&guest=1
 [5]: https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true
-[6]: https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master
+[6]: https://ci.appveyor.com/project/wjakob/mitsuba3/branch/master
 -->
 | Documentation   |
 |      :---:      |
 | [![docs][1]][2] |
 
 
-[1]: https://readthedocs.org/projects/mitsuba2/badge/?version=latest
-[2]: https://mitsuba2.readthedocs.io/en/latest/src/getting_started/intro.html
+[1]: https://readthedocs.org/projects/mitsuba3/badge/?version=latest
+[2]: https://mitsuba3.readthedocs.io/en/latest/src/getting_started/intro.html
 
 ## Introduction
 
@@ -82,7 +82,7 @@ several other noteworthy changes:
 
 ## Compiling and using Mitsuba 3
 
-Please see the [documentation](http://mitsuba2.readthedocs.org/en/latest) for
+Please see the [documentation](http://mitsuba3.readthedocs.org/en/latest) for
 details on how to compile, use, and extend Mitsuba 3.
 
 ## About
