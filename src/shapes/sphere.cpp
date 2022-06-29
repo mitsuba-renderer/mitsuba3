@@ -82,7 +82,7 @@ The two declarations below are equivalent.
             'bsdf': {
                 'type': 'diffuse'
             }
-        }, 
+        },
 
         'sphere_2': {
             'type': 'sphere',
@@ -111,8 +111,8 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
-                    get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
+                   mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -398,9 +398,13 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
-                                                     uint32_t /*recursion_depth*/,
+                                                     uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
+
+        // Early exit when tracing isn't necessary
+        if (!m_is_instance && recursion_depth > 0)
+            return dr::zero<SurfaceInteraction3f>();
 
         // Recompute ray intersection to get differentiable t
         Float t = pi.t;

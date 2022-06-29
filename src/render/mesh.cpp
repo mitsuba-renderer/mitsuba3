@@ -626,9 +626,13 @@ MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
                                                    uint32_t ray_flags,
-                                                   uint32_t /*recursion_depth*/,
+                                                   uint32_t recursion_depth,
                                                    Mask active) const {
     MI_MASK_ARGUMENT(active);
+
+    // Early exit when tracing isn't necessary
+    if (!m_is_instance && recursion_depth > 0)
+        return dr::zero<SurfaceInteraction3f>();
 
     constexpr bool IsDiff = dr::is_diff_array_v<Float>;
 

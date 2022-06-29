@@ -532,6 +532,9 @@ public:
     /// Mark that the shape's geometry has changed
     void mark_dirty() { m_dirty = true; }
 
+    // Mark that shape as an instance
+    void mark_as_instance() { m_is_instance = true; }
+
     /// The \c Scene class needs access to \c Shape::m_dirty
     friend class Scene<Float, Spectrum>;
 
@@ -561,6 +564,9 @@ protected:
 
     field<Transform4f, ScalarTransform4f> m_to_world;
     field<Transform4f, ScalarTransform4f> m_to_object;
+
+    /// True if the shape is used in a \c ShapeGroup
+    bool m_is_instance = false;
 
 #if defined(MI_ENABLE_CUDA)
     /// OptiX hitgroup data buffer
