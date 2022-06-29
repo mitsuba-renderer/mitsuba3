@@ -13,7 +13,7 @@ tags.
 
 import sys
 import os
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile
 import re
 import pathlib
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     output_wheel_filename = wheel_filename.replace(
             "-linux_x86_64", "-manylinux_2_17_x86_64.manylinux2014_x86_64")
 
-    with ZipFile(f'{output_dir}/{output_wheel_filename}', 'w') as out_zip:
+    with ZipFile(f'{output_dir}/{output_wheel_filename}', 'w', ZIP_DEFLATED) as out_zip:
         with ZipFile(wheel_loc, mode="r") as wheel_zip:
             for file_info in wheel_zip.infolist():
                 with wheel_zip.open(file_info) as file:
