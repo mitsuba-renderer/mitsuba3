@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <cstring>
 #include <string>
 #include <sstream>
 #include <ostream>
