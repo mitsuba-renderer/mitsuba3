@@ -61,16 +61,16 @@ MI_PY_EXPORT(DrJit) {
 
     // Import the right variant of Dr.Jit
     const char *backend = "scalar";
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         backend = "cuda";
-    else if constexpr (dr::is_llvm_array_v<Float>)
+    else if constexpr (dr::is_llvm_v<Float>)
         backend = "llvm";
 
     py::module drjit         = py::module::import("drjit"),
                drjit_variant = drjit.attr(backend),
                drjit_scalar  = drjit.attr("scalar");
 
-    if constexpr (dr::is_diff_array_v<Float>)
+    if constexpr (dr::is_diff_v<Float>)
         drjit_variant = drjit_variant.attr("ad");
 
     array_init = drjit.attr("detail").attr("array_init");

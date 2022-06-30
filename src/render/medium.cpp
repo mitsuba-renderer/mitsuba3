@@ -40,7 +40,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     MI_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
 
     // initialize basic medium interaction fields
-    MediumInteraction3f mei = dr::zero<MediumInteraction3f>();
+    MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
     mei.wi          = -ray.d;
     mei.sh_frame    = Frame3f(mei.wi);
     mei.time        = ray.time;
@@ -52,8 +52,8 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     dr::masked(mint, !active) = 0.f;
     dr::masked(maxt, !active) = dr::Infinity<Float>;
 
-    mint = dr::max(0.f, mint);
-    maxt = dr::min(ray.maxt, maxt);
+    mint = dr::maximum(0.f, mint);
+    maxt = dr::minimum(ray.maxt, maxt);
 
     auto combined_extinction = get_majorant(mei, active);
     Float m                  = combined_extinction[0];
@@ -85,7 +85,7 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
                                          Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-    Float t      = dr::min(mi.t, si.t) - mi.mint;
+    Float t      = dr::minimum(mi.t, si.t) - mi.mint;
     UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
     UnpolarizedSpectrum pdf = dr::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };

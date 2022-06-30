@@ -86,7 +86,7 @@ public:
 
         // 3. Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
 

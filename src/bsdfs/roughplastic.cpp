@@ -236,8 +236,8 @@ public:
 
             using FloatP = dr::Packet<dr::scalar_t<Float>>;
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
-            FloatX mu = dr::max(1e-6f, dr::linspace<FloatX>(0, 1, MI_ROUGH_TRANSMITTANCE_RES));
-            FloatX zero = dr::zero<FloatX>(MI_ROUGH_TRANSMITTANCE_RES);
+            FloatX mu = dr::maximum(1e-6f, dr::linspace<FloatX>(0, 1, MI_ROUGH_TRANSMITTANCE_RES));
+            FloatX zero = dr::zeros<FloatX>(MI_ROUGH_TRANSMITTANCE_RES);
 
             Vector3fX wi = Vector3fX(dr::sqrt(1 - mu * mu), zero, mu);
 
@@ -248,7 +248,7 @@ public:
                 dr::width(external_transmittance));
 
             m_internal_reflectance =
-                dr::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
+                dr::mean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
         dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
                         m_internal_reflectance);
@@ -267,7 +267,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, result };
@@ -370,7 +370,7 @@ public:
                       Mask active = true) const {
         using UInt32 = dr::uint32_array_t<Float>;
         x *= Float(size - 1);
-        UInt32 index = dr::min(UInt32(x), uint32_t(size - 2));
+        UInt32 index = dr::minimum(UInt32(x), uint32_t(size - 2));
 
         Float v0 = dr::gather<Float>(data, index, active),
               v1 = dr::gather<Float>(data, index + 1, active);

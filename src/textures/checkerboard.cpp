@@ -72,7 +72,7 @@ public:
 
         Point2f uv = m_transform.transform_affine(it.uv);
         dr::mask_t<Point2f> mask = uv - dr::floor(uv) > .5f;
-        UnpolarizedSpectrum result = dr::zero<UnpolarizedSpectrum>();
+        UnpolarizedSpectrum result = dr::zeros<UnpolarizedSpectrum>();
 
         Mask m0 = dr::eq(mask.x(), mask.y()),
              m1 = !m0;

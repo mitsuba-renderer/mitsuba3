@@ -55,7 +55,7 @@ public:
     MI_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
-        if constexpr (!dr::is_jit_array_v<Float>) {
+        if constexpr (!dr::is_jit_v<Float>) {
             Log(Warn, "SamplingIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
                       "recommended to switch to a cuda_* or llvm_* mode");
@@ -134,7 +134,7 @@ public:
     using Base = CppADIntegrator<Float, Spectrum>;
 
     PyADIntegrator(const Properties &props) : Base(props) {
-        if constexpr (!dr::is_jit_array_v<Float>) {
+        if constexpr (!dr::is_jit_v<Float>) {
             Log(Warn, "ADIntegrator Python implementations will have "
                       "terrible performance in scalar_* modes. It is strongly "
                       "recommended to switch to a cuda_* or llvm_* mode");

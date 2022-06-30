@@ -95,7 +95,7 @@ Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const dr::Array<Float, 6> &s) {
                   2.f * (wm.x() * wm.y() * (s[XZ] * s[YZ] - s[ZZ] * s[XY]) +
                          wm.x() * wm.z() * (s[XY] * s[YZ] - s[YY] * s[XZ]) +
                          wm.y() * wm.z() * (s[XY] * s[XZ] - s[XX] * s[YZ]));
-    return dr::max(det_s, 0.f) * dr::safe_sqrt(det_s) /
+    return dr::maximum(det_s, 0.f) * dr::safe_sqrt(det_s) /
            (dr::Pi<Float> * dr::sqr(den));
 }
 

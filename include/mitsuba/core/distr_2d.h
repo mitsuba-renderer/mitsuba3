@@ -84,7 +84,7 @@ public:
                            const ScalarVector2u &size)
         : m_size(size) {
 
-        std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[dr::hprod(m_size)]);
+        std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[dr::prod(m_size)]);
         std::unique_ptr<ScalarFloat[]> marg_cdf(new ScalarFloat[m_size.y()]);
 
         // Construct conditional and marginal CDFs
@@ -100,7 +100,7 @@ public:
             marg_cdf[y] = (ScalarFloat) accum_marg;
         }
 
-        m_cond_cdf = dr::load<FloatStorage>(cond_cdf.get(), dr::hprod(m_size));
+        m_cond_cdf = dr::load<FloatStorage>(cond_cdf.get(), dr::prod(m_size));
         m_marg_cdf = dr::load<FloatStorage>(marg_cdf.get(), m_size.y());
 
         m_inv_normalization = (ScalarFloat) accum_marg;
@@ -245,7 +245,7 @@ protected:
         if constexpr (Dimension > 0) {
             MI_MASK_ARGUMENT(active);
 
-            UInt32 slice_offset = dr::zero<UInt32>();
+            UInt32 slice_offset = dr::zeros<UInt32>();
             for (size_t dim = 0; dim < Dimension; ++dim) {
                 if (unlikely(m_param_values[dim].size() == 1)) {
                     param_weight[2 * dim] = 1.f;
@@ -310,7 +310,7 @@ protected:
  * square <tt>[0, 1]^2</tt> to a function on <tt>[0, 1]^2</tt> that linearly
  * interpolates the input array.
  *
- * The mapping is constructed from a sequence of <tt>log2(hmax(res))</tt>
+ * The mapping is constructed from a sequence of <tt>log2(max(res))</tt>
  * hierarchical sample warping steps, where <tt>res</tt> is the input array
  * resolution. It is bijective and generally very well-behaved (i.e. low
  * distortion), which makes it a good choice for structured point sets such
@@ -376,7 +376,7 @@ public:
         ScalarVector2u n_patches = size - 1;
 
         // Keep track of the dependence on additional parameters (optional)
-        uint32_t max_level = math::log2i_ceil(dr::hmax(n_patches));
+        uint32_t max_level = math::log2i_ceil(dr::max(n_patches));
 
         m_max_patch_index = n_patches - 1;
 
@@ -393,7 +393,7 @@ public:
                     double sum = 0.0;
                     for (uint32_t i = 0; i < m_levels[0].size; ++i)
                         sum += (double) data[offset + i];
-                    scale = dr::hprod(n_patches) / (ScalarFloat) sum;
+                    scale = dr::prod(n_patches) / (ScalarFloat) sum;
                 }
 
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
@@ -439,7 +439,7 @@ public:
             }
 
             // Copy and normalize fine resolution interpolant
-            ScalarFloat scale = normalize ? (ScalarFloat) (dr::hprod(n_patches) / sum) : 1.f;
+            ScalarFloat scale = normalize ? (ScalarFloat) (dr::prod(n_patches) / sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 l0p[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
@@ -491,7 +491,7 @@ public:
         sample = dr::clamp(sample, 0.f, 1.f);
 
         // Hierarchical sample warping
-        Point2u offset = dr::zero<Point2u>();
+        Point2u offset = dr::zeros<Point2u>();
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
@@ -584,7 +584,7 @@ public:
         sample *= m_inv_patch_size;
 
         /// Point2f() -> Point2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
-        Point2u offset = dr::min(Point2u(Point2i(sample)), m_max_patch_index);
+        Point2u offset = dr::minimum(Point2u(Point2i(sample)), m_max_patch_index);
         UInt32 offset_i =
             offset.x() + offset.y() * level0.width + slice_offset * level0.size;
 
@@ -667,7 +667,7 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = dr::min(Point2u(Point2i(pos)), m_max_patch_index);
+        Point2u offset = dr::minimum(Point2u(Point2i(pos)), m_max_patch_index);
         pos -= Point2f(Point2i(offset));
 
         const Level &level0 = m_levels[0];
@@ -729,10 +729,10 @@ protected:
 
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
-            : size(dr::hprod(res)), width(res.x()) {
+            : size(dr::prod(res)), width(res.x()) {
 
             uint32_t n = size * slices;
-            if constexpr (dr::is_cuda_array_v<Float>) {
+            if constexpr (dr::is_cuda_v<Float>) {
                 data = dr::map<FloatStorage>(
                     jit_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
                     n, true);
@@ -743,7 +743,7 @@ protected:
         }
 
         void ready() {
-            if constexpr (dr::is_cuda_array_v<Float>)
+            if constexpr (dr::is_cuda_v<Float>)
                 data = dr::migrate(data, AllocType::Device);
         }
 
@@ -1025,12 +1025,12 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = dr::min(Point2u(Point2i(pos)), m_size - 2u);
+        Point2u offset = dr::minimum(Point2u(Point2i(pos)), m_size - 2u);
         pos -= Point2f(Point2i(offset));
 
         UInt32 index = offset.x() + offset.y() * m_size.x();
 
-        uint32_t size = dr::hprod(m_size);
+        uint32_t size = dr::prod(m_size);
         if (Dimension != 0)
             index += slice_offset * size;
 
@@ -1068,7 +1068,7 @@ public:
         }
         oss << "  storage = { " << m_slices << " slice" << (m_slices > 1 ? "s" : "")
             << ", ";
-        size_t size = m_slices * (dr::hprod(m_size) * 2 + m_size.y());
+        size_t size = m_slices * (dr::prod(m_size) * 2 + m_size.y());
         oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
@@ -1105,9 +1105,9 @@ protected:
         MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = dr::hprod(m_size - 1),
+        uint32_t n_cond = dr::prod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = dr::hprod(m_size);
+                 n_data = dr::prod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1189,9 +1189,9 @@ protected:
         MI_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = dr::hprod(m_size - 1),
+        uint32_t n_cond = dr::prod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = dr::hprod(m_size);
+                 n_data = dr::prod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1202,7 +1202,7 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u offset = dr::min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u offset = dr::minimum(Point2u(Point2i(sample)), m_size - 2u);
         UInt32 index = offset.x() + offset.y() * m_size.x() + slice_offset * n_data;
         sample -= Point2f(Point2i(offset));
 
@@ -1253,7 +1253,7 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = dr::hprod(m_size);
+                 n_data = dr::prod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1348,7 +1348,7 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = dr::hprod(m_size);
+                 n_data = dr::prod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1359,7 +1359,7 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u pos = dr::min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u pos = dr::minimum(Point2u(Point2i(sample)), m_size - 2u);
         sample -= Point2f(Point2i(pos));
 
         UInt32 offset_data =

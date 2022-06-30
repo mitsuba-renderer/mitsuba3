@@ -51,7 +51,7 @@ public:
     }
 
     Float eval(Float x, dr::mask_t<Float> /* active */) const override {
-        return dr::max(0.f, 1.f - dr::abs(x * m_inv_radius));
+        return dr::maximum(0.f, 1.f - dr::abs(x * m_inv_radius));
     }
 
     std::string to_string() const override {

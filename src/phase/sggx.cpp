@@ -113,7 +113,7 @@ public:
         /* if (m_diffuse) {
            auto sampled_n = sggx_sample_vndf(mi.sh_frame,
            ctx.sampler->next_2d(active), s); return dr::InvPi<Float> *
-           dr::max(dr::dot(wo, sampled_n), 0.f); } else { */
+           dr::maximum(dr::dot(wo, sampled_n), 0.f); } else { */
         return 0.25f * sggx_ndf_pdf(dr::normalize(wo + mi.wi), s) /
                sggx_projected_area(mi.wi, s);
         // }

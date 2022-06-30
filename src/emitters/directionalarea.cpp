@@ -94,7 +94,7 @@ public:
         const Vector3f d = ps.n;
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si(ps, dr::zero<Wavelength>());
+        SurfaceInteraction3f si(ps, dr::zeros<Wavelength>());
         auto [wavelength, wav_weight] = sample_wavelengths(si, wavelength_sample, active);
 
         // Note: ray.mint will ensure we don't immediately self-intersect
@@ -115,7 +115,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f & /*it*/, const Point2f & /*sample*/,
                      Mask /*active*/) const override {
-        return { dr::zero<DirectionSample3f>(), dr::zero<Spectrum>() };
+        return { dr::zeros<DirectionSample3f>(), dr::zeros<Spectrum>() };
     }
 
     Float pdf_direction(const Interaction3f & /*it*/,

@@ -220,7 +220,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         UnpolarizedSpectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, result };

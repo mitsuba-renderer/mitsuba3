@@ -129,14 +129,14 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Value volume() const { return dr::hprod(max - min); }
+    Value volume() const { return dr::prod(max - min); }
 
     /// Calculate the 2-dimensional surface area of a 3D bounding box
     Value surface_area() const {
         if constexpr (Dimension == 3) {
             /// Fast path for n = 3
             Vector d = max - min;
-            return dr::hsum(dr::shuffle<1, 2, 0>(d) * d) * Scalar(2);
+            return dr::sum(dr::shuffle<1, 2, 0>(d) * d) * Scalar(2);
         } else {
             /// Generic case
             Vector d = max - min;
@@ -267,29 +267,29 @@ template <typename Point_> struct BoundingBox {
     /// Clip this bounding box to another bounding box
     template <typename T>
     void clip(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
-        min = dr::max(min, bbox.min);
-        max = dr::min(max, bbox.max);
+        min = dr::maximum(min, bbox.min);
+        max = dr::minimum(max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
     template <typename T>
     void expand(const mitsuba::Point<T, Point::Size> &p) {
-        min = dr::min(min, p);
-        max = dr::max(max, p);
+        min = dr::minimum(min, p);
+        max = dr::maximum(max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
     template <typename T>
     void expand(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
-        min = dr::min(min, bbox.min);
-        max = dr::max(max, bbox.max);
+        min = dr::minimum(min, bbox.min);
+        max = dr::maximum(max, bbox.max);
     }
 
     /// Merge two bounding boxes
     static BoundingBox merge(const BoundingBox &bbox1, const BoundingBox &bbox2) {
         return BoundingBox(
-            dr::min(bbox1.min, bbox2.min),
-            dr::max(bbox1.max, bbox2.max)
+            dr::minimum(bbox1.min, bbox2.min),
+            dr::maximum(bbox1.max, bbox2.max)
         );
     }
 
@@ -306,7 +306,7 @@ template <typename Point_> struct BoundingBox {
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
-        auto active = dr::all(dr::neq(ray.d, dr::zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
+        auto active = dr::all(dr::neq(ray.d, dr::zeros<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
         // Compute intersection intervals for each axis
         Vector d_rcp = dr::rcp(ray.d),
@@ -314,12 +314,12 @@ template <typename Point_> struct BoundingBox {
                t2 = (max - ray.o) * d_rcp;
 
         // Ensure proper ordering
-        Vector t1p = dr::min(t1, t2),
-               t2p = dr::max(t1, t2);
+        Vector t1p = dr::minimum(t1, t2),
+               t2p = dr::maximum(t1, t2);
 
         // Intersect intervals
-        Float mint = dr::hmax(t1p),
-              maxt = dr::hmin(t2p);
+        Float mint = dr::max(t1p),
+              maxt = dr::min(t2p);
 
         active = active && maxt >= mint;
 

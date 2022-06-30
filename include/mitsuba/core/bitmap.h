@@ -677,11 +677,11 @@ void accumulate_2d(ConstT source,
     using Value = std::decay_t<T>;
 
     /// Clip against bounds of source and target image
-    Vector<int, 2> shift = dr::max(0, dr::max(-source_offset, -target_offset));
+    Vector<int, 2> shift = dr::maximum(0, dr::maximum(-source_offset, -target_offset));
     source_offset += shift;
     target_offset += shift;
-    size -= dr::max(source_offset + size - source_size, 0);
-    size -= dr::max(target_offset + size - target_size, 0);
+    size -= dr::maximum(source_offset + size - source_size, 0);
+    size -= dr::maximum(target_offset + size - target_size, 0);
 
     if (dr::any(size <= 0))
         return;
@@ -698,7 +698,7 @@ void accumulate_2d(ConstT source,
         for (int y = 0; y < size.y(); ++y) {
             for (int i = 0; i < n; ++i) {
                 if constexpr (std::is_integral_v<Value>)
-                    target[i] = (Value) dr::max(maxval, source[i] + target[i]);
+                    target[i] = (Value) dr::maximum(maxval, source[i] + target[i]);
                 else
                     target[i] += source[i];
             }

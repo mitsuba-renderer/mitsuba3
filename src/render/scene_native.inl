@@ -28,7 +28,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) 
             s.shapes_registry_ids
                 = dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
         } else {
-            s.shapes_registry_ids = dr::zero<DynamicBuffer<UInt32>>();
+            s.shapes_registry_ids = dr::zeros<DynamicBuffer<UInt32>>();
         }
     } else {
         m_accel = kdtree;
@@ -162,8 +162,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = dr::zero<UInt32>();
-        Float ray_mint = dr::zero<Float>();
+        UInt32 zero = dr::zeros<UInt32>();
+        Float ray_mint = dr::zeros<Float>();
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray.o.x().index(), ray.o.y().index(),
@@ -248,8 +248,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = dr::zero<UInt32>();
-        Float ray_mint = dr::zero<Float>();
+        UInt32 zero = dr::zeros<UInt32>();
+        Float ray_mint = dr::zeros<Float>();
 
         uint32_t in[14] = { coherent.index(),  active.index(),
                             ray.o.x().index(), ray.o.y().index(),

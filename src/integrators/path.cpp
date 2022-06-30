@@ -116,7 +116,7 @@ public:
 
 
         // Variables caching information from the previous bounce
-        Interaction3f prev_si         = dr::zero<Interaction3f>();
+        Interaction3f prev_si         = dr::zeros<Interaction3f>();
         Float         prev_bsdf_pdf   = 1.f;
         Bool          prev_bsdf_delta = true;
         BSDFContext   bsdf_ctx;
@@ -256,9 +256,9 @@ public:
 
             dr::masked(depth, si.is_valid()) += 1;
 
-            Float throughput_max = dr::hmax(unpolarized_spectrum(throughput));
+            Float throughput_max = dr::max(unpolarized_spectrum(throughput));
 
-            Float rr_prob = dr::min(throughput_max * dr::sqr(eta), .95f);
+            Float rr_prob = dr::minimum(throughput_max * dr::sqr(eta), .95f);
             Mask rr_active = depth >= m_rr_depth,
                  rr_continue = sampler->next_1d() < rr_prob;
 

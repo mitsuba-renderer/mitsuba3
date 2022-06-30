@@ -46,7 +46,7 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
         if (sample_transmission) {
             bs.wo                = -si.wi;

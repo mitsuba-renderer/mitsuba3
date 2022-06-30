@@ -52,7 +52,7 @@ Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &coeff) {
 
     const size_t n_samples = ((MI_CIE_SAMPLES - 1) * 3 + 1);
 
-    SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+    SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
     Array3f accum = 0.f;
     float h = (MI_CIE_MAX - MI_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {

@@ -218,7 +218,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         Ray3f ray;
@@ -258,7 +258,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         RayDifferential3f ray;

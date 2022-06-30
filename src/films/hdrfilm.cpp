@@ -234,7 +234,7 @@ public:
 
     ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
                                  bool border) override {
-        bool warn = !dr::is_jit_array_v<Float> && !is_spectral_v<Spectrum> &&
+        bool warn = !dr::is_jit_v<Float> && !is_spectral_v<Spectrum> &&
                     m_channels.size() <= 5;
 
         bool default_config = size == ScalarVector2u(0);
@@ -244,7 +244,7 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              dr::is_llvm_array_v<Float> /* coalesce */,
+                              dr::is_llvm_v<Float> /* coalesce */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */);
     }
@@ -264,7 +264,7 @@ public:
             return m_storage->tensor();
         }
 
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             Float data;
             uint32_t source_ch;
             uint32_t pixel_count;
@@ -275,7 +275,7 @@ public:
                 data        = m_storage->tensor().array();
                 size        = m_storage->size();
                 source_ch   = (uint32_t) m_storage->channel_count();
-                pixel_count = dr::hprod(m_storage->size());
+                pixel_count = dr::prod(m_storage->size());
             }
 
             /* The following code develops weighted image block data into
@@ -360,7 +360,7 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::hprod(size);
+            size_t width = source->channel_count() * dr::prod(size);
             auto data = dr::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
 
             size_t shape[3] = { (size_t) source->height(),
@@ -378,7 +378,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
 
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         bool alpha = has_flag(m_flags, FilmFlags::Alpha);

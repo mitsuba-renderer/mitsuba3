@@ -194,7 +194,7 @@ public:
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, RayFlags::All | RayFlags::BoundaryTest, true, active);
-        dr::masked(si, !si.is_valid()) = dr::zero<SurfaceInteraction3f>();
+        dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
         size_t ctr = 0;
 
         for (size_t i = 0; i < m_aov_types.size(); ++i) {

@@ -181,7 +181,7 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    dr::mask_t<FloatP> active) const {
         Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_array_v<FloatP>)
+        if constexpr (!dr::is_jit_v<FloatP>)
             to_object = m_to_object.scalar();
         else
             to_object = m_to_object.value();
@@ -204,7 +204,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_array_v<FloatP>)
+        if constexpr (!dr::is_jit_v<FloatP>)
             to_object = m_to_object.scalar();
         else
             to_object = m_to_object.value();
@@ -229,12 +229,12 @@ public:
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
-            return dr::zero<SurfaceInteraction3f>();
+            return dr::zeros<SurfaceInteraction3f>();
 
         // Recompute ray intersection to get differentiable prim_uv and t
         Float t = pi.t;
         Point2f prim_uv = pi.prim_uv;
-        if constexpr (dr::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_v<Float>) {
             PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
             prim_uv = dr::replace_grad(prim_uv, pi_d.prim_uv);
             t = dr::replace_grad(t, pi_d.t);
@@ -242,7 +242,7 @@ public:
 
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t = dr::select(active, t, dr::Infinity<Float>);
 
         // Re-project onto the disk to improve accuracy
@@ -272,7 +272,7 @@ public:
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
 
-        si.dn_du = si.dn_dv = dr::zero<Vector3f>();
+        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         si.shape    = this;
         si.instance = nullptr;
 
@@ -286,7 +286,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_array_v<Float>) {
+        if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
 

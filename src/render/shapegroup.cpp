@@ -8,7 +8,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     m_id = props.id();
 
 #if !defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_array_v<Float>)
+    if constexpr (!dr::is_cuda_v<Float>)
         m_kdtree = new ShapeKDTree(props);
 #endif
     m_has_meshes = false;
@@ -37,7 +37,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 #endif
 
 #if !defined(MI_ENABLE_EMBREE)
-                if constexpr (!dr::is_cuda_array_v<Float>)
+                if constexpr (!dr::is_cuda_v<Float>)
                     m_kdtree->add_shape(shape);
 #endif
                 m_has_meshes |= shape->is_mesh();
@@ -48,7 +48,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         }
     }
 #if !defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         if (!m_kdtree->ready())
             m_kdtree->build();
 
@@ -57,7 +57,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 #endif
 
 #if defined(MI_ENABLE_LLVM)
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
         for (size_t i = 0; i < m_shapes.size(); i++)
@@ -70,9 +70,9 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #if defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         // Ensure all raytracing kernels are terminated before releasing the scene
-        if constexpr (dr::is_llvm_array_v<Float>)
+        if constexpr (dr::is_llvm_v<Float>)
             dr::sync_thread();
 
         rtcReleaseScene(m_embree_scene);
@@ -83,7 +83,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #if defined(MI_ENABLE_EMBREE)
 MI_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) {
     DRJIT_MARK_USED(device);
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         // Construct the BVH only once
         if (m_embree_scene == nullptr) {
             m_embree_scene = rtcNewScene(device);
@@ -94,7 +94,7 @@ MI_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice de
             }
 
             // Ensure shape data pointers are finished evaluating before building
-            if constexpr (dr::is_llvm_array_v<Float>)
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
             rtcCommitScene(m_embree_scene);
@@ -133,11 +133,11 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     MI_MASK_ARGUMENT(active);
 
     if (recursion_depth > 0)
-        return dr::zero<SurfaceInteraction3f>();
+        return dr::zeros<SurfaceInteraction3f>();
 
     ShapePtr shape = pi.shape;
 
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         if constexpr (!dr::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
             shape = m_shapes[pi.shape_index];
@@ -154,7 +154,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 MI_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize
 ShapeGroup<Float, Spectrum>::primitive_count() const {
 #if !defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_array_v<Float>)
+    if constexpr (!dr::is_cuda_v<Float>)
         return m_kdtree->primitive_count();
 #endif
 

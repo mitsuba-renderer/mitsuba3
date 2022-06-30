@@ -121,7 +121,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = dr::is_llvm_array_v<Float>,
+               bool coalesce = dr::is_llvm_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -142,7 +142,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = dr::is_llvm_array_v<Float>,
+               bool coalesce = dr::is_llvm_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 

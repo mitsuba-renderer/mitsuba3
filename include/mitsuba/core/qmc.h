@@ -87,7 +87,7 @@ public:
             active = dr::neq(index, 0u);
         }
 
-        return dr::min(dr::OneMinusEpsilon<Float>, Float(value) * factor);
+        return dr::minimum(dr::OneMinusEpsilon<Float>, Float(value) * factor);
     }
 
     /**
@@ -126,7 +126,7 @@ public:
         }
 
         Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
-        return dr::min(dr::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
+        return dr::minimum(dr::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
     }
 
     /// Return the permutation corresponding to the given prime number basis

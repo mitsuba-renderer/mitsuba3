@@ -344,7 +344,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        BSDFSample3f bs   = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs   = dr::zeros<BSDFSample3f>();
 
         // Ignoring perfectly grazing incoming rays
         active &= dr::neq(cos_theta_i, 0.0f);

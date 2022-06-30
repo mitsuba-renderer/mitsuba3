@@ -161,7 +161,7 @@ public:
 
     /// Is this an isotropic microfacet distribution?
     bool is_isotropic() const {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return m_alpha_u.index() == m_alpha_v.index();
         else
             return m_alpha_u == m_alpha_v;
@@ -271,7 +271,7 @@ public:
                 cos_theta_2 = dr::sqr(cos_theta);
 
                 // Compute probability density of the sampled position
-                Float cos_theta_3 = dr::max(cos_theta_2 * cos_theta, 1e-20f);
+                Float cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
                 pdf = (1.f - sample.x()) / (dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
             } else {
                 // GGX / Trowbridge-Reitz distribution function
@@ -281,7 +281,7 @@ public:
 
                 // Compute probability density of the sampled position
                 Float temp = 1.f + tan_theta_m_2 / alpha_2,
-                      cos_theta_3 = dr::max(cos_theta_2 * cos_theta, 1e-20f);
+                      cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
                 pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::sqr(temp));
             }
 
@@ -383,7 +383,7 @@ public:
 
             /* Start with a good initial guess (analytic solution for
                theta_i = pi/2, which is the most nonlinear case) */
-            sample = dr::max(dr::min(sample, 1.f - 1e-6f), 1e-6f);
+            sample = dr::maximum(dr::minimum(sample, 1.f - 1e-6f), 1e-6f);
             Float x = maxval - (maxval + 1.f) * dr::erf(dr::sqrt(-dr::log(sample.x())));
 
             // Normalization factor for the CDF
@@ -423,8 +423,8 @@ public:
 
 protected:
     void configure() {
-        m_alpha_u = dr::max(m_alpha_u, 1e-4f);
-        m_alpha_v = dr::max(m_alpha_v, 1e-4f);
+        m_alpha_u = dr::maximum(m_alpha_u, 1e-4f);
+        m_alpha_v = dr::maximum(m_alpha_v, 1e-4f);
     }
 
     /// Compute the squared 1D roughness along direction \c v
@@ -472,7 +472,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 
     using FloatX = dr::DynamicArray<dr::scalar_t<Float>>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
-    Float result = dr::zero<Float>(dr::width(wi));
+    Float result = dr::zeros<Float>(dr::width(wi));
 
     auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = dr::meshgrid(weights, weights);
@@ -503,7 +503,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
             FloatP f = std::get<0>(fresnel(dr::dot(wi_p, m), FloatP(eta)));
             FloatP smith = distr.smith_g1(wo, m) * f;
             dr::masked(smith, wo.z() <= 0.f || wi_p.z() <= 0.f) = 0.f;
-            result_p += smith * dr::hprod(weight) * 0.25f;
+            result_p += smith * dr::prod(weight) * 0.25f;
         }
 
         dr::store(result.data() + i * FloatP::Size, result_p);
@@ -525,7 +525,7 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
     using ScalarFloat = dr::scalar_t<Float>;
     using FloatX = dr::DynamicArray<ScalarFloat>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
-    Float result = dr::zero<Float>(dr::width(wi));
+    Float result = dr::zeros<Float>(dr::width(wi));
 
     auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = dr::meshgrid(weights, weights);
@@ -558,7 +558,7 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
             FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
             dr::masked(smith, wo.z() * wi_p.z() >= 0.f) = 0.f;
 
-            result_p += smith * dr::hprod(weight) * 0.25f;
+            result_p += smith * dr::prod(weight) * 0.25f;
         }
 
         dr::store(result.data() + i * FloatP::Size, result_p);

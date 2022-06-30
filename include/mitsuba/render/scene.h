@@ -583,7 +583,7 @@ extern MI_EXPORT_LIB void librender_nop();
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
 SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
         return is_valid() ? shape->emitter() : scene->environment();
     } else {

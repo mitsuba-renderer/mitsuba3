@@ -41,7 +41,7 @@ template <typename Point_> struct BoundingSphere {
 
     /// Expand the bounding sphere radius to contain another point.
     void expand(const Point &p) {
-        radius = dr::max(radius, dr::norm(p - center));
+        radius = dr::maximum(radius, dr::norm(p - center));
     }
 
     /**

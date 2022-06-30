@@ -3015,7 +3015,7 @@ constructs internal data structures to efficiently map uniform
 variates from the unit square ``[0, 1]^2`` to a function on ``[0,
 1]^2`` that linearly interpolates the input array.
 
-The mapping is constructed from a sequence of ``log2(hmax(res))``
+The mapping is constructed from a sequence of ``log2(max(res))``
 hierarchical sample warping steps, where ``res`` is the input array
 resolution. It is bijective and generally very well-behaved (i.e. low
 distortion), which makes it a good choice for structured point sets
@@ -3505,7 +3505,7 @@ static const char *__doc_mitsuba_Interaction_time = R"doc(Time value associated 
 static const char *__doc_mitsuba_Interaction_wavelengths = R"doc(Wavelengths associated with the ray that produced this interaction)doc";
 
 static const char *__doc_mitsuba_Interaction_zero =
-R"doc(This callback method is invoked by dr::zero<>, and takes care of
+R"doc(This callback method is invoked by dr::zeros<>, and takes care of
 fields that deviate from the standard zero-initialization convention.
 In this particular class, the ``t`` field should be set to an infinite
 value to mark invalid intersection records.)doc";
@@ -5090,7 +5090,7 @@ static const char *__doc_mitsuba_PreliminaryIntersection_shape_index = R"doc(Sha
 static const char *__doc_mitsuba_PreliminaryIntersection_t = R"doc(Distance traveled along the ray)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_zero =
-R"doc(This callback method is invoked by dr::zero<>, and takes care of
+R"doc(This callback method is invoked by dr::zeros<>, and takes care of
 fields that deviate from the standard zero-initialization convention.
 In this particular class, the ``t`` field should be set to an infinite
 value to mark invalid intersection records.)doc";

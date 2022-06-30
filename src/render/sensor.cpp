@@ -109,7 +109,7 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
             return m_srf->sample_spectrum(
-                    dr::zero<SurfaceInteraction3f>(),
+                    dr::zeros<SurfaceInteraction3f>(),
                     math::sample_shifted<Wavelength>(sample),
                     active);
         }

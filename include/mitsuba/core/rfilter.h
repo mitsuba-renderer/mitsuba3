@@ -63,8 +63,8 @@ public:
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MI_INLINE Float eval_discretized(Float x, Mask active = true) const {
-        if constexpr (!dr::is_jit_array_v<Float>) {
-            UInt32 index = dr::min(UInt32(dr::abs(x * m_scale_factor)),
+        if constexpr (!dr::is_jit_v<Float>) {
+            UInt32 index = dr::minimum(UInt32(dr::abs(x * m_scale_factor)),
                                    MI_FILTER_RESOLUTION);
             return dr::gather<Float>(m_values.data(), index, active);
         } else {

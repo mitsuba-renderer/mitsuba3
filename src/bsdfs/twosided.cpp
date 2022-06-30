@@ -119,7 +119,7 @@ public:
 
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
-        Result result = dr::zero<Result>();
+        Result result = dr::zeros<Result>();
 
         if (m_brdf[0] == m_brdf[1]) {
             si.wi.z() = dr::abs(si.wi.z());

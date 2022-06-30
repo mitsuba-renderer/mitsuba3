@@ -208,7 +208,7 @@ public:
                 PluginManager::instance()->create_object<ReconstructionFilter>(
                     Properties("tent"));
             m_bitmap =
-                m_bitmap->resample(dr::max(m_bitmap->size(), 2), rfilter);
+                m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
         }
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
@@ -300,7 +300,7 @@ public:
                   to_string());
         } else {
             if (dr::none_or<false>(active))
-                return dr::zero<UnpolarizedSpectrum>();
+                return dr::zeros<UnpolarizedSpectrum>();
 
             if constexpr (is_monochromatic_v<Spectrum>) {
                 if (channels == 1)
@@ -334,7 +334,7 @@ public:
                   to_string());
         } else {
             if (dr::none_or<false>(active))
-                return dr::zero<Float>();
+                return dr::zeros<Float>();
 
             if (channels == 1)
                 return interpolate_1(si, active);
@@ -357,7 +357,7 @@ public:
                 to_string());
         } else {
             if (dr::none_or<false>(active))
-                return dr::zero<Vector2f>();
+                return dr::zeros<Vector2f>();
 
             if (m_texture.filter_mode() == dr::FilterMode::Linear) {
                 if constexpr (!dr::is_array_v<Mask>)
@@ -440,7 +440,7 @@ public:
                   to_string());
         } else {
             if (dr::none_or<false>(active))
-                return dr::zero<Color3f>();
+                return dr::zeros<Color3f>();
 
             return interpolate_3(si, active);
         }
@@ -449,7 +449,7 @@ public:
     std::pair<Point2f, Float>
     sample_position(const Point2f &sample, Mask active = true) const override {
         if (dr::none_or<false>(active))
-            return { dr::zero<Point2f>(), dr::zero<Float>() };
+            return { dr::zeros<Point2f>(), dr::zeros<Float>() };
 
         if (!m_distr2d)
             init_distr();
@@ -483,12 +483,12 @@ public:
             }
         }
 
-        return { sample2, pdf * dr::hprod(res) };
+        return { sample2, pdf * dr::prod(res) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
         if (dr::none_or<false>(active))
-            return dr::zero<Float>();
+            return dr::zeros<Float>();
 
         if (!m_distr2d)
             init_distr();
@@ -517,7 +517,7 @@ public:
             Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
                   v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
 
-            return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::hprod(res);
+            return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::prod(res);
         } else {
             // Scale to bitmap resolution, no shift
             Point2f uv = pos_ * res;
@@ -525,7 +525,7 @@ public:
             // Integer pixel positions for nearest-neighbor interpolation
             Vector2i uv_i = m_texture.wrap(dr::floor2int<Vector2i>(uv));
 
-            return m_distr2d->pdf(uv_i, active) * dr::hprod(res);
+            return m_distr2d->pdf(uv_i, active) * dr::prod(res);
         }
     }
 
@@ -535,7 +535,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if (dr::none_or<false>(active))
-            return { dr::zero<Wavelength>(), dr::zero<UnpolarizedSpectrum>() };
+            return { dr::zeros<Wavelength>(), dr::zeros<UnpolarizedSpectrum>() };
 
         if constexpr (is_spectral_v<Spectrum>) {
             SurfaceInteraction3f si(_si);
@@ -674,7 +674,7 @@ protected:
     void rebuild_internals(bool init_mean, bool init_distr) {
         auto&& data = dr::migrate(m_texture.value(), AllocType::Host);
 
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         if (m_transform != ScalarTransform3f())
@@ -683,7 +683,7 @@ protected:
         const ScalarFloat *ptr = data.data();
 
         double mean = 0.0;
-        size_t pixel_count = (size_t) dr::hprod(resolution());
+        size_t pixel_count = (size_t) dr::prod(resolution());
         bool exceed_unit_range = false;
 
         const size_t channels = m_texture.shape()[2];

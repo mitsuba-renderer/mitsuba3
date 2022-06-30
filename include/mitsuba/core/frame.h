@@ -79,7 +79,7 @@ template <typename Float_> struct Frame {
      */
     static Float tan_theta_2(const Vector3f &v) {
         Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
-        return dr::max(temp, 0.f) / dr::sqr(v.z());
+        return dr::maximum(temp, 0.f) / dr::sqr(v.z());
     }
 
     /** \brief Give a unit direction, this function returns the sine of the

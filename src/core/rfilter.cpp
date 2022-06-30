@@ -9,7 +9,7 @@ MI_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 MI_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
     Assert(m_radius > 0);
 
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         m_values.resize(MI_FILTER_RESOLUTION + 1);
 
         // Evaluate and store the filter values

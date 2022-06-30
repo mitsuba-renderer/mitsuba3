@@ -248,7 +248,7 @@ public:
         bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_transmission  = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
 

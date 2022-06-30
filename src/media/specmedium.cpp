@@ -188,7 +188,7 @@ public:
     UnpolarizedSpectrum
     get_majorant(const MediumInteraction3f &mi, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = mi.wavelengths;
         UnpolarizedSpectrum full_majorant = m_spectral_majorant->eval(si, active);
         return m_scale * full_majorant;
@@ -207,7 +207,7 @@ public:
 
         m_proportions->eval_n(mi, proportions, active);
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = mi.wavelengths;
 
         UnpolarizedSpectrum sigma_t(0.f), albedo(0.f);
@@ -233,13 +233,13 @@ public:
         ScalarFloat resolution = dr::Infinity<ScalarFloat>;
         ScalarVector2f range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
         for (auto srf : m_spectra_sigma_t) {
-            range.x() = dr::min(range.x(), srf->wavelength_range().x());
-            range.y() = dr::max(range.y(), srf->wavelength_range().y());
-            resolution = dr::min(resolution, srf->spectral_resolution());
+            range.x() = dr::minimum(range.x(), srf->wavelength_range().x());
+            range.y() = dr::maximum(range.y(), srf->wavelength_range().y());
+            resolution = dr::minimum(resolution, srf->spectral_resolution());
         }
 
         size_t n_points = (size_t) dr::ceil((range.y() - range.x()) / resolution);
-        FloatStorage spectral_majorant = dr::zero<FloatStorage>(n_points);
+        FloatStorage spectral_majorant = dr::zeros<FloatStorage>(n_points);
         Float majorant_wavelengths = dr::linspace<Float>(range.x(), range.y(), n_points);
 
         // Compute maximum proportion per grid channel
@@ -248,7 +248,7 @@ public:
             Log(Error, "This plugins needs a volume that supports per-channel queries");
         m_proportions->max_per_channel(max_proportions_grid.data());
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = majorant_wavelengths;
 
         uint32_t index = 0;
@@ -263,7 +263,7 @@ public:
         DoubleStorage spectral_majorant_dbl = DoubleStorage(spectral_majorant);
 
         auto && storage = dr::migrate(spectral_majorant_dbl, AllocType::Host);
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         // Store majorant information

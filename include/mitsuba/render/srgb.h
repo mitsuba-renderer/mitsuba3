@@ -15,7 +15,7 @@ MI_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
 
         return dr::select(
             dr::isinf(coeff.z()), dr::fmadd(dr::sign(coeff.z()), .5f, .5f),
-            dr::max(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f))
+            dr::maximum(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f))
         );
     } else {
         Throw("srgb_model_eval(): invoked for a non-spectral color type!");
@@ -30,8 +30,8 @@ MI_INLINE dr::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
     Vec lambda = dr::linspace<Vec>(MI_CIE_MIN, MI_CIE_MAX);
     Vec v = dr::fmadd(dr::fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
     Vec result = dr::select(dr::isinf(coeff.z()), dr::fmadd(dr::sign(coeff.z()), .5f, .5f),
-                        dr::max(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f)));
-    return dr::hmean(result);
+                        dr::maximum(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f)));
+    return dr::mean(result);
 }
 
 /**

@@ -56,7 +56,7 @@ struct Interaction {
         : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
 
     /**
-     * This callback method is invoked by dr::zero<>, and takes care of fields that deviate
+     * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
      * from the standard zero-initialization convention. In this particular class, the ``t``
      * field should be set to an infinite value to mark invalid intersection records.
      */
@@ -96,7 +96,7 @@ private:
      * position is offset along the surface normal to prevent self intersection.
      */
     Point3f offset_p(const Vector3f &d) const {
-        Float mag = (1.f + dr::hmax(dr::abs(p))) * math::RayEpsilon<Float>;
+        Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
         mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
         return dr::fmadd(mag, dr::detach(n), p);
     }
@@ -593,7 +593,7 @@ struct PreliminaryIntersection {
     // =============================================================
 
     /**
-     * This callback method is invoked by dr::zero<>, and takes care of fields that deviate
+     * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
      * from the standard zero-initialization convention. In this particular class, the ``t``
      * field should be set to an infinite value to mark invalid intersection records.
      */
@@ -627,7 +627,7 @@ struct PreliminaryIntersection {
 
             active &= is_valid();
             if (dr::none_or<false>(active)) {
-                SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+                SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
                 si.wi = -ray.d;
                 si.wavelengths = ray.wavelengths;
                 return si;
@@ -655,7 +655,7 @@ struct PreliminaryIntersection {
             // Incident direction in local coordinates
             si.wi = dr::select(active, si.to_local(-ray.d), -ray.d);
 
-            si.duv_dx = si.duv_dy = dr::zero<Point2f>();
+            si.duv_dx = si.duv_dy = dr::zeros<Point2f>();
 
             if (has_flag(ray_flags, RayFlags::BoundaryTest))
                 si.boundary_test =

@@ -58,7 +58,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
 	m_size -= 2 * m_border_size;
 
     // Copy the image tensor
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         m_tensor = TensorXf(tensor.array().copy(), 3, tensor.shape().data());
     else
         m_tensor = TensorXf(tensor.array(), 3, tensor.shape().data());
@@ -71,10 +71,10 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
 
     ScalarVector2u size_ext = m_size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * dr::hprod(size_ext),
+    size_t size_flat = m_channel_count * dr::prod(size_ext),
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
-    m_tensor = TensorXf(dr::zero<Array>(size_flat), 3, shape);
+    m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
 }
 
 MI_VARIANT void
@@ -86,10 +86,10 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
 
     ScalarVector2u size_ext = size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * dr::hprod(size_ext),
+    size_t size_flat = m_channel_count * dr::prod(size_ext),
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
-    m_tensor = TensorXf(dr::zero<Array>(size_flat), 3, shape);
+    m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
     m_size = size;
 }
 
@@ -106,7 +106,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
     ScalarPoint2i  source_offset = block->offset() - block->border_size(),
                    target_offset =        offset() -        border_size();
 
-    if constexpr (dr::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_v<Float>) {
         // If target block is cleared and match size, directly copy data
         if (m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size()) {
@@ -136,7 +136,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                                                   const Float *values,
                                                   Mask active) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
-    constexpr bool JIT = dr::is_jit_array_v<Float>;
+    constexpr bool JIT = dr::is_jit_v<Float>;
 
     // Check if all sample values are valid
     if (m_warn_negative || m_warn_invalid) {
@@ -212,7 +212,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     if constexpr (JIT) {
         record_loop = jit_flag(JitFlag::LoopRecord) && !m_normalize;
 
-        if constexpr (dr::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_v<Float>) {
             record_loop = record_loop &&
                           !dr::grad_enabled(pos) &&
                           !dr::grad_enabled(m_tensor);
@@ -232,8 +232,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 pos_1_f = pos_f + radius;
 
         // Interval specifying the pixels covered by the filter
-        Point2u pos_0_u = Point2u(dr::max(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-                pos_1_u = Point2u(dr::min(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+        Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
+                pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
                 count_u = pos_1_u - pos_0_u + 1u;
 
         // Base index of the top left corner
@@ -514,7 +514,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
                                                    Float *values,
                                                    Mask active) const {
-    constexpr bool JIT = dr::is_jit_array_v<Float>;
+    constexpr bool JIT = dr::is_jit_v<Float>;
 
     // Account for image block offset
     Point2f pos = pos_ - ScalarVector2f(m_offset);
@@ -556,7 +556,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     if constexpr (JIT) {
         record_loop = jit_flag(JitFlag::LoopRecord);
 
-        if constexpr (dr::is_diff_array_v<Float>) {
+        if constexpr (dr::is_diff_v<Float>) {
             record_loop = record_loop &&
                           !dr::grad_enabled(pos) &&
                           !dr::grad_enabled(m_tensor);
@@ -571,15 +571,15 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
     // Zero-initialize output array
     for (uint32_t i = 0; i < m_channel_count; ++i)
-        values[i] = dr::zero<Float>(dr::width(pos));
+        values[i] = dr::zeros<Float>(dr::width(pos));
 
     Point2f pos_f   = pos + ((int) m_border_size - .5f),
             pos_0_f = pos_f - radius,
             pos_1_f = pos_f + radius;
 
     // Interval specifying the pixels covered by the filter
-    Point2u pos_0_u = Point2u(dr::max(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-            pos_1_u = Point2u(dr::min(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+    Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
+            pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
             count_u = pos_1_u - pos_0_u + 1u;
 
     // Base index of the top left corner

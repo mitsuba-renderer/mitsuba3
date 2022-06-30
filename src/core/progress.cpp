@@ -28,7 +28,7 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
 ProgressReporter::~ProgressReporter() { }
 
 void ProgressReporter::update(float progress) {
-    progress = dr::min(dr::max(progress, 0.f), 1.f);
+    progress = dr::minimum(dr::maximum(progress, 0.f), 1.f);
 
     if (progress == m_last_progress)
         return;
@@ -45,7 +45,7 @@ void ProgressReporter::update(float progress) {
         eta.resize(22);
 
     if (m_bar_size > 0) {
-        size_t filled = dr::min(m_bar_size, (size_t) dr::round(m_bar_size * progress)),
+        size_t filled = dr::minimum(m_bar_size, (size_t) dr::round(m_bar_size * progress)),
                eta_pos = m_bar_start + m_bar_size + 2;
         memset((char *) m_line.data() + m_bar_start, '=', filled);
         memset((char *) m_line.data() + eta_pos, ' ', m_line.size() - eta_pos - 1);

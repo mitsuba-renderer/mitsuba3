@@ -71,7 +71,7 @@ public:
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                dr::max(math::RayEpsilon<Float>,
+                dr::maximum(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
         } else {
             m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
@@ -100,7 +100,7 @@ public:
 
         // 3. Sample spectrum
         auto [wavelengths, weight] = sample_wavelengths(
-            dr::zero<SurfaceInteraction3f>(), wavelength_sample, active);
+            dr::zeros<SurfaceInteraction3f>(), wavelength_sample, active);
 
         weight *= m_surface_area * dr::Pi<ScalarFloat>;
 
@@ -116,7 +116,7 @@ public:
         Vector3f d = warp::square_to_uniform_sphere(sample);
 
         // Automatically enlarge the bounding sphere when it does not contain the reference point
-        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
+        Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
               dist   = 2.f * radius;
 
         DirectionSample3f ds;
@@ -130,7 +130,7 @@ public:
         ds.d       = d;
         ds.dist    = dist;
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         return {
@@ -148,7 +148,7 @@ public:
 
     Spectrum eval_direction(const Interaction3f &it, const DirectionSample3f &,
                             Mask active) const override {
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
         return depolarizer<Spectrum>(m_radiance->eval(si, active));
     }
@@ -163,10 +163,10 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             /* When virtual function calls are recorded in symbolic mode,
                we can't throw an exception here. */
-            return { dr::zero<PositionSample3f>(),
+            return { dr::zeros<PositionSample3f>(),
                      dr::full<Float>(dr::NaN<ScalarFloat>) };
         } else {
             NotImplementedError("sample_position");

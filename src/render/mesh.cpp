@@ -39,13 +39,13 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     m_vertex_count = vertex_count;
     m_face_count = face_count;
 
-    m_faces = dr::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
-    m_vertex_positions = dr::zero<FloatStorage>(m_vertex_count * 3);
+    m_faces = dr::zeros<DynamicBuffer<UInt32>>(m_face_count * 3);
+    m_vertex_positions = dr::zeros<FloatStorage>(m_vertex_count * 3);
 
     if (has_vertex_normals)
-        m_vertex_normals = dr::zero<FloatStorage>(m_vertex_count * 3);
+        m_vertex_normals = dr::zeros<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
-        m_vertex_texcoords = dr::zero<FloatStorage>(m_vertex_count * 2);
+        m_vertex_texcoords = dr::zeros<FloatStorage>(m_vertex_count * 2);
 
     initialize();
 }
@@ -108,7 +108,7 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         Throw("bbox(ScalarIndex) is not available in CUDA mode!");
 
     Assert(index <= m_face_count);
@@ -123,8 +123,8 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
 
-    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(dr::min(min(v0, v1), v2),
-                                                               dr::max(dr::max(v0, v1), v2));
+    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(dr::minimum(dr::minimum(v0, v1), v2),
+                                                               dr::maximum(dr::maximum(v0, v1), v2));
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
@@ -149,7 +149,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) co
         }
     }
     // Evaluate buffers if necessary
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
     ref<FileStream> stream =
@@ -264,7 +264,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
     if constexpr (!dr::is_dynamic_v<Float>) {
         size_t invalid_counter = 0;
-        std::vector<InputNormal3f> normals(m_vertex_count, dr::zero<InputNormal3f>());
+        std::vector<InputNormal3f> normals(m_vertex_count, dr::zeros<InputNormal3f>());
 
         for (ScalarSize i = 0; i < m_face_count; ++i) {
             auto fi = face_indices(i);
@@ -321,7 +321,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         Vector3f n = dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
 
-        Vector3f normals = dr::zero<Vector3f>(m_vertex_count);
+        Vector3f normals = dr::zeros<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
             Vector3f d0 = dr::normalize(v[(i + 1) % 3] - v[i]);
             Vector3f d1 = dr::normalize(v[(i + 2) % 3] - v[i]);
@@ -347,7 +347,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
     const InputFloat *ptr = vertex_positions.data();
@@ -369,7 +369,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
 
     auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
     auto&& faces = dr::migrate(m_faces, AllocType::Host);
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
     const InputFloat *pos_p = vertex_positions.data();
@@ -439,7 +439,7 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
     result->m_bbox = m_bbox;
     result->m_bbox.expand(other->m_bbox);
 
-    if constexpr (dr::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_v<Float>) {
         UInt32 threshold = dr::opaque<UInt32>(face_count() * 3),
                offset    = dr::opaque<UInt32>(vertex_count()),
                index     = dr::arange<UInt32>(result->face_count() * 3);
@@ -476,7 +476,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh->m_faces = m_faces;
 
     auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
     const InputFloat *ptr = vertex_texcoords.data();
@@ -582,7 +582,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
             ray, /* coherent = */ true, active);
 
     if (dr::none_or<false>(pi.is_valid()))
-        return dr::zero<SurfaceInteraction3f>();
+        return dr::zeros<SurfaceInteraction3f>();
 
     pi.shape = this;
 
@@ -632,9 +632,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Early exit when tracing isn't necessary
     if (!m_is_instance && recursion_depth > 0)
-        return dr::zero<SurfaceInteraction3f>();
+        return dr::zeros<SurfaceInteraction3f>();
 
-    constexpr bool IsDiff = dr::is_diff_array_v<Float>;
+    constexpr bool IsDiff = dr::is_diff_v<Float>;
 
     Vector3u fi = face_indices(pi.prim_index, active);
 
@@ -695,7 +695,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
 
-    SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+    SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
     // Re-interpolate intersection using barycentric coordinates
     si.p = dr::fmadd(p0, b0, dr::fmadd(p1, b1, p2 * b2));
@@ -782,7 +782,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             si.dn_du = dr::fnmadd(n, dr::dot(n, si.dn_du), si.dn_du);
             si.dn_dv = dr::fnmadd(n, dr::dot(n, si.dn_dv), si.dn_dv);
         } else {
-            si.dn_du = si.dn_dv = dr::zero<Vector3f>();
+            si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         }
     } else {
         si.sh_frame.n = si.n;
@@ -835,9 +835,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                      pq1 = v1 - e1 * dr::clamp(dr::dot(v1, e1) / dr::dot(e1, e1), 0, 1),
                      pq2 = v2 - e2 * dr::clamp(dr::dot(v2, e2) / dr::dot(e2, e2), 0, 1);
             Float s = dr::sign(e0.x() * e2.y() - e0.y() * e2.x());
-            Vector2f d = dr::min(dr::min(Vector2f(dr::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
-                                         Vector2f(dr::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
-                                         Vector2f(dr::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
+            Vector2f d = dr::minimum(dr::minimum(Vector2f(dr::dot(pq0, pq0), s * (v0.x() * e0.y() - v0.y() * e0.x())),
+                                                 Vector2f(dr::dot(pq1, pq1), s * (v1.x() * e1.y() - v1.y() * e1.x()))),
+                                                 Vector2f(dr::dot(pq2, pq2), s * (v2.x() * e2.y() - v2.y() * e2.x())));
             Float dist = dr::sqrt(d.x());
             // Scale s.t. farthest point / barycenter is one
             dist /= dr::sqrt(3.f) / 6.f;
@@ -892,7 +892,7 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
                                       Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
     if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("Invalid attribute requested %s.", name.c_str());
@@ -908,7 +908,7 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
         else
             return result;
     } else {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("eval_attribute(): Attribute \"%s\" requested but had size %u.", name, attr.size);
@@ -921,7 +921,7 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
     if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("Invalid attribute requested %s.", name.c_str());
@@ -931,7 +931,7 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
     if (attr.size == 1) {
         return interpolate_attribute<1, true>(attr.type, attr.buf, si, active);
     } else {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("eval_attribute_1(): Attribute \"%s\" requested but had size %u.", name, attr.size);
@@ -944,7 +944,7 @@ Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
     if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("Invalid attribute requested %s.", name.c_str());
@@ -954,7 +954,7 @@ Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
     if (attr.size == 3) {
         return interpolate_attribute<3, true>(attr.type, attr.buf, si, active);
     } else {
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             return 0.f;
         else
             Throw("eval_attribute_3(): Attribute \"%s\" requested but had size %u.", name, attr.size);

@@ -56,7 +56,7 @@ MI_PY_EXPORT(xml) {
 
             return single_object_or_list(objects);
         },
-        "path"_a, "update_scene"_a = false, "parallel"_a = !dr::is_jit_array_v<Float>,
+        "path"_a, "update_scene"_a = false, "parallel"_a = !dr::is_jit_v<Float>,
         D(xml, load_file));
 
     m.def(
@@ -78,7 +78,7 @@ MI_PY_EXPORT(xml) {
 
             return single_object_or_list(objects);
         },
-        "string"_a, "parallel"_a = !dr::is_jit_array_v<Float>,
+        "string"_a, "parallel"_a = !dr::is_jit_v<Float>,
         D(xml, load_string));
 
     m.def(
@@ -90,7 +90,7 @@ MI_PY_EXPORT(xml) {
 
             py::object out = single_object_or_list(objects);
 
-            if constexpr (dr::is_jit_array_v<Float>) {
+            if constexpr (dr::is_jit_v<Float>) {
                 dr::eval();
                 dr::sync_thread();
             }

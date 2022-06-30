@@ -171,7 +171,8 @@ public:
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
-        return ScalarBoundingBox3f(dr::min(p0 - x, p1 - x), dr::max(p0 + x, p1 + x));
+        return ScalarBoundingBox3f(dr::minimum(p0 - x, p1 - x),
+                                   dr::maximum(p0 + x, p1 + x));
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
@@ -192,8 +193,8 @@ public:
         /* Now forget about the cylinder ends and intersect an infinite
            cylinder with each bounding box face, then compute a bounding
            box of the resulting ellipses. */
-        Point3fP8  face_p = dr::zero<Point3fP8>();
-        Vector3fP8 face_n = dr::zero<Vector3fP8>();
+        Point3fP8  face_p = dr::zeros<Point3fP8>();
+        Vector3fP8 face_n = dr::zeros<Vector3fP8>();
 
         for (size_t i = 0; i < 3; ++i) {
             face_p.entry(i,  i * 2 + 0) = bbox.min.entry(i);
@@ -229,9 +230,9 @@ public:
         ellipse_bounds.clip(bbox);
 
         return ScalarBoundingBox3f(
-            hmin_inner(select(ellipse_overlap, ellipse_bounds.min,
+            min_inner(select(ellipse_overlap, ellipse_bounds.min,
                               Point3fP8(dr::Infinity<ScalarFloat>))),
-            hmax_inner(select(ellipse_overlap, ellipse_bounds.max,
+            max_inner(select(ellipse_overlap, ellipse_bounds.max,
                               Point3fP8(-dr::Infinity<ScalarFloat>))));
     }
 
@@ -275,8 +276,8 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
-                                              dr::is_diff_array_v<Float>,
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
+                                              dr::is_diff_v<Float>,
                                           dr::float32_array_t<FloatP>,
                                           dr::float64_array_t<FloatP>>;
         using ScalarValue = dr::scalar_t<Value>;
@@ -284,7 +285,7 @@ public:
         Ray3fP ray;
         Value radius;
         Value length;
-        if constexpr (!dr::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_v<Value>) {
             ray = m_to_object.scalar().transform_affine(ray_);
             radius = (ScalarValue) m_radius.scalar();
             length = (ScalarValue) m_length.scalar();
@@ -330,7 +331,7 @@ public:
                                   FloatP(near_t), FloatP(far_t)),
                        dr::Infinity<FloatP>);
 
-        return { t, dr::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -338,8 +339,8 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
-                                              dr::is_diff_array_v<Float>,
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
+                                              dr::is_diff_v<Float>,
                                           dr::float32_array_t<FloatP>,
                                           dr::float64_array_t<FloatP>>;
         using ScalarValue = dr::scalar_t<Value>;
@@ -347,7 +348,7 @@ public:
         Ray3fP ray;
         Value radius;
         Value length;
-        if constexpr (!dr::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_v<Value>) {
             ray = m_to_object.scalar().transform_affine(ray_);
             radius = (ScalarValue) m_radius.scalar();
             length = (ScalarValue) m_length.scalar();
@@ -400,16 +401,16 @@ public:
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
-            return dr::zero<SurfaceInteraction3f>();
+            return dr::zeros<SurfaceInteraction3f>();
 
         // Recompute ray intersection to get differentiable prim_uv and t
         Float t = pi.t;
-        if constexpr (dr::is_diff_array_v<Float>)
+        if constexpr (dr::is_diff_v<Float>)
             t = dr::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t = dr::select(active, t, dr::Infinity<Float>);
         si.p = ray(t);
 
@@ -452,7 +453,7 @@ public:
             Float dist_caps = 0.5f - dr::abs(si.uv.y() - 0.5f);
 
             // Take the minimum of both distances to ensure 0.0 at silhouette.
-            si.boundary_test = dr::min(dist_caps, dist_edge);
+            si.boundary_test = dr::minimum(dist_caps, dist_edge);
         }
 
         return si;
@@ -462,7 +463,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_array_v<Float>) {
+        if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 

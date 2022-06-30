@@ -173,9 +173,9 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
     cls.attr("Value") = py::type::of<Type>();
     cls.attr("MaskType") = py::type::of<Mask>();
     cls.attr("IsScalar") = false;
-    cls.attr("IsJIT") = dr::is_jit_array_v<Array>;
-    cls.attr("IsLLVM") = dr::is_llvm_array_v<Array>;
-    cls.attr("IsCUDA") = dr::is_cuda_array_v<Array>;
+    cls.attr("IsJIT") = dr::is_jit_v<Array>;
+    cls.attr("IsLLVM") = dr::is_llvm_v<Array>;
+    cls.attr("IsCUDA") = dr::is_cuda_v<Array>;
     cls.attr("Depth") = dr::array_depth_v<Array>;
     cls.attr("Size")  = dr::array_size_v<Array>;
     cls.attr("IsDiff") = false;
@@ -187,7 +187,7 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
     cls.attr("Prefix") = "Array";
     cls.attr("Shape") = py::make_tuple(dr::Dynamic);
 
-    if constexpr (dr::is_jit_array_v<Array>) {
+    if constexpr (dr::is_jit_v<Array>) {
         cls.def_property_readonly("index", &Array::index);
         cls.def("label_", [](const Array &a) { return a.label_(); });
         cls.def("set_label_", [](Array &a, const char *label) { a.set_label_(label); });
@@ -212,13 +212,13 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
                        return dr::reinterpret_array<Array>(a);
                    });
 
-    if constexpr (dr::is_jit_array_v<Array>) {
+    if constexpr (dr::is_jit_v<Array>) {
         py::module module = py::module::import("drjit");
-        if constexpr (dr::is_cuda_array_v<Array>)
+        if constexpr (dr::is_cuda_v<Array>)
             module = module.attr("cuda");
         else
             module = module.attr("llvm");
-        if constexpr (dr::is_diff_array_v<Array>)
+        if constexpr (dr::is_diff_v<Array>)
             module = module.attr("ad");
         using UInt32 = dr::uint32_array_t<Array>;
         py::class_<UInt32> uint32_obj = py::class_<UInt32>(module.attr("UInt32"));

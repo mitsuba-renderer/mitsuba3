@@ -235,7 +235,7 @@ template <typename UInt32>
 UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
                        dr::mask_t<UInt32> active = true) {
     if (sample_count == 1)
-        return dr::zero<UInt32>(dr::width(index));
+        return dr::zeros<UInt32>(dr::width(index));
 
     UInt32 w = sample_count - 1;
     w |= w >> 1;
@@ -267,7 +267,7 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
         return tmp;
     };
 
-    if constexpr (dr::is_jit_array_v<UInt32>) {
+    if constexpr (dr::is_jit_v<UInt32>) {
         if (jit_flag(JitFlag::LoopRecord)) {
             dr::Loop<dr::mask_t<UInt32>> loop("perm", active, index);
             while (loop(dr::detach(active))) {
@@ -281,7 +281,7 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
     // Worst case is when the index is sequentially mapped to every invalid numbers (out
     // of range) before being mapped into the correct range. E.g. decreasing sequence
     uint32_t iter = 0, max_iter = 0;
-    if constexpr (dr::is_jit_array_v<UInt32>)
+    if constexpr (dr::is_jit_v<UInt32>)
         max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
     do {
         dr::masked(index, active) = body(index);

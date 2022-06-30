@@ -592,7 +592,7 @@ NAMESPACE_END(mitsuba)
     ray_intersect_preliminary_packet(                                          \
         const Ray3fP##N &ray, MaskP##N active) const override {                \
         (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_array_v<Float>)                             \
+        if constexpr (!dr::is_cuda_v<Float>)                             \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, active);     \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
@@ -600,7 +600,7 @@ NAMESPACE_END(mitsuba)
     MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
         const override {                                                       \
         (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_array_v<Float>)                             \
+        if constexpr (!dr::is_cuda_v<Float>)                             \
             return ray_test_impl<FloatP##N>(ray, active);                      \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
@@ -611,7 +611,7 @@ NAMESPACE_END(mitsuba)
     PreliminaryIntersection3f ray_intersect_preliminary(                       \
         const Ray3f &ray, Mask active) const override {                        \
         MI_MASK_ARGUMENT(active);                                             \
-        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();  \
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();  \
         std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
             ray_intersect_preliminary_impl<Float>(ray, active);                \
         pi.shape = this;                                                       \

@@ -175,17 +175,17 @@ public:
         ScalarFloat resolution = dr::Infinity<ScalarFloat>;
         // Compute full range of wavelengths and resolution in the film
         for (auto srf : m_srfs) {
-            m_range.x() = dr::min(m_range.x(), srf->wavelength_range().x());
-            m_range.y() = dr::max(m_range.y(), srf->wavelength_range().y());
-            resolution = dr::min(resolution, srf->spectral_resolution());
+            m_range.x() = dr::minimum(m_range.x(), srf->wavelength_range().x());
+            m_range.y() = dr::maximum(m_range.y(), srf->wavelength_range().y());
+            resolution = dr::minimum(resolution, srf->spectral_resolution());
         }
 
         // Compute resolution of the discretized PDF used for sampling
         size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution);
-        FloatStorage mis_data = dr::zero<FloatStorage>(n_points);
+        FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
         Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points);
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = mis_wavelengths;
 
         for (auto srf : m_srfs) {
@@ -200,7 +200,7 @@ public:
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
 
         auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         // Create new spectrum with the sampling information
@@ -243,7 +243,7 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              dr::is_llvm_array_v<Float> /* coalesce */,
+                              dr::is_llvm_v<Float> /* coalesce */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
     }
@@ -252,7 +252,7 @@ public:
                         Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
         aovs[m_channels.size() - 1] = weight;   // Set sample weight
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
@@ -262,7 +262,7 @@ public:
 
         for (size_t j = 0; j < m_srfs.size(); ++j) {
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
-            aovs[j] = dr::zero<Float>();
+            aovs[j] = dr::zeros<Float>();
 
             for (size_t i = 0; i<Spectrum::Size; ++i)
                 aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
@@ -286,7 +286,7 @@ public:
             return m_storage->tensor();
         }
 
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             Float data;
             uint32_t source_ch;
             size_t pixel_count;
@@ -297,7 +297,7 @@ public:
                 data         = m_storage->tensor().array();
                 size         = m_storage->size();
                 source_ch    = (uint32_t) m_storage->channel_count();
-                pixel_count  = dr::hprod(m_storage->size());
+                pixel_count  = dr::prod(m_storage->size());
             }
 
             // Number of channels of the target tensor
@@ -328,7 +328,7 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::hprod(size);
+            size_t width = source->channel_count() * dr::prod(size);
             auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
 
             size_t shape[3] = { (size_t) source->height(),
@@ -347,7 +347,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
 
-        if constexpr (dr::is_jit_array_v<Float>)
+        if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         ref<Bitmap> source = new Bitmap(

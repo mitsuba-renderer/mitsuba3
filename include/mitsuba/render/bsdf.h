@@ -515,7 +515,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 
     /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
     /// differentials
-    if constexpr (!dr::is_diff_array_v<Float>) {
+    if constexpr (!dr::is_diff_v<Float>) {
         if (!has_uv_partials() && dr::any(bsdf->needs_differentials()))
             compute_uv_partials(ray);
     } else {
