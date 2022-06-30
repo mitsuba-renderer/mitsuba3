@@ -46,6 +46,8 @@ setup(
         '-DCMAKE_INSTALL_BINDIR=mitsuba',
         '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
         '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data',
+        '-DMI_ENABLE_EMBREE=OFF',
+        '-DMI_DEFAULT_VARIANTS:STRING=scalar_rgb',
         f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
         f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}'
     ],
