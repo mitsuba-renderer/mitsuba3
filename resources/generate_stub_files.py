@@ -1,15 +1,21 @@
+#!/usr/bin/env python
+"""
+Usage: generate_stub_files.py {dest_dir} {mitsuba_path}
+
+This script generates stub files for Python type information for the `m̀itsuba`
+package.  It recursively traverses the `mitsuba` package and writes all the
+objects (clases, methods, functions, enums, etc.) it finds to the `dest_dir`
+folder. The stub files contain both the signatures and the docstrings of the
+objects. The second argument of this script, `mitsuba_path`, is optional and
+indicates the path to the `mitsuba` package folder if it is not installed or
+included in the user's $PYTHONPATH envvar.
+"""
+
 import os
 import inspect
 import re
-
-import mitsuba as mi
-
-mi.set_variant('llvm_ad_rgb')
-
-# In VS Code you will need to add the following to settings.json:
-# "python.analysis.extraPaths": [
-#     "${workspaceFolder}/build/python/stub",
-# ],
+import sys
+import logging
 
 # ------------------------------------------------------------------------------
 
@@ -35,7 +41,6 @@ def process_type_hint(s):
             j = sub.index(')')
         else:
             j = i + match_next.start() - 2
-        type_hint = sub[i:j]
 
         type_hints.append((offset + i, offset + j, sub[i:j]))
 
@@ -149,6 +154,7 @@ def process_class(obj):
     for k, v in methods:
         process_function(k, v, indent=4)
 
+    w(f'    ...')
     w('')
 
 # ------------------------------------------------------------------------------
@@ -219,10 +225,15 @@ def process_module(m):
     buffer = ''
 
     w('from typing import Callable, Iterable, Iterator, Tuple, List, TypeVar, overload, ModuleType')
-    w('import numpy')
     w('import mitsuba')
     w('import mitsuba as mi')
     w('')
+
+    # Ignore initilization errors of invalid variants on this system
+    try:
+        dir(m)
+    except Exception:
+        pass
 
     for k in dir(m):
         v = getattr(m, k)
@@ -243,12 +254,14 @@ def process_module(m):
         elif type(v).__bases__[0].__name__ == 'module' or type(v).__name__ == 'module':
             if k in ['mi', 'mitsuba', 'dr']:
                 continue
+            if not (v.__name__.startswith('mitsuba') or v.__name__.startswith('drjit.')):
+                continue
+
             w(f'')
-            w(f'import .{k} as {k}')
+            w(f'from .stubs import {k} as {k}')
             w('')
             submodules.append((k, v))
         else:
-            # print(k, v, type(v))
             pass
 
     # Adjust DrJIT type hints manually here
@@ -258,20 +271,42 @@ def process_module(m):
 
 # ------------------------------------------------------------------------------
 
-stub_folder = '../build/python/stub/'
+if __name__ == '__main__':
+    logging.info('Generating stub files for the mitsuba package.')
 
-if not os.path.exists(stub_folder):
-    os.makedirs(stub_folder)
+    if len(sys.argv) < 2:
+        raise RuntimeError("At least one argument is expected: the output "
+                           "directory of the generated stubs")
+    stub_folder = sys.argv[1]
 
-print(f'Process mitsuba root module')
-buffer, submodules = process_module(mi)
-with open(f'{stub_folder}mitsuba.pyi', 'w') as f:
-    f.write(buffer)
+    if len(sys.argv) > 2:
+        mitsuba_folder = sys.argv[2]
+        sys.path.append(mitsuba_folder)
 
-for k, v in submodules:
-    print(f'Process submodule: {k}')
-    buffer, _ = process_module(v)
-    with open(f'{stub_folder}{k}.pyi', 'w') as f:
+    import mitsuba as mi
+    mi.set_variant('scalar_rgb')
+
+    os.makedirs(f'{stub_folder}/stubs', exist_ok=True)
+
+    logging.debug(f'Processing mitsuba root module')
+    buffer, submodules = process_module(mi)
+    with open(f'{stub_folder}__init__.pyi', 'w') as f:
         f.write(buffer)
 
-print(f'Done -> stub files written to {os.path.abspath(stub_folder)}')
+    processed_submodules = set()
+    while len(submodules) != 0:
+        k, v = submodules[0]
+        if k in processed_submodules:
+            submodules = submodules[1:]
+            continue
+
+        logging.debug(f'Processing submodule: {k}')
+        buffer, new_submodules = process_module(v)
+
+        with open(f'{stub_folder}stubs/{k}.pyi', 'w') as f:
+            f.write(buffer)
+
+        submodules = submodules[1:] + new_submodules
+        processed_submodules.add(k)
+
+    logging.info(f'Done -> stub files written to {os.path.abspath(stub_folder)}')
