@@ -51,7 +51,7 @@ public:
 
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             FloatStorage temp = dr::migrate(m_pmf, AllocType::Host);
             dr::sync_thread();
             compute_cdf(temp.data(), temp.size());
@@ -299,7 +299,7 @@ public:
 
     /// Update the internal state. Must be invoked when changing the pdf.
     void update() {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             FloatStorage temp = dr::migrate(m_pdf, AllocType::Host);
             dr::sync_thread();
             compute_cdf(temp.data(), temp.size());
@@ -493,7 +493,7 @@ private:
 
             double value = 0.5 * interval_size * (y0 + y1);
 
-            m_max = dr::max(m_max, y1);
+            m_max = dr::maximum(m_max, y1);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;
@@ -587,7 +587,7 @@ public:
         if (m_pdf.size() != m_nodes.size())
             Throw("IrregularContinuousDistribution: 'pdf' and 'nodes' size mismatch!");
 
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             FloatStorage temp_nodes = dr::migrate(m_nodes, AllocType::Host);
             FloatStorage temp_pdf = dr::migrate(m_pdf, AllocType::Host);
             dr::sync_thread();
@@ -646,7 +646,7 @@ public:
             }
         );
 
-        index = dr::max(dr::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = dr::maximum(dr::minimum(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
         Value x0 = dr::gather<Value>(m_nodes, index,      active),
               x1 = dr::gather<Value>(m_nodes, index + 1u, active),
@@ -676,7 +676,7 @@ public:
             }
         );
 
-        index = dr::max(dr::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = dr::maximum(dr::minimum(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
         Value x0 = dr::gather<Value>(m_nodes, index,      active),
               x1 = dr::gather<Value>(m_nodes, index + 1u, active),
@@ -813,12 +813,12 @@ private:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_max = dr::max(m_max, y1);
+            m_max = dr::maximum(m_max, y1);
 
-            m_range.x() = dr::min(m_range.x(), (ScalarFloat) x0);
-            m_range.y() = dr::max(m_range.y(), (ScalarFloat) x1);
+            m_range.x() = dr::minimum(m_range.x(), (ScalarFloat) x0);
+            m_range.y() = dr::maximum(m_range.y(), (ScalarFloat) x1);
 
-            m_interval_size = dr::min(m_interval_size, (ScalarFloat) x1 - (ScalarFloat) x0);
+            m_interval_size = dr::minimum(m_interval_size, (ScalarFloat) x1 - (ScalarFloat) x0);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;

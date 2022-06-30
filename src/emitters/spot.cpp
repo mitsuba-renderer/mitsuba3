@@ -164,7 +164,7 @@ public:
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float) m_cos_cutoff_angle);
 
         // 2. Sample spectrum
-        auto si = dr::zero<SurfaceInteraction3f>();
+        auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
         si.p    = m_to_world.value().translation();
         si.uv   = direction_to_uv(local_dir);
@@ -200,7 +200,7 @@ public:
         Float falloff = falloff_curve(local_d, active);
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
-        SurfaceInteraction3f si      = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si      = dr::zeros<SurfaceInteraction3f>();
         si.t                         = 0.f;
         si.time                      = it.time;
         si.wavelengths               = it.wavelengths;

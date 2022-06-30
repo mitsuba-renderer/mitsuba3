@@ -87,7 +87,7 @@ template <typename T> unpolarized_spectrum_t<T> unpolarized_spectrum(const T& sp
  */
 template <typename T> auto depolarizer(const T &spectrum = T(1)) {
     if constexpr (is_polarized_v<T>) {
-        T result = dr::zero<T>();
+        T result = dr::zeros<T>();
         result(0, 0) = spectrum(0, 0);
         return result;
     } else {
@@ -181,12 +181,12 @@ extern MI_EXPORT_LIB CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda
 
 template <typename Float> auto get_color_space_tables() {
 #if defined(MI_ENABLE_LLVM)
-    if constexpr (dr::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>)
         return color_space_tables_llvm;
     else
 #endif
 #if defined(MI_ENABLE_CUDA)
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         return color_space_tables_cuda;
     else
 #endif
@@ -215,7 +215,7 @@ Result cie1931_xyz(Float wavelength, dr::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
               wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zeros<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -251,7 +251,7 @@ Float cie1931_y(Float wavelength, dr::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
               wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zeros<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -281,7 +281,7 @@ Result linear_rgb_rec(Float wavelength, dr::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
               wavelength <= (ScalarFloat) MI_CIE_MAX;
 
-    UInt32 i0 = dr::clamp(UInt32(t), dr::zero<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zeros<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
     auto tables = detail::get_color_space_tables<Float32>();
@@ -306,9 +306,9 @@ Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
                                 const Spectrum<Float, Size> &wavelengths,
                                 dr::mask_t<Float> active = true) {
     dr::Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
-    return { dr::hmean(XYZ.x() * value),
-             dr::hmean(XYZ.y() * value),
-             dr::hmean(XYZ.z() * value) };
+    return { dr::mean(XYZ.x() * value),
+             dr::mean(XYZ.y() * value),
+             dr::mean(XYZ.z() * value) };
 }
 
 /// Spectral responses to sRGB.
@@ -317,9 +317,9 @@ Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
                                  const Spectrum<Float, Size> &wavelengths,
                                  dr::mask_t<Float> active = true) {
     dr::Array<Spectrum<Float, Size>, 3> rgb = linear_rgb_rec(wavelengths, active);
-    return { dr::hmean(rgb.x() * value),
-             dr::hmean(rgb.y() * value),
-             dr::hmean(rgb.z() * value) };
+    return { dr::mean(rgb.x() * value),
+             dr::mean(rgb.y() * value),
+             dr::mean(rgb.z() * value) };
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
@@ -350,7 +350,7 @@ dr::value_t<Spectrum> luminance(const Spectrum &value,
         DRJIT_MARK_USED(active);
         return luminance(value);
     } else {
-        return dr::hmean(cie1931_y(wavelengths, active) * value);
+        return dr::mean(cie1931_y(wavelengths, active) * value);
     }
 }
 
@@ -389,7 +389,7 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     Value tmp = dr::sech(0.0072f * (wavelengths - 538.f));
     return dr::select(wavelengths >= MI_CIE_MIN && wavelengths <= MI_CIE_MAX,
-                      0.003939804229326285f * tmp * tmp, dr::zero<Value>());
+                      0.003939804229326285f * tmp * tmp, dr::zeros<Value>());
 }
 
 /// Helper function to sample a wavelength (and a weight) given a random number

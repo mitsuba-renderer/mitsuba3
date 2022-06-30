@@ -22,7 +22,7 @@ VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
       m_bbox(ScalarBoundingBox3f(ScalarPoint3f(0.f), ScalarPoint3f(1.f))),
       m_max_per_channel(channel_count, 0.f) {
     m_data = std::unique_ptr<ScalarFloat[]>(
-        new ScalarFloat[dr::hprod(m_size) * m_channel_count]);
+        new ScalarFloat[dr::prod(m_size) * m_channel_count]);
 }
 
 MI_VARIANT
@@ -52,7 +52,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     m_size.y() = uint32_t(size_y);
     m_size.z() = uint32_t(size_z);
 
-    size_t size = dr::hprod(m_size);
+    size_t size = dr::prod(m_size);
     int32_t channel_count;
     stream->read(channel_count);
     m_channel_count = channel_count;
@@ -73,8 +73,8 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
             float val;
             stream->read(val);
             m_data[k] = val;
-            m_max     = dr::max(m_max, val);
-            m_max_per_channel[j] = dr::max(m_max_per_channel[j], val);
+            m_max     = dr::maximum(m_max, val);
+            m_max_per_channel[j] = dr::maximum(m_max_per_channel[j], val);
             ++k;
         }
     }
@@ -112,13 +112,13 @@ void VolumeGrid<Float, Spectrum>::write(Stream *stream) const {
     stream->write(float(m_bbox.max.z()));
 
     if constexpr (std::is_same<ScalarFloat, float>::value)
-        stream->write_array(m_data.get(), dr::hprod(m_size) * m_channel_count);
+        stream->write_array(m_data.get(), dr::prod(m_size) * m_channel_count);
     else {
         // Need to convert data to single precision before writing to disk
-        std::vector<float> output(dr::hprod(m_size) * m_channel_count);
-        for (size_t i = 0; i < dr::hprod(m_size) * m_channel_count; ++i)
+        std::vector<float> output(dr::prod(m_size) * m_channel_count);
+        for (size_t i = 0; i < dr::prod(m_size) * m_channel_count; ++i)
             output[i] = m_data[i];
-        stream->write_array(output.data(), dr::hprod(m_size) * m_channel_count);
+        stream->write_array(output.data(), dr::prod(m_size) * m_channel_count);
     }
 }
 

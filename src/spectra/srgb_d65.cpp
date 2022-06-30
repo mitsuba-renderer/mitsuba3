@@ -57,7 +57,7 @@ public:
                reflectance value (colors in [0, 1]) which is accomplished here by
                scaling. We use a color where the highest component is 50%,
                which generally yields a fairly smooth spectrum. */
-            ScalarFloat scale = dr::hmax(color) * 2.f;
+            ScalarFloat scale = dr::max(color) * 2.f;
             if (scale != 0.f)
                 color /= scale;
 

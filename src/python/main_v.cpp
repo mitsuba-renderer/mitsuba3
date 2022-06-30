@@ -143,8 +143,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    color_management_static_initialization(dr::is_cuda_array_v<Float>,
-                                           dr::is_llvm_array_v<Float>);
+    color_management_static_initialization(dr::is_cuda_v<Float>,
+                                           dr::is_llvm_v<Float>);
     Scene::static_accel_initialization();
 
     MI_PY_IMPORT(Object);

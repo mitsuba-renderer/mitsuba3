@@ -203,7 +203,7 @@ public:
     DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
                                        Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        DirectionSample3f result = dr::zero<DirectionSample3f>();
+        DirectionSample3f result = dr::zeros<DirectionSample3f>();
 
         Vector3f dc_v = m_center.value() - it.p;
         Float dc_2 = dr::squared_norm(dc_v);
@@ -238,7 +238,7 @@ public:
                 sin_phi * sin_alpha,
                 cos_alpha));
 
-            DirectionSample3f ds = dr::zero<DirectionSample3f>();
+            DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
             ds.d        = ds.p - it.p;
@@ -246,7 +246,7 @@ public:
             Float dist2 = dr::squared_norm(ds.d);
             ds.dist     = dr::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
-            ds.pdf      = warp::square_to_uniform_cone_pdf(dr::zero<Vector3f>(), cos_theta_max);
+            ds.pdf      = warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_theta_max);
             dr::masked(ds.pdf, dr::eq(ds.dist, 0.f)) = 0.f;
 
             dr::masked(result, outside_mask) = ds;
@@ -255,7 +255,7 @@ public:
         Mask inside_mask = dr::andnot(active, outside_mask);
         if (unlikely(dr::any_or<true>(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
-            DirectionSample3f ds = dr::zero<DirectionSample3f>();
+            DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
             ds.d        = ds.p - it.p;
@@ -287,7 +287,7 @@ public:
 
         return dr::select(sin_alpha < dr::OneMinusEpsilon<Float>,
             // Reference point lies outside the sphere
-            warp::square_to_uniform_cone_pdf(dr::zero<Vector3f>(), cos_alpha),
+            warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_alpha),
             m_inv_surface_area * dr::sqr(ds.dist) / dr::abs_dot(ds.d, ds.n)
         );
     }
@@ -306,8 +306,8 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
-                                              dr::is_diff_array_v<Float>,
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
+                                              dr::is_diff_v<Float>,
                                           dr::float32_array_t<FloatP>,
                                           dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
@@ -316,7 +316,7 @@ public:
 
         Value radius;
         Value3 center;
-        if constexpr (!dr::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_v<Value>) {
             radius = (ScalarValue)  m_radius.scalar();
             center = (ScalarValue3) m_center.scalar();
         } else {
@@ -347,7 +347,7 @@ public:
             active, dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t)),
             dr::Infinity<FloatP>);
 
-        return { t, dr::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -355,8 +355,8 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_array_v<FloatP> ||
-                                              dr::is_diff_array_v<Float>,
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
+                                              dr::is_diff_v<Float>,
                                           dr::float32_array_t<FloatP>,
                                           dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
@@ -365,7 +365,7 @@ public:
 
         Value radius;
         Value3 center;
-        if constexpr (!dr::is_jit_array_v<Value>) {
+        if constexpr (!dr::is_jit_v<Value>) {
             radius = (ScalarValue)  m_radius.scalar();
             center = (ScalarValue3) m_center.scalar();
         } else {
@@ -404,11 +404,11 @@ public:
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
-            return dr::zero<SurfaceInteraction3f>();
+            return dr::zeros<SurfaceInteraction3f>();
 
         // Recompute ray intersection to get differentiable t
         Float t = pi.t;
-        if constexpr (dr::is_diff_array_v<Float>)
+        if constexpr (dr::is_diff_v<Float>)
             t = dr::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
         // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
@@ -419,7 +419,7 @@ public:
         bool need_dp_duv = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
         bool need_uv     = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t = dr::select(active, t, dr::Infinity<Float>);
 
         si.sh_frame.n = dr::normalize(ray(t) - m_center.value());
@@ -500,7 +500,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_array_v<Float>) {
+        if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
 

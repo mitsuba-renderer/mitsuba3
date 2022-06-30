@@ -84,7 +84,7 @@ public:
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
 
     /// Return the volume grid size in bytes (excluding metadata)
-    size_t buffer_size() const { return dr::hprod(m_size) * bytes_per_voxel(); }
+    size_t buffer_size() const { return dr::prod(m_size) * bytes_per_voxel(); }
 
     /**
      * Write an encoded form of the bitmap to a binary volume file

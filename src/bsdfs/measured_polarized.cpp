@@ -283,7 +283,7 @@ public:
             dr::masked(value, dr::any(dr::isnan(value(0,0)))) = 0.f;
 
             // Make sure intensity is non-negative
-            value(0, 0) = dr::max(0.f, value(0,0));
+            value(0, 0) = dr::maximum(0.f, value(0,0));
 
             // Reverse phi rotation from above on Stokes reference frames
             Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
@@ -313,7 +313,7 @@ public:
             }
 
             // Make sure BRDF is non-negative
-            value = dr::max(0.f, value);
+            value = dr::maximum(0.f, value);
         }
 
         return (value * cos_theta_o) & active;

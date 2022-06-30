@@ -37,10 +37,10 @@ bool AnimatedTransform::has_scale() const {
     if (m_keyframes.empty())
         return false;
 
-    Matrix3f delta = dr::zero<Matrix3f>();
+    Matrix3f delta = dr::zeros<Matrix3f>();
     for (auto const &k: m_keyframes)
         delta += dr::abs(k.scale - dr::identity<Matrix3f>());
-    return dr::hsum_nested(delta) / m_keyframes.size() > 1e-3f;
+    return dr::sum_nested(delta) / m_keyframes.size() > 1e-3f;
 }
 
 typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds() const {

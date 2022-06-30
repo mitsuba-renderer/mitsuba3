@@ -108,7 +108,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     m_render_timer.reset();
 
     TensorXf result;
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         // Render on the CPU using a spiral pattern
         uint32_t n_threads = (uint32_t) Thread::thread_count();
 
@@ -126,7 +126,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             block_size = MI_BLOCK_SIZE; // 32x32
             while (true) {
                 // Ensure that there is a block for every thread
-                if (block_size == 1 || dr::hprod((film_size + block_size - 1) /
+                if (block_size == 1 || dr::prod((film_size + block_size - 1) /
                                                  block_size) >= n_threads)
                     break;
                 block_size /= 2;
@@ -146,7 +146,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         uint32_t grain_size = std::max(total_blocks / (4 * n_threads), 1u);
 
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
-        seed *= dr::hprod(film_size);
+        seed *= dr::prod(film_size);
 
         ThreadEnvironment env;
         dr::parallel_for(
@@ -167,7 +167,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 for (uint32_t i = range.begin();
                      i != range.end() && !should_stop(); ++i) {
                     auto [offset, size, block_id] = spiral.next_block();
-                    Assert(dr::hprod(size) != 0);
+                    Assert(dr::prod(size) != 0);
 
                     if (film->sample_border())
                         offset -= film->rfilter()->border_size();
@@ -207,14 +207,14 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
                wavefront_size_limit =
-                   dr::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+                   dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (wavefront_size > wavefront_size_limit)
             Throw("Tried to perform a %s-based rendering with a total sample "
                   "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
                   "for this backend). Please use fewer samples per pixel or "
                   "render using multiple passes.",
-                  dr::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  dr::is_llvm_v<Float> ? "LLVM JIT" : "OptiX",
                   wavefront_size, dr::log2i(wavefront_size_limit + 1),
                   wavefront_size_limit);
 
@@ -304,7 +304,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         }
     }
 
-    if (!m_stop && (evaluate || !dr::is_jit_array_v<Float>))
+    if (!m_stop && (evaluate || !dr::is_jit_v<Float>))
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 
@@ -515,7 +515,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     uint32_t n_passes = spp / spp_per_pass;
 
-    size_t samples_per_pass = spp_per_pass * (size_t) dr::hprod(film_size);
+    size_t samples_per_pass = spp_per_pass * (size_t) dr::prod(film_size);
 
     std::vector<std::string> aovs = aov_names();
     if (!aovs.empty())
@@ -536,10 +536,10 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     }
 
     ScalarFloat sample_scale =
-        dr::hprod(crop_size) / ScalarFloat(spp * dr::hprod(film_size));
+        dr::prod(crop_size) / ScalarFloat(spp * dr::prod(film_size));
 
     TensorXf result;
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         size_t n_threads = Thread::thread_count();
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
@@ -623,14 +623,14 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
                wavefront_size_limit =
-                   dr::is_llvm_array_v<Float> ? 0xffffffffu : 0x40000000u;
+                   dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (wavefront_size > wavefront_size_limit)
             Throw("Tried to perform a %s-based rendering with a total sample "
                   "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
                   "for this backend). Please use fewer samples per pixel or "
                   "render using multiple passes.",
-                  dr::is_llvm_array_v<Float> ? "LLVM JIT" : "OptiX",
+                  dr::is_llvm_v<Float> ? "LLVM JIT" : "OptiX",
                   wavefront_size, dr::log2i(wavefront_size_limit + 1),
                   wavefront_size_limit);
 
@@ -692,7 +692,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         }
     }
 
-    if (!m_stop && (evaluate || !dr::is_jit_array_v<Float>))
+    if (!m_stop && (evaluate || !dr::is_jit_v<Float>))
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 

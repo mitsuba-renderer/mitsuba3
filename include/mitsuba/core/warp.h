@@ -556,7 +556,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
 #else
         /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
            distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
-        Value sy = dr::max(1.f - sample.y(), 1e-6f);
+        Value sy = dr::maximum(1.f - sample.y(), 1e-6f);
         Value cos_theta = 1.f +
             dr::log(dr::fmadd(1.f - sy, dr::exp(-2.f * kappa), sy)) / kappa;
 #endif
@@ -569,7 +569,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
 
     Value r2 = dr::squared_norm(p),
-          sy = dr::max(1.f - r2, 1e-6f),
+          sy = dr::maximum(1.f - r2, 1e-6f),
           cos_theta = 1.f + dr::log(sy + (1.f - sy) * dr::exp(-2.f * kappa)) / kappa;
 
     p *= dr::safe_sqrt((1.f - dr::sqr(cos_theta)) / r2);

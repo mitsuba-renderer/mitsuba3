@@ -177,7 +177,7 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
 
@@ -227,7 +227,7 @@ public:
             cos_theta_m
         );
 
-        Float jacobian = dr::max(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() *
+        Float jacobian = dr::maximum(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() *
                                     sin_theta_m, 1e-6f) * 4.f * dr::dot(wi, m);
 
         bs.wo = dr::fmsub(m, 2.f * dr::dot(m, wi), wi);
@@ -374,7 +374,7 @@ public:
         #endif
 
         Float jacobian =
-            dr::max(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            dr::maximum(2.f * dr::sqr(dr::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
             dr::dot(wi, m);
 
         pdf = vndf_pdf * pdf / jacobian;

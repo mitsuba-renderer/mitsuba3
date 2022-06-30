@@ -29,14 +29,14 @@ template <typename T> std::string type_suffix() {
             id += 'u';
     }
 
-    if constexpr (dr::is_diff_array_v<V>)
+    if constexpr (dr::is_diff_v<V>)
         id += 'D';
 
     if constexpr (dr::is_packed_array_v<V>)
         id += 'P';
-    else if constexpr (dr::is_llvm_array_v<V>)
+    else if constexpr (dr::is_llvm_v<V>)
         id += 'L';
-    else if constexpr (dr::is_cuda_array_v<V>)
+    else if constexpr (dr::is_cuda_v<V>)
         id += 'C';
     else if constexpr (dr::is_dynamic_array_v<V>)
         id += 'X';

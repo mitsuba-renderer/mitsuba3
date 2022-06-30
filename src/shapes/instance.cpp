@@ -150,7 +150,7 @@ public:
 
         // Nested instancing is not supported
         if (recursion_depth > 0)
-            return dr::zero<SurfaceInteraction3f>();
+            return dr::zeros<SurfaceInteraction3f>();
 
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
             m_to_object.value().transform_affine(ray), pi, ray_flags, recursion_depth, active);
@@ -205,7 +205,7 @@ public:
 #if defined(MI_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
         DRJIT_MARK_USED(device);
-        if constexpr (!dr::is_cuda_array_v<Float>) {
+        if constexpr (!dr::is_cuda_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
             dr::Matrix<ScalarFloat32, 4> matrix(m_to_world.scalar().matrix);

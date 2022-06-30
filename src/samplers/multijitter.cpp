@@ -90,10 +90,10 @@ public:
         m_resolution[1] = uint32_t(dr::sqrt(ScalarFloat(spp)));
         m_resolution[0] = (spp + m_resolution[1] - 1) / m_resolution[1];
 
-        if (spp != dr::hprod(m_resolution))
-            Log(Warn, "Sample count rounded up to %i", dr::hprod(m_resolution));
+        if (spp != dr::prod(m_resolution))
+            Log(Warn, "Sample count rounded up to %i", dr::prod(m_resolution));
 
-        m_sample_count = dr::hprod(m_resolution);
+        m_sample_count = dr::prod(m_resolution);
         m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
         m_inv_resolution   = dr::rcp(ScalarPoint2f(m_resolution));
         m_resolution_x_div = m_resolution[0];

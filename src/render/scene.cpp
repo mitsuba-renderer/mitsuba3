@@ -69,9 +69,9 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarVector3f extents = m_bbox.extents();
 
             ScalarFloat distance =
-                dr::hmax(extents) / (2.f * dr::tan(45.f * .5f * dr::Pi<ScalarFloat> / 180.f));
+                dr::max(extents) / (2.f * dr::tan(45.f * .5f * dr::Pi<ScalarFloat> / 180.f));
 
-            sensor_props.set_float("far_clip", (Properties::Float) (dr::hmax(extents) * 5 + distance));
+            sensor_props.set_float("far_clip", (Properties::Float) (dr::max(extents) * 5 + distance));
             sensor_props.set_float("near_clip", (Properties::Float) distance / 100);
 
             sensor_props.set_float("focus_distance", (Properties::Float) (distance + extents.z() / 2));
@@ -94,7 +94,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             create_object<Integrator>(Properties("path"));
     }
 
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         accel_init_gpu(props);
     else
         accel_init_cpu(props);
@@ -118,7 +118,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         accel_release_gpu();
     else
         accel_release_cpu();
@@ -132,7 +132,7 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     m_integrator = nullptr;
     m_environment = nullptr;
 
-    if constexpr (dr::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_v<Float>) {
         // Clean up JIT pointer registry now that the above has happened
         jit_registry_trim();
     }
@@ -145,7 +145,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
 
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_gpu(ray, ray_flags, active);
     else
         return ray_intersect_cpu(ray, ray_flags, coherent, active);
@@ -154,7 +154,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coherent, Mask active) const {
     DRJIT_MARK_USED(coherent);
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_preliminary_gpu(ray, active);
     else
         return ray_intersect_preliminary_cpu(ray, coherent, active);
@@ -165,7 +165,7 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) c
     MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
 
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         return ray_test_gpu(ray, active);
     else
         return ray_test_cpu(ray, coherent, active);
@@ -176,7 +176,7 @@ Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
 #if !defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_array_v<Float>)
+    if constexpr (!dr::is_cuda_v<Float>)
         return ray_intersect_naive_cpu(ray, active);
 #endif
     DRJIT_MARK_USED(ray);
@@ -201,7 +201,7 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
     Float index_sample_scaled = index_sample * emitter_count_f;
 
-    UInt32 index = dr::min(UInt32(index_sample_scaled), emitter_count - 1u);
+    UInt32 index = dr::minimum(UInt32(index_sample_scaled), emitter_count - 1u);
 
     return { index, emitter_count_f, index_sample_scaled - Float(index) };
 }
@@ -226,7 +226,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
          vcall_inline = jit_flag(JitFlag::VCallInline);
 
     size_t emitter_count = m_emitters.size();
@@ -242,8 +242,8 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
         std::tie(ray, weight) =
             m_emitters[0]->sample_ray(time, sample1, sample2, sample3, active);
     } else {
-        ray = dr::zero<Ray3f>();
-        weight = dr::zero<Spectrum>();
+        ray = dr::zeros<Ray3f>();
+        weight = dr::zeros<Spectrum>();
         emitter = EmitterPtr(nullptr);
     }
 
@@ -261,7 +261,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
          vcall_inline = jit_flag(JitFlag::VCallInline);
 
     size_t emitter_count = m_emitters.size();
@@ -299,7 +299,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             dr::masked(ds.pdf, occluded) = 0.f;
         }
     } else {
-        ds = dr::zero<DirectionSample3f>();
+        ds = dr::zeros<DirectionSample3f>();
         spec = 0.f;
     }
 
@@ -341,7 +341,7 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     }
 
     if (accel_is_dirty) {
-        if constexpr (dr::is_cuda_array_v<Float>)
+        if constexpr (dr::is_cuda_v<Float>)
             accel_parameters_changed_gpu();
         else
             accel_parameters_changed_cpu();
@@ -372,14 +372,14 @@ MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         Scene::static_accel_initialization_gpu();
     else
         Scene::static_accel_initialization_cpu();
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         Scene::static_accel_shutdown_gpu();
     else
         Scene::static_accel_shutdown_cpu();

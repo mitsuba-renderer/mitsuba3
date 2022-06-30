@@ -204,7 +204,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         Ray3f ray;
@@ -238,7 +238,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         RayDifferential3f ray;
@@ -280,11 +280,11 @@ public:
         Point3f ref_p     = trafo.inverse().transform_affine(it.p);
 
         // Check if it is outside of the clip range
-        DirectionSample3f ds = dr::zero<DirectionSample3f>();
+        DirectionSample3f ds = dr::zeros<DirectionSample3f>();
         ds.pdf = 0.f;
         active &= (ref_p.z() >= m_near_clip) && (ref_p.z() <= m_far_clip);
         if (dr::none_or<false>(active))
-            return { ds, dr::zero<Spectrum>() };
+            return { ds, dr::zeros<Spectrum>() };
 
         Point3f screen_sample = m_camera_to_sample * ref_p;
         ds.uv = Point2f(screen_sample.x() - m_principal_point_offset.x(),
@@ -292,7 +292,7 @@ public:
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
                   (ds.uv.y() <= 1);
         if (dr::none_or<false>(active))
-            return { ds, dr::zero<Spectrum>() };
+            return { ds, dr::zeros<Spectrum>() };
 
         ds.uv *= m_resolution;
 

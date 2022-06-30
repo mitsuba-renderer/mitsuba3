@@ -121,7 +121,7 @@ public:
                                           bitmap->component_format(), res);
 
         // Luminance image used for importance sampling
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[dr::hprod(res)]);
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[dr::prod(res)]);
 
         ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
                     *out_ptr = (ScalarFloat *) bitmap_2->data(),
@@ -141,14 +141,14 @@ public:
                 for (size_t x = 0; x < bitmap->size().x(); ++x) {
                     ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
                     ScalarFloat lum = mitsuba::luminance(rgb);
-                    min_lum = dr::min(min_lum, lum);
+                    min_lum = dr::minimum(min_lum, lum);
                     lum_accum_d += (double) lum;
                     in_ptr += 4;
                 }
             }
             in_ptr = (ScalarFloat *) bitmap->data();
 
-            luminance_offset = ScalarFloat(lum_accum_d / dr::hprod(bitmap->size()));
+            luminance_offset = ScalarFloat(lum_accum_d / dr::prod(bitmap->size()));
 
             /* Be wary of constant environment maps: average and minimum
                should be sufficiently different */
@@ -175,13 +175,13 @@ public:
                        reflectance value (colors in [0, 1]) which is accomplished here by
                        scaling. We use a color where the highest component is 50%,
                        which generally yields a fairly smooth spectrum. */
-                    ScalarFloat scale = dr::hmax(rgb) * 2.f;
-                    ScalarColor3f rgb_norm = rgb / dr::max(1e-8f, scale);
+                    ScalarFloat scale = dr::max(rgb) * 2.f;
+                    ScalarColor3f rgb_norm = rgb / dr::maximum(1e-8f, scale);
                     coeff = dr::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
                                        dr::Array<ScalarFloat, 1>(scale));
                 }
 
-                lum = dr::max(lum - luminance_offset, 0.f);
+                lum = dr::maximum(lum - luminance_offset, 0.f);
 
                 *lum_ptr++ = lum * sin_theta;
                 dr::store(out_ptr, coeff);
@@ -218,11 +218,11 @@ public:
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
             auto&& data = dr::migrate(m_data.array(), AllocType::Host);
 
-            if constexpr (dr::is_jit_array_v<Float>)
+            if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
             std::unique_ptr<ScalarFloat[]> luminance(
-                new ScalarFloat[dr::hprod(res)]);
+                new ScalarFloat[dr::prod(res)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
@@ -259,8 +259,8 @@ public:
 
             m_warp = Warp(luminance.get(), res);
 
-            if constexpr (dr::is_jit_array_v<Float>)
-                m_data.array() = dr::migrate(data, dr::is_cuda_array_v<Float>
+            if constexpr (dr::is_jit_v<Float>)
+                m_data.array() = dr::migrate(data, dr::is_cuda_v<Float>
                                                        ? AllocType::Device
                                                        : AllocType::HostAsync);
         }
@@ -270,7 +270,7 @@ public:
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                dr::max(math::RayEpsilon<Float>,
+                dr::maximum(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
         } else {
             m_bsphere.center = 0.f;
@@ -324,7 +324,7 @@ public:
             m_bsphere.center + (perpendicular_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component (weight accounts for radiance)
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t    = 0.f;
         si.time = time;
         si.p    = origin;
@@ -355,10 +355,10 @@ public:
         d = Vector3f(d.y(), d.z(), -d.x());
 
         // Needed when the reference point is on the sensor, which is not part of the bbox
-        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
+        Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
 
-        Float inv_sin_theta = dr::safe_rsqrt(dr::max(
+        Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
 
         d = m_to_world.value().transform_affine(d);
@@ -397,7 +397,7 @@ public:
         uv.x() -= .5f / (m_data.shape(1) - 1u);
         uv -= dr::floor(uv);
 
-        Float inv_sin_theta = dr::safe_rsqrt(dr::max(
+        Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
 
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::sqr(dr::Pi<Float>)));
@@ -423,12 +423,12 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             /* Do not throw an exception in JIT-compiled variants. This
                function might be invoked by DrJit's virtual function call
                recording mechanism despite not influencing any actual
                calculation. */
-            return { dr::zero<PositionSample3f>(), dr::NaN<Float> };
+            return { dr::zeros<PositionSample3f>(), dr::NaN<Float> };
         } else {
             NotImplementedError("sample_position");
         }
@@ -460,7 +460,7 @@ protected:
         uv -= dr::floor(uv);
         uv *= Vector2f(res - 1u);
 
-        Point2u pos = dr::min(Point2u(uv), res - 2u);
+        Point2u pos = dr::minimum(Point2u(uv), res - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
@@ -493,7 +493,7 @@ protected:
             UnpolarizedSpectrum result = s * f * m_scale;
 
             if (include_whitepoint) {
-                SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+                SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
                 si.wavelengths = wavelengths;
                 result *= m_d65->eval(si, active);
             }

@@ -26,10 +26,10 @@ MI_PY_EXPORT(VolumeGrid) {
             std::vector<ScalarFloat> max_per_channel(channel_count, -dr::Infinity<ScalarFloat>);
             if (compute_max) {
                 size_t ch_index = 0;
-                for (size_t i = 0; i < dr::hprod(size) * channel_count; ++i) {
-                    max = dr::max(max, volumegrid->data()[i]);
+                for (size_t i = 0; i < dr::prod(size) * channel_count; ++i) {
+                    max = dr::maximum(max, volumegrid->data()[i]);
                     ch_index = i % channel_count;
-                    max_per_channel[ch_index] = dr::max(max_per_channel[ch_index], volumegrid->data()[i]);
+                    max_per_channel[ch_index] = dr::maximum(max_per_channel[ch_index], volumegrid->data()[i]);
                 }
             }
 

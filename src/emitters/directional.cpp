@@ -95,7 +95,7 @@ public:
         if (scene->bbox().valid()) {
             m_bsphere = scene->bbox().bounding_sphere();
             m_bsphere.radius =
-                dr::max(math::RayEpsilon<Float>,
+                dr::maximum(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
         } else {
             m_bsphere.center = 0.f;
@@ -126,7 +126,7 @@ public:
         Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t    = 0.f;
         si.time = time;
         si.p    = origin;
@@ -148,7 +148,7 @@ public:
 
         Vector3f d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
         // Needed when the reference point is on the sensor, which is not part of the bbox
-        Float radius = dr::max(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
+        Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
 
         DirectionSample3f ds;
@@ -162,7 +162,7 @@ public:
         ds.d      = -d;
         ds.dist   = dist;
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths          = it.wavelengths;
 
         // No need to divide by the PDF here (always equal to 1.f)
@@ -187,10 +187,10 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             // When vcalls are recorded in symbolic mode, we can't throw an exception,
             // even though this result will be unused.
-            return { dr::zero<PositionSample3f>(),
+            return { dr::zeros<PositionSample3f>(),
                      dr::full<Float>(dr::NaN<ScalarFloat>) };
         } else {
             NotImplementedError("sample_position");

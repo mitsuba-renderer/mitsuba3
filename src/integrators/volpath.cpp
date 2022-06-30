@@ -109,19 +109,19 @@ public:
 
         Spectrum throughput(1.f), result(0.f);
         MediumPtr medium = initial_medium;
-        MediumInteraction3f mei = dr::zero<MediumInteraction3f>();
+        MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
 
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
             uint32_t n_channels = (uint32_t) dr::array_size_v<Spectrum>;
-            channel = (UInt32) dr::min(sampler->next_1d(active) * n_channels, n_channels - 1);
+            channel = (UInt32) dr::minimum(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Mask needs_intersection = true;
-        Interaction3f last_scatter_event = dr::zero<Interaction3f>();
+        Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
@@ -139,7 +139,7 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
             active &= dr::any(dr::neq(unpolarized_spectrum(throughput), 0.f));
-            Float q = dr::min(dr::hmax(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
+            Float q = dr::minimum(dr::max(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
             dr::masked(throughput, perform_rr) *= dr::rcp(dr::detach(q));
@@ -338,7 +338,7 @@ public:
         Ray3f ray = ref_interaction.spawn_ray(ds.d);
 
         Float total_dist = 0.f;
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Mask needs_intersection = true;
 
         dr::Loop<Mask> loop("Volpath integrator emitter sampling");
@@ -359,7 +359,7 @@ public:
 
             if (dr::any_or<true>(active_medium)) {
                 auto mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = dr::min(mei.t, remaining_dist);
+                dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = dr::minimum(mei.t, remaining_dist);
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
@@ -370,7 +370,7 @@ public:
                 Mask is_spectral = medium->has_spectral_extinction() && active_medium;
                 Mask not_spectral = !is_spectral && active_medium;
                 if (dr::any_or<true>(is_spectral)) {
-                    Float t      = dr::min(remaining_dist, dr::min(mei.t, si.t)) - mei.mint;
+                    Float t      = dr::minimum(remaining_dist, dr::minimum(mei.t, si.t)) - mei.mint;
                     UnpolarizedSpectrum tr  = dr::exp(-t * mei.combined_extinction);
                     UnpolarizedSpectrum free_flight_pdf = dr::select(si.t < mei.t || mei.t > remaining_dist, tr, tr * mei.combined_extinction);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);

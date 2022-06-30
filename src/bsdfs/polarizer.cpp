@@ -101,7 +101,7 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         bs.wo = -si.wi;
         bs.pdf = 1.f;
         bs.eta = 1.f;

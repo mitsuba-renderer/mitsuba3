@@ -849,8 +849,8 @@ protected:
             Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
             Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            rel_min = dr::min(dr::max(rel_min, dr::zero<Vector>()), m_max_bin);
-            rel_max = dr::min(dr::max(rel_max, dr::zero<Vector>()), m_max_bin);
+            rel_min = dr::minimum(dr::maximum(rel_min, dr::zeros<Vector>()), m_max_bin);
+            rel_max = dr::minimum(dr::maximum(rel_max, dr::zeros<Vector>()), m_max_bin);
 
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
@@ -2311,14 +2311,14 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
 
         const KDNode *node = m_nodes.get();
 
         /* Intersect against the scene bounding box */
         auto bbox_result = m_bbox.ray_intersect(ray);
-        Float mint = dr::max(ray.mint, std::get<1>(bbox_result));
-        Float maxt = dr::min(ray.maxt, std::get<2>(bbox_result));
+        Float mint = dr::maximum(ray.mint, std::get<1>(bbox_result));
+        Float maxt = dr::minimum(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
             active = active && (maxt >= mint);
@@ -2408,7 +2408,7 @@ public:
                 --stack_index;
                 KDStackEntry& entry = stack[stack_index];
                 mint = entry.mint;
-                maxt = dr::min(entry.maxt, ray.maxt);
+                maxt = dr::minimum(entry.maxt, ray.maxt);
                 active = entry.active;
                 node = entry.node;
             } else {
@@ -2425,7 +2425,7 @@ public:
     MI_INLINE PreliminaryIntersection3f
     ray_intersect_naive(Ray3f ray, Mask active) const {
         if constexpr (!dr::is_array_v<Float>) {
-            PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
+            PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
 
             for (Size i = 0; i < primitive_count(); ++i) {
                 PreliminaryIntersection3f prim_pi = intersect_prim<ShadowRay>(i, ray);

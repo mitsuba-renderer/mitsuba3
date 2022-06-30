@@ -471,7 +471,7 @@ public:
         // // Compute the relative time value in [0, 1]
         // Value t0 = dr::gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
         //       t1 = dr::gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
-        //       t  = dr::min(dr::max((time - t0) / (t1 - t0), 0.f), 1.f);
+        //       t  = dr::minimum(dr::maximum((time - t0) / (t1 - t0), 0.f), 1.f);
 
         // // Interpolate the scale matrix
         // Matrix3f scale0 = dr::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),

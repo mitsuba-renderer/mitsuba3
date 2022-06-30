@@ -104,7 +104,7 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     Log(Info, "Embree ready. (took %s)",
         util::time_string((float) timer.value()));
 
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         // Get shapes registry ids
         if (!m_shapes.empty()) {
             std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
@@ -113,13 +113,13 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
             s.shapes_registry_ids
                 = dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
         } else {
-            s.shapes_registry_ids = dr::zero<DynamicBuffer<UInt32>>();
+            s.shapes_registry_ids = dr::zeros<DynamicBuffer<UInt32>>();
         }
     }
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
-    if constexpr (dr::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
@@ -134,7 +134,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     }
 
     // Ensure shape data pointers are fully evaluated before building the BVH
-    if constexpr (dr::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
     dr::parallel_for(
@@ -149,7 +149,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
        ensures that the lifetime of the IAS goes beyond the one of the Scene
        instance if there are still some pending ray tracing calls (e.g. non
        evaluated variables depending on a ray tracing call). */
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         // Prevents the IAS to be released when updating the scene parameters
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
@@ -171,7 +171,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
@@ -205,16 +205,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
     if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
+        ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
         DRJIT_MARK_USED(coherent);
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
-        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
 
         using Vector3s = Vector<Single, 3>;
 
@@ -254,7 +254,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         }
 
         return pi;
-    } else if constexpr (dr::is_llvm_array_v<Float>) {
+    } else if constexpr (dr::is_llvm_v<Float>) {
         uint32_t jit_width = jit_llvm_vector_width();
 
         void *scene_ptr = (void *) s.accel,
@@ -277,7 +277,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = dr::zero<UInt32>();
+        UInt32 zero = dr::zeros<UInt32>();
 
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_time(ray.time);
@@ -330,7 +330,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_cpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
@@ -350,9 +350,9 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
     if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
+        ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
         DRJIT_MARK_USED(coherent);
 
@@ -372,7 +372,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         rtcOccluded1(s.accel, &context, &ray2);
 
         return ray2.tfar != ray_maxt;
-    } else if constexpr (dr::is_llvm_array_v<Float>) {
+    } else if constexpr (dr::is_llvm_v<Float>) {
         uint32_t jit_width = jit_llvm_vector_width();
 
         void *scene_ptr = (void *) s.accel,
@@ -394,7 +394,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        UInt32 zero = dr::zero<UInt32>();
+        UInt32 zero = dr::zeros<UInt32>();
 
         // Conversion, in case this is a double precision build
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);

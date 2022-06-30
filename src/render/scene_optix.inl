@@ -219,7 +219,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
         Timer timer;
@@ -293,7 +293,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         dr::sync_thread();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
@@ -396,7 +396,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         // Ensure all raytracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
@@ -427,7 +427,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
@@ -457,7 +457,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
         // Be careful with 'ray.maxt' in double precision variants
         if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
+            ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),
@@ -487,7 +487,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialize it for vcalls
-        pi.shape_index = dr::zero<UInt32>();
+        pi.shape_index = dr::zeros<UInt32>();
 
         // jit_optix_ray_trace leaves payload data uninitialized for inactive lanes
         pi.t[!active] = dr::Infinity<Float>;
@@ -508,7 +508,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
@@ -521,7 +521,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
-    if constexpr (dr::is_cuda_array_v<Float>) {
+    if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
@@ -546,7 +546,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
 
         // Be careful with 'ray.maxt' in double precision variants
         if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = dr::min(ray_maxt, dr::Largest<Single>);
+            ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
             m_accel_handle.index(),

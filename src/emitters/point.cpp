@@ -100,7 +100,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, weight] = sample_wavelengths(
-            dr::zero<SurfaceInteraction3f>(), wavelength_sample, active);
+            dr::zeros<SurfaceInteraction3f>(), wavelength_sample, active);
 
         weight *= 4.f * dr::Pi<Float>;
 
@@ -133,7 +133,7 @@ public:
         ds.dist = dr::sqrt(dist2);
         ds.d *= inv_dist;
 
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec =
@@ -150,7 +150,7 @@ public:
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec = m_intensity->eval(si, active) *
@@ -164,7 +164,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        PositionSample3f ps = dr::zero<PositionSample3f>();
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p = m_position.value();
         ps.time = time;
         ps.delta = true;

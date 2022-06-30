@@ -10,7 +10,7 @@ Spiral::Spiral(const Vector2u &size, const Vector2u &offset,
       m_block_size(block_size) {
 
     m_blocks = (size + (block_size - 1)) / block_size;
-    m_block_count = dr::hprod(m_blocks);
+    m_block_count = dr::prod(m_blocks);
 
     reset();
 }
@@ -41,7 +41,7 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2u, uint32_t> Spiral::next_block() {
         m_block_counter + (m_passes_left - 1) * m_block_count;
 
     Vector2u offset = m_position * m_block_size,
-             size   = dr::min(m_block_size, m_size - offset);
+             size   = dr::minimum(m_block_size, m_size - offset);
 
     Assert(dr::all(offset <= m_size));
 

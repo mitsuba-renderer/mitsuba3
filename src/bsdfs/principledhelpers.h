@@ -50,8 +50,8 @@ public:
         Float cos_theta2 =
                 (1.f - dr::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
 
-        Float sin_theta = dr::sqrt(dr::max(0.f, 1.f - cos_theta2)),
-        cos_theta = dr::sqrt(dr::max(0.f, cos_theta2));
+        Float sin_theta = dr::sqrt(dr::maximum(0.f, 1.f - cos_theta2)),
+        cos_theta = dr::sqrt(dr::maximum(0.f, cos_theta2));
 
         return Normal3f(cos_phi * sin_theta, sin_phi * sin_theta, cos_theta);
     }
@@ -322,11 +322,11 @@ std::pair<Float, Float> calc_dist_params(Float anisotropic,
                                          bool has_anisotropic){
     Float roughness_2 = dr::sqr(roughness);
     if (!has_anisotropic) {
-        Float a = dr::max(0.001f, roughness_2);
+        Float a = dr::maximum(0.001f, roughness_2);
         return { a, a };
     }
     Float aspect = dr::sqrt(1.0f - 0.9f * anisotropic);
-    return { dr::max(0.001f, roughness_2 / aspect),
-             dr::max(0.001f, roughness_2 * aspect) };
+    return { dr::maximum(0.001f, roughness_2 / aspect),
+             dr::maximum(0.001f, roughness_2 * aspect) };
 }
 NAMESPACE_END(mitsuba)

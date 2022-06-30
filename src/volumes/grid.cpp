@@ -199,7 +199,7 @@ public:
         m_accel = props.get<bool>("accel", true);
 
         ScalarVector3i res = m_volume_grid->size();
-        ScalarUInt32 size = dr::hprod(res);
+        ScalarUInt32 size = dr::prod(res);
 
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 &&
@@ -214,11 +214,11 @@ public:
                 ScalarColor3f rgb = dr::load<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are
                 // between 0 and 1
-                ScalarFloat scale = dr::hmax(rgb) * 2.f;
+                ScalarFloat scale = dr::max(rgb) * 2.f;
                 ScalarColor3f rgb_norm =
-                    rgb / dr::max((ScalarFloat) 1e-8, scale);
+                    rgb / dr::maximum((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
-                max = dr::max(max, scale);
+                max = dr::maximum(max, scale);
                 dr::store(scaled_data_ptr,
                           dr::concat(coeff, dr::Array<ScalarFloat, 1>(scale)));
                 ptr += 3;
@@ -276,7 +276,7 @@ public:
             m_texture.set_tensor(m_texture.tensor());
 
             if (!m_fixed_max)
-                m_max = (float) dr::hmax_nested(dr::detach(m_texture.value()));
+                m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
         }
     }
 
@@ -296,7 +296,7 @@ public:
                   to_string());
         else {
             if (dr::none_or<false>(active))
-                return dr::zero<UnpolarizedSpectrum>();
+                return dr::zeros<UnpolarizedSpectrum>();
 
             if constexpr (is_monochromatic_v<Spectrum>) {
                 if (channels == 1)
@@ -328,14 +328,14 @@ public:
                   to_string());
         else {
             if (dr::none_or<false>(active))
-                return dr::zero<Float>();
+                return dr::zeros<Float>();
 
             if (channels == 1)
                 return interpolate_1(it, active);
             else if (channels == 3)
                 return luminance(interpolate_3(it, active));
             else // 6 channels
-                return dr::hmean(interpolate_6(it, active));
+                return dr::mean(interpolate_6(it, active));
         }
     }
 
@@ -359,7 +359,7 @@ public:
                   "(raw=false)", to_string());
         } else {
             if (dr::none_or<false>(active))
-                return dr::zero<Vector3f>();
+                return dr::zeros<Vector3f>();
 
             return interpolate_3(it, active);
         }
@@ -375,7 +375,7 @@ public:
                   "vector, but it has %s channel(s)", to_string(), channels);
         else {
             if (dr::none_or<false>(active))
-                return dr::zero<dr::Array<Float, 6>>();
+                return dr::zeros<dr::Array<Float, 6>>();
 
             return interpolate_6(it, active);
         }

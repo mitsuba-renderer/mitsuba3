@@ -220,13 +220,13 @@ Value eval_1d(Float min, Float max, const Float *values,
     Mask mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && dr::none(mask_valid)))
-        return dr::zero<Value>();
+        return dr::zeros<Value>();
 
     /* Transform 'x' so that nodes lie at integer positions */
     Value t = (x - min) * (Float(size - 1) / (max - min));
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = dr::max(Index(0), dr::min(Index(t), Index(size - 2)));
+    Index idx = dr::maximum(Index(0), dr::minimum(Index(t), Index(size - 2)));
 
     GET_SPLINE_UNIFORM(idx);
 
@@ -234,7 +234,7 @@ Value eval_1d(Float min, Float max, const Float *values,
     t -= idx;
 
     if (!Extrapolate)
-        return dr::select(mask_valid, eval_spline(f0, f1, d0, d1, t), dr::zero<Value>());
+        return dr::select(mask_valid, eval_spline(f0, f1, d0, d1, t), dr::zeros<Value>());
     else
         return eval_spline(f0, f1, d0, d1, t);
 }
@@ -279,7 +279,7 @@ Value eval_1d(const Float *nodes, const Float *values,
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && dr::none(mask_valid)))
-        return dr::zero<Value>();
+        return dr::zeros<Value>();
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval<Index>(size,
@@ -294,7 +294,7 @@ Value eval_1d(const Float *nodes, const Float *values,
     Value t = (x - x0) / width;
 
     if (!Extrapolate)
-        return dr::select(mask_valid, eval_spline(f0, f1, d0, d1, t), dr::zero<Value>());
+        return dr::select(mask_valid, eval_spline(f0, f1, d0, d1, t), dr::zeros<Value>());
     else
         return eval_spline(f0, f1, d0, d1, t);
 }
@@ -428,7 +428,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     GET_SPLINE_UNIFORM(idx);
 
     /* Invert the spline interpolant using Newton-Bisection */
-    Value a = dr::zero<Value>(), b = Value(1.f), t = Value(.5f);
+    Value a = dr::zeros<Value>(), b = Value(1.f), t = Value(.5f);
 
     /* Keep track all which lane is still active */
     Mask active(true);
@@ -790,13 +790,13 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     auto mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && dr::none(mask_valid)))
-        return std::make_pair(Mask(false), dr::zero<Int32>());
+        return std::make_pair(Mask(false), dr::zeros<Int32>());
 
     /* Transform 'x' so that nodes lie at integer positions */
     Value t = (x - min) * (Float(size - 1) / (max - min));
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = dr::max(Index(0), dr::min(Index(t), Index(size - 2)));
+    Index idx = dr::maximum(Index(0), dr::minimum(Index(t), Index(size - 2)));
 
     /* Compute the relative position within the interval */
     t -= (Value) idx;
@@ -805,10 +805,10 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
            w0, w1, w2, w3;
 
     /* Function value weights */
-    w0 = dr::zero<Value>();
+    w0 = dr::zeros<Value>();
     w1 =  2 * t3 - 3 * t2 + 1;
     w2 = -2 * t3 + 3 * t2;
-    w3 = dr::zero<Value>();
+    w3 = dr::zeros<Value>();
     Int32 offset = (Int32) idx - 1;
 
     /* Turn derivative weights into node weights using
@@ -880,7 +880,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && dr::none(mask_valid)))
-        return std::make_pair(Mask(false), dr::zero<Int32>());
+        return std::make_pair(Mask(false), dr::zeros<Int32>());
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval<Index>(size,
@@ -900,10 +900,10 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
            w0, w1, w2, w3;
 
     /* Function value weights */
-    w0 = dr::zero<Value>();
+    w0 = dr::zeros<Value>();
     w1 = 2*t3 - 3*t2 + 1;
     w2 = -2*t3 + 3*t2;
-    w3 = dr::zero<Value>();
+    w3 = dr::zeros<Value>();
 
     Int32 offset = (Int32) idx - 1;
 
@@ -996,7 +996,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
 
     /* Compute interpolation weights separately for each dimension */
     if (unlikely(dr::none(valid_x && valid_y)))
-        return dr::zero<Value>();
+        return dr::zeros<Value>();
 
     Index index = offset[1] * size1 + offset[0];
     Value result(0);
@@ -1008,7 +1008,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
             Value weight_x  = weights[0][xi];
             Value weight_xy = weight_x * weight_y;
 
-            Mask weight_valid = dr::neq(weight_xy, dr::zero<Value>());
+            Mask weight_valid = dr::neq(weight_xy, dr::zeros<Value>());
             Value value = dr::gather<Value>(values, index, weight_valid);
 
             result = dr::fmadd(value, weight_xy, result);

@@ -169,7 +169,7 @@ public:
         auto [uv, pdf] = m_irradiance->sample_position(direction_sample, active);
 
         // 2. Sample spectrum (weight includes irradiance eval)
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t                    = 0.f;
         si.time                 = time;
         si.p                    = m_to_world.value().translation();
@@ -207,7 +207,7 @@ public:
         active &= dr::all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
-        SurfaceInteraction3f it_query = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
         it_query.uv = uv;
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);

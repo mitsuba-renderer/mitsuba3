@@ -212,7 +212,7 @@ public:
         Point3T p0, p1, p2;
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
         // Ensure we don't rely on drjit-core when called from an LLVM kernel
-        if constexpr (!dr::is_array_v<T> && dr::is_llvm_array_v<Float>) {
+        if constexpr (!dr::is_array_v<T> && dr::is_llvm_v<Float>) {
             fi = dr::gather<Faces>(m_faces_ptr, index, active);
             p0 = dr::gather<InputPoint3f>(m_vertex_positions_ptr, fi[0], active),
             p1 = dr::gather<InputPoint3f>(m_vertex_positions_ptr, fi[1], active),
@@ -233,7 +233,7 @@ public:
     MI_INLINE PreliminaryIntersection3f
     ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
                            Mask active = true) const {
-        PreliminaryIntersection3f pi = dr::zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
         std::tie(pi.t, pi.prim_uv) = ray_intersect_triangle_impl<Float>(index, ray, active);
         pi.prim_index = index;
         pi.shape = this;

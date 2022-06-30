@@ -366,8 +366,8 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
               x1p = c / temp;
 
         /* Order the results so that x0 < x1 */
-        Value x0m = dr::min(x0p, x1p),
-              x1m = dr::max(x0p, x1p);
+        Value x0m = dr::minimum(x0p, x1p),
+              x1m = dr::maximum(x0p, x1p);
 
         x0 = dr::select(linear_case, x0, x0m);
         x1 = dr::select(linear_case, x0, x1m);

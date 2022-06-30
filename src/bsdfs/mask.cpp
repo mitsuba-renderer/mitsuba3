@@ -133,7 +133,7 @@ public:
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely(!sample_transmission && !sample_nested))
             return { bs, result };

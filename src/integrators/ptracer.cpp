@@ -108,8 +108,8 @@ public:
         Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
 
         // 3. Emitter position sampling
-        Spectrum emitter_weight = dr::zero<Spectrum>();
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        Spectrum emitter_weight = dr::zeros<Spectrum>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         // 3.a. Infinite emitters
         Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite),
@@ -118,7 +118,7 @@ public:
             /* Sample a direction toward an envmap emitter starting
                from the center of the scene (the sensor is not part of the
                scene's bounding box, which could otherwise cause issues.) */
-            Interaction3f ref_it(0.f, time, dr::zero<Wavelength>(),
+            Interaction3f ref_it(0.f, time, dr::zeros<Wavelength>(),
                                  sensor->world_transform().translation());
 
             auto [ds, dir_weight] = emitter->sample_direction(
@@ -142,7 +142,7 @@ public:
                 emitter->sample_position(time, sampler->next_2d(active), active_e);
 
             emitter_weight[active_e] = pos_weight;
-            si[active_e] = SurfaceInteraction3f(ps, dr::zero<Wavelength>());
+            si[active_e] = SurfaceInteraction3f(ps, dr::zeros<Wavelength>());
         }
 
         /* 4. Connect to the sensor.
@@ -269,8 +269,8 @@ public:
             // Russian Roulette
             Mask use_rr = depth > m_rr_depth;
             if (dr::any_or<true>(use_rr)) {
-                Float q = dr::min(
-                    dr::hmax(unpolarized_spectrum(throughput)) * dr::sqr(eta), 0.95f);
+                Float q = dr::minimum(
+                    dr::max(unpolarized_spectrum(throughput)) * dr::sqr(eta), 0.95f);
                 dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
                 dr::masked(throughput, use_rr) *= dr::rcp(q);
             }
@@ -317,7 +317,7 @@ public:
                BSDF. Clamp negative cosines (zero value if behind the surface). */
 
             surface_weight[on_surface && dr::eq(bsdf, nullptr)] *=
-                dr::max(0.f, Frame3f::cos_theta(local_d));
+                dr::maximum(0.f, Frame3f::cos_theta(local_d));
 
             on_surface &= dr::neq(bsdf, nullptr);
             if (dr::any_or<true>(on_surface)) {

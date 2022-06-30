@@ -55,7 +55,7 @@ public:
         /* Precompute a cheap approximation to the filter kernel.
            Unnecessary on NVIDIA GPUs that provide a fast exponential
            instruction via the MUFU (multi-function generator). */
-        if constexpr (!dr::is_cuda_array_v<Float>) {
+        if constexpr (!dr::is_cuda_v<Float>) {
             /*
               Remez fit to exp(-x/2), obtained using:
 
@@ -92,13 +92,13 @@ public:
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        if constexpr (!dr::is_cuda_array_v<Float>) {
-            return dr::max(dr::detail::estrin_impl(dr::sqr(x), m_coeff), 0.f);
+        if constexpr (!dr::is_cuda_v<Float>) {
+            return dr::maximum(dr::detail::estrin_impl(dr::sqr(x), m_coeff), 0.f);
         } else {
             // Use the base-2 exponential functions on NVIDIA hardware
             ScalarFloat alpha = -1.f / (2.f * dr::sqr(m_stddev));
             ScalarFloat bias = dr::exp(alpha * dr::sqr(m_radius));
-            return dr::max(0.f, dr::exp2((dr::InvLogTwo<Float> * alpha) * dr::sqr(x)) - bias);
+            return dr::maximum(0.f, dr::exp2((dr::InvLogTwo<Float> * alpha) * dr::sqr(x)) - bias);
         }
     }
 

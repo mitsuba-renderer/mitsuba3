@@ -76,7 +76,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
 #if defined(MI_ENABLE_CUDA)
-    if constexpr (dr::is_cuda_array_v<Float>)
+    if constexpr (dr::is_cuda_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
 }
@@ -125,7 +125,7 @@ void embree_intersect_scalar(int* valid,
         return;
 
     // Create a Mitsuba ray
-    Ray3f ray = dr::zero<Ray3f>();
+    Ray3f ray = dr::zeros<Ray3f>();
     ray.o.x() = rtc_ray->org_x;
     ray.o.y() = rtc_ray->org_y;
     ray.o.z() = rtc_ray->org_z;
@@ -292,7 +292,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 }
 
 MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
         rtcSetGeometryUserData(geom, (void *) this);
@@ -449,7 +449,7 @@ Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
                                        Mask /*active*/) const {
     /* When virtual function calls are recorded in symbolic mode,
        we can't throw an exception here. */
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         return 0.f;
     else
         NotImplementedError("eval_attribute");
@@ -461,7 +461,7 @@ Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
                                          Mask /*active*/) const {
     /* When virtual function calls are recorded in symbolic mode,
        we can't throw an exception here. */
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         return 0.f;
     else
         NotImplementedError("eval_attribute_1");
@@ -472,7 +472,7 @@ Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
                                          Mask /*active*/) const {
     /* When virtual function calls are recorded in symbolic mode,
        we can't throw an exception here. */
-    if constexpr (dr::is_jit_array_v<Float>)
+    if constexpr (dr::is_jit_v<Float>)
         return 0.f;
     else
         NotImplementedError("eval_attribute_3");
@@ -519,7 +519,7 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             if (!is_mesh())
                 dr::make_opaque(m_to_world, m_to_object);
         }
@@ -530,7 +530,7 @@ void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &
             m_sensor->parameters_changed({"parent"});
 
 #if defined(MI_ENABLE_CUDA)
-        if constexpr (dr::is_cuda_array_v<Float>)
+        if constexpr (dr::is_cuda_v<Float>)
             optix_prepare_geometry();
 #endif
     }
@@ -541,7 +541,7 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
-    if constexpr (dr::is_jit_array_v<Float>) {
+    if constexpr (dr::is_jit_v<Float>) {
         if (!is_mesh())
             dr::make_opaque(m_to_world, m_to_object);
     }

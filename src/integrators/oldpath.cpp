@@ -134,7 +134,7 @@ public:
                getting stuck (e.g. due to total internal reflection) */
             Bool use_rr = depth > m_rr_depth;
             if (dr::any_or<true>(use_rr)) {
-                Float q = dr::min(dr::hmax(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
+                Float q = dr::minimum(dr::max(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
                 dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
                 dr::masked(throughput, use_rr) *= dr::detach(dr::rcp(q));
             }

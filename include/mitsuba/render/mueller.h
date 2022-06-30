@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mueller)
 *   The value of the (0, 0) element
 */
 template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
-    MuellerMatrix<Float> result = dr::zero<MuellerMatrix<Float>>();
+    MuellerMatrix<Float> result = dr::zeros<MuellerMatrix<Float>>();
     result(0, 0) = value;
     return result;
 }

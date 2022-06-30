@@ -185,7 +185,7 @@ public:
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius =
-            dr::max(math::RayEpsilon<Float>,
+            dr::maximum(math::RayEpsilon<Float>,
                     m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
     }
 
@@ -200,7 +200,7 @@ public:
 
         // Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zero<SurfaceInteraction3f>(),
+            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
                                wavelength_sample,
                                active);
         ray.wavelengths = wavelengths;

@@ -35,7 +35,7 @@ Blended material (:monosp:`blendbsdf`)
 This plugin implements a *blend* material, which represents
 linear combinations of two BSDF instances. Any surface scattering model in Mitsuba 3 (be it smooth,
 rough, reflecting, or transmitting) can be mixed with others in this manner to synthesize new models.
-The association of nested BSDF plugins with the two positions in the interpolation is based on the 
+The association of nested BSDF plugins with the two positions in the interpolation is based on the
 alphanumeric order of their identifiers.
 
 The following XML snippet describes the material shown above:
@@ -128,7 +128,7 @@ public:
             return { bs, result };
         }
 
-        BSDFSample3f bs = dr::zero<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
 
         Mask m0 = active && sample1 >  weight,

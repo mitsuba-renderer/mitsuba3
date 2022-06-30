@@ -107,7 +107,7 @@ public:
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
 
         // 3. Sample spectral component
-        SurfaceInteraction3f si(ps, dr::zero<Wavelength>());
+        SurfaceInteraction3f si(ps, dr::zeros<Wavelength>());
         auto [wavelength, wav_weight] =
             sample_wavelengths(si, wavelength_sample, active);
         si.time = time;
