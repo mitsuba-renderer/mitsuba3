@@ -107,16 +107,16 @@ public:
 
     Float mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::mean_async(srgb_model_mean(m_value));
+            return dr::mean(srgb_model_mean(m_value));
         else
-            return dr::mean_async(dr::mean(m_value));
+            return dr::mean(dr::mean(m_value));
     }
 
     ScalarFloat max() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::max(srgb_model_mean(m_value));
+            return dr::max_nested(srgb_model_mean(m_value));
         else
-            return dr::max(dr::max(m_value));
+            return dr::max_nested(m_value);
     }
 
     std::string to_string() const override {
