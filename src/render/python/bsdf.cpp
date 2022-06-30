@@ -37,7 +37,7 @@ MI_PY_EXPORT(BSDFContext) {
         .def(py::init<TransportMode>(),
             "mode"_a = TransportMode::Radiance, D(BSDFContext, BSDFContext))
         .def(py::init<TransportMode, uint32_t, uint32_t>(),
-            "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
+            "mode"_a, "type_mask"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
         .def_method(BSDFContext, reverse)
         .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
         .def_field(BSDFContext, mode,      D(BSDFContext, mode))
