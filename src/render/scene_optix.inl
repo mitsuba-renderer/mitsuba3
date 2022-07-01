@@ -148,7 +148,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         ));
 
         std::function<void(OptixTask)> execute_task = [&](OptixTask task) {
-            size_t max_new_tasks = pool_size();
+            unsigned int max_new_tasks = pool_size();
 
             std::unique_ptr<OptixTask[]> new_tasks =
                 std::make_unique<OptixTask[]>(max_new_tasks);
