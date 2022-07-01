@@ -547,22 +547,22 @@ def cornell_box():
             'near_clip': 0.001,
             'far_clip': 100.0,
             'focus_distance': 1000,
-            'fov': 42.0,
+            'fov': 39.3077,
             'to_world': T.look_at(
-                origin=[0, 0, 3.7],
+                origin=[0, 0, 3.90],
                 target=[0, 0, 0],
                 up=[0, 1, 0]
             ),
             'sampler': {
                 'type': 'independent',
-                'sample_count': 128
+                'sample_count': 64
             },
             'film': {
                 'type': 'hdrfilm',
                 'width' : 256,
                 'height': 256,
                 'rfilter': {
-                    'type': 'tent',
+                    'type': 'gaussian',
                 },
                 'pixel_format': 'rgb',
                 'component_format': 'float32',
@@ -593,7 +593,7 @@ def cornell_box():
         # -------------------- Light --------------------
         'light': {
             'type': 'rectangle',
-            'to_world': T.translate([0.0, 0.99, 0.0]).rotate([1, 0, 0], 90).scale(0.25),
+            'to_world': T.translate([0.0, 0.99, 0.01]).rotate([1, 0, 0], 90).scale([0.23, 0.19, 0.19]),
             'bsdf': {
                 'type': 'ref',
                 'id': 'white'
@@ -649,7 +649,7 @@ def cornell_box():
         },
         'small-box': {
             'type': 'cube',
-            'to_world': T.translate([0.35, -0.7, 0.4]).rotate([0, 1, 0], -18).scale(0.3),
+            'to_world': T.translate([0.335, -0.7, 0.38]).rotate([0, 1, 0], -17).scale(0.3),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
@@ -657,7 +657,7 @@ def cornell_box():
         },
         'large-box': {
             'type': 'cube',
-            'to_world': T.translate([-0.35, -0.4, -0.25]).rotate([0, 1, 0], 20).scale([0.3, 0.6, 0.3]),
+            'to_world': T.translate([-0.33, -0.4, -0.28]).rotate([0, 1, 0], 18.25).scale([0.3, 0.61, 0.3]),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
