@@ -240,7 +240,33 @@ def test02_traverse_update(variants_all_ad_rgb):
     reset_update_keys()
 
 
-def test03_render_fwd_assert(variants_all_ad_rgb):
+def test03_scene_parameters_keep(variants_all_ad_rgb):
+    bsdf = mi.load_dict({'type': 'principled'})
+    params = mi.traverse(bsdf)
+
+    params.keep(r'.*\.value')
+    assert len(params) == 11
+
+    params.keep(['clearcoat.value', 'flatness.value'])
+    assert len(params) == 2
+
+
+def test04_scene_parameters_update(variants_all_ad_rgb):
+    bsdf = mi.load_dict({'type': 'principled'})
+    params = mi.traverse(bsdf)
+
+    ret = params.update({
+        'clearcoat.value': 0.5,
+        'flatness.value': 0.4,
+    })
+
+    assert dr.allclose(params['clearcoat.value'], 0.5)
+    assert dr.allclose(params['flatness.value'], 0.4)
+
+    assert ret[-1][-1] == {'clearcoat', 'flatness'}
+
+
+def test05_render_fwd_assert(variants_all_ad_rgb):
     scene = mi.load_dict({
         'type': 'scene',
         'shape': {

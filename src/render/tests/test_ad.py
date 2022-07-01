@@ -141,6 +141,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
 
     params = mi.traverse(scene)
     param_ref = mi.Color3f(params[key])
+    params.keep(key)
 
     image_ref = scene.integrator().render(scene, seed=0, spp=spp)
 
@@ -149,7 +150,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
 
     opt[key] = mi.Color3f(0.1)
     dr.set_label(opt[key], key)
-    opt.update()
+    params.update(opt)
 
     avrg_params = mi.Color3f(0)
 
@@ -176,7 +177,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         opt.step()
 
         # Optimizer: Update the scene parameters
-        opt.update()
+        params.update(opt)
 
         err_ref = dr.sum(dr.detach(dr.sqr(param_ref - params[key])))[0]
         print('Iteration %03i: error=%g' % (it, err_ref))
@@ -425,21 +426,20 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
 
     n = 5
     x = dr.full(mi.Float, 1.0, n)
-    params = {'x': x}
+    params = { 'x': x }
 
     if opt == 'SGD':
         opt = mi.ad.SGD(lr=1.0, momentum=0.8, params=params, mask_updates=True)
     else:
         assert opt == 'Adam'
         opt = mi.ad.Adam(lr=1.0, params=params, mask_updates=True)
-    opt.load()
 
     # Build momentum for a few iterations
     g1 = dr.full(mi.Float, -1.0, n)
     for _ in range(5):
         dr.set_grad(params['x'], g1)
         opt.step()
-        opt.update()
+        params.update(opt)
     assert dr.all(params['x'] > 2.4)
 
     # Masked updates: parameters and state should only
@@ -452,7 +452,7 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
 
         dr.set_grad(params['x'], g2)
         opt.step()
-        opt.update()
+        params.update(opt)
 
         assert dr.all(dr.eq(params['x'], prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
         assert dr.all(dr.neq(params['x'], prev_x) | is_zero), 'Param should be updated where grad != 0'

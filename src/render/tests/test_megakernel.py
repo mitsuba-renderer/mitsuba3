@@ -189,8 +189,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
         assert len(dr.kernel_history([dr.KernelType.JIT])) == 0
 
         opt = mi.ad.SGD(lr=0.05, params=params)
-        opt.load(key)
-        opt.update()
+        params.update(opt)
 
         # Creating the optimizer shouldn't produce any kernel launch
         assert len(dr.kernel_history([dr.KernelType.JIT])) == 0

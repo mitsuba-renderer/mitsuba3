@@ -7,21 +7,27 @@ class Optimizer:
     """
     Base class of all gradient-based optimizers.
     """
-    def __init__(self, lr, params):
+    def __init__(self, lr, params: dict):
         """
         Parameter ``lr``:
             learning rate
 
-        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
-            Scene parameters dictionary containing the parameters to optimize.
+        Parameter ``params`` (:py:class:`dict`):
+            Dictionary-like object containing parameters to optimize.
         """
-        self.lr = defaultdict(lambda: self.lr_default)
+        self.lr   = defaultdict(lambda: self.lr_default)
         self.lr_v = defaultdict(lambda: self.lr_default_v)
 
         self.set_learning_rate(lr)
         self.variables = {}
-        self.params = params
         self.state = {}
+
+        if params is not None:
+            for k, v in params.items():
+                if type(params) is mi.SceneParameters:
+                    if params.flags(k) & mi.ParamFlags.NonDifferentiable.value:
+                        continue
+                self.__setitem__(k, v)
 
     def __contains__(self, key: str):
         return self.variables.__contains__(key)
@@ -61,76 +67,18 @@ class Optimizer:
 
     def items(self):
         class OptimizerItemIterator:
-            def __init__(self, params):
-                self.params = params
-                self.it = params.keys().__iter__()
+            def __init__(self, items):
+                self.items = items
+                self.it = items.keys().__iter__()
 
             def __iter__(self):
                 return self
 
             def __next__(self):
                 key = next(self.it)
-                return (key, self.params[key])
+                return (key, self.items[key])
 
         return OptimizerItemIterator(self.variables)
-
-    def __match(regexps, params):
-        """Return subset of keys matching any regex from a list of regex"""
-        if params is None:
-            return []
-
-        if regexps is None:
-            return params.keys()
-
-        if type(regexps) is not list:
-            regexps = [regexps]
-
-        import re
-        regexps = [re.compile(k).match for k in regexps]
-        return [k for k in params.keys() if any (r(k) for r in regexps)]
-
-    def load(self, keys=None) -> None:
-        """
-        Load a set of scene parameters to optimize.
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be loaded. Regex are supported to define
-            a subset of parameters at once. If set to ``None``, all differentiable
-            scene parameters will be loaded.
-        """
-
-        if self.params is None:
-            raise Exception('Optimizer.load(): scene parameters dictionary should be'
-                            'passed to the constructor!')
-
-        for k in Optimizer.__match(keys, self.params):
-            value = self.params[k]
-            if dr.is_diff_v(value) and dr.is_float_v(value):
-                self[k] = value
-
-    def update(self, keys=None) -> None:
-        """
-        Propagate updates of the parameters being optimized back to the scene state.
-
-        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
-            Scene parameters dictionary
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be updated. Regex are supported to update
-            a subset of parameters at once. If set to ``None``, all scene parameters will
-            be update.
-        """
-
-        if self.params is None:
-            raise Exception('Optimizer.update(): scene parameters dictionary should be '
-                            'passed to the constructor!')
-
-        for k in Optimizer.__match(keys, self.variables):
-            if k in self.params:
-                self.params[k] = self.variables[k]
-
-        dr.schedule(self.params)
-        self.params.update()
 
     def set_learning_rate(self, lr) -> None:
         """
@@ -180,7 +128,7 @@ class SGD(Optimizer):
     :math:`\\varepsilon` is the learning rate, and :math:`\\mu` is
     the momentum parameter.
     """
-    def __init__(self, lr, momentum=0, params=None, mask_updates=False):
+    def __init__(self, lr, momentum=0, mask_updates=False, params:dict=None):
         """
         Parameter ``lr``:
             learning rate
@@ -193,6 +141,9 @@ class SGD(Optimizer):
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
             See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
+
+        Parameter ``params`` (:py:class:`dict`):
+            Optional dictionary-like object containing parameters to optimize.
         """
         assert momentum >= 0 and momentum < 1
         assert lr > 0
@@ -274,7 +225,7 @@ class Adam(Optimizer):
     `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
     """
     def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
-                 params=None, mask_updates=False):
+                 mask_updates=False, params: dict=None):
         """
         Parameter ``lr``:
             learning rate
@@ -290,9 +241,10 @@ class Adam(Optimizer):
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
-        """
-        super().__init__(lr, params)
 
+        Parameter ``params`` (:py:class:`dict`):
+            Optional dictionary-like object containing parameters to optimize.
+        """
         assert 0 <= beta_1 < 1 and 0 <= beta_2 < 1 \
             and lr > 0 and epsilon > 0
 
@@ -301,6 +253,7 @@ class Adam(Optimizer):
         self.epsilon = epsilon
         self.mask_updates = mask_updates
         self.t = defaultdict(lambda: 0)
+        super().__init__(lr, params)
 
     def step(self):
         """Take a gradient step"""

@@ -207,8 +207,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     params[key] = type(params[key])(1.0)
     params.update()
     opt = mi.ad.SGD(lr=1e-2, params=params)
-    opt.load()
-    opt.update()
+    params.update(opt)
 
     with dr.suspend_grad():
         image = integrator.render(scene, seed=0, spp=64)
