@@ -87,6 +87,8 @@ class SceneParameters(Mapping):
         return len(self.properties)
 
     def __repr__(self) -> str:
+        if len(self) == 0:
+            return f'SceneParameters[]'
         name_length = int(max([len(k) for k in self.properties.keys()]) + 2)
         param_list = '\n'
         param_list += '  ' + '-' * (name_length + 53) + '\n'
@@ -169,7 +171,7 @@ class SceneParameters(Mapping):
 
         return self.properties[key]
 
-    def update(self) -> list[tuple[Any, set]]:
+    def update(self, values: dict = None) -> list[tuple[Any, set]]:
         """
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
@@ -181,7 +183,18 @@ class SceneParameters(Mapping):
         corresponds to a Mitsuba node/object that is updated. The tuple's first
         element is the node itself. The second element is the set of keys that
         the node is being updated for.
+
+        Parameter ``values`` (``dict``):
+            Optional dictionary-like object containing a set of keys and values
+            to be used to overwrite scene parameters. This operation will happen
+            before propagating the update further into the scene internal state.
         """
+        if values is not None:
+            for k, v in values.items():
+                if k in self:
+                    self[k] = v
+        dr.schedule(self)
+
         update_candidate_keys = list(self.update_candidates.keys())
         for key in update_candidate_keys:
             # Candidate objects might have been modified inplace, we must check
@@ -208,11 +221,20 @@ class SceneParameters(Mapping):
     def keep(self, keys: list) -> None:
         """
         Reduce the size of the dictionary by only keeping elements,
-        whose keys are part of the provided list 'keys'.
-        """
-        assert isinstance(keys, list)
+        whose keys are defined by 'keys'.
 
-        keys = set(keys)
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be kept. Regex are supported to define
+            a subset of parameters at once. If set to ``None``, all differentiable
+            scene parameters will be loaded.
+        """
+        if type(keys) is not list:
+            keys = [keys]
+
+        import re
+        regexps = [re.compile(k).match for k in keys]
+        keys = [k for k in self.keys() if any (r(k) for r in regexps)]
+
         self.properties = {
             k: v for k, v in self.properties.items() if k in keys
         }
