@@ -801,15 +801,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         /* Solve a least squares problem to determine
            the UV coordinates within the current triangle */
-        Float b1  = dr::dot(dp0, rel),
-              b2  = dr::dot(dp1, rel),
+        Float bb1 = dr::dot(dp0, rel),
+              bb2 = dr::dot(dp1, rel),
               a11 = dr::dot(dp0, dp0),
               a12 = dr::dot(dp0, dp1),
               a22 = dr::dot(dp1, dp1),
               inv_det = dr::rcp(a11 * a22 - a12 * a12);
 
-        Float u = dr::fmsub (a22, b1, a12 * b2) * inv_det,
-              v = dr::fnmadd(a12, b1, a11 * b2) * inv_det,
+        Float u = dr::fmsub (a22, bb1, a12 * bb2) * inv_det,
+              v = dr::fnmadd(a12, bb1, a11 * bb2) * inv_det,
               w = 1.f - u - v;
 
         /* If we are using flat shading, just fall back to a signed distance
