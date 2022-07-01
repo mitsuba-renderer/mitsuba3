@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Usage: tag_wheel_manylinux.py {dest_dir} {wheel_file}
+Usage: tag_wheel_manylinux.py {wheel_file} {dest_dir}
 
 This script manually replaces the '*-linux_x86_64' tag of a Python wheel
 `wheel_file` with the following tags:
@@ -11,55 +11,67 @@ The new wheel is written to `dest_dir` with a filename that reflects the new
 tags.
 """
 
-import sys
 import os
-from zipfile import ZIP_DEFLATED, ZipFile
-import re
 import pathlib
+import re
+import shutil
+import subprocess
+import sys
 
-def process_file(file, file_info, out_zip):
+
+def process_wheel_info_file(file):
     """
-    Copies the input file `file` to the archive `out_zip` without any
-    modifications, unless the file is the metadata "WHEEL" file in which case
-    the tags in it are modified.
+    Modifies the metadata "WHEEL" file given as `file` such to have the
+    appropriate 'manylinux' platform tags instead of the generic 'linux' one.
     """
-    if file_info.filename == f'{wheel_package_prefix}.dist-info/WHEEL':
-        metadata = file.read().decode("utf-8")
-        metadata_lines = metadata.split("\n")
-        new_metadata_lines = []
+    metadata_lines = file.read().splitlines()
+    new_metadata_lines = []
 
-        for i in range(len(metadata_lines)):
-            line = metadata_lines[i]
-            if re.match("^Tag: .*-linux_x86_64$", line):
-                new_line1 = line.replace("-linux_x86_64", "-manylinux_2_17_x86_64")
-                new_line2 = line.replace("-linux_x86_64", "-manylinux2014_x86_64")
+    for i in range(len(metadata_lines)):
+        line = metadata_lines[i]
+        if re.match("^Tag: .*-linux_x86_64$", line):
+            new_line = line.replace("-linux_x86_64", "-manylinux_2_17_x86_64")
+            new_metadata_lines.append(new_line)
 
-                new_metadata_lines.append(new_line1)
-                new_metadata_lines.append(new_line2)
-            else:
-                new_metadata_lines.append(line)
+            new_line = line.replace("-linux_x86_64", "-manylinux2014_x86_64")
+            new_metadata_lines.append(new_line)
+        else:
+            new_metadata_lines.append(line)
 
-        out_zip.writestr(file_info.filename, '\n'.join(new_metadata_lines))
-    else:
-        out_zip.writestr(file_info.filename, file.read())
+    file.seek(0)
+    file.write("\n".join(new_metadata_lines))
+    file.truncate()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if len(sys.argv) != 3:
-        raise RuntimeError("Exactly two arugments are expected: the output "
-        "destination and the wheel archive file!")
+        raise RuntimeError("Exactly two arugments are expected: the wheel "
+                           "archive file and the output directory!")
 
-    output_dir = sys.argv[1]
-    wheel_loc = sys.argv[2]
+    wheel_loc = sys.argv[1]
+    output_dir = sys.argv[2]
 
     wheel_filename = os.path.basename(wheel_loc)
-    wheel_package_prefix = wheel_filename[:wheel_filename.find('-', wheel_filename.find('-') + 1)]
+    version_begin = wheel_filename.find("-")
+    wheel_package_prefix = wheel_filename[: wheel_filename.find("-", version_begin + 1)]
 
-    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
-    output_wheel_filename = wheel_filename.replace(
-            "-linux_x86_64", "-manylinux_2_17_x86_64.manylinux2014_x86_64")
+    unpack_dir = f"/tmp/{os.path.splitext(os.path.basename(__file__))[0]}/{wheel_package_prefix}"
+    shutil.rmtree(unpack_dir, ignore_errors=True)
+    os.makedirs(unpack_dir, exist_ok=False)
+    os.makedirs(output_dir, exist_ok=True)
 
-    with ZipFile(f'{output_dir}/{output_wheel_filename}', 'w', ZIP_DEFLATED) as out_zip:
-        with ZipFile(wheel_loc, mode="r") as wheel_zip:
-            for file_info in wheel_zip.infolist():
-                with wheel_zip.open(file_info) as file:
-                    process_file(file, file_info, out_zip)
+    # The `wheel` package drops all file permissions when unpacking
+    subprocess.check_call(["unzip", "-q", wheel_loc, "-d", unpack_dir])
+
+    with open(
+        f"{unpack_dir}/{wheel_package_prefix}.dist-info/WHEEL",
+        "r+",
+    ) as wheel_info_file:
+        process_wheel_info_file(wheel_info_file)
+
+    # The `wheel` package will recompute the hash of every file and modify the RECORD file
+    # It also renames the packed wheel to reflect the new platform tags
+    subprocess.check_call([
+        sys.executable, "-m",
+        "wheel", "pack", f"{unpack_dir}", "-d", output_dir,
+    ])
