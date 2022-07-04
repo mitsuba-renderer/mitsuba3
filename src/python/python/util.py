@@ -218,7 +218,7 @@ class SceneParameters(Mapping):
 
         return out
 
-    def keep(self, keys: list) -> None:
+    def keep(self, keys: None | str | list[str]) -> None:
         """
         Reduce the size of the dictionary by only keeping elements,
         whose keys are defined by 'keys'.

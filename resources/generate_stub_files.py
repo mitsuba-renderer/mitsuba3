@@ -107,8 +107,10 @@ def process_enums(name, e, indent=0):
 
 def process_class(obj):
     methods = []
+    py_methods = []
     properties = []
     enums = []
+
     for k in dir(obj):
         # Skip private attributes
         if k.startswith('_'):
@@ -120,12 +122,20 @@ def process_class(obj):
         v = getattr(obj, k)
         if type(v).__name__ == 'instancemethod':
             methods.append((k, v))
+        elif type(v).__name__ == 'function' and v.__code__.co_varnames[0] == 'self':
+            py_methods.append((k, v))
         elif type(v).__name__ == 'property':
             properties.append((k, v))
         elif str(v).endswith(k):
             enums.append((k, v))
 
-    w(f'class {obj.__name__}:')
+    base = obj.__bases__[0]
+    base_name = base.__name__
+    has_base = not (base_name == 'object' or base_name == 'pybind11_object')
+    if has_base and not base.__module__.startswith('mitsuba'):
+        w(f'from {base.__module__} import {base_name}')
+
+    w(f'class {obj.__name__}{"(" + base_name + ")" if has_base else ""}:')
     if obj.__doc__ is not None:
         doc = obj.__doc__.splitlines()
         if len(doc) > 0:
@@ -153,6 +163,9 @@ def process_class(obj):
 
     for k, v in methods:
         process_function(k, v, indent=4)
+
+    for k, v in py_methods:
+        process_py_function(k, v, indent=4)
 
     w(f'    ...')
     w('')
@@ -206,7 +219,7 @@ def process_py_function(name, obj, indent=0):
 
     w(f"{indent}def {name}{signature}:{'' if has_doc else ' ...'}")
 
-    if obj.__doc__ is not None:
+    if has_doc:
         doc = obj.__doc__.splitlines()
         if len(doc) > 0: # first line is always empty
             w(f'{indent}    \"\"\"')
@@ -224,7 +237,7 @@ def process_module(m):
     submodules = []
     buffer = ''
 
-    w('from typing import Callable, Iterable, Iterator, Tuple, List, TypeVar, overload, ModuleType')
+    w('from typing import Any, Callable, Iterable, Iterator, Tuple, List, TypeVar, Union, overload, ModuleType')
     w('import mitsuba')
     w('import mitsuba as mi')
     w('')
@@ -239,18 +252,18 @@ def process_module(m):
         v = getattr(m, k)
 
         if inspect.isclass(v):
+            if (hasattr(v, '__module__') and
+                not (v.__module__.startswith('mitsuba') or v.__module__.startswith('drjit.'))):
+                continue
             process_class(v)
-            continue
         elif type(v).__name__ in ['method', 'function']:
             process_py_function(k, v)
         elif type(v).__name__ == 'builtin_function_or_method':
             process_function(k, v)
-            continue
         elif type(v) in [str, bool, int, float]:
             if k.startswith('_'):
                 continue
             process_properties(k, v)
-            continue
         elif type(v).__bases__[0].__name__ == 'module' or type(v).__name__ == 'module':
             if k in ['mi', 'mitsuba', 'dr']:
                 continue
@@ -261,8 +274,6 @@ def process_module(m):
             w(f'from .stubs import {k} as {k}')
             w('')
             submodules.append((k, v))
-        else:
-            pass
 
     # Adjust DrJIT type hints manually here
     buffer = buffer.replace(f'drjit.{mi.variant()[:4]}.ad.', 'mitsuba.')
