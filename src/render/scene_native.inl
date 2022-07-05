@@ -15,7 +15,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     kdtree->build();
 
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         m_accel = new NativeState<Float, Spectrum>();
         NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
         s.accel = kdtree;
@@ -36,7 +36,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) 
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    if constexpr (dr::is_llvm_array_v<Float>) {
+    if constexpr (dr::is_llvm_v<Float>) {
         NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) m_accel;
         s->accel->dec_ref();
         delete s;
@@ -48,7 +48,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     ShapeKDTree *kdtree;
-    if constexpr (dr::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>)
         kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
     else
         kdtree = (ShapeKDTree *) m_accel;
@@ -136,7 +136,7 @@ MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       Mask coherent,
                                                       Mask active) const {
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_array_v<Float>) {
         DRJIT_MARK_USED(coherent);
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<false>(ray, active);
@@ -208,7 +208,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask coherent, Mask active) const {
-    if constexpr (!dr::is_cuda_array_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>) {
         PreliminaryIntersection3f pi =
             ray_intersect_preliminary_cpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
@@ -224,7 +224,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags,
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
                                      Mask coherent, Mask active) const {
-    if constexpr (!dr::is_jit_array_v<Float>) {
+    if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(coherent);
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
@@ -269,7 +269,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
     const ShapeKDTree *kdtree;
-    if constexpr (dr::is_llvm_array_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>)
         kdtree = ((NativeState<Float, Spectrum> *) m_accel)->accel;
     else
         kdtree = (const ShapeKDTree *) m_accel;
