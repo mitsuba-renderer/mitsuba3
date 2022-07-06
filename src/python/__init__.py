@@ -7,6 +7,7 @@ import threading
 from importlib import import_module as _import, reload as _reload
 import drjit as dr
 import os
+import logging
 
 if sys.version_info < (3, 8):
     raise ImportError("Mitsuba requires Python 3.8 or greater.")
@@ -21,6 +22,28 @@ if os.name == 'nt':
     except AttributeError:  # otherwise use PATH
         os.environ['PATH'] += os.pathsep + d
     del d, i
+
+mi_dir = os.path.dirname(os.path.realpath(__file__))
+if os.name != 'nt' and os.path.relpath(dr.__path__[0], mi_dir) != '../drjit':
+    drjit_loc = os.path.realpath(dr.__path__[0])
+    drjit_expected_loc = os.path.realpath(os.path.join(mi_dir, "..", "drjit"))
+    logging.warning("The `mitsuba` package relies on `drjit` and needs it "
+                    "to be installed at a specific location. Currently, "
+                    "`drjit` is located at \"%s\" when it is expected to be "
+                    "at \"%s\". This can happen when both packages are not "
+                    "installed in the same Python environment. You will very "
+                    "likely experience linking issues if you do not fix this."
+                    % (drjit_loc, drjit_expected_loc))
+del mi_dir
+
+dr_version_requirement = "0.2.0.dev3"
+if dr.__version__ != dr_version_requirement:
+    raise ImportError("You are using an incompatible version of `drjit`. "
+                      "Only version \"%s\" is guaranteed to be compatible with "
+                      "your current Mitsuba installation. Please update your "
+                      "Python packages for `drjit` and/or `mitsuba`."
+                      % (dr_version_requirement))
+del dr_version_requirement
 
 try:
     _import('mitsuba.mitsuba_ext')
