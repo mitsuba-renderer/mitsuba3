@@ -53,6 +53,10 @@ setup(
     ],
     install_requires=["drjit"],
     packages=['mitsuba'],
-    scripts=['resources/mitsuba'],
+    entry_points={
+        'console_scripts': [
+            'mitsuba = mitsuba.cli:_main',
+        ]
+    },
     python_requires=">=3.8"
 )
