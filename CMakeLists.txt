@@ -521,10 +521,12 @@ install(
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mitsuba/core
 )
 
-if (SKBUILD)
-  ro_copy(${CMAKE_CURRENT_SOURCE_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff)
-else()
+set(MI_SRGB_COEFF_FILE "" CACHE STRING "Location of the spectral upsampling model file (srgb.coeff) if it should not be generated during the build.")
+mark_as_advanced(MI_SRGB_COEFF_FILE)
+if ("${MI_SRGB_COEFF_FILE}" STREQUAL "")
   ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
+else()
+  ro_copy(${MI_SRGB_COEFF_FILE} data/srgb.coeff)
 endif()
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/data/srgb.coeff

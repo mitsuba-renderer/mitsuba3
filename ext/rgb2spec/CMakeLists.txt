@@ -25,13 +25,11 @@ if (NOT APPLE)
   endif()
 endif()
 
-if (NOT SKBUILD)
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/srgb.coeff
-    DEPENDS rgb2spec_opt
-    COMMAND $<TARGET_FILE:rgb2spec_opt> 64 ${CMAKE_CURRENT_BINARY_DIR}/srgb.coeff
-  )
-endif()
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/srgb.coeff
+  DEPENDS rgb2spec_opt
+  COMMAND $<TARGET_FILE:rgb2spec_opt> 64 ${CMAKE_CURRENT_BINARY_DIR}/srgb.coeff
+)
 
 add_custom_target(
   rgb2spec_opt_run

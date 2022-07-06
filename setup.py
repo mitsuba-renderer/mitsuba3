@@ -29,6 +29,8 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 long_description = long_description[long_description.find('## Introduction'):]
 mi_cmake_toolchain_file = os.environ.get("MI_CMAKE_TOOLCHAIN_FILE", "")
 mi_drjit_cmake_dir = os.environ.get("MI_DRJIT_CMAKE_DIR", "")
+mi_srgb_coeff_file = os.environ.get("MI_SRGB_COEFF_FILE", "")
+mi_python_stubs_dir = os.environ.get("MI_PYTHON_STUBS_DIR", "")
 pathlib.Path("./mitsuba").mkdir(exist_ok=True)
 
 setup(
@@ -49,7 +51,9 @@ setup(
         '-DMI_ENABLE_EMBREE=OFF',
         '-DMI_DEFAULT_VARIANTS:STRING=scalar_rgb',
         f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
-        f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}'
+        f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}',
+        f'-DMI_SRGB_COEFF_FILE:STRING={mi_srgb_coeff_file}',
+        f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}'
     ],
     install_requires=["drjit"],
     packages=['mitsuba'],
