@@ -58,6 +58,14 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.6.1
 
+      - name: Local mitsuba Build for macOS cross-compilation
+        if: runner.os == 'macOS' &&  ${{ matrix.cibw-arch }} == 'arm64'
+        run: |
+          pip install ninja cmake
+          mkdir build
+          cmake -B build -GNinja .
+          ninja -C build
+
       - name: Prepare cibuildwheel environment for macOS
         if: runner.os == 'macOS'
         run: |
@@ -67,7 +75,9 @@ jobs:
           rm -rf /tmp/drjit_wheel && mkdir -p /tmp/drjit_wheel/ && cd /tmp/drjit_wheel && \
           pip download --platform=macosx_11_0_arm64 --only-binary=:all: drjit && \
           unzip *.whl\"" >> $GITHUB_ENV && \
-          echo "MI_DRJIT_CMAKE_DIR=/tmp/drjit_wheel/drjit/share/cmake/drjit" >> $GITHUB_ENV
+          echo "MI_DRJIT_CMAKE_DIR=/tmp/drjit_wheel/drjit/share/cmake/drjit" >> $GITHUB_ENV && \
+          echo "MI_SRGB_COEFF_FILE=$(pwd)/build/data/srgb.coeff" >> $GITHUB_ENV && \
+          echo "MI_PYTHON_STUB_DIR=$(pwd)/build/python/mitsuba" >> $GITHUB_ENV
 
           echo "CIBW_ARCHS_MACOS=${{ matrix.cibw-arch }}" >> $GITHUB_ENV
 

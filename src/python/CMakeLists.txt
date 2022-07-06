@@ -128,6 +128,38 @@ if (NOT SKBUILD)
   endforeach(file)
 endif()
 
+# ----------------------------------------------------------
+#   Generate type information stubs
+# ----------------------------------------------------------
+
+set(MI_PYTHON_STUBS_DIR "" CACHE STRING "Location of the Python typing fle stubs directory to use if the files should not be generated during the build.")
+mark_as_advanced(MI_PYTHON_STUBS_DIR)
+if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
+  add_custom_target(stub_file_generation ALL COMMAND
+    "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
+    ${MI_BINARY_DIR}/python/mitsuba/ ${MI_BINARY_DIR}/python
+    DEPENDS mitsuba_ext)
+  foreach (MI_VARIANT ${MI_VARIANTS})
+      string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+      list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+      add_dependencies(stub_file_generation mitsuba_${MI_VARIANT_NAME}_ext)
+  endforeach()
+  if (NOT SKBUILD)
+    add_dependencies(stub_file_generation drjit-python)
+  endif()
+else()
+  ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)
+  file(GLOB_RECURSE MI_PYTHON_STUB_FILES RELATIVE ${MI_PYTHON_STUBS_DIR}/stubs ${MI_PYTHON_STUBS_DIR}/stubs/*.pyi)
+  foreach(file ${MI_PYTHON_STUB_FILES})
+    ro_copy(${MI_PYTHON_STUBS_DIR}/stubs/${file} python/mitsuba/stubs/${file})
+  endforeach(file)
+endif()
+
+install(FILES ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi DESTINATION mitsuba)
+install(DIRECTORY ${MI_BINARY_DIR}/python/mitsuba/stubs/ DESTINATION mitsuba/stubs)
+
+file(GENERATE OUTPUT ${MI_BINARY_DIR}/python/mitsuba/py.typed CONTENT "partial\n")
+install(FILES ${MI_BINARY_DIR}/python/mitsuba/py.typed DESTINATION mitsuba)
 
 # ----------------------------------------------------------
 #   pytest.ini file
@@ -183,28 +215,4 @@ if (UNIX)
     `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
     -o ${MKDOC_PATH}/python/docstr.h
   )
-endif()
-
-# ----------------------------------------------------------
-#   Generate type information stubs
-# ----------------------------------------------------------
-
-if (NOT CMAKE_CROSSCOMPILING)
-  add_custom_target(stub_file_generation ALL COMMAND
-    "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
-    ${MI_BINARY_DIR}/python/mitsuba/ ${MI_BINARY_DIR}/python
-    DEPENDS mitsuba_ext)
-  foreach (MI_VARIANT ${MI_VARIANTS})
-      string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
-      list(GET MI_VARIANT 0 MI_VARIANT_NAME)
-      add_dependencies(stub_file_generation mitsuba_${MI_VARIANT_NAME}_ext)
-  endforeach()
-  if (NOT SKBUILD)
-    add_dependencies(stub_file_generation drjit-python)
-  endif()
-  install(DIRECTORY ${MI_BINARY_DIR}/python/mitsuba/stubs/ DESTINATION mitsuba/stubs)
-  install(FILES ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi DESTINATION mitsuba)
-
-  file(GENERATE OUTPUT ${MI_BINARY_DIR}/python/mitsuba/py.typed CONTENT "partial\n")
-  install(FILES ${MI_BINARY_DIR}/python/mitsuba/py.typed DESTINATION mitsuba)
 endif()
