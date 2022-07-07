@@ -8,12 +8,13 @@ static_assert(sizeof(RTCIntersectContext) == 24 /* Dr.Jit assumes this */);
 static uint32_t embree_threads = 0;
 static RTCDevice embree_device = nullptr;
 
-template <typename Float>
+template <typename Float, typename Spectrum>
 struct EmbreeState {
     MI_IMPORT_CORE_TYPES()
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    std::vector<ref<Shape<Float, Spectrum>>> shapes;
 };
 
 static void embree_error_callback(void * /*user_ptr */, RTCError code, const char *str) {
@@ -91,8 +92,9 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
 
     Timer timer;
 
-    m_accel = new EmbreeState<Float>();
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    using State = EmbreeState<Float, Spectrum>;
+    m_accel = new State();
+    State &s = *(State *) m_accel;
 
     s.accel = rtcNewScene(embree_device);
     rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
@@ -115,14 +117,24 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
         } else {
             s.shapes_registry_ids = dr::zeros<DynamicBuffer<UInt32>>();
         }
+
+        // Keep reference to shapes in order to ensure their lifetime goes
+        // beyond the one of the Scene
+        for (auto &shape : m_shapes)
+            s.shapes.push_back(shape);
+        for (auto &shape : m_shapegroups)
+            s.shapes.push_back(shape);
     }
+
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    using State = EmbreeState<Float, Spectrum>;
+    State &s = *(State *) m_accel;
+
     for (int geo : s.geometries)
         rtcDetachGeometry(s.accel, geo);
     s.geometries.clear();
@@ -157,8 +169,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
-                EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
+                using State = EmbreeState<Float, Spectrum>;
+                State *s = (State *) payload;
                 if (free) {
+                    Log(Debug, "Free Embree scene state..");
+                    s->shapes.clear();
                     rtcReleaseScene(s->accel);
                     delete s;
                 }
@@ -199,8 +214,9 @@ MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       Mask coherent,
                                                       Mask active) const {
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     using Single = dr::float32_array_t<Float>;
+    using State = EmbreeState<Float, Spectrum>;
+    State &s = *(State *) m_accel;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
@@ -344,8 +360,9 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, 
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const {
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     using Single = dr::float32_array_t<Float>;
+    using State = EmbreeState<Float, Spectrum>;
+    State &s = *(State *) m_accel;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
