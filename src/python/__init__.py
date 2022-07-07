@@ -36,14 +36,14 @@ if os.name != 'nt' and os.path.relpath(dr.__path__[0], mi_dir) != '../drjit':
                     % (drjit_loc, drjit_expected_loc))
 del mi_dir
 
-dr_version_requirement = "0.2.0.dev3"
-if dr.__version__ != dr_version_requirement:
+from .config import DRJIT_VERSION_REQUIREMENT
+if dr.__version__ != DRJIT_VERSION_REQUIREMENT:
     raise ImportError("You are using an incompatible version of `drjit`. "
                       "Only version \"%s\" is guaranteed to be compatible with "
                       "your current Mitsuba installation. Please update your "
                       "Python packages for `drjit` and/or `mitsuba`."
-                      % (dr_version_requirement))
-del dr_version_requirement
+                      % (DRJIT_VERSION_REQUIREMENT))
+del DRJIT_VERSION_REQUIREMENT
 
 try:
     _import('mitsuba.mitsuba_ext')
