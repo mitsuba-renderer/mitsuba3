@@ -20,11 +20,11 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('src/tutorials'):
-    os.symlink('../../tutorials', 'src/tutorials', target_is_directory=True)
+if not os.path.exists('src/getting_started/quickstart/'):
+    os.symlink('../../tutorials/quickstart', 'src/getting_started/quickstart', target_is_directory=True)
 
-if not os.path.exists('src/getting_started/tutorials/'):
-    os.symlink('../../tutorials/getting_started', 'src/getting_started/tutorials', target_is_directory=True)
+if not os.path.exists('src/tutorials/tutorials/'):
+    os.symlink('../../tutorials/tutorials', 'src/tutorials/tutorials', target_is_directory=True)
 
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
@@ -220,7 +220,7 @@ nbsphinx_prolog = """
 
 extensions.append('sphinx_gallery.load_style')
 nbsphinx_thumbnails = {
-    'src/tutorials/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
+    'src/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
 }
 
 extensions.append('sphinx_copybutton')
