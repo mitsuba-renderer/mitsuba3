@@ -984,10 +984,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
 static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
                                                     const fs::path &filename_,
-                                                    const std::string &variant,
                                                     ParameterList param,
-                                                    bool write_update,
-                                                    bool parallel) {
+                                                    bool write_update) {
     fs::path filename = filename_;
 
     pugi::xml_document doc;
@@ -1313,8 +1311,7 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
     try {
         ParameterList param;
         detail::XMLParseContext ctx(variant, false);
-        (void) detail::init_xml_parse_context_from_file(ctx, filename, variant, param,
-                                                        false, false);
+        (void) detail::init_xml_parse_context_from_file(ctx, filename, param, false);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
 
@@ -1388,7 +1385,7 @@ std::vector<ref<Object>> load_file(const fs::path &filename,
                                    bool write_update,
                                    bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
-    
+
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
@@ -1402,9 +1399,8 @@ std::vector<ref<Object>> load_file(const fs::path &filename,
     Thread::thread()->set_file_resolver(fs.get());
 
     try {
-        detail::XMLParseContext ctx(variant, false);
-        auto scene_id = detail::init_xml_parse_context_from_file(ctx, filename, variant, param,
-                                                                 write_update, parallel);
+        detail::XMLParseContext ctx(variant, parallel);
+        auto scene_id = detail::init_xml_parse_context_from_file(ctx, filename, param, write_update);
 
         ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
         std::vector<ref<Object>> objects = detail::expand_node(top_node);
