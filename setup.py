@@ -14,14 +14,19 @@ except ImportError:
           file=sys.stderr)
     raise
 
-VERSION_REGEX = re.compile(
-    r"^\s*#\s*define\s+MI_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
-
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
 with open(os.path.join("include/mitsuba/mitsuba.h")) as f:
-    matches = dict(VERSION_REGEX.findall(f.read()))
+    mi_version_regex = re.compile(
+        r"^\s*#\s*define\s+MI_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
+    matches = dict(mi_version_regex.findall(f.read()))
     mitsuba_version = "{MAJOR}.{MINOR}.{PATCH}".format(**matches)
+
+with open(os.path.join("ext/drjit/include/drjit/fwd.h")) as f:
+    drjit_version_regex = re.compile(
+        r"^\s*#\s*define\s+DRJIT_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
+    matches = dict(drjit_version_regex.findall(f.read()))
+    drjit_version = "{MAJOR}.{MINOR}.{PATCH}".format(**matches)
 
 with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -48,14 +53,12 @@ setup(
         '-DCMAKE_INSTALL_BINDIR=mitsuba',
         '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
         '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data',
-        '-DMI_ENABLE_EMBREE=OFF',
-        '-DMI_DEFAULT_VARIANTS:STRING=scalar_rgb',
         f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
         f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}',
         f'-DMI_SRGB_COEFF_FILE:STRING={mi_srgb_coeff_file}',
         f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}'
     ],
-    install_requires=["drjit"],
+    install_requires=[f"drjit=={drjit_version}"],
     packages=['mitsuba'],
     entry_points={
         'console_scripts': [
