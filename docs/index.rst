@@ -92,6 +92,7 @@ different set of goals.
         :classes: btn-link stretched-link
 
     ---
+    :column: col-lg-4 p-2
 
     Developer's Guide
     ^^^^^^^^^^^^^^^^^
@@ -100,14 +101,13 @@ different set of goals.
         :width: 20%
         :align: center
 
-    For the bravest of all.
-
     .. link-button:: src/developer_guide
         :type: ref
         :text:
         :classes: btn-link stretched-link
 
     ---
+    :column: col-lg-4 p-2
 
     Plugin reference
     ^^^^^^^^^^^^^^^^
@@ -123,6 +123,7 @@ different set of goals.
         :classes: btn-link stretched-link
 
     ---
+    :column: col-lg-4 p-2
 
     API reference
     ^^^^^^^^^^^^^
