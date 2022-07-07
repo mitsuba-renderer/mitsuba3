@@ -34,26 +34,14 @@ This command will install all the necessary dependencies on your system (e.g.
 See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 from the git source tree.
 
-Tutorials
----------
+Quickstart
+----------
 
-The best place to start is with user-friendly tutorials that will show you how
-to use Mitsuba 3 with complete, end-to-end examples. 🚀
+.. _sec-quickstart:
 
 For the new users, we put together absolute beginner's tutorials for both DrJit and Mitsuba.
 
 .. nbgallery::
 
-    tutorials/getting_started/quickstart/drjit_quickstart
-    tutorials/getting_started/quickstart/mitsuba_quickstart
-
-Once you have gone through the two tutorials above, you should be in good shape
-to dive deeper in the library. The following tutorials are organized in 3
-categories and cover the fundamental concepts of the Mitsuba library.
-
-.. toctree::
-    :maxdepth: 2
-
-    getting_started/rendering
-    getting_started/inverse_rendering
-    getting_started/others
+    getting_started/quickstart/drjit_quickstart
+    getting_started/quickstart/mitsuba_quickstart

@@ -24,6 +24,8 @@ different set of goals.
 
 .. .............................................................................
 
+.. logos from https://uxwing.com/
+
 .. panels::
     :header: text-center font-weight-bold
     :body: text-center
@@ -34,9 +36,25 @@ different set of goals.
         :width: 20%
         :align: center
 
-    Learn about the main concepts.
+    Get started with Mitsuba 3.
 
     .. link-button:: src/getting_started
+        :type: ref
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Tutorials
+    ^^^^^^^^^
+
+    .. image:: ../resources/data/docs/images/logos/tutorials-logo.png
+        :width: 20%
+        :align: center
+
+    Learn about the main concepts.
+
+    .. link-button:: src/tutorials
         :type: ref
         :text:
         :classes: btn-link stretched-link
@@ -50,7 +68,7 @@ different set of goals.
         :width: 20%
         :align: center
 
-    Explore specific problems step by step.
+    Explore specific features step by step.
 
     .. link-button:: src/how_to_guides
         :type: ref
@@ -127,6 +145,7 @@ different set of goals.
     :hidden:
 
     src/getting_started
+    src/tutorials
     src/how_to_guides
     src/key_topics
     src/developer_guide
