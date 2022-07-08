@@ -7,7 +7,7 @@ Cloning the repository
 ----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
+**3.9.0**) and Python (at least **3.8**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
@@ -166,7 +166,7 @@ without modifications in that case.
 * clang 9.0.0-2 (tags/RELEASE_900/final)
 * cmake 3.13.4
 * ninja 1.9.0
-* python 3.9
+* python 3.8
 
 Windows
 -------
@@ -227,7 +227,7 @@ once might be necessary:
     xcode-select --install
 
 Note that the default Python version installed with macOS is not compatible with
-Mitsuba 3, and a more recent version (at least 3.6) needs to be installed (e.g.
+Mitsuba 3, and a more recent version (at least 3.8) needs to be installed (e.g.
 via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
 <https://brew.sh/>`_).
 
@@ -244,7 +244,7 @@ Now, compilation should be as simple as running the following from inside the
 * macOS Catalina 10.15.2
 * Xcode 11.3.1
 * cmake 3.16.4
-* Python 3.9.0
+* Python 3.8.0
 
 
 Running Mitsuba
