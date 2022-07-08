@@ -272,3 +272,51 @@ img {
     page-break-inside: avoid;
     break-inside: avoid-column;
 }
+
+
+/* Override to disable dark theme support in sphinx_tabs */
+@media (prefers-color-scheme: dark) {
+    body[data-theme="auto"] .page .sphinx-tabs-panel {
+        color: auto;
+        background-color: white;
+    }
+
+    body[data-theme="auto"] .page .sphinx-tabs-tab {
+        color: #1D5C87;
+        background-color: rgba(255, 255, 255, 0);
+    }
+
+    body[data-theme="auto"] .page .sphinx-tabs-tab[aria-selected="true"] {
+        border-bottom: 1px solid white;
+        background-color: white;
+    }
+}
+
+/* Explicit dark theme styling: okay to keep */
+/*
+body[data-theme="dark"] .sphinx-tabs-panel {
+    color: white;
+    background-color: rgb(50, 50, 50);
+  }
+
+  body[data-theme="dark"] .sphinx-tabs-tab {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  body[data-theme="dark"] .sphinx-tabs-tab[aria-selected="true"] {
+    border-bottom: 2px solid rgb(50, 50, 50);
+    background-color: rgb(50, 50, 50);
+  }
+*/
+
+/* Copybutton: disable on the "prompt numbering" cell in notebooks */
+.nbinput .prompt.highlight-none .copybtn,
+.nboutput .prompt.highlight-none .copybtn {
+    display: none;
+}
+/* Copybutton: fix vertical placement of button in notebook cells */
+.nbinput .highlight button.copybtn,
+.nboutput .highlight button.copybtn {
+    top: 0.26rem;
+}
