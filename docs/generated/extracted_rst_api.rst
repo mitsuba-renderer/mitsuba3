@@ -531,12 +531,12 @@
         Parameter ``Radiance`` (0>):
             *no description available*
 
-    .. py:method:: __init__(self, mode, type_mak, component)
+    .. py:method:: __init__(self, mode, type_mask, component)
 
         Parameter ``mode`` (:py:obj:`mitsuba.TransportMode`):
             *no description available*
 
-        Parameter ``type_mak`` (int):
+        Parameter ``type_mask`` (int):
             *no description available*
 
         Parameter ``component`` (int):
@@ -829,11 +829,6 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.BSDFPtr`:
-            *no description available*
-
-    .. py:method:: mitsuba.BSDFPtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.label_(self)
@@ -1936,18 +1931,18 @@
 
         (arg0: bool, arg1: int) -> drjit.llvm.ad.Bool
 
-    .. py:method:: mitsuba.Bool.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.Bool.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+        Parameter ``source`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
@@ -1959,16 +1954,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Bool.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Bool.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.Bool.init_(self, arg0)
@@ -2076,7 +2061,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bool.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.Bool.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.Bool):
             *no description available*
@@ -2837,6 +2822,662 @@
             *no description available*
 
         Returns → Tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
+            *no description available*
+
+.. py:class:: mitsuba.ChainScalarTransform3d
+
+    Base class: :py:obj:`mitsuba.ScalarTransform3d`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainScalarTransform3d.rotate(self, angle)
+
+        Create a rotation transformation in 2D. The angle is specified in
+        degrees
+
+        Parameter ``angle`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform3d.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform3d.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainScalarTransform3f
+
+    Base class: :py:obj:`mitsuba.ScalarTransform3f`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainScalarTransform3f.rotate(self, angle)
+
+        Create a rotation transformation in 2D. The angle is specified in
+        degrees
+
+        Parameter ``angle`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform3f.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform3f.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainScalarTransform4d
+
+    Base class: :py:obj:`mitsuba.ScalarTransform4d`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.from_frame(self, frame)
+
+        Creates a transformation that converts from 'frame' to the standard
+        basis
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.look_at(self, origin, target, up)
+
+        Create a look-at camera transformation
+
+        Parameter ``origin`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            Camera position
+
+        Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            Target vector
+
+        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            Up vector
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.orthographic(self, near, far)
+
+        Create an orthographic transformation, which maps Z to [0,1] and
+        leaves the X and Y coordinates untouched.
+
+        Parameter ``near`` (float):
+            Near clipping plane
+
+        Parameter ``far`` (float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.perspective(self, fov, near, far)
+
+        Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+        Projects vectors in camera space onto a plane at z=1:
+
+        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
+        near))
+
+        Camera-space depths are not mapped linearly!
+
+        Parameter ``fov`` (float):
+            Field of view in degrees
+
+        Parameter ``near`` (float):
+            Near clipping plane
+
+        Parameter ``far`` (float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.rotate(self, axis, angle)
+
+        Create a rotation transformation around an arbitrary axis in 3D. The
+        angle is specified in degrees
+
+        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            *no description available*
+
+        Parameter ``angle`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.to_frame(self, frame)
+
+        Creates a transformation that converts from the standard basis to
+        'frame'
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4d.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainScalarTransform4f
+
+    Base class: :py:obj:`mitsuba.ScalarTransform4f`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.from_frame(self, frame)
+
+        Creates a transformation that converts from 'frame' to the standard
+        basis
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.look_at(self, origin, target, up)
+
+        Create a look-at camera transformation
+
+        Parameter ``origin`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            Camera position
+
+        Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            Target vector
+
+        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            Up vector
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.orthographic(self, near, far)
+
+        Create an orthographic transformation, which maps Z to [0,1] and
+        leaves the X and Y coordinates untouched.
+
+        Parameter ``near`` (float):
+            Near clipping plane
+
+        Parameter ``far`` (float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.perspective(self, fov, near, far)
+
+        Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+        Projects vectors in camera space onto a plane at z=1:
+
+        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
+        near))
+
+        Camera-space depths are not mapped linearly!
+
+        Parameter ``fov`` (float):
+            Field of view in degrees
+
+        Parameter ``near`` (float):
+            Near clipping plane
+
+        Parameter ``far`` (float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.rotate(self, axis, angle)
+
+        Create a rotation transformation around an arbitrary axis in 3D. The
+        angle is specified in degrees
+
+        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            *no description available*
+
+        Parameter ``angle`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.to_frame(self, frame)
+
+        Creates a transformation that converts from the standard basis to
+        'frame'
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainScalarTransform4f.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainScalarTransform4f`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainTransform3d
+
+    Base class: :py:obj:`mitsuba.Transform3d`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainTransform3d.rotate(self, angle)
+
+        Create a rotation transformation in 2D. The angle is specified in
+        degrees
+
+        Parameter ``angle`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform3d.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform3d.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3d`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainTransform3f
+
+    Base class: :py:obj:`mitsuba.Transform3f`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainTransform3f.rotate(self, angle)
+
+        Create a rotation transformation in 2D. The angle is specified in
+        degrees
+
+        Parameter ``angle`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform3f.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform3f.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform3f`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainTransform4d
+
+    Base class: :py:obj:`mitsuba.Transform4d`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainTransform4d.from_frame(self, frame)
+
+        Creates a transformation that converts from 'frame' to the standard
+        basis
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.look_at(self, origin, target, up)
+
+        Create a look-at camera transformation
+
+        Parameter ``origin`` (:py:obj:`mitsuba.Point3d`):
+            Camera position
+
+        Parameter ``target`` (:py:obj:`mitsuba.Point3d`):
+            Target vector
+
+        Parameter ``up`` (:py:obj:`mitsuba.Point3d`):
+            Up vector
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.orthographic(self, near, far)
+
+        Create an orthographic transformation, which maps Z to [0,1] and
+        leaves the X and Y coordinates untouched.
+
+        Parameter ``near`` (drjit.llvm.ad.Float64):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float64):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.perspective(self, fov, near, far)
+
+        Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+        Projects vectors in camera space onto a plane at z=1:
+
+        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
+        near))
+
+        Camera-space depths are not mapped linearly!
+
+        Parameter ``fov`` (drjit.llvm.ad.Float64):
+            Field of view in degrees
+
+        Parameter ``near`` (drjit.llvm.ad.Float64):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float64):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.rotate(self, axis, angle)
+
+        Create a rotation transformation around an arbitrary axis in 3D. The
+        angle is specified in degrees
+
+        Parameter ``axis`` (:py:obj:`mitsuba.Point3d`):
+            *no description available*
+
+        Parameter ``angle`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.to_frame(self, frame)
+
+        Creates a transformation that converts from the standard basis to
+        'frame'
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4d.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4d`:
+            *no description available*
+
+.. py:class:: mitsuba.ChainTransform4f
+
+    Base class: :py:obj:`mitsuba.Transform4f`
+
+    Encapsulates a 4x4 homogeneous coordinate transformation along with
+    its inverse transpose
+
+    The Transform class provides a set of overloaded matrix-vector
+    multiplication operators for vectors, points, and normals (all of them
+    behave differently under homogeneous coordinate transformations, hence
+    the need to represent them using separate types)
+
+    .. py:method:: mitsuba.ChainTransform4f.from_frame(self, frame)
+
+        Creates a transformation that converts from 'frame' to the standard
+        basis
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.look_at(self, origin, target, up)
+
+        Create a look-at camera transformation
+
+        Parameter ``origin`` (:py:obj:`mitsuba.Point3f`):
+            Camera position
+
+        Parameter ``target`` (:py:obj:`mitsuba.Point3f`):
+            Target vector
+
+        Parameter ``up`` (:py:obj:`mitsuba.Point3f`):
+            Up vector
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.orthographic(self, near, far)
+
+        Create an orthographic transformation, which maps Z to [0,1] and
+        leaves the X and Y coordinates untouched.
+
+        Parameter ``near`` (drjit.llvm.ad.Float):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.perspective(self, fov, near, far)
+
+        Create a perspective transformation. (Maps [near, far] to [0, 1])
+
+        Projects vectors in camera space onto a plane at z=1:
+
+        x_proj = x / z y_proj = y / z z_proj = (far * (z - near)) / (z * (far-
+        near))
+
+        Camera-space depths are not mapped linearly!
+
+        Parameter ``fov`` (drjit.llvm.ad.Float):
+            Field of view in degrees
+
+        Parameter ``near`` (drjit.llvm.ad.Float):
+            Near clipping plane
+
+        Parameter ``far`` (drjit.llvm.ad.Float):
+            Far clipping plane
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.rotate(self, axis, angle)
+
+        Create a rotation transformation around an arbitrary axis in 3D. The
+        angle is specified in degrees
+
+        Parameter ``axis`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``angle`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.scale(self, v)
+
+        Create a scale transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.to_frame(self, frame)
+
+        Creates a transformation that converts from the standard basis to
+        'frame'
+
+        Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ChainTransform4f.translate(self, v)
+
+        Create a translation transformation
+
+        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ChainTransform4f`:
             *no description available*
 
 .. py:class:: mitsuba.Class
@@ -3695,11 +4336,6 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.EmitterPtr`:
-            *no description available*
-
-    .. py:method:: mitsuba.EmitterPtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.EmitterPtr.is_environment(self)
@@ -4885,14 +5521,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.Float):
-            *no description available*
-
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
@@ -4945,7 +5573,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Float.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.Float.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
@@ -4960,18 +5588,18 @@
 
         (arg0: float, arg1: int) -> drjit.llvm.ad.Float
 
-    .. py:method:: mitsuba.Float.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.Float.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.Float):
+        Parameter ``source`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
@@ -4995,89 +5623,12 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Float.graphviz_()
-
-        Returns → str:
-            *no description available*
-
     .. py:method:: mitsuba.Float.gt_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.Float.iadd_(self, arg0)
@@ -5121,16 +5672,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Float.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.Float.init_(self, arg0)
@@ -5270,7 +5811,12 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Float.max_(self, arg0)
+    .. py:method:: mitsuba.Float.max_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
@@ -5286,7 +5832,12 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Float.min_(self, arg0)
+    .. py:method:: mitsuba.Float.min_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
@@ -5351,10 +5902,10 @@
             Returns → drjit.llvm.ad.Float:
                 *no description available*
 
-    .. py:method:: mitsuba.Float.pow_(overloaded)
+    .. py:method:: mitsuba.Float.power_(overloaded)
 
 
-        .. py:method:: pow_(self, arg0)
+        .. py:method:: power_(self, arg0)
 
             Parameter ``arg0`` (float):
                 *no description available*
@@ -5362,13 +5913,18 @@
             Returns → drjit.llvm.ad.Float:
                 *no description available*
 
-        .. py:method:: pow_(self, arg0)
+        .. py:method:: power_(self, arg0)
 
             Parameter ``arg0`` (drjit.llvm.ad.Float):
                 *no description available*
 
             Returns → drjit.llvm.ad.Float:
                 *no description available*
+
+    .. py:method:: mitsuba.Float.prod_(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
 
     .. py:method:: mitsuba.Float.rcp_(self)
 
@@ -5420,7 +5976,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Float.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.Float.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.Float):
             *no description available*
@@ -5562,6 +6118,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.Float):
             *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Float.sum_(self)
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
@@ -5880,14 +6441,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → float:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.Float64):
-            *no description available*
-
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
@@ -5940,7 +6493,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.Float64.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
@@ -5955,18 +6508,18 @@
 
         (arg0: float, arg1: int) -> drjit.llvm.ad.Float64
 
-    .. py:method:: mitsuba.Float64.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.Float64.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.Float64):
+        Parameter ``source`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.Float64:
@@ -5990,89 +6543,12 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.graphviz_()
-
-        Returns → str:
-            *no description available*
-
     .. py:method:: mitsuba.Float64.gt_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → float:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → float:
-                *no description available*
-
-    .. py:method:: mitsuba.Float64.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.Float64:
             *no description available*
 
     .. py:method:: mitsuba.Float64.iadd_(self, arg0)
@@ -6116,16 +6592,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Float64:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Float64.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.Float64.init_(self, arg0)
@@ -6265,7 +6731,12 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.max_(self, arg0)
+    .. py:method:: mitsuba.Float64.max_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
@@ -6281,7 +6752,12 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.min_(self, arg0)
+    .. py:method:: mitsuba.Float64.min_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
@@ -6346,10 +6822,10 @@
             Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
-    .. py:method:: mitsuba.Float64.pow_(overloaded)
+    .. py:method:: mitsuba.Float64.power_(overloaded)
 
 
-        .. py:method:: pow_(self, arg0)
+        .. py:method:: power_(self, arg0)
 
             Parameter ``arg0`` (float):
                 *no description available*
@@ -6357,13 +6833,18 @@
             Returns → drjit.llvm.ad.Float64:
                 *no description available*
 
-        .. py:method:: pow_(self, arg0)
+        .. py:method:: power_(self, arg0)
 
             Parameter ``arg0`` (drjit.llvm.ad.Float64):
                 *no description available*
 
             Returns → drjit.llvm.ad.Float64:
                 *no description available*
+
+    .. py:method:: mitsuba.Float64.prod_(self)
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
 
     .. py:method:: mitsuba.Float64.rcp_(self)
 
@@ -6415,7 +6896,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Float64.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.Float64.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.Float64):
             *no description available*
@@ -6557,6 +7038,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.Float64):
             *no description available*
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.Float64.sum_(self)
 
         Returns → drjit.llvm.ad.Float64:
             *no description available*
@@ -6876,7 +7362,7 @@
     variates from the unit square ``[0, 1]^2`` to a function on ``[0,
     1]^2`` that linearly interpolates the input array.
 
-    The mapping is constructed from a sequence of ``log2(hmax(res))``
+    The mapping is constructed from a sequence of ``log2(max(res))``
     hierarchical sample warping steps, where ``res`` is the input array
     resolution. It is bijective and generally very well-behaved (i.e. low
     distortion), which makes it a good choice for structured point sets
@@ -6995,7 +7481,7 @@
     variates from the unit square ``[0, 1]^2`` to a function on ``[0,
     1]^2`` that linearly interpolates the input array.
 
-    The mapping is constructed from a sequence of ``log2(hmax(res))``
+    The mapping is constructed from a sequence of ``log2(max(res))``
     hierarchical sample warping steps, where ``res`` is the input array
     resolution. It is bijective and generally very well-behaved (i.e. low
     distortion), which makes it a good choice for structured point sets
@@ -7114,7 +7600,7 @@
     variates from the unit square ``[0, 1]^2`` to a function on ``[0,
     1]^2`` that linearly interpolates the input array.
 
-    The mapping is constructed from a sequence of ``log2(hmax(res))``
+    The mapping is constructed from a sequence of ``log2(max(res))``
     hierarchical sample warping steps, where ``res`` is the input array
     resolution. It is bijective and generally very well-behaved (i.e. low
     distortion), which makes it a good choice for structured point sets
@@ -7233,7 +7719,7 @@
     variates from the unit square ``[0, 1]^2`` to a function on ``[0,
     1]^2`` that linearly interpolates the input array.
 
-    The mapping is constructed from a sequence of ``log2(hmax(res))``
+    The mapping is constructed from a sequence of ``log2(max(res))``
     hierarchical sample warping steps, where ``res`` is the input array
     resolution. It is bijective and generally very well-behaved (i.e. low
     distortion), which makes it a good choice for structured point sets
@@ -7811,14 +8297,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.Int):
-            *no description available*
-
         Returns → drjit.llvm.ad.Int:
             *no description available*
 
@@ -7846,7 +8324,7 @@
         Returns → drjit.llvm.ad.Int:
             *no description available*
 
-    .. py:method:: mitsuba.Int.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.Int.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
@@ -7861,18 +8339,18 @@
 
         (arg0: int, arg1: int) -> drjit.llvm.ad.Int
 
-    .. py:method:: mitsuba.Int.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.Int.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.Int):
+        Parameter ``source`` (drjit.llvm.ad.Int):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.Int:
@@ -7892,78 +8370,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.Int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.Int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.Int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.Int:
             *no description available*
 
     .. py:method:: mitsuba.Int.iadd_(self, arg0)
@@ -8015,16 +8421,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.Int.init_(self, arg0)
@@ -8162,7 +8558,12 @@
         Returns → drjit.llvm.ad.Int:
             *no description available*
 
-    .. py:method:: mitsuba.Int.max_(self, arg0)
+    .. py:method:: mitsuba.Int.max_(self)
+
+        Returns → drjit.llvm.ad.Int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
@@ -8178,7 +8579,12 @@
         Returns → drjit.llvm.ad.Int:
             *no description available*
 
-    .. py:method:: mitsuba.Int.min_(self, arg0)
+    .. py:method:: mitsuba.Int.min_(self)
+
+        Returns → drjit.llvm.ad.Int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
@@ -8256,6 +8662,11 @@
         Returns → drjit.llvm.ad.Int:
             *no description available*
 
+    .. py:method:: mitsuba.Int.prod_(self)
+
+        Returns → drjit.llvm.ad.Int:
+            *no description available*
+
     .. py:method:: mitsuba.Int.reinterpret_array_(overloaded)
 
 
@@ -8291,7 +8702,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Int.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.Int.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.Int):
             *no description available*
@@ -8384,6 +8795,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.Int):
             *no description available*
+
+        Returns → drjit.llvm.ad.Int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.sum_(self)
 
         Returns → drjit.llvm.ad.Int:
             *no description available*
@@ -8562,14 +8978,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.Int64):
-            *no description available*
-
         Returns → drjit.llvm.ad.Int64:
             *no description available*
 
@@ -8597,7 +9005,7 @@
         Returns → drjit.llvm.ad.Int64:
             *no description available*
 
-    .. py:method:: mitsuba.Int64.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.Int64.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
@@ -8612,18 +9020,18 @@
 
         (arg0: int, arg1: int) -> drjit.llvm.ad.Int64
 
-    .. py:method:: mitsuba.Int64.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.Int64.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.Int64):
+        Parameter ``source`` (drjit.llvm.ad.Int64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.Int64:
@@ -8643,78 +9051,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int64.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.Int64:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int64.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.Int64:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int64.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.Int64:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.Int64.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.Int64:
             *no description available*
 
     .. py:method:: mitsuba.Int64.iadd_(self, arg0)
@@ -8766,16 +9102,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Int64:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.Int64.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.Int64.init_(self, arg0)
@@ -8913,7 +9239,12 @@
         Returns → drjit.llvm.ad.Int64:
             *no description available*
 
-    .. py:method:: mitsuba.Int64.max_(self, arg0)
+    .. py:method:: mitsuba.Int64.max_(self)
+
+        Returns → drjit.llvm.ad.Int64:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
@@ -8929,7 +9260,12 @@
         Returns → drjit.llvm.ad.Int64:
             *no description available*
 
-    .. py:method:: mitsuba.Int64.min_(self, arg0)
+    .. py:method:: mitsuba.Int64.min_(self)
+
+        Returns → drjit.llvm.ad.Int64:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
@@ -9007,6 +9343,11 @@
         Returns → drjit.llvm.ad.Int64:
             *no description available*
 
+    .. py:method:: mitsuba.Int64.prod_(self)
+
+        Returns → drjit.llvm.ad.Int64:
+            *no description available*
+
     .. py:method:: mitsuba.Int64.reinterpret_array_(overloaded)
 
 
@@ -9042,7 +9383,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Int64.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.Int64.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.Int64):
             *no description available*
@@ -9135,6 +9476,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.Int64):
             *no description available*
+
+        Returns → drjit.llvm.ad.Int64:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.sum_(self)
 
         Returns → drjit.llvm.ad.Int64:
             *no description available*
@@ -9551,7 +9897,7 @@
 
         .. py:method:: zero_(self, arg0)
 
-            This callback method is invoked by dr::zero<>, and takes care of
+            This callback method is invoked by dr::zeros<>, and takes care of
             fields that deviate from the standard zero-initialization convention.
             In this particular class, the ``t`` field should be set to an infinite
             value to mark invalid intersection records.
@@ -10005,7 +10351,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: True
+    :value: False
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -11093,6 +11439,14 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Matrix3f.sh_eval_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → List[drjit.llvm.ad.Array3f]:
+            *no description available*
+
 .. py:class:: mitsuba.Matrix4f
 
     .. py:method:: mitsuba.Matrix4f.entry_(self, arg0)
@@ -11416,11 +11770,6 @@
         Returns whether this medium has a spectrally varying extinction
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.MediumPtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.intersect_aabb(self, ray)
@@ -12290,11 +12639,6 @@
         Returns → :py:obj:`mitsuba.ObjectPtr`:
             *no description available*
 
-    .. py:method:: mitsuba.ObjectPtr.index(self)
-
-        Returns → int:
-            *no description available*
-
     .. py:method:: mitsuba.ObjectPtr.label_(self)
 
         Returns → str:
@@ -12709,7 +13053,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.UInt64:
+        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
@@ -12778,11 +13122,6 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.PhaseFunctionPtr`:
-            *no description available*
-
-    .. py:method:: mitsuba.PhaseFunctionPtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.label_(self)
@@ -13132,7 +13471,7 @@
 
     .. py:method:: mitsuba.PreliminaryIntersection3f.zero_(self, arg0)
 
-        This callback method is invoked by dr::zero<>, and takes care of
+        This callback method is invoked by dr::zeros<>, and takes care of
         fields that deviate from the standard zero-initialization convention.
         In this particular class, the ``t`` field should be set to an infinite
         value to mark invalid intersection records.
@@ -15089,17 +15428,17 @@
         Parameter ``angle`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
+        Returns → ChainTransform<double, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3d.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2d`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
+        Returns → ChainTransform<double, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3d.transform_affine(overloaded)
@@ -15131,10 +15470,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2d`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3d`:
+        Returns → ChainTransform<double, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3d.translation(self)
@@ -15239,17 +15578,17 @@
         Parameter ``angle`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
+        Returns → ChainTransform<float, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3f.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
+        Returns → ChainTransform<float, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3f.transform_affine(overloaded)
@@ -15281,10 +15620,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint2f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform3f`:
+        Returns → ChainTransform<float, 3>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform3f.translation(self)
@@ -15367,7 +15706,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.has_scale(overloaded)
@@ -15409,10 +15748,10 @@
         Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3d`):
             Target vector
 
-        Parameter ``up`` (:py:obj:`mitsuba.ScalarVector3d`):
+        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3d`):
             Up vector
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.orthographic(near, far)
@@ -15426,7 +15765,7 @@
         Parameter ``far`` (float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.perspective(fov, near, far)
@@ -15449,7 +15788,7 @@
         Parameter ``far`` (float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.rotate(axis, angle)
@@ -15457,23 +15796,23 @@
         Create a rotation transformation around an arbitrary axis in 3D. The
         angle is specified in degrees
 
-        Parameter ``axis`` (:py:obj:`mitsuba.ScalarVector3d`):
+        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3d`):
             *no description available*
 
         Parameter ``angle`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3d`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.to_frame(frame)
@@ -15484,7 +15823,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.transform_affine(overloaded)
@@ -15538,10 +15877,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3d`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4d`:
+        Returns → ChainTransform<double, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4d.translation(self)
@@ -15624,7 +15963,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.has_scale(overloaded)
@@ -15666,10 +16005,10 @@
         Parameter ``target`` (:py:obj:`mitsuba.ScalarPoint3f`):
             Target vector
 
-        Parameter ``up`` (:py:obj:`mitsuba.ScalarVector3f`):
+        Parameter ``up`` (:py:obj:`mitsuba.ScalarPoint3f`):
             Up vector
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.orthographic(near, far)
@@ -15683,7 +16022,7 @@
         Parameter ``far`` (float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.perspective(fov, near, far)
@@ -15706,7 +16045,7 @@
         Parameter ``far`` (float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.rotate(axis, angle)
@@ -15714,23 +16053,23 @@
         Create a rotation transformation around an arbitrary axis in 3D. The
         angle is specified in degrees
 
-        Parameter ``axis`` (:py:obj:`mitsuba.ScalarVector3f`):
+        Parameter ``axis`` (:py:obj:`mitsuba.ScalarPoint3f`):
             *no description available*
 
         Parameter ``angle`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3f`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.to_frame(frame)
@@ -15741,7 +16080,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.transform_affine(overloaded)
@@ -15795,10 +16134,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.ScalarVector3f`):
+        Parameter ``v`` (:py:obj:`mitsuba.ScalarPoint3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarTransform4f`:
+        Returns → ChainTransform<float, 4>:
             *no description available*
 
     .. py:method:: mitsuba.ScalarTransform4f.translation(self)
@@ -16362,7 +16701,7 @@
         Parameter ``key`` (str):
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.update()
+    .. py:method:: mitsuba.SceneParameters.update(values=None)
 
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
@@ -16375,15 +16714,28 @@
         element is the node itself. The second element is the set of keys that
         the node is being updated for.
 
+        Parameter ``values`` (``dict``):
+            Optional dictionary-like object containing a set of keys and values
+            to be used to overwrite scene parameters. This operation will happen
+            before propagating the update further into the scene internal state.
+
+        Parameter ``values`` (dict):
+            *no description available*
+
         Returns → list[tuple[Any, set]]:
             *no description available*
 
     .. py:method:: mitsuba.SceneParameters.keep(keys)
 
         Reduce the size of the dictionary by only keeping elements,
-        whose keys are part of the provided list 'keys'.
+        whose keys are defined by 'keys'.
 
-        Parameter ``keys`` (list):
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be kept. Regex are supported to define
+            a subset of parameters at once. If set to ``None``, all differentiable
+            scene parameters will be loaded.
+
+        Parameter ``keys`` (None | str | list[str]):
             *no description available*
 
         Returns → None:
@@ -16514,11 +16866,6 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.SensorPtr`:
-            *no description available*
-
-    .. py:method:: mitsuba.SensorPtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.SensorPtr.label_(self)
@@ -17349,11 +17696,6 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.ShapePtr`:
-            *no description available*
-
-    .. py:method:: mitsuba.ShapePtr.index(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.interior_medium(self)
@@ -18951,6 +19293,14 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.TensorXf.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.TensorXf.atan2_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
@@ -19075,16 +19425,6 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.TensorXf.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.TensorXf.index_ad(self)
-
-        Returns → int:
-            *no description available*
-
     .. py:method:: mitsuba.TensorXf.ior_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
@@ -19148,7 +19488,7 @@
         Returns → drjit.llvm.ad.TensorXb:
             *no description available*
 
-    .. py:method:: mitsuba.TensorXf.max_(self, arg0)
+    .. py:method:: mitsuba.TensorXf.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -19156,7 +19496,7 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.TensorXf.min_(self, arg0)
+    .. py:method:: mitsuba.TensorXf.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -19561,6 +19901,615 @@
         Returns → :py:obj:`mitsuba.ScalarVector2f`:
             *no description available*
 
+.. py:class:: mitsuba.Texture1f
+
+
+    .. py:method:: __init__(self, shape, channels, use_accel=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``shape`` (List[int[1]]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: __init__(self, tensor, use_accel=True, migrate=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_cubic(self, pos, active=True, force_drjit=False)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_drjit`` (bool):
+            *no description available*
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_cubic_grad(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Array1f]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_cubic_hessian(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[List[drjit.llvm.ad.Array1f], List[drjit::Matrix<drjit::DiffArray<drjit::LLVMArray<float> >, 1ul>]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_fetch(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][2]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_fetch_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][2]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_fetch_drjit(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][2]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval_nonaccel(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.filter_mode(self)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.migrated(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.set_tensor(self, tensor, migrate=False)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.set_value(self, value, migrate=False)
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.tensor(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.use_accel(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.value(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.wrap_mode(self)
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture2f
+
+
+    .. py:method:: __init__(self, shape, channels, use_accel=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``shape`` (List[int[2]]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: __init__(self, tensor, use_accel=True, migrate=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_cubic(self, pos, active=True, force_drjit=False)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_drjit`` (bool):
+            *no description available*
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_cubic_grad(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Array2f]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_cubic_hessian(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[List[drjit.llvm.ad.Array2f], List[drjit.llvm.ad.Matrix2f]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_fetch(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][4]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_fetch_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][4]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_fetch_drjit(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][4]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval_nonaccel(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.filter_mode(self)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.migrated(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.set_tensor(self, tensor, migrate=False)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.set_value(self, value, migrate=False)
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.tensor(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.use_accel(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.value(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.wrap_mode(self)
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+.. py:class:: mitsuba.Texture3f
+
+
+    .. py:method:: __init__(self, shape, channels, use_accel=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``shape`` (List[int[3]]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: __init__(self, tensor, use_accel=True, migrate=True, filter_mode=<FilterMode., Linear, wrap_mode=<WrapMode., Clamp)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``Linear`` (1>):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``Clamp`` (1>):
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_cubic(self, pos, active=True, force_drjit=False)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_drjit`` (bool):
+            *no description available*
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_cubic_grad(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Array3f]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_cubic_hessian(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[List[drjit.llvm.ad.Array3f], List[drjit.llvm.ad.Matrix3f]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_fetch(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][8]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_fetch_cuda(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][8]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_fetch_drjit(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[List[drjit.llvm.ad.Float][8]]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval_nonaccel(self, pos, active=True)
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → List[drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.filter_mode(self)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.migrated(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.set_tensor(self, tensor, migrate=False)
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.set_value(self, value, migrate=False)
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.tensor(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.use_accel(self)
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.value(self)
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.wrap_mode(self)
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
 .. py:class:: mitsuba.Thread
 
     Base class: :py:obj:`mitsuba.Object`
@@ -19953,17 +20902,17 @@
         Parameter ``angle`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector2d`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.transform_affine(overloaded)
@@ -19995,10 +20944,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector2d`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.translation(self)
@@ -20110,17 +21059,17 @@
         Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector2f`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.transform_affine(overloaded)
@@ -20152,10 +21101,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector2f`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform3f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.translation(self)
@@ -20245,7 +21194,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.has_scale(overloaded)
@@ -20287,10 +21236,10 @@
         Parameter ``target`` (:py:obj:`mitsuba.Point3d`):
             Target vector
 
-        Parameter ``up`` (:py:obj:`mitsuba.Vector3d`):
+        Parameter ``up`` (:py:obj:`mitsuba.Point3d`):
             Up vector
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.orthographic(near, far)
@@ -20304,7 +21253,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float64):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.perspective(fov, near, far)
@@ -20327,7 +21276,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float64):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.rotate(axis, angle)
@@ -20335,23 +21284,23 @@
         Create a rotation transformation around an arbitrary axis in 3D. The
         angle is specified in degrees
 
-        Parameter ``axis`` (:py:obj:`mitsuba.Vector3d`):
+        Parameter ``axis`` (:py:obj:`mitsuba.Point3d`):
             *no description available*
 
         Parameter ``angle`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3d`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.to_frame(frame)
@@ -20362,7 +21311,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.transform_affine(overloaded)
@@ -20416,10 +21365,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3d`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4d`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.translation(self)
@@ -20509,7 +21458,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.has_scale(overloaded)
@@ -20551,10 +21500,10 @@
         Parameter ``target`` (:py:obj:`mitsuba.Point3f`):
             Target vector
 
-        Parameter ``up`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``up`` (:py:obj:`mitsuba.Point3f`):
             Up vector
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.orthographic(near, far)
@@ -20568,7 +21517,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.perspective(fov, near, far)
@@ -20591,7 +21540,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.rotate(axis, angle)
@@ -20599,23 +21548,23 @@
         Create a rotation transformation around an arbitrary axis in 3D. The
         angle is specified in degrees
 
-        Parameter ``axis`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``axis`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
         Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.scale(v)
 
         Create a scale transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.to_frame(frame)
@@ -20626,7 +21575,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.transform_affine(overloaded)
@@ -20680,10 +21629,10 @@
 
         Create a translation transformation
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Transform4f`:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.translation(self)
@@ -20865,14 +21814,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.UInt):
-            *no description available*
-
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
@@ -20900,7 +21841,7 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.UInt.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.UInt.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -20915,18 +21856,18 @@
 
         (arg0: int, arg1: int) -> drjit.llvm.ad.UInt
 
-    .. py:method:: mitsuba.UInt.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.UInt.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+        Parameter ``source`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.UInt:
@@ -20946,78 +21887,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.UInt:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.UInt:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.UInt:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.iadd_(self, arg0)
@@ -21069,16 +21938,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.UInt:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.UInt.init_(self, arg0)
@@ -21216,7 +22075,12 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.UInt.max_(self, arg0)
+    .. py:method:: mitsuba.UInt.max_(self)
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -21232,7 +22096,12 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.UInt.min_(self, arg0)
+    .. py:method:: mitsuba.UInt.min_(self)
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -21306,6 +22175,11 @@
                 *no description available*
 
     .. py:method:: mitsuba.UInt.popcnt_(self)
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.prod_(self)
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
@@ -21395,7 +22269,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.UInt.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.UInt.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -21496,6 +22370,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt):
             *no description available*
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.sum_(self)
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
@@ -21674,14 +22553,6 @@
         Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.dot_async_(self, arg0)
-
-        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
-            *no description available*
-
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
@@ -21709,7 +22580,7 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.UInt64.fmadd_(self, arg0, arg1)
+    .. py:method:: mitsuba.UInt64.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
@@ -21724,18 +22595,18 @@
 
         (arg0: int, arg1: int) -> drjit.llvm.ad.UInt64
 
-    .. py:method:: mitsuba.UInt64.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.UInt64.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (drjit.llvm.ad.UInt64):
+        Parameter ``source`` (drjit.llvm.ad.UInt64):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → drjit.llvm.ad.UInt64:
@@ -21755,78 +22626,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.hmax_(overloaded)
-
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmax_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt64.hmax_async_(self)
-
-        Returns → drjit.llvm.ad.UInt64:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.hmin_(overloaded)
-
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hmin_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt64.hmin_async_(self)
-
-        Returns → drjit.llvm.ad.UInt64:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.hprod_(overloaded)
-
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hprod_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt64.hprod_async_(self)
-
-        Returns → drjit.llvm.ad.UInt64:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.hsum_(overloaded)
-
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-        .. py:method:: hsum_(self)
-
-            Returns → int:
-                *no description available*
-
-    .. py:method:: mitsuba.UInt64.hsum_async_(self)
-
-        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.iadd_(self, arg0)
@@ -21878,16 +22677,6 @@
             *no description available*
 
         Returns → drjit.llvm.ad.UInt64:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.index(self)
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.UInt64.index_ad(self)
-
-        Returns → int:
             *no description available*
 
     .. py:method:: mitsuba.UInt64.init_(self, arg0)
@@ -22025,7 +22814,12 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.UInt64.max_(self, arg0)
+    .. py:method:: mitsuba.UInt64.max_(self)
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.maximum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
@@ -22041,7 +22835,12 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.UInt64.min_(self, arg0)
+    .. py:method:: mitsuba.UInt64.min_(self)
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.minimum_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
@@ -22119,6 +22918,11 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
+    .. py:method:: mitsuba.UInt64.prod_(self)
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
     .. py:method:: mitsuba.UInt64.reinterpret_array_(overloaded)
 
 
@@ -22154,7 +22958,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.UInt64.scatter_(self, target, index, mask, permute)
+    .. py:method:: mitsuba.UInt64.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (drjit.llvm.ad.UInt64):
             *no description available*
@@ -22255,6 +23059,11 @@
 
         Parameter ``arg0`` (drjit.llvm.ad.UInt64):
             *no description available*
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.sum_(self)
 
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
@@ -22645,7 +23454,7 @@
     Enabling ``mask_updates`` avoids these two issues. This is similar to
     `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
 
-    .. py:method:: __init__()
+    .. py:method:: __init__(params=None)
 
         Parameter ``lr``:
             learning rate
@@ -22661,6 +23470,12 @@
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
+        
+        Parameter ``params`` (:py:class:`dict`):
+            Optional dictionary-like object containing parameters to optimize.
+
+        Parameter ``params`` (typing.Optional[dict]):
+            *no description available*
 
         
     .. py:method:: mitsuba.ad.Adam.step()
@@ -22675,42 +23490,18 @@
 
     Base class of all gradient-based optimizers.
 
-    .. py:method:: __init__()
+    .. py:method:: __init__(params)
 
         Parameter ``lr``:
             learning rate
         
-        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
-            Scene parameters dictionary containing the parameters to optimize.
+        Parameter ``params`` (:py:class:`dict`):
+            Dictionary-like object containing parameters to optimize.
+
+        Parameter ``params`` (dict):
+            *no description available*
 
         
-    .. py:method:: mitsuba.ad.Optimizer.load()
-
-        Load a set of scene parameters to optimize.
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be loaded. Regex are supported to define
-            a subset of parameters at once. If set to ``None``, all differentiable
-            scene parameters will be loaded.
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.Optimizer.update()
-
-        Propagate updates of the parameters being optimized back to the scene state.
-
-        Parameter ``params`` (:py:class:`mitsuba.SceneParameters`):
-            Scene parameters dictionary
-
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be updated. Regex are supported to update
-            a subset of parameters at once. If set to ``None``, all scene parameters will
-            be update.
-
-        Returns → None:
-            *no description available*
-
     .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
 
         Set the learning rate.
@@ -22747,7 +23538,7 @@
     :math:`\varepsilon` is the learning rate, and :math:`\mu` is
     the momentum parameter.
 
-    .. py:method:: __init__()
+    .. py:method:: __init__(params=None)
 
         Parameter ``lr``:
             learning rate
@@ -22760,6 +23551,12 @@
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
             See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
+        
+        Parameter ``params`` (:py:class:`dict`):
+            Optional dictionary-like object containing parameters to optimize.
+
+        Parameter ``params`` (typing.Optional[dict]):
+            *no description available*
 
         
     .. py:method:: mitsuba.ad.SGD.step()
@@ -23736,6 +24533,10 @@
 
     Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Vector3f`]:
         *no description available*
+
+.. py:function:: mitsuba.cornell_box()
+
+    Returns a dictionary containing a description of the Cornell Box scene.
 
 .. py:function:: mitsuba.depolarizer(arg0)
 
@@ -25569,14 +26370,14 @@
         default, the integrator specified in the original scene description will
         be used.
 
-    Parameter ``seed` (``int``)
+    Parameter ``seed`` (``int``)
         This parameter controls the initialization of the random number
         generator during the primal rendering step. It is crucial that you
         specify different seeds (e.g., an increasing sequence) if subsequent
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad` (``int``)
+    Parameter ``seed_grad`` (``int``)
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation will
         automatically compute a suitable value from the primal ``seed``.
@@ -27381,6 +28182,16 @@
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
 
 .. py:function:: mitsuba.xml.dict_to_xml()
+
+.. py:function:: mitsuba.xml_to_props(path)
+
+    Get the names and properties of the objects described in a Mitsuba XML file
+
+    Parameter ``path`` (str):
+        *no description available*
+
+    Returns → List[Tuple[str, :py:obj:`mitsuba.Properties`]]:
+        *no description available*
 
 .. py:function:: mitsuba.xyz_to_srgb(rgb, active=True)
 

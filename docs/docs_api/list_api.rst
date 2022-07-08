@@ -30,6 +30,22 @@
 
 .. autoclass:: mitsuba.BoundingSphere3f
 
+.. autoclass:: mitsuba.ChainScalarTransform3d
+
+.. autoclass:: mitsuba.ChainScalarTransform3f
+
+.. autoclass:: mitsuba.ChainScalarTransform4d
+
+.. autoclass:: mitsuba.ChainScalarTransform4f
+
+.. autoclass:: mitsuba.ChainTransform3d
+
+.. autoclass:: mitsuba.ChainTransform3f
+
+.. autoclass:: mitsuba.ChainTransform4d
+
+.. autoclass:: mitsuba.ChainTransform4f
+
 .. autoclass:: mitsuba.Class
 
 .. autoclass:: mitsuba.Color0d
@@ -424,6 +440,18 @@
 
 .. autoclass:: mitsuba.Texture
 
+.. autoclass:: mitsuba.Texture1d
+
+.. autoclass:: mitsuba.Texture1f
+
+.. autoclass:: mitsuba.Texture2d
+
+.. autoclass:: mitsuba.Texture2f
+
+.. autoclass:: mitsuba.Texture3d
+
+.. autoclass:: mitsuba.Texture3f
+
 .. autoclass:: mitsuba.Thread
 
 .. autoclass:: mitsuba.ThreadEnvironment
@@ -537,6 +565,8 @@
 .. autofunction:: mitsuba.cie1931_y
 
 .. autofunction:: mitsuba.coordinate_system
+
+.. autofunction:: mitsuba.cornell_box
 
 .. autofunction:: mitsuba.depolarizer
 
@@ -871,6 +901,8 @@
 .. autoclass:: mitsuba.xml.WriteXML
 
 .. autofunction:: mitsuba.xml.dict_to_xml
+
+.. autofunction:: mitsuba.xml_to_props
 
 .. autofunction:: mitsuba.xyz_to_srgb
 
