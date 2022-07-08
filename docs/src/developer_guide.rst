@@ -22,11 +22,11 @@ Code structure
 
 The Mitsuba codebase is split into 3 basic support folders:
 
-* The core folder (in `src/libcore`) implements basic functionality such as
+* The core folder (in `src/core`) implements basic functionality such as
   cross-platform file and bitmap I/O, data structures, scheduling, as well as
   logging and plugin management.
 
-* The rendering folder (in `src/librender``) contains abstractions needed to
+* The rendering folder (in `src/render``) contains abstractions needed to
   load and represent scenes containing light sources, shapes, materials, and
   participating media.
 
@@ -34,12 +34,15 @@ The Mitsuba codebase is split into 3 basic support folders:
   written in Python, and which access Mitsuba through bindings. This includes
   statistical tests (Chi^2, etc.) and tooling for differentiable rendering.
 
+All other folders in `src` implement Mitsuba 3 plugins such as `bsdf`, `shapes`,
+etc.
+
 Coding style
 ------------
 
-We've essentially imported Python's PEP 8 into the C++ side (which does not
-specify a recommended naming convention), ensuring that code that uses
-functionality from both languages looks natural.
+We've essentially imported Python's `PEP 8 <https://peps.python.org/pep-0008/>`_
+into the C++ side (which does not specify a recommended naming convention),
+ensuring that code that uses functionality from both languages looks natural.
 
 Contributing
 ------------

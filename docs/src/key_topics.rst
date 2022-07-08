@@ -21,4 +21,5 @@ Topics
 
     key_topics/variants
     key_topics/scene_format
+    key_topics/differences
     key_topics/polarization

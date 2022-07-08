@@ -1,5 +1,41 @@
+.. _sec-writing-documentation:
+
 Writing documentation
 =====================
+
+Additional packages are required to generate the HTML documentation which can
+be installed running the following command:
+
+.. code-block:: bash
+
+    pip install -r docs/requirements.txt
+
+If not already done, run `cmake` in the build folder to generate the build
+targets related to the documentation:
+
+.. code-block:: bash
+
+  cd build
+  cmake -GNinja ..
+
+To generate the HTML documentation, build the `mkdoc` target as follow:
+
+.. code-block:: bash
+
+    ninja mkdoc
+
+This process will generate the documentation HTML files into the `build/html`
+folder.
+
+API references generation
+-------------------------
+
+The API references need to be generated manually executing the following command:
+
+.. code-block:: bash
+
+    ninja mkdoc-api
+    ninja mkdoc # Rebuild the documentation to update the API references
 
 Notebook tutorials
 ------------------
@@ -25,10 +61,3 @@ the metadata of that cell:
     {
         "nbsphinx": "hidden"
     }
-
-Before building the documentation, make sure to install `pandoc <https://pandoc.org/installing.html>`_
-as well as the required libraries:
-
-.. code-block:: bash
-
-    pip install -r docs/requirements.txt
