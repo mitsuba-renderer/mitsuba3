@@ -22,138 +22,109 @@ predecessors: `Mitsuba 0.6 <https://github.com/mitsuba-renderer/mitsuba>`_ and
 However, in most other respects, it is a completely new system following a
 different set of goals.
 
-.. .............................................................................
+Installation
+------------
 
-.. logos from https://uxwing.com/
+Mitsuba 3 can be installed via :monosp:`pip` from `PyPI
+<https://pypi.org/project/mitsuba/>`_. This is the recommended installation
+method for most users.
+
+.. code-block:: bash
+
+    pip install mitsuba
+
+This command will install all the necessary dependencies on your system (e.g.
+`Dr.Jit`) if not already available.
+
+.. note::
+
+    For computation and rendering on the GPU, Mitsuba 3 relies on dynamic
+    library loading which will seamlessly use the CUDA and OptiX installation
+    present within the GPU driver itself.
+
+See the :ref:`developer guide <sec-compiling>` for complete instructions on building
+from the git source tree.
+
+
+Hello World!
+------------
+
+You should now be all setup to render your first scene with Mitsuba 3. Running
+the Mitsuba 3 code below will render the famous Cornell Box scene and write the
+rendered image to a file on disk.
+
+.. code-block:: python
+
+    import mitsuba as mi
+
+    mi.set_variant('scalar_rgb')
+
+    img = mi.render(mi.load_dict(mi.cornell_box()))
+
+    mi.Bitmap(img).write('cbox.exr')
+
+
+.. _sec-quickstart:
+
+Quickstart
+----------
+
+For the new users, we put together absolute beginner's tutorials for both DrJit and Mitsuba.
 
 .. panels::
-    :header: text-center font-weight-bold
-    :body: text-center
+    :body: text-center font-weight-bold
 
-    Getting Started
-    ^^^^^^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/logos/getting-started-logo.png
-        :width: 20%
+    .. image:: ../resources/data/docs/images/logos/drjit-logo.png
+        :width: 30%
         :align: center
 
-    Get started with Mitsuba 3.
+    Dr.Jit quickstart
 
-    .. link-button:: src/getting_started
+    .. link-button:: src/quickstart/drjit_quickstart
         :type: ref
         :text:
         :classes: btn-link stretched-link
 
     ---
 
-    Tutorials
-    ^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/tutorials-logo.png
-        :width: 20%
+    .. image:: ../resources/data/docs/images/logos/mitsuba-logo.png
+        :width: 30%
         :align: center
 
-    Learn about the main concepts.
+    Mitsuba quickstart
 
-    .. link-button:: src/tutorials
+    .. link-button:: src/quickstart/mitsuba_quickstart
         :type: ref
         :text:
         :classes: btn-link stretched-link
-
-    ---
-
-    How-to Guides
-    ^^^^^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/how-to-guide-logo.png
-        :width: 20%
-        :align: center
-
-    Explore specific features step by step.
-
-    .. link-button:: src/how_to_guides
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
-
-    ---
-
-    Key Topics
-    ^^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/key-topics-logo.png
-        :width: 20%
-        :align: center
-
-    Dive deep in advanced topics.
-
-    .. link-button:: src/key_topics
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
-
-    ---
-    :column: col-lg-4 p-2
-
-    Developer's Guide
-    ^^^^^^^^^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/developer-logo.png
-        :width: 20%
-        :align: center
-
-    .. link-button:: src/developer_guide
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
-
-    ---
-    :column: col-lg-4 p-2
-
-    Plugin reference
-    ^^^^^^^^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/plugin-reference-logo.png
-        :width: 20%
-        :align: center
-
-
-    .. link-button:: src/plugin_reference
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
-
-    ---
-    :column: col-lg-4 p-2
-
-    API reference
-    ^^^^^^^^^^^^^
-
-    .. image:: ../resources/data/docs/images/logos/api-reference-logo.png
-        :width: 20%
-        :align: center
-
-    .. link-button:: src/api_reference
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
-
-.. icons from https://uxwing.com
 
 .. .............................................................................
 
 .. toctree::
     :maxdepth: 1
+    :caption: Tutorials
     :hidden:
 
-    src/getting_started
-    src/tutorials
+    src/rendering_tutorials
+    src/inverse_rendering_tutorials
+    src/others_tutorials
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Guides
+    :hidden:
+
     src/how_to_guides
     src/key_topics
     src/developer_guide
+
+.. toctree::
+    :maxdepth: 1
+    :caption: References
+    :hidden:
+
     src/plugin_reference
     src/api_reference
-
-.. .............................................................................
 
 .. toctree::
     :maxdepth: 1

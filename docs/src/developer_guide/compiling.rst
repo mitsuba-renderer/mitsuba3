@@ -7,7 +7,7 @@ Cloning the repository
 ----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.6**). Further platform-specific dependencies
+**3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
@@ -41,8 +41,7 @@ installs a git alias named ``pullall`` that automates these two steps.
 
 .. code-block:: bash
 
-    git config --global alias.pullall '!f(){ git pull "$@" && git submodule
-    update --init --recursive; }; f'
+    git config --global alias.pullall '!f(){ git pull "$@" && git submodule update --init --recursive; }; f'
 
 Afterwards, simply write
 
@@ -117,28 +116,23 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang and libc++ (Clang's
-    C++ library) sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake
-    ninja-build
+    # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
+    sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake ninja-build
 
-    # Install libraries for image I/O and the graphical user interface sudo apt
-    install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev
-    libxcursor-dev
+    # Install libraries for image I/O and the graphical user interface
+    sudo apt install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev libxcursor-dev
 
-    # Install required Python packages sudo apt install python3-dev
-    python3-distutils python3-setuptools
+    # Install required Python packages
+    sudo apt install python3-dev python3-distutils python3-setuptools
 
 Additional packages are required to run the included test suite or to generate
-HTML documentation (see :ref:`Developer guide <sec-devguide>`). If those are
+HTML documentation (see :ref:`Developer guide <sec-writing-documentation>`). If those are
 interesting to you, also enter the following commands:
 
 .. code-block:: bash
 
-    # For running tests sudo apt install python3-pytest python3-pytest-xdist
-    python3-numpy
-
-    # For generating the documentation sudo apt install python3-sphinx
-    python3-guzzle-sphinx-theme python3-sphinxcontrib.bibtex
+    # For running tests
+    sudo apt install python3-pytest python3-pytest-xdist python3-numpy
 
 Next, ensure that two environment variables :monosp:`CC` and :monosp:`CXX` are
 exported. You can either run these two commands manually before using CMake
@@ -155,7 +149,9 @@ inside the :monosp:`mitsuba3` root directory:
 
 .. code-block:: bash
 
-    # Create a directory where build products are stored mkdir build cd build
+    # Create a directory where build products are stored
+    mkdir build
+    cd build
     cmake -GNinja .. ninja
 
 
@@ -170,7 +166,7 @@ without modifications in that case.
 * clang 9.0.0-2 (tags/RELEASE_900/final)
 * cmake 3.13.4
 * ninja 1.9.0
-* python 3.7.5
+* python 3.9
 
 Windows
 -------
@@ -179,20 +175,27 @@ On Windows, a recent version of `Visual Studio 2019
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
 CMake, or Python (e.g. via `Miniconda 3
 <https://docs.conda.io/en/latest/miniconda.html>`_) might need to be installed
-manually. Mitsuba's build system *requires* access to Python >= 3.6 even if you
+manually. Mitsuba's build system *requires* access to Python >= 3.9 even if you
 do not plan to use Mitsuba's python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:
 
 .. code-block:: bash
 
-    # To be safe, explicitly ask for the 64 bit version of Visual Studio cmake
-    -G "Visual Studio 16 2019" -A x64
+    # To be safe, explicitly ask for the 64 bit version of Visual Studio
+    cmake -G "Visual Studio 16 2019" -A x64
 
 
 Afterwards, open the generated ``mitsuba.sln`` file and proceed building as
 usual from within Visual Studio. You will probably also want to set the build
 mode to *Release* there.
+
+It is also possible to directly build from the terminal running the following
+command:
+
+.. code-block:: bash
+
+    cmake --build .. --config Release
 
 Additional packages are required to run the included test suite or to generate
 HTML documentation (see :ref:`Developer guide <sec-devguide>`). If those are
@@ -241,7 +244,7 @@ Now, compilation should be as simple as running the following from inside the
 * macOS Catalina 10.15.2
 * Xcode 11.3.1
 * cmake 3.16.4
-* Python 3.7.3
+* Python 3.9.0
 
 
 Running Mitsuba
@@ -253,9 +256,11 @@ directory to configure environment variables
 
 .. code-block:: bash
 
-    # On Linux / Mac OS source setpath.sh
+    # On Linux / Mac OS
+    source setpath.sh
 
-    # On Windows C:/.../mitsuba3/build> setpath
+    # On Windows
+    C:/.../mitsuba3/build> setpath
 
 Mitsuba can then be used to render scenes by typing
 
@@ -295,12 +300,13 @@ path to the compiler. E.g.
 
 .. code-block:: bash
 
-    # Environment variable export CUDACXX=/usr/local/cuda/bin/nvcc
+    # Environment variable
+    export CUDACXX=/usr/local/cuda/bin/nvcc
 
     # or
 
-    # As part of the CMake process cmake ..
-    -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+    # As part of the CMake process
+    cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 
 By default, Mitsuba is able to resolve the OptiX API itself, and therefore does
 not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake flag

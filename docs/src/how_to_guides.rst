@@ -20,7 +20,7 @@ Guides
     :maxdepth: 1
     :glob:
 
-    tutorials/how_to_guides/transformation_toolbox
-    tutorials/how_to_guides/image_io_and_manipulation
-    tutorials/how_to_guides/mesh_io_and_manipulation
-    tutorials/how_to_guides/use_optimizers
+    how_to_guides/transformation_toolbox
+    how_to_guides/image_io_and_manipulation
+    how_to_guides/mesh_io_and_manipulation
+    how_to_guides/use_optimizers

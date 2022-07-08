@@ -20,11 +20,14 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('src/getting_started/quickstart/'):
-    os.symlink('../../tutorials/quickstart', 'src/getting_started/quickstart', target_is_directory=True)
+if not os.path.exists('src/quickstart/'):
+    os.symlink('../../tutorials/quickstart', 'src/quickstart', target_is_directory=True)
 
-if not os.path.exists('src/tutorials/tutorials/'):
-    os.symlink('../../tutorials/tutorials', 'src/tutorials/tutorials', target_is_directory=True)
+if not os.path.exists('src/tutorials/'):
+    os.symlink('../../tutorials/tutorials', 'src/tutorials', target_is_directory=True)
+
+if not os.path.exists('src/how_to_guides/'):
+    os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
 
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
