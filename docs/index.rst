@@ -75,7 +75,7 @@ For the new users, we put together absolute beginner's tutorials for both DrJit 
     :body: text-center font-weight-bold
 
     .. image:: ../resources/data/docs/images/logos/drjit-logo.png
-        :width: 30%
+        :height: 50
         :align: center
 
     Dr.Jit quickstart
@@ -88,7 +88,7 @@ For the new users, we put together absolute beginner's tutorials for both DrJit 
     ---
 
     .. image:: ../resources/data/docs/images/logos/mitsuba-logo.png
-        :width: 30%
+        :height: 50
         :align: center
 
     Mitsuba quickstart
