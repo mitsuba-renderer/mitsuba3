@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mitsuba 3 documentation build configuration file
+# Mitsuba 3 API reference generation configuration file
 #
 # The documentation can be built by invoking "make mkdoc"
 # from the build directory
@@ -11,7 +11,6 @@ import os
 from os.path import join, realpath, dirname
 import shlex
 import subprocess
-import guzzle_sphinx_theme
 
 from pathlib import Path
 
@@ -24,7 +23,6 @@ from pathlib import Path
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '2.4'
-
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
