@@ -65,7 +65,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         while (dda_loop(dr::detach(active_dda))) {
             // Figure out which axis we hit first.
             // `t_next` is the ray's `t` parameter when hitting that axis.
-            Float t_next = dr::hmin(dda_tmax);
+            Float t_next = dr::min(dda_tmax);
             Vector3f tmax_update;
             Mask got_assigned = false;
             for (size_t k = 0; k < 3; ++k) {
@@ -248,7 +248,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
 
             // Figure out which axis we hit first.
             // `dda_t_next` is the ray's `t` parameter when hitting that axis.
-            Float dda_t_next = dr::hmin(dda_tmax);
+            Float dda_t_next = dr::min(dda_tmax);
             // TODO: this selection scheme looks dangerous in case of exact equality
             //       with more than one component.
             Vector3f tmax_update;
@@ -299,7 +299,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
             dt = -dr::log(1 - sampler->next_1d(active)) / local_majorant;
             active_drt = active;
         }
-        Float dt_clamped = dr::min(dt, maxt - running_t);
+        Float dt_clamped = dr::minimum(dt, maxt - running_t);
 
         // Reservoir sampling with replacement
         Float current_weight = transmittance * dt_clamped;
@@ -382,7 +382,7 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
     loop.init();
     while (loop(active)) {
         Float dt = -dr::log(1 - sampler->next_1d(active)) / m;
-        Float dt_clamped = dr::min(dt, maxt - running_t);
+        Float dt_clamped = dr::minimum(dt, maxt - running_t);
 
         // Reservoir sampling with replacement
         Float current_weight =

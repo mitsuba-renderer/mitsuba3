@@ -165,7 +165,7 @@ public:
         if (m_majorant_grid)
             return m_majorant_grid->voxel_size();
         else
-            return dr::zero<Vector3f>();
+            return dr::zeros<Vector3f>();
     }
 
     /// Returns whether this specific medium instance uses emitter sampling

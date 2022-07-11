@@ -515,7 +515,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 #if defined(MI_OPTIX_ENABLE_BBOX_FASTPATH)
         // Attempt a fast path for scenes that are only made of a single AABB.
         if (m_use_bbox_fast_path) {
-            SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+            SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
             const ref<Shape> shape = m_shapes[0];
             const ScalarBoundingBox3f bbox = shape->bbox();
@@ -537,7 +537,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
             // The axis with the largest local coordinate (magnitude)
             // is the axis of the normal vector.
             Point3f p_local_abs = dr::abs(p_local);
-            Float vmax = dr::hmax(p_local_abs);
+            Float vmax = dr::max(p_local_abs);
             Normal3f n(dr::eq(p_local_abs.x(), vmax), dr::eq(p_local_abs.y(), vmax),
                     dr::eq(p_local_abs.z(), vmax));
             // Normal always points to the outside of the bbox, independently
@@ -545,7 +545,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
             n = dr::normalize(dr::sign(p_local) * n);
             si.n = dr::select(hit, n, -ray.d);
 
-            si.shape = dr::select(hit, dr::opaque<ShapePtr>(shape.get()), dr::zero<ShapePtr>());
+            si.shape = dr::select(hit, dr::opaque<ShapePtr>(shape.get()), dr::zeros<ShapePtr>());
             si.uv = 0.f;  // TODO: proper UVs
             si.sh_frame.n = si.n;
             if (has_flag(ray_flags, RayFlags::ShadingFrame))
@@ -577,7 +577,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         if (false) {
 #endif
             // Attempt a fast path for scenes that are only made of a single AABB.
-            SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+            SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
             const ref<Shape> shape         = m_shapes[0];
             const ScalarBoundingBox3f bbox = shape->bbox();

@@ -195,7 +195,7 @@ public:
             //                  1e-2 for "fine" model initialization.
             const ScalarFloat a = 1e-2f;
             // Approximate size of a voxel in world coordinates
-            ScalarFloat voxel_size = dr::hmax(m_sigmat->voxel_size());
+            ScalarFloat voxel_size = dr::max(m_sigmat->voxel_size());
             default_param = dr::log(dr::pow(1.f - a, -1.f / voxel_size) - 1.f);
         }
         m_density_activation_parameter =
@@ -243,7 +243,7 @@ public:
             // TODO: make this really optional if we never need max_density
             const ScalarFloat vmax = density_activation(
                 m_majorant_factor * m_scale.scalar() * m_sigmat->max());
-            m_max_density = dr::opaque<Float>(dr::max(1e-6f, vmax));
+            m_max_density = dr::opaque<Float>(dr::maximum(1e-6f, vmax));
             m_majorant_grid = nullptr;
             Log(Debug, "Heterogeneous medium majorant updated to: %s (majorant factor: %s)",
                 m_max_density, m_majorant_factor);
@@ -306,7 +306,7 @@ public:
                 return dr::log(1.f +
                                dr::exp(v + m_density_activation_parameter));
             case ActivationType::ReLU:
-                return dr::max(v, 0.f);
+                return dr::maximum(v, 0.f);
             default:
                 Throw("Unsupported activation type: %s",
                       (uint32_t) m_density_activation);
