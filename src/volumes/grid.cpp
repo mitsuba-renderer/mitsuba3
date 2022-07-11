@@ -581,7 +581,7 @@ protected:
         if (m_texture.shape()[3] != 1)
             NotImplementedError("local_majorants() when Channels != 1");
 
-        if constexpr (dr::is_jit_array_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>) {
             dr::eval(m_texture.value());
             dr::sync_thread();
         }
@@ -603,7 +603,7 @@ protected:
 
         Log(Debug, "Constructing supergrid of resolution %s from full grid of resolution %s",
             resolution, full_resolution);
-        size_t n = dr::hprod(resolution);
+        size_t n = dr::prod(resolution);
         Value result = dr::full<Value>(-dr::Infinity<Float>, n);
 
         // Z is the slowest axis, X is the fastest.
@@ -649,7 +649,7 @@ protected:
 
                     Value values =
                         dr::gather<Value>(scaled_data, idx);
-                    result = dr::max(result, values);
+                    result = dr::maximum(result, values);
                 }
             }
         }

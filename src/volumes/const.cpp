@@ -107,11 +107,16 @@ protected:
     void update_max() {
         // It should be okay to query with a fake surface interaction,
         // since the "texture" is just a constant value.
-        SurfaceInteraction3f si = dr::zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths =
             Wavelength(0.5f * (MI_CIE_MAX - MI_CIE_MIN) + MI_CIE_MIN);
         Spectrum result = m_value->eval(si);
-        m_max = dr::hmean(dr::hmean(dr::detach(result)));
+        // TODO: use better syntax for this
+        Float tmp = dr::mean(dr::mean(dr::detach(result)));
+        if constexpr (dr::is_jit_v<Float>)
+            m_max = tmp[0];
+        else
+            m_max = tmp;
     }
 
 

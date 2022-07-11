@@ -64,7 +64,7 @@ public:
 
     /// Reinterprets the data with the given size.
     void set_size(ScalarVector3u sz) {
-        if (dr::hprod(sz) != dr::hprod(m_size))
+        if (dr::prod(sz) != dr::prod(m_size))
             Throw("The new size %s doesn't match the entry count of old size %s", sz, m_size);
         m_size = sz;
     }
