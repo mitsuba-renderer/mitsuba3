@@ -49,6 +49,8 @@ and is only marginally slower than the :ref:`simple volumetric path tracer <inte
 Similar to the simple volumetric path tracer, this integrator has special
 support for index-matched transmission events.
 
+.. warning:: This integrator does not support forward-mode differentiation.
+
 .. tabs::
     .. code-tab::  xml
 

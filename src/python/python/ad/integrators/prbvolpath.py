@@ -77,6 +77,10 @@ class PRBVolpathIntegrator(RBIntegrator):
                mi.Bool, mi.Spectrum]:
         self.prepare_scene(scene)
 
+        if mode == dr.ADMode.Forward:
+            raise RuntimeError("PRBVolpathIntegrator doesn't support "
+                               "forward-mode differentiation!")
+
         is_primal = mode == dr.ADMode.Primal
 
         ray = mi.Ray3f(ray)

@@ -53,6 +53,8 @@ to it (as compared to, say, a :ref:`dielectric <bsdf-dielectric>` or
     spectral MIS <integrator-volpathmis>`, which will produce in a significantly less noisy
     rendered image.
 
+.. warning:: This integrator does not support forward-mode differentiation.
+
 .. tabs::
     .. code-tab::  xml
 
