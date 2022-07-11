@@ -200,7 +200,7 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
             return dr::gather<Array, true>(source, index, mask);
         else
             return dr::gather<Array, false>(source, index, mask);
-    });
+    }, "source"_a, "index"_a, "mask"_a, "permute"_a=false);
 
     cls.def_static("select_",
                    [](const Mask &m, const Array &t, const Array &f) {

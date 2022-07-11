@@ -140,3 +140,25 @@ def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     M_world = si.to_world_mueller(M_local, wi_local, wo_local)
 
     assert dr.allclose(M, M_world, atol=1e-5)
+
+def test05_gather_interaction(variants_any_llvm):
+    from mitsuba import ScalarTransform4f as T
+    scene = mi.load_dict({
+        "type" : "scene",
+        'sphere': { 'type' : 'sphere' },
+        'integrator': { 'type': 'path' },
+        'mysensor': {
+            'type': 'perspective',
+            'to_world': T.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+            'myfilm': {'type': 'hdrfilm'},
+        },
+    })
+    sensor = scene.sensors()[0]
+    ray, w = sensor.sample_ray(0.0, 0.0, mi.Point2f([0.1, 0.2, 0.3]), mi.Point2f([0.1, 0.2, 0.3]))
+    si = scene.ray_intersect(ray)
+    
+    si_ = dr.gather(mi.SurfaceInteraction3f, si, mi.UInt32([0, 2]))
+
+    assert(dr.width(si_.shape) == 2)
+    assert(dr.allclose(si_.t[0], si.t[0]))
+    assert(dr.allclose(si_.t[1], si.t[2]))
