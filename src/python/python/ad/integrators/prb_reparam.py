@@ -7,6 +7,44 @@ from .common import RBIntegrator, mis_weight
 
 class PRBReparamIntegrator(RBIntegrator):
     """
+    .. _integrator-prb_reparam:
+
+    Reparameterized Path Replay Backpropagation Integrator (:monosp:`prb_reparam`)
+    ------------------------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - reparam_max_depth
+       - |int|
+       - Specifies the longest path depth for which the reparameterization
+         should be enabled. For instance, a value of 1 will only produce
+         visibility gradients for directly visible shapes. (Default: 2)
+
+     * - reparam_rays
+       - |int|
+       - Specifies the number of auxiliary rays to be traced when performing the
+         reparameterization. (Default: 16)
+
+     * - reparam_kappa
+       - |float|
+       - Specifies the kappa parameter of the von Mises Fisher distribution used
+         to sample auxiliary rays.. (Default: 1e5)
+
+     * - reparam_exp
+       - |float|
+       - Power exponent applied on the computed harmonic weights in the
+         reparameterization. (Default: 3.0)
+
+     * - reparam_antithetic
+       - |bool|
+       - Should antithetic sampling be enabled to improve convergence when
+         sampling the auxiliary rays? (Default: False)
+
+     * - reparam_unroll
+       - |bool|
+       - Unroll the loop tracing auxiliary rays in the reparameterization?
+         (Default: False)
+
     This class implements a reparameterized Path Replay Backpropagation (PRB)
     integrator with the following properties:
 
@@ -23,66 +61,52 @@ class PRBReparamIntegrator(RBIntegrator):
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See 'prb.py' and 'prb_basic.py' for simplified implementations that remove
+    See `prb.py` and `prb_basic.py` for simplified implementations that remove
     some of these features.
 
-    See the papers
-
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob.
-
-    and
-
-      "Monte Carlo Estimators for Differential Light Transport"
-      (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
-      Iliyan Georgiev, and Wenzel Jakob.
-
-    for details on PRB and attached/detached sampling. Reparameterizations
+    See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
+    for details on PRB, attached/detached sampling. Reparameterizations
     for differentiable rendering were proposed in
-
-      "Reparameterizing discontinuous integrands for differentiable rendering"
-      (Proceedings of SIGGRAPH Asia'19) by Guillaume Loubet,
-      Nicolas Holzschuch, and Wenzel Jakob.
-
-    The specific change of variables used in Mitsuba is described here:
-
-      "Unbiased Warped-Area Sampling for Differentiable Rendering"
-      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
-      Tzu-Mao Li, and Frédo Durand.
+    :cite:`Loubet2019Reparameterizing`. The specific change of variables used in
+    Mitsuba is described in :cite:`Bangaru2020`.
 
     A few more technical details regarding the implementation: this integrator
     uses detached sampling, hence the sampling process that generates the path
-    vertices (e.g., v₀, v₁, ..) and the computation of Monte Carlo sampling
+    vertices (e.g., `v₀`, `v₁`, ..) and the computation of Monte Carlo sampling
     densities is excluded from the derivative computation. However, the path
     throughput that is then evaluated on top of these vertices does track
     derivatives, and it also uses reparameterizations.
 
-    Consider the contribution 'L' of a path (v₀, v₁, v₂, v₃, v₄) where 'v₀' is
-    the sensor position, the 'f's capture BSDFs and cosine factors, and the
-    'E's represent emission.
+    Consider the contribution `L` of a path `(v₀, v₁, v₂, v₃, v₄)` where `v₀` is
+    the sensor position, the `f` capture BSDFs and cosine factors, and the
+    `E` represent emission.
 
-    L(v₀, v₁, v₂, v₃) = E₁(v₀, v₁) + f₁(v₀, v₁, v₂) *
-                            (E₂(v₁, v₂) + f₂(v₁, v₂, v₃) *
-                                (E₃(v₂, v₃) + f₃(v₂, v₃, v₄) * E₄(v₃, v₄)))
+    .. code-block::
 
-    The derivative of this function with respect to a scene parameter 'π'
+        L(v₀, v₁, v₂, v₃) = E₁(v₀, v₁) + f₁(v₀, v₁, v₂) *
+                                (E₂(v₁, v₂) + f₂(v₁, v₂, v₃) *
+                                    (E₃(v₂, v₃) + f₃(v₂, v₃, v₄) * E₄(v₃, v₄)))
+
+
+    The derivative of this function with respect to a scene parameter `π`
     expands into a long sequence of terms via the product and chain rules.
 
-    ∂L =                       ______ Derivative of emission terms ______
-                               (∂E₁/∂π + ∂E₁/∂v₀ ∂v₀/∂π + ∂E₁/∂v₁ ∂v₁/∂π)
-     + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₁ ∂v₁/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂)                 (∂E₃/∂π + ∂E₃/∂v₂ ∂v₂/∂π + ∂E₃/∂v₃ ∂v₃/∂π)
-     + (f₁ f₂ f₃)              (∂E₄/∂π + ∂E₄/∂v₃ ∂v₃/∂π + ∂E₄/∂v₄ ∂v₄/∂π)
+    .. code-block::
 
-                               ______________ Derivative of reflection terms _____________
-     + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂π + ∂f₁/∂v₀ ∂v₀/∂π + ∂f₁/∂v₁ ∂v₁/∂π + ∂f₁/∂v₂ ∂v₂/∂π)
-     + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₁ ∂v₁/∂π + ∂f₂/∂v₂ ∂v₂/∂π + ∂f₂/∂v₃ ∂v₃/∂π)
-     + (f₁ f₂ E₄             ) (∂f₃/∂π + ∂f₃/∂v₂ ∂v₂/∂π + ∂f₃/∂v₃ ∂v₃/∂π + ∂f₃/∂v₄ ∂v₄/∂π)
+        ∂L =                       ______ Derivative of emission terms ______
+                                  (∂E₁/∂π + ∂E₁/∂v₀ ∂v₀/∂π + ∂E₁/∂v₁ ∂v₁/∂π)
+        + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₁ ∂v₁/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
+        + (f₁ f₂)                 (∂E₃/∂π + ∂E₃/∂v₂ ∂v₂/∂π + ∂E₃/∂v₃ ∂v₃/∂π)
+        + (f₁ f₂ f₃)              (∂E₄/∂π + ∂E₄/∂v₃ ∂v₃/∂π + ∂E₄/∂v₄ ∂v₄/∂π)
+
+                                ______________ Derivative of reflection terms _____________
+        + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂π + ∂f₁/∂v₀ ∂v₀/∂π + ∂f₁/∂v₁ ∂v₁/∂π + ∂f₁/∂v₂ ∂v₂/∂π)
+        + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₁ ∂v₁/∂π + ∂f₂/∂v₂ ∂v₂/∂π + ∂f₂/∂v₃ ∂v₃/∂π)
+        + (f₁ f₂ E₄             ) (∂f₃/∂π + ∂f₃/∂v₂ ∂v₂/∂π + ∂f₃/∂v₃ ∂v₃/∂π + ∂f₃/∂v₄ ∂v₄/∂π)
 
     This expression sums over essentially the same terms, but it must account
     for how each one could change as a consequence of internal dependencies
-    (e.g., ∂f₁/∂π) or due to the reparameterization (e.g., ∂f₁/∂v₁ ∂v₁/∂π).
+    (e.g., `∂f₁/∂π`) or due to the reparameterization (e.g., `∂f₁/∂v₁ ∂v₁/∂π`).
     It's tedious to do this derivative calculation manually, especially once
     additional complications like direct illumination sampling and MIS are
     taken into account. We prefer using automatic differentiation for this,
@@ -92,62 +116,72 @@ class PRBReparamIntegrator(RBIntegrator):
     integrators perform a loop over path vertices, while DrJit's loop
     recording facilities do not permit the use of AD across loop iterations.
     The loop must thus be designed so that use of AD is self-contained in each
-    iteration of the loop, while generating all the terms of ∂T iteratively
+    iteration of the loop, while generating all the terms of `∂T` iteratively
     without omission or duplication.
 
-    We have chosen to implement this loop so that iteration 'i' computes all
-    derivative terms associated with the current vertex, meaning: Eᵢ/∂π, fᵢ/∂π,
-    as well as the parameterization-induced terms involving ∂vᵢ/∂π. To give a
-    more concrete example, filtering the previous example derivative ∂L to only
-    include terms for the interior vertex v₂ leaves:
+    We have chosen to implement this loop so that iteration `i` computes all
+    derivative terms associated with the current vertex, meaning: `Eᵢ/∂π`, `fᵢ/∂π`,
+    as well as the parameterization-induced terms involving `∂vᵢ/∂π`. To give a
+    more concrete example, filtering the previous example derivative `∂L` to only
+    include terms for the interior vertex `v₂` leaves:
 
-    ∂L₂ =                      __ Derivative of emission terms __
-     + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
+    .. code-block::
 
-                               ___ Derivative of reflection terms __
-     + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
-     + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
-     + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
+        ∂L₂ =                      __ Derivative of emission terms __
+            + (f₁   )                 (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
+            + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
+
+                                   __ Derivative of reflection terms __
+            + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
+            + (f₁ E₃ + f₁ f₃ E₄     ) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
+            + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
 
     Let's go through these one by one, starting with the easier ones:
 
-    ∂L₂ = (f₁              ) (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
-        + (f₁ E₃ + f₁ f₃ E₄) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
-        + ...
+    .. code-block::
+
+        ∂L₂ = (f₁              ) (∂E₂/∂π + ∂E₂/∂v₂ ∂v₂/∂π)
+            + (f₁ E₃ + f₁ f₃ E₄) (∂f₂/∂π + ∂f₂/∂v₂ ∂v₂/∂π)
+            + ...
 
     These are the derivatives of local emission and reflection terms. They both
-    account for changes in the parameterization (∂v₂/∂π) and a potential
+    account for changes in the parameterization (`∂v₂/∂π`) and a potential
     dependence of the reflection/emission model on the scene parameter being
-    differentiated (∂E₂/∂π, ∂f₂/∂π).
+    differentiated (`∂E₂/∂π`, `∂f₂/∂π`).
 
     In the first line, the f₁ term corresponds to the path throughput (labeled
-    β in this class) in the general case, and the (f₁ E₃ + f₁ f₃ E₄) term is
-    the incident illumination (Lᵢ) at the current vertex.
+    `β` in this class) in the general case, and the (`f₁ E₃ + f₁ f₃ E₄`) term is
+    the incident illumination (`Lᵢ`) at the current vertex.
 
     Evaluating these terms using AD will look something like this:
+
+    .. code-block:: python
 
         with dr.resume_grad():
             v₂' = reparameterize(v₂)
             L₂ = β * E₂(v₁, v₂') + Lᵢ * f₂(v₁, v₂', v₃) + ...
 
-    with a later call to 'dr.backward(L₂)'. In practice, 'E' and 'f' are
+    with a later call to `dr.backward(L₂)`. In practice, `E` and `f` are
     directional functions, which means that these directions need to be
     recomputed from positions using AD.
 
-    However, that leaves a few more terms in ∂L₂ that unfortunately add some
+    However, that leaves a few more terms in `∂L₂` that unfortunately add some
     complications.
 
-    ∂L₂ = ...  + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
-               + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
-               + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
+    .. code-block::
+
+        ∂L₂ = ...  + (f₁ f₂)                 (∂E₃/∂v₂ ∂v₂/∂π)
+                   + (E₂ + f₂ E₃ + f₂ f₃ E₄) (∂f₁/∂v₂ ∂v₂/∂π)
+                   + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
 
     These are changes in emission or reflection terms at neighboring vertices
-    (v₁ and v₃) that arise due to the reparameterization at v₂. It's important
+    (`v₁` and `v₃`) that arise due to the reparameterization at `v₂`. It's important
     that the influence of the scene parameters on the emission or reflection
     terms at these vertices is excluded: we are only interested in directional
     derivatives that arise due to the reparametrization, which can be
-    accomplished using a more targeted version of 'dr.resume_grad()'.
+    accomplished using a more targeted version of `dr.resume_grad()`.
+
+    .. code-block:: python
 
         with dr.resume_grad(v₂'):
             L₂ += β * f₂ * E₃(v₂', v₃) # Emission at next vertex
@@ -158,13 +192,20 @@ class PRBReparamIntegrator(RBIntegrator):
     ahead" by one bounce.
 
     The loop begins each iteration being already provided with the previous
-    and current intersection in the form of a ``PreliminaryIntersection3f``.
-    It must still be turned into a full ``SurfaceInteraction3f`` which,
+    and current intersection in the form of a `PreliminaryIntersection3f`.
+    It must still be turned into a full `SurfaceInteraction3f` which,
     however, only involves a virtual function call and no ray tracing. It
     computes the next intersection and passes that along to the subsequent
     iteration. Each iteration reconstructs three surface interaction records
-    (prev, cur, next), of which only 'cur' tracks positional derivatives.
+    (`prev`, `cur`, `next`), of which only `cur` tracks positional derivatives.
 
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'prb_reparam',
+            'max_depth': 8,
+            'reparam_rays': 8
     """
 
     def __init__(self, props):

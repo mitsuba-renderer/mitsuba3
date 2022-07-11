@@ -6,6 +6,7 @@
 
 import os
 import re
+import importlib
 
 SHAPE_ORDERING = [
     'obj',
@@ -87,7 +88,13 @@ INTEGRATOR_ORDERING = [
     'path',
     'aov',
     'volpath',
-    'volpathmis'
+    'volpathmis',
+    'mitsuba.ad.integrators.prb.PRBIntegrator',
+    'mitsuba.ad.integrators.prb_basic.BasicPRBIntegrator',
+    'mitsuba.ad.integrators.direct_reparam.DirectReparamIntegrator',
+    'mitsuba.ad.integrators.emission_reparam.EmissionReparamIntegrator',
+    'mitsuba.ad.integrators.prb_reparam.PRBReparamIntegrator',
+    'mitsuba.ad.integrators.prbvolpath.PRBVolpathIntegrator',
 ]
 
 FILM_ORDERING = ['hdrfilm',
@@ -124,6 +131,8 @@ def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
     if ordering and f in ordering:
         return ordering.index(f)
+    elif filename in ordering:
+        return ordering.index(filename)
     else:
         return 1000
 
@@ -146,11 +155,22 @@ def extract(target, filename):
         target.write(line)
     f.close()
 
+def extract_python(target, name):
+    print("Processing %s" % name)
+    import mitsuba
+    mitsuba.set_variant('llvm_ad_rgb')
+    mod = importlib.import_module(name[:-len(name.split('.')[-1])-1])
+    obj = getattr(mod, name.split('.')[-1])
+    lines = obj.__doc__.splitlines()
+    for l in lines:
+        # Remove indentation
+        target.write(l[4:]+'\n')
+
 # Traverse source directories and process any found plugin code
 
 
 def process(path, target, ordering):
-    def capture(fileList, dirname, files):
+    def capture(file_list, dirname, files):
         suffix = os.path.split(dirname)[1]
         if 'lib' in suffix or suffix == 'tests' \
                 or suffix == 'mitsuba' or suffix == 'utils' \
@@ -159,17 +179,24 @@ def process(path, target, ordering):
         for filename in files:
             if '.cpp' == os.path.splitext(filename)[1]:
                 fname = os.path.join(dirname, filename)
-                fileList += [fname]
+                file_list += [fname]
 
-    fileList = []
+    file_list = []
     for (dirname, _, files) in os.walk(path):
-        capture(fileList, dirname, files)
+        capture(file_list, dirname, files)
 
-    ordering = [(find_order_id(fname, ordering), fname) for fname in fileList]
+    for o in ordering:
+        if o.startswith('mitsuba.'):
+            file_list.append(o)
+
+    ordering = [(find_order_id(fname, ordering), fname) for fname in file_list]
     ordering = sorted(ordering, key=lambda entry: entry[0])
 
     for entry in ordering:
-        extract(target, entry[1])
+        if entry[1].startswith('mitsuba.'):
+            extract_python(target, entry[1])
+        else:
+            extract(target, entry[1])
 
 
 def process_src(target, src_subdir, ordering=None):

@@ -7,7 +7,28 @@ from .common import RBIntegrator, mis_weight
 
 class PRBIntegrator(RBIntegrator):
     """
-    This class implements a basic Path Replay Backpropagation (PRB) integrator
+    .. _integrator-prb:
+
+    Path Replay Backpropagation (:monosp:`prb`)
+    -------------------------------------------
+
+    .. pluginparameters::
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth in the generated output image (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         visible light sources. 2 will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: 6)
+
+     * - rr_depth
+       - |int|
+       - Specifies the path depth, at which the implementation will begin to use
+         the *russian roulette* path termination criterion. For example, if set to
+         1, then path generation many randomly cease after encountering directly
+         visible surfaces. (Default: 5)
+
+    This plugin implements a basic Path Replay Backpropagation (PRB) integrator
     with the following properties:
 
     - Emitter sampling (a.k.a. next event estimation).
@@ -21,22 +42,18 @@ class PRBIntegrator(RBIntegrator):
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See 'prb_basic.py' for an even more reduced implementation that removes
+    See `prb_basic.py` for an even more reduced implementation that removes
     the first two features.
 
-    See the papers
-
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
-
-    and
-
-      "Monte Carlo Estimators for Differential Light Transport"
-      (Proceedings of SIGGRAPH'21) by Tizan Zeltner, Sébastien Speierer,
-      Iliyan Georgiev, and Wenzel Jakob
-
+    See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
     for details on PRB, attached/detached sampling, and reparameterizations.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'prb',
+            'max_depth': 8
     """
 
     def sample(self,

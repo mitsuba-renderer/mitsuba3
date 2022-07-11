@@ -7,11 +7,50 @@ from .common import ADIntegrator
 
 class EmissionReparamIntegrator(ADIntegrator):
     """
+    .. _integrator-emission_reparam:
+
+    Reparameterized Emission Integrator (:monosp:`emission_reparam`)
+    -------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - reparam_max_depth
+       - |int|
+       - Specifies the longest path depth for which the reparameterization
+         should be enabled (maximum 1 for this integrator). (Default: 1)
+
+     * - reparam_rays
+       - |int|
+       - Specifies the number of auxiliary rays to be traced when performing the
+         reparameterization. (Default: 16)
+
+     * - reparam_kappa
+       - |float|
+       - Specifies the kappa parameter of the von Mises Fisher distribution used
+         to sample auxiliary rays.. (Default: 1e5)
+
+     * - reparam_exp
+       - |float|
+       - Power exponent applied on the computed harmonic weights in the
+         reparameterization. (Default: 3.0)
+
+     * - reparam_antithetic
+       - |bool|
+       - Should antithetic sampling be enabled to improve convergence when
+         sampling the auxiliary rays. (Default: False)
+
     This class implements a reparameterized emission integrator.
 
-    It reparametrizes the camera ray to handle discontinuity issues
+    It reparameterizes the camera ray to handle discontinuity issues
     caused by moving emitters. This is mainly used for learning and
     debugging purpose.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'emission_reparam',
+            'reparam_rays': 8
     """
 
     def __init__(self, props):

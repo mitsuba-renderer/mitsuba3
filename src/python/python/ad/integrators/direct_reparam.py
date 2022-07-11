@@ -7,20 +7,61 @@ from .common import ADIntegrator, mis_weight
 
 class DirectReparamIntegrator(ADIntegrator):
     """
-    This class implements a reparameterized direct illumination integrator.
-    
-    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
-    'reparam_max_depth' are both set to be 2. But since direct illumination
+    .. _integrator-direct_reparam:
+
+    Reparameterized Direct Integrator (:monosp:`direct_reparam`)
+    -------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - reparam_max_depth
+       - |int|
+       - Specifies the longest path depth for which the reparameterization
+         should be enabled (maximum 2 for this integrator). A value of 1
+         will only produce visibility gradients for directly visible shapes
+         while a value of 2 will also account for shadows. (Default: 2)
+
+     * - reparam_rays
+       - |int|
+       - Specifies the number of auxiliary rays to be traced when performing the
+         reparameterization. (Default: 16)
+
+     * - reparam_kappa
+       - |float|
+       - Specifies the kappa parameter of the von Mises Fisher distribution used
+         to sample auxiliary rays.. (Default: 1e5)
+
+     * - reparam_exp
+       - |float|
+       - Power exponent applied on the computed harmonic weights in the
+         reparameterization. (Default: 3.0)
+
+     * - reparam_antithetic
+       - |bool|
+       - Should antithetic sampling be enabled to improve convergence when
+         sampling the auxiliary rays. (Default: False)
+
+    This plugin implements a reparameterized direct illumination integrator.
+
+    It is functionally equivalent with `prb_reparam` when `max_depth` and
+    `reparam_max_depth` are both set to be 2. But since direct illumination
     tasks only have two ray segments, the overhead of relying on radiative
-    backpropagation is non-neglegible. This implementation builds on the
+    backpropagation is non-negligible. This implementation builds on the
     traditional ADIntegrator that does not require two passes during
     gradient traversal.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'direct_reparam',
+            'reparam_rays': 8
     """
 
     def __init__(self, props):
         super().__init__(props)
 
-        # Specifies the max depth up to which reparamterization is applied
+        # Specifies the max depth up to which reparameterization is applied
         self.reparam_max_depth = props.get('reparam_max_depth', 2)
         assert(self.reparam_max_depth <= 2)
 

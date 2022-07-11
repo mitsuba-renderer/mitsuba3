@@ -16,7 +16,7 @@ class ADIntegrator(mi.CppADIntegrator):
        - Specifies the longest path depth in the generated output image (where -1
          corresponds to :math:`\\infty`). A value of |1| will only render directly
          visible light sources. |2| will lead to single-bounce (direct-only)
-         illumination, and so on. (Default: |-1|)
+         illumination, and so on. (Default: |6|)
      * - rr_depth
        - |int|
        - Specifies the path depth, at which the implementation will begin to use
@@ -28,7 +28,7 @@ class ADIntegrator(mi.CppADIntegrator):
     def __init__(self, props = mi.Properties()):
         super().__init__(props)
 
-        max_depth = props.get('max_depth', 4)
+        max_depth = props.get('max_depth', 6)
         if max_depth < 0 and max_depth != -1:
             raise Exception("\"max_depth\" must be set to -1 (infinite) or a value >= 0")
 

@@ -14,6 +14,32 @@ def index_spectrum(spec, idx):
 
 class PRBVolpathIntegrator(RBIntegrator):
     """
+    .. _integrator-prbvolpath:
+
+    Path Replay Backpropagation Volumetric Integrator (:monosp:`prbvolpath`)
+    -------------------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth in the generated output image (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         visible light sources. 2 will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: 6)
+
+     * - rr_depth
+       - |int|
+       - Specifies the path depth, at which the implementation will begin to use
+         the *russian roulette* path termination criterion. For example, if set to
+         1, then path generation many randomly cease after encountering directly
+         visible surfaces. (Default: 5)
+
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters. (Default: no, i.e. |false|)
+
+
     This class implements a volumetric Path Replay Backpropagation (PRB) integrator
     with the following properties:
 
@@ -30,13 +56,15 @@ class PRBVolpathIntegrator(RBIntegrator):
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See the paper
+    See the paper :cite:`Vicini2021` for details on PRB and differentiable delta
+    tracking.
 
-      "Path Replay Backpropagation: Differentiating Light Paths using
-       Constant Memory and Linear Time" (Proceedings of SIGGRAPH'21)
-       by Delio Vicini, Sébastien Speierer, and Wenzel Jakob
+    .. tabs::
 
-    for details on PRB and differentiable delta tracking.
+        .. code-tab:: python
+
+            'type': 'prbvolpath',
+            'max_depth': 8
     """
     def __init__(self, props=mi.Properties()):
         super().__init__(props)

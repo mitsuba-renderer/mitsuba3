@@ -6,7 +6,22 @@ import mitsuba as mi
 from .common import RBIntegrator
 
 class BasicPRBIntegrator(RBIntegrator):
+
     """
+    .. _integrator-prb_basic:
+
+    Basic Path Replay Backpropagation (:monosp:`prb_basic`)
+    ---------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth in the generated output image (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         visible light sources. 2 will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: 6)
+
     Basic Path Replay Backpropagation-style integrator *without* next event
     estimation, multiple importance sampling, Russian Roulette, and
     reparameterization. The lack of all of these features means that gradients
@@ -18,7 +33,15 @@ class BasicPRBIntegrator(RBIntegrator):
     illustrate how a very basic rendering algorithm can be implemented in
     Python along with efficient forward/reverse-mode derivatives. See the file
     'prb.py' for a more feature-complete Path Replay Backpropagation
-    integrator, and 'prb_reparam.py' for one that also handles visibility.
+    integrator, and `prb_reparam.py` for one that also handles visibility.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'prb_basic',
+            'max_depth': 8
+
     """
 
     def sample(self,
