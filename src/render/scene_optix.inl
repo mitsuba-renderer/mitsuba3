@@ -386,19 +386,19 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int should_free, void *payload) {
-                OptixSceneState<Shape> &s = *(OptixSceneState<Shape> *) payload;
+                OptixSceneState<Shape> *s = (OptixSceneState<Shape> *) payload;
                 if (should_free) {
                     Log(Debug, "Free OptiX scene state..");
 
-                    jit_free(s.sbt.raygenRecord);
-                    jit_free(s.sbt.hitgroupRecordBase);
-                    jit_free(s.sbt.missRecordBase);
-                    jit_free(s.ias_buffer);
+                    jit_free(s->sbt.raygenRecord);
+                    jit_free(s->sbt.hitgroupRecordBase);
+                    jit_free(s->sbt.missRecordBase);
+                    jit_free(s->ias_buffer);
 
                     // Delete shapes asynchronously to avoid deadlock in AD mode
-                    Task *task = dr::do_async([s, payload]() {
-                        s.shapes.clear();
-                        delete (OptixSceneState<Shape> *) payload;
+                    Task *task = dr::do_async([s]() {
+                        s->shapes.clear();
+                        delete s;
                     });
                     Thread::register_task(task);
                 }
