@@ -173,9 +173,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
                 State *s = (State *) payload;
                 if (free) {
                     Log(Debug, "Free Embree scene state..");
-                    s->shapes.clear();
+
                     rtcReleaseScene(s->accel);
-                    delete s;
+
+                    // Delete shapes asynchronously to avoid deadlock in AD mode
+                    Task *task = dr::do_async([s]() {
+                        s->shapes.clear();
+                        delete s;
+                    });
+                    Thread::register_task(task);
                 }
             },
             (void *) m_accel
