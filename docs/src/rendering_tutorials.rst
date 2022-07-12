@@ -14,7 +14,7 @@ with Mitsuba 3:
     :caption: rendering
 
     quickstart/mitsuba_quickstart
-    tutorials/rendering/editing_a_scene
-    tutorials/rendering/multi_view_rendering
-    tutorials/rendering/scripting_renderer
-    tutorials/rendering/polarized_rendering
+    rendering/editing_a_scene
+    rendering/multi_view_rendering
+    rendering/scripting_renderer
+    rendering/polarized_rendering
