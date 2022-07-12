@@ -36,11 +36,12 @@ method for most users.
 This command will install all the necessary dependencies on your system (e.g.
 `Dr.Jit`) if not already available.
 
-.. note::
+.. warning::
 
     For computation and rendering on the GPU, Mitsuba 3 relies on dynamic
     library loading which will seamlessly use the CUDA and OptiX installation
-    present within the GPU driver itself.
+    present within the GPU driver itself. However note that a version of the
+    NVidia GPU driver equal or greater than 495.89 is required.
 
 See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 from the git source tree.
