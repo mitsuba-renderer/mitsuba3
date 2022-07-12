@@ -1,7 +1,7 @@
 Gallery
 =======
 
-On this page you will find different 3D scene ready to be used with Mitsuba 3.
+On this page you will find different 3D scenes ready to be used with Mitsuba 3.
 
 All scenes in this gallery marked with 🅱️ originate from `Benedikt Bitterli's
 rendering resources <https://benedikt-bitterli.me/resources/>`_. On the official
@@ -26,6 +26,10 @@ Simple scenes
         :height: 90
         :align: center
 
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
     ---
 
     Material preview
@@ -33,6 +37,10 @@ Simple scenes
     .. image:: ../resources/data/docs/images/gallery_thumbnails/matpreview.png
         :height: 90
         :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
 
     ---
 
@@ -81,75 +89,6 @@ Simple scenes
     .. link-button:: https://benedikt-bitterli.me/resources/
         :text:
         :classes: btn-link stretched-link
-
-    ---
-
-
-Documentation banners
-+++++++++++++++++++++
-
-.. panels::
-    :header: text-center font-weight-bold
-    :body: text-center
-    :footer: p-0 m-0
-    :container: container-lg pb-3
-    :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
-
-    ---
-
-    Banner 1
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_01.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 2
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_02.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 3
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_03.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 4
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_04.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 5
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_05.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 6
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_06.png
-        :height: 90
-        :align: center
-
-    ---
-
-    Banner 7
-    ^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/banners/banner_07.png
-        :height: 90
-        :align: center
 
 
 Single object
@@ -255,9 +194,6 @@ Single object
     .. link-button:: https://benedikt-bitterli.me/resources/
         :text:
         :classes: btn-link stretched-link
-
-    ---
-
 
 
 Architecture
@@ -424,4 +360,97 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+
+Documentation banners
++++++++++++++++++++++
+
+.. panels::
+    :header: text-center font-weight-bold
+    :body: text-center
+    :footer: p-0 m-0
+    :container: container-lg pb-3
+    :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
+
     ---
+
+    Banner 1
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_01.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 2
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_02.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 3
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_03.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 4
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_04.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 5
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_05.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 6
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_06.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
+
+    ---
+
+    Banner 7
+    ^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/banners/banner_07.png
+        :height: 90
+        :align: center
+
+    .. link-button:: https://benedikt-bitterli.me/resources/
+        :text:
+        :classes: btn-link stretched-link
