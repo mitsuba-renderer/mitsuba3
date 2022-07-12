@@ -26,7 +26,7 @@ Simple scenes
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/cornell-box.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -38,7 +38,7 @@ Simple scenes
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/matpreview.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -50,7 +50,7 @@ Simple scenes
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/veach-bidir.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -62,7 +62,7 @@ Simple scenes
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/veach-mis.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -74,7 +74,7 @@ Simple scenes
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/volumetric-caustic.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -86,7 +86,7 @@ Simple scenes
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/veach-ajar.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -107,7 +107,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/car.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -119,7 +119,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/car2.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -131,7 +131,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/coffee.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -143,7 +143,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/teapot.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -155,7 +155,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/dragon.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -167,7 +167,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/spaceship.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -179,7 +179,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/lamp.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -191,7 +191,7 @@ Single object
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/teapot-full.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -212,7 +212,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/bathroom.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -224,7 +224,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/bathroom2.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -236,7 +236,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/bedroom.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -248,7 +248,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/classroom.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -260,7 +260,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/dining-room.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -272,7 +272,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/kitchen.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -284,7 +284,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -296,7 +296,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room-2.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -308,7 +308,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room-3.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -320,7 +320,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/staircase.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -332,7 +332,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/staircase2.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -344,7 +344,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/glass-of-water.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -356,7 +356,7 @@ Architecture
         :height: 130
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/house.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -379,7 +379,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_01.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -391,7 +391,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_02.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -403,7 +403,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_03.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -415,7 +415,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_04.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -427,7 +427,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_05.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -439,7 +439,7 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_06.zip
         :text:
         :classes: btn-link stretched-link
 
@@ -451,6 +451,6 @@ Documentation banners
         :height: 90
         :align: center
 
-    .. link-button:: https://benedikt-bitterli.me/resources/
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/banner_07.zip
         :text:
         :classes: btn-link stretched-link
