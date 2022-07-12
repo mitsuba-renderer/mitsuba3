@@ -228,6 +228,41 @@ public:
             if (!volume_grid)
                 Throw("Property \"grid\" must be a VolumeGrid instance.");
             m_volume_grid = volume_grid;
+        } else if (props.has_property("data")) {
+            // --- Getting grid data directly from the properties
+            // Note: we expect the tensor data to be directly given
+            // with the correct data layout, i.e. (Z, Y, X, C).
+            const void *ptr = props.pointer("data");
+            const TensorXf *data = (TensorXf *) ptr;
+            const auto &shape = data->shape();
+
+            if (!props.get<bool>("raw", true))
+                Throw("Passing grid data directly implies raw = true");
+            if (props.get<bool>("use_grid_bbox", false))
+                Throw("Passing grid data directly implies use_grid_bbox = false");
+            if (data->ndim() != 4)
+                Throw("The given \"data\" tensor must have 4 dimensions, found %s", data->ndim());
+
+            // Initialize the rest of the fields from the given data
+            // TODO: initialize it properly if it's really needed
+            m_volume_grid = new VolumeGrid(
+                ScalarVector3u(shape[2], shape[1], shape[0]), shape[3]);
+            /* TODO: better syntax for this */ {
+                Float tmp = dr::max(data->array());
+                if constexpr (dr::is_jit_v<Float>)
+                    m_volume_grid->set_max(tmp[0]);
+                else
+                    m_volume_grid->set_max(tmp);
+            }
+
+            // Copy data over from Tensor to VolumeGrid
+            using HostFloat  = dr::DynamicArray<ScalarFloat>;
+            using HostUInt32 = dr::uint32_array_t<HostFloat>;
+            const HostFloat host_data = dr::migrate(data->array(), AllocType::Host);
+            dr::sync_thread();
+            dr::scatter(m_volume_grid->data(), host_data, dr::arange<HostUInt32>(host_data.size()));
+            dr::eval(m_volume_grid->data());
+            dr::sync_thread();
         } else {
             FileResolver *fs = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));

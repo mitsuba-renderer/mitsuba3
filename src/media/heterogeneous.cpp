@@ -334,8 +334,6 @@ public:
         props.set_pointer("data", &majorants);
         m_majorant_grid = (Volume *) PluginManager::instance()
                               ->create_object<Volume>(props)
-                              ->expand()
-                              .front()
                               .get();
         Log(Info, "Majorant supergrid updated (resolution: %s)", m_majorant_grid->resolution());
     }
