@@ -121,6 +121,7 @@ struct PluginManager::PluginManagerPrivate {
 };
 
 ref<PluginManager> PluginManager::m_instance = new PluginManager();
+bool PluginManager::m_alive = true;
 
 PluginManager::PluginManager() : d(new PluginManagerPrivate()) { }
 
@@ -128,6 +129,7 @@ PluginManager::~PluginManager() {
     std::lock_guard<std::mutex> guard(d->m_mutex);
     for (auto &pair: d->m_plugins)
         delete pair.second;
+    m_alive = false;
 }
 
 void PluginManager::ensure_plugin_loaded(const std::string &name) {
