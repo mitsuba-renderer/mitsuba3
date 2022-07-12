@@ -10,8 +10,9 @@ void Object::dec_ref(bool dealloc) const noexcept {
     if (ref_count <= 0) {
         fprintf(stderr, "Internal error: Object reference count < 0!\n");
         abort();
-    } else if (ref_count == 1 && dealloc)
+    } else if (ref_count == 1 && dealloc) {
         delete this;
+    }
 }
 
 std::vector<ref<Object>> Object::expand() const {

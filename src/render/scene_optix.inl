@@ -397,8 +397,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
                     // Delete shapes asynchronously to avoid deadlock in AD mode
                     Task *task = dr::do_async([s]() {
-                        s->shapes.clear();
-                        delete s;
+                        if (PluginManager::alive()) {
+                            s->shapes.clear();
+                            delete s;
+                        }
                     });
                     Thread::register_task(task);
                 }
@@ -412,7 +414,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
-        // Ensure all raytracing kernels are terminated before releasing the scene
+        // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
         /* Decrease the reference count of the handle variable. This will

@@ -178,8 +178,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 
                     // Delete shapes asynchronously to avoid deadlock in AD mode
                     Task *task = dr::do_async([s]() {
-                        s->shapes.clear();
-                        delete s;
+                        if (PluginManager::alive()) {
+                            s->shapes.clear();
+                            delete s;
+                        }
                     });
                     Thread::register_task(task);
                 }

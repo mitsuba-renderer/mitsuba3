@@ -22,6 +22,9 @@ public:
     /// Return the global plugin manager
     static PluginManager *instance() { return m_instance; }
 
+    /// Returns whether the global plugin manager is still alive
+    static bool alive() { return m_alive; }
+
     /// Ensure that a plugin is loaded and ready
     void ensure_plugin_loaded(const std::string &name);
 
@@ -65,6 +68,7 @@ private:
     struct PluginManagerPrivate;
     std::unique_ptr<PluginManagerPrivate> d;
     static ref<PluginManager> m_instance;
+    static bool m_alive;
 };
 
 NAMESPACE_END(mitsuba)
