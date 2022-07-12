@@ -396,13 +396,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     jit_free(s->ias_buffer);
 
                     // Delete shapes asynchronously to avoid deadlock in AD mode
-                    Task *task = dr::do_async([s]() {
-                        if (PluginManager::alive()) {
-                            s->shapes.clear();
-                            delete s;
-                        }
-                    });
-                    Thread::register_task(task);
+                    try {
+                        Task *task = dr::do_async([s]() {
+                            if (PluginManager::alive()) {
+                                s->shapes.clear();
+                                delete s;
+                            }
+                        });
+                        Thread::register_task(task);
+                    } catch(const std::system_error& e) { } // Catch "mutex lock failed"
                 }
             },
             (void *) m_accel
