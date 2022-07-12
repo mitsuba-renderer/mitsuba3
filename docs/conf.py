@@ -23,8 +23,14 @@ HTML5Translator.visit_reference = replacement
 if not os.path.exists('src/quickstart/'):
     os.symlink('../../tutorials/quickstart', 'src/quickstart', target_is_directory=True)
 
-if not os.path.exists('src/tutorials/'):
-    os.symlink('../../tutorials/tutorials', 'src/tutorials', target_is_directory=True)
+if not os.path.exists('src/rendering'):
+    os.symlink('../../tutorials/rendering', 'src/rendering', target_is_directory=True)
+
+if not os.path.exists('src/inverse_rendering'):
+    os.symlink('../../tutorials/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
+
+if not os.path.exists('src/others'):
+    os.symlink('../../tutorials/others', 'src/others', target_is_directory=True)
 
 if not os.path.exists('src/how_to_guides/'):
     os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
@@ -196,8 +202,7 @@ extensions.append('sphinx_panels')
 extensions.append('nbsphinx')
 nbsphinx_execute = 'never'
 
-# nbsphinx_input_prompt = 'In [%s]:'
-# nbsphinx_output_prompt = 'Out [%s]:'
+# Inject javascript at the top of tutorial pages to add Download buttons
 nbsphinx_prolog = """
 .. raw:: html
 
@@ -205,17 +210,23 @@ nbsphinx_prolog = """
 
     </style>
 
-    <div id="nb_link" class="admonition topic alert alert-block alert-success">
-        <a href="#">
-            <center>📑⬇️ Download Jupyter notebook</center>
-        </a>
+    <div style="display: flex;">
+        <div id="nb_link" class="admonition topic alert alert-block alert-success" style="float: left;">
+            <a href="#" download>
+                <center>⬇️ Download Jupyter notebook</center>
+            </a>
+        </div>
+        <div class="admonition topic alert alert-block alert-warning" style="float: left;">
+            <a href="http://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip" download>
+                <center>⬇️ Download data</center>
+            </a>
+        </div>
     </div>
 
     <script>
         var path = window.location.pathname;
-        var pos = path.lastIndexOf("/tutorials/");
-        var name = path.slice(pos + 11, -5);
-        var tuto_url = "https://github.com/mitsuba-renderer/mitsuba-tutorials/blob/master/";
+        var name = path.slice(path.lastIndexOf("/src/") + 5, -5);
+        var tuto_url = "https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/";
         var elem = document.getElementById("nb_link").firstElementChild;
         elem.href = tuto_url + name + ".ipynb";
     </script>

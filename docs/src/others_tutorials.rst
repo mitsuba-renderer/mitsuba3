@@ -12,6 +12,6 @@ than rendering and inverse rendering.
 
 .. nbgallery::
 
-    tutorials/others/bsdf_deep_dive
-    tutorials/others/granular_phase_function
-    tutorials/others/custom_plugin
+    others/bsdf_deep_dive
+    others/granular_phase_function
+    others/custom_plugin
