@@ -89,12 +89,12 @@ INTEGRATOR_ORDERING = [
     'aov',
     'volpath',
     'volpathmis',
-    'mitsuba.ad.integrators.prb.PRBIntegrator',
-    'mitsuba.ad.integrators.prb_basic.BasicPRBIntegrator',
-    'mitsuba.ad.integrators.direct_reparam.DirectReparamIntegrator',
-    'mitsuba.ad.integrators.emission_reparam.EmissionReparamIntegrator',
-    'mitsuba.ad.integrators.prb_reparam.PRBReparamIntegrator',
-    'mitsuba.ad.integrators.prbvolpath.PRBVolpathIntegrator',
+    '../src/python/python/ad/integrators/prb.py',
+    '../src/python/python/ad/integrators/prb_basic.py',
+    '../src/python/python/ad/integrators/direct_reparam.py',
+    '../src/python/python/ad/integrators/emission_reparam.py',
+    '../src/python/python/ad/integrators/prb_reparam.py',
+    '../src/python/python/ad/integrators/prbvolpath.py',
 ]
 
 FILM_ORDERING = ['hdrfilm',
@@ -155,19 +155,27 @@ def extract(target, filename):
         target.write(line)
     f.close()
 
-def extract_python(target, name):
-    print("Processing %s" % name)
-    import mitsuba
-    mitsuba.set_variant('llvm_ad_rgb')
-    mod = importlib.import_module(name[:-len(name.split('.')[-1])-1])
-    obj = getattr(mod, name.split('.')[-1])
-    lines = obj.__doc__.splitlines()
-    for l in lines:
+def extract_python(target, filename):
+    f = open(filename, encoding='utf-8')
+    inheader = False
+    for line in f.readlines():
         # Remove indentation
-        target.write(l[4:]+'\n')
+        if line.startswith('    '):
+            line = line[4:]
+        match = re.match(r'\"\"\"', line)
+        if not inheader and match is not None:
+            print("Processing PY %s" % filename)
+            inheader = True
+            continue
+        if inheader and match is not None:
+            inheader = False
+            continue
+        if not inheader:
+            continue
+        target.write(line)
+    f.close()
 
 # Traverse source directories and process any found plugin code
-
 
 def process(path, target, ordering):
     def capture(file_list, dirname, files):
@@ -186,14 +194,14 @@ def process(path, target, ordering):
         capture(file_list, dirname, files)
 
     for o in ordering:
-        if o.startswith('mitsuba.'):
+        if o.endswith('.py'):
             file_list.append(o)
 
     ordering = [(find_order_id(fname, ordering), fname) for fname in file_list]
     ordering = sorted(ordering, key=lambda entry: entry[0])
 
     for entry in ordering:
-        if entry[1].startswith('mitsuba.'):
+        if entry[1].endswith('.py'):
             extract_python(target, entry[1])
         else:
             extract(target, entry[1])
@@ -213,19 +221,19 @@ def generate(build_dir):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     sections = [
-        ('shapes',      SHAPE_ORDERING),
-        ('bsdfs',       BSDF_ORDERING),
-        ('media',       MEDIUM_ORDERING),
-        ('phase',       PHASE_ORDERING),
-        ('emitters',    EMITTER_ORDERING),
-        ('sensors',     SENSOR_ORDERING),
-        ('textures',    TEXTURE_ORDERING),
-        ('spectra',     SPECTRUM_ORDERING),
+        # ('shapes',      SHAPE_ORDERING),
+        # ('bsdfs',       BSDF_ORDERING),
+        # ('media',       MEDIUM_ORDERING),
+        # ('phase',       PHASE_ORDERING),
+        # ('emitters',    EMITTER_ORDERING),
+        # ('sensors',     SENSOR_ORDERING),
+        # ('textures',    TEXTURE_ORDERING),
+        # ('spectra',     SPECTRUM_ORDERING),
         ('integrators', INTEGRATOR_ORDERING),
-        ('samplers',    SAMPLER_ORDERING),
-        ('films',       FILM_ORDERING),
-        ('rfilters',    RFILTER_ORDERING),
-        ('volumes',     VOLUME_ORDERING)
+        # ('samplers',    SAMPLER_ORDERING),
+        # ('films',       FILM_ORDERING),
+        # ('rfilters',    RFILTER_ORDERING),
+        # ('volumes',     VOLUME_ORDERING)
     ]
 
     for section, ordering in sections:
