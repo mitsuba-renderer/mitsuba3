@@ -394,17 +394,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     jit_free(s->sbt.hitgroupRecordBase);
                     jit_free(s->sbt.missRecordBase);
                     jit_free(s->ias_buffer);
-
-                    // Delete shapes asynchronously to avoid deadlock in AD mode
-                    try {
-                        Task *task = dr::do_async([s]() {
-                            if (PluginManager::alive()) {
-                                s->shapes.clear();
-                                delete s;
-                            }
-                        });
-                        Thread::register_task(task);
-                    } catch(const std::system_error& e) { } // Catch "mutex lock failed"
+                    s->ias_buffer = nullptr;
                 }
             },
             (void *) m_accel
@@ -423,6 +413,16 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
            trigger the release of the Embree acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
+
+        // Delete shapes if BVH was destroyed, otherwise leak
+        OptixSceneState<Shape> *s = (OptixSceneState<Shape> *) m_accel;
+        if (!s->ias_buffer) {
+            s->shapes.clear();
+            delete s;
+        } else {
+            Log(Debug, "Pending ray tracing kernels, shape instances will be leaked.");
+        }
+
         m_accel = nullptr;
     }
 }

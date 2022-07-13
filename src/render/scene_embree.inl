@@ -175,17 +175,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
                     Log(Debug, "Free Embree scene state..");
 
                     rtcReleaseScene(s->accel);
-
-                    // Delete shapes asynchronously to avoid deadlock in AD mode
-                    try {
-                        Task *task = dr::do_async([s]() {
-                            if (PluginManager::alive()) {
-                                s->shapes.clear();
-                                delete s;
-                            }
-                        });
-                        Thread::register_task(task);
-                    } catch(const std::system_error& e) { } // Catch "mutex lock failed"
+                    s->accel = nullptr;
                 }
             },
             (void *) m_accel
@@ -206,6 +196,16 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
            trigger the release of the Embree acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
+
+        // Delete shapes if BVH was destroyed, otherwise leak
+        using State = EmbreeState<Float, Spectrum>;
+        State *s = (State *) m_accel;
+        if (!s->accel) {
+            s->shapes.clear();
+            delete s;
+        } else {
+            Log(Debug, "Pending ray tracing kernels, shape instances will be leaked.");
+        }
 
         bool scene_contains_others = false;
         for (auto& shape : m_shapes)
