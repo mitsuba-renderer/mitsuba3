@@ -394,7 +394,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     jit_free(s->sbt.hitgroupRecordBase);
                     jit_free(s->sbt.missRecordBase);
                     jit_free(s->ias_buffer);
-                    s->ias_buffer = nullptr;
+                    s->ias_handle = 0;
                 }
             },
             (void *) m_accel
@@ -416,7 +416,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 
         // Delete shapes if BVH was destroyed, otherwise leak
         OptixSceneState<Shape> *s = (OptixSceneState<Shape> *) m_accel;
-        if (!s->ias_buffer) {
+        if (s->ias_handle == 0) {
             s->shapes.clear();
             delete s;
         } else {
