@@ -33,7 +33,6 @@ struct OptixSceneState {
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
     size_t config_index;
-    std::vector<ref<Shape>> shapes;
 };
 
 /**
@@ -252,13 +251,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
         s.config_index = init_optix_config(has_meshes, has_others, has_instances);
         const OptixConfig &config = optix_configs[s.config_index];
 
-        // Keep reference to shapes in order to ensure their lifetime goes
-        // beyond the one of the Scene
-        for (auto &shape : m_shapes)
-            s.shapes.push_back(shape);
-        for (auto &shape : m_shapegroups)
-            s.shapes.push_back(shape);
-
         // =====================================================
         //  Shader Binding Table generation
         // =====================================================
@@ -394,7 +386,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     jit_free(s->sbt.hitgroupRecordBase);
                     jit_free(s->sbt.missRecordBase);
                     jit_free(s->ias_buffer);
-                    s->ias_handle = 0;
+
+                    delete s;
                 }
             },
             (void *) m_accel
@@ -409,18 +402,22 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
+        uint32_t handle_index = m_accel_handle.index();
+
         /* Decrease the reference count of the handle variable. This will
-           trigger the release of the Embree acceleration data structure if no
+           trigger the release of the OptiX acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
 
-        // Delete shapes if BVH was destroyed, otherwise leak
-        OptixSceneState<Shape> *s = (OptixSceneState<Shape> *) m_accel;
-        if (s->ias_handle == 0) {
-            s->shapes.clear();
-            delete s;
-        } else {
+        /* In case the OptiX acceleration data structure hasn't been release by
+           the instruction above, we will leak all shape instances to ensure the
+           validity of any pending ray tracing kernel */
+        if (jit_var_exists(handle_index)) {
             Log(Debug, "Pending ray tracing kernels, shape instances will be leaked.");
+            for (auto &shape : m_shapes)
+                shape->inc_ref();
+            for (auto &shape : m_shapegroups)
+                shape->inc_ref();
         }
 
         m_accel = nullptr;
