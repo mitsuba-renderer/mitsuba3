@@ -14,7 +14,7 @@ Simple scenes
 .. panels::
     :header: text-center font-weight-bold
     :body: text-center
-    :footer: p-0 m-0
+    :footer: text-center p-0 m-0
     :container: container-lg pb-3
     :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
@@ -54,6 +54,9 @@ Simple scenes
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
     ---
 
     `🅱️ <https://benedikt-bitterli.me/resources/>`_ Veach MIS
@@ -65,6 +68,9 @@ Simple scenes
     .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/veach-mis.zip
         :text:
         :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
     ---
 
@@ -78,6 +84,9 @@ Simple scenes
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
     ---
 
     `🅱️ <https://benedikt-bitterli.me/resources/>`_ Veach Ajar
@@ -90,6 +99,9 @@ Simple scenes
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
 
 Single object
 +++++++++++++
@@ -97,11 +109,11 @@ Single object
 .. panels::
     :header: text-center font-weight-bold
     :body: text-center
-    :footer: p-0 m-0
+    :footer: text-center p-0 m-0
     :container: container-lg pb-3
     :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Car
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Pontiac GTO 67
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/car.png
         :height: 130
@@ -111,9 +123,12 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `thecali <http://www.blendswap.com/users/view/thecali>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Car 2
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Old vintage car
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/car2.png
         :height: 130
@@ -123,9 +138,12 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `piopis <http://www.blendswap.com/users/view/piopis>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Coffee
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Coffee Maker
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/coffee.png
         :height: 130
@@ -135,17 +153,8 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
-    ---
-
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Teapot
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot.png
-        :height: 130
-        :align: center
-
-    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/teapot.zip
-        :text:
-        :classes: btn-link stretched-link
+    ++++++++++++++
+    by `cekuhnen <http://www.blendswap.com/user/cekuhnen>`_
 
     ---
 
@@ -159,6 +168,9 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Delatronic <http://www.blendswap.com/user/Delatronic>`_
+
     ---
 
     `🅱️ <https://benedikt-bitterli.me/resources/>`_ Spaceship
@@ -170,6 +182,9 @@ Single object
     .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/spaceship.zip
         :text:
         :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `thecali <http://www.blendswap.com/user/thecali>`_
 
     ---
 
@@ -183,6 +198,24 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `UP3D <http://www.blendswap.com/users/view/UP3D>`_
+
+    ---
+
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Teapot
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot.png
+        :height: 130
+        :align: center
+
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/teapot.zip
+        :text:
+        :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
     ---
 
     `🅱️ <https://benedikt-bitterli.me/resources/>`_ Teapot-full
@@ -195,6 +228,41 @@ Single object
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
+
+    ---
+
+    Lego Bulldozer
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/gallery_thumbnails/lego.png
+        :height: 130
+        :align: center
+
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/lego.zip
+        :text:
+        :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `Heinzelnisse <https://www.blendswap.com/profile/88652>`_
+
+    ---
+
+    Sci-Fi Rover
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    .. image:: ../resources/data/docs/images/gallery_thumbnails/rover.png
+        :height: 130
+        :align: center
+
+    .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/rover.zip
+        :text:
+        :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `vajrablue <https://www.blendswap.com/profile/5201>`_
+
+
 
 Architecture
 ++++++++++++
@@ -202,11 +270,11 @@ Architecture
 .. panels::
     :header: text-center font-weight-bold
     :body: text-center
-    :footer: p-0 m-0
+    :footer: text-center p-0 m-0
     :container: container-lg pb-3
     :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Bathroom 1
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Bathroom
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom.png
         :height: 130
@@ -216,9 +284,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Mareck <http://www.blendswap.com/users/view/Mareck>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Bathroom 2
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Salle de bain
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom2.png
         :height: 130
@@ -227,6 +298,9 @@ Architecture
     .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/bathroom2.zip
         :text:
         :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `nacimus <http://www.blendswap.com/users/view/nacimus>`_
 
     ---
 
@@ -240,9 +314,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `SlykDrako <http://www.blendswap.com/user/SlykDrako>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Classroom
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Japanese Classroom
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/classroom.png
         :height: 130
@@ -252,9 +329,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `NovaZeeke <http://www.blendswap.com/users/view/NovaZeeke>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Dining room
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ The Breakfast Room
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/dining-room.png
         :height: 130
@@ -264,9 +344,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Kitchen
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Country Kitchen
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/kitchen.png
         :height: 130
@@ -276,9 +359,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Jay-Artist <http://www.blendswap.com/user/Jay-Artist>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Living room 1
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Grey & White Room
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room.png
         :height: 130
@@ -288,9 +374,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Living room 2
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ The White Room
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-2.png
         :height: 130
@@ -300,9 +389,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Jay-Artist <http://www.blendswap.com/user/Jay-Artist>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Living room 3
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Modern Living Room
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-3.png
         :height: 130
@@ -312,9 +404,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Staircase
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Wooden Staircase
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase.png
         :height: 130
@@ -324,9 +419,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Staircase 2
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Modern Hall
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase2.png
         :height: 130
@@ -335,6 +433,9 @@ Architecture
     .. link-button:: http://rgl.s3.eu-central-1.amazonaws.com/scenes/staircase2.zip
         :text:
         :classes: btn-link stretched-link
+
+    ++++++++++++++
+    by `NewSee2l035 <http://www.blendswap.com/user/NewSee2l035>`_
 
     ---
 
@@ -348,9 +449,12 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `aXel <http://www.blendswap.com/user/aXel>`_
+
     ---
 
-    `🅱️ <https://benedikt-bitterli.me/resources/>`_ House
+    `🅱️ <https://benedikt-bitterli.me/resources/>`_ Victorian Style House
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     .. image:: ../resources/data/docs/images/gallery_thumbnails/house.png
         :height: 130
@@ -360,6 +464,9 @@ Architecture
         :text:
         :classes: btn-link stretched-link
 
+    ++++++++++++++
+    by `MrChimp2313 <http://www.blendswap.com/users/view/MrChimp2313>`_
+
 
 Documentation banners
 +++++++++++++++++++++
@@ -367,7 +474,7 @@ Documentation banners
 .. panels::
     :header: text-center font-weight-bold
     :body: text-center
-    :footer: p-0 m-0
+    :footer: text-center p-0 m-0
     :container: container-lg pb-3
     :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
