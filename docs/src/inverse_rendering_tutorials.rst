@@ -18,4 +18,5 @@ applications:
     inverse_rendering/caustics_optimization
     inverse_rendering/object_pose_estimation
     inverse_rendering/volume_optimization
+    inverse_rendering/radiance_field_reconstruction
     inverse_rendering/polarizer_optimization
