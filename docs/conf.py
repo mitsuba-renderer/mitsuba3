@@ -231,6 +231,7 @@ nbsphinx_prolog = """
             background-color: white;
             color: black;
             font-color: black;
+            cursor: pointer;
         }
 
         #data_btn {
@@ -253,6 +254,7 @@ nbsphinx_prolog = """
             background-color: white;
             color: black;
             font-color: black;
+            cursor: pointer;
         }
     </style>
 
