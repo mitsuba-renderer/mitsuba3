@@ -207,28 +207,84 @@ nbsphinx_prolog = """
 .. raw:: html
 
     <style>
+        #nb_btn {
+            box-shadow: 0 0.2rem 0.5rem rgb(0 0 0 / 25%), 0 0 0.0625rem rgb(0 0 0 / 10%);
+            background-color: #03bfa5;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            width: 35%;
+            font-size: 1em;
+            font-weight: 700;
+            margin-right: 5%;
+            margin-top: 1em;
+            font-weight: 700;
+            font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+            font-color: white;
+            transition-duration: 0.4s;
+        }
+        #nb_btn:hover {
+            background-color: white;
+            color: black;
+            font-color: black;
+        }
 
+        #data_btn {
+            box-shadow: 0 0.2rem 0.5rem rgb(0 0 0 / 25%), 0 0 0.0625rem rgb(0 0 0 / 10%);
+            background-color: #03bfa5;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            width: 35%;
+            font-size: 1em;
+            font-weight: 700;
+            font-color: white;
+            transition-duration: 0.4s;
+        }
+        #data_btn:hover {
+            background-color: white;
+            color: black;
+            font-color: black;
+        }
     </style>
 
-    <div style="display: flex;">
-        <div id="nb_link" class="admonition topic alert alert-block alert-success" style="float: left;">
-            <a href="#" download>
-                <center>⬇️ Download Jupyter notebook</center>
-            </a>
-        </div>
-        <div class="admonition topic alert alert-block alert-warning" style="float: left;">
-            <a href="http://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip" download>
-                <center>⬇️ Download data</center>
-            </a>
-        </div>
+    <div style="display: block; width: 100%; text-align: center;">
+        <button id="nb_btn" type="submit" onclick="#">
+            Download notebook
+        </button>
+
+        <button id="data_btn" type="submit" onclick="window.open('http://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip')">
+            Download data
+        </button>
     </div>
 
     <script>
+        function download(filename, name) {
+            var element = document.createElement('a');
+            window.URL = window.URL || window.webkitURL;
+            element.setAttribute('href', filename);
+            element.setAttribute('download', name);
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
         var path = window.location.pathname;
         var name = path.slice(path.lastIndexOf("/src/") + 5, -5);
         var tuto_url = "https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/";
-        var elem = document.getElementById("nb_link").firstElementChild;
-        elem.href = tuto_url + name + ".ipynb";
+        var elem = document.getElementById("nb_btn");
+        elem.onclick = function() {
+            var filename = tuto_url + name + ".ipynb";
+            download(filename, filename.slice(filename.lastIndexOf("/") + 1));
+        };
     </script>
 """
 
