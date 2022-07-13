@@ -197,9 +197,9 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     Float sampled_t_step        = dr::NaN<Float>;
     Float sampling_weight       = dr::NaN<Float>;
 
-    dr::Loop<Mask> loop("Medium::sample_interaction_drt");
-    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-             running_t, mei_sub, transmittance);
+    dr::Loop<Mask> loop("Medium::sample_interaction_drt", active, sampler,
+                        acc_weight, sampled_t, sampled_t_step, sampling_weight,
+                        running_t, mei_sub, transmittance);
     Float global_majorant;
     Float dda_t, desired_tau, tau_acc;
     Vector3f dda_tmax, dda_tdelta;
@@ -220,9 +220,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
             extract_channel(get_majorant(mei, active), channel);
     }
 
-    sampler->loop_put(loop);
-    loop.init();
-    while (loop(dr::detach(active))) {
+    while (loop(active)) {
         // --- Mixed DRT / DDA loop:
         // - If the majorant is spatially varying, one iteration of the loop
         //   will both progress traversal of the majorant supergrid with DDA
@@ -335,12 +333,12 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
 
     sampled_t = sampled_t + sampler->next_1d(did_traverse) * sampled_t_step;
 
-    Mask valid_mei   = (sampled_t <= maxt);
-    mei.t            = dr::select(valid_mei, sampled_t, dr::Infinity<Float>);
-    mei.p            = ray(sampled_t);
-    std::tie(mei.sigma_s, mei.sigma_n, mei.sigma_t) =
-        get_scattering_coefficients(mei, valid_mei);
-    mei.combined_extinction = get_majorant(mei, valid_mei);
+    Mask valid_mei = (sampled_t <= maxt);
+    mei.t          = dr::select(valid_mei, sampled_t, dr::Infinity<Float>);
+    mei.p          = ray(sampled_t);
+    // Note: not looking up the sigma_t, majorant, etc to fill-in the medium
+    // interaction. This is so that the caller can decide whether to do an
+    // attached or detached lookup.
 
     return { mei, sampling_weight };
 }
@@ -417,9 +415,9 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
     Mask valid_mei   = (sampled_t <= maxt);
     mei.t            = dr::select(valid_mei, sampled_t, dr::Infinity<Float>);
     mei.p            = ray(sampled_t);
-    std::tie(mei.sigma_s, mei.sigma_n, mei.sigma_t) =
-        get_scattering_coefficients(mei, valid_mei);
-    mei.combined_extinction = get_majorant(mei, valid_mei);
+    // Note: not looking up the sigma_t, majorant, etc to fill-in the medium
+    // interaction. This is so that the caller can decide whether to do an
+    // attached or detached lookup.
 
     return { mei, sampling_weight };
 }

@@ -260,35 +260,35 @@ public:
             return m_max_density;
     }
 
-    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
+    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mei,
                                    Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        auto value = m_albedo->eval(mi, active);
+        auto value = m_albedo->eval(mei, active);
         return value & active;
     }
 
-    UnpolarizedSpectrum get_emission(const MediumInteraction3f &mi,
+    UnpolarizedSpectrum get_emission(const MediumInteraction3f &mei,
                                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        auto value = m_emission->eval(mi, active);
+        auto value = m_emission->eval(mei, active);
         return value & active;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
-    get_scattering_coefficients(const MediumInteraction3f &mi,
+    get_scattering_coefficients(const MediumInteraction3f &mei,
                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
         auto sigmat =
-            density_activation(m_scale.value() * m_sigmat->eval(mi, active));
+            density_activation(m_scale.value() * m_sigmat->eval(mei, active));
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
-            sigmat *= m_phase_function->projected_area(mi, active);
+            sigmat *= m_phase_function->projected_area(mei, active);
 
-        auto sigmas = sigmat * m_albedo->eval(mi, active);
+        auto sigmas = sigmat * m_albedo->eval(mei, active);
 
         UnpolarizedSpectrum local_majorant =
             (m_majorant_resolution_factor > 0)
-                ? m_majorant_grid->eval_1(mi, active)
+                ? m_majorant_grid->eval_1(mei, active)
                 : m_max_density;
         auto sigman = local_majorant - sigmat;
 

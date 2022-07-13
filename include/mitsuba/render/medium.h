@@ -78,6 +78,11 @@ public:
      * Intended for adjoint integration.
      *
      * Returns the interaction record and a sampling weight.
+     *
+     * Warning: the returned medium interaction's quantities (sigma_t,
+     * majorant, etc) will *not* be filled in. This is to allow the caller
+     * to decide whether to perform attached or detached lookups for
+     * these quantities.
      */
     std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_drt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
@@ -88,6 +93,11 @@ public:
      * Intended for adjoint integration.
      *
      * Returns the interaction record and a sampling weight.
+     *
+     * Warning: the returned medium interaction's quantities (sigma_t,
+     * majorant, etc) will *not* be filled in. This is to allow the caller
+     * to decide whether to perform attached or detached lookups for
+     * these quantities.
      */
     std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_drrt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
