@@ -1,5 +1,3 @@
-:hide-toc:
-
 .. only:: not latex
 
 .. .. image:: images/mitsuba-logo-white-bg.png
@@ -10,8 +8,8 @@
         :width: 100%
         :align: center
 
-Mitsuba 3
-=========
+Getting started
+===============
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse
 simulation. It consists of a small set of core libraries and a wide variety of
@@ -99,7 +97,26 @@ For the new users, we put together absolute beginner's tutorials for both DrJit 
         :text:
         :classes: btn-link stretched-link
 
+Citation
+--------
+
+When using Mitsuba 3 or Dr.Jit in academic projects, please cite
+
+.. code-block:: bibtex
+
+    @misc{drjit,
+        author = {Wenzel Jakob, Sébastien Speierer, Nicolas Roussel, Delio Vicini},
+        year = {2022},
+        note = {https://arxiv.org/abs/2202.01284},
+        title = {Dr.Jit: A Just-In-Time Compiler for Differentiable Rendering}
+    }
+
 .. .............................................................................
+
+.. toctree::
+   :hidden:
+
+   self
 
 .. toctree::
     :maxdepth: 1
