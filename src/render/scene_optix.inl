@@ -26,7 +26,6 @@ NAMESPACE_BEGIN(mitsuba)
 static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
 
 // Per scene OptiX state data structure
-template <typename Shape>
 struct OptixSceneState {
     OptixShaderBindingTable sbt = {};
     OptixAccelData accel;
@@ -226,8 +225,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
         Timer timer;
         optix_initialize();
 
-        m_accel = new OptixSceneState<Shape>();
-        OptixSceneState<Shape> &s = *(OptixSceneState<Shape> *) m_accel;
+        m_accel = new OptixSceneState();
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
 
         // =====================================================
         //  Initialize OptiX configuration
@@ -296,7 +295,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
         dr::sync_thread();
-        OptixSceneState<Shape> &s = *(OptixSceneState<Shape> *) m_accel;
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
         if (!m_shapes.empty()) {
@@ -378,7 +377,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int should_free, void *payload) {
-                OptixSceneState<Shape> *s = (OptixSceneState<Shape> *) payload;
+                OptixSceneState *s = (OptixSceneState *) payload;
                 if (should_free) {
                     Log(Debug, "Free OptiX scene state..");
 
@@ -402,24 +401,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
-        uint32_t handle_index = m_accel_handle.index();
-
         /* Decrease the reference count of the handle variable. This will
            trigger the release of the OptiX acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
-
-        /* In case the OptiX acceleration data structure hasn't been release by
-           the instruction above, we will leak all shape instances to ensure the
-           validity of any pending ray tracing kernel */
-        if (jit_var_exists(handle_index)) {
-            Log(Debug, "Pending ray tracing kernels, shape instances will be leaked.");
-            for (auto &shape : m_shapes)
-                shape->inc_ref();
-            for (auto &shape : m_shapegroups)
-                shape->inc_ref();
-        }
-
         m_accel = nullptr;
     }
 }
@@ -444,7 +429,7 @@ MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        OptixSceneState<Shape> &s = *(OptixSceneState<Shape> *) m_accel;
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
         // Override optix configuration in drjit-core.
@@ -538,7 +523,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        OptixSceneState<Shape> &s = *(OptixSceneState<Shape> *) m_accel;
+        OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
         // Override optix configuration in drjit-core.
