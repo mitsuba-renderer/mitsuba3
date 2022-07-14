@@ -73,10 +73,13 @@ details on how to compile, use, and extend Mitsuba 3.
 ## About
 
 This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob).
-Significant features and/or improvements to the code were contributed by [Merlin
-Nimier-David](https://merlin.nimierdavid.fr/), [Guillaume
-Loubet](https://maverick.inria.fr/Membres/Guillaume.Loubet/), [Benoît
-Ruiz](https://github.com/4str0m), [Sébastien
-Speierer](https://speierers.github.io/), [Delio
-Vicini](https://dvicini.github.io/), and [Tizian
-Zeltner](https://tizianzeltner.com/).
+Significant features and/or improvements to the code were contributed by
+[Sébastien Speierer](https://speierers.github.io/),
+[Nicolas Roussel](https://github.com/njroussel),
+[Merlin Nimier-David](https://merlin.nimierdavid.fr/),
+[Delio Vicini](https://dvicini.github.io/),
+[Tizian Zeltner](https://tizianzeltner.com/),
+[Baptiste Nicolet](https://bnicolet.com/),
+[Miguel Crespo](https://mcrespo.me/),
+[Vincent Leroy](https://github.com/leroyvn), and
+[Ziyi Zhang](https://github.com/ziyi-zhang).
