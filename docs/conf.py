@@ -197,6 +197,7 @@ extensions.append('sphinx.ext.todo')
 todo_include_todos = True
 
 extensions.append('sphinxcontrib.bibtex')
+extensions.append('sphinxcontrib.youtube')
 
 extensions.append('sphinx_panels')
 
