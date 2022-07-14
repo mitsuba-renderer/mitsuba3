@@ -1,6 +1,7 @@
 <!-- <img src="https://github.com/mitsuba-renderer/mitsuba3/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo"> -->
 
-<img src="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-data/master/docs/images/banners/banner_01.jpg" alt="Mitsuba banner">
+<img src="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-data/master/docs/images/banners/banner_01.jpg"
+alt="Mitsuba banner">
 
 # Mitsuba Renderer 3
 
@@ -19,74 +20,63 @@
 
 ## Introduction
 
-Mitsuba 3 is a research-oriented rendering system written in portable C++17. It
-consists of a small set of core libraries and a wide variety of plugins that
-implement functionality ranging from materials and light sources to complete
-rendering algorithms. Mitsuba 3 strives to retain scene compatibility with its
-predecessor [Mitsuba 0.6](https://github.com/mitsuba-renderer/mitsuba).
-However, in most other respects, it is a completely new system following a
-different set of goals.
+Mitsuba 3 is a research-oriented rendering system for forward and inverse
+simulation. It consists of a small set of core libraries and a wide variety of
+plugins that implement functionality ranging from materials and light sources to
+complete rendering algorithms. Mitsuba 3 is implemented on top of
+[Dr.Jit](https://github.com/mitsuba-renderer/drjit) a just-in-time (JIT)
+compiler for ordinary and differentiable computation.
 
-The most significant change of Mitsuba 3 is that it is a *retargetable*
-renderer: this means that the underlying implementations and data structures
-are specified in a generic fashion that can be transformed to accomplish a
-number of different tasks. For example:
+Mitsuba 3 is a *retargetable* renderer: this means that the underlying
+implementations and data structures are specified in a generic fashion that can
+be transformed to accomplish several different tasks.
 
-1. In the simplest case, Mitsuba 3 is an ordinary CPU-based RGB renderer that
-   processes one ray at a time similar to its predecessor [Mitsuba
-   0.6](https://github.com/mitsuba-renderer/mitsuba).
+## Installation
 
-2. Alternatively, Mitsuba 3 can be transformed into a differentiable renderer
-   that runs on NVIDIA RTX GPUs. A differentiable rendering algorithm is able
-   to compute derivatives of the entire simulation with respect to input
-   parameters such as camera pose, geometry, BSDFs, textures, and volumes. In
-   conjunction with gradient-based optimization, this opens door to challenging
-   inverse problems including computational material design and scene reconstruction.
+Mitsuba 3 can be installed via pip from PyPI:
 
-3. Another type of transformation turns Mitsuba 3 into a vectorized CPU
-   renderer that leverages Single Instruction/Multiple Data (SIMD) instruction
-   sets such as AVX512 on modern CPUs to efficiently sample many light paths in
-   parallel.
+```bash
+pip install mitsuba
+```
 
-4. Yet another type of transformation rewrites physical aspects of the
-   simulation: Mitsuba can be used as a monochromatic renderer, RGB-based
-   renderer, or spectral renderer. Each variant can optionally account for the
-   effects of polarization if desired.
+This command will install all the necessary dependencies on your system.
 
-In addition to the above transformations, there are
-several other noteworthy changes:
+> :warning:
+> For computation and rendering on the GPU, make sure to install an NVidia GPU driver equal or greater than `495.89`.
 
-1. Mitsuba 3 provides very fine-grained Python bindings to essentially every
-   function using [pybind11](https://github.com/pybind/pybind11). This makes it
-   possible to import the renderer into a Jupyter notebook and develop new
-   algorithms interactively while visualizing their behavior using plots.
+## Usage
 
-2. The renderer includes a large automated test suite written in Python, and
-   its development relies on several continuous integration servers that
-   compile and test new commits on different operating systems using various
-   compilation settings (e.g. debug/release builds, single/double precision,
-   etc). Manually checking that external contributions don't break existing
-   functionality had become a severe bottleneck in the previous Mitsuba 0.6
-   codebase, hence the goal of this infrastructure is to avoid such manual
-   checks and streamline interactions with the community (Pull Requests, etc.)
-   in the future.
+Here is a simple "Hello World" example that shows how simple it is to render a
+scene using Mitsuba 3 from Python:
 
-3. An all-new cross-platform user interface is currently being developed using
-   the [NanoGUI](https://github.com/mitsuba-renderer/nanogui) library. *Note
-   that this is not yet complete.*
+```python
+# Import the library using the alias "mi"
+import mitsuba as mi
+# Set the variant of the renderer
+mi.set_variant('scalar_rgb')
+# Load a scene
+scene = mi.load_dict(mi.cornell_box())
+# Render the scene
+img = mi.render(scene)
+# Write the rendered image to an EXR file
+mi.Bitmap(img).write('cbox.exr')
+```
 
-## Compiling and using Mitsuba 3
+More tutorials can be found in the [documentation][2], covering various
+use-cases.
 
-Please see the [documentation](http://mitsuba3.readthedocs.org/en/latest) for
+## Compiling from sources
+
+Please see the [documentation](https://mitsuba.readthedocs.io/en/latest/src/developer_guide.html) for
 details on how to compile, use, and extend Mitsuba 3.
 
 ## About
 
 This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob).
-Significant features and/or improvements to the code were contributed by
-[Merlin Nimier-David](https://merlin.nimierdavid.fr/),
-[Guillaume Loubet](https://maverick.inria.fr/Membres/Guillaume.Loubet/),
-[Benoît Ruiz](https://github.com/4str0m),
-[Sébastien Speierer](https://github.com/Speierers),
-[Delio Vicini](https://dvicini.github.io/),
-and [Tizian Zeltner](https://tizianzeltner.com/).
+Significant features and/or improvements to the code were contributed by [Merlin
+Nimier-David](https://merlin.nimierdavid.fr/), [Guillaume
+Loubet](https://maverick.inria.fr/Membres/Guillaume.Loubet/), [Benoît
+Ruiz](https://github.com/4str0m), [Sébastien
+Speierer](https://speierers.github.io/), [Delio
+Vicini](https://dvicini.github.io/), and [Tizian
+Zeltner](https://tizianzeltner.com/).
