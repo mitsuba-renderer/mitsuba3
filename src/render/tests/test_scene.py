@@ -129,12 +129,9 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
                     'sample_count': 4,
                 },
             },
-            'sphere1': {
+            'sphere': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj'
-            },
-            'sphere2': {
-                'type': 'sphere',
             },
             'emitter': {
                 'type': 'point',
