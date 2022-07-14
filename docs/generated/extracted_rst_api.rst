@@ -13053,7 +13053,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
