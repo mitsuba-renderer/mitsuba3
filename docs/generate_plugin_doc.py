@@ -221,19 +221,19 @@ def generate(build_dir):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     sections = [
-        # ('shapes',      SHAPE_ORDERING),
-        # ('bsdfs',       BSDF_ORDERING),
-        # ('media',       MEDIUM_ORDERING),
-        # ('phase',       PHASE_ORDERING),
-        # ('emitters',    EMITTER_ORDERING),
-        # ('sensors',     SENSOR_ORDERING),
-        # ('textures',    TEXTURE_ORDERING),
-        # ('spectra',     SPECTRUM_ORDERING),
+        ('shapes',      SHAPE_ORDERING),
+        ('bsdfs',       BSDF_ORDERING),
+        ('media',       MEDIUM_ORDERING),
+        ('phase',       PHASE_ORDERING),
+        ('emitters',    EMITTER_ORDERING),
+        ('sensors',     SENSOR_ORDERING),
+        ('textures',    TEXTURE_ORDERING),
+        ('spectra',     SPECTRUM_ORDERING),
         ('integrators', INTEGRATOR_ORDERING),
-        # ('samplers',    SAMPLER_ORDERING),
-        # ('films',       FILM_ORDERING),
-        # ('rfilters',    RFILTER_ORDERING),
-        # ('volumes',     VOLUME_ORDERING)
+        ('samplers',    SAMPLER_ORDERING),
+        ('films',       FILM_ORDERING),
+        ('rfilters',    RFILTER_ORDERING),
+        ('volumes',     VOLUME_ORDERING)
     ]
 
     for section, ordering in sections:
