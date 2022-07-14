@@ -164,7 +164,7 @@ def extract_python(target, filename):
             line = line[4:]
         match = re.match(r'\"\"\"', line)
         if not inheader and match is not None:
-            print("Processing PY %s" % filename)
+            print("Processing %s" % filename)
             inheader = True
             continue
         if inheader and match is not None:

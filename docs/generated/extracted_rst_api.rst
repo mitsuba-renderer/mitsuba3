@@ -814,18 +814,18 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.BSDFPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.BSDFPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.BSDFPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.BSDFPtr`:
@@ -4321,18 +4321,18 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.EmitterPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.EmitterPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.EmitterPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.EmitterPtr`:
@@ -11721,18 +11721,18 @@
         Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
             This method returns a pair of (Transmittance, PDF).
 
-    .. py:method:: mitsuba.MediumPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.MediumPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.MediumPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.MediumPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.MediumPtr`:
@@ -12622,18 +12622,18 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ObjectPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.ObjectPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.ObjectPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.ObjectPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ObjectPtr`:
@@ -13107,18 +13107,18 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.PhaseFunctionPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.PhaseFunctionPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.PhaseFunctionPtr`:
@@ -16851,18 +16851,18 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.SensorPtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.SensorPtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.SensorPtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.SensorPtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.SensorPtr`:
@@ -17681,18 +17681,18 @@
         Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*> >:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.gather_(arg0, arg1, arg2, arg3)
+    .. py:method:: mitsuba.ShapePtr.gather_(source, index, mask, permute=False)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.ShapePtr`):
+        Parameter ``source`` (:py:obj:`mitsuba.ShapePtr`):
             *no description available*
 
-        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+        Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
 
-        Parameter ``arg3`` (bool):
+        Parameter ``permute`` (bool):
             *no description available*
 
         Returns → :py:obj:`mitsuba.ShapePtr`:
@@ -23578,15 +23578,15 @@
      * - max_depth
          - |int|
          - Specifies the longest path depth in the generated output image (where -1
-           corresponds to :math:`\infty`). A value of |1| will only render directly
-           visible light sources. |2| will lead to single-bounce (direct-only)
-           illumination, and so on. (Default: |-1|)
+           corresponds to :math:`\infty`). A value of 1 will only render directly
+           visible light sources. 2 will lead to single-bounce (direct-only)
+           illumination, and so on. (Default: 6)
      * - rr_depth
          - |int|
          - Specifies the path depth, at which the implementation will begin to use
            the *russian roulette* path termination criterion. For example, if set to
-           |1|, then path generation many randomly cease after encountering directly
-           visible surfaces. (Default: |5|)
+           1, then path generation many randomly cease after encountering directly
+           visible surfaces. (Default: 5)
 
     .. py:method:: __init__(self, arg0)
 
@@ -24156,115 +24156,6 @@
 
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
-
-.. py:class:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a reparameterized direct illumination integrator.
-
-    It is functionally equivalent with 'prb_reparam' when 'max_depth' and
-    'reparam_max_depth' are both set to be 2. But since direct illumination
-    tasks only have two ray segments, the overhead of relying on radiative
-    backpropagation is non-neglegible. This implementation builds on the
-    traditional ADIntegrator that does not require two passes during
-    gradient traversal.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.reparam(scene, rng, params, ray, depth, active)
-
-        Helper function to reparameterize rays internally and within ADIntegrator
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``rng`` (mi.PCG32):
-            *no description available*
-
-        Parameter ``params`` (Any):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``depth`` (mi.UInt32):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool):
-            Mask to specify active lanes.
-
-    .. py:method:: mitsuba.ad.direct_reparam.DirectReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
-
-.. py:class:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
-
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
-
-    This class implements a reparameterized emission integrator.
-
-    It reparametrizes the camera ray to handle discontinuity issues
-    caused by moving emitters. This is mainly used for learning and
-    debugging purpose.
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
-    .. py:method:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator.sample(mode, scene, sampler, ray, reparam, active)
-
-        See ``ADIntegrator.sample()`` for a description of this interface and
-        the role of the various parameters and return values.
-
-        Parameter ``mode`` (dr.ADMode):
-            *no description available*
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``ray`` (mi.Ray3f):
-            *no description available*
-
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.Bool], Tuple[mi.Ray3f, mi.Float]]]):
-            *no description available*
-
-        Parameter ``active`` (mi.Bool, **kwargs):
-            Mask to specify active lanes.
-
-        Returns → Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-            *no description available*
 
 .. py:function:: mitsuba.ad.reparameterize_ray(scene, rng, params, ray, num_rays=4, kappa=100000.0, exponent=3.0, antithetic=False, unroll=False, active=True)
 
@@ -27969,8 +27860,7 @@
 
         Add an entry to a given subdict.
 
-        Params
-        ------
+        Parameters:
 
         key: dict key
         value: entry
@@ -27980,8 +27870,7 @@
 
         Add a comment to the scene dict
 
-        Params
-        ------
+        Parameters:
 
         comment: text of the comment
         file: the subdict to which to add the comment
@@ -27991,8 +27880,7 @@
         Add an include tag to the main file.
         This is used when splitting the XML scene file in multiple fragments.
 
-        Params
-        ------
+        Parameters:
 
         file: the file to include
 
@@ -28001,8 +27889,7 @@
         Write a string to file index ind.
         Optionally indent the string by a number of tabs
 
-        Params
-        ------
+        Parameters:
 
         ind: index of the file to write to
         st: text to write
@@ -28014,8 +27901,7 @@
         using filenames based on the given base name.
         Create the necessary folders to create the file at the specified path.
 
-        Params
-        ------
+        Parameters:
 
         name: path to the scene.xml file to write.
 
@@ -28023,8 +27909,7 @@
 
         Switch next output to the given file index
 
-        Params
-        ------
+        Parameters:
 
         file: index of the file to start writing to
 
@@ -28032,8 +27917,7 @@
 
         Write an XML comment to file.
 
-        Params
-        ------
+        Parameters:
 
         comment: The text of the comment to write
         file: Index of the file to write to
@@ -28043,8 +27927,7 @@
         Write an XML header to a specified file.
         Optionally add a comment to describe the file.
 
-        Params
-        ------
+        Parameters:
 
         file: The file to write to
         comment: Optional comment to add (e.g. "# Geometry file")
@@ -28053,8 +27936,7 @@
 
         Open an XML tag (e.g. emitter, bsdf...)
 
-        Params
-        ------
+        Parameters:
 
         name: Name of the tag (emitter, bsdf, shape...)
         attributes: Additional fields to add to the opening tag (e.g. name, type...)
@@ -28064,8 +27946,7 @@
 
         Close the last tag we opened in a given file.
 
-        Params
-        ------
+        Parameters:
 
         file: The file to write to
 
@@ -28073,8 +27954,7 @@
 
         Write a single-line XML element.
 
-        Params
-        ------
+        Parameters:
 
         name: Name of the element (e.g. integer, string, rotate...)
         attributes: Additional fields to add to the element (e.g. name, value...)
@@ -28085,8 +27965,7 @@
         Get the corresponding tag of a given plugin (e.g. 'bsdf' for 'diffuse')
         If the given type (e.g. 'transform') is not a plugin, returns None.
 
-        Params
-        ------
+        Parameters:
 
         plugin_type: Name of the type (e.g. 'diffuse', 'ply'...)
 
@@ -28099,8 +27978,7 @@
         Traverse the scene graph and look for properties in the defaults dict.
         For such properties, store their value in a default tag and replace the value by $name in the prop.
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing the scene info
 
@@ -28112,8 +27990,7 @@
             - Separate the dict into different category-specific subdicts.
             - If not splitting files, merge them in the end.
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing the scene data
 
@@ -28123,8 +28000,7 @@
         The entry should contain the name and value of the spectrum entry.
         The type is passed separately, since it is popped from the dict in write_dict
 
-        Params
-        ------
+        Parameters:
 
         entry: the dict containing the spectrum
         entry_type: either 'spectrum' or 'rgb'
@@ -28134,8 +28010,7 @@
         Given a filepath, either copy it in the scene folder (in the corresponding directory)
         or convert it to a relative path.
 
-        Params
-        ------
+        Parameters:
 
         filepath: the path to the given file
         tag: the tag this path property belongs to in (shape, texture, spectrum)
@@ -28146,8 +28021,7 @@
         Given a dictionary, iterate over its entries and write them to file.
         Calls itself for nested dictionaries.
 
-        Params
-        ------
+        Parameters:
 
         data: The dictionary to write to file.
 
@@ -28155,8 +28029,7 @@
 
         Preprocess then write the input dict to XML file format
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing all the scene info.
 
@@ -28165,8 +28038,7 @@
         Converts a mitsuba ScalarTransform4f into a dict entry.
         This dict entry won't have a 'type' because it's handled in a specific case.
 
-        Params
-        ------
+        Parameters:
 
         transform: the given transform matrix
 
@@ -28175,8 +28047,7 @@
         Export a transform as a combination of rotation, scale and translation.
         This helps manually modifying the transform after export (for cameras for instance)
 
-        Params
-        ------
+        Parameters:
 
         transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)

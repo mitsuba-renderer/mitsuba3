@@ -10,7 +10,7 @@ class EmissionReparamIntegrator(ADIntegrator):
     .. _integrator-emission_reparam:
 
     Reparameterized Emission Integrator (:monosp:`emission_reparam`)
-    -------------------------------------------------------------
+    ----------------------------------------------------------------
 
     .. pluginparameters::
 

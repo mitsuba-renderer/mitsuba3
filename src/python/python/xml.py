@@ -65,8 +65,7 @@ class WriteXML:
         '''
         Add an entry to a given subdict.
 
-        Params
-        ------
+        Parameters:
 
         key: dict key
         value: entry
@@ -78,8 +77,7 @@ class WriteXML:
         '''
         Add a comment to the scene dict
 
-        Params
-        ------
+        Parameters:
 
         comment: text of the comment
         file: the subdict to which to add the comment
@@ -93,8 +91,7 @@ class WriteXML:
         Add an include tag to the main file.
         This is used when splitting the XML scene file in multiple fragments.
 
-        Params
-        ------
+        Parameters:
 
         file: the file to include
         '''
@@ -107,8 +104,7 @@ class WriteXML:
         Write a string to file index ind.
         Optionally indent the string by a number of tabs
 
-        Params
-        ------
+        Parameters:
 
         ind: index of the file to write to
         st: text to write
@@ -128,8 +124,7 @@ class WriteXML:
         using filenames based on the given base name.
         Create the necessary folders to create the file at the specified path.
 
-        Params
-        ------
+        Parameters:
 
         name: path to the scene.xml file to write.
         '''
@@ -205,8 +200,7 @@ class WriteXML:
         '''
         Switch next output to the given file index
 
-        Params
-        ------
+        Parameters:
 
         file: index of the file to start writing to
         '''
@@ -217,8 +211,7 @@ class WriteXML:
         '''
         Write an XML comment to file.
 
-        Params
-        ------
+        Parameters:
 
         comment: The text of the comment to write
         file: Index of the file to write to
@@ -234,8 +227,7 @@ class WriteXML:
         Write an XML header to a specified file.
         Optionally add a comment to describe the file.
 
-        Params
-        ------
+        Parameters:
 
         file: The file to write to
         comment: Optional comment to add (e.g. "# Geometry file")
@@ -247,8 +239,7 @@ class WriteXML:
         '''
         Open an XML tag (e.g. emitter, bsdf...)
 
-        Params
-        ------
+        Parameters:
 
         name: Name of the tag (emitter, bsdf, shape...)
         attributes: Additional fields to add to the opening tag (e.g. name, type...)
@@ -272,8 +263,7 @@ class WriteXML:
         '''
         Close the last tag we opened in a given file.
 
-        Params
-        ------
+        Parameters:
 
         file: The file to write to
         '''
@@ -290,8 +280,7 @@ class WriteXML:
         '''
         Write a single-line XML element.
 
-        Params
-        ------
+        Parameters:
 
         name: Name of the element (e.g. integer, string, rotate...)
         attributes: Additional fields to add to the element (e.g. name, value...)
@@ -312,8 +301,7 @@ class WriteXML:
         Get the corresponding tag of a given plugin (e.g. 'bsdf' for 'diffuse')
         If the given type (e.g. 'transform') is not a plugin, returns None.
 
-        Params
-        ------
+        Parameters:
 
         plugin_type: Name of the type (e.g. 'diffuse', 'ply'...)
         '''
@@ -336,8 +324,7 @@ class WriteXML:
         Traverse the scene graph and look for properties in the defaults dict.
         For such properties, store their value in a default tag and replace the value by $name in the prop.
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing the scene info
         '''
@@ -378,8 +365,7 @@ class WriteXML:
             - Separate the dict into different category-specific subdicts.
             - If not splitting files, merge them in the end.
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing the scene data
         '''
@@ -456,8 +442,7 @@ class WriteXML:
         The entry should contain the name and value of the spectrum entry.
         The type is passed separately, since it is popped from the dict in write_dict
 
-        Params
-        ------
+        Parameters:
 
         entry: the dict containing the spectrum
         entry_type: either 'spectrum' or 'rgb'
@@ -504,8 +489,7 @@ class WriteXML:
         Given a filepath, either copy it in the scene folder (in the corresponding directory)
         or convert it to a relative path.
 
-        Params
-        ------
+        Parameters:
 
         filepath: the path to the given file
         tag: the tag this path property belongs to in (shape, texture, spectrum)
@@ -542,8 +526,7 @@ class WriteXML:
         Given a dictionary, iterate over its entries and write them to file.
         Calls itself for nested dictionaries.
 
-        Params
-        ------
+        Parameters:
 
         data: The dictionary to write to file.
         '''
@@ -632,8 +615,7 @@ class WriteXML:
         '''
         Preprocess then write the input dict to XML file format
 
-        Params
-        ------
+        Parameters:
 
         scene_dict: The dictionary containing all the scene info.
         '''
@@ -663,8 +645,7 @@ class WriteXML:
         Converts a mitsuba ScalarTransform4f into a dict entry.
         This dict entry won't have a 'type' because it's handled in a specific case.
 
-        Params
-        ------
+        Parameters:
 
         transform: the given transform matrix
         '''
@@ -684,8 +665,7 @@ class WriteXML:
         Export a transform as a combination of rotation, scale and translation.
         This helps manually modifying the transform after export (for cameras for instance)
 
-        Params
-        ------
+        Parameters:
 
         transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)

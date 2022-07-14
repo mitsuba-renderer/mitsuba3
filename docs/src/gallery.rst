@@ -8,7 +8,7 @@ rendering resources <https://benedikt-bitterli.me/resources/>`_. On the official
 webpage you can also download the same scenes for other renderers such as PRBT 4
 and Tungsten.
 
-Check the `LICENSE.txt` file in the scene folder to learn more about the restrictions of a specific scene. Although note that the majority allow commercial use, and many don't even require attribution.
+Check the :monosp:`LICENSE.txt` file in the scene folder to learn more about the restrictions of a specific scene. Although note that the majority allow commercial use, and many don't even require attribution.
 
 Simple scenes
 +++++++++++++

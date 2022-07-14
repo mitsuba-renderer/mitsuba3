@@ -136,7 +136,8 @@ exclude_patterns = ['.build',
                     'release.rst',
                     'src/plugin_reference/section_*.rst',
                     'docs_api/*',
-                    'generated/extracted_rst_api.rst',
+                    'generated/*.rst',
+                    'src/generated/*_api.rst',
                     '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all

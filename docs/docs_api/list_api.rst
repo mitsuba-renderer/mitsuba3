@@ -536,10 +536,6 @@
 
 .. autofunction:: mitsuba.ad.common.mis_weight
 
-.. autoclass:: mitsuba.ad.direct_reparam.DirectReparamIntegrator
-
-.. autoclass:: mitsuba.ad.emission_reparam.EmissionReparamIntegrator
-
 .. autofunction:: mitsuba.ad.reparameterize_ray
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
