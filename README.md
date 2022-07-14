@@ -9,18 +9,19 @@
 
 [1]: https://readthedocs.org/projects/mitsuba3/badge/?version=master
 [2]: https://mitsuba3.readthedocs.io/en/latest/src/getting_started/intro.html
-[3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba2_Build)/statusIcon.svg
-[4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba2_Build&guest=1
 [5]: https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true
 [6]: https://ci.appveyor.com/project/wjakob/mitsuba3/branch/master
 -->
-| Documentation   |
-|      :---:      |
-| [![docs][1]][2] |
+
+| Documentation   | Linux             |
+|      :---:      |       :---:       |
+| [![docs][1]][2] | [![rgl-ci][3]][4] |
 
 
-[1]: https://readthedocs.org/projects/mitsuba3/badge/?version=latest
-[2]: https://mitsuba3.readthedocs.io/en/latest/src/getting_started/intro.html
+[1]: https://readthedocs.org/projects/mitsuba/badge/?version=latest
+[2]: https://mitsuba.readthedocs.io/en/latest/src/getting_started/intro.html
+[3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_Build)/statusIcon.svg
+[4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_Build&guest=1
 
 ## Introduction
 
