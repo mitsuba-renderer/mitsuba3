@@ -21,7 +21,7 @@ NAMESPACE_END(detail)
  * subclasses and provides various convenience functions
  * layered on top of on them.
  *
- * All read<b>X</b>() and write<b>X</b>() methods support transparent
+ * All ``read*()`` and ``write*()`` methods support transparent
  * conversion based on the endianness of the underlying system and the
  * value passed to \ref set_byte_order(). Whenever \ref host_byte_order()
  * and \ref byte_order() disagree, the endianness is swapped.
@@ -41,9 +41,9 @@ public:
 
     /// Defines the byte order (endianness) to use in this Stream
     enum EByteOrder {
-        EBigEndian = 0,                ///< PowerPC, SPARC, Motorola 68K
-        ELittleEndian = 1,             ///< x86, x86_64
-        ENetworkByteOrder = EBigEndian ///< Network byte order (an alias for big endian)
+        EBigEndian = 0,                /// PowerPC, SPARC, Motorola 68K
+        ELittleEndian = 1,             /// x86, x86_64
+        ENetworkByteOrder = EBigEndian /// Network byte order (an alias for big endian)
     };
 
     /**

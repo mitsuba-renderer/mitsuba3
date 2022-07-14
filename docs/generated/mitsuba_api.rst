@@ -354,25 +354,13 @@ Parsing
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 27849
-  :end-line: 27852
+  :end-line: 27859
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 27853
-  :end-line: 28053
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 28054
-  :end-line: 28055
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 28056
-  :end-line: 28065
+  :start-line: 27860
+  :end-line: 27869
 
 ------------
 
@@ -2501,8 +2489,8 @@ Spectrum
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 28066
-  :end-line: 28079
+  :start-line: 27870
+  :end-line: 27883
 
 ------------
 

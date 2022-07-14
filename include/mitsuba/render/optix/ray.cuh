@@ -7,10 +7,10 @@
 namespace optix {
 
 struct Ray3f {
-    Vector3f o;         ///< Ray origin
-    Vector3f d;         ///< Ray direction
-    float maxt;         ///< Maximum position on the ray segment
-    float time;         ///< Time value associated with this ray
+    Vector3f o;         /// Ray origin
+    Vector3f d;         /// Ray direction
+    float maxt;         /// Maximum position on the ray segment
+    float time;         /// Time value associated with this ray
 
     DEVICE Ray3f() {}
 

@@ -332,8 +332,8 @@ template <typename Point_> struct BoundingBox {
         return { c, dr::norm(c - max) };
     }
 
-    Point min; ///< Component-wise minimum
-    Point max; ///< Component-wise maximum
+    Point min; /// Component-wise minimum
+    Point max; /// Component-wise maximum
 };
 
 /// Print a string representation of the bounding box
