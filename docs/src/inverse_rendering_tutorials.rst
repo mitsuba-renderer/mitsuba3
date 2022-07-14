@@ -1,4 +1,4 @@
-.. image:: ../../resources/data/docs/images/banners/banner_04.png
+.. image:: ../../resources/data/docs/images/banners/banner_04.jpg
     :width: 100%
     :align: center
 

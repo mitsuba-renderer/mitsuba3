@@ -1,25 +1,15 @@
-<img src="https://github.com/mitsuba-renderer/mitsuba3/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo">
+<!-- <img src="https://github.com/mitsuba-renderer/mitsuba3/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo"> -->
+
+<img src="https://github.com/mitsuba-renderer/mitsuba-data/raw/9491911338f7758f7969e99e48d660759f45ba7d/docs/images/banners/banner_01.jpg" alt="Mitsuba banner">
 
 # Mitsuba Renderer 3
-<!--
-| Documentation   | Linux             | Windows             |
-|      :---:      |       :---:       |        :---:        |
-| [![docs][1]][2] | [![rgl-ci][3]][4] | [![appveyor][5]][6] |
-
-
-[1]: https://readthedocs.org/projects/mitsuba3/badge/?version=master
-[2]: https://mitsuba3.readthedocs.io/en/latest/src/getting_started/intro.html
-[5]: https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true
-[6]: https://ci.appveyor.com/project/wjakob/mitsuba3/branch/master
--->
 
 | Documentation   | Linux             | MacOS             | Windows           |
 |      :---:      |       :---:       |       :---:       |       :---:       |
 | [![docs][1]][2] | [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] |
 
-
 [1]: https://readthedocs.org/projects/mitsuba/badge/?version=latest
-[2]: https://mitsuba.readthedocs.io/en/latest/src/getting_started/intro.html
+[2]: https://mitsuba.readthedocs.io/en/latest/
 [3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64Clang10)/statusIcon.svg
 [4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_LinuxAmd64Clang10&guest=1
 [5]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64gcc9)/statusIcon.svg
