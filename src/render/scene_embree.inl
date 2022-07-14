@@ -179,26 +179,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
-        uint32_t handle_index = m_accel_handle.index();
-
         /* Decrease the reference count of the handle variable. This will
            trigger the release of the Embree acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
-
-        /* In case the Embree acceleration data structure hasn't been release by
-           the instruction above, we will leak all shape instances to ensure the
-           validity of any pending ray tracing kernel */
-        if (jit_var_exists(handle_index)) {
-            Log(Debug, "Pending ray tracing kernels, shape instances will be leaked.");
-            for (auto &shape : m_shapes)
-                shape->inc_ref();
-            for (auto &shape : m_shapegroups)
-                shape->inc_ref();
-        }
+        m_accel = nullptr;
     }
-
-    m_accel = nullptr;
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f

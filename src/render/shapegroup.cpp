@@ -173,7 +173,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                                                          const OptixProgramGroup *program_groups) {
+                                                                         const OptixProgramGroup *program_groups) {
     m_sbt_offset = (uint32_t) hitgroup_records.size();
     fill_hitgroup_records(m_shapes, hitgroup_records, program_groups);
 }
