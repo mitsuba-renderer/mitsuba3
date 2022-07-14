@@ -608,10 +608,10 @@ protected:
 protected:
     /// Enumeration representing the state of a classified primitive in the O(N log N) builder
     enum class PrimClassification : uint8_t {
-        Ignore = 0, ///< Primitive was handled already, ignore from now on
-        Left   = 1, ///< Primitive is left of the split plane
-        Right  = 2, ///< Primitive is right of the split plane
-        Both   = 3  ///< Primitive straddles the split plane
+        Ignore = 0, /// Primitive was handled already, ignore from now on
+        Left   = 1, /// Primitive is left of the split plane
+        Right  = 2, /// Primitive is right of the split plane
+        Both   = 3  /// Primitive straddles the split plane
     };
 
     /* ==================================================================== */

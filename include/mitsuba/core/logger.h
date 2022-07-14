@@ -8,11 +8,11 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Available Log message types
 enum LogLevel : int {
-    Trace = 0,   ///< Trace message, for extremely verbose debugging
-    Debug = 100, ///< Debug message, usually turned off
-    Info  = 200, ///< More relevant debug / information message
-    Warn  = 300, ///< Warning message
-    Error = 400  ///< Error message, causes an exception to be thrown
+    Trace = 0,   /// Trace message, for extremely verbose debugging
+    Debug = 100, /// Debug message, usually turned off
+    Info  = 200, /// More relevant debug / information message
+    Warn  = 300, /// Warning message
+    Error = 400  /// Error message, causes an exception to be thrown
 };
 
 /**

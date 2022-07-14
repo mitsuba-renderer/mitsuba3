@@ -38,17 +38,17 @@ class MI_EXPORT_LIB Properties {
 public:
     /// Supported types of properties
     enum class Type {
-        Bool,              ///< Boolean value (true/false)
-        Long,              ///< 64-bit signed integer
-        Float,             ///< Floating point value
-        Array3f,           ///< 3D array
-        Transform,         ///< 4x4 transform for homogeneous coordinates
-        AnimatedTransform, ///< An animated 4x4 transformation
-        Color,             ///< Tristimulus color value
-        String,            ///< String
-        NamedReference,    ///< Named reference to another named object
-        Object,            ///< Arbitrary object
-        Pointer            ///< const void* pointer (for internal communication between plugins)
+        Bool,              /// Boolean value (true/false)
+        Long,              /// 64-bit signed integer
+        Float,             /// Floating point value
+        Array3f,           /// 3D array
+        Transform,         /// 4x4 transform for homogeneous coordinates
+        AnimatedTransform, /// An animated 4x4 transformation
+        Color,             /// Tristimulus color value
+        String,            /// String
+        NamedReference,    /// Named reference to another named object
+        Object,            /// Arbitrary object
+        Pointer            /// const void* pointer (for internal communication between plugins)
     };
 
     // Scene parsing in double precision

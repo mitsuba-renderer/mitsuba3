@@ -24,8 +24,8 @@ class MI_EXPORT_LIB ZStream : public Stream {
 public:
 
     enum EStreamType {
-        EDeflateStream, ///< A raw deflate stream
-        EGZipStream ///< A gzip-compatible stream
+        EDeflateStream, /// A raw deflate stream
+        EGZipStream /// A gzip-compatible stream
     };
 
     using Stream::read;

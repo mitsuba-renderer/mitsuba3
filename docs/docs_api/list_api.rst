@@ -892,10 +892,6 @@
 
 .. autofunction:: mitsuba.warp.von_mises_fisher_to_square
 
-.. autoclass:: mitsuba.xml.Files
-
-.. autoclass:: mitsuba.xml.WriteXML
-
 .. autofunction:: mitsuba.xml.dict_to_xml
 
 .. autofunction:: mitsuba.xml_to_props

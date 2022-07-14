@@ -65,11 +65,12 @@ class WriteXML:
         '''
         Add an entry to a given subdict.
 
-        Parameters:
-
-        key: dict key
-        value: entry
-        file: the subdict to which to add the data
+        Parameter ``key``:
+            dict key
+        Parameter ``value``:
+            entry
+        Parameter ``file``:
+            the subdict to which to add the data
         '''
         self.scene_data[file].update([(key, value)])
 
@@ -77,10 +78,10 @@ class WriteXML:
         '''
         Add a comment to the scene dict
 
-        Parameters:
-
-        comment: text of the comment
-        file: the subdict to which to add the comment
+        Parameter ``comment``:
+            text of the comment
+        Parameter ``file``:
+            the subdict to which to add the comment
         '''
         key = "__com__%d" % self.com_count
         self.com_count += 1
@@ -93,7 +94,8 @@ class WriteXML:
 
         Parameters:
 
-        file: the file to include
+        Parameter ``file``:
+            the file to include
         '''
         key = "__include__%d" % file
         value = {'type':'include', 'filename':self.file_names[file]}
@@ -104,11 +106,12 @@ class WriteXML:
         Write a string to file index ind.
         Optionally indent the string by a number of tabs
 
-        Parameters:
-
-        ind: index of the file to write to
-        st: text to write
-        tabs: optional number of tabs to add
+        Parameter ``ind``:
+            index of the file to write to
+        Parameter ``st``:
+            text to write
+        Parameter ``tabs``:
+            optional number of tabs to add
         '''
 
         # Prevent trying to write to a file that isn't open
@@ -124,9 +127,8 @@ class WriteXML:
         using filenames based on the given base name.
         Create the necessary folders to create the file at the specified path.
 
-        Parameters:
-
-        name: path to the scene.xml file to write.
+        Parameter ``name``:
+            path to the scene.xml file to write.
         '''
 
         # If any files happen to be open, close them and start again
@@ -200,9 +202,8 @@ class WriteXML:
         '''
         Switch next output to the given file index
 
-        Parameters:
-
-        file: index of the file to start writing to
+        Parameter ``file``:
+            index of the file to start writing to
         '''
 
         self.current_file = file
@@ -211,10 +212,10 @@ class WriteXML:
         '''
         Write an XML comment to file.
 
-        Parameters:
-
-        comment: The text of the comment to write
-        file: Index of the file to write to
+        Parameter ``comment``:
+            The text of the comment to write
+        Parameter ``file``:
+            Index of the file to write to
         '''
         if not file:
             file = self.current_file
@@ -227,10 +228,10 @@ class WriteXML:
         Write an XML header to a specified file.
         Optionally add a comment to describe the file.
 
-        Parameters:
-
-        file: The file to write to
-        comment: Optional comment to add (e.g. "# Geometry file")
+        Parameter ``file``:
+            The file to write to
+        Parameter ``comment``:
+            Optional comment to add (e.g. "# Geometry file")
         '''
         if comment:
             self.write_comment(comment, file)
@@ -239,11 +240,12 @@ class WriteXML:
         '''
         Open an XML tag (e.g. emitter, bsdf...)
 
-        Parameters:
-
-        name: Name of the tag (emitter, bsdf, shape...)
-        attributes: Additional fields to add to the opening tag (e.g. name, type...)
-        file: File to write to
+        Parameter ``name``:
+            Name of the tag (emitter, bsdf, shape...)
+        Parameter ``attributes``:
+            Additional fields to add to the opening tag (e.g. name, type...)
+        Parameter ``file``:
+            File to write to
         '''
         if file is not None:
             self.set_output_file(file)
@@ -263,9 +265,8 @@ class WriteXML:
         '''
         Close the last tag we opened in a given file.
 
-        Parameters:
-
-        file: The file to write to
+        Parameter ``file``:
+            The file to write to
         '''
         if file is not None:
             self.set_output_file(file)
@@ -280,11 +281,12 @@ class WriteXML:
         '''
         Write a single-line XML element.
 
-        Parameters:
-
-        name: Name of the element (e.g. integer, string, rotate...)
-        attributes: Additional fields to add to the element (e.g. name, value...)
-        file: The file to write to
+        Parameter ``name``:
+            Name of the element (e.g. integer, string, rotate...)
+        Parameter ``attributes``:
+            Additional fields to add to the element (e.g. name, value...)
+        Parameter ``file``:
+            The file to write to
         '''
         if file is not None:
             self.set_output_file(file)
@@ -301,9 +303,8 @@ class WriteXML:
         Get the corresponding tag of a given plugin (e.g. 'bsdf' for 'diffuse')
         If the given type (e.g. 'transform') is not a plugin, returns None.
 
-        Parameters:
-
-        plugin_type: Name of the type (e.g. 'diffuse', 'ply'...)
+        Parameter ``plugin_type``:
+            Name of the type (e.g. 'diffuse', 'ply'...)
         '''
         class_ =  self.pmgr.get_plugin_class(plugin_type, mi.variant())
         if not class_: # If get_plugin_class returns None, there is not corresponding plugin
@@ -324,9 +325,8 @@ class WriteXML:
         Traverse the scene graph and look for properties in the defaults dict.
         For such properties, store their value in a default tag and replace the value by $name in the prop.
 
-        Parameters:
-
-        scene_dict: The dictionary containing the scene info
+        Parameter ``scene_dict``:
+            The dictionary containing the scene info
         '''
         scene_dict = scene_dict.copy()
         for key, value in scene_dict.items():
@@ -365,9 +365,8 @@ class WriteXML:
             - Separate the dict into different category-specific subdicts.
             - If not splitting files, merge them in the end.
 
-        Parameters:
-
-        scene_dict: The dictionary containing the scene data
+        Parameter ``scene_dict``:
+            The dictionary containing the scene data
         '''
 
         if self.split_files:
@@ -442,10 +441,10 @@ class WriteXML:
         The entry should contain the name and value of the spectrum entry.
         The type is passed separately, since it is popped from the dict in write_dict
 
-        Parameters:
-
-        entry: the dict containing the spectrum
-        entry_type: either 'spectrum' or 'rgb'
+        Parameter ``entry``:
+            The dict containing the spectrum
+        Parameter ``entry_type``:
+            Either 'spectrum' or 'rgb'
         '''
         if entry_type == 'rgb':
             if len(entry.keys()) != 2 or 'value' not in entry:
@@ -489,10 +488,10 @@ class WriteXML:
         Given a filepath, either copy it in the scene folder (in the corresponding directory)
         or convert it to a relative path.
 
-        Parameters:
-
-        filepath: the path to the given file
-        tag: the tag this path property belongs to in (shape, texture, spectrum)
+        Parameter ``filepath``:
+            the path to the given file
+        Parameter ``tag``:
+            the tag this path property belongs to in (shape, texture, spectrum)
         '''
         if tag not in self.subfolders:
             raise ValueError("Unsupported tag for a filename: %s" % tag)
@@ -526,9 +525,8 @@ class WriteXML:
         Given a dictionary, iterate over its entries and write them to file.
         Calls itself for nested dictionaries.
 
-        Parameters:
-
-        data: The dictionary to write to file.
+        Parameter ``data``:
+            The dictionary to write to file.
         '''
 
         if 'type' in data: # Scene tag
@@ -615,9 +613,8 @@ class WriteXML:
         '''
         Preprocess then write the input dict to XML file format
 
-        Parameters:
-
-        scene_dict: The dictionary containing all the scene info.
+        Parameter ``scene_dict``:
+            The dictionary containing all the scene info.
         '''
         self.preprocess_scene(scene_dict) # Re order elements
         if self.split_files:
@@ -645,9 +642,8 @@ class WriteXML:
         Converts a mitsuba ScalarTransform4f into a dict entry.
         This dict entry won't have a 'type' because it's handled in a specific case.
 
-        Parameters:
-
-        transform: the given transform matrix
+        Parameter ``transform``:
+            The given transform matrix
         '''
 
         value = " ".join(["%f" % x for x in transform.matrix.numpy().flatten()])
@@ -665,10 +661,10 @@ class WriteXML:
         Export a transform as a combination of rotation, scale and translation.
         This helps manually modifying the transform after export (for cameras for instance)
 
-        Parameters:
-
-        transform: The ScalarTransform4f transform matrix to decompose
-        export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
+        Parameter ``transform``:
+            The ScalarTransform4f transform matrix to decompose
+        Parameter ``export_scale``:
+            Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
         '''
 
         scale, quat, trans = dr.transform_decompose(transform.matrix)
@@ -706,6 +702,16 @@ class WriteXML:
         return params
 
 def dict_to_xml(scene_dict, filename, split_files=False):
+    '''
+    Converts a Mitsuba dictionary into its XML representation.
+
+    Parameter ``scene_dict``:
+        Mitsuba dictionary
+    Parameter ``filename``:
+        Output filename
+    Parameter ``split_files``:
+        Whether to split the scene into multiple files (default: False)
+    '''
     writer = WriteXML(filename, split_files=split_files)
     try:
         writer.process(scene_dict)

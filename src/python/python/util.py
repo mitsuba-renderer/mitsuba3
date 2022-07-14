@@ -141,7 +141,7 @@ class SceneParameters(Mapping):
         state.
 
         This method should rarely be called explicitly. The
-        py:class:`~mitsuba.SceneParameters` will detect most operations on
+        :py:class:`~mitsuba.SceneParameters` will detect most operations on
         its values and automatically flag them as dirty. A common exception to
         the detection mechanism is the :py:meth:`~drjit.scatter` operation which
         needs an explicit call to :py:meth:`~mitsuba.SceneParameters.set_dirty()`.

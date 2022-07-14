@@ -22,7 +22,7 @@ private:
 
 /** \brief Simple \ref Stream implementation backed-up by a file.
  *
- * The underlying file abstraction is std::fstream, and so most
+ * The underlying file abstraction is ``std::fstream``, and so most
  * operations can be expected to behave similarly.
  */
 class MI_EXPORT_LIB FileStream : public Stream {

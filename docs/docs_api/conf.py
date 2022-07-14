@@ -146,7 +146,8 @@ excluded_api = [
     r'mitsuba.ad.direct_reparam(.*)', r'mitsuba.ad.integrators.direct_reparam(.*)',
     r'mitsuba.ad.emission_reparam(.*)', r'mitsuba.ad.integrators.emission_reparam(.*)',
     'mitsuba.float_dtype', 'mitsuba.casters', 'mitsuba.cast_object',
-    'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper'
+    'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper',
+    'mitsuba.xml.WriteXML', 'mitsuba.xml.Files',
 ]
 
 # Define the structure of the generated reference pages for the different libraries.
