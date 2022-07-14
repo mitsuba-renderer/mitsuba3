@@ -4,7 +4,7 @@
 ..     :width: 75%
 ..     :align: center
 
-.. image:: resources/data/docs/images/banners/banner_01.png
+.. image:: resources/data/docs/images/banners/banner_01.jpg
         :width: 100%
         :align: center
 
