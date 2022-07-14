@@ -97,6 +97,14 @@ For the new users, we put together absolute beginner's tutorials for both DrJit 
         :text:
         :classes: btn-link stretched-link
 
+Video tutorials
+---------------
+
+The following Youtube playlist contains various video tutorials related
+to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries:
+
+.. youtube:: LCsjK6Cbv6Q
+
 Citation
 --------
 

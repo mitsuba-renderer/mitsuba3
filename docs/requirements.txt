@@ -4,6 +4,7 @@ pybtex
 nbsphinx
 furo
 sphinxcontrib-bibtex
+sphinxcontrib-youtube
 sphinx-panels
 sphinx-gallery
 sphinx-copybutton
