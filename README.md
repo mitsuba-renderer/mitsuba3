@@ -13,15 +13,19 @@
 [6]: https://ci.appveyor.com/project/wjakob/mitsuba3/branch/master
 -->
 
-| Documentation   | Linux             |
-|      :---:      |       :---:       |
-| [![docs][1]][2] | [![rgl-ci][3]][4] |
+| Documentation   | Linux             | MacOS             | Windows           |
+|      :---:      |       :---:       |       :---:       |       :---:       |
+| [![docs][1]][2] | [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] |
 
 
 [1]: https://readthedocs.org/projects/mitsuba/badge/?version=latest
 [2]: https://mitsuba.readthedocs.io/en/latest/src/getting_started/intro.html
-[3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_Build)/statusIcon.svg
-[4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_Build&guest=1
+[3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64Clang10)/statusIcon.svg
+[4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_LinuxAmd64Clang10&guest=1
+[5]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64gcc9)/statusIcon.svg
+[6]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_LinuxAmd64gcc9&guest=1
+[7]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_WindowsAmd64msvc2020)/statusIcon.svg
+[8]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_WindowsAmd64msvc2020&guest=1
 
 ## Introduction
 
