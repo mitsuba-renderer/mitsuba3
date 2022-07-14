@@ -34,7 +34,7 @@ method for most users.
     pip install mitsuba
 
 This command will install all the necessary dependencies on your system (e.g.
-`Dr.Jit`) if not already available.
+:monosp:`Dr.Jit`) if not already available.
 
 .. warning::
 

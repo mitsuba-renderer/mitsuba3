@@ -14,15 +14,15 @@ class ADIntegrator(mi.CppADIntegrator):
      * - max_depth
        - |int|
        - Specifies the longest path depth in the generated output image (where -1
-         corresponds to :math:`\\infty`). A value of |1| will only render directly
-         visible light sources. |2| will lead to single-bounce (direct-only)
-         illumination, and so on. (Default: |6|)
+         corresponds to :math:`\\infty`). A value of 1 will only render directly
+         visible light sources. 2 will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: 6)
      * - rr_depth
        - |int|
        - Specifies the path depth, at which the implementation will begin to use
          the *russian roulette* path termination criterion. For example, if set to
-         |1|, then path generation many randomly cease after encountering directly
-         visible surfaces. (Default: |5|)
+         1, then path generation many randomly cease after encountering directly
+         visible surfaces. (Default: 5)
     """
 
     def __init__(self, props = mi.Properties()):

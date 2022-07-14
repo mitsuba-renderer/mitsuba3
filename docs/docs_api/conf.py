@@ -143,6 +143,8 @@ extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 excluded_api = [
     r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager',
     r'mitsuba.ad.(.*).annotations', r'mitsuba.ad.prb(.*)', r'mitsuba.ad.integrators.prb(.*)',
+    r'mitsuba.ad.direct_reparam(.*)', r'mitsuba.ad.integrators.direct_reparam(.*)',
+    r'mitsuba.ad.emission_reparam(.*)', r'mitsuba.ad.integrators.emission_reparam(.*)',
     'mitsuba.float_dtype', 'mitsuba.casters', 'mitsuba.cast_object',
     'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper'
 ]
@@ -186,8 +188,11 @@ api_doc_structure = {
               r'mitsuba.Point([\w]+)',
               r'mitsuba.Normal([\w]+)',
               r'mitsuba.Matrix([\w]+)',
+              r'mitsuba.Quaternion([\w]+)',
+              r'mitsuba.Texture([\w]+)',
               r'mitsuba.Bounding([\w]+)',
               r'mitsuba.Transform([\w]+)',
+              r'mitsuba.Chain([\w]*)Transform([\w]+)',
               r'mitsuba.AnimatedTransform',
               r'mitsuba.Frame([\w]+)',
               r'mitsuba.Color([\w]+)',
@@ -207,7 +212,7 @@ api_doc_structure = {
     'Film': ['mitsuba.Film([\w]+|)', 'mitsuba.ImageBlock'],
     'Filter': [r'mitsuba.([\w]*)Filter([\w]*)'],
     'Sampler': ['mitsuba.Sampler'],
-    'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree'],
+    'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree', 'mitsuba.cornell_box'],
     'Record': ['mitsuba.PositionSample3f', 'mitsuba.DirectionSample3f',
                r'mitsuba.([\w]+)Interaction([\w]+)',
                r'mitsuba.([\w]+)Intersection([\w]+)', ],
