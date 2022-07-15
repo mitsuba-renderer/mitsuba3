@@ -13,7 +13,7 @@ def index_spectrum(spec, idx):
     return m
 
 class PRBVolpathIntegrator(RBIntegrator):
-    """
+    r"""
     .. _integrator-prbvolpath:
 
     Path Replay Backpropagation Volumetric Integrator (:monosp:`prbvolpath`)

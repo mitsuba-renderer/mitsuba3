@@ -6,7 +6,7 @@ import mitsuba as mi
 from .common import ADIntegrator, mis_weight
 
 class DirectReparamIntegrator(ADIntegrator):
-    """
+    r"""
     .. _integrator-direct_reparam:
 
     Reparameterized Direct Integrator (:monosp:`direct_reparam`)

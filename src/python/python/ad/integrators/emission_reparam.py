@@ -6,7 +6,7 @@ import mitsuba as mi
 from .common import ADIntegrator
 
 class EmissionReparamIntegrator(ADIntegrator):
-    """
+    r"""
     .. _integrator-emission_reparam:
 
     Reparameterized Emission Integrator (:monosp:`emission_reparam`)

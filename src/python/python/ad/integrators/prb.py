@@ -6,7 +6,7 @@ import mitsuba as mi
 from .common import RBIntegrator, mis_weight
 
 class PRBIntegrator(RBIntegrator):
-    """
+    r"""
     .. _integrator-prb:
 
     Path Replay Backpropagation (:monosp:`prb`)

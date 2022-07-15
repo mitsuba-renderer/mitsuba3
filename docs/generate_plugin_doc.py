@@ -163,12 +163,13 @@ def extract_python(target, filename):
         # Remove indentation
         if line.startswith('    '):
             line = line[4:]
-        match = re.match(r'\"\"\"', line)
-        if not inheader and match is not None:
+        match_beg = re.match(r'r\"\"\"', line)
+        match_end = re.match(r'\"\"\"',  line)
+        if not inheader and match_beg is not None:
             print("Processing %s" % filename)
             inheader = True
             continue
-        if inheader and match is not None:
+        if inheader and match_end is not None:
             inheader = False
             continue
         if not inheader:
