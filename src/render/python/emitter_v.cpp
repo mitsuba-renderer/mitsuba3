@@ -45,6 +45,8 @@ public:
     }
 
     using Emitter::m_flags;
+    using Emitter::m_needs_sample_2;
+    using Emitter::m_needs_sample_3;
 };
 
 MI_PY_EXPORT(Emitter) {
@@ -58,6 +60,8 @@ MI_PY_EXPORT(Emitter) {
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
         .def_method(Emitter, flags, "active"_a = true)
+        .def_readwrite("m_needs_sample_2", &PyEmitter::m_needs_sample_2)
+        .def_readwrite("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
         .def_property("m_flags",
             [](PyEmitter &emitter){ return emitter.m_flags; },
             [](PyEmitter &emitter, uint32_t flags){

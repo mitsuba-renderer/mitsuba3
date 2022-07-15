@@ -50,6 +50,9 @@ public:
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, Sensor, to_string,);
     }
+
+    using Sensor::m_needs_sample_2;
+    using Sensor::m_needs_sample_3;
 };
 
 MI_PY_EXPORT(Sensor) {
@@ -64,7 +67,9 @@ MI_PY_EXPORT(Sensor) {
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
-        .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
+        .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler))
+        .def_readwrite("m_needs_sample_2", &PySensor::m_needs_sample_2)
+        .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3);
 
     MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
