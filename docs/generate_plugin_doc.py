@@ -97,8 +97,10 @@ INTEGRATOR_ORDERING = [
     '../src/python/python/ad/integrators/prbvolpath.py',
 ]
 
-FILM_ORDERING = ['hdrfilm',
-                 'specfilm']
+FILM_ORDERING = [
+    'hdrfilm',
+    'specfilm'
+]
 
 RFILTER_ORDERING = [
     'box',
@@ -112,7 +114,6 @@ RFILTER_ORDERING = [
 MEDIUM_ORDERING = [
     'homogeneous',
     'heterogeneous',
-    'specmedium'
 ]
 
 PHASE_ORDERING = [
