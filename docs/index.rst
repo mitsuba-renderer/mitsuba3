@@ -12,38 +12,35 @@ Getting started
 ===============
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse
-simulation. It consists of a small set of core libraries and a wide variety of
-plugins that implement functionality ranging from materials and light sources to complete
-rendering algorithms. Mitsuba 3 strives to retain scene compatibility with its
-predecessors: `Mitsuba 0.6 <https://github.com/mitsuba-renderer/mitsuba>`_ and
-`Mitsuba 2 <https://github.com/mitsuba-renderer/mitsuba2>`_.
-However, in most other respects, it is a completely new system following a
-different set of goals.
+light-transport simulation. It consists of a small set of core libraries and a
+wide variety of plugins that implement functionality ranging from materials and
+light sources to complete rendering algorithms. Mitsuba 3 strives to retain
+scene compatibility with its predecessors: `Mitsuba 0.6
+<https://github.com/mitsuba-renderer/mitsuba>`_ and `Mitsuba 2
+<https://github.com/mitsuba-renderer/mitsuba2>`_. However, in most other
+respects, it is a completely new system following a different set of goals.
 
 Installation
 ------------
 
 Mitsuba 3 can be installed via :monosp:`pip` from `PyPI
-<https://pypi.org/project/mitsuba/>`_. This is the recommended installation
-method for most users.
+<https://pypi.org/project/mitsuba/>`_. This is the recommended method of installation.
 
 .. code-block:: bash
 
     pip install mitsuba
 
-This command will install all the necessary dependencies on your system (e.g.
-:monosp:`Dr.Jit`) if not already available.
-
-.. warning::
-
-    For computation and rendering on the GPU, Mitsuba 3 relies on dynamic
-    library loading which will seamlessly use the CUDA and OptiX installation
-    present within the GPU driver itself. However note that a version of the
-    NVidia GPU driver equal or greater than 495.89 is required.
+This command will also install :monosp:`Dr.Jit` on your system if not already available.
 
 See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 from the git source tree.
 
+Requirements
+^^^^^^^^^^^^
+
+- ``Python >= 3.8``
+- (optional) For computation on the GPU: ``NVidia driver >= 495.89``
+- (optional) For vectorized / parallel computation on the CPU: ``LLVM >= 11.1``
 
 Hello World!
 ------------
@@ -68,7 +65,7 @@ rendered image to a file on disk.
 Quickstart
 ----------
 
-For the new users, we put together absolute beginner's tutorials for both DrJit and Mitsuba.
+For the new users, we put together absolute beginner's tutorials for both Dr.Jit and Mitsuba.
 
 .. grid:: 2
 
@@ -94,7 +91,7 @@ Video tutorials
 ---------------
 
 The following Youtube playlist contains various video tutorials related
-to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries:
+to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries.
 
 .. youtube:: LCsjK6Cbv6Q
 

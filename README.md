@@ -21,15 +21,30 @@ alt="Mitsuba banner">
 ## Introduction
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse
-simulation. It consists of a small set of core libraries and a wide variety of
-plugins that implement functionality ranging from materials and light sources to
-complete rendering algorithms. Mitsuba 3 is implemented on top of
-[Dr.Jit](https://github.com/mitsuba-renderer/drjit) a just-in-time (JIT)
+light-transport simulation. It consists of a small set of core libraries and a
+wide variety of plugins that implement functionality ranging from materials and
+light sources to complete rendering algorithms. Mitsuba 3 is implemented on top
+of [Dr.Jit](https://github.com/mitsuba-renderer/drjit) a just-in-time (JIT)
 compiler for ordinary and differentiable computation.
 
 Mitsuba 3 is a *retargetable* renderer: this means that the underlying
 implementations and data structures are specified in a generic fashion that can
 be transformed to accomplish several different tasks.
+
+## Main Features
+
+- **Cross-platform**: Mitsuba 3 runs natively on Linux (X86_64), macOS (x86_64 & aarch64), and Windows (x86_64)
+
+- **High performance**: Using the Dr.Jit *just-in-time* compiler, computations using Mitsuba 3 can be turned into high-performance fused kernels using either LLVM (when targeting the CPU) or CUDA (when targeting the GPU).
+
+- **Python First**: Mitsuba 3 is built to be deeply integrated into Python, which makes it
+more than a simple renderer. It opens the door to flexible scripting with no compromise on performances given the use of a just-in-time compiler.
+
+- **Rendering research toolbox**: Mitsuba 3 provides the tooling necessary to do rendering research and quick prototyping in Python or C++.
+
+- **Differentiation**: Mitsuba 3 is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as camera pose, geometry, BSDFs, textures, and volumes.
+
+- **Spectral & Polarization**: Mitsuba 3 can be used as a monochromatic renderer, RGB-based renderer, or spectral renderer. Each variant can optionally account for the effects of polarization if desired.
 
 ## Installation
 
@@ -39,10 +54,11 @@ Mitsuba 3 can be installed via pip from PyPI:
 pip install mitsuba
 ```
 
-This command will install all the necessary dependencies on your system.
+### Requirements
 
-> :warning:
-> For computation and rendering on the GPU, make sure to install an NVidia GPU driver equal or greater than `495.89`.
+- `Python >= 3.8`
+- (optional) For computation on the GPU: `Nvidia driver >= 495.89`
+- (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
 
 ## Usage
 
