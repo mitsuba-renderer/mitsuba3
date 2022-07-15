@@ -197,9 +197,9 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     Float sampled_t_step        = dr::NaN<Float>;
     Float sampling_weight       = dr::NaN<Float>;
 
-    dr::Loop<Mask> loop("Medium::sample_interaction_drt", active, sampler,
-                        acc_weight, sampled_t, sampled_t_step, sampling_weight,
-                        running_t, mei_sub, transmittance);
+    dr::Loop<Mask> loop("Medium::sample_interaction_drt");
+    loop.put(active, sampler, acc_weight, sampled_t, sampled_t_step,
+             sampling_weight, running_t, mei_sub, transmittance);
     Float global_majorant;
     Float dda_t, desired_tau, tau_acc;
     Vector3f dda_tmax, dda_tdelta;
@@ -219,6 +219,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
         global_majorant =
             extract_channel(get_majorant(mei, active), channel);
     }
+    loop.init();
 
     while (loop(active)) {
         // --- Mixed DRT / DDA loop:
@@ -373,11 +374,9 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
     Float sampled_t_step = dr::NaN<Float>;
     Float sampling_weight = dr::NaN<Float>;
 
-    dr::Loop<Mask> loop("Medium::sample_interaction_drrt");
-    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-             running_t, mei_sub, transmittance);
-    sampler->loop_put(loop);
-    loop.init();
+    dr::Loop<Mask> loop("Medium::sample_interaction_drrt", active, acc_weight,
+                        sampled_t, sampled_t_step, sampling_weight, running_t,
+                        mei_sub, transmittance, sampler);
     while (loop(active)) {
         Float dt = -dr::log(1 - sampler->next_1d(active)) / m;
         Float dt_clamped = dr::minimum(dt, maxt - running_t);
