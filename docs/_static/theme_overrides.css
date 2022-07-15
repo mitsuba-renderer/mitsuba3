@@ -322,14 +322,14 @@ body[data-theme="dark"] .sphinx-tabs-panel {
 }
 
 /* Tweaks for gallery page */
-.card img {
+.sd-card-body img {
     height: 100%;
     min-height: 160px;
     object-fit: cover;
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 10px;
 }
-.card .card-body {
+.sd-card .sd-card-body {
     border-left: 1px solid rgba(0, 0, 0, 0.06);
     border-right: 1px solid rgba(0, 0, 0, 0.06);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);

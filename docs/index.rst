@@ -70,32 +70,25 @@ Quickstart
 
 For the new users, we put together absolute beginner's tutorials for both DrJit and Mitsuba.
 
-.. panels::
-    :body: text-center font-weight-bold
+.. grid:: 2
 
-    .. image:: ../resources/data/docs/images/logos/drjit-logo.png
-        :height: 50
-        :align: center
+    .. grid-item-card:: Dr.Jit quickstart
+        :class-title: sd-text-center sd-font-weight-bold
+        :link: src/quickstart/drjit_quickstart.html
 
-    Dr.Jit quickstart
+        .. image:: ../resources/data/docs/images/logos/drjit-logo.png
+            :height: 200
+            :align: center
 
-    .. link-button:: src/quickstart/drjit_quickstart
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
 
-    ---
+    .. grid-item-card:: Mitsuba quickstart
+        :class-title: sd-text-center sd-font-weight-bold
+        :link: src/quickstart/mitsuba_quickstart.html
 
-    .. image:: ../resources/data/docs/images/logos/mitsuba-logo.png
-        :height: 50
-        :align: center
+        .. image:: ../resources/data/docs/images/logos/mitsuba-logo.png
+            :height: 200
+            :align: center
 
-    Mitsuba quickstart
-
-    .. link-button:: src/quickstart/mitsuba_quickstart
-        :type: ref
-        :text:
-        :classes: btn-link stretched-link
 
 Video tutorials
 ---------------

@@ -5,7 +5,7 @@ nbsphinx
 furo
 sphinxcontrib-bibtex
 sphinxcontrib-youtube
-sphinx-panels
+sphinx-design
 sphinx-gallery
 sphinx-copybutton
 sphinx-hoverxref
