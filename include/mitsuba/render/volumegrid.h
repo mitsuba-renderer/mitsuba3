@@ -60,6 +60,9 @@ public:
     /// Return the precomputed maximum over the volume grid
     ScalarFloat max() const { return m_max; }
 
+    /// Return the precomputed maximum over the volume grid per channel
+    std::vector<ScalarFloat> max_generic() const { return m_max_generic; }
+
     /// Set the precomputed maximum over the volume grid
     void set_max(ScalarFloat max) { m_max = max; }
 
@@ -100,6 +103,7 @@ protected:
     ScalarUInt32 m_channel_count;
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
+    std::vector<ScalarFloat> m_max_generic;
 };
 
 MI_EXTERN_CLASS(VolumeGrid)

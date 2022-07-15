@@ -54,20 +54,24 @@ MI_PY_EXPORT(Volume) {
         .def_method(Volume, resolution)
         .def_method(Volume, bbox)
         .def_method(Volume, max)
+        .def_method(Volume, max_generic)
         .def_method(Volume, eval, "it"_a, "active"_a = true)
         .def_method(Volume, eval_1, "it"_a, "active"_a = true)
         .def_method(Volume, eval_3, "it"_a, "active"_a = true)
         .def("eval_6",
-             [](const Volume &volume, const Interaction3f &it,
-                const Mask active) {
-                 dr::Array<Float, 6> result = volume.eval_6(it, active);
-                 std::array<Float, 6> output;
-                 for (size_t i = 0; i < 6; ++i)
-                     output[i] = std::move(result[i]);
-                 return output;
-             },
-             "it"_a, "active"_a = true, D(Volume, eval_6))
-        .def_method(Volume, eval_gradient, "it"_a, "active"_a = true);
+                [](const Volume &volume, const Interaction3f &it, const Mask active) {
+                    dr::Array<Float, 6> result = volume.eval_6(it, active);
+                    std::array<Float, 6> output;
+                    for (size_t i = 0; i < 6; ++i)
+                        output[i] = std::move(result[i]);
+                    return output;
+                }, "it"_a, "active"_a = true, D(Volume, eval_6))
+        .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,
+             D(Volume, eval_gradient))
+        .def("eval_generic", &Volume::eval_generic, "it"_a, "active"_a = true,
+             D(Volume, eval_generic))
+        .def("eval_generic_1", &Volume::eval_generic_1, "it"_a, "active"_a = true,
+             D(Volume, eval_generic_1));
 
     MI_PY_REGISTER_OBJECT("register_volume", Volume)
-};
+}

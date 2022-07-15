@@ -1,4 +1,5 @@
 #include <mitsuba/render/film.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(FilmFlags) {

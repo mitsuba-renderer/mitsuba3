@@ -170,6 +170,8 @@ public:
 
         FileResolver *fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
+        if (!fs::exists(file_path))
+            Log(Error, "\"%s\": file does not exist!", file_path);
         m_volume_grid = new VolumeGrid(file_path);
 
         m_raw = props.get<bool>("raw", false);
@@ -222,6 +224,7 @@ public:
             m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
                                   m_accel, filter_mode, wrap_mode);
             m_max = m_volume_grid->max();
+            m_max_generic = m_volume_grid->max_generic();
         }
 
         if (props.get<bool>("use_grid_bbox", false)) {

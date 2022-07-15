@@ -35,6 +35,7 @@ MI_PY_EXPORT(VolumeGrid) {
         .def_method(VolumeGrid, size)
         .def_method(VolumeGrid, channel_count)
         .def_method(VolumeGrid, max)
+        .def_method(VolumeGrid, max_generic)
         .def_method(VolumeGrid, set_max)
         .def_method(VolumeGrid, bytes_per_voxel)
         .def_method(VolumeGrid, buffer_size)

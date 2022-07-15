@@ -63,6 +63,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
                                  ScalarPoint3f(dims[3], dims[4], dims[5]));
 
     m_max = -dr::Infinity<ScalarFloat>;
+    m_max_generic.resize(m_channel_count, -dr::Infinity<ScalarFloat>);
 
     m_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * m_channel_count]);
     size_t k = 0;
@@ -72,6 +73,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
             stream->read(val);
             m_data[k] = val;
             m_max     = dr::max(m_max, val);
+            m_max_generic[j] = dr::max(m_max_generic[j], val);
             ++k;
         }
     }
@@ -120,6 +122,11 @@ std::string VolumeGrid<Float, Spectrum>::to_string() const {
         << "  size = " << m_size << "," << std::endl
         << "  channels = " << m_channel_count << "," << std::endl
         << "  max = " << m_max << "," << std::endl
+        << "  max_channels = [" << std::endl << "    ";
+    for (uint32_t i=0; i<m_max_generic.size(); ++i)
+        oss << m_max_generic[i] << ", ";
+    oss << std::endl;
+    oss << "  ],"  << std::endl
         << "  data = [ " << util::mem_string(buffer_size())
         << " of volume data ]" << std::endl
         << "]";
