@@ -57,42 +57,9 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         }
     }
 
-    if (m_sensors.empty()) {
-        Log(Warn, "No sensors found! Instantiating a perspective camera..");
-        Properties sensor_props("perspective");
-        sensor_props.set_float("fov", 45.0);
-
-        /* Create a perspective camera with a 45 deg. field of view
-           and positioned so that it can see the entire scene */
-        if (m_bbox.valid()) {
-            ScalarPoint3f center = m_bbox.center();
-            ScalarVector3f extents = m_bbox.extents();
-
-            ScalarFloat distance =
-                dr::max(extents) / (2.f * dr::tan(45.f * .5f * dr::Pi<ScalarFloat> / 180.f));
-
-            sensor_props.set_float("far_clip", (Properties::Float) (dr::max(extents) * 5 + distance));
-            sensor_props.set_float("near_clip", (Properties::Float) distance / 100);
-
-            sensor_props.set_float("focus_distance", (Properties::Float) (distance + extents.z() / 2));
-            sensor_props.set_transform(
-                "to_world", ScalarTransform4f::translate(ScalarVector3f(
-                                center.x(), center.y(), m_bbox.min.z() - distance)));
-        }
-
-        m_sensors.push_back(
-            PluginManager::instance()->create_object<Sensor>(sensor_props));
-    }
-
     // Create sensors' shapes (environment sensors)
     for (Sensor *sensor: m_sensors)
         sensor->set_scene(this);
-
-    if (!m_integrator) {
-        Log(Warn, "No integrator found! Instantiating a path tracer..");
-        m_integrator = PluginManager::instance()->
-            create_object<Integrator>(Properties("path"));
-    }
 
     if constexpr (dr::is_cuda_v<Float>)
         accel_init_gpu(props);
@@ -103,7 +70,6 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         // Inform environment emitters etc. about the scene bounds
         for (Emitter *emitter: m_emitters)
             emitter->set_scene(this);
-
     }
 
     m_shapes_dr = dr::load<DynamicBuffer<ShapePtr>>(

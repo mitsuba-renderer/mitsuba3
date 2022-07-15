@@ -112,6 +112,8 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
         Throw("Root element of the input file must be a <scene> tag!");
+    if (scene->sensors().empty())
+        Throw("No sensor specified for scene: %s", scene);
     if (sensor_i >= scene->sensors().size())
         Throw("Specified sensor index is out of bounds!");
     auto film = scene->sensors()[sensor_i]->film();

@@ -218,7 +218,7 @@ public:
 
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
-            if constexpr (dr::is_jit_array_v<Float>) {
+            if constexpr (dr::is_jit_v<Float>) {
                 // Enforce horizontal continuity
                 UInt32 row_index = dr::arange<UInt32>(res.y());
                 Vector4f v0 = dr::gather<Vector4f>(m_data.array(), row_index);
@@ -243,7 +243,7 @@ public:
             for (size_t y = 0; y < res.y(); ++y) {
                 ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
-                if constexpr (!dr::is_jit_array_v<Float>) {
+                if constexpr (!dr::is_jit_v<Float>) {
                     // Enforce horizontal continuity
                     ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
                     ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),

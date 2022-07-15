@@ -94,8 +94,10 @@ MI_PY_EXPORT(Scene) {
             return result;
         }, D(Scene, shapes))
         .def("integrator",
-            [](Scene &scene) {
+            [](Scene &scene) -> py::object {
                 Integrator *o = scene.integrator();
+                if (!o)
+                    return py::none();
                 if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
                     return py::cast(tmp);
                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
