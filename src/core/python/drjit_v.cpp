@@ -180,6 +180,11 @@ MI_PY_EXPORT(DrJit) {
     else
         m.attr("TensorXf") = drjit_variant.attr("TensorXf64");
     m.attr("TensorXd") = drjit_variant.attr("TensorXf64");
+    m.attr("TensorXi") = drjit_variant.attr("TensorXi");
+    m.attr("TensorXi64") = drjit_variant.attr("TensorXi64");
+    m.attr("TensorXb") = drjit_variant.attr("TensorXb");
+    m.attr("TensorXu") = drjit_variant.attr("TensorXu");
+    m.attr("TensorXu64") = drjit_variant.attr("TensorXu64");
 
     // Texture type aliases
     if constexpr (std::is_same_v<float, ScalarFloat>) {
