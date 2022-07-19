@@ -20,39 +20,65 @@ alt="Mitsuba banner">
 
 ## Introduction
 
-Mitsuba 3 is a research-oriented rendering system for forward and inverse
-light-transport simulation. It consists of a small set of core libraries and a
-wide variety of plugins that implement functionality ranging from materials and
-light sources to complete rendering algorithms. Mitsuba 3 is implemented on top
-of [Dr.Jit](https://github.com/mitsuba-renderer/drjit) a just-in-time (JIT)
-compiler for ordinary and differentiable computation.
+Mitsuba 3 is a research-oriented rendering system for forward and inverse light
+transport simulation. It consists of a core library and a set of plugins that
+implement functionality ranging from materials and light sources to complete
+rendering algorithms. 
 
-Mitsuba 3 is a *retargetable* renderer: this means that the underlying
-implementations and data structures are specified in a generic fashion that can
-be transformed to accomplish several different tasks.
+Mitsuba 3 is *retargetable*: this means that the underlying implementations and
+data structures can transform to accomplish various different tasks. For
+example, the same code can simulate both scalar (classic one-ray-at-a-time) RGB transport
+or differential spectral transport on the GPU. This all builds on
+[Dr.Jit](https://github.com/mitsuba-renderer/drjit), a specialized *just-in-time*
+(JIT) compiler developed specifically for this project.
 
 ## Main Features
 
-- **Cross-platform**: Mitsuba 3 runs natively on Linux (X86_64), macOS (x86_64 & aarch64), and Windows (x86_64)
+- **Cross-platform**: Mitsuba 3 has been tested on Linux (``x86_64``), macOS
+  (``aarch64``, ``x86_64``), and Windows (``x86_64``).
 
-- **High performance**: Using the Dr.Jit *just-in-time* compiler, computations using Mitsuba 3 can be turned into high-performance fused kernels using either LLVM (when targeting the CPU) or CUDA (when targeting the GPU).
+- **High performance**: The underlying Dr.Jit compiler fuses rendering code
+  into fused kernels that achieve state-of-the-art performance. It currently
+  provides a LLVM backend (targeting the CPU) and a CUDA/OptiX backend
+  (targeting NVIDIA GPUs with ray tracing hardware acceleration).
 
-- **Python First**: Mitsuba 3 is built to be deeply integrated into Python, which makes it
-more than a simple renderer. It opens the door to flexible scripting with no compromise on performances given the use of a just-in-time compiler.
+- **Python first**: Mitsuba 3 is deeply integrated with Python,
+  which makes it more than a simple renderer. It opens the door to flexible
+  scripting with no compromise on performances given the use of a just-in-time
+  compiler.
 
-- **Rendering research toolbox**: Mitsuba 3 provides the tooling necessary to do rendering research and quick prototyping in Python or C++.
+- **Rendering research toolbox**: Mitsuba 3 provides the tooling necessary to
+  do rendering research and quick prototyping in Python or C++.
 
-- **Differentiation**: Mitsuba 3 is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as camera pose, geometry, BSDFs, textures, and volumes.
+- **Differentiation**: Mitsuba 3 is a differentiable renderer, meaning that it
+  can compute derivatives of the entire simulation with respect to input
+  parameters such as camera pose, geometry, BSDFs, textures, and volumes.
 
-- **Spectral & Polarization**: Mitsuba 3 can be used as a monochromatic renderer, RGB-based renderer, or spectral renderer. Each variant can optionally account for the effects of polarization if desired.
+- **Spectral & Polarization**: Mitsuba 3 can be used as a monochromatic
+  renderer, RGB-based renderer, or spectral renderer. Each variant can
+  optionally account for the effects of polarization if desired.
 
 ## Installation
 
-Mitsuba 3 can be installed via pip from PyPI:
+We provide precompiled binary wheels via PyPI. Installing Mitsuba this way is as simple as running
 
 ```bash
 pip install mitsuba
 ```
+
+This includes four variants by default:
+
+- ``scalar_spectral``
+- ``scalar_rgb``
+- ``llvm_ad_rgb``
+- ``cuda_ad_rgb``
+
+The first two perform classic one-ray-at-a-time simulation using either a RGB
+or spectral color representation, while the latter two can be used for inverse
+rendering on the CPU or GPU. To access additional variants, you will need to
+compile a custom version of Dr.Jit using CMake. Please see the
+[documentation](https://mitsuba.readthedocs.io/en/latest/src/developer_guide/compiling.html)
+for details on this.
 
 ### Requirements
 
@@ -78,13 +104,8 @@ img = mi.render(scene)
 mi.Bitmap(img).write('cbox.exr')
 ```
 
-More tutorials can be found in the [documentation][2], covering various
-use-cases.
-
-## Compiling from sources
-
-Please see the [documentation](https://mitsuba.readthedocs.io/en/latest/src/developer_guide.html) for
-details on how to compile, use, and extend Mitsuba 3.
+Tutorials and example notebooks covering a variety of applications can be found
+in the [documentation][2].
 
 ## About
 
