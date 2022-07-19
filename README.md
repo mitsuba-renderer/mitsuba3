@@ -5,9 +5,9 @@ alt="Mitsuba banner">
 
 # Mitsuba Renderer 3
 
-| Documentation   | Linux             | MacOS             | Windows           |
-|      :---:      |       :---:       |       :---:       |       :---:       |
-| [![docs][1]][2] | [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] |
+| Documentation  | Tutorial videos  | Linux             | MacOS             | Windows           |
+|      :---:     |      :---:       |       :---:       |       :---:       |       :---:       |
+| [![docs][1]][2]| [![vids][9]][10] | [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] |
 
 [1]: https://readthedocs.org/projects/mitsuba/badge/?version=latest
 [2]: https://mitsuba.readthedocs.io/en/latest/
@@ -17,13 +17,15 @@ alt="Mitsuba banner">
 [6]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_LinuxAmd64gcc9&guest=1
 [7]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_WindowsAmd64msvc2020)/statusIcon.svg
 [8]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_WindowsAmd64msvc2020&guest=1
+[9]: https://img.shields.io/badge/YouTube-View-green?style=plastic&logo=youtube
+[10]: https://www.youtube.com/watch?v=9Ja9buZx0Cs&list=PLI9y-85z_Po6da-pyTNGTns2n4fhpbLe5&index=1
 
 ## Introduction
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse light
-transport simulation. It consists of a core library and a set of plugins that
-implement functionality ranging from materials and light sources to complete
-rendering algorithms. 
+transport simulation developed at [EPFL](https://www.epfl.ch) in Switzerland.
+It consists of a core library and a set of plugins that implement functionality
+ranging from materials and light sources to complete rendering algorithms. 
 
 Mitsuba 3 is *retargetable*: this means that the underlying implementations and
 data structures can transform to accomplish various different tasks. For
@@ -38,35 +40,41 @@ or differential spectral transport on the GPU. This all builds on
   (``aarch64``, ``x86_64``), and Windows (``x86_64``).
 
 - **High performance**: The underlying Dr.Jit compiler fuses rendering code
-  into fused kernels that achieve state-of-the-art performance. It currently
-  provides a LLVM backend (targeting the CPU) and a CUDA/OptiX backend
-  (targeting NVIDIA GPUs with ray tracing hardware acceleration).
+  into kernels that achieve state-of-the-art performance using
+  an LLVM backend targeting the CPU and a CUDA/OptiX backend
+  targeting NVIDIA GPUs with ray tracing hardware acceleration.
 
-- **Python first**: Mitsuba 3 is deeply integrated with Python,
-  which makes it more than a simple renderer. It opens the door to flexible
-  scripting with no compromise on performances given the use of a just-in-time
-  compiler.
-
-- **Rendering research toolbox**: Mitsuba 3 provides the tooling necessary to
-  do rendering research and quick prototyping in Python or C++.
+- **Python first**: Mitsuba 3 is deeply integrated with Python. Materials,
+  textures, and even full rendering algorithms can be developed in Python,
+  which the system JIT-compiles (and optionally differentiates) on the fly.
+  This enables the experimentation needed for research in computer graphics and
+  other disciplines.
 
 - **Differentiation**: Mitsuba 3 is a differentiable renderer, meaning that it
   can compute derivatives of the entire simulation with respect to input
-  parameters such as camera pose, geometry, BSDFs, textures, and volumes.
+  parameters such as camera pose, geometry, BSDFs, textures, and volumes. It
+  implements recent differentiable rendering algorithms developed at EPFL. 
 
 - **Spectral & Polarization**: Mitsuba 3 can be used as a monochromatic
   renderer, RGB-based renderer, or spectral renderer. Each variant can
   optionally account for the effects of polarization if desired.
 
+## Tutorial videos, documentation
+
+We've recorded several [YouTube videos](10) that provide a gentle introduction
+Mitsuba 3 and Dr.Jit. Beyond this you can find complete Juypter notebooks
+covering a variety of applications, how-to guides, and reference documentation
+on [readthedocs](2).
+
 ## Installation
 
-We provide precompiled binary wheels via PyPI. Installing Mitsuba this way is as simple as running
+We provide pre-compiled binary wheels via PyPI. Installing Mitsuba this way is as simple as running
 
 ```bash
 pip install mitsuba
 ```
 
-This includes four variants by default:
+on the command line. The Python package includes four variants by default:
 
 - ``scalar_spectral``
 - ``scalar_rgb``
