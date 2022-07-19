@@ -155,6 +155,9 @@ public:
     void set_crop_window(const ScalarPoint2u &crop_offset,
                          const ScalarVector2u &crop_size);
 
+    /// Set the film size.
+    void set_size(const ScalarPoint2u &size);
+
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *rfilter() const {
         return m_filter.get();

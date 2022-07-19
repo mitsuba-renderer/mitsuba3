@@ -78,6 +78,12 @@ MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop
     m_crop_offset = crop_offset;
 }
 
+MI_VARIANT void Film<Float, Spectrum>::set_size(const ScalarPoint2u &size) {
+    m_size = size;
+    // Reset the crop window to match the full sensor area
+    set_crop_window(ScalarVector2u(0, 0), m_size);
+}
+
 MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Film[" << std::endl
