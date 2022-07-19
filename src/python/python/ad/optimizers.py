@@ -225,22 +225,26 @@ class Adam(Optimizer):
     `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
     """
     def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
-                 mask_updates=False, params: dict=None):
+                 mask_updates=False, uniform=False, params: dict=None):
         """
         Parameter ``lr``:
             learning rate
 
         Parameter ``beta_1``:
-            controls the exponential averaging of first
-            order gradient moments
+            controls the exponential averaging of first order gradient moments
 
         Parameter ``beta_2``:
-            controls the exponential averaging of second
-            order gradient moments
+            controls the exponential averaging of second order gradient moments
 
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
+
+        Parameter ``uniform``:
+            if enabled, the optimizer will use the 'UniformAdam' variant of Adam
+            [Nicolet et al. 2021], where the update rule uses the *maximum* of
+            the second moment estimates at the current step instead of the
+            per-element second moments.
 
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
@@ -252,6 +256,7 @@ class Adam(Optimizer):
         self.beta_2 = beta_2
         self.epsilon = epsilon
         self.mask_updates = mask_updates
+        self.uniform = uniform
         self.t = defaultdict(lambda: 0)
         super().__init__(lr, params)
 
@@ -282,7 +287,10 @@ class Adam(Optimizer):
             self.state[k] = (m_t, v_t)
             dr.schedule(self.state[k])
 
-            step = lr_t * m_t / (dr.sqrt(v_t) + self.epsilon)
+            if self.uniform:
+                step = lr_t * m_t / (dr.sqrt(dr.max(v_t)) + self.epsilon)
+            else:
+                step = lr_t * m_t / (dr.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
                 step = dr.select(nonzero, step, 0.)
             u = dr.detach(p) - step
