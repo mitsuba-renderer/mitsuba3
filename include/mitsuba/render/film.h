@@ -151,11 +151,34 @@ public:
     /// Return the offset of the crop window
     const ScalarPoint2u &crop_offset() const { return m_crop_offset; }
 
-    /// Set the size and offset of the crop window.
+    /**
+     * \brief Set the size and offset of the film's crop window.
+     *
+     * The caller is responsible to invoke the parameters_changed() method on
+     * any sensor referring to this film.
+     *
+     * This function will throw an exception if crop_offset + crop_size > size.
+     *
+     * \param crop_offset
+     *    The offset of the crop window.
+     *
+     * \param crop_size
+     *    The size of the crop window.
+     */
     void set_crop_window(const ScalarPoint2u &crop_offset,
                          const ScalarVector2u &crop_size);
 
-    /// Set the film size.
+    /**
+     * \brief Set the size of the film.
+     *
+     * This method will reset the crop window to the full image.
+     *
+     * The caller is responsible to invoke the parameters_changed() method on
+     * any sensor referring to this film.
+     *
+     * \param size
+     *     The new size of the film.
+     */
     void set_size(const ScalarPoint2u &size);
 
     /// Return the image reconstruction filter (const version)

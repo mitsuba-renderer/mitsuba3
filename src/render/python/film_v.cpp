@@ -82,8 +82,8 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, size)
         .def_method(Film, crop_size)
         .def_method(Film, crop_offset)
-        .def_method(Film, set_crop_window)
-        .def_method(Film, set_size)
+        .def_method(Film, set_crop_window, "crop_offset"_a, "crop_size"_a)
+        .def_method(Film, set_size, "size"_a)
         .def_method(Film, rfilter)
         .def("prepare_sample",
             [] (const Film *film, const UnpolarizedSpectrum &spec,

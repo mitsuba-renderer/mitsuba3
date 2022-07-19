@@ -2827,9 +2827,31 @@ static const char *__doc_mitsuba_Film_schedule_storage = R"doc(dr::schedule() va
 
 static const char *__doc_mitsuba_Film_sensor_response_function = R"doc(Returns the specific Sensor Response Function (SRF) used by the film)doc";
 
-static const char *__doc_mitsuba_Film_set_crop_window = R"doc(Set the size and offset of the crop window.)doc";
+static const char *__doc_mitsuba_Film_set_crop_window =
+R"doc(Set the size and offset of the film's crop window.
 
-static const char *__doc_mitsuba_Film_set_size = R"doc(Set the film size.)doc";
+The caller is responsible to invoke the parameters_changed() method on
+any sensor referring to this film.
+
+This function will throw an exception if crop_offset + crop_size >
+size.
+
+Parameter ``crop_offset``:
+    The offset of the crop window.
+
+Parameter ``crop_size``:
+    The size of the crop window.)doc";
+
+static const char *__doc_mitsuba_Film_set_size =
+R"doc(Set the size of the film.
+
+This method will reset the crop window to the full image.
+
+The caller is responsible to invoke the parameters_changed() method on
+any sensor referring to this film.
+
+Parameter ``size``:
+    The new size of the film.)doc";
 
 static const char *__doc_mitsuba_Film_size =
 R"doc(Ignoring the crop window, return the resolution of the underlying
