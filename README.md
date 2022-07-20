@@ -61,10 +61,10 @@ or differential spectral transport on the GPU. This all builds on
 
 ## Tutorial videos, documentation
 
-We've recorded several [YouTube videos](10) that provide a gentle introduction
+We've recorded several [YouTube videos][10] that provide a gentle introduction
 Mitsuba 3 and Dr.Jit. Beyond this you can find complete Juypter notebooks
 covering a variety of applications, how-to guides, and reference documentation
-on [readthedocs](2).
+on [readthedocs][2].
 
 ## Installation
 
