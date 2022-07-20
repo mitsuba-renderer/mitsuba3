@@ -44,7 +44,7 @@ setup(
     author="Realistic Graphics Lab (RGL), EPFL",
     author_email="wenzel.jakob@epfl.ch",
     description="3: A Retargetable Forward and Inverse Renderer",
-    url="https://github.com/mitsuba-renderer/mitsuba2",
+    url="https://github.com/mitsuba-renderer/mitsuba3",
     license="BSD",
     long_description=long_description,
     long_description_content_type='text/markdown',
