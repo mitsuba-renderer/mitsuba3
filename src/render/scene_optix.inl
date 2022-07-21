@@ -294,7 +294,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
-        dr::sync_thread();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 

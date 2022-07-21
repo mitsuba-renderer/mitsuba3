@@ -110,9 +110,6 @@ void build_gas(const OptixDeviceContext &context,
         for (size_t i = 0; i < shapes_count; i++)
             shape_subset[i]->optix_build_input(build_inputs[i]);
 
-        // Ensure shape data pointers are fully evaluated before building the BVH
-        dr::sync_thread();
-
         OptixAccelBufferSizes buffer_sizes;
         jit_optix_check(optixAccelComputeMemoryUsage(
             context,
