@@ -400,20 +400,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MI_VARIANTS MATCHES "dou
 endif()
 
 # Forwarding of profiler events to external tools
-if (MI_ENABLE_PROFILER)
-  if (MI_PROFILER_ITTNOTIFY)
-    include_directories(${ITT_INCLUDE_DIRS})
-    add_definitions(-DMI_ENABLE_ITTNOTIFY=1)
-  endif()
+if (MI_PROFILER_ITTNOTIFY)
+  include_directories(${ITT_INCLUDE_DIRS})
+  add_definitions(-DMI_ENABLE_ITTNOTIFY=1)
+endif()
 
-  if (MI_PROFILER_NVTX)
-    set(CUDA_TOOLKIT_ROOT_DIR "" CACHE STRING "Path to the CUDA installation root directory.")
-    if (NOT CUDA_TOOLKIT_ROOT_DIR)
-      message(FATAL_ERROR "Specify CUDA_TOOLKIT_ROOT_DIR.")
-    endif()
-    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-    add_definitions(-DMI_ENABLE_NVTX=1)
+if (MI_PROFILER_NVTX)
+  set(CUDA_TOOLKIT_ROOT_DIR "" CACHE STRING "Path to the CUDA installation root directory.")
+  if (NOT CUDA_TOOLKIT_ROOT_DIR)
+    message(FATAL_ERROR "Specify CUDA_TOOLKIT_ROOT_DIR.")
   endif()
+  include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+  add_definitions(-DMI_ENABLE_NVTX=1)
 endif()
 
 # Register the Mitsuba codebase
