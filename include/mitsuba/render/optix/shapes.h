@@ -90,10 +90,15 @@ void build_gas(const OptixDeviceContext &context,
                                        OptixAccelData::HandleData &handle) {
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
-                                   OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+
+#if defined(MI_OPTIX_COMPACT)
+        accel_options.buildFlags |= OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+#endif
+
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
+
         if (handle.buffer) {
             jit_free(handle.buffer);
             handle.handle = 0ull;
@@ -102,7 +107,6 @@ void build_gas(const OptixDeviceContext &context,
         }
 
         size_t shapes_count = shape_subset.size();
-
         if (shapes_count == 0)
             return;
 
@@ -122,9 +126,11 @@ void build_gas(const OptixDeviceContext &context,
         void* d_temp_buffer = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
         void* output_buffer = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes + 8);
 
+#if defined(MI_OPTIX_COMPACT)
         OptixAccelEmitDesc emit_property = {};
         emit_property.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
         emit_property.result = (CUdeviceptr)((char*)output_buffer + buffer_sizes.outputSizeInBytes);
+#endif
 
         OptixTraversableHandle accel;
         jit_optix_check(optixAccelBuild(
@@ -138,12 +144,17 @@ void build_gas(const OptixDeviceContext &context,
             (CUdeviceptr)output_buffer,
             buffer_sizes.outputSizeInBytes,
             &accel,
+#if defined(MI_OPTIX_COMPACT)
             &emit_property,  // emitted property list
             1                // num emitted properties
+#else
+            nullptr, 0
+#endif
         ));
 
         jit_free(d_temp_buffer);
 
+#if defined(MI_OPTIX_COMPACT)
         size_t compact_size;
         jit_memcpy(JitBackend::CUDA,
                    &compact_size,
@@ -163,6 +174,7 @@ void build_gas(const OptixDeviceContext &context,
             jit_free(output_buffer);
             output_buffer = compact_buffer;
         }
+#endif
 
         handle.handle = accel;
         handle.buffer = output_buffer;
