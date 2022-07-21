@@ -81,7 +81,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions")) {
-        recompute_bbox();
+        if constexpr (!dr::is_jit_v<Float>)
+            recompute_bbox();
 
         if (has_vertex_normals())
             recompute_vertex_normals();
