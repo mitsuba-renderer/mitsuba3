@@ -152,7 +152,8 @@ inside the :monosp:`mitsuba3` root directory:
     # Create a directory where build products are stored
     mkdir build
     cd build
-    cmake -GNinja .. ninja
+    cmake -GNinja .. 
+    ninja
 
 
 **Tested version**
@@ -236,7 +237,10 @@ Now, compilation should be as simple as running the following from inside the
 
 .. code-block:: bash
 
-    mkdir build cd build cmake -GNinja .. ninja
+    mkdir build 
+    cd build 
+    cmake -GNinja .. 
+    ninja
 
 
 **Tested version**
