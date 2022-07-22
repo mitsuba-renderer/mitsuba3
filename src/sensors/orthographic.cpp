@@ -106,17 +106,18 @@ public:
     void update_camera_transforms() {
         m_camera_to_sample = orthographic_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            m_near_clip, m_far_clip);
+            Float(m_near_clip), Float(m_far_clip));
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 
         // Position differentials on the near plane
-        m_dx = m_sample_to_camera * ScalarPoint3f(1.f / m_resolution.x(), 0.f, 0.f) -
-               m_sample_to_camera * ScalarPoint3f(0.f);
-        m_dy = m_sample_to_camera * ScalarPoint3f(0.f, 1.f / m_resolution.y(), 0.f)
-             - m_sample_to_camera * ScalarPoint3f(0.f);
+        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
+               m_sample_to_camera * Point3f(0.f);
+        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
+             - m_sample_to_camera * Point3f(0.f);
 
         m_normalization = 1.f / m_image_rect.volume();
+        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_normalization);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -197,11 +198,11 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_camera_to_sample;
-    ScalarTransform4f m_sample_to_camera;
-    ScalarBoundingBox2f m_image_rect;
-    ScalarFloat m_normalization;
-    ScalarVector3f m_dx, m_dy;
+    Transform4f m_camera_to_sample;
+    Transform4f m_sample_to_camera;
+    BoundingBox2f m_image_rect;
+    Float m_normalization;
+    Vector3f m_dx, m_dy;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(OrthographicCamera, ProjectiveCamera)

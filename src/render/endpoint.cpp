@@ -24,6 +24,8 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(p
     /* For some emitters, set_shape() will never be called, so we
        must ensure that m_shape is at least initialized. */
     dr::set_attr(this, "shape", m_shape);
+
+    dr::make_opaque(m_to_world);
 }
 
 MI_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }

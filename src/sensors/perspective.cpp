@@ -175,26 +175,29 @@ public:
         // TODO: should probably update m_principal_point_offset
         m_camera_to_sample = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            m_x_fov, m_near_clip, m_far_clip);
+            m_x_fov, Float(m_near_clip), Float(m_far_clip));
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 
         // Position differentials on the near plane
-        m_dx = m_sample_to_camera * ScalarPoint3f(1.f / m_resolution.x(), 0.f, 0.f) -
-               m_sample_to_camera * ScalarPoint3f(0.f);
-        m_dy = m_sample_to_camera * ScalarPoint3f(0.f, 1.f / m_resolution.y(), 0.f)
-             - m_sample_to_camera * ScalarPoint3f(0.f);
+        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
+               m_sample_to_camera * Point3f(0.f);
+        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
+             - m_sample_to_camera * Point3f(0.f);
 
         /* Precompute some data for importance(). Please
            look at that function for further details. */
-        ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
-                      pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
+        Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
+                pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
 
         m_image_rect.reset();
-        m_image_rect.expand(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
-        m_image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
+        m_image_rect.expand(Point2f(pmin.x(), pmin.y()) / pmin.z());
+        m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
+
+        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_x_fov,
+                        m_image_rect, m_normalization, m_principal_point_offset);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -395,13 +398,13 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_camera_to_sample;
-    ScalarTransform4f m_sample_to_camera;
-    ScalarBoundingBox2f m_image_rect;
-    ScalarFloat m_normalization;
-    ScalarFloat m_x_fov;
-    ScalarVector3f m_dx, m_dy;
-    ScalarVector2f m_principal_point_offset;
+    Transform4f m_camera_to_sample;
+    Transform4f m_sample_to_camera;
+    BoundingBox2f m_image_rect;
+    Float m_normalization;
+    Float m_x_fov;
+    Vector3f m_dx, m_dy;
+    Vector2f m_principal_point_offset;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
