@@ -27,8 +27,8 @@ transport simulation developed at [EPFL](https://www.epfl.ch) in Switzerland.
 It consists of a core library and a set of plugins that implement functionality
 ranging from materials and light sources to complete rendering algorithms. 
 
-Mitsuba 3 is *retargetable*: this means that the underlying implementations and
-data structures can transform to accomplish various different tasks. For
+Mitsuba 3 is *retargetable*: the underlying implementations and
+data structures can transform to accomplish various tasks. For
 example, the same code can simulate both scalar (classic one-ray-at-a-time) RGB transport
 or differential spectral transport on the GPU. This all builds on
 [Dr.Jit](https://github.com/mitsuba-renderer/drjit), a specialized *just-in-time*
@@ -62,7 +62,7 @@ or differential spectral transport on the GPU. This all builds on
 ## Tutorial videos, documentation
 
 We've recorded several [YouTube videos][10] that provide a gentle introduction
-Mitsuba 3 and Dr.Jit. Beyond this you can find complete Juypter notebooks
+Mitsuba 3 and Dr.Jit. Beyond this, you can find complete Juypter notebooks
 covering a variety of applications, how-to guides, and reference documentation
 on [readthedocs][2].
 
@@ -81,7 +81,7 @@ on the command line. The Python package includes four variants by default:
 - ``llvm_ad_rgb``
 - ``cuda_ad_rgb``
 
-The first two perform classic one-ray-at-a-time simulation using either a RGB
+The first two perform classic one-ray-at-a-time simulation using either an RGB
 or spectral color representation, while the latter two can be used for inverse
 rendering on the CPU or GPU. To access additional variants, you will need to
 compile a custom version of Dr.Jit using CMake. Please see the
