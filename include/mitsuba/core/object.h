@@ -273,7 +273,7 @@ private:
  * introduce discontinuities in the Monte Carlo simulation.
  */
 enum class ParamFlags : uint32_t {
-    /// Tracking gradients w.r.t. this parameter is not allowed
+    /// Tracking gradients w.r.t. this parameter is allowed
     Differentiable = 0x0,
 
     /// Tracking gradients w.r.t. this parameter is not allowed
