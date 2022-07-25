@@ -236,6 +236,7 @@ class MitsubaModule(types.ModuleType):
             from .config import MI_DEFAULT_VARIANT
             if MI_DEFAULT_VARIANT != '':
                 self.set_variant(MI_DEFAULT_VARIANT)
+                variant = MI_DEFAULT_VARIANT
             else:
                 raise ImportError('Before importing any packages, you must '
                                   'specify the desired variant of Mitsuba '
