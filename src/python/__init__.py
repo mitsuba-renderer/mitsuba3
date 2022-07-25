@@ -264,7 +264,11 @@ class MitsubaModule(types.ModuleType):
                 result[v] = sys.modules[f'mitsuba.{v}']
 
         # Add this lookup to the cache
-        _tls.cache[(variant, submodule, key)] = result
+        cache = getattr(_tls, 'cache', None)
+        if cache is None:
+            cache = {}
+            _tls.cache = cache
+        cache[(variant, submodule, key)] = result
 
         return result
 
