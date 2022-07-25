@@ -391,7 +391,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  to_world = " << indent(m_to_world) << std::endl
+            << "  to_world = " << indent(m_to_world, 13) << std::endl
             << "]";
         return oss.str();
     }
