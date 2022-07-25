@@ -216,12 +216,22 @@ Float radical_inverse_2(UInt index, UInt scramble = 0) {
 template <typename UInt, typename Float = dr::float_array_t<UInt>>
 Float sobol_2(UInt index, UInt scramble = 0) {
     if constexpr (std::is_same_v<dr::scalar_t<Float>, double>) {
-        for (UInt v = 1ULL << 52; index != 0; index >>= 1, v ^= v >> 1)
+        UInt v = 1ULL << 52;
+        dr::Loop<dr::mask_t<UInt>> loop("sobol_2", v, scramble, index);
+        while(loop(dr::neq(index, 0U))) {
             dr::masked(scramble, dr::eq(index & 1U, 1U)) ^= v;
+            index >>= 1;
+            v ^= v >> 1;
+        }
         return dr::reinterpret_array<Float>(dr::sr<12>(scramble) | 0x3ff0000000000000ull) - 1.0;
     } else {
-        for (UInt v = 1U << 31; index != 0; index >>= 1, v ^= v >> 1)
+        UInt v = 1U << 31;
+        dr::Loop<dr::mask_t<UInt>> loop("sobol_2", v, scramble, index);
+        while(loop(dr::neq(index, 0U))) {
             dr::masked(scramble, dr::eq(index & 1U, 1U)) ^= v;
+            index >>= 1;
+            v ^= v >> 1;
+        }
         return Float(scramble) / Float(1ULL << 32);
     }
 }
