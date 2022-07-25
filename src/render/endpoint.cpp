@@ -25,7 +25,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(p
        must ensure that m_shape is at least initialized. */
     dr::set_attr(this, "shape", m_shape);
 
-    dr::make_opaque(m_to_world);
+    dr::make_opaque(m_to_world.value());
 }
 
 MI_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
