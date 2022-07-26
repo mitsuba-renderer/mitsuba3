@@ -26,7 +26,7 @@ function of the cosine of the scattering angle.
 
 .. admonition:: Notes
 
-   * The scattering angle is here defined as the dot product of the
+   * The scattering angle cosine is here defined as the dot product of the
      incoming and outgoing directions, where the incoming, resp. outgoing
      direction points *toward*, resp. *outward* the interaction point.
    * From this follows that :math:`\cos \theta = 1` corresponds to forward
@@ -82,13 +82,22 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
-        Float cos_theta = m_distr.sample(sample2.x());
-        Float sin_theta = dr::safe_sqrt(1.f - cos_theta * cos_theta);
+        // Sample a direction in physics convention.
+        // We sample cos θ' = cos(π - θ) = -cos θ.
+        Float cos_theta_prime = m_distr.sample(sample2.x());
+        Float sin_theta_prime =
+            dr::safe_sqrt(1.f - cos_theta_prime * cos_theta_prime);
         auto [sin_phi, cos_phi] =
             dr::sincos(2.f * dr::Pi<ScalarFloat> * sample2.y());
-        Vector3f wo{ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta };
-        wo        = -mi.to_world(wo);
-        Float pdf = m_distr.eval_pdf_normalized(-cos_theta, active) *
+        Vector3f wo{ sin_theta_prime * cos_phi, sin_theta_prime * sin_phi,
+                     cos_theta_prime };
+
+        // Switch the sampled direction to graphics convention and transform the
+        // computed direction to world coordinates
+        wo = -mi.to_world(wo);
+
+        // Retrieve the PDF value from the physics convention-sampled angle
+        Float pdf = m_distr.eval_pdf_normalized(cos_theta_prime, active) *
                     dr::InvTwoPi<ScalarFloat>;
 
         return { wo, pdf };
@@ -99,8 +108,12 @@ public:
                Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
 
-        Float cos_theta = dot(wo, mi.wi);
-        return m_distr.eval_pdf_normalized(-cos_theta, active) *
+        // The data is laid out in physics convention
+        // (with cos θ = 1 corresponding to forward scattering).
+        // This parameterization differs from the convention used internally by
+        // Mitsuba and is the reason for the minus sign below.
+        Float cos_theta = -dot(wo, mi.wi);
+        return m_distr.eval_pdf_normalized(cos_theta, active) *
                dr::InvTwoPi<ScalarFloat>;
     }
 
