@@ -115,7 +115,7 @@ struct Thread::ThreadPrivate {
     bool external_thread = false;
     bool critical = false;
     int core_affinity = -1;
-    Thread::EPriority priority;
+    Thread::EPriority priority = Thread::ENormalPriority;
     ref<Logger> logger;
     ref<Thread> parent;
     ref<FileResolver> fresolver;
