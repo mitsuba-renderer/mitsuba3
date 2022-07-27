@@ -98,3 +98,12 @@ then it can be instantiated e.g. as follows:
                 'filename': 'cute.jpg'
             }
         }
+
+Flags
+^^^^^^
+
+Each parameter optionally has flags that are listed in the last column.
+These flags indicate whether the parameter is differentiable or not, or whether it introduces
+discontinuities and thus needs special treatment.
+
+See :py:class:`mitsuba.ParamFlags` for their documentation.
