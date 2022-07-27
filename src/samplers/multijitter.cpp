@@ -27,7 +27,7 @@ Correlated Multi-Jittered sampler (:monosp:`multijitter`)
    - |bool|
    - Adds additional random jitter withing the substratum (Default: True)
 
-This plugin implements the methods introduced in Pixar's tech memo :cite:`kensler1967correlated`.
+This plugin implements the methods introduced in Pixar's tech memo :cite:`Kensler2013CorrelatedMS`.
 
 Unlike the previously described stratified sampler, multi-jittered sample patterns produce samples
 that are well stratified in 2D but also well stratified when projected onto one dimension. This can
