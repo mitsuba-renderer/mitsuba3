@@ -307,9 +307,9 @@ public:
      *            and other information. The contents are undefined if sampling
      *            failed.
      *
-     *     value: The BSDF value (multiplied by the cosine foreshortening
-     *            factor when a non-delta component is sampled). A zero
-     *            spectrum indicates that sampling failed.
+     *     value: The BSDF value divided by the probability (multiplied by the
+     *            cosine foreshortening factor when a non-delta component is
+     *            sampled). A zero spectrum indicates that sampling failed.
      */
     virtual std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx,
