@@ -8,8 +8,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _spectrum-blackbody:
 
-sRGB D65 spectrum (:monosp:`blackbody`)
----------------------------------------
+Blackbody spectrum (:monosp:`blackbody`)
+----------------------------------------
 
 .. pluginparameters::
 
