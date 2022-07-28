@@ -1,12 +1,12 @@
 sphinx>=2.4
 pygments-mathematica
 pybtex
-nbsphinx
+nbsphinx==0.8.9
 furo
 sphinxcontrib-bibtex
 sphinxcontrib-youtube
 sphinx-design
-sphinx-gallery
+sphinx-gallery==0.10.1
 sphinx-copybutton
 sphinx-hoverxref
 sphinx_tabs
