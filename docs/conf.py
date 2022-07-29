@@ -261,35 +261,15 @@ nbsphinx_prolog = """
     </style>
 
     <div style="display: block; width: 100%; text-align: center;">
-        <button id="nb_btn" type="submit" onclick="#">
-            Download notebook
-        </button>
+        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
+            <button id="nb_btn">Download notebook</button>
+        </a>
 
-        <button id="data_btn" type="submit" onclick="window.open('https://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip')">
-            Download data
-        </button>
+        <a href="https://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip" target="_blank">
+            <button id="data_btn">Download data</button>
+        </a>
     </div>
 
-    <script>
-        function download(filename, name) {
-            var element = document.createElement('a');
-            window.URL = window.URL || window.webkitURL;
-            element.setAttribute('href', filename);
-            element.setAttribute('download', name);
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }
-
-        var path = window.location.pathname;
-        var name = path.slice(path.lastIndexOf("/src/") + 5, -5);
-        var tuto_url = "https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/";
-        var elem = document.getElementById("nb_btn");
-        elem.onclick = function() {
-            var filename = tuto_url + name + ".ipynb";
-            download(filename, filename.slice(filename.lastIndexOf("/") + 1));
-        };
-    </script>
 """
 
 extensions.append('sphinx_gallery.load_style')
