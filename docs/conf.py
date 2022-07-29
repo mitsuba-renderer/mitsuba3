@@ -265,7 +265,7 @@ nbsphinx_prolog = """
             Download notebook
         </button>
 
-        <button id="data_btn" type="submit" onclick="window.open('http://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip')">
+        <button id="data_btn" type="submit" onclick="window.open('https://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip')">
             Download data
         </button>
     </div>

@@ -25,7 +25,7 @@ alt="Mitsuba banner">
 Mitsuba 3 is a research-oriented rendering system for forward and inverse light
 transport simulation developed at [EPFL](https://www.epfl.ch) in Switzerland.
 It consists of a core library and a set of plugins that implement functionality
-ranging from materials and light sources to complete rendering algorithms. 
+ranging from materials and light sources to complete rendering algorithms.
 
 Mitsuba 3 is *retargetable*: this means that the underlying implementations and
 data structures can transform to accomplish various different tasks. For
@@ -53,7 +53,7 @@ or differential spectral transport on the GPU. This all builds on
 - **Differentiation**: Mitsuba 3 is a differentiable renderer, meaning that it
   can compute derivatives of the entire simulation with respect to input
   parameters such as camera pose, geometry, BSDFs, textures, and volumes. It
-  implements recent differentiable rendering algorithms developed at EPFL. 
+  implements recent differentiable rendering algorithms developed at EPFL.
 
 - **Spectral & Polarization**: Mitsuba 3 can be used as a monochromatic
   renderer, RGB-based renderer, or spectral renderer. Each variant can
@@ -117,7 +117,7 @@ in the [documentation][2].
 
 ## About
 
-This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob).
+This project was created by [Wenzel Jakob](https://rgl.epfl.ch/people/wjakob).
 Significant features and/or improvements to the code were contributed by
 [Sébastien Speierer](https://speierers.github.io/),
 [Nicolas Roussel](https://github.com/njroussel),

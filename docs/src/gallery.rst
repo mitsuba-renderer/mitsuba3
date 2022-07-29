@@ -85,7 +85,7 @@ Single object
             :height: 130
             :align: center
 
-        by `thecali <http://www.blendswap.com/users/view/thecali>`_
+        by `thecali <https://www.blendswap.com/user/thecali>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Old vintage car <https://rgl.s3.eu-central-1.amazonaws.com/scenes/car2.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -95,7 +95,7 @@ Single object
             :height: 130
             :align: center
 
-        by `piopis <http://www.blendswap.com/users/view/piopis>`_
+        by `piopis <https://www.blendswap.com/user/piopis>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Coffee Maker <https://rgl.s3.eu-central-1.amazonaws.com/scenes/coffee.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -105,7 +105,7 @@ Single object
             :height: 130
             :align: center
 
-        by `cekuhnen <http://www.blendswap.com/user/cekuhnen>`_
+        by `cekuhnen <https://www.blendswap.com/user/cekuhnen>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Dragon <https://rgl.s3.eu-central-1.amazonaws.com/scenes/dragon.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -115,7 +115,7 @@ Single object
             :height: 130
             :align: center
 
-        by `Delatronic <http://www.blendswap.com/user/Delatronic>`_
+        by `Delatronic <https://www.blendswap.com/user/Delatronic>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Spaceship <https://rgl.s3.eu-central-1.amazonaws.com/scenes/spaceship.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -125,7 +125,7 @@ Single object
             :height: 130
             :align: center
 
-        by `thecali <http://www.blendswap.com/user/thecali>`_
+        by `thecali <https://www.blendswap.com/user/thecali>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Lamp <https://rgl.s3.eu-central-1.amazonaws.com/scenes/lamp.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -135,7 +135,7 @@ Single object
             :height: 130
             :align: center
 
-        by `UP3D <http://www.blendswap.com/users/view/UP3D>`_
+        by `UP3D <https://www.blendswap.com/user/UP3D>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Teapot <https://rgl.s3.eu-central-1.amazonaws.com/scenes/teapot.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -193,7 +193,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Mareck <http://www.blendswap.com/users/view/Mareck>`_
+        by `Mareck <https://www.blendswap.com/user/Mareck>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Salle de bain <https://rgl.s3.eu-central-1.amazonaws.com/scenes/bathroom2.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -203,7 +203,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `nacimus <http://www.blendswap.com/users/view/nacimus>`_
+        by `nacimus <https://www.blendswap.com/user/nacimus>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Bedroom <https://rgl.s3.eu-central-1.amazonaws.com/scenes/bedroom.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -213,7 +213,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `SlykDrako <http://www.blendswap.com/user/SlykDrako>`_
+        by `SlykDrako <https://www.blendswap.com/user/SlykDrako>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Japanese Classroom <https://rgl.s3.eu-central-1.amazonaws.com/scenes/classroom.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -223,7 +223,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `NovaZeeke <http://www.blendswap.com/users/view/NovaZeeke>`_
+        by `NovaZeeke <https://www.blendswap.com/user/NovaZeeke>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `The Breakfast Room <https://rgl.s3.eu-central-1.amazonaws.com/scenes/dining-room.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -233,7 +233,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+        by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Country Kitchen <https://rgl.s3.eu-central-1.amazonaws.com/scenes/kitchen.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -243,7 +243,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Jay-Artist <http://www.blendswap.com/user/Jay-Artist>`_
+        by `Jay-Artist <https://www.blendswap.com/user/Jay-Artist>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Grey & White Room <https://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -253,7 +253,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+        by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `The White Room <https://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room-2.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -263,7 +263,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Jay-Artist <http://www.blendswap.com/user/Jay-Artist>`_
+        by `Jay-Artist <https://www.blendswap.com/user/Jay-Artist>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Modern Living Room <https://rgl.s3.eu-central-1.amazonaws.com/scenes/living-room-3.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -273,7 +273,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+        by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Wooden Staircase <https://rgl.s3.eu-central-1.amazonaws.com/scenes/staircase.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -283,7 +283,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `Wig42 <http://www.blendswap.com/users/view/Wig42>`_
+        by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Modern Hall <https://rgl.s3.eu-central-1.amazonaws.com/scenes/staircase2.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -293,7 +293,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `NewSee2l035 <http://www.blendswap.com/user/NewSee2l035>`_
+        by `NewSee2l035 <https://www.blendswap.com/user/NewSee2l035>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Glass of water <https://rgl.s3.eu-central-1.amazonaws.com/scenes/glass-of-water.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -303,7 +303,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `aXel <http://www.blendswap.com/user/aXel>`_
+        by `aXel <https://www.blendswap.com/user/aXel>`_
 
     .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Victorian Style House <https://rgl.s3.eu-central-1.amazonaws.com/scenes/house.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
@@ -313,7 +313,7 @@ Architecture
             :height: 130
             :align: center
 
-        by `MrChimp2313 <http://www.blendswap.com/users/view/MrChimp2313>`_
+        by `MrChimp2313 <https://www.blendswap.com/user/MrChimp2313>`_
 
 
 Documentation banners

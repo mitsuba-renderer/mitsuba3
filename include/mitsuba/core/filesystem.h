@@ -3,7 +3,7 @@
 /**
  * \brief filesystem helpers to manipulate paths on Linux/Windows/Mac OS
  *
- * Follows the C++17 fs interface (see http://en.cppreference.com/w/cpp/experimental/fs).
+ * Follows the C++17 fs interface (see https://en.cppreference.com/w/cpp/experimental/fs).
  * Based on implementations from https://github.com/wjakob/filesystem.
  *
  * This class is just a temporary workaround to avoid the heavy boost
