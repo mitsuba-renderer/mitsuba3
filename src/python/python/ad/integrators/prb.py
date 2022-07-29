@@ -42,7 +42,7 @@ class PRBIntegrator(RBIntegrator):
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See `prb_basic.py` for an even more reduced implementation that removes
+    See ``prb_basic.py`` for an even more reduced implementation that removes
     the first two features.
 
     See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`

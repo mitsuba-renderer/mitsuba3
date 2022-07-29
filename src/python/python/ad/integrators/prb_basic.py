@@ -31,8 +31,8 @@ class BasicPRBIntegrator(RBIntegrator):
     This class is not meant to be used in practice, but merely exists to
     illustrate how a very basic rendering algorithm can be implemented in
     Python along with efficient forward/reverse-mode derivatives. See the file
-    'prb.py' for a more feature-complete Path Replay Backpropagation
-    integrator, and `prb_reparam.py` for one that also handles visibility.
+    ``prb.py`` for a more feature-complete Path Replay Backpropagation
+    integrator, and ``prb_reparam.py`` for one that also handles visibility.
 
     .. tabs::
 
