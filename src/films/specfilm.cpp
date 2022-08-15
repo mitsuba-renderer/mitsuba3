@@ -207,8 +207,8 @@ public:
         auto props = Properties("regular");
         props.set_pointer("values", storage.data());
         props.set_long("size", n_points);
-        props.set_float("lambda_min", (double) m_range.x());
-        props.set_float("lambda_max", (double) m_range.y());
+        props.set_float("wavelength_min", (double) m_range.x());
+        props.set_float("wavelength_max", (double) m_range.y());
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 

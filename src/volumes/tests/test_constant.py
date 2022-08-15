@@ -9,8 +9,8 @@ def test01_constant_construct(variant_scalar_rgb):
         "to_world": mi.ScalarTransform4f.scale([2, 0.2, 1]),
         "value": {
             "type": "regular",
-            "lambda_min": 500,
-            "lambda_max": 600,
+            "wavelength_min": 500,
+            "wavelength_max": 600,
             "values": "3.0, 3.0"
         }
     })

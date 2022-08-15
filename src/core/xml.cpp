@@ -1251,8 +1251,8 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             if (is_regular) {
                 props.set_plugin_name("regular");
                 props.set_long("size", wavelengths.size());
-                props.set_float("lambda_min", wavelengths.front());
-                props.set_float("lambda_max", wavelengths.back());
+                props.set_float("wavelength_min", wavelengths.front());
+                props.set_float("wavelength_max", wavelengths.back());
                 props.set_pointer("values", values.data());
             } else {
                 props.set_plugin_name("irregular");

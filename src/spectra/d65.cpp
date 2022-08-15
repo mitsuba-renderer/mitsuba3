@@ -81,8 +81,8 @@ public:
     std::vector<ref<Object>> expand() const override {
         // This plugin recursively expands into an instance of 'interpolated'
         Properties props("regular");
-        props.set_float("lambda_min", (Properties::Float) MI_CIE_MIN);
-        props.set_float("lambda_max", (Properties::Float) MI_CIE_MAX);
+        props.set_float("wavelength_min", (Properties::Float) MI_CIE_MIN);
+        props.set_float("wavelength_max", (Properties::Float) MI_CIE_MAX);
         props.set_int("size", 95);
         Properties::Float tmp[95];
         for (size_t i = 0; i < 95; ++i)

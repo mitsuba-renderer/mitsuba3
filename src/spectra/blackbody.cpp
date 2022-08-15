@@ -13,11 +13,11 @@ Blackbody spectrum (:monosp:`blackbody`)
 
 .. pluginparameters::
 
- * - lambda_min
+ * - wavelength_min
    - |float|
    - Minimum wavelength of the spectral range in nanometers. (Default: 360nm)
 
- * - lambda_max
+ * - wavelength_max
    - |float|
    - Maximum wavelength of the spectral range in nanometers. (Default: 830nm)
 
@@ -82,8 +82,8 @@ public:
     BlackBodySpectrum(const Properties &props) : Texture(props) {
         m_temperature = props.get<ScalarFloat>("temperature");
         m_wavelength_range = ScalarVector2f(
-            props.get<ScalarFloat>("lambda_min", MI_CIE_MIN),
-            props.get<ScalarFloat>("lambda_max", MI_CIE_MAX)
+            props.get<ScalarFloat>("wavelength_min", MI_CIE_MIN),
+            props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX)
         );
         parameters_changed();
     }

@@ -498,8 +498,8 @@ def test12_dict_spectrum(variant_scalar_spectral):
 
     s2 = mi.load_string(f"""
         <spectrum  type='regular' version='2.0.0'>
-           <float name="lambda_min" value="400"/>
-           <float name="lambda_max" value="700"/>
+           <float name="wavelength_min" value="400"/>
+           <float name="wavelength_max" value="700"/>
            <string name="values" value="0.1, 0.2, 0.4, 0.1"/>
        </spectrum>
     """)

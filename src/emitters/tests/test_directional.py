@@ -9,8 +9,8 @@ spectrum_dicts = {
     },
     'regular': {
         "type": "regular",
-        "lambda_min": 500,
-        "lambda_max": 600,
+        "wavelength_min": 500,
+        "wavelength_max": 600,
         "values": "1, 2"
     }
 }

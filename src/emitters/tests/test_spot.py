@@ -7,8 +7,8 @@ spectrum_dicts = {
     'd65': { 'type' : 'd65' },
     'regular': {
         'type' : 'regular',
-        'lambda_min' : 500.0,
-        'lambda_max' : 600.0,
+        'wavelength_min' : 500.0,
+        'wavelength_max' : 600.0,
         'values' : "1, 2",
     }
 }

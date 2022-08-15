@@ -16,11 +16,11 @@ Regular spectrum (:monosp:`regular`)
 .. pluginparameters::
  :extra-rows: 3
 
- * - lambda_min
+ * - wavelength_min
    - |float|
    - Minimum wavelength of the spectral range in nanometers.
 
- * - lambda_max
+ * - wavelength_max
    - |float|
    - Maximum wavelength of the spectral range in nanometers.
 
@@ -61,8 +61,8 @@ public:
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
         ScalarVector2f wavelength_range(
-            props.get<ScalarFloat>("lambda_min"),
-            props.get<ScalarFloat>("lambda_max")
+            props.get<ScalarFloat>("wavelength_min"),
+            props.get<ScalarFloat>("wavelength_max")
         );
 
         if (props.type("values") == Properties::Type::String) {

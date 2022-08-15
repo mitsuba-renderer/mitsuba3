@@ -10,8 +10,8 @@ import mitsuba as mi
 def obj():
     return mi.load_dict({
         "type" : "regular",
-        "lambda_min" : 500,
-        "lambda_max" : 600,
+        "wavelength_min" : 500,
+        "wavelength_max" : 600,
         "values" : "1, 2"
     })
 
