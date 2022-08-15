@@ -8,7 +8,9 @@ strive to document breaking API changes in the release notes below.
 Incoming release
 ----------------
 
-- TBA
+- Add stubs for ``Float``, ``ScalarFloat`` and other builtin types `[8249179] <https://github.com/mitsuba-renderer/mitsuba3/commit/824917976176cb0a5b2a2b1cf1247e36e6b866ce>`_
+- Minor improvements to the documentation
+- ...
 
 Mitsuba 3.0.1
 -------------
