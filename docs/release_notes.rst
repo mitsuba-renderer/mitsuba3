@@ -10,6 +10,7 @@ Incoming release
 
 - Add stubs for ``Float``, ``ScalarFloat`` and other builtin types `[8249179] <https://github.com/mitsuba-renderer/mitsuba3/commit/824917976176cb0a5b2a2b1cf1247e36e6b866ce>`_
 - Minor improvements to the documentation
+- Plugins ``regular`` and ``blackbody`` have renamed parameters: ``wavelength_min``, ``wavelength_max`` (previously ``lambda_min``, ``lambda_max``)
 - ...
 
 Mitsuba 3.0.1
