@@ -2,9 +2,9 @@
 """
 Usage: generate_stub_files.py {dest_dir} {mitsuba_path}
 
-This script generates stub files for Python type information for the `m̀itsuba`
+This script generates stub files for Python type information for the `mitsuba`
 package.  It recursively traverses the `mitsuba` package and writes all the
-objects (clases, methods, functions, enums, etc.) it finds to the `dest_dir`
+objects (classes, methods, functions, enums, etc.) it finds to the `dest_dir`
 folder. The stub files contain both the signatures and the docstrings of the
 objects. The second argument of this script, `mitsuba_path`, is optional and
 indicates the path to the `mitsuba` package folder if it is not installed or
@@ -231,6 +231,12 @@ def process_py_function(name, obj, indent=0):
 
 # ------------------------------------------------------------------------------
 
+def process_builtin_type(type, name):
+    w(f"class {name}: ...")
+    w(f'')
+
+# ------------------------------------------------------------------------------
+
 def process_module(m):
     global buffer
 
@@ -242,7 +248,7 @@ def process_module(m):
     w('import mitsuba as mi')
     w('')
 
-    # Ignore initilization errors of invalid variants on this system
+    # Ignore initialization errors of invalid variants on this system
     try:
         dir(m)
     except Exception:
@@ -254,6 +260,8 @@ def process_module(m):
         if inspect.isclass(v):
             if (hasattr(v, '__module__') and
                 not (v.__module__.startswith('mitsuba') or v.__module__.startswith('drjit.'))):
+                if v in [bool, int, float]:
+                    process_builtin_type(v, k)
                 continue
             process_class(v)
         elif type(v).__name__ in ['method', 'function']:
