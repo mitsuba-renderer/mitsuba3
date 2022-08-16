@@ -434,9 +434,19 @@
 
 .. autoclass:: mitsuba.SurfaceInteraction3f
 
+.. autoclass:: mitsuba.TensorXb
+
 .. autoclass:: mitsuba.TensorXd
 
 .. autoclass:: mitsuba.TensorXf
+
+.. autoclass:: mitsuba.TensorXi
+
+.. autoclass:: mitsuba.TensorXi64
+
+.. autoclass:: mitsuba.TensorXu
+
+.. autoclass:: mitsuba.TensorXu64
 
 .. autoclass:: mitsuba.Texture
 

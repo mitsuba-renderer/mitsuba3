@@ -4849,6 +4849,20 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Endpoint.set_scene(self, scene)
+
+        Inform the emitter about the properties of the scene
+
+        Various emitters that surround the scene (e.g. environment emitters)
+        must be informed about the scene dimensions to operate correctly. This
+        function is invoked by the Scene constructor.
+
+        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Endpoint.set_shape(self, shape)
 
         Set the shape associated with this endpoint.
@@ -4939,7 +4953,7 @@
 
     Simple Stream implementation backed-up by a file.
 
-    The underlying file abstraction is std::fstream, and so most
+    The underlying file abstraction is ``std::fstream``, and so most
     operations can be expected to behave similarly.
 
     .. py:method:: __init__(self, p, mode=<EMode., ERead)
@@ -5162,19 +5176,6 @@
         Returns the specific Sensor Response Function (SRF) used by the film
 
         Returns → :py:obj:`mitsuba.Texture`:
-            *no description available*
-
-    .. py:method:: mitsuba.Film.set_crop_window(self, arg0, arg1)
-
-        Set the size and offset of the crop window.
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.ScalarPoint2u`):
-            *no description available*
-
-        Parameter ``arg1`` (:py:obj:`mitsuba.ScalarVector2u`):
-            *no description available*
-
-        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Film.size(self)
@@ -10128,23 +10129,23 @@
 
     .. py:data:: Trace
 
-        < Trace message, for extremely verbose debugging
+        
 
     .. py:data:: Debug
 
-        < Debug message, usually turned off
+        Trace message, for extremely verbose debugging
 
     .. py:data:: Info
 
-        < More relevant debug / information message
+        Debug message, usually turned off
 
     .. py:data:: Warn
 
-        < Warning message
+        More relevant debug / information message
 
     .. py:data:: Error
 
-        < Error message, causes an exception to be thrown
+        Warning message
 
     .. py:method:: __init__(self, value)
 
@@ -10363,7 +10364,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.0.0
+    :value: 3.0.1
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10375,7 +10376,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 0
+    :value: 1
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -13053,7 +13054,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.UInt64:
+        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
@@ -13955,27 +13956,22 @@
     .. py:method:: mitsuba.Ray2f.d
         :property:
 
-        < Ray direction
+        Ray origin
 
     .. py:method:: mitsuba.Ray2f.maxt
         :property:
 
-        < Maximum position on the ray segment
-
-    .. py:method:: mitsuba.Ray2f.o
-        :property:
-
-        < Ray origin
+        Ray direction
 
     .. py:method:: mitsuba.Ray2f.time
         :property:
 
-        < Time value associated with this ray
+        Maximum position on the ray segment
 
     .. py:method:: mitsuba.Ray2f.wavelengths
         :property:
 
-        < Wavelength associated with the ray
+        Time value associated with this ray
 
 .. py:class:: mitsuba.Ray3f
 
@@ -14047,27 +14043,22 @@
     .. py:method:: mitsuba.Ray3f.d
         :property:
 
-        < Ray direction
+        Ray origin
 
     .. py:method:: mitsuba.Ray3f.maxt
         :property:
 
-        < Maximum position on the ray segment
-
-    .. py:method:: mitsuba.Ray3f.o
-        :property:
-
-        < Ray origin
+        Ray direction
 
     .. py:method:: mitsuba.Ray3f.time
         :property:
 
-        < Time value associated with this ray
+        Maximum position on the ray segment
 
     .. py:method:: mitsuba.Ray3f.wavelengths
         :property:
 
-        < Wavelength associated with the ray
+        Time value associated with this ray
 
 .. py:class:: mitsuba.RayDifferential3f
 
@@ -17941,7 +17932,7 @@
     Specifies all functions to be implemented by stream subclasses and
     provides various convenience functions layered on top of on them.
 
-    All read**X**() and write**X**() methods support transparent
+    All ``read*()`` and ``write*()`` methods support transparent
     conversion based on the endianness of the underlying system and the
     value passed to set_byte_order(). Whenever host_byte_order() and
     byte_order() disagree, the endianness is swapped.
@@ -17957,15 +17948,15 @@
 
         .. py:data:: EBigEndian
 
-            < PowerPC, SPARC, Motorola 68K
+            
 
         .. py:data:: ELittleEndian
 
-            < x86, x86_64
+            PowerPC, SPARC, Motorola 68K
 
         .. py:data:: ENetworkByteOrder
 
-            < Network byte order (an alias for big endian)
+            x86, x86_64
 
         .. py:method:: __init__(self, value)
 
@@ -19192,6 +19183,149 @@
 
         Incident direction in the local shading frame
 
+.. py:class:: mitsuba.TensorXb
+
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (object):
+            *no description available*
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+    .. py:method:: __init__(self, array, shape)
+
+        Parameter ``array`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Parameter ``shape`` (List[int]):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.TensorXb):
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.not_(self)
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.select_
+
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXb, arg2: drjit.llvm.ad.TensorXb) -> drjit.llvm.ad.TensorXb
+
+    .. py:method:: mitsuba.TensorXb.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXb.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXb):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
 .. py:class:: mitsuba.TensorXf
 
 
@@ -19324,6 +19458,11 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.TensorXf.ceil_(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
     .. py:method:: mitsuba.TensorXf.cos_(self)
 
         Returns → drjit.llvm.ad.TensorXf:
@@ -19377,9 +19516,17 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.TensorXf.fmadd_(self, arg0)
+    .. py:method:: mitsuba.TensorXf.floor_(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXf.fma_(self, arg0, arg1)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
         Returns → drjit.llvm.ad.TensorXf:
@@ -19504,6 +19651,14 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.TensorXf.mod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
     .. py:method:: mitsuba.TensorXf.mul_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
@@ -19569,6 +19724,11 @@
 
             Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
+
+    .. py:method:: mitsuba.TensorXf.round_(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
 
     .. py:method:: mitsuba.TensorXf.rsqrt_(self)
 
@@ -19656,12 +19816,1589 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.TensorXf.trunc_(self)
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
     .. py:method:: mitsuba.TensorXf.xor_(self, arg0)
 
         Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
         Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+.. py:class:: mitsuba.TensorXi
+
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (object):
+            *no description available*
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (drjit.llvm.ad.Int):
+            *no description available*
+
+    .. py:method:: __init__(self, array, shape)
+
+        Parameter ``array`` (drjit.llvm.ad.Int):
+            *no description available*
+
+        Parameter ``shape`` (List[int]):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.TensorXi, arg0: drjit.llvm.ad.TensorXf64) -> None
+
+        11. __init__(self: drjit.llvm.ad.TensorXi, arg0: drjit.llvm.TensorXi) -> None
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.abs_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.floordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.fma_(self, arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.ge_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.gt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.iadd_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.ifloordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.imod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.imul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.isl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.isr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.isub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.le_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.lt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.lzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.maximum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.minimum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.mod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.mul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.mulhi_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.neg_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.not_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.popcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.reinterpret_array_(overloaded)
+
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi:
+                *no description available*
+
+    .. py:method:: mitsuba.TensorXi.select_
+
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXi, arg2: drjit.llvm.ad.TensorXi) -> drjit.llvm.ad.TensorXi
+
+    .. py:method:: mitsuba.TensorXi.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.sl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.sr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.sub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.tzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi:
+            *no description available*
+
+.. py:class:: mitsuba.TensorXi64
+
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (object):
+            *no description available*
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (drjit.llvm.ad.Int64):
+            *no description available*
+
+    .. py:method:: __init__(self, array, shape)
+
+        Parameter ``array`` (drjit.llvm.ad.Int64):
+            *no description available*
+
+        Parameter ``shape`` (List[int]):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.TensorXi64, arg0: drjit.llvm.ad.TensorXf64) -> None
+
+        11. __init__(self: drjit.llvm.ad.TensorXi64, arg0: drjit.llvm.TensorXi64) -> None
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.abs_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.floordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.fma_(self, arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.ge_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.gt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.iadd_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.ifloordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.imod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.imul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.isl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.isr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.isub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.le_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.lt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.lzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.maximum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.minimum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.mod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.mul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.mulhi_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.neg_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.not_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.popcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.reinterpret_array_(overloaded)
+
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXf64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXi64:
+                *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.select_
+
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXi64, arg2: drjit.llvm.ad.TensorXi64) -> drjit.llvm.ad.TensorXi64
+
+    .. py:method:: mitsuba.TensorXi64.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.sl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.sr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.sub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.tzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXi64.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXi64:
+            *no description available*
+
+.. py:class:: mitsuba.TensorXu
+
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (object):
+            *no description available*
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: __init__(self, array, shape)
+
+        Parameter ``array`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``shape`` (List[int]):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.TensorXu, arg0: drjit.llvm.ad.TensorXf64) -> None
+
+        11. __init__(self: drjit.llvm.ad.TensorXu, arg0: drjit.llvm.TensorXu) -> None
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.abs_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.floordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.fma_(self, arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.ge_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.gt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.iadd_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.ifloordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.imod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.imul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.isl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.isr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.isub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.le_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.lt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.lzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.maximum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.minimum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.mod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.mul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.mulhi_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.neg_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.not_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.popcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.reinterpret_array_(overloaded)
+
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu:
+                *no description available*
+
+    .. py:method:: mitsuba.TensorXu.select_
+
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXu, arg2: drjit.llvm.ad.TensorXu) -> drjit.llvm.ad.TensorXu
+
+    .. py:method:: mitsuba.TensorXu.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.sl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.sr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.sub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.tzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu:
+            *no description available*
+
+.. py:class:: mitsuba.TensorXu64
+
+
+    .. py:method:: __init__(self)
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (object):
+            *no description available*
+
+    .. py:method:: __init__(self, array)
+
+        Parameter ``array`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+    .. py:method:: __init__(self, array, shape)
+
+        Parameter ``array`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+        Parameter ``shape`` (List[int]):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: drjit.llvm.ad.TensorXu64, arg0: drjit.llvm.ad.TensorXf64) -> None
+
+        11. __init__(self: drjit.llvm.ad.TensorXu64, arg0: drjit.llvm.TensorXu64) -> None
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.abs_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.add_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.and_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.andnot_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.assign(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.data_(self)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.eq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.floordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.fma_(self, arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.ge_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.gt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.iadd_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.iand_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.ifloordiv_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.imod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.imul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.ior_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.isl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.isr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.isub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.ixor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.le_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.lt_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.lzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.maximum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.minimum_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.mod_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.mul_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.mulhi_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.neg_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.neq_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXb:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.not_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.or_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.popcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.reinterpret_array_(overloaded)
+
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXi64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu64:
+                *no description available*
+
+        .. py:method:: reinterpret_array_(arg0)
+
+            Parameter ``arg0`` (drjit.llvm.ad.TensorXf64):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXu64:
+                *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.select_
+
+        (arg0: drjit.llvm.ad.TensorXb, arg1: drjit.llvm.ad.TensorXu64, arg2: drjit.llvm.ad.TensorXu64) -> drjit.llvm.ad.TensorXu64
+
+    .. py:method:: mitsuba.TensorXu64.set_index_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.set_index_ad_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.sl_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.sr_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.sub_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.tzcnt_(self)
+
+        Returns → drjit.llvm.ad.TensorXu64:
+            *no description available*
+
+    .. py:method:: mitsuba.TensorXu64.xor_(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.TensorXu64):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXu64:
             *no description available*
 
 .. py:class:: mitsuba.Texture
@@ -19983,7 +21720,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.ad.Array1f]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array1f]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f.eval_cubic_hessian(self, pos, active=True)
@@ -19994,7 +21731,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[List[drjit.llvm.ad.Array1f], List[drjit::Matrix<drjit::DiffArray<drjit::LLVMArray<float> >, 1ul>]]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array1f], List[drjit::Matrix<drjit::DiffArray<drjit::LLVMArray<float> >, 1ul>]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f.eval_cuda(self, pos, active=True)
@@ -20186,7 +21923,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.ad.Array2f]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array2f]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture2f.eval_cubic_hessian(self, pos, active=True)
@@ -20197,7 +21934,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[List[drjit.llvm.ad.Array2f], List[drjit.llvm.ad.Matrix2f]]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array2f], List[drjit.llvm.ad.Matrix2f]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture2f.eval_cuda(self, pos, active=True)
@@ -20389,7 +22126,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → List[drjit.llvm.ad.Array3f]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array3f]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture3f.eval_cubic_hessian(self, pos, active=True)
@@ -20400,7 +22137,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[List[drjit.llvm.ad.Array3f], List[drjit.llvm.ad.Matrix3f]]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array3f], List[drjit.llvm.ad.Matrix3f]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture3f.eval_cuda(self, pos, active=True)
@@ -23407,11 +25144,11 @@
 
         .. py:data:: EDeflateStream
 
-            < A raw deflate stream
+            
 
         .. py:data:: EGZipStream
 
-            < A gzip-compatible stream
+            A raw deflate stream
 
         .. py:method:: __init__(self, value)
 
@@ -23460,16 +25197,20 @@
             learning rate
         
         Parameter ``beta_1``:
-            controls the exponential averaging of first
-            order gradient moments
+            controls the exponential averaging of first order gradient moments
         
         Parameter ``beta_2``:
-            controls the exponential averaging of second
-            order gradient moments
+            controls the exponential averaging of second order gradient moments
         
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
+        
+        Parameter ``uniform``:
+            if enabled, the optimizer will use the 'UniformAdam' variant of Adam
+            [Nicolet et al. 2021], where the update rule uses the *maximum* of
+            the second moment estimates at the current step instead of the
+            per-element second moments.
         
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.

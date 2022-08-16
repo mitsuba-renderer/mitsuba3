@@ -19,10 +19,11 @@ High dynamic range film (:monosp:`hdrfilm`)
 -------------------------------------------
 
 .. pluginparameters::
+ :extra-rows: 7
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels Default: 768, 576)
+   - Width and height of the camera sensor in pixels. Default: 768, 576)
 
  * - file_format
    - |string|
@@ -58,6 +59,21 @@ High dynamic range film (:monosp:`hdrfilm`)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
      Gaussian filter)
+
+ * - size
+   - ``Vector2u``
+   - Width and height of the camera sensor in pixels
+   - |exposed|
+
+ * - crop_size
+   - ``Vector2u``
+   - Size of the sub-rectangle of the output in pixels
+   - |exposed|
+
+ * - crop_offset
+   - ``Point2u``
+   - Offset of the sub-rectangle of the output in pixels
+   - |exposed|
 
 This is the default film plugin that is used when none is explicitly specified. It stores the
 captured image as a high dynamic range OpenEXR file and tries to preserve the rendering as much as
@@ -110,7 +126,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_sample_border, m_filter, m_flags)
+                    m_sample_border, m_filter, m_flags, set_crop_window)
     MI_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -200,6 +216,22 @@ public:
         }
 
         props.mark_queried("banner"); // no banner in Mitsuba 3
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (string::contains(keys, "size")) {
+            ScalarVector2u crop_size = string::contains(keys, "crop_size") ? m_crop_size : 0;
+            ScalarPoint2u crop_offset = string::contains(keys, "crop_offset")
+                                            ? m_crop_offset
+                                            : ScalarPoint2u(m_size);
+            set_crop_window(crop_size, crop_offset);
+        }
     }
 
     size_t prepare(const std::vector<std::string> &aovs) override {

@@ -169,12 +169,12 @@ def test05_render_crop_film(variants_all):
     image1_cropped = image1[offset[1]:offset[1]+size[1], offset[0]:offset[0]+size[0], :]
     dr.eval(image1_cropped)
 
-    # 2. Use the film's crop window via the Python API
-    film = scene.sensors()[0].film()
-    if True:
-        film.set_crop_window(offset, size)
-        # TODO: ideally, we shouldn't need to call this explicitly
-        scene.sensors()[0].parameters_changed()
+    # 2. Use the film's crop window
+    params = mi.traverse(scene)
+    params['sensor.film.crop_size'] = size
+    params['sensor.film.crop_offset'] = offset
+    params.update()
+
     image2 = integrator.render(scene, seed=0, spp=4, develop=True)
     dr.eval(image2)
 
