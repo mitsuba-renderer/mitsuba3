@@ -21,6 +21,7 @@ Spectral film (:monosp:`specfilm`)
 ----------------------------------
 
 .. pluginparameters::
+ :extra-rows: 6
 
  * - width, height
    - |int|
@@ -51,6 +52,21 @@ Spectral film (:monosp:`specfilm`)
  * - (Nested plugins)
    - |spectrum|
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
+   - |exposed|
+
+ * - size
+   - ``Vector2u``
+   - Width and height of the camera sensor in pixels
+   - |exposed|
+
+ * - crop_size
+   - ``Vector2u``
+   - Size of the sub-rectangle of the output in pixels
+   - |exposed|
+
+ * - crop_offset
+   - ``Point2u``
+   - Offset of the sub-rectangle of the output in pixels
    - |exposed|
 
 This plugin stores one or several spectral bands as a multichannel spectral image in a high dynamic
@@ -119,8 +135,8 @@ Notice that in this example, each band contains the spectral sensitivity of one 
 template <typename Float, typename Spectrum>
 class SpecFilm final : public Film<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_sample_border, m_filter, m_flags, m_srf)
+    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
+                   m_filter, m_flags, m_srf, set_crop_window)
     MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
 
@@ -166,9 +182,9 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
         for (size_t i=0; i<m_srfs.size(); ++i)
             callback->put_object(m_names[i], m_srfs[i].get(), +ParamFlags::NonDifferentiable);
-        Base::traverse(callback);
     }
 
     void compute_srf_sampling() {

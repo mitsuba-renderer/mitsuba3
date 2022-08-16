@@ -192,6 +192,9 @@ public:
     /// Flags for all properties combined.
     uint32_t flags() const { return m_flags; }
 
+    void traverse(TraversalCallback *callback) override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
+
     //! @}
     // =============================================================
 

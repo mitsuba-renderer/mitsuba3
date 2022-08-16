@@ -125,8 +125,8 @@ The following XML snippet describes a film that writes a full-HD RGBA OpenEXR fi
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_sample_border, m_filter, m_flags, set_crop_window)
+    MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
+                   m_filter, m_flags)
     MI_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -216,22 +216,6 @@ public:
         }
 
         props.mark_queried("banner"); // no banner in Mitsuba 3
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (string::contains(keys, "size")) {
-            ScalarVector2u crop_size = string::contains(keys, "crop_size") ? m_crop_size : 0;
-            ScalarPoint2u crop_offset = string::contains(keys, "crop_offset")
-                                            ? m_crop_offset
-                                            : ScalarPoint2u(m_size);
-            set_crop_window(crop_size, crop_offset);
-        }
     }
 
     size_t prepare(const std::vector<std::string> &aovs) override {

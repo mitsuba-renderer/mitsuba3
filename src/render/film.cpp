@@ -52,6 +52,27 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
 MI_VARIANT Film<Float, Spectrum>::~Film() { }
 
+MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
+    callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
+    callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
+}
+
+MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    ScalarVector2u crop_size = m_crop_size;
+    ScalarPoint2u crop_offset = m_crop_offset;
+
+    // Reset the crop window to match the full sensor area if necessary
+    if (string::contains(keys, "size")) {
+        if (!string::contains(keys, "crop_size"))
+            crop_size = 0;
+        if (!string::contains(keys, "crop_offset"))
+            crop_offset = ScalarPoint2u(m_size);
+    }
+
+    set_crop_window(crop_offset, crop_size);
+}
+
 MI_VARIANT void
 Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
                                       const Wavelength & /* wavelengths */,

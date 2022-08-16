@@ -170,9 +170,9 @@ def test05_render_crop_film(variants_all):
     dr.eval(image1_cropped)
 
     # 2. Use the film's crop window
-    params = mi.traverse(scene)
-    params['sensor.film.crop_size'] = size
-    params['sensor.film.crop_offset'] = offset
+    params = mi.traverse(scene.sensors()[0])
+    params['film.crop_size'] = size
+    params['film.crop_offset'] = offset
     params.update()
 
     image2 = integrator.render(scene, seed=0, spp=4, develop=True)
