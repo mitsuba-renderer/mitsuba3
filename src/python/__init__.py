@@ -234,15 +234,20 @@ class MitsubaModule(types.ModuleType):
             # The variant wasn't set explicitly, we first check if a default
             # variant is set in the config.py file.
             from .config import MI_DEFAULT_VARIANT
-            if MI_DEFAULT_VARIANT != '':
-                self.set_variant(MI_DEFAULT_VARIANT)
-                variant = MI_DEFAULT_VARIANT
+            import os
+            default_variant = os.getenv('MI_DEFAULT_VARIANT', default=MI_DEFAULT_VARIANT)
+            if default_variant != '':
+                self.set_variant(default_variant)
+                variant = default_variant
             else:
                 raise ImportError('Before importing any packages, you must '
                                   'specify the desired variant of Mitsuba '
                                   'using \"mitsuba.set_variant(..)\".\nThe '
-                                  'following variants are available: %s.' % (
-                                  ", ".join(self.variants())))
+                                  'following variants are available: %s.\n'
+                                  'You can also use the MI_DEFAULT_VARIANT '
+                                  'environment variable to define a default '
+                                  'variant.' % (
+                                  ', '.join(self.variants())))
 
         if not variant is None:
             # Check whether we are importing a known submodule
@@ -282,7 +287,7 @@ class MitsubaModule(types.ModuleType):
         return getattr(_tls, 'variant', None)
 
     def variants(self) -> typing.List[str]:
-        'Return a list of all variants that have been compiled'
+        '''Return a list of all variants that have been compiled'''
         from .config import MI_VARIANTS
         return MI_VARIANTS
 
