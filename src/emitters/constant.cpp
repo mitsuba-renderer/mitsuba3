@@ -38,7 +38,7 @@ geometry that uses basic (e.g. diffuse) materials.
 
     .. code-tab:: python
 
-        'type'='constant',
+        'type': 'constant',
         'radiance': {
             'type': 'spectrum',
             'value': 1.0,

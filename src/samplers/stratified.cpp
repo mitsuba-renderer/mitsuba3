@@ -58,7 +58,7 @@ the independent sampler, as well as better convergence.
 
     .. code-tab:: python
 
-        'type'='stratified',
+        'type': 'stratified',
         'sample_count': '4'
 
  */

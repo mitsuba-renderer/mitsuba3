@@ -71,9 +71,9 @@ These are specified as children of the corresponding ``<shape>`` element:
 
         # .. scene contents ..
 
-        'type'='sphere',
+        'type': 'sphere',
         'emitter': {
-            'type'='area',
+            'type': 'area',
             'radiance': {
                 'type': 'spectrum',
                 'value': 1.0,

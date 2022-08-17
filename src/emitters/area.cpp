@@ -44,9 +44,9 @@ emitter shape and specify an :monosp:`area` instance as its child:
 
     .. code-tab:: python
 
-        'type'='sphere',
+        'type': 'sphere',
         'emitter': {
-            'type'='area',
+            'type': 'area',
             'radiance': {
                 'type': 'spectrum',
                 'value': 1.0,

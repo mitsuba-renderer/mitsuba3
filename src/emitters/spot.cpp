@@ -57,7 +57,7 @@ using the lookat tag, e.g.:
 
     .. code-tab:: python
 
-        'type'='spot',
+        'type': 'spot',
         'to_world': mi.ScalarTransform4f.lookat(
             origin=[1, 1, 1],
             target=[1, 2, 1],

@@ -83,7 +83,7 @@ High quality free light probes are available on
 
     .. code-tab:: python
 
-        'type'='envmap',
+        'type': 'envmap',
         'filename': 'textures/museum.exr'
 
  */
