@@ -45,7 +45,7 @@ simply instantiate the desired sensor shape and specify an
 
     .. code-tab:: python
 
-        'type'='sphere',
+        'type': 'sphere',
         'sensor': {
             'type': 'irradiancemeter'
             'film': {

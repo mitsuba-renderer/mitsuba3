@@ -121,7 +121,7 @@ The exact camera position and orientation is most easily expressed using the
 
     .. code-tab:: python
 
-        'type'='thinlens',
+        'type': 'thinlens',
         'fov': 45,
         'to_world': mi.ScalarTransform4f.lookat(
             origin=[1, 1, 1],

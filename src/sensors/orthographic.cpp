@@ -66,7 +66,7 @@ The exact camera position and orientation is most easily expressed using the
 
     .. code-tab:: python
 
-        'type'='orthographic',
+        'type': 'orthographic',
         'to_world': mi.ScalarTransform4f.lookat(
             origin=[1, 1, 1],
             target=[1, 2, 1],

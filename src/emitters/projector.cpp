@@ -101,7 +101,7 @@ operation remains efficient even if only a single pixel is turned on.
 
     .. code-tab:: python
 
-        'type'='projector',
+        'type': 'projector',
         'irradiance': {
             'type': 'spectrum',
             'value': 1.0,

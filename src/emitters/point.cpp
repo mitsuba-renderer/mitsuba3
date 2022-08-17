@@ -47,7 +47,7 @@ uniformly radiates illumination into all directions.
 
     .. code-tab:: python
 
-        'type'='point',
+        'type': 'point',
         'position': [0.0, 5.0, 0.0],
         'intensity': {
             'type': 'spectrum',

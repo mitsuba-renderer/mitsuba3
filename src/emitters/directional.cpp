@@ -48,7 +48,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
     .. code-tab:: python
 
-        'type'='directional',
+        'type': 'directional',
         'direction': [1.0, 0.0, 0.0],
         'irradiance': {
             'type': 'spectrum',

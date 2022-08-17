@@ -41,9 +41,9 @@ Similar to an area light, but emitting only in the normal direction.
 
     .. code-tab:: python
 
-        'type'='sphere',
+        'type': 'sphere',
         'emitter': {
-            'type'='directionalarea',
+            'type': 'directionalarea',
             'radiance': {
                 'type': 'spectrum',
                 'value': 1.0,

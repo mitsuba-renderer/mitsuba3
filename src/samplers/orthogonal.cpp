@@ -71,7 +71,7 @@ stratification of 2D projections of those samples wouldn't be ensured anymore.
 
     .. code-tab:: python
 
-        'type'='orthogonal',
+        'type': 'orthogonal',
         'sample_count': '4'
 
  */

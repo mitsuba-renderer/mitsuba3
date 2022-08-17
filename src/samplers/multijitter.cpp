@@ -67,7 +67,7 @@ columns and the rows.
 
     .. code-tab:: python
 
-        'type'='multijitter',
+        'type': 'multijitter',
         'sample_count': '64'
 
  */

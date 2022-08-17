@@ -59,7 +59,7 @@ on the order of the machine epsilon (:math:`6\cdot 10^{-8}`) in single precision
 
     .. code-tab:: python
 
-        'type'='independent',
+        'type': 'independent',
         'sample_count': '64'
 
  */

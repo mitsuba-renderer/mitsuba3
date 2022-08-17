@@ -66,7 +66,7 @@ which is a quality criterion on their spatial distribution.
 
     .. code-tab:: python
 
-        'type'='ldsampler',
+        'type': 'ldsampler',
         'sample_count': '64'
 
  */
