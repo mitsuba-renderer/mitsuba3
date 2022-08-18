@@ -129,23 +129,33 @@ if (NOT SKBUILD)
 endif()
 
 # ----------------------------------------------------------
-#   Generate type information stubs
+#   Generate type information stubs (drjit)
+# ----------------------------------------------------------
+
+if (NOT SKBUILD)
+  add_custom_target(drjit_stub_file_generation ALL COMMAND
+    "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
+    ${MI_BINARY_DIR}/python/drjit/ ${MI_BINARY_DIR}/python DEPENDS drjit-python)
+endif()
+
+# ----------------------------------------------------------
+#   Generate type information stubs (mitsuba)
 # ----------------------------------------------------------
 
 set(MI_PYTHON_STUBS_DIR "" CACHE STRING "Location of the Python typing fle stubs directory to use if the files should not be generated during the build.")
 mark_as_advanced(MI_PYTHON_STUBS_DIR)
 if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
-  add_custom_target(stub_file_generation ALL COMMAND
+  add_custom_target(mitsuba_stub_file_generation ALL COMMAND
     "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
     ${MI_BINARY_DIR}/python/mitsuba/ ${MI_BINARY_DIR}/python
     DEPENDS mitsuba_ext)
   foreach (MI_VARIANT ${MI_VARIANTS})
-      string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
-      list(GET MI_VARIANT 0 MI_VARIANT_NAME)
-      add_dependencies(stub_file_generation mitsuba_${MI_VARIANT_NAME}_ext)
+    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+    add_dependencies(mitsuba_stub_file_generation mitsuba_${MI_VARIANT_NAME}_ext)
   endforeach()
   if (NOT SKBUILD)
-    add_dependencies(stub_file_generation drjit-python)
+    add_dependencies(mitsuba_stub_file_generation drjit-python)
   endif()
 else()
   ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)

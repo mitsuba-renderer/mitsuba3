@@ -32,11 +32,11 @@ def process_type_hint(s):
     type_hints = []
     offset = 0
     while True:
-        match = re.search(r'[a-z]+: ', sub)
+        match = re.search(r'[a-zA-Z]+: ', sub)
         if match is None:
             return s
         i = match.start() + len(match.group())
-        match_next = re.search(r'[a-z]+: ', sub[i:])
+        match_next = re.search(r'[a-zA-Z]+: ', sub[i:])
         if match_next is None:
             j = sub.index(')')
         else:
@@ -130,8 +130,12 @@ def process_class(obj):
             enums.append((k, v))
 
     base = obj.__bases__[0]
-    base_name = base.__name__
-    has_base = not (base_name == 'object' or base_name == 'pybind11_object')
+    base_module = base.__module__
+    base_name = base.__qualname__
+    has_base = not (base_module == 'builtins' or base_name == 'object' or base_name == 'pybind11_object')
+    base_name = base_module + '.' + base_name
+    base_name = base_name.replace(f'.{mi.variant()}', '')
+
     if has_base and not base.__module__.startswith('mitsuba'):
         w(f'from {base.__module__} import {base_name}')
 
@@ -217,6 +221,18 @@ def process_py_function(name, obj, indent=0):
     signature = signature.replace('\'', '')
     signature = signature.replace('mi.', 'mitsuba.')
 
+    # Fix parameters that have enums as default values
+    enum_match = re.search(r'\=<', signature)
+    while enum_match is not None:
+        begin = enum_match.start()
+        end = begin + signature[begin:].index('>')
+
+        new_default_value = signature[begin + 2:end]
+        new_default_value = new_default_value[:new_default_value.index(':')]
+
+        signature = signature[:begin + 1] + new_default_value + signature[end + 1:]
+        enum_match = re.search(r'\=<', signature[begin])
+
     w(f"{indent}def {name}{signature}:{'' if has_doc else ' ...'}")
 
     if has_doc:
@@ -237,7 +253,7 @@ def process_builtin_type(type, name):
 
 # ------------------------------------------------------------------------------
 
-def process_module(m):
+def process_module(m, top_module=False):
     global buffer
 
     submodules = []
@@ -259,7 +275,7 @@ def process_module(m):
 
         if inspect.isclass(v):
             if (hasattr(v, '__module__') and
-                not (v.__module__.startswith('mitsuba') or v.__module__.startswith('drjit.'))):
+                not (v.__module__.startswith('mitsuba') or v.__module__.startswith('drjit'))):
                 if v in [bool, int, float]:
                     process_builtin_type(v, k)
                 continue
@@ -275,16 +291,23 @@ def process_module(m):
         elif type(v).__bases__[0].__name__ == 'module' or type(v).__name__ == 'module':
             if k in ['mi', 'mitsuba', 'dr']:
                 continue
-            if not (v.__name__.startswith('mitsuba') or v.__name__.startswith('drjit.')):
+            if not (v.__name__.startswith('mitsuba') or v.__name__.startswith('drjit')):
                 continue
 
+            if k.startswith('_'):
+                continue
+
+            module_filename = v.__name__[len("mitsuba."):]
+            module_filename = module_filename.replace('.', '_')
+
             w(f'')
-            w(f'from .stubs import {k} as {k}')
+            w(f'from {".stubs" if top_module else "."} import {module_filename} as {k}')
             w('')
-            submodules.append((k, v))
+
+            submodules.append((module_filename, v))
 
     # Adjust DrJIT type hints manually here
-    buffer = buffer.replace(f'drjit.{mi.variant()[:4]}.ad.', 'mitsuba.')
+    buffer = re.sub(r'drjit\.(scalar|llvm|cuda).(ad\.)?' , 'mitsuba.', buffer)
 
     return buffer, submodules
 
@@ -308,24 +331,24 @@ if __name__ == '__main__':
     os.makedirs(f'{stub_folder}/stubs', exist_ok=True)
 
     logging.debug(f'Processing mitsuba root module')
-    buffer, submodules = process_module(mi)
+    buffer, submodules = process_module(mi, top_module=True)
     with open(f'{stub_folder}__init__.pyi', 'w') as f:
         f.write(buffer)
 
     processed_submodules = set()
     while len(submodules) != 0:
         k, v = submodules[0]
-        if k in processed_submodules:
+        if v in processed_submodules:
             submodules = submodules[1:]
             continue
 
-        logging.debug(f'Processing submodule: {k}')
+        logging.debug(f'Processing submodule: {v.__name__}')
         buffer, new_submodules = process_module(v)
 
         with open(f'{stub_folder}stubs/{k}.pyi', 'w') as f:
             f.write(buffer)
 
         submodules = submodules[1:] + new_submodules
-        processed_submodules.add(k)
+        processed_submodules.add(v)
 
     logging.info(f'Done -> stub files written to {os.path.abspath(stub_folder)}')
