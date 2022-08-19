@@ -242,7 +242,6 @@ int main(int argc, char *argv[]) {
                 thread_count = 1;
             }
         }
-        Thread::set_thread_count(thread_count);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
@@ -256,6 +255,22 @@ int main(int argc, char *argv[]) {
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
         bool cuda = string::starts_with(mode, "cuda_");
         bool llvm = string::starts_with(mode, "llvm_");
+
+
+        /*
+         * Ugly workaround for the issue:
+         * pool_set_size with count = 0 AND
+         * cuda rendering makes optix init
+         * fail.
+         * */
+        if( cuda ){
+            if( thread_count == 1 )
+                Thread::set_thread_count( 2 );
+            else
+                Thread::set_thread_count(thread_count);
+        }else{
+            Thread::set_thread_count(thread_count);
+        }
 
 #if defined(MI_ENABLE_CUDA)
         if (cuda)
