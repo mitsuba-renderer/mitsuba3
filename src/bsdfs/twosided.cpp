@@ -50,7 +50,7 @@ The following snippet describes a two-sided diffuse material:
 
         <bsdf type="twosided">
             <bsdf type="diffuse">
-                 <spectrum name="reflectance" value="0.4"/>
+                 <rgb name="reflectance" value="0.4"/>
             </bsdf>
         </bsdf>
 
@@ -60,7 +60,7 @@ The following snippet describes a two-sided diffuse material:
         'material': {
             'type': 'diffuse',
             'reflectance': {
-                'type': 'spectrum',
+                'type': 'rgb',
                 'value': 0.4
             }
         }

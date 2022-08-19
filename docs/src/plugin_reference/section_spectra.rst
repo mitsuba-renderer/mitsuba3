@@ -87,17 +87,39 @@ and all different color modes. Each plugin is briefly summarized below.
           - Spectral mode
         * - ``<spectrum name=".." value="0.5"/>``
           - :ref:`uniform <spectrum-uniform>`
+          - :ref:`srgb <spectrum-srgb>`
           - :ref:`uniform <spectrum-uniform>`
-          - :ref:`d65 <spectrum-d65>`
         * - ``<spectrum name=".." value="400:0.1, 700:0.2"/>``
           - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb_d65 <spectrum-srgb_d65>`
+          - :ref:`srgb <spectrum-srgb>`
           - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
         * - ``<spectrum name=".." filename=".."/>``
           - :ref:`uniform <spectrum-uniform>`
-          - :ref:`srgb_d65 <spectrum-srgb_d65>`
+          - :ref:`srgb <spectrum-srgb>`
           - :ref:`regular <spectrum-regular>`/:ref:`irregular <spectrum-irregular>`
         * - ``<rgb name=".." value="0.5, 0.2, 0.5"/>``
-          - :ref:`srgb_d65 <spectrum-srgb_d65>`
-          - :ref:`srgb_d65 <spectrum-srgb_d65>`
-          - :ref:`srgb_d65 <spectrum-srgb_d65>`
+          - :ref:`d65 <spectrum-d65>`
+          - :ref:`srgb <spectrum-srgb>`
+          - :ref:`d65 <spectrum-d65>`
+
+A uniform spectrum does not produce a uniform RGB response in sRGB (which
+has a D65 white point). Hence giving ``<spectrum name=".." value="1.0"/>``
+as the radiance value of an emitter will result in a purple-ish color. On the
+other hand, using such spectrum for a BSDF reflectance value will result in
+an object appearing white. Both RGB and spectral modes of Mitsuba 3 will
+exhibit this behavior consistently. The figure below illustrates this for
+combinations of inputs for the emitter radiance (here using a :ref:`constant <emitter-constant>` emitter)
+and the BSDF reflectance (here using a :ref:`diffuse <bsdf-diffuse>` BSDF).
+
+.. image:: ../../resources/data/docs/images/misc/spectrum_rgb_table.png
+    :width: 60%
+    :align: center
+
+.. warning::
+
+    While it is possible to define unbounded RGB properties (such as the ``eta``
+    value for a :ref:`conductor BSDF <bsdf-conductor>`) using ``<rgb name=".." value=".."/>``
+    tag, it is highly recommended to directly define a spectrum curve (or use a
+    material from :num:`conductor-ior-list>`) as the spectral uplifting algorithm
+    implemented in Mitsuba won't be able to guarantee that the produced spectrum
+    will behave consistently in both RGB and spectral modes.

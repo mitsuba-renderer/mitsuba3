@@ -23,7 +23,7 @@ the following snippet instantiates a point light emitter that illuminates a sphe
             <!-- .. scene contents .. -->
 
             <emitter type="point">
-                <spectrum name="intensity" value="1"/>
+                <rgb name="intensity" value="1"/>
                 <point name="position" x="0" y="0" z="-2"/>
             </emitter>
 
@@ -60,7 +60,7 @@ These are specified as children of the corresponding ``<shape>`` element:
 
             <shape type="sphere">
                 <emitter type="area">
-                    <spectrum name="radiance" value="1"/>
+                    <rgb name="radiance" value="1"/>
                 </emitter>
             </shape>
         </scene>
@@ -75,7 +75,7 @@ These are specified as children of the corresponding ``<shape>`` element:
         'emitter': {
             'type': 'area',
             'radiance': {
-                'type': 'spectrum',
+                'type': 'rgb',
                 'value': 1.0,
             }
         }

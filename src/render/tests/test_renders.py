@@ -283,7 +283,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
             raise ValueError('Scene "{}" not found in available scenes: {}'.format(
                 scene, list(map(os.path.basename, scenes))))
 
-    for scene_fname in SCENES:
+    for scene_fname in scenes:
         scene_dir = dirname(scene_fname)
 
         if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
@@ -302,6 +302,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
             if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
 
+            print(f'Rendering: {scene_fname} - {variant}')
             scene = mi.load_file(scene_fname, spp=spp)
             scene.integrator().render(scene, seed=0, develop=False)
 
@@ -311,11 +312,11 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
             # Write rendered image to a file
             os.makedirs(dirname(ref_fname), exist_ok=True)
             xyz_to_rgb_bmp(img).write(ref_fname)
-            print('Saved rendered image to: ' + ref_fname)
+            print(f'Saved rendered image to: {ref_fname}')
 
             # Write variance image to a file
             xyz_to_rgb_bmp(var_img).write(var_fname)
-            print('Saved variance image to: ' + var_fname)
+            print(f'Saved variance image to: {var_fname}')
 
 
 if __name__ == '__main__':

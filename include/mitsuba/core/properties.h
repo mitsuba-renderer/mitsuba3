@@ -238,7 +238,7 @@ public:  // Type-specific getters and setters ----------------------------------
             ref<Object> object = find_object(name);
             if (!object->class_()->derives_from(MI_CLASS(Texture)))
                 Throw("The property \"%s\" has the wrong type (expected "
-                    " <spectrum> or <texture>).", name);
+                      " <spectrum> or <texture>).", name);
             mark_queried(name);
             return (Texture *) object.get();
         } else if (p_type == Properties::Type::Float) {
@@ -247,7 +247,7 @@ public:  // Type-specific getters and setters ----------------------------------
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
-                    " <spectrum> or <texture>).", name);
+                  " <spectrum> or <texture>).", name);
         }
     }
 
@@ -268,6 +268,44 @@ public:  // Type-specific getters and setters ----------------------------------
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         }
         return texture<Texture>(name);
+    }
+
+    /// Retrieve a texture multiplied by D65 if necessary (if the property is a float, create a D65 texture instead)
+    template <typename Texture>
+    ref<Texture> texture_d65(const std::string &name) const {
+        if (!has_property(name))
+            Throw("Property \"%s\" has not been specified!", name);
+
+        auto p_type = type(name);
+        if (p_type == Properties::Type::Object) {
+            ref<Object> object = find_object(name);
+            if (!object->class_()->derives_from(MI_CLASS(Texture)))
+                Throw("The property \"%s\" has the wrong type (expected "
+                      " <spectrum> or <texture>).", name);
+            mark_queried(name);
+            return (Texture *) Texture::D65((Texture *) object.get()).get();
+        } else if (p_type == Properties::Type::Float) {
+            return (Texture *) Texture::D65(get<Float>(name)).get();
+        } else {
+            Throw("The property \"%s\" has the wrong type (expected "
+                  " <spectrum> or <texture>).", name);
+        }
+    }
+
+    /// Retrieve a texture multiplied by D65 if necessary (use the provided texture if no entry exists)
+    template <typename Texture>
+    ref<Texture> texture_d65(const std::string &name, ref<Texture> def_val) const {
+        if (!has_property(name))
+            return def_val;
+        return texture_d65<Texture>(name);
+    }
+
+    /// Retrieve a texture multiplied by D65 if necessary (or create D65 texture with default value)
+    template <typename Texture, typename FloatType>
+    ref<Texture> texture_d65(const std::string &name, FloatType def_val) const {
+        if (!has_property(name))
+            return (Texture *) Texture::D65(def_val).get();
+        return texture_d65<Texture>(name);
     }
 
     /// Retrieve a 3D texture

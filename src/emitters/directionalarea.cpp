@@ -35,7 +35,7 @@ Similar to an area light, but emitting only in the normal direction.
 
         <shape type="sphere">
             <emitter type="directionalarea">
-                <spectrum name="radiance" value="1.0"/>
+                <rgb name="radiance" value="1.0"/>
             </emitter>
         </shape>
 
@@ -45,7 +45,7 @@ Similar to an area light, but emitting only in the normal direction.
         'emitter': {
             'type': 'directionalarea',
             'radiance': {
-                'type': 'spectrum',
+                'type': 'rgb',
                 'value': 1.0,
             }
         }
@@ -65,7 +65,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance       = props.texture("radiance", Texture::D65(1.f));
+        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
         m_needs_sample_3 = false;
 
         m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;

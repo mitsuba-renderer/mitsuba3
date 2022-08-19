@@ -90,7 +90,7 @@ operation remains efficient even if only a single pixel is turned on.
         :name: projector-light
 
         <emitter type="projector">
-            <spectrum name="irradiance" value="1.0"/>
+            <rgb name="irradiance" value="1.0"/>
             <float name="fov" value="45"/>
             <transform name="to_world">
                 <lookat origin="1, 1, 1"
@@ -103,7 +103,7 @@ operation remains efficient even if only a single pixel is turned on.
 
         'type': 'projector',
         'irradiance': {
-            'type': 'spectrum',
+            'type': 'rgb',
             'value': 1.0,
         },
         'fov': 45,
@@ -121,9 +121,9 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
-        m_intensity_scale = Texture::D65(props.get<ScalarFloat>("scale", 1));
+        m_intensity_scale = props.get<ScalarFloat>("scale", 1.f);
 
-        m_irradiance = props.texture<Texture>("irradiance");
+        m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
 
         ScalarVector2i size = m_irradiance->resolution();
         m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
@@ -135,7 +135,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("scale", m_intensity_scale.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("scale", m_intensity_scale, +ParamFlags::Differentiable);
         callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
@@ -232,7 +232,7 @@ public:
          * Note that:
          *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
          */
-        spec *= dr::Pi<Float> * m_intensity_scale->eval(it_query, active) /
+        spec *= dr::Pi<Float> * m_intensity_scale /
                 (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
 
         return { ds, depolarizer<Spectrum>(spec & active) };
@@ -252,14 +252,11 @@ public:
     }
 
     std::pair<Wavelength, Spectrum>
-    sample_wavelengths(const SurfaceInteraction3f &_si, Float sample,
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
-        SurfaceInteraction3f si(_si);
         auto [wav, weight] = m_irradiance->sample_spectrum(
             si, math::sample_shifted<Wavelength>(sample), active);
-        si.wavelengths = wav;
-        weight *= m_intensity_scale->eval(si, active);
-        return { wav, weight };
+        return { wav, weight * m_intensity_scale };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
@@ -283,6 +280,7 @@ public:
         oss << "Projector[" << std::endl
             << "  x_fov = " << m_x_fov << "," << std::endl
             << "  irradiance = " << string::indent(m_irradiance) << "," << std::endl
+            << "  intensity_scale = " << string::indent(m_intensity_scale) << "," << std::endl
             << "  to_world = " << string::indent(m_to_world) << std::endl
             << "]";
         return oss.str();
@@ -292,7 +290,7 @@ public:
 
 protected:
     ref<Texture> m_irradiance;
-    ref<Texture> m_intensity_scale;
+    Float m_intensity_scale;
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;

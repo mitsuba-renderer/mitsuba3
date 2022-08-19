@@ -84,50 +84,48 @@ void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengt
 template <typename Scalar>
 Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
                                        const std::vector<Scalar> &values,
-                                       bool bounded) {
-    Color<Scalar, 3> color = (Scalar) 0.f;
+                                       bool bounded, bool d65) {
+    Color<Scalar, 3> xyz = (Scalar) 0.f;
 
     const int steps = 1000;
     for (int i = 0; i < steps; ++i) {
-        Scalar x = (Scalar) MI_CIE_MIN +
+        Scalar w = (Scalar) MI_CIE_MIN +
                    (i / (Scalar)(steps - 1)) * ((Scalar) MI_CIE_MAX -
                                                 (Scalar) MI_CIE_MIN);
 
-        if (x < wavelengths.front() || x > wavelengths.back())
+        if (w < wavelengths.front() || w > wavelengths.back())
             continue;
 
         // Find interval containing 'x'
         uint32_t index = math::find_interval<uint32_t>(
             (uint32_t) wavelengths.size(),
             [&](uint32_t idx) {
-                return wavelengths[idx] <= x;
+                return wavelengths[idx] <= w;
             });
 
-        Scalar x0 = wavelengths[index],
-               x1 = wavelengths[index + 1],
-               y0 = values[index],
-               y1 = values[index + 1];
+        Scalar w0 = wavelengths[index],
+               w1 = wavelengths[index + 1],
+               v0 = values[index],
+               v1 = values[index + 1];
 
-        // Linear interpolant at 'x'
-        Scalar y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
-
-        Color<Scalar, 3> xyz = cie1931_xyz(x);
-        color += xyz * y;
+        // Linear interpolant at 'w'
+        Scalar v = ((w - w1) * v0 + (w0 - w) * v1) / (w0 - w1);
+        xyz += cie1931_xyz(w) * v * (d65 ? cie_d65(w) : Scalar(1));
     }
 
     // Last specified value repeats implicitly
-    color *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) / (Scalar) steps;
-    color = xyz_to_srgb(color);
+    xyz *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) / (Scalar) steps;
+    Color<Scalar, 3> rgb = xyz_to_srgb(xyz);
 
-    if (bounded && dr::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
-        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = clamp(color, (Scalar) 0.f, (Scalar) 1.f);
-    } else if (!bounded && dr::any(color < (Scalar) 0.f)) {
-        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = dr::maximum(color, (Scalar) 0.f);
+    if (bounded && dr::any(rgb < (Scalar) 0.f || rgb > (Scalar) 1.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", rgb);
+        rgb = clamp(rgb, (Scalar) 0.f, (Scalar) 1.f);
+    } else if (!bounded && dr::any(rgb < (Scalar) 0.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", rgb);
+        rgb = dr::maximum(rgb, (Scalar) 0.f);
     }
 
-    return color;
+    return rgb;
 }
 
 /// Explicit instantiations
@@ -147,10 +145,10 @@ template MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
 
 template MI_EXPORT_LIB Color<float, 3>
 spectrum_list_to_srgb(const std::vector<float> &wavelengths,
-                      const std::vector<float> &values, bool bounded);
+                      const std::vector<float> &values, bool bounded, bool d65);
 template MI_EXPORT_LIB Color<double, 3>
 spectrum_list_to_srgb(const std::vector<double> &wavelengths,
-                      const std::vector<double> &values, bool bounded);
+                      const std::vector<double> &values, bool bounded, bool d65);
 
 // =======================================================================
 //! @{ \name CIE 1931 2 degree observer implementation

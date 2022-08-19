@@ -213,8 +213,12 @@ public:
     /// Does this texture evaluation depend on the UV coordinates
     virtual bool is_spatially_varying() const { return false; }
 
-    /// Convenience method returning the standard D65 illuminant.
+    /// Convenience function returning the standard D65 illuminant
     static ref<Texture> D65(ScalarFloat scale = 1.f);
+
+    /// Convenience function to create a product texture of a texture and the
+    /// standard D65 illuminant
+    static ref<Texture> D65(ref<Texture> texture);
 
     /// Return a string identifier
     std::string id() const override { return m_id; }

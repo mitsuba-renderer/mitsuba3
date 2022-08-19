@@ -185,7 +185,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
                                </transform>
 
                                <emitter type="area">
-                                   <spectrum name="radiance" value="1"/>
+                                   <rgb name="radiance" value="1"/>
                                </emitter>
                            </shape>
 
@@ -277,7 +277,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
                                </transform>
 
                                <emitter type="area">
-                                   <spectrum name="radiance" value="1"/>
+                                   <rgb name="radiance" value="1"/>
                                </emitter>
                            </shape>
 

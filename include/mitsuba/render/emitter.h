@@ -63,7 +63,6 @@ public:
     /// Flags for all components combined.
     uint32_t flags(dr::mask_t<Float> /*active*/ = true) const { return m_flags; }
 
-
     DRJIT_VCALL_REGISTER(Float, mitsuba::Emitter)
 
     MI_DECLARE_CLASS()

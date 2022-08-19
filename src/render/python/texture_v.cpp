@@ -84,7 +84,7 @@ MI_PY_EXPORT(Texture) {
 
     MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
         .def(py::init<const Properties &>(), "props"_a)
-        .def_static("D65", &Texture::D65, "scale"_a = 1.f)
+        .def_static("D65", py::overload_cast<ScalarFloat>(&Texture::D65), "scale"_a = 1.f)
         .def_method(Texture, mean, D(Texture, mean))
         .def_method(Texture, max, D(Texture, max))
         .def_method(Texture, is_spatially_varying)

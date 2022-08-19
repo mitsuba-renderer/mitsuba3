@@ -215,14 +215,14 @@ def test07_dict_spectrum(variants_all_scalar):
     e1 = mi.load_dict({
         "type" : "point",
         "intensity" : {
-            "type" : "spectrum",
+            "type" : "rgb",
             "value" : 0.44
         }
     })
 
     e2 = mi.load_string("""
         <emitter type="point" version="3.0.0">
-            <spectrum name="intensity" value="0.44"/>
+            <rgb name="intensity" value="0.44"/>
         </emitter>
     """)
 
@@ -468,13 +468,12 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
 
 
 def test11_dict_spectrum_srgb(variant_scalar_rgb):
-    CIE_Y_NORMALIZATION = 1.0 / 106.7502593994140625
     spectrum = [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
 
     w = [s[0] for s in spectrum]
-    v = [s[1] * CIE_Y_NORMALIZATION for s in spectrum]
-    rgb = mi.spectrum_list_to_srgb(w, v)
-    assert dr.allclose(rgb, [0.442717, 0.278474, 0.118373])
+    v = [s[1] * mi.MI_CIE_Y_NORMALIZATION for s in spectrum]
+    rgb = mi.spectrum_list_to_srgb(w, v, d65=True)
+    assert dr.allclose(rgb, [0.380475, 0.289928, 0.134294])
 
     s1 = mi.load_dict({
         "type" : "spectrum",
@@ -483,7 +482,7 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
 
     s2 = mi.load_string(f"""
         <spectrum  type='srgb' version='2.0.0'>
-            <rgb name="color" value="0.442717, 0.278474, 0.118373"/>
+            <rgb name="color" value="0.380475, 0.289928, 0.134294"/>
         </spectrum>
     """)
 

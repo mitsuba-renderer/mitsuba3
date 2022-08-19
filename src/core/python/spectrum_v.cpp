@@ -12,6 +12,7 @@ MI_PY_EXPORT(Spectrum) {
     .def("luminance", [](Color<Float, 3> c) {
             return luminance(c);
         }, "c"_a, D(luminance))
+
     .def("cie1931_xyz", [](Float wavelengths) {
             return cie1931_xyz(wavelengths);
         }, "wavelength"_a, D(cie1931_xyz))
@@ -21,6 +22,10 @@ MI_PY_EXPORT(Spectrum) {
     .def("cie1931_y", [](Float wavelengths) {
             return cie1931_y(wavelengths);
         }, "wavelength"_a, D(cie1931_y))
+    .def("cie_d65", [](Float wavelengths) {
+            return cie_d65(wavelengths);
+        }, "wavelength"_a, D(cie_d65))
+
     .def("sample_rgb_spectrum", &sample_rgb_spectrum<Float>, "sample"_a,
         D(sample_rgb_spectrum))
     .def("sample_rgb_spectrum", &sample_rgb_spectrum<Spectrum>, "sample"_a,
@@ -53,12 +58,14 @@ MI_PY_EXPORT(Spectrum) {
 
     m.attr("MI_CIE_MIN") = MI_CIE_MIN;
     m.attr("MI_CIE_MAX") = MI_CIE_MAX;
+    m.attr("MI_CIE_Y_NORMALIZATION") = MI_CIE_Y_NORMALIZATION;
+    m.attr("MI_CIE_D65_NORMALIZATION") = MI_CIE_D65_NORMALIZATION;
 
     m.def("unpolarized_spectrum", [](const Spectrum &s) { return unpolarized_spectrum(s); }, "");
     m.def("depolarizer", [](const Spectrum &s) { return depolarizer(s); }, "");
 
     m.def("spectrum_list_to_srgb", &spectrum_list_to_srgb<ScalarFloat>,
-          "wavelengths"_a, "values"_a, "bounded"_a=true);
+          "wavelengths"_a, "values"_a, "bounded"_a=true, "d65"_a=false);
 
     m.def("spectrum_from_file",
         [] (const fs::path &filename) {
