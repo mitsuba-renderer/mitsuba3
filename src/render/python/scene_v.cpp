@@ -75,6 +75,9 @@ MI_PY_EXPORT(Scene) {
              "ref"_a, "ds"_a, "active"_a = true, D(Scene, pdf_emitter_direction))
         .def("eval_emitter_direction", &Scene::eval_emitter_direction,
              "ref"_a, "ds"_a, "active"_a = true, D(Scene, eval_emitter_direction))
+        .def("sample_emitter_ray", &Scene::sample_emitter_ray,
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a,
+             D(Scene, sample_emitter_ray))
         // Accessors
         .def_method(Scene, bbox)
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))

@@ -10352,7 +10352,7 @@
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.MI_ENABLE_EMBREE
     :type: bool
@@ -13054,7 +13054,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<unsigned long> >:
+        Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
     .. py:method:: mitsuba.PhaseFunctionPtr.entry_(self, arg0)
@@ -16608,6 +16608,46 @@
         * ``spec`` is a Monte Carlo sampling weight specifying the ratio of
         the radiance incident from the emitter and the sample probability per
         unit solid angle.
+
+    .. py:method:: mitsuba.Scene.sample_emitter_ray(self, time, sample1, sample2, sample3, active)
+
+        Sample a ray according to the emission profile of scene emitters
+
+        This function combines both steps of choosing a ray origin on a light
+        source and an outgoing ray direction. It does not return any auxiliary
+        sampling information and is mainly meant to be used by unidirectional
+        rendering techniques like particle tracing.
+
+        Sampling is ideally perfectly proportional to the emission profile,
+        though approximations are acceptable as long as these are reflected in
+        the returned Monte Carlo sampling weight.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray to be sampled.
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the emission profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`, drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >]:
+            A tuple ``(ray, weight, emitter, radiance)``, where
+
+        * ``ray`` is the sampled ray (e.g. starting on the surface of an area
+        emitter)
+
+        * ``weight`` returns the emitted radiance divided by the spatio-
+        directional sampling density
+
+        * ``emitter`` is a pointer specifying the sampled emitter
 
     .. py:method:: mitsuba.Scene.sensors(self)
 
