@@ -153,12 +153,17 @@ public:
 
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p    = m_to_world.value().transform_affine(Point3f(p.x(), p.y(), 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
         ps.delta = false;
+
+        Float r = dr::norm(p);
+        Float v = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Float>;
+        dr::masked(v, v < 0.f) += 1.f;
+        ps.uv = Point2f(r, v);
 
         return ps;
     }

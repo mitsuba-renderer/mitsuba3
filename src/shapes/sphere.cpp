@@ -181,7 +181,7 @@ public:
 
         Point3f local = warp::square_to_uniform_sphere(sample);
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p = dr::fmadd(local, m_radius.value(), m_center.value());
         ps.n = local;
 
@@ -191,6 +191,7 @@ public:
         ps.time = time;
         ps.delta = m_radius.value() == 0.f;
         ps.pdf = m_inv_surface_area;
+        ps.uv = sample;
 
         return ps;
     }

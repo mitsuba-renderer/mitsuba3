@@ -146,7 +146,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        PositionSample3f ps;
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p = m_to_world.value().transform_affine(
             Point3f(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
         ps.n    = m_frame.n;
