@@ -132,6 +132,31 @@ struct Spectrum<dr::detail::MaskedArray<Value_>, Size_>
 #define MI_CIE_Y_NORMALIZATION (1.0 / 106.7502593994140625)
 
 /**
+ * D65 illuminant data from CIE, expressed as relative spectral power
+ * distribution, normalized relative to the power at 560nm.
+ */
+const float d65_table[MI_CIE_SAMPLES] = {
+    46.6383f, 49.3637f, 52.0891f, 51.0323f, 49.9755f, 52.3118f, 54.6482f,
+    68.7015f, 82.7549f, 87.1204f, 91.486f,  92.4589f, 93.4318f, 90.057f,
+    86.6823f, 95.7736f, 104.865f, 110.936f, 117.008f, 117.41f,  117.812f,
+    116.336f, 114.861f, 115.392f, 115.923f, 112.367f, 108.811f, 109.082f,
+    109.354f, 108.578f, 107.802f, 106.296f, 104.79f,  106.239f, 107.689f,
+    106.047f, 104.405f, 104.225f, 104.046f, 102.023f, 100.0f,   98.1671f,
+    96.3342f, 96.0611f, 95.788f,  92.2368f, 88.6856f, 89.3459f, 90.0062f,
+    89.8026f, 89.5991f, 88.6489f, 87.6987f, 85.4936f, 83.2886f, 83.4939f,
+    83.6992f, 81.863f,  80.0268f, 80.1207f, 80.2146f, 81.2462f, 82.2778f,
+    80.281f,  78.2842f, 74.0027f, 69.7213f, 70.6652f, 71.6091f, 72.979f,
+    74.349f,  67.9765f, 61.604f,  65.7448f, 69.8856f, 72.4863f, 75.087f,
+    69.3398f, 63.5927f, 55.0054f, 46.4182f, 56.6118f, 66.8054f, 65.0941f,
+    63.3828f, 63.8434f, 64.304f,  61.8779f, 59.4519f, 55.7054f, 51.959f,
+    54.6998f, 57.4406f, 58.8765f, 60.3125f
+};
+
+/* Scaling the CIE D65 spectrum curve by the following constant ensures that
+   it integrates to a luminance of 1.0 */
+#define MI_CIE_D65_NORMALIZATION (1.0 / 98.99741751876255)
+
+/**
  * \brief Struct carrying color space tables with fits for \ref cie1931_xyz and
  * \ref cie1931_y as well as corresponding precomputed ITU-R Rec. BT.709 linear
  * RGB tables.
@@ -152,6 +177,8 @@ template <typename Float> struct CIE1932Tables {
         );
 
         srgb = xyz_to_srgb(xyz);
+
+        d65 = dr::load<FloatStorage>(d65_table, MI_CIE_SAMPLES);
     }
 
     void release() {
@@ -160,12 +187,15 @@ template <typename Float> struct CIE1932Tables {
         initialized = false;
 
         xyz = srgb = Color<FloatStorage, 3>();
+        d65 = FloatStorage();
     }
 
     /// CIE 1931 XYZ color tables
     Color<FloatStorage, 3> xyz;
     /// ITU-R Rec. BT.709 linear RGB tables
     Color<FloatStorage, 3> srgb;
+    /// CIE D65 illuminant spectrum table
+    FloatStorage d65;
 
 private:
     bool initialized = false;
@@ -265,6 +295,37 @@ Float cie1931_y(Float wavelength, dr::mask_t<Float> active = true) {
 }
 
 /**
+ * \brief Evaluate the CIE D65 illuminant spectrum given a wavelength in
+ * nanometers, normalized to ensures that it integrates to a luminance of 1.0.
+ */
+template <typename Float>
+Float cie_d65(Float wavelength, dr::mask_t<Float> active = true) {
+    using UInt32      = dr::uint32_array_t<Float>;
+    using Float32     = dr::float32_array_t<Float>;
+    using ScalarFloat = dr::scalar_t<Float>;
+
+    Float t = (wavelength - (ScalarFloat) MI_CIE_MIN) *
+              ((MI_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MI_CIE_MAX - (ScalarFloat) MI_CIE_MIN));
+
+    active &= wavelength >= (ScalarFloat) MI_CIE_MIN &&
+              wavelength <= (ScalarFloat) MI_CIE_MAX;
+
+    UInt32 i0 = dr::clamp(UInt32(t), dr::zeros<UInt32>(), UInt32(MI_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
+
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0 = (Float) dr::gather<Float32>(tables.d65, i0, active);
+    Float v1 = (Float) dr::gather<Float32>(tables.d65, i1, active);
+
+    Float w1 = t - Float(i0),
+          w0 = (ScalarFloat) 1.f - w1;
+
+    Float v = dr::fmadd(w0, v0, w1 * v1) * (ScalarFloat) MI_CIE_D65_NORMALIZATION;
+
+    return dr::select(active, v, Float(0.f));
+}
+/**
  * \brief Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
  * given a wavelength in nanometers
  */
@@ -300,26 +361,34 @@ Result linear_rgb_rec(Float wavelength, dr::mask_t<Float> active = true) {
                   dr::fmadd(w0, v0_b, w1 * v1_b)) & dr::mask_t<Result>(active, active, active);
 }
 
-/// Spectral responses to XYZ.
+/**
+ * \brief Spectral responses to XYZ normalized according to the CIE curves to
+ * ensure that a unit-valued spectrum integrates to a luminance of 1.0.
+ */
 template <typename Float, size_t Size>
 Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
                                 const Spectrum<Float, Size> &wavelengths,
                                 dr::mask_t<Float> active = true) {
     dr::Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
-    return { dr::mean(XYZ.x() * value),
-             dr::mean(XYZ.y() * value),
-             dr::mean(XYZ.z() * value) };
+    Color<Float, 3> res = { dr::mean(XYZ.x() * value),
+                            dr::mean(XYZ.y() * value),
+                            dr::mean(XYZ.z() * value) };
+    return res * MI_CIE_Y_NORMALIZATION;
 }
 
-/// Spectral responses to sRGB.
+/**
+ * \brief Spectral responses to sRGB normalized according to the CIE curves to
+ * ensure that a unit-valued spectrum integrates to a luminance of 1.0.
+ */
 template <typename Float, size_t Size>
 Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
                                  const Spectrum<Float, Size> &wavelengths,
                                  dr::mask_t<Float> active = true) {
     dr::Array<Spectrum<Float, Size>, 3> rgb = linear_rgb_rec(wavelengths, active);
-    return { dr::mean(rgb.x() * value),
-             dr::mean(rgb.y() * value),
-             dr::mean(rgb.z() * value) };
+    Color<Float, 3> res = { dr::mean(rgb.x() * value),
+                            dr::mean(rgb.y() * value),
+                            dr::mean(rgb.z() * value) };
+    return res * MI_CIE_Y_NORMALIZATION;
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
@@ -443,7 +512,7 @@ MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
                                     const std::vector<Scalar> &values);
 
 /**
- * \brief Tranform a spectrum into a set of equivalent sRGB coefficients
+ * \brief Transform a spectrum into a set of equivalent sRGB coefficients
  *
  * When ``bounded`` is set, the resulting sRGB coefficients will be at most 1.0.
  * In any case, sRGB coefficients will be clamped to 0 if they are negative.
@@ -453,12 +522,15 @@ MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
  * \param values
  *     Array with the values at the previously specified wavelengths
  * \param bounded
- *     Boolean that controls if clamping is required.
+ *     Boolean that controls if clamping is required. (default: True)
+ * \param d65
+ *     Should the D65 illuminant be included in the integration. (default: False)
  */
 template <typename Scalar>
 MI_EXPORT_LIB Color<Scalar, 3>
 spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values,
-                      bool bounded = true);
+                      bool bounded = true,
+                      bool d65 = false);
 
 NAMESPACE_END(mitsuba)

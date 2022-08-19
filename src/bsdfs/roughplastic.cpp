@@ -120,7 +120,7 @@ The following XML snippet describes a material definition for black plastic mate
         <bsdf type="roughplastic">
             <string name="distribution" value="beckmann"/>
             <float name="int_ior" value="1.61"/>
-            <spectrum name="diffuse_reflectance" value="0"/>
+            <rgb name="diffuse_reflectance" value="0"/>
         </bsdf>
 
     .. code-tab:: python
@@ -129,7 +129,7 @@ The following XML snippet describes a material definition for black plastic mate
         'distribution': 'beckmann',
         'int_ior': 1.61,
         'diffuse_reflectance': {
-            'type': 'spectrum',
+            'type': 'rgb',
             'value': 0
         }
 

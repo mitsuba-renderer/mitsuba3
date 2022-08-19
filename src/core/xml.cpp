@@ -250,7 +250,6 @@ struct XMLParseContext {
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
-    bool spectral_unbounded = false;
     std::string variant;
     bool parallel;
 
@@ -541,24 +540,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 name      = node.attribute("name").value(),
                                 type      = node.attribute("type").value(),
                                 node_name = node.name();
-
-                    /*
-                     * Detect that we are using a Spectral Film and change spectral context
-                     *
-                     * This is necessary because in a normal Spectral to RGB rendering, the system uses
-                     * D65 illuminants for emitters and a normalization to keep Spectral and RGB
-                     * renderings similar. When using the Spectral Film, we potentially work outside
-                     * of the visible range (so D65 by default may not be ideal). Furthermore, the
-                     * normalization constant does not help in this scenario.
-                     *
-                     * It is needed to put the spectral film as the first thing before anything that
-                     * needs correction inside the scene description.
-                     */
-                    if (type == "specfilm") {
-                        ctx.spectral_unbounded = true;
-                        Log(Info, "Spectral Film detected during scene loading."
-                                  "\"D65\" emitters and \"MI_CIE_Y_NORMALIZATION\" have been disabled");
-                    }
 
                     Properties props_nested(type);
                     props_nested.set_id(id);
@@ -873,8 +854,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         name, const_value, wavelengths, values, ctx.variant,
                         within_emitter,
                         ctx.color_mode == ColorMode::Spectral,
-                        ctx.color_mode == ColorMode::Monochromatic,
-                        ctx.spectral_unbounded);
+                        ctx.color_mode == ColorMode::Monochromatic);
 
                     props.set_object(name, obj);
                 }
@@ -1118,7 +1098,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
             #if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
                 if (ctx.is_jit()) {
-                    // Ensures dr::scatter occuring in object constructors are flushed
+                    // Ensures dr::scatter occurring in object constructors are flushed
                     dr::eval();
                     if (ctx.parallel)
                         dr::sync_thread();
@@ -1193,14 +1173,18 @@ ref<Object> create_texture_from_rgb(const std::string &name,
                                     Color<float, 3> color,
                                     const std::string &variant,
                                     bool within_emitter) {
-    Properties props(within_emitter ? "srgb_d65" : "srgb");
+    Properties props(within_emitter ? "d65" : "srgb");
     props.set_color("color", color);
 
     if (!within_emitter && is_unbounded_spectrum(name))
         props.set_bool("unbounded", true);
 
-    return PluginManager::instance()->create_object(
+    ref<Object> texture = PluginManager::instance()->create_object(
         props, Class::for_name("Texture", variant));
+    std::vector<ref<Object>> children = texture->expand();
+    if (!children.empty())
+        return (Object *) children[0].get();
+    return texture;
 }
 
 ref<Object> create_texture_from_spectrum(const std::string &name,
@@ -1210,36 +1194,38 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                                          const std::string &variant,
                                          bool within_emitter,
                                          bool is_spectral_mode,
-                                         bool is_monochromatic_mode,
-                                         bool spectral_unbounded) {
+                                         bool is_monochromatic_mode) {
     const Class *class_ = Class::for_name("Texture", variant);
 
+    bool is_unbounded = is_unbounded_spectrum(name);
     if (wavelengths.empty()) {
-        Properties props("uniform");
-        if (within_emitter && is_spectral_mode && !spectral_unbounded) {
-            props.set_plugin_name("d65");
-            props.set_float("scale", const_value);
+        if (!is_spectral_mode && within_emitter && !is_unbounded) {
+            /* A uniform spectrum does not produce a uniform RGB response in the
+               sRGB (which has a D65 white point). The call to 'xyz_to_srgb'
+               computes this purple-ish color and uses it to initialize the
+               'srgb' plugin. This is needed mainly for consistency between RGB
+               and spectral variants of Mitsuba. */
+            Color3f color = const_value * xyz_to_srgb(Color3f(1.0));
+            Properties props("srgb");
+            props.set_color("color", color);
+            props.set_bool("unbounded", true);
+            return PluginManager::instance()->create_object(props, class_);
         } else {
+            Properties props("uniform");
             props.set_float("value", const_value);
+            return PluginManager::instance()->create_object(props, class_);
         }
-
-        ref<Object> obj = PluginManager::instance()->create_object(props, class_);
-        auto expanded = obj->expand();
-        Assert(expanded.size() <= 1);
-        if (!expanded.empty())
-            obj = expanded[0];
-        return obj;
     } else {
-        /* Values are scaled so that integrating the spectrum against the CIE curves
-            and converting to sRGB yields (1, 1, 1) for D65. */
-        Float unit_conversion = 1;
-        if ((within_emitter && !spectral_unbounded) || !is_spectral_mode)
-            unit_conversion = Float(MI_CIE_Y_NORMALIZATION);
-
         /* Detect whether wavelengths are regularly sampled and potentially
-            apply the conversion factor. */
+           apply the conversion factor. */
         Float min_interval = std::numeric_limits<Float>::infinity(),
               max_interval = 0.0;
+
+        /* Values should be scaled so that integrating the spectrum against the
+           CIE curves and converting to sRGB yields (1, 1, 1) for D65 in
+           non-spectral modes. */
+        Float unit_conversion =
+            !is_spectral_mode ? Float(MI_CIE_Y_NORMALIZATION) : Float(1.f);
 
         for (size_t n = 0; n < wavelengths.size(); ++n) {
             values[n] *= unit_conversion;
@@ -1278,19 +1264,25 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
             return PluginManager::instance()->create_object(props, class_);
         } else {
-            // In non-spectral mode, pre-integrate against the CIE matching curves
+            /* Pre-integrate against the CIE matching curves. In order to match
+            the behavior of spectral modes, this function should instead
+            pre-integrate against the product of the CIE curves and the CIE D65
+            curve in the case of reflectance values. */
             Color3f color = spectrum_list_to_srgb(
-                wavelengths, values, !(within_emitter || is_unbounded_spectrum(name)));
+                wavelengths, values,
+                /* bounded */ !(within_emitter || is_unbounded),
+                /* d65 */ !(within_emitter && !is_unbounded));
+
 
             Properties props;
             if (is_monochromatic_mode) {
                 props = Properties("uniform");
                 props.set_float("value", luminance(color));
             } else {
-                props = Properties(within_emitter ? "srgb_d65" : "srgb");
+                props = Properties("srgb");
                 props.set_color("color", color);
 
-                if (!within_emitter && is_unbounded_spectrum(name))
+                if (within_emitter || is_unbounded)
                     props.set_bool("unbounded", true);
             }
 

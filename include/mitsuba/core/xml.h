@@ -63,8 +63,7 @@ extern MI_EXPORT_LIB ref<Object> create_texture_from_spectrum(
                                         const std::string &variant,
                                         bool within_emitter,
                                         bool is_spectral_mode,
-                                        bool is_monochromatic_mode,
-                                        bool spectral_unbounded);
+                                        bool is_monochromatic_mode);
 
 /// Expands a node (if it does not expand it is wrapped into a std::vector)
 extern MI_EXPORT_LIB std::vector<ref<Object>> expand_node(

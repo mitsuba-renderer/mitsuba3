@@ -43,7 +43,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
         <emitter type="directional">
             <vector name="direction" value="1.0, 0.0, 0.0"/>
-            <spectrum name="irradiance" value="1.0"/>
+            <rgb name="irradiance" value="1.0"/>
         </emitter>
 
     .. code-tab:: python
@@ -51,7 +51,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
         'type': 'directional',
         'direction': [1.0, 0.0, 0.0],
         'irradiance': {
-            'type': 'spectrum',
+            'type': 'rgb',
             'value': 1.0,
         }
 
@@ -79,7 +79,11 @@ public:
             dr::make_opaque(m_to_world);
         }
 
-        m_irradiance = props.texture<Texture>("irradiance", Texture::D65(1.f));
+        m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
+
+        if (m_irradiance->is_spatially_varying())
+            Throw("Expected a non-spatially varying irradiance spectra!");
+
         m_needs_sample_3 = false;
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;

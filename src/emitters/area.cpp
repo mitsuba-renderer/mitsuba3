@@ -38,7 +38,7 @@ emitter shape and specify an :monosp:`area` instance as its child:
 
         <shape type="sphere">
             <emitter type="area">
-                <spectrum name="radiance" value="1.0"/>
+                <rgb name="radiance" value="1.0"/>
             </emitter>
         </shape>
 
@@ -48,7 +48,7 @@ emitter shape and specify an :monosp:`area` instance as its child:
         'emitter': {
             'type': 'area',
             'radiance': {
-                'type': 'spectrum',
+                'type': 'rgb',
                 'value': 1.0,
             }
         }
@@ -67,12 +67,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
-            // TODO: this should probably be done in the parser, just like with
-            // non-textured spectra.
-            m_d65 = Texture::D65(1.f);
-        }
+        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
@@ -89,8 +84,6 @@ public:
 
         auto result = depolarizer<Spectrum>(m_radiance->eval(si, active)) &
                       (Frame3f::cos_theta(si.wi) > 0.f);
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
-            result *= m_d65->eval(si, active);
 
         return result;
     }
@@ -161,10 +154,6 @@ public:
         }
 
         UnpolarizedSpectrum spec = m_radiance->eval(si, active) / ds.pdf;
-
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
-            spec *= m_d65->eval(si, active);
-
         ds.emitter = this;
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
@@ -199,9 +188,6 @@ public:
 
         SurfaceInteraction3f si(ds, it.wavelengths);
         UnpolarizedSpectrum spec = m_radiance->eval(si, active);
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
-            spec *= m_d65->eval(si, active);
-
         return dr::select(active, depolarizer<Spectrum>(spec), 0.f);
     }
 
@@ -237,14 +223,8 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
-        auto [wav, weight] = m_radiance->sample_spectrum(
+        return m_radiance->sample_spectrum(
             si, math::sample_shifted<Wavelength>(sample), active);
-        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
-            SurfaceInteraction3f si2(si);
-            si2.wavelengths = wav;
-            weight *= m_d65->eval(si2, active);
-        }
-        return { wav, weight };
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
@@ -265,7 +245,7 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    ref<Texture> m_radiance, m_d65;
+    ref<Texture> m_radiance;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)

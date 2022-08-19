@@ -65,13 +65,34 @@ Float Texture<Float, Spectrum>::pdf_position(const Point2f &, Mask) const {
 
 MI_VARIANT ref<Texture<Float, Spectrum>>
 Texture<Float, Spectrum>::D65(ScalarFloat scale) {
-    Properties props(is_spectral_v<Spectrum> ? "d65" : "uniform");
-    props.set_float(is_spectral_v<Spectrum> ? "scale" : "value", Properties::Float(scale));
+    Properties props("d65");
+    props.set_float("scale", Properties::Float(scale));
     ref<Texture> texture = PluginManager::instance()->create_object<Texture>(props);
     std::vector<ref<Object>> children = texture->expand();
     if (!children.empty())
         return (Texture *) children[0].get();
     return texture;
+}
+
+MI_VARIANT ref<Texture<Float, Spectrum>>
+Texture<Float, Spectrum>::D65(ref<Texture> texture) {
+    if constexpr (!is_spectral_v<Spectrum>) {
+        return texture;
+    } else {
+        std::vector<std::string> plugins = {
+            "srgb", "bitmap", "checkerboard", "mesh_attribute"
+        };
+        if (string::contains(plugins, texture->class_()->name())) {
+            Properties props("d65");
+            props.set_object("nested", texture);
+            ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
+            std::vector<ref<Object>> children = texture2->expand();
+            if (!children.empty())
+                return (Texture *) children[0].get();
+            return texture2;
+        }
+        return texture;
+    }
 }
 
 MI_VARIANT typename Texture<Float, Spectrum>::ScalarVector2i

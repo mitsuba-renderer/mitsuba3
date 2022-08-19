@@ -6,8 +6,8 @@ import mitsuba as mi
 @pytest.mark.slow
 def test01_chi2_smooth(variants_vec_backends_once_rgb):
     xml = """<float name="alpha" value="0.05"/>
-             <spectrum name="specular_reflectance" value="0.7"/>
-             <spectrum name="diffuse_reflectance" value="0.1"/>"""
+             <rgb name="specular_reflectance" value="0.7"/>
+             <rgb name="diffuse_reflectance" value="0.1"/>"""
     sample_func, pdf_func = mi.chi2.BSDFAdapter("roughplastic", xml)
 
     chi2 = mi.chi2.ChiSquareTest(
@@ -25,8 +25,8 @@ def test01_chi2_smooth(variants_vec_backends_once_rgb):
 @pytest.mark.slow
 def test02_chi2_rough(variants_vec_backends_once_rgb):
     xml = """<float name="alpha" value="0.25"/>
-             <spectrum name="specular_reflectance" value="0.7"/>
-             <spectrum name="diffuse_reflectance" value="0.1"/>"""
+             <rgb name="specular_reflectance" value="0.7"/>
+             <rgb name="diffuse_reflectance" value="0.1"/>"""
     sample_func, pdf_func = mi.chi2.BSDFAdapter("roughplastic", xml)
 
     chi2 = mi.chi2.ChiSquareTest(

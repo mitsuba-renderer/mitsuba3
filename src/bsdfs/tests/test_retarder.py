@@ -324,7 +324,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
                                </transform>
 
                                <emitter type="area">
-                                   <spectrum name="radiance" value="1"/>
+                                   <rgb name="radiance" value="1"/>
                                </emitter>
                            </shape>
 
@@ -440,7 +440,7 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
                                </transform>
 
                                <emitter type="area">
-                                   <spectrum name="radiance" value="1"/>
+                                   <rgb name="radiance" value="1"/>
                                </emitter>
                            </shape>
 

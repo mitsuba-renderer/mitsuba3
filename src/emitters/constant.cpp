@@ -33,14 +33,14 @@ geometry that uses basic (e.g. diffuse) materials.
         :name: constant-light
 
         <emitter type="constant">
-            <spectrum name="radiance" value="1.0"/>
+            <rgb name="radiance" value="1.0"/>
         </emitter>
 
     .. code-tab:: python
 
         'type': 'constant',
         'radiance': {
-            'type': 'spectrum',
+            'type': 'rgb',
             'value': 1.0,
         }
 
@@ -58,7 +58,11 @@ public:
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
-        m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
+        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
+
+        if (m_radiance->is_spatially_varying())
+            Throw("Expected a non-spatially varying radiance spectra!");
+
         m_flags = +EmitterFlags::Infinite;
         dr::set_attr(this, "flags", m_flags);
     }

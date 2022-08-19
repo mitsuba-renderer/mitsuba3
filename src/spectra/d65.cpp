@@ -1,27 +1,9 @@
 #include <mitsuba/render/texture.h>
-#include <mitsuba/core/properties.h>
+#include <mitsuba/render/srgb.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-/**
- * D65 illuminant data from CIE, expressed as relative spectral power distribution,
- * normalized relative to the power at 560nm.
- */
-const float data[95] = {
-    46.6383f,  49.3637f,  52.0891f,  51.0323f,  49.9755f,  52.3118f,  54.6482f,  68.7015f,
-    82.7549f,  87.1204f,  91.486f,   92.4589f,  93.4318f,  90.057f,   86.6823f,  95.7736f,
-    104.865f,  110.936f,  117.008f,  117.41f,   117.812f,  116.336f,  114.861f,  115.392f,
-    115.923f,  112.367f,  108.811f,  109.082f,  109.354f,  108.578f,  107.802f,  106.296f,
-    104.79f,   106.239f,  107.689f,  106.047f,  104.405f,  104.225f,  104.046f,  102.023f,
-    100.0f,    98.1671f,  96.3342f,  96.0611f,  95.788f,   92.2368f,  88.6856f,  89.3459f,
-    90.0062f,  89.8026f,  89.5991f,  88.6489f,  87.6987f,  85.4936f,  83.2886f,  83.4939f,
-    83.6992f,  81.863f,   80.0268f,  80.1207f,  80.2146f,  81.2462f,  82.2778f,  80.281f,
-    78.2842f,  74.0027f,  69.7213f,  70.6652f,  71.6091f,  72.979f,   74.349f,   67.9765f,
-    61.604f,   65.7448f,  69.8856f,  72.4863f,  75.087f,   69.3398f,  63.5927f,  55.0054f,
-    46.4182f,  56.6118f,  66.8054f,  65.0941f,  63.3828f,  63.8434f,  64.304f,   61.8779f,
-    59.4519f,  55.7054f,  51.959f,   54.6998f,  57.4406f,  58.8765f,  60.3125f
-};
 
 /**!
 
@@ -31,17 +13,42 @@ D65 spectrum (:monosp:`d65`)
 ----------------------------
 
 .. pluginparameters::
+ :extra-rows: 2
+
+ * - color
+   - :paramtype:`color`
+   - The corresponding sRGB color value.
 
  * - scale
    - |float|
    - Optional scaling factor applied to the emitted spectrum. (Default: 1.0)
 
-The CIE Standard Illuminant D65 corresponds roughly to the average midday light in Europe,
-also called a daylight illuminant. It is the default emission spectrum used for light sources
-in all spectral rendering modes.
+ * - (Nested plugin)
+   - :paramtype:`texture`
+   - Underlying texture/spectra to be multiplied by D65.
+   - |exposed|, |differentiable|
 
-This plugin, once instantiated, will usually automatically be converted into a
-`spectrum-regular`_ instance.
+ * - color
+   - :paramtype:`color`
+   - Spectral upsampling model coefficients of the srgb color value.
+   - |exposed|, |differentiable|
+
+
+The CIE Standard Illuminant D65 corresponds roughly to the average midday light
+in Europe, also called a daylight illuminant. It is the default emission
+spectrum used for light sources in all spectral rendering modes.
+
+The D65 spectrum can be multiplied by a color value specified using the ``color``
+parameters.
+
+Alternatively, it is possible to modulate the D65 illuminant with a spectrally
+or\and spatially varying signal defined by a nested texture plugin. This is used
+in many emitter plugins when the radiance quantity might be driven by a 2D
+texture but also needs to be multiplied with the D65 spectrum.
+
+In RGB rendering modes, the D65 illuminant isn't relevant therefore this plugin
+expands into another plugin type (e.g. ``uniform``, ``srgb``, ...) as the
+product isn't required in this case.
 
 .. tabs::
     .. code-tab:: xml
@@ -49,7 +56,7 @@ This plugin, once instantiated, will usually automatically be converted into a
 
         <shape type=".. shape type ..">
             <emitter type="area">
-                <spectrum type="d65" name="radiance" />
+                <spectrum type="d65" />
             </emitter>
         </shape>
 
@@ -58,9 +65,7 @@ This plugin, once instantiated, will usually automatically be converted into a
         'type': '.. shape type ..',
         'emitter': {
             'type': 'area',
-            'radiance': {
-                'type': 'd65',
-            }
+            'radiance': { 'type': 'd65', }
         }
 
  */
@@ -68,42 +73,246 @@ This plugin, once instantiated, will usually automatically be converted into a
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public Texture<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_BASE(Texture)
+    MI_IMPORT_TYPES()
 
-    D65Spectrum(const Properties &props) : Texture(props) {
-        /* The default scale factor is set so that integrating
-           the spectrum against the CIE curves & converting to
-           sRGB yields a pixel value of (1, 1, 1) */
+    D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
-        m_scale *= 1.f / 10568.f;
+
+        auto objects = props.objects(true);
+        if (objects.size() > 1)
+            Throw("Only a single texture child object can be specified.");
+        if (objects.size() == 1) {
+            m_nested_texture = dynamic_cast<Base *>(objects[0].second.get());
+            if (!m_nested_texture)
+                Throw("Child object should be a texture object.");
+        }
+
+        if (props.has_property("color")) {
+            if (m_nested_texture)
+                Throw("Color and child texture object shouldn't be specifed at "
+                      "the same time.");
+
+            ScalarColor3f color = props.get<ScalarColor3f>("color");
+
+            if constexpr (is_spectral_v<Spectrum>) {
+                /* Evaluate the spectral upsampling model. This requires a
+                   reflectance value (colors in [0, 1]) which is accomplished here by
+                   scaling. We use a color where the highest component is 50%,
+                   which generally yields a fairly smooth spectrum. */
+                ScalarFloat factor = dr::max(color) * 2.f;
+                if (factor != 0.f)
+                    color /= factor;
+                m_scale *= factor;
+
+                m_value = srgb_model_fetch(color);
+            } else if constexpr (is_rgb_v<Spectrum>) {
+                m_value = color;
+            } else {
+                static_assert(is_monochromatic_v<Spectrum>);
+                m_value = luminance(color);
+            }
+
+            dr::make_opaque(m_value);
+            m_has_value = true;
+        }
+
+        Properties props_d65("regular");
+        props_d65.set_float("wavelength_min", (Properties::Float) MI_CIE_MIN);
+        props_d65.set_float("wavelength_max", (Properties::Float) MI_CIE_MAX);
+        props_d65.set_int("size", MI_CIE_SAMPLES);
+        Properties::Float data[MI_CIE_SAMPLES];
+        for (size_t i = 0; i < MI_CIE_SAMPLES; ++i)
+            data[i] = Properties::Float(d65_table[i] * m_scale * ScalarFloat(MI_CIE_D65_NORMALIZATION));
+        props_d65.set_pointer("values", (const void *) &data[0]);
+        m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        if (m_nested_texture)
+            callback->put_object("nested_texture", m_nested_texture.get(), +ParamFlags::Differentiable);
+        if (m_has_value)
+            callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+        callback->put_object("d65", m_d65, +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        if (m_has_value)
+            dr::make_opaque(m_value);
     }
 
     std::vector<ref<Object>> expand() const override {
-        // This plugin recursively expands into an instance of 'interpolated'
-        Properties props("regular");
-        props.set_float("wavelength_min", (Properties::Float) MI_CIE_MIN);
-        props.set_float("wavelength_max", (Properties::Float) MI_CIE_MAX);
-        props.set_int("size", 95);
-        Properties::Float tmp[95];
-        for (size_t i = 0; i < 95; ++i)
-            tmp[i] = Properties::Float(data[i] * m_scale);
-        props.set_pointer("values", (const void *) &tmp[0]);
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (!m_nested_texture && !m_has_value)
+                return { (Object *) m_d65.get() };
+            return { };
+        } else {
+            if (m_nested_texture)
+                 return { (Object *) m_nested_texture.get() };
 
-        PluginManager *pmgr = PluginManager::instance();
-        return { ref<Object>(pmgr->create_object<Texture>(props)) };
+            if (m_has_value) {
+                Properties props("srgb");
+                props.set_color("color", dr::slice(m_value) * m_scale);
+                props.set_bool("unbounded", true);
+                return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+            }
+
+            Properties props("uniform");
+            props.set_float("value", Properties::Float(m_scale));
+            return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+        }
+    }
+
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            UnpolarizedSpectrum d65_val = m_d65->eval(si, active);
+            if (m_has_value)
+                return d65_val * srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
+            else
+                return d65_val * m_nested_texture->eval(si, active);
+        } else {
+            NotImplementedError("eval");
+        }
+    }
+
+    std::pair<Wavelength, UnpolarizedSpectrum>
+    sample_spectrum(const SurfaceInteraction3f &si, const Wavelength &sample,
+                    Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_has_value) {
+                // TODO: better sampling strategy
+                SurfaceInteraction3f si2(si);
+                si2.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+                return { si2.wavelengths, eval(si2, active) * (MI_CIE_MAX - MI_CIE_MIN) };
+            } else {
+                auto [wav, weight] = m_nested_texture->sample_spectrum(si, sample, active);
+                SurfaceInteraction3f si2(si);
+                si2.wavelengths = wav;
+                return { wav, weight * m_d65->eval(si2, active) };
+            }
+        } else {
+            NotImplementedError("sample_spectrum");
+        }
+    }
+
+    Wavelength pdf_spectrum(const SurfaceInteraction3f &si, Mask active) const override {
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_nested_texture)
+                return m_nested_texture->pdf_spectrum(si, active);
+            else if (m_has_value)
+                return dr::rcp(MI_CIE_MAX - MI_CIE_MIN);
+            else
+                return Base::pdf_spectrum(si, active);
+        } else {
+            NotImplementedError("pdf_spectrum");
+        }
+    }
+
+    std::pair<Point2f, Float> sample_position(const Point2f &sample, Mask active) const override {
+        if (m_nested_texture)
+            return m_nested_texture->sample_position(sample, active);
+        else
+            return Base::sample_position(sample, active);
+    }
+
+    Float pdf_position(const Point2f &p, Mask active) const override {
+        if (m_nested_texture)
+            return m_nested_texture->pdf_position(p, active);
+        else
+            return Base::pdf_position(p, active);
+    }
+
+    Float eval_1(const SurfaceInteraction3f &si, Mask active) const override {
+        if (m_nested_texture)
+            return m_nested_texture->eval_1(si, active);
+        else
+            return Base::eval_1(si, active);
+    }
+
+    Vector2f eval_1_grad(const SurfaceInteraction3f &si, Mask active) const override {
+        if (m_nested_texture)
+            return m_nested_texture->eval_1_grad(si, active);
+        else
+            return Base::eval_1_grad(si, active);
+    }
+
+    Color3f eval_3(const SurfaceInteraction3f &si, Mask active) const override {
+        if (m_nested_texture)
+            return m_nested_texture->eval_3(si, active);
+        else
+            return Base::eval_3(si, active);
+    }
+
+    Float mean() const override {
+        if (m_nested_texture)
+            return m_nested_texture->mean();
+        else
+            return dr::mean(m_value);
+    }
+
+    ScalarVector2i resolution() const override {
+        if (m_nested_texture)
+            return m_nested_texture->resolution();
+        else
+            return Base::resolution();
+    }
+
+    ScalarFloat spectral_resolution() const override {
+        return (MI_CIE_MAX - MI_CIE_MAX) / (MI_CIE_SAMPLES - 1);
+    }
+
+    ScalarVector2f wavelength_range() const override {
+        if (m_nested_texture)
+            return m_nested_texture->wavelength_range();
+        else
+            return ScalarVector2f(MI_CIE_MIN, MI_CIE_MAX);
+    }
+
+    ScalarFloat max() const override {
+        if (m_nested_texture)
+            return m_nested_texture->max();
+        else
+            return dr::max_nested(srgb_model_mean(m_value));
+    }
+
+    bool is_spatially_varying() const override {
+        if (m_nested_texture)
+            return m_nested_texture->is_spatially_varying();
+        else
+            return false;
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "D65Spectrum[" << std::endl
-            << "  scale = " << m_scale << std::endl
-            << "]";
+        oss << "D65Spectrum[" << std::endl;
+        oss << "  scale = " << m_scale << std::endl;
+        if (m_nested_texture)
+            oss << "  nested_texture = " << string::indent(m_nested_texture) << std::endl;
+        if (m_has_value)
+            oss << "  value = " << m_value << std::endl;
+        oss << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS()
 private:
+    /**
+     * Depending on the compiled variant, this plugin either stores coefficients
+     * for a spectral upsampling model, or a plain RGB/monochromatic value.
+     */
+    static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
+    Color<Float, ChannelCount> m_value;
+
+    ref<Base> m_nested_texture;
+    ref<Base> m_d65;
+
     ScalarFloat m_scale;
+
+    bool m_has_value = false;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)

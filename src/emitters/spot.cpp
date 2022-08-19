@@ -52,7 +52,7 @@ using the lookat tag, e.g.:
                 <!-- Orient the light so that points from (1, 1, 1) towards (1, 2, 1) -->
                 <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
             </transform>
-            <spectrum name="intensity" value="1.0"/>
+            <rgb name="intensity" value="1.0"/>
         </emitter>
 
     .. code-tab:: python
@@ -89,8 +89,8 @@ public:
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
-        m_texture = props.texture<Texture>("texture", Texture::D65(1.f));
+        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
+        m_texture = props.texture_d65<Texture>("texture", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");

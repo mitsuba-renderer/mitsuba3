@@ -42,7 +42,7 @@ uniformly radiates illumination into all directions.
 
         <emitter type="point">
             <point name="position" value="0.0, 5.0, 0.0"/>
-            <spectrum name="intensity" value="1.0"/>
+            <rgb name="intensity" value="1.0"/>
         </emitter>
 
     .. code-tab:: python
@@ -75,7 +75,11 @@ public:
 
         dr::make_opaque(m_position);
 
-        m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
+        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
+
+        if (m_intensity->is_spatially_varying())
+            Throw("Expected a non-spatially varying intensity spectra!");
+
         m_needs_sample_3 = false;
         m_flags = +EmitterFlags::DeltaPosition;
         dr::set_attr(this, "flags", m_flags);

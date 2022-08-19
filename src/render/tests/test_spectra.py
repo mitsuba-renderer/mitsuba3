@@ -21,7 +21,7 @@ def test02_d65(variant_scalar_spectral):
     ps = mi.PositionSample3f()
 
     assert dr.allclose(d65.eval(mi.SurfaceInteraction3f(ps, [350, 456, 700, 840])),
-                       dr.scalar.Array4f([0, 117.49, 71.6091, 0]) / 10568.0)
+                       dr.scalar.Array4f([0, 117.49, 71.6091, 0]) * mi.MI_CIE_D65_NORMALIZATION)
 
 
 def test03_blackbody(variant_scalar_spectral):
@@ -37,8 +37,8 @@ def test03_blackbody(variant_scalar_spectral):
                        [0, 10997.9, 11812, 0])
 
 
-def test04_srgb_d65(variant_scalar_spectral, np_rng):
-    """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
+def test04_d65(variant_scalar_spectral, np_rng):
+    """d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
     import numpy as np
@@ -55,8 +55,8 @@ def test04_srgb_d65(variant_scalar_spectral, np_rng):
         intensity  = (np.max(color) * 2.0) or 1.0
         normalized = np.array(color) / intensity
 
-        srgb_d65 = mi.load_dict({
-            "type" : "srgb_d65",
+        d65 = mi.load_dict({
+            "type" : "d65",
             "color" : mi.Color3f(color)
 
         })
@@ -65,7 +65,7 @@ def test04_srgb_d65(variant_scalar_spectral, np_rng):
             "color" : mi.Color3f(normalized),
         })
 
-        assert dr.allclose(srgb_d65.eval(mi.SurfaceInteraction3f(ps, wavelengths)),
+        assert dr.allclose(d65.eval(mi.SurfaceInteraction3f(ps, wavelengths)),
                            d65_eval * intensity * srgb.eval(mi.SurfaceInteraction3f(ps, wavelengths)), atol=1e-5)
 
 
