@@ -301,7 +301,7 @@ if (MI_ENABLE_EMBREE)
   add_definitions(-DMI_ENABLE_EMBREE=1)
   message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
 else()
-  message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
+  message(STATUS "Mitsuba: using built-in implementation for CPU ray tracing.")
 endif()
 
 if (MI_ENABLE_AUTODIFF)
