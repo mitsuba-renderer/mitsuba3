@@ -226,18 +226,20 @@ public:
                 m_bbox.expand(p);
                 vertices.push_back(p);
             } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
-                // Vertex normal
-                InputNormal3f n;
-                cur += 3;
-                for (size_t i = 0; i < 3; ++i) {
-                    const char *orig = cur;
-                    n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
-                    parse_error |= cur == orig;
+                if (!m_face_normals) {
+                    cur += 3;
+                    // Vertex normal
+                    InputNormal3f n;
+                    for (size_t i = 0; i < 3; ++i) {
+                        const char *orig = cur;
+                        n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
+                        parse_error |= cur == orig;
+                    }
+                    n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                    if (unlikely(!all(dr::isfinite(n))))
+                        fail("mesh contains invalid vertex normal data");
+                    normals.push_back(n);
                 }
-                n = dr::normalize(m_to_world.scalar().transform_affine(n));
-                if (unlikely(!all(dr::isfinite(n))))
-                    fail("mesh contains invalid vertex normal data");
-                normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
                 InputVector2f uv;

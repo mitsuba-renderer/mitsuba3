@@ -287,7 +287,7 @@ public:
                         InputPoint3f p = dr::load<InputPoint3f>(target);
                         p = m_to_world.scalar().transform_affine(p);
                         if (unlikely(!all(dr::isfinite(p))))
-                            fail("mesh contains invalid vertex positions/normal data");
+                            fail("mesh contains invalid vertex position data");
                         m_bbox.expand(p);
                         dr::store(position_ptr, p);
                         position_ptr += 3;
