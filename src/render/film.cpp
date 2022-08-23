@@ -65,9 +65,9 @@ MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std:
     // Reset the crop window to match the full sensor area if necessary
     if (string::contains(keys, "size")) {
         if (!string::contains(keys, "crop_size"))
-            crop_size = 0;
+            crop_size = ScalarPoint2u(m_size);
         if (!string::contains(keys, "crop_offset"))
-            crop_offset = ScalarPoint2u(m_size);
+            crop_offset = 0;
     }
 
     set_crop_window(crop_offset, crop_size);

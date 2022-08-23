@@ -79,9 +79,12 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, bitmap, "raw"_a = false)
         .def_method(Film, write, "path"_a)
         .def_method(Film, sample_border)
-        .def_method(Film, size)
-        .def_method(Film, crop_size)
-        .def_method(Film, crop_offset)
+        // Make sure to return a copy of those members as they might also be
+        // exposed by-references via `mi.traverse`. In which case the return
+        // policy of `mi.traverse` might overrule the ones of those bindings.
+        .def("size", [] (const Film *film) { return ScalarVector2u(film->size()); })
+        .def("crop_size", [] (const Film *film) { return ScalarVector2u(film->crop_size()); })
+        .def("crop_offset", [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); })
         .def_method(Film, rfilter)
         .def("prepare_sample",
             [] (const Film *film, const UnpolarizedSpectrum &spec,
