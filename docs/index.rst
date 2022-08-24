@@ -98,15 +98,16 @@ to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries.
 Citation
 --------
 
-When using Mitsuba 3 or Dr.Jit in academic projects, please cite
+When using Mitsuba 3 or Dr.Jit in academic projects, please cite:
 
 .. code-block:: bibtex
 
-    @misc{drjit,
-        author = {Wenzel Jakob, Sébastien Speierer, Nicolas Roussel, Delio Vicini},
-        year = {2022},
-        note = {https://arxiv.org/abs/2202.01284},
-        title = {Dr.Jit: A Just-In-Time Compiler for Differentiable Rendering}
+    @software{jakob2022mitsuba3,
+        title = {Mitsuba 3 renderer},
+        author = {Wenzel Jakob and Sébastien Speierer and Nicolas Roussel and Merlin Nimier-David and Delio Vicini and Tizian Zeltner and Baptiste Nicolet and Miguel Crespo and Vincent Leroy and Ziyi Zhang},
+        note = {https://mitsuba-renderer.org},
+        version = {3.0.1},
+        year = 2022,
     }
 
 .. .............................................................................
