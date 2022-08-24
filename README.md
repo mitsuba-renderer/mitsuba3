@@ -129,7 +129,7 @@ Significant features and/or improvements to the code were contributed by
 [Vincent Leroy](https://github.com/leroyvn), and
 [Ziyi Zhang](https://github.com/ziyi-zhang).
 
-When using Mitsuba 3 or Dr.Jit in academic projects, please cite:
+When using Mitsuba 3 in academic projects, please cite:
 
 ```bibtex
 @software{jakob2022mitsuba3,

@@ -98,7 +98,7 @@ to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries.
 Citation
 --------
 
-When using Mitsuba 3 or Dr.Jit in academic projects, please cite:
+When using Mitsuba 3 in academic projects, please cite:
 
 .. code-block:: bibtex
 
