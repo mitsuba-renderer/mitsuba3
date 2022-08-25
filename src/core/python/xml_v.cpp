@@ -45,7 +45,8 @@ MI_PY_EXPORT(xml) {
                 for (auto [k, v] : kwargs)
                     param.emplace_back(
                         (std::string) py::str(k),
-                        (std::string) py::str(v)
+                        (std::string) py::str(v),
+                        false
                     );
             }
 
@@ -67,7 +68,8 @@ MI_PY_EXPORT(xml) {
                 for (auto [k, v] : kwargs)
                     param.emplace_back(
                         (std::string) py::str(k),
-                        (std::string) py::str(v)
+                        (std::string) py::str(v),
+                        false
                     );
             }
 

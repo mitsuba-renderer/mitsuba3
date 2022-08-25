@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
 /// Used to pass key=value pairs to the parser
-using ParameterList = std::vector<std::pair<std::string, std::string>>;
+using ParameterList = std::vector<std::tuple<std::string, std::string, bool>>;
 
 /**
  * Load a Mitsuba scene from an XML file
@@ -75,7 +75,7 @@ extern MI_EXPORT_LIB std::vector<ref<Object>> expand_node(
 extern MI_EXPORT_LIB std::vector<std::pair<std::string, Properties>> xml_to_properties(
                                         const fs::path &path,
                                         const std::string &variant);
-       
+
 NAMESPACE_END(detail)
 
 NAMESPACE_END(xml)
