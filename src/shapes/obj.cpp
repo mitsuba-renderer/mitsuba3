@@ -226,7 +226,7 @@ public:
                 m_bbox.expand(p);
                 vertices.push_back(p);
             } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
-                if (!m_face_normals) {
+                if (m_face_normals) {
                     cur += 3;
                     // Vertex normal
                     InputNormal3f n;
