@@ -124,13 +124,16 @@ std::string indent(const T *value, size_t amount = 2) {
     return indent((const T2 *) value, amount);
 }
 
-inline void replace_inplace(std::string &str, const std::string &source,
+inline bool replace_inplace(std::string &str, const std::string &source,
                             const std::string &target) {
     size_t pos = 0;
+    bool found = false;
     while ((pos = str.find(source, pos)) != std::string::npos) {
+        found = true;
         str.replace(pos, source.length(), target);
         pos += target.length();
     }
+    return found;
 }
 
 /// Remove leading and trailing characters

@@ -433,14 +433,17 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         if (!param.empty()) {
             std::sort(param.begin(), param.end(),
                 [](const auto &a, const auto &b) -> bool {
-                    return a.first.length() > b.first.length();
+                    return std::get<0>(a).length() > std::get<0>(b).length();
                 });
+
             for (auto attr: node.attributes()) {
                 std::string value = attr.value();
                 if (value.find('$') == std::string::npos)
                     continue;
-                for (const auto &kv : param)
-                    string::replace_inplace(value, "$" + kv.first, kv.second);
+                for (auto &p : param) {
+                    if (string::replace_inplace(value, "$" + std::get<0>(p), std::get<1>(p)))
+                        std::get<2>(p) = true;
+                }
                 if (value.find('$') != std::string::npos)
                     src.throw_error(node, "undefined parameter(s) in string: \"%s\"!", value);
                 attr.set_value(value.c_str());
@@ -630,13 +633,17 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     std::string value = node.attribute("value").value();
                     if (name.empty())
                         src.throw_error(node, "<default>: name must by nonempty");
+
+                    if (name.find(",") != std::string::npos)
+                        src.throw_error(node, "Invalid character in parameter name: ',' in %s", name);
+
                     bool found = false;
-                    for (auto &kv: param) {
-                        if (kv.first == name)
+                    for (auto &p: param) {
+                        if (std::get<0>(p) == name)
                             found = true;
                     }
                     if (!found)
-                        param.emplace_back(name, value);
+                        param.emplace_back(name, value, true);
                     return std::make_pair("", "");
                 }
                 break;
@@ -1011,6 +1018,11 @@ static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
     auto scene_id = parse_xml(src, ctx, root, Tag::Invalid, props,
                               param, arg_counter, 0).second;
 
+    for (const auto& p : param) {
+        if (!std::get<2>(p))
+            Throw("Unused parameter \"%s\"!", std::get<0>(p));
+    }
+
     if (src.modified && write_update) {
         fs::path backup = filename;
         backup.replace_extension(".bak");
@@ -1370,6 +1382,11 @@ std::vector<ref<Object>> load_string(const std::string &string,
         size_t arg_counter; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
+
+        for (const auto& p : param) {
+            if (!std::get<2>(p))
+                Throw("Unused parameter \"%s\"!", std::get<0>(p));
+        }
 
         ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
         std::vector<ref<Object>> objects = detail::expand_node(top_node);

@@ -389,3 +389,25 @@ def test28_xml_to_props_property_args(variant_scalar_rgb, tmp_path):
             assert dr.allclose(prop['center'], [0, 0, -10])
             assert prop['radius'] == 10.0
     assert has_sphere
+
+
+def test29_xml_kwargs(variant_scalar_rgb):
+    mi.load_string("""<scene version="3.0.0">
+                            <bsdf type="$bsdf"/>
+                      </scene>""", bsdf='diffuse')
+
+    with pytest.raises(RuntimeError) as e:
+        mi.load_string("""<scene version="3.0.0">
+                            <bsdf type="$bsdf"/>
+                        </scene>""", bsdf='diffuse', emitter='area')
+    e.match('Unused parameter "emitter"')
+
+
+def test30_invalid_parameter_name(variant_scalar_rgb):
+    with pytest.raises(Exception) as e:
+        mi.load_string("""
+        <scene version="3.0.0">
+            <default name="test_2," value="2"/>
+        </scene>
+        """)
+    e.match('Invalid character in parameter name')

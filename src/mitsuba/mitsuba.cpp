@@ -249,8 +249,7 @@ int main(int argc, char *argv[]) {
             auto sep = value.find('=');
             if (sep == std::string::npos)
                 Throw("-D/--define: expect key=value pair!");
-            params.push_back(std::make_pair(value.substr(0, sep),
-                                            value.substr(sep+1)));
+            params.emplace_back(value.substr(0, sep), value.substr(sep+1), false);
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
