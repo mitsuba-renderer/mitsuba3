@@ -8,6 +8,7 @@ from importlib import import_module as _import, reload as _reload
 import drjit as dr
 import os
 import logging
+from importlib.metadata import entry_points
 
 if sys.version_info < (3, 8):
     raise ImportError("Mitsuba requires Python 3.8 or greater.")
@@ -323,6 +324,25 @@ class MitsubaModule(types.ModuleType):
             else:
                 _import('mitsuba.ad.integrators')
             del sys
+
+        # Load extensions
+        eps_group = 'mitsuba.plugins'
+        eps = entry_points()
+        if eps_group in eps:
+            mitsuba_plugin_eps = eps[eps_group]
+
+            # Closure factory to avoid plugin constructors to be used by reference
+            def plugin_constructor(plugin_class):
+                return lambda props: plugin_class(props)
+
+            for plugin_ep in mitsuba_plugin_eps:
+                name = plugin_ep.name
+                plugin_class = plugin_ep.load()
+
+                if issubclass(plugin_class, self.BSDF):
+                    self.register_bsdf(name, plugin_constructor(plugin_class))
+                elif issubclass(plugin_class, self.Emitter):
+                    self.register_emitter(name, plugin_constructor(plugin_class))
 
 # Check whether we are reloading the mitsuba module
 reload = f'mitsuba.{submodules[0]}' in sys.modules
