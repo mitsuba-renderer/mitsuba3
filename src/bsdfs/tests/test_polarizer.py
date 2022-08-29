@@ -24,10 +24,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
     # The polarizer is rotated to different angles and hit with fully
     # unpolarized light (Stokes vector [1, 0, 0, 0]).
     # We then test if the outgoing Stokes vector corresponds to the expected
-    # rotation of linearly polarized light (Case 1).
-    #
-    # Additionally, a perfect linear polarizer should be invariant to "tilting",
-    # i.e. rotations around "x" or "z" in this local frame (Case 2, 3).
+    # rotation of linearly polarized light.
 
     # Incident direction
     wi = mi.Vector3f(0, 0, 1)
@@ -59,26 +56,9 @@ def test02_sample_local(variant_scalar_mono_polarized):
             'theta': {'type': 'spectrum', 'value': angle}
         })
 
-        # Case 1: Perpendicular incidence.
+        # Perpendicular incidence.
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
-        stokes_out = M @ stokes_in
-        assert dr.allclose(expected, stokes_out, atol=1e-3)
-
-        def rotate_vector(v, axis, angle):
-            return mi.Transform4f.rotate(axis, angle) @ v
-
-        # Case 2: Tilt polarizer around "x". Should not change anything.
-        # (Note: to stay with local coordinates, we rotate the incident direction instead.)
-        si.wi = rotate_vector(wi, [1, 0, 0], angle=30.0)
-        bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
-        stokes_out = M @ stokes_in
-        assert dr.allclose(expected, stokes_out, atol=1e-3)
-
-        # Case 3: Tilt polarizer around "y". Should not change anything.
-        # (Note: to stay with local coordinates, we rotate the incident direction instead.)
-        si.wi = rotate_vector(wi, [0, 1, 0], angle=30.0)
-        bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
         stokes_out = M @ stokes_in
         assert dr.allclose(expected, stokes_out, atol=1e-3)
 
@@ -351,3 +331,62 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         malus = dr.cos(theta)**2
         malus *= radiance[0]
         assert dr.allclose(malus, radiance[i], atol=1e-2)
+
+
+def test06_tilted(variant_scalar_mono_polarized):
+
+    def spectrum_from_stokes(v):
+        res = mi.Spectrum(0.0)
+        for i in range(4):
+            res[i, 0] = v[i]
+        return res
+
+    # Test implementation for tilted polarizers, i.e. when incident directions
+    # of the local coordinate system are non-perpendicular. See also
+    # "The polarization properties of a tilted polarizer" by Korger et al. 2013.
+
+    stokes_in = spectrum_from_stokes([1, 0, 0, 0])
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+
+    # Check for different polarizer rotation angles
+    for angle in [0, 90, +45, -45]:
+        # Ray arriving at a 30˚ angle
+        sin_theta, cos_theta = dr.sincos(30.0 / 180.0 * dr.pi)
+        ray = mi.Ray3f(mi.Point3f(0, 0, 1), -mi.Vector3f(sin_theta, 0, cos_theta), 0.0, mi.Color0f())
+
+        # Case 1: Rotate based on the internal `theta` angle parameter.
+        scene_theta = mi.load_dict({
+            'type': 'rectangle',
+            'bsdf': {
+                'type': 'polarizer',
+                'theta': {'type': 'spectrum', 'value': angle}
+            }
+        })
+
+        si_theta = scene_theta.ray_intersect(ray)
+        bsdf_theta = si_theta.bsdf(ray)
+        bs_theta, M_theta = bsdf_theta.sample(ctx, si_theta, 0.0, [0.0, 0.0])
+        M_theta = si_theta.to_world_mueller(M_theta, -si_theta.wi, bs_theta.wo)
+        wo_theta = si_theta.to_world(bs_theta.wo)
+
+        # Case 2: Rotate the actual geometry of the polarizer.
+        scene_rot = mi.load_dict({
+            'type': 'rectangle',
+            'bsdf': {
+                'type': 'polarizer',
+                'theta': {'type': 'spectrum', 'value': 0.0}
+            },
+            'to_world': mi.ScalarTransform4f.rotate(axis=(0, 0, 1), angle=-angle)
+        })
+
+        si_rot = scene_rot.ray_intersect(ray)
+        bsdf_rot = si_rot.bsdf(ray)
+        bs_rot, M_rot = bsdf_rot.sample(ctx, si_rot, 0.0, [0.0, 0.0])
+        M_rot = si_rot.to_world_mueller(M_rot, -si_rot.wi, bs_rot.wo)
+        wo_rot = si_rot.to_world(bs_rot.wo)
+
+        stokes_theta = M_theta @ stokes_in
+        stokes_rot = M_rot @ stokes_in
+
+        assert dr.allclose(stokes_theta, stokes_rot, atol=1e-3)

@@ -115,26 +115,26 @@ public:
                 return { bs, mueller::absorber(0.5f*transmittance) };
             }
 
+            using Vector3fS = Vector<UnpolarizedSpectrum, 3>;
+
             // Query rotation angle
             UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
+            auto [sin_theta, cos_theta] = dr::sincos(theta);
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
 
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
-
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
                below. */
-            Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
+            Vector3fS forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             /* To account for non-perpendicular incidence, we compute the effective
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
-            Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = dr::cross(forward, eff_a_axis);
+            Vector3fS a_axis(sin_theta, cos_theta, 0.f);
+            Vector3fS eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
+            Vector3fS eff_t_axis = dr::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,
@@ -169,26 +169,26 @@ public:
                 return mueller::absorber(0.5f*transmittance);
             }
 
+            using Vector3fS = Vector<UnpolarizedSpectrum, 3>;
+
             // Query rotation angle
             UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
+            auto [sin_theta, cos_theta] = dr::sincos(theta);
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
 
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
-
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
                below. */
-            Vector3f forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
+            Vector3fS forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
 
             /* To account for non-perpendicular incidence, we compute the effective
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
-            Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = dr::cross(forward, eff_a_axis);
+            Vector3fS a_axis(sin_theta, cos_theta, 0.f);
+            Vector3fS eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
+            Vector3fS eff_t_axis = dr::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,
