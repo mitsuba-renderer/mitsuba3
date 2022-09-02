@@ -2,6 +2,8 @@ include_directories(
   ${ASMJIT_INCLUDE_DIRS}
 )
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 add_executable(mitsuba-bin mitsuba.cpp)
 
 target_link_libraries(mitsuba-bin PRIVATE mitsuba)
