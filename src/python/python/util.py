@@ -346,6 +346,10 @@ class _RenderOp(dr.CustomOp):
     rendering operation is encountered by an AD graph traversal).
     """
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.variant = mi.variant()
+
     def eval(self, scene, sensor, params, integrator, seed, spp):
         self.scene = scene
         self.sensor = sensor
@@ -365,6 +369,7 @@ class _RenderOp(dr.CustomOp):
             )
 
     def forward(self):
+        mi.set_variant(self.variant)
         if not isinstance(self.params, mi.SceneParameters):
             raise Exception('An instance of mi.SceneParameter containing the '
                             'scene parameter to be differentiated should be '
@@ -375,6 +380,12 @@ class _RenderOp(dr.CustomOp):
                                            self.seed[1], self.spp[1]))
 
     def backward(self):
+        mi.set_variant(self.variant)
+        if not isinstance(self.params, mi.SceneParameters):
+            raise Exception('An instance of mi.SceneParameter containing the '
+                            'scene parameter to be differentiated should be '
+                            'provided to mi.render() if backward derivatives are '
+                            'desired!')
         self.integrator.render_backward(self.scene, self.params, self.grad_out(),
                                         self.sensor, self.seed[1], self.spp[1])
 

@@ -25,7 +25,11 @@ public:
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
                       util::last_error());
         #else
-            m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
+            #if defined(__clang__)
+                m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);
+            #else
+                m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
+            #endif
             if (!m_handle)
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
                       dlerror());

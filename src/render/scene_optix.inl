@@ -23,7 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 #  define strdup(x) _strdup(x)
 #endif
 
-static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
+static constexpr size_t PROGRAM_GROUP_COUNT = 2 + CUSTOM_OPTIX_SHAPE_COUNT;
 
 // Per scene OptiX state data structure
 struct OptixSceneState {
@@ -32,6 +32,7 @@ struct OptixSceneState {
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
     size_t config_index;
+    uint32_t sbt_jit_index;
 };
 
 /**
@@ -48,12 +49,14 @@ struct OptixConfig {
     OptixDeviceContext context;
     OptixPipelineCompileOptions pipeline_compile_options;
     OptixModule module;
-    OptixProgramGroup program_groups[ProgramGroupCount];
-    char *custom_shapes_program_names[2 * custom_optix_shapes_count];
+    OptixProgramGroup program_groups[PROGRAM_GROUP_COUNT];
+    char *custom_shapes_program_names[2 * CUSTOM_OPTIX_SHAPE_COUNT];
+    uint32_t pipeline_jit_index;
 };
 
 // Array storing previously initialized optix configurations
-static OptixConfig optix_configs[8] = {};
+static constexpr int32_t OPTIX_CONFIG_COUNT = 8;
+static OptixConfig optix_configs[OPTIX_CONFIG_COUNT] = {};
 
 size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
     // Compute config index in optix_configs based on required set of features
@@ -181,7 +184,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         // =====================================================
 
         OptixProgramGroupOptions program_group_options = {};
-        OptixProgramGroupDesc pgd[ProgramGroupCount] {};
+        OptixProgramGroupDesc pgd[PROGRAM_GROUP_COUNT] {};
 
         pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
         pgd[0].miss.module                  = config.module;
@@ -190,10 +193,10 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         pgd[1].hitgroup.moduleCH            = config.module;
         pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
 
-        for (size_t i = 0; i < custom_optix_shapes_count; i++) {
+        for (size_t i = 0; i < CUSTOM_OPTIX_SHAPE_COUNT; i++) {
             pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
-            std::string name = string::to_lower(custom_optix_shapes[i]);
+            std::string name = string::to_lower(CUSTOM_OPTIX_SHAPE_NAMES[i]);
             config.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
             config.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
 
@@ -207,12 +210,18 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         check_log(optixProgramGroupCreate(
             config.context,
             pgd,
-            ProgramGroupCount,
+            PROGRAM_GROUP_COUNT,
             &program_group_options,
             optix_log,
             &optix_log_size,
             config.program_groups
         ));
+
+        config.pipeline_jit_index = jit_optix_configure_pipeline(
+            &config.pipeline_compile_options,
+            config.module,
+            config.program_groups, PROGRAM_GROUP_COUNT
+        );
     }
 
     return config_index;
@@ -281,6 +290,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props
             jit_malloc_migrate(s.sbt.missRecordBase, AllocType::Device, 1);
         s.sbt.hitgroupRecordBase =
             jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
+
+        s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
 
         // =====================================================
         //  Acceleration data structure building
@@ -377,19 +388,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int should_free, void *payload) {
-                OptixSceneState *s = (OptixSceneState *) payload;
                 if (should_free) {
-                    Log(Debug, "Free OptiX scene state..");
-
-                    jit_free(s->sbt.raygenRecord);
-                    jit_free(s->sbt.hitgroupRecordBase);
-                    jit_free(s->sbt.missRecordBase);
-                    jit_free(s->ias_buffer);
-
-                    delete s;
+                    Log(Debug, "Free OptiX IAS..");
+                    jit_free(payload);
                 }
             },
-            (void *) m_accel
+            (void *) s.ias_buffer
         );
 
         clear_shapes_dirty();
@@ -401,26 +405,40 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
-        /* Decrease the reference count of the handle variable. This will
+        /* Decrease the reference count of the IAS handle variable. This will
            trigger the release of the OptiX acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
+
+        OptixSceneState *s = (OptixSceneState *) m_accel;
+
+        /* This will decrease the reference count of the shader binding table
+           JIT variable which might trigger the release of the OptiX SBT if no
+           ray tracing calls are pending. */
+        UInt32 handle = UInt32::steal(s->sbt_jit_index);
+        handle = 0;
+
+        delete s;
+
         m_accel = nullptr;
     }
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
-    Log(Debug, "Optix configuration shutdown..");
-    for (size_t j = 0; j < 8; j++) {
-        OptixConfig &config = optix_configs[j];
-        if (config.module) {
-            for (size_t i = 0; i < ProgramGroupCount; i++)
-                jit_optix_check(optixProgramGroupDestroy(config.program_groups[i]));
-            for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
-                free(config.custom_shapes_program_names[i]);
-            jit_optix_check(optixModuleDestroy(config.module));
-            config.module = nullptr;
+    if constexpr (dr::is_cuda_v<Float>) {
+        for (size_t j = 0; j < OPTIX_CONFIG_COUNT; j++) {
+            OptixConfig &config = optix_configs[j];
+            if (config.pipeline_jit_index) {
+                /* Decrease the reference count of the pipeline JIT variable.
+                This will trigger the release of the OptiX pipeline data
+                structure if no ray tracing calls are pending. */
+                UInt32 handle = UInt32::steal(config.pipeline_jit_index);
+                handle = 0;
+
+                for (size_t i = 0; i < 2 * CUSTOM_OPTIX_SHAPE_COUNT; i++)
+                    free(config.custom_shapes_program_names[i]);
+            }
         }
     }
 }
@@ -431,14 +449,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
     if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
-
-        // Override optix configuration in drjit-core.
-        // TODO This could be problematic when raytracing calls on other scenes are still pending.
-        jit_optix_configure(
-            &config.pipeline_compile_options,
-            &s.sbt,
-            config.program_groups, ProgramGroupCount
-        );
 
         UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
@@ -477,7 +487,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index());
+                            trace_args, active.index(),
+                            config.pipeline_jit_index, s.sbt_jit_index);
 
         PreliminaryIntersection3f pi;
         pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
@@ -526,14 +537,6 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        // Override optix configuration in drjit-core.
-        // TODO This could be problematic when raytracing calls on other scenes are still pending.
-        jit_optix_configure(
-            &config.pipeline_compile_options,
-            &s.sbt,
-            config.program_groups, ProgramGroupCount
-        );
-
         UInt32 ray_mask(255),
                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
@@ -560,7 +563,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index());
+                            trace_args, active.index(),
+                            config.pipeline_jit_index, s.sbt_jit_index);
 
         return active && dr::eq(UInt32::steal(trace_args[15]), 1);
     } else {
