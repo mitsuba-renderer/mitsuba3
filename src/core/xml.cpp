@@ -577,6 +577,9 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                       arg_counter_nested, depth + 1,
                                       node_name == "emitter",
                                       node_name == "spectrum");
+                        if (nested_id == id)
+                            src.throw_error(node, "cannot reference parent id \"%s\" in nested object",
+                                            nested_id);
                         if (!nested_id.empty())
                             props_nested.set_named_reference(arg_name, nested_id);
                     }
