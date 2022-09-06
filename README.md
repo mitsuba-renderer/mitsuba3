@@ -9,8 +9,8 @@ alt="Mitsuba banner">
 |      :---:     |      :---:       |       :---:       |       :---:       |       :---:       |
 | [![docs][1]][2]| [![vids][9]][10] | [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] |
 
-[1]: https://readthedocs.org/projects/mitsuba/badge/?version=latest
-[2]: https://mitsuba.readthedocs.io/en/latest/
+[1]: https://readthedocs.org/projects/mitsuba/badge/?version=stable
+[2]: https://mitsuba.readthedocs.io/en/stable/
 [3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64Clang10)/statusIcon.svg
 [4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba3_LinuxAmd64Clang10&guest=1
 [5]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64gcc9)/statusIcon.svg
