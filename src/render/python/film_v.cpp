@@ -82,9 +82,15 @@ MI_PY_EXPORT(Film) {
         // Make sure to return a copy of those members as they might also be
         // exposed by-references via `mi.traverse`. In which case the return
         // policy of `mi.traverse` might overrule the ones of those bindings.
-        .def("size", [] (const Film *film) { return ScalarVector2u(film->size()); })
-        .def("crop_size", [] (const Film *film) { return ScalarVector2u(film->crop_size()); })
-        .def("crop_offset", [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); })
+        .def("size",
+             [] (const Film *film) { return ScalarVector2u(film->size()); },
+             D(Film, size))
+        .def("crop_size",
+             [] (const Film *film) { return ScalarVector2u(film->crop_size()); },
+             D(Film, crop_size))
+        .def("crop_offset",
+             [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); },
+             D(Film, crop_offset))
         .def_method(Film, rfilter)
         .def("prepare_sample",
             [] (const Film *film, const UnpolarizedSpectrum &spec,
