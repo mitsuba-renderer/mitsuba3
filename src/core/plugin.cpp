@@ -25,7 +25,7 @@ public:
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
                       util::last_error());
         #else
-            #if defined(__clang__)
+            #if defined(__clang__) && !defined(__APPLE__)
                 m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);
             #else
                 m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
