@@ -149,8 +149,6 @@ public:
             props.get<ScalarFloat>("principal_point_offset_x", 0.f),
             props.get<ScalarFloat>("principal_point_offset_y", 0.f)
         );
-        ScalarVector2f crop_size = ScalarVector2f(m_film->crop_size());
-        m_principal_point_offset *= size / crop_size;
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -172,7 +170,6 @@ public:
     }
 
     void update_camera_transforms() {
-        // TODO: should probably update m_principal_point_offset
         m_camera_to_sample = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
             m_x_fov, Float(m_near_clip), Float(m_far_clip));
@@ -214,10 +211,13 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
+        Vector2f scaled_principal_point_offset =
+            m_film->size() * m_principal_point_offset / m_film->crop_size();
+
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + m_principal_point_offset.x(),
-                                 position_sample.y() + m_principal_point_offset.y(),
+                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
+                                 position_sample.y() + scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -248,10 +248,13 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
+        Vector2f scaled_principal_point_offset =
+            m_film->size() * m_principal_point_offset / m_film->crop_size();
+
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + m_principal_point_offset.x(),
-                                 position_sample.y() + m_principal_point_offset.y(),
+                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
+                                 position_sample.y() + scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -289,9 +292,12 @@ public:
         if (dr::none_or<false>(active))
             return { ds, dr::zeros<Spectrum>() };
 
+        Vector2f scaled_principal_point_offset =
+            m_film->size() * m_principal_point_offset / m_film->crop_size();
+
         Point3f screen_sample = m_camera_to_sample * ref_p;
-        ds.uv = Point2f(screen_sample.x() - m_principal_point_offset.x(),
-                        screen_sample.y() - m_principal_point_offset.y());
+        ds.uv = Point2f(screen_sample.x() - scaled_principal_point_offset.x(),
+                        screen_sample.y() - scaled_principal_point_offset.y());
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
                   (ds.uv.y() <= 1);
         if (dr::none_or<false>(active))
