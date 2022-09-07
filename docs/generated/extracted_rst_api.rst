@@ -23472,9 +23472,18 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.TraversalCallback.put_parameter(self)
+    .. py:method:: mitsuba.TraversalCallback.put_parameter(self, name, value, flags)
 
         Inform the traversal callback about an attribute of an instance
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``value`` (object):
+            *no description available*
+
+        Parameter ``flags`` (:py:obj:`mitsuba.ParamFlags`):
+            *no description available*
 
         Returns → None:
             *no description available*

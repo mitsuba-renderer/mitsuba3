@@ -59,13 +59,14 @@ MI_PY_EXPORT(Object) {
              "name"_a, "variant"_a, py::return_value_policy::reference,
              D(PluginManager, get_plugin_class));
 
-    py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback", D(TraversalCallback))
+    py::class_<TraversalCallback, PyTraversalCallback>(
+        m, "TraversalCallback", D(TraversalCallback))
         .def(py::init<>())
         .def("put_parameter",
-             [] (const TraversalCallback *) {
+             [] (const TraversalCallback *, const std::string &, py::object &, ParamFlags) {
                 Throw("The `put_parameter` methods must be overriden!");
              },
-             D(TraversalCallback, put_parameter))
+             "name"_a, "value"_a, "flags"_a, D(TraversalCallback, put_parameter))
         .def_method(TraversalCallback, put_object, "name"_a, "obj"_a, "flags"_a);
 
     py::class_<Object, ref<Object>>(m, "Object", D(Object))
