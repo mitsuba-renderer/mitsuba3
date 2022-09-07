@@ -304,7 +304,7 @@ public:
         put_parameter_impl(name, &v, flags, typeid(T));
     }
 
-    /// Inform the tranversal callback that the instance references another Mitsuba object
+    /// Inform the traversal callback that the instance references another Mitsuba object
     virtual void put_object(const std::string &name, Object *obj,
                             uint32_t flags) = 0;
 

@@ -3740,7 +3740,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -23444,6 +23444,40 @@
         :property:
 
 .. py:class:: mitsuba.TraversalCallback
+
+    Abstract class providing an interface for traversing scene graphs
+
+    This interface can be implemented either in C++ or in Python, to be
+    used in conjunction with Object::traverse() to traverse a scene graph.
+    Mitsuba currently uses this mechanism to determine a scene's
+    differentiable parameters.
+
+    .. py:method:: __init__(self)
+
+
+    .. py:method:: mitsuba.TraversalCallback.put_object(self, name, obj, flags)
+
+        Inform the tranversal callback that the instance references another
+        Mitsuba object
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``obj`` (mitsuba::Object):
+            *no description available*
+
+        Parameter ``flags`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.TraversalCallback.put_parameter(self)
+
+        Inform the traversal callback about an attribute of an instance
+
+        Returns → None:
+            *no description available*
 
 .. py:class:: mitsuba.UInt
 
