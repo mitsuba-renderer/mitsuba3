@@ -503,9 +503,9 @@
         bs: Sampling record, indicating the sampled direction, PDF values and
         other information. The contents are undefined if sampling failed.
 
-        value: The BSDF value (multiplied by the cosine foreshortening factor
-        when a non-delta component is sampled). A zero spectrum indicates that
-        sampling failed.
+        value: The BSDF value divided by the probability (multiplied by the
+        cosine foreshortening factor when a non-delta component is sampled). A
+        zero spectrum indicates that sampling failed.
 
 .. py:class:: mitsuba.BSDFContext
 
@@ -937,9 +937,9 @@
         bs: Sampling record, indicating the sampled direction, PDF values and
         other information. The contents are undefined if sampling failed.
 
-        value: The BSDF value (multiplied by the cosine foreshortening factor
-        when a non-delta component is sampled). A zero spectrum indicates that
-        sampling failed.
+        value: The BSDF value divided by the probability (multiplied by the
+        cosine foreshortening factor when a non-delta component is sampled). A
+        zero spectrum indicates that sampling failed.
 
     .. py:method:: mitsuba.BSDFPtr.select_(arg0, arg1, arg2)
 
@@ -12827,7 +12827,7 @@
 
     .. py:data:: Differentiable
 
-        Tracking gradients w.r.t. this parameter is not allowed
+        Tracking gradients w.r.t. this parameter is allowed
 
     .. py:data:: NonDifferentiable
 
@@ -23457,7 +23457,7 @@
 
     .. py:method:: mitsuba.TraversalCallback.put_object(self, name, obj, flags)
 
-        Inform the tranversal callback that the instance references another
+        Inform the traversal callback that the instance references another
         Mitsuba object
 
         Parameter ``name`` (str):
