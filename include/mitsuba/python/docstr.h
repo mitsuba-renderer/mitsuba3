@@ -862,9 +862,9 @@ Returns:
 bs: Sampling record, indicating the sampled direction, PDF values and
 other information. The contents are undefined if sampling failed.
 
-value: The BSDF value (multiplied by the cosine foreshortening factor
-when a non-delta component is sampled). A zero spectrum indicates that
-sampling failed.)doc";
+value: The BSDF value divided by the probability (multiplied by the
+cosine foreshortening factor when a non-delta component is sampled). A
+zero spectrum indicates that sampling failed.)doc";
 
 static const char *__doc_mitsuba_BSDF_set_id = R"doc(Set a string identifier)doc";
 
@@ -2775,6 +2775,8 @@ static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_srf = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_parameters_changed = R"doc()doc";
+
 static const char *__doc_mitsuba_Film_prepare =
 R"doc(Configure the film for rendering a specified set of extra channels
 (AOVS). Returns the total number of channels that the film will store)doc";
@@ -2858,6 +2860,8 @@ R"doc(Ignoring the crop window, return the resolution of the underlying
 sensor)doc";
 
 static const char *__doc_mitsuba_Film_to_string = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_Film_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_write = R"doc(Write the developed contents of the film to a file on disk)doc";
 
@@ -4757,7 +4761,7 @@ For instance, in the context of differentiable rendering, it is
 important to know which parameters can be differentiated, and which of
 those might introduce discontinuities in the Monte Carlo simulation.)doc";
 
-static const char *__doc_mitsuba_ParamFlags_Differentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
+static const char *__doc_mitsuba_ParamFlags_Differentiable = R"doc(Tracking gradients w.r.t. this parameter is allowed)doc";
 
 static const char *__doc_mitsuba_ParamFlags_Discontinuous =
 R"doc(Tracking gradients w.r.t. this parameter will introduce
@@ -8907,7 +8911,7 @@ Mitsuba currently uses this mechanism to determine a scene's
 differentiable parameters.)doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_object =
-R"doc(Inform the tranversal callback that the instance references another
+R"doc(Inform the traversal callback that the instance references another
 Mitsuba object)doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_parameter = R"doc(Inform the traversal callback about an attribute of an instance)doc";
