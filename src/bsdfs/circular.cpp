@@ -15,11 +15,6 @@ Circular polarizer material (:monosp:`circular`)
 
 .. pluginparameters::
 
- * - theta
-   - |spectrum| or |texture|
-   - Specifies the rotation angle (in degrees) of the polarizer around the optical axis (Default: 0.0)
-   - |exposed|, |differentiable|, |discontinuous|
-
  * - transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
@@ -30,9 +25,10 @@ Circular polarizer material (:monosp:`circular`)
    - Flag to switch between left and right circular polarization. (Default: |false|, i.e. right circular polarizer)
 
 This material simulates an ideal circular polarizer useful to test polarization aware
-light transport or to conduct virtual optical experiments. To rotate the polarizer,
-either the parameter ``theta`` can be used, or alternative a rotation can be applied
-directly to the associated shape.
+light transport or to conduct virtual optical experiments. Unlike the
+:ref:`linear retarder <bsdf-retarder>` or the :ref:`linear polarizer <bsdf-polarizer>`,
+this filter is invariant to rotations and therefore does not provide a corresponding
+``theta`` parameter.
 
 The following XML snippet describes a left circular polarizer material:
 
@@ -66,7 +62,6 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     CircularPolarizer(const Properties &props) : Base(props) {
-        m_theta = props.texture<Texture>("theta", 0.f);
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
         m_left_handed = props.get<bool>("left_handed", false);
 
@@ -75,7 +70,6 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("theta",           m_theta.get(),          ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_object("transmittance",   m_transmittance.get(),  +ParamFlags::Differentiable);
     }
 
@@ -94,18 +88,9 @@ public:
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
-            // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
-
-            // Combine linear polarizer and quarter wave plate
-            Spectrum LP  = mueller::linear_polarizer(1.f);
-            Spectrum QWP = mueller::linear_retarder(0.5f*dr::Pi<Float>);
-            UnpolarizedSpectrum rot = m_left_handed ? 3.f*dr::Pi<Float>/4.f : dr::Pi<Float>/4.f;
-            QWP = mueller::rotated_element(rot, QWP);
-            Spectrum M = QWP * LP;
-
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
+            // Get standard Mueller matrix for the circular polarizer.
+            Spectrum M = m_left_handed ? mueller::left_circular_polarizer<Float>()
+                                       : mueller::right_circular_polarizer<Float>();
 
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
@@ -141,18 +126,9 @@ public:
 
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
-            // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
-
-            // Combine linear polarizer and quarter wave plate
-            Spectrum LP  = mueller::linear_polarizer(1.f);
-            Spectrum QWP = mueller::linear_retarder(0.5f*dr::Pi<Float>);
-            UnpolarizedSpectrum rot = m_left_handed ? 3.f*dr::Pi<Float>/4.f : dr::Pi<Float>/4.f;
-            QWP = mueller::rotated_element(rot, QWP);
-            Spectrum M = QWP * LP;
-
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
+            // Get standard Mueller matrix for the circular polarizer.
+            Spectrum M = m_left_handed ? mueller::left_circular_polarizer<Float>()
+                                       : mueller::right_circular_polarizer<Float>();
 
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
@@ -176,7 +152,6 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "CircularPolarizer[" << std::endl
-            << "  theta = " << string::indent(m_theta) << std::endl
             << "  transmittance = " << string::indent(m_transmittance) << std::endl
             << "]";
         return oss.str();
@@ -184,7 +159,6 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    ref<Texture> m_theta;
     ref<Texture> m_transmittance;
     bool m_left_handed;
 };

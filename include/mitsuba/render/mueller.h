@@ -33,7 +33,8 @@ NAMESPACE_BEGIN(mueller)
 * \param value
 *   The value of the (0, 0) element
 */
-template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
+template <typename Float>
+MuellerMatrix<Float> depolarizer(Float value = 1.f) {
     MuellerMatrix<Float> result = dr::zeros<MuellerMatrix<Float>>();
     result(0, 0) = value;
     return result;
@@ -45,7 +46,8 @@ template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
 * \param value
 *     The amount of absorption.
 */
-template <typename Float> MuellerMatrix<Float> absorber(Float value) {
+template <typename Float>
+MuellerMatrix<Float> absorber(Float value) {
     return value;
 }
 
@@ -59,8 +61,9 @@ template <typename Float> MuellerMatrix<Float> absorber(Float value) {
 *     The amount of attenuation of the transmitted component (1 corresponds
 *     to an ideal polarizer).
 */
-template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.f) {
-    Float a = value * .5f;
+template <typename Float>
+MuellerMatrix<Float> linear_polarizer(Float value = 1.f) {
+    Float a = value * 0.5f;
     return MuellerMatrix<Float>(
         a, a, 0, 0,
         a, a, 0, 0,
@@ -84,7 +87,8 @@ template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.
  *     The phase difference between the fast and slow axis
  *
  */
-template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
+template <typename Float>
+MuellerMatrix<Float> linear_retarder(Float phase) {
     Float s, c;
     std::tie(s, c) = dr::sincos(phase);
     return MuellerMatrix<Float>(
@@ -96,13 +100,44 @@ template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
 }
 
 /**
+ * \brief Constructs the Mueller matrix of a (right) circular polarizer.
+ *
+ * "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+ */
+template <typename Float>
+MuellerMatrix<Float> right_circular_polarizer() {
+    return 0.5f * MuellerMatrix<Float>(
+        1, 0, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        1, 0, 0, 1
+    );
+}
+
+/**
+ * \brief Constructs the Mueller matrix of a (left) circular polarizer.
+ *
+ * "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+ */
+template <typename Float>
+MuellerMatrix<Float> left_circular_polarizer() {
+    return 0.5f * MuellerMatrix<Float>(
+        1, 0, 0, -1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        -1, 0, 0, 1
+    );
+}
+
+/**
 * \brief Constructs the Mueller matrix of a linear diattenuator, which
 * attenuates the electric field components at 0 and 90 degrees by
 * 'x' and 'y', * respectively.
 */
-template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
-    Float a = .5f * (x + y),
-          b = .5f * (x - y),
+template <typename Float>
+MuellerMatrix<Float> diattenuator(Float x, Float y) {
+    Float a = 0.5f * (x + y),
+          b = 0.5f * (x - y),
           c = dr::sqrt(x * y);
 
     return MuellerMatrix<Float>(
@@ -125,7 +160,8 @@ template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
   *
   * "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
   */
-template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
+template <typename Float>
+MuellerMatrix<Float> rotator(Float theta) {
     auto [s, c] = dr::sincos(2.f * theta);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
@@ -171,8 +207,8 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
 
     Float r_s = dr::abs(dr::sqr(a_s)),
           r_p = dr::abs(dr::sqr(a_p)),
-          a = .5f * (r_s + r_p),
-          b = .5f * (r_s - r_p),
+          a = 0.5f * (r_s + r_p),
+          b = 0.5f * (r_s - r_p),
           c = dr::sqrt(r_s * r_p);
 
     dr::masked(sin_delta, dr::eq(c, 0.f)) = 0.f; // avoid issues with NaNs
@@ -216,8 +252,8 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
 
     Float t_s = dr::sqr(a_s_r),
           t_p = dr::sqr(a_p_r),
-          a = .5f * factor * (t_s + t_p),
-          b = .5f * factor * (t_s - t_p),
+          a = 0.5f * factor * (t_s + t_p),
+          b = 0.5f * factor * (t_s - t_p),
           c = factor * dr::sqrt(t_s * t_p);
 
     return MuellerMatrix<Float>(
