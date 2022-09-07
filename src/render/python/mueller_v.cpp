@@ -25,6 +25,16 @@ MI_PY_EXPORT(mueller) {
     m.def("linear_retarder", &mueller::linear_retarder<UnpolarizedSpectrum>,
           "phase"_a, D(mueller, linear_retarder));
 
+    m.def("right_circular_polarizer", &mueller::right_circular_polarizer<Float>,
+          D(mueller, right_circular_polarizer));
+    m.def("right_circular_polarizer", &mueller::right_circular_polarizer<UnpolarizedSpectrum>,
+          D(mueller, right_circular_polarizer));
+
+    m.def("left_circular_polarizer", &mueller::left_circular_polarizer<Float>,
+          D(mueller, left_circular_polarizer));
+    m.def("left_circular_polarizer", &mueller::left_circular_polarizer<UnpolarizedSpectrum>,
+          D(mueller, left_circular_polarizer));
+
     m.def("diattenuator", &mueller::diattenuator<Float>,
           "x"_a, "y"_a, D(mueller, diattenuator));
     m.def("diattenuator", &mueller::diattenuator<UnpolarizedSpectrum>,

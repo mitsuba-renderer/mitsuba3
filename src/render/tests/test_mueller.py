@@ -9,13 +9,13 @@ def test01_depolarizer(variant_scalar_rgb):
     # Remove all polarization, and change intensity based on transmittance value.
     assert dr.allclose(mi.mueller.depolarizer(.8) @ Array4f([1, .5, .5, .5]), [.8, 0, 0, 0])
 
+
 def test02_rotator(variant_scalar_rgb):
     # Start with horizontally linear polarized light [1,1,0,0] and ..
     # .. rotate the Stokes frame by +45˚
     assert dr.allclose(mi.mueller.rotator( 45 * dr.pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, -1, 0], atol=1e-5)
     # .. rotate the Stokes frame by -45˚
     assert dr.allclose(mi.mueller.rotator(-45 * dr.pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, +1, 0], atol=1e-5)
-
 
 
 def test03_linear_polarizer(variant_scalar_rgb):
@@ -28,6 +28,7 @@ def test03_linear_polarizer(variant_scalar_rgb):
     stokes_out = polarizer @ stokes_in
     intensity  = stokes_out[0]
     assert dr.allclose(intensity, value_malus)
+
 
 def test04_linear_polarizer_rotated(variant_scalar_rgb):
     # The closed-form expression for a rotated linear polarizer is available
@@ -174,3 +175,21 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
     # outgoing directions.
     M_rotated_bases_aligned = mi.mueller.rotate_mueller_basis_collinear(M, w, b_00, b_45)
     assert dr.allclose(M_rotated_element, M_rotated_bases_aligned, atol=1e-5)
+
+
+def test09_circular(variant_scalar_rgb):
+    # Test a few simple outcomes of polarization due to circular polarizers.
+    L = mi.mueller.left_circular_polarizer()
+    R = mi.mueller.right_circular_polarizer()
+
+    # Unpolarized light is converted into left/right circularly polarized light.
+    dr.allclose(L @ Array4f([1, 0, 0, 0]), Array4f([0.5, 0, 0, -0.5]))
+    dr.allclose(R @ Array4f([1, 0, 0, 0]), Array4f([0.5, 0, 0, +0.5]))
+
+    # Linear polarization is also converted to circular polarization.
+    dr.allclose(L @ Array4f([1, 1, 0, 0]), Array4f([0.5, 0, 0, -0.5]))
+    dr.allclose(R @ Array4f([1, 1, 0, 0]), Array4f([0.5, 0, 0, +0.5]))
+
+    # Light that is already circularly polarized is unchanged.
+    dr.allclose(L @ Array4f([1, 0, 0, -1]), Array4f([0.5, 0, 0, -1]))
+    dr.allclose(R @ Array4f([1, 0, 0, +1]), Array4f([0.5, 0, 0, +1]))

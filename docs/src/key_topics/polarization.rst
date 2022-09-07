@@ -209,10 +209,14 @@ Apart from standard optical elements (:ref:`Table 2 <table_optical_elements>`) a
           - :math:`\frac{1}{2} \begin{bmatrix} 1 & 1 & 0 & 0 \\ 1 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix}`
         * - Ideal linear retarder (fast axis horizontal), :math:`\phi`: phase difference
           - :math:`\begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & \cos\phi & \sin\phi \\ 0 & 0 & -\sin\phi & \cos\phi \end{bmatrix}`
-        * - Quarter-wave plate (fast axis horizontal)
+        * - Ideal quarter-wave plate (fast axis horizontal)
           - :math:`\begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 \\ 0 & 0 & -1 & 0 \end{bmatrix}`
-        * - Half-wave plate
+        * - Ideal half-wave plate
           - :math:`\begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & -1 & 0 \\ 0 & 0 & 0 & -1 \end{bmatrix}`
+        * - Ideal right circular polarizer
+          - :math:`\frac{1}{2} \begin{bmatrix} 1 & 0 & 0 & 1 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 1 & 0 & 0 & 1 \end{bmatrix}`
+        * - Ideal left circular polarizer
+          - :math:`\frac{1}{2} \begin{bmatrix} 1 & 0 & 0 & -1 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ -1 & 0 & 0 & 1 \end{bmatrix}`
         * - General polarizer. :math:`\alpha_x, \alpha_y`: transmission along the two orthogonal axes
           - :math:`\frac{1}{2} \begin{bmatrix} \alpha_x^2 + \alpha_y^2 & \alpha_x^2 - \alpha_y^2 & 0 & 0 \\ \alpha_x^2 - \alpha_y^2 & \alpha_x^2 + \alpha_y^2 & 0 & 0 \\ 0 & 0 & 2 \alpha_x \alpha_y & 0 \\ 0 & 0 & 0 & 2 \alpha_x \alpha_y \end{bmatrix}`
 
