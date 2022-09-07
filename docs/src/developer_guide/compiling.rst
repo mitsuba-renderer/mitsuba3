@@ -176,7 +176,7 @@ On Windows, a recent version of `Visual Studio 2019
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
 CMake, or Python (e.g. via `Miniconda 3
 <https://docs.conda.io/en/latest/miniconda.html>`_) might need to be installed
-manually. Mitsuba's build system *requires* access to Python >= 3.9 even if you
+manually. Mitsuba's build system *requires* access to Python >= 3.8 even if you
 do not plan to use Mitsuba's python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:
@@ -254,17 +254,20 @@ Now, compilation should be as simple as running the following from inside the
 Running Mitsuba
 ---------------
 
-Once Mitsuba is compiled, run the ``setpath.sh/bat`` script in your build
-directory to configure environment variables
-(``PATH/LD_LIBRARY_PATH/PYTHONPATH``) that are required to run Mitsuba.
+Once Mitsuba is compiled, run the ``setpath.sh/.bat/.ps1`` script in your build
+directory to configure environment variables (``PATH/PYTHONPATH``) that are
+required to run Mitsuba.
 
 .. code-block:: bash
 
     # On Linux / Mac OS
     source setpath.sh
 
-    # On Windows
-    C:/.../mitsuba3/build> setpath
+    # On Windows (cmd)
+    C:/.../mitsuba3/build/Release> setpath
+
+    # On Windows (powershell)
+    C:/.../mitsuba3/build/Release> .\setpath.ps1
 
 Mitsuba can then be used to render scenes by typing
 
