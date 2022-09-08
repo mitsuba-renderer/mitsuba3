@@ -165,12 +165,18 @@ if (NOT SKBUILD)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}" DRJIT_STUBS_ENV_PATH)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
 
-  add_custom_target(drjit_stub_file_generation ALL COMMAND
-    ${CMAKE_COMMAND} -E env
-    "PATH=${DRJIT_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
-    "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-    "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
-    ${MI_BINARY_DIR}/python/drjit DEPENDS drjit-python copy-python)
+  add_custom_command(
+    OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
+    COMMAND ${CMAKE_COMMAND} -E env
+      "PATH=${DRJIT_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
+      "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
+      ${MI_BINARY_DIR}/python/drjit
+    DEPENDS drjit-python copy-python
+  )
+  add_custom_target(drjit_stub_file_generation ALL
+    DEPENDS ${MI_BINARY_DIR}/python/drjit/__init__.pyi
+  )
 endif()
 
 # ----------------------------------------------------------
@@ -187,12 +193,18 @@ if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}" MI_STUBS_ENV_PATH)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
 
-  add_custom_target(mitsuba_stub_file_generation ALL COMMAND
-    ${CMAKE_COMMAND} -E env
-    "PATH=${DRJIT_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
-    "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-    "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
-    ${MI_BINARY_DIR}/python/mitsuba DEPENDS mitsuba_ext copy-python)
+  add_custom_command(
+    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    COMMAND ${CMAKE_COMMAND} -E env
+      "PATH=${MI_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
+      "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
+      ${MI_BINARY_DIR}/python/mitsuba
+    DEPENDS mitsuba_ext copy-python
+  )
+  add_custom_target(mitsuba_stub_file_generation ALL
+    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+  )
 
   foreach (MI_VARIANT ${MI_VARIANTS})
     string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
