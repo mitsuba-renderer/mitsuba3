@@ -12,17 +12,6 @@ import logging
 if _sys.version_info < (3, 8):
     raise ImportError("Mitsuba requires Python 3.8 or greater.")
 
-if _os.name == 'nt':
-    # Specify DLL search path for windows (no rpath on this platform..)
-    d = __file__
-    for i in range(3):
-        d = _os.path.dirname(d)
-    try: # try to use Python 3.8's DLL handling
-        _os.add_dll_directory(d)
-    except AttributeError:  # otherwise use PATH
-        _os.environ['PATH'] += _os.pathsep + d
-    del d, i
-
 mi_dir = _os.path.dirname(_os.path.realpath(__file__))
 if _os.name != 'nt' and _os.path.relpath(_dr.__path__[0], mi_dir) != '../drjit':
     drjit_loc = _os.path.realpath(_dr.__path__[0])
