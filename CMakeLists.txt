@@ -488,11 +488,11 @@ endif()
 if (MSVC AND MI_ENABLE_PYTHON)
   foreach(target mitsuba ${MI_DEPEND})
     set(COPY_TARGET_PYTHON
-      ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE:${target}>)
+      ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE_NAME:${target}>)
     get_target_property(TARGET_FOLDER ${target} FOLDER)
     if (TARGET_FOLDER STREQUAL "drjit")
       set(COPY_TARGET_PYTHON
-        ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE:${target}>)
+        ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE_NAME:${target}>)
     endif()
 
     add_custom_target(copy-${target} ALL
