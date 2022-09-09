@@ -7,3 +7,5 @@ add_plugin(thinlens        thinlens.cpp)
 add_plugin(irradiancemeter irradiancemeter.cpp)
 add_plugin(distant         distant.cpp)
 add_plugin(batch           batch.cpp)
+
+set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)

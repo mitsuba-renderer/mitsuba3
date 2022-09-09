@@ -6,3 +6,5 @@ add_plugin(lanczos    lanczos.cpp)
 add_plugin(mitchell   mitchell.cpp)
 add_plugin(catmullrom catmullrom.cpp)
 add_plugin(gaussian   gaussian.cpp)
+
+set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)

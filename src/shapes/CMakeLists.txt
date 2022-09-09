@@ -20,3 +20,4 @@ if (MI_ENABLE_EMBREE)
     target_link_libraries(instance PRIVATE embree)
 endif()
 
+set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
