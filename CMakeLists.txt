@@ -437,7 +437,7 @@ if (NOT SKBUILD)
     add_custom_target(mkdoc-api
         ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR_API}" "${SPHINX_OUTPUT_DIR_API}"
         COMMENT "Building HTML documentation with Sphinx"
-        DEPENDS copy-python
+        DEPENDS copy-python-src
         USES_TERMINAL)
   endif()
 endif()
@@ -482,6 +482,26 @@ if (NOT SKBUILD)
   if (MI_ENABLE_AUTODIFF)
     list(APPEND MI_DEPEND drjit-autodiff)
   endif()
+endif()
+
+# Copy shared libraries to Python folders (no rpath on Windows)
+if (MSVC AND MI_ENABLE_PYTHON)
+  foreach(target mitsuba ${MI_DEPEND})
+    set(COPY_TARGET_PYTHON
+      ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE:${target}>)
+    get_target_property(TARGET_FOLDER ${target} FOLDER)
+    if (TARGET_FOLDER STREQUAL "drjit")
+      set(COPY_TARGET_PYTHON
+        ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE:${target}>)
+    endif()
+
+    add_custom_target(copy-${target} ALL
+      COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:${target}> ${COPY_TARGET_PYTHON}
+      DEPENDS ${target}
+    )
+    add_dependencies(copy-python-targets copy-${target})
+  endforeach(target)
 endif()
 
 # Set up location for build products
