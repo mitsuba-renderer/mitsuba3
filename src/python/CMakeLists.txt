@@ -150,8 +150,18 @@ endif()
 #   Copy python files target
 # ----------------------------------------------------------
 
-add_custom_target(copy-python ALL DEPENDS ${MI_COPY_FILES})
-set_target_properties(copy-python PROPERTIES FOLDER python)
+add_custom_target(copy-python-src ALL DEPENDS ${MI_COPY_FILES})
+set_target_properties(copy-python-src PROPERTIES FOLDER python)
+
+# ----------------------------------------------------------
+#   Copy targets for python (no rpath on Windows)
+# ----------------------------------------------------------
+
+if (MSVC)
+  # This target is consumed in the root CMakeLists.txt
+  add_custom_target(copy-python-targets ALL)
+  set_target_properties(copy-python-src PROPERTIES FOLDER python)
+endif()
 
 # ----------------------------------------------------------
 #   Generate type information stubs (drjit)
@@ -162,17 +172,22 @@ if (NOT SKBUILD)
   if(MSVC)
     set(PATH_SEP ";")
   endif()
-  file(TO_NATIVE_PATH "${MI_BINARY_DIR}" DRJIT_STUBS_ENV_PATH)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
+
+  set(DRJIT_STUB_FILE_DEPENDENCIES "")
+  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-python-src)
+  if (MSVC)
+    set(DRJIT_STUB_FILE_DEPENDENCIES copy-python-targets)
+    list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-python-targets)
+  endif()
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
     COMMAND ${CMAKE_COMMAND} -E env
-      "PATH=${DRJIT_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
       "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
       "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
       ${MI_BINARY_DIR}/python/drjit
-    DEPENDS drjit-python copy-python
+    DEPENDS drjit-python ${DRJIT_STUB_FILE_DEPENDENCIES}
   )
   add_custom_target(drjit_stub_file_generation ALL
     DEPENDS ${MI_BINARY_DIR}/python/drjit/__init__.pyi
@@ -190,30 +205,33 @@ if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
   if(MSVC)
     set(PATH_SEP ";")
   endif()
-  file(TO_NATIVE_PATH "${MI_BINARY_DIR}" MI_STUBS_ENV_PATH)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
+
+  set(MI_STUB_FILE_DEPENDENCIES "")
+  foreach (MI_VARIANT ${MI_VARIANTS})
+    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES mitsuba_${MI_VARIANT_NAME}_ext)
+  endforeach()
+  if (NOT SKBUILD)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES drjit_stub_file_generation)
+  endif()
+  list(APPEND MI_STUB_FILE_DEPENDENCIES copy-python-src)
+  if (MSVC)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES copy-python-targets)
+  endif()
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
     COMMAND ${CMAKE_COMMAND} -E env
-      "PATH=${MI_STUBS_ENV_PATH}${PATH_SEP}$ENV{PATH}"
       "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
       "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
       ${MI_BINARY_DIR}/python/mitsuba
-    DEPENDS mitsuba_ext copy-python
+    DEPENDS mitsuba_ext ${MI_STUB_FILE_DEPENDENCIES}
   )
   add_custom_target(mitsuba_stub_file_generation ALL
     DEPENDS ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
   )
-
-  foreach (MI_VARIANT ${MI_VARIANTS})
-    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
-    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
-    add_dependencies(mitsuba_stub_file_generation mitsuba_${MI_VARIANT_NAME}_ext)
-  endforeach()
-  if (NOT SKBUILD)
-    add_dependencies(mitsuba_stub_file_generation drjit_stub_file_generation)
-  endif()
 else()
   ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)
   file(GLOB_RECURSE MI_PYTHON_STUB_FILES RELATIVE ${MI_PYTHON_STUBS_DIR}/stubs ${MI_PYTHON_STUBS_DIR}/stubs/*.pyi)

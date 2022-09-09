@@ -326,7 +326,7 @@ if __name__ == '__main__':
 
     logging.debug(f'Processing mitsuba root module')
     buffer, submodules = process_module(mi, top_module=True)
-    with open(f'{stub_folder}__init__.pyi', 'w') as f:
+    with open(os.path.join(stub_folder, '__init__.pyi'), 'w') as f:
         f.write(buffer)
 
     processed_submodules = set()
