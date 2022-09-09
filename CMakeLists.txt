@@ -376,6 +376,7 @@ execute_process(
 )
 
 # Function for creating Mitsuba plugins
+set(MI_PLUGIN_TARGETS "")
 function(add_plugin)
   list(GET ARGV 0 TARGET)
   list(REMOVE_AT ARGV 0)
@@ -393,6 +394,8 @@ function(add_plugin)
     LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
   )
+  list(APPEND MI_PLUGIN_TARGETS ${TARGET})
+  set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
 endfunction(add_plugin)
 
 # Be extra noisy about unintended float->double conversions
@@ -486,22 +489,27 @@ endif()
 
 # Copy shared libraries to Python folders (no rpath on Windows)
 if (MSVC AND MI_ENABLE_PYTHON)
-  foreach(target mitsuba ${MI_DEPEND})
-    set(COPY_TARGET_PYTHON
-      ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE_NAME:${target}>)
+  add_custom_target(copy-targets ALL)
+
+  set(COPY_TARGETS mitsuba ${MI_DEPEND} ${MI_PLUGIN_TARGETS})
+  foreach(target ${COPY_TARGETS})
     get_target_property(TARGET_FOLDER ${target} FOLDER)
     if (TARGET_FOLDER STREQUAL "drjit")
-      set(COPY_TARGET_PYTHON
-        ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE_NAME:${target}>)
+        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE_NAME:${target}>)
+    elseif(TARGET_FOLDER MATCHES "plugins/.*$")
+        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/plugins/$<TARGET_FILE_NAME:${target}>)
+    else()
+        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE_NAME:${target}>)
     endif()
-
-    add_custom_target(copy-${target} ALL
-      COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:${target}> ${COPY_TARGET_PYTHON}
+    add_custom_command(
+      TARGET copy-targets POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:${target}> ${COPY_TARGET_DESTINATION}
       DEPENDS ${target}
     )
-    add_dependencies(copy-python-targets copy-${target})
   endforeach(target)
+
+  add_dependencies(copy-targets-python copy-targets)
 endif()
 
 # Set up location for build products
