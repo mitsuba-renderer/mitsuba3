@@ -1,6 +1,5 @@
 from importlib import import_module as _import
 import pytest
-import sys
 
 def test01_import_mitsuba_variants():
     import mitsuba as mi
@@ -119,3 +118,30 @@ def test08_sys_module_size():
         getattr(v, "foo", False)
 
     assert True
+
+
+@pytest.mark.parametrize('order', [0, 1, 2])
+def test09_import_torch_order(order):
+    if order == 0:
+        pytest.importorskip("torch")
+        import mitsuba as mi
+        mi.set_variant(mi.variants()[0])
+    if order == 1:
+        import mitsuba as mi
+        pytest.importorskip("torch")
+        mi.set_variant(mi.variants()[0])
+    if order == 2:
+        import mitsuba as mi
+        mi.set_variant(mi.variants()[0])
+        pytest.importorskip("torch")
+
+    bmp = mi.Bitmap(mi.TensorXf([0.0, 0.0, 0.0, 0.0], [2, 2]))
+    bsdf = mi.load_dict({
+        'type': 'diffuse',
+        'reflectance': {
+            'type': 'bitmap',
+            'bitmap': bmp,
+        },
+    })
+
+    print(bsdf)
