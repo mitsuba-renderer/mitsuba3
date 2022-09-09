@@ -47,10 +47,16 @@ del DRJIT_VERSION_REQUIREMENT
 
 try:
     # Use RTLD_DEEPBIND to prevent the DLL to search symbols in the global scope
-    old_flags = _sys.getdlopenflags()
-    _sys.setdlopenflags(_os.RTLD_LAZY | _os.RTLD_LOCAL | _os.RTLD_DEEPBIND)
+    if _os.name != 'nt':
+        old_flags = _sys.getdlopenflags()
+        _sys.setdlopenflags(_os.RTLD_LAZY | _os.RTLD_LOCAL | _os.RTLD_DEEPBIND)
+
     _import('mitsuba.mitsuba_ext')
-    _sys.setdlopenflags(old_flags)
+
+    if _os.name != 'nt':
+        _sys.setdlopenflags(old_flags)
+        del old_flags
+
     _tls = threading.local()
     _tls.cache = {}
 except (ImportError, ModuleNotFoundError) as e:
@@ -115,13 +121,18 @@ class MitsubaVariantModule(types.ModuleType):
         if modules is None:
             try:
                 # Use RTLD_DEEPBIND to prevent DLLs to search symbols in the global scope
-                old_flags = _sys.getdlopenflags()
-                _sys.setdlopenflags(_os.RTLD_LAZY | _os.RTLD_LOCAL | _os.RTLD_DEEPBIND)
+                if _os.name != 'nt':
+                    old_flags = _sys.getdlopenflags()
+                    _sys.setdlopenflags(_os.RTLD_LAZY | _os.RTLD_LOCAL | _os.RTLD_DEEPBIND)
+
                 modules = (
                     _import('mitsuba.mitsuba_ext'),
                     _import('mitsuba.mitsuba_' + variant + '_ext'),
                 )
-                _sys.setdlopenflags(old_flags)
+
+                if _os.name != 'nt':
+                    _sys.setdlopenflags(old_flags)
+
                 super().__setattr__('_modules', modules)
             except ImportError as e:
                 if str(e).startswith('No module named'):
