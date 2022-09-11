@@ -127,7 +127,11 @@ class MitsubaVariantModule(types.ModuleType):
                 # Use RTLD_DEEPBIND to prevent DLLs to search symbols in the global scope
                 if _os.name != 'nt':
                     old_flags = _sys.getdlopenflags()
-                    _sys.setdlopenflags(_os.RTLD_LAZY | _os.RTLD_LOCAL | _os.RTLD_DEEPBIND)
+                    new_flags = _os.RTLD_LAZY | _os.RTLD_LOCAL
+                    if _sys.platform != 'darwin':
+                        new_flags |= _os.RTLD_DEEPBIND
+                    _sys.setdlopenflags(new_flags)
+                    del new_flags
 
                 modules = (
                     _import('mitsuba.mitsuba_ext'),
