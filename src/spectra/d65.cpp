@@ -106,11 +106,8 @@ public:
                 m_scale *= factor;
 
                 m_value = srgb_model_fetch(color);
-            } else if constexpr (is_rgb_v<Spectrum>) {
-                m_value = color;
             } else {
-                static_assert(is_monochromatic_v<Spectrum>);
-                m_value = luminance(color);
+                m_value = color;
             }
 
             dr::make_opaque(m_value);
@@ -173,6 +170,7 @@ public:
             else
                 return d65_val * m_nested_texture->eval(si, active);
         } else {
+            DRJIT_MARK_USED(si);
             NotImplementedError("eval");
         }
     }
@@ -195,6 +193,8 @@ public:
                 return { wav, weight * m_d65->eval(si2, active) };
             }
         } else {
+            DRJIT_MARK_USED(si);
+            DRJIT_MARK_USED(sample);
             NotImplementedError("sample_spectrum");
         }
     }
@@ -208,6 +208,8 @@ public:
             else
                 return Base::pdf_spectrum(si, active);
         } else {
+            DRJIT_MARK_USED(si);
+            DRJIT_MARK_USED(active);
             NotImplementedError("pdf_spectrum");
         }
     }
@@ -273,10 +275,14 @@ public:
     }
 
     ScalarFloat max() const override {
-        if (m_nested_texture)
-            return m_nested_texture->max();
-        else
-            return dr::max_nested(srgb_model_mean(m_value));
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_nested_texture)
+                return m_nested_texture->max();
+            else
+                return dr::max_nested(srgb_model_mean(m_value));
+        } else {
+            NotImplementedError("max");
+        }
     }
 
     bool is_spatially_varying() const override {
@@ -300,13 +306,7 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    /**
-     * Depending on the compiled variant, this plugin either stores coefficients
-     * for a spectral upsampling model, or a plain RGB/monochromatic value.
-     */
-    static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
-    Color<Float, ChannelCount> m_value;
-
+    Color<Float, 3> m_value;
     ref<Base> m_nested_texture;
     ref<Base> m_d65;
 
