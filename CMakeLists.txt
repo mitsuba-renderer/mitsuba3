@@ -552,8 +552,14 @@ set(MI_SRGB_COEFF_FILE "" CACHE STRING "Location of the spectral upsampling mode
 mark_as_advanced(MI_SRGB_COEFF_FILE)
 if ("${MI_SRGB_COEFF_FILE}" STREQUAL "")
   ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
+  if (MSVC AND MI_ENABLE_PYTHON)
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff python/mitsuba/data/srgb.coeff rgb2spec_opt_run)
+  endif()
 else()
   ro_copy(${MI_SRGB_COEFF_FILE} data/srgb.coeff)
+  if (MSVC AND MI_ENABLE_PYTHON)
+    ro_copy(${MI_SRGB_COEFF_FILE} python/mitsuba/data/srgb.coeff)
+  endif()
 endif()
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/data/srgb.coeff
@@ -569,6 +575,14 @@ add_custom_command(
   "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
   "${MI_BINARY_DIR}/data/ior"
 )
+if (MSVC AND MI_ENABLE_PYTHON)
+  add_custom_command(
+    TARGET copy-resources DEPENDS IOR_FILES
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
+    "${MI_BINARY_DIR}/python/mitsuba/data/ior"
+  )
+endif()
 install(
   DIRECTORY ${MI_BINARY_DIR}/data/ior
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
