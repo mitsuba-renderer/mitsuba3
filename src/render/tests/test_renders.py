@@ -271,7 +271,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         assert False
 
 
-def render_ref_images(scenes, spp, overwrite, scene=None):
+def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):
     if scene is not None:
         if not scene.endswith('.xml'):
             scene = scene + '.xml'
@@ -289,20 +289,23 @@ def render_ref_images(scenes, spp, overwrite, scene=None):
         if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
             continue
 
-        for variant in mi.variants():
-            if not variant.split('_')[0] == 'scalar' or variant.endswith('double'):
+        for variant_ in mi.variants():
+            if not variant.split('_')[0] == 'scalar' or variant_.endswith('double'):
                 continue
 
-            if 'polarized' in variant and os.path.split(scene_dir)[1] in POLARIZED_EXCLUDE_FOLDERS:
+            if variant is not None and variant != variant_:
                 continue
 
-            mi.set_variant(variant)
+            if 'polarized' in variant_ and os.path.split(scene_dir)[1] in POLARIZED_EXCLUDE_FOLDERS:
+                continue
+
+            mi.set_variant(variant_)
 
             ref_fname, var_fname = get_ref_fname(scene_fname)
             if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
 
-            print(f'Rendering: {scene_fname} - {variant}')
+            print(f'Rendering: {scene_fname} - {variant_}')
             scene = mi.load_file(scene_fname, spp=spp)
             scene.integrator().render(scene, seed=0, develop=False)
 
@@ -331,5 +334,7 @@ if __name__ == '__main__':
                         help='Samples per pixel. Default value: 32000')
     parser.add_argument('--scene', default=None, type=str,
                         help='Name of a specific scene to render. Otherwise, try to render reference images for all scenes.')
+    parser.add_argument('--variant', default=None, type=str,
+                        help='Name of a specific variant to render. Otherwise, try to render reference images for all variants.')
     args = parser.parse_args()
     render_ref_images(SCENES, **vars(args))
