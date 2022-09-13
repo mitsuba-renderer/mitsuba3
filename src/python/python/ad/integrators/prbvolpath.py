@@ -210,6 +210,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 valid_ray |= act_medium_scatter
                 with dr.suspend_grad():
                     wo, phase_pdf = phase.sample(phase_ctx, mei, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
+                act_medium_scatter &= phase_pdf > 0.0
                 new_ray = mei.spawn_ray(wo)
                 ray[act_medium_scatter] = new_ray
                 needs_intersection |= act_medium_scatter

@@ -237,6 +237,7 @@ public:
                     sampler->next_1d(act_medium_scatter),
                     sampler->next_2d(act_medium_scatter),
                     act_medium_scatter);
+                act_medium_scatter &= phase_pdf > 0.f;
                 Ray3f new_ray  = mei.spawn_ray(wo);
                 dr::masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
