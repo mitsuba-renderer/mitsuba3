@@ -55,31 +55,31 @@ class PRBReparamIntegrator(RBIntegrator):
     - The integrator reparameterizes the incident hemisphere to handle
       visibility-induced discontinuities. This makes it possible to optimize
       geometric parameters like vertex positions. Discontinuities observed
-      through ideal specular reflection/refraction are not supported and
-      produce biased gradients (see also the next point).
+      through ideal specular reflection/refraction are not supported and produce
+      biased gradients (see also the next point).
 
     - Detached sampling. This means that the properties of ideal specular
       objects (e.g., the IOR of a glass vase) cannot be optimized.
 
-    See ``prb.py`` and ``prb_basic.py`` for simplified implementations that remove
-    some of these features.
+    See ``prb.py`` and ``prb_basic.py`` for simplified implementations that
+    remove some of these features.
 
-    See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
-    for details on PRB, attached/detached sampling. Reparameterizations
-    for differentiable rendering were proposed in
+    See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo` for
+    details on PRB, attached/detached sampling. Reparameterizations for
+    differentiable rendering were proposed in
     :cite:`Loubet2019Reparameterizing`. The specific change of variables used in
     Mitsuba is described in :cite:`Bangaru2020`.
 
     A few more technical details regarding the implementation: this integrator
     uses detached sampling, hence the sampling process that generates the path
-    vertices (e.g., ``v₀``, ``v₁``, ..) and the computation of Monte Carlo sampling
-    densities is excluded from the derivative computation. However, the path
-    throughput that is then evaluated on top of these vertices does track
+    vertices (e.g., ``v₀``, ``v₁``, ..) and the computation of Monte Carlo
+    sampling densities is excluded from the derivative computation. However, the
+    path throughput that is then evaluated on top of these vertices does track
     derivatives, and it also uses reparameterizations.
 
-    Consider the contribution ``L`` of a path ``(v₀, v₁, v₂, v₃, v₄)`` where ``v₀`` is
-    the sensor position, the ``f`` capture BSDFs and cosine factors, and the
-    ``E`` represent emission.
+    Consider the contribution ``L`` of a path ``(v₀, v₁, v₂, v₃, v₄)`` where
+    ``v₀`` is the sensor position, the ``f`` capture BSDFs and cosine factors,
+    and the ``E`` represent emission.
 
     .. code-block:: none
 
@@ -106,24 +106,25 @@ class PRBReparamIntegrator(RBIntegrator):
 
     This expression sums over essentially the same terms, but it must account
     for how each one could change as a consequence of internal dependencies
-    (e.g., ``∂f₁/∂π``) or due to the reparameterization (e.g., ``∂f₁/∂v₁ ∂v₁/∂π``).
-    It's tedious to do this derivative calculation manually, especially once
-    additional complications like direct illumination sampling and MIS are
-    taken into account. We prefer using automatic differentiation for this,
-    which will evaluate the chain/product rule automatically.
+    (e.g., ``∂f₁/∂π``) or due to the reparameterization (e.g., ``∂f₁/∂v₁
+    ∂v₁/∂π``). It's tedious to do this derivative calculation manually,
+    especially once additional complications like direct illumination sampling
+    and MIS are taken into account. We prefer using automatic differentiation
+    for this, which will evaluate the chain/product rule automatically.
 
     However, a nontrivial technical challenge here is that path tracing-style
-    integrators perform a loop over path vertices, while DrJit's loop
-    recording facilities do not permit the use of AD across loop iterations.
-    The loop must thus be designed so that use of AD is self-contained in each
-    iteration of the loop, while generating all the terms of ``∂T`` iteratively
-    without omission or duplication.
+    integrators perform a loop over path vertices, while DrJit's loop recording
+    facilities do not permit the use of AD across loop iterations. The loop must
+    thus be designed so that use of AD is self-contained in each iteration of
+    the loop, while generating all the terms of ``∂T`` iteratively without
+    omission or duplication.
 
     We have chosen to implement this loop so that iteration ``i`` computes all
-    derivative terms associated with the current vertex, meaning: ``Eᵢ/∂π``, ``fᵢ/∂π``,
-    as well as the parameterization-induced terms involving ``∂vᵢ/∂π``. To give a
-    more concrete example, filtering the previous example derivative ``∂L`` to only
-    include terms for the interior vertex ``v₂`` leaves:
+    derivative terms associated with the current vertex, meaning: ``Eᵢ/∂π``,
+    ``fᵢ/∂π``, as well as the parameterization-induced terms involving
+    ``∂vᵢ/∂π``. To give a more concrete example, filtering the previous example
+    derivative ``∂L`` to only include terms for the interior vertex ``v₂``
+    leaves:
 
     .. code-block:: none
 
@@ -150,8 +151,8 @@ class PRBReparamIntegrator(RBIntegrator):
     differentiated (``∂E₂/∂π``, ``∂f₂/∂π``).
 
     In the first line, the f₁ term corresponds to the path throughput (labeled
-    ``β`` in this class) in the general case, and the (``f₁ E₃ + f₁ f₃ E₄``) term is
-    the incident illumination (``Lᵢ``) at the current vertex.
+    ``β`` in this class) in the general case, and the (``f₁ E₃ + f₁ f₃ E₄``)
+    term is the incident illumination (``Lᵢ``) at the current vertex.
 
     Evaluating these terms using AD will look something like this:
 
@@ -175,11 +176,11 @@ class PRBReparamIntegrator(RBIntegrator):
                    + (f₁ f₂ E₄             ) (∂f₃/∂v₂ ∂v₂/∂π)
 
     These are changes in emission or reflection terms at neighboring vertices
-    (``v₁`` and ``v₃``) that arise due to the reparameterization at ``v₂``. It's important
-    that the influence of the scene parameters on the emission or reflection
-    terms at these vertices is excluded: we are only interested in directional
-    derivatives that arise due to the reparametrization, which can be
-    accomplished using a more targeted version of ``dr.resume_grad()``.
+    (``v₁`` and ``v₃``) that arise due to the reparameterization at ``v₂``. It's
+    important that the influence of the scene parameters on the emission or
+    reflection terms at these vertices is excluded: we are only interested in
+    directional derivatives that arise due to the reparametrization, which can
+    be accomplished using a more targeted version of ``dr.resume_grad()``.
 
     .. code-block:: none
 
@@ -188,16 +189,16 @@ class PRBReparamIntegrator(RBIntegrator):
             L₂ += Lᵢ_prev * f₁(v₀, v₁, v₂') # BSDF at previous vertex
             L₂ += Lᵢ_next * f₃(v₂', v₃, v₄) # BSDF at next vertex
 
-    To get the quantities for the next vertex, the path tracer must "run
-    ahead" by one bounce.
+    To get the quantities for the next vertex, the path tracer must "run ahead"
+    by one bounce.
 
-    The loop begins each iteration being already provided with the previous
-    and current intersection in the form of a ``PreliminaryIntersection3f``.
-    It must still be turned into a full ``SurfaceInteraction3f`` which,
-    however, only involves a virtual function call and no ray tracing. It
-    computes the next intersection and passes that along to the subsequent
-    iteration. Each iteration reconstructs three surface interaction records
-    (``prev``, ``cur``, ``next``), of which only ``cur`` tracks positional derivatives.
+    The loop begins each iteration being already provided with the previous and
+    current intersection in the form of a ``PreliminaryIntersection3f``. It must
+    still be turned into a full ``SurfaceInteraction3f`` which, however, only
+    involves a virtual function call and no ray tracing. It computes the next
+    intersection and passes that along to the subsequent iteration. Each
+    iteration reconstructs three surface interaction records (``prev``, ``cur``,
+    ``next``), of which only ``cur`` tracks positional derivatives.
 
     .. tabs::
 

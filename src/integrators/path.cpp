@@ -114,7 +114,6 @@ public:
         // If m_hide_emitters == false, the environment emitter will be visible
         Mask valid_ray                = !m_hide_emitters && dr::neq(scene->environment(), nullptr);
 
-
         // Variables caching information from the previous bounce
         Interaction3f prev_si         = dr::zeros<Interaction3f>();
         Float         prev_bsdf_pdf   = 1.f;

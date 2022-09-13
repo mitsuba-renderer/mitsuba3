@@ -651,7 +651,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
            triangle.
            Moeller and Trumbore method bridges the gradients at 'ray' and the
            computed surface interaction. But the effects of the third part
-           remains ambigious. 'DetachShape' explicitly detaches the three
+           remains ambiguous. 'DetachShape' explicitly detaches the three
            vertices, which is equivalent to computing a 'hit point' of a laser
            characterized by 'ray'. 'FollowShape' on the other hand first finds
            the 'hit point', then glues the interaction point with the

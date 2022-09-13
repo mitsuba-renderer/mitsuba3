@@ -27,7 +27,7 @@ import drjit as dr
 import mitsuba as mi
 import importlib
 
-import pytest, sys, inspect, os, argparse
+import pytest, os, argparse
 from os.path import join, realpath, exists
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
