@@ -127,7 +127,7 @@ class DirectReparamIntegrator(ADIntegrator):
         bsdf_ctx = mi.BSDFContext()
         L = mi.Spectrum(0)
 
-        ray_reparam = mi.Ray3f(ray)
+        ray_reparam = mi.Ray3f(dr.detach(ray))
         if not primal:
             # Camera ray reparameterization determinant multiplied in ADIntegrator.sample_rays()
             ray_reparam.d, _ = reparam(ray, depth=0, active=active)

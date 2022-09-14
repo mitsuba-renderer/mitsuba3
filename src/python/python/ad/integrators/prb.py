@@ -81,7 +81,7 @@ class PRBIntegrator(RBIntegrator):
         # --------------------- Configure loop state ----------------------
 
         # Copy input arguments to avoid mutating the caller's state
-        ray = mi.Ray3f(ray)
+        ray = mi.Ray3f(dr.detach(ray))
         depth = mi.UInt32(0)                          # Depth of current vertex
         L = mi.Spectrum(0 if primal else state_in)    # Radiance accumulator
         δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance

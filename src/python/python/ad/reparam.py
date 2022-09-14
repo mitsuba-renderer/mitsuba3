@@ -95,7 +95,7 @@ def _sample_warp_field(scene: mi.Scene,
                              coherent=False)
 
     # Convert into a direction at 'ray.o'. When no surface was intersected,
-    # copy the original (static) direction
+    # copy the original direction
     hit = si.is_valid()
     V_direct = dr.select(hit, dr.normalize(si.p - ray.o), ray.d)
 
@@ -168,7 +168,7 @@ class _ReparameterizeOp(dr.CustomOp):
         it = mi.UInt32(0)
         rng = self.rng
         ray_grad_o = self.grad_in('ray').o
-        ray_frame = mi.Frame3f(self.ray.d)
+        ray_grad_d = self.grad_in('ray').d
 
         loop = mi.Loop(name="reparameterize_ray(): forward propagation",
                        state=lambda: (it, Z, dZ, grad_V, grad_div_lhs, rng.state))
@@ -182,10 +182,12 @@ class _ReparameterizeOp(dr.CustomOp):
             ray = mi.Ray3f(self.ray)
             dr.enable_grad(ray.o)
             dr.set_grad(ray.o, ray_grad_o)
+            dr.enable_grad(ray.d)
+            dr.set_grad(ray.d, ray_grad_d)
+            ray_frame = mi.Frame3f(ray.d)
 
             rng_state_backup = rng.state
-            sample = mi.Point2f(rng.next_float32(),
-                             rng.next_float32())
+            sample = mi.Point2f(rng.next_float32(), rng.next_float32())
 
             if self.antithetic:
                 repeat = dr.eq(it & 1, 0)
@@ -285,9 +287,10 @@ class _ReparameterizeOp(dr.CustomOp):
 
         it = mi.UInt32(0)
         ray_grad_o = mi.Point3f(0)
+        ray_grad_d = mi.Vector3f(0)
 
         loop = mi.Loop(name="reparameterize_ray(): backpropagation",
-                       state=lambda: (it, rng.state, ray_grad_o))
+                       state=lambda: (it, rng.state, ray_grad_o, ray_grad_d))
 
         # Unroll the entire loop in wavefront mode
         # loop.set_uniform(True) # TODO can we turn this back on? (see self.active in loop condition)
@@ -297,6 +300,8 @@ class _ReparameterizeOp(dr.CustomOp):
         while loop(self.active & (it < self.num_rays)):
             ray = mi.Ray3f(self.ray)
             dr.enable_grad(ray.o)
+            dr.enable_grad(ray.d)
+            ray_frame = mi.Frame3f(ray.d)
 
             rng_state_backup = rng.state
 
@@ -319,10 +324,12 @@ class _ReparameterizeOp(dr.CustomOp):
             dr.enqueue(dr.ADMode.Backward, V_i, div_V_1_i)
             dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
             ray_grad_o += dr.grad(ray.o)
+            ray_grad_d += dr.grad(ray.d)
             it += 1
 
         ray_grad = dr.detach(dr.zeros(type(self.ray)))
         ray_grad.o = ray_grad_o
+        ray_grad.d = ray_grad_d
         self.set_grad_in('ray', ray_grad)
 
 
@@ -334,12 +341,13 @@ class _ReparameterizeOp(dr.CustomOp):
         # Ignore inactive lanes
         grad_direction  = dr.select(self.active, grad_direction, 0.0)
         grad_divergence = dr.select(self.active, grad_divergence, 0.0)
-        ray_frame = mi.Frame3f(self.ray.d)
         rng = self.rng
         rng_clone = mi.PCG32(rng)
 
         ray = mi.Ray3f(self.ray)
         dr.enable_grad(ray.o)
+        dr.enable_grad(ray.d)
+        ray_frame = mi.Frame3f(ray.d)
 
         warp_fields = []
         for i in range(self.num_rays):
@@ -384,6 +392,7 @@ class _ReparameterizeOp(dr.CustomOp):
 
         ray_grad = dr.detach(dr.zeros(type(self.ray)))
         ray_grad.o = dr.grad(ray.o)
+        ray_grad.d = dr.grad(ray.d)
         self.set_grad_in('ray', ray_grad)
 
 

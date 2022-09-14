@@ -173,7 +173,7 @@ public:
         callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
         callback->put_parameter("focus_distance", m_focus_distance,   +ParamFlags::NonDifferentiable);
         callback->put_parameter("x_fov", m_x_fov,                     +ParamFlags::NonDifferentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),        +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),        +ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
