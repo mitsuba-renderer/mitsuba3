@@ -312,7 +312,7 @@ class PRBReparamIntegrator(RBIntegrator):
         # Initialize loop state variables caching the rays and preliminary
         # intersections of the previous (zero-initialized) and current vertex
         ray_prev = dr.zeros(mi.Ray3f)
-        ray_cur  = mi.Ray3f(ray)
+        ray_cur  = mi.Ray3f(dr.detach(ray))
         pi_prev  = dr.zeros(mi.PreliminaryIntersection3f)
         pi_cur   = scene.ray_intersect_preliminary(ray_cur, coherent=True,
                                                    active=active)

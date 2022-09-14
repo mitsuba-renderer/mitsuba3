@@ -294,9 +294,9 @@ class ADIntegrator(mi.CppADIntegrator):
         scene: mi.Scene,
         sensor: mi.Sensor,
         sampler: mi.Sampler,
-        reparam: Callable[[mi.Ray3f, mi.Bool],
-                          Tuple[mi.Ray3f, mi.Float]] = None
-    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f]:
+        reparam: Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
+                          Tuple[mi.Vector3f, mi.Float]] = None
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
         """
         Sample a 2D grid of primary rays for a given sensor
 
@@ -363,12 +363,13 @@ class ADIntegrator(mi.CppADIntegrator):
         if mi.is_spectral:
             wavelength_sample = sampler.next_1d()
 
-        ray, weight = sensor.sample_ray_differential(
-            time=time,
-            sample1=wavelength_sample,
-            sample2=pos_adjusted,
-            sample3=aperture_sample
-        )
+        with dr.resume_grad():
+            ray, weight = sensor.sample_ray_differential(
+                time=time,
+                sample1=wavelength_sample,
+                sample2=pos_adjusted,
+                sample3=aperture_sample
+            )
 
         reparam_det = 1.0
 
@@ -396,10 +397,16 @@ class ADIntegrator(mi.CppADIntegrator):
 
             with dr.resume_grad():
                 # Reparameterize the camera ray
-                reparam_d, reparam_det = reparam(ray=ray, depth=mi.UInt32(0))
+                reparam_d, reparam_det = reparam(ray=dr.detach(ray),
+                                                 depth=mi.UInt32(0))
 
-                # Create a fake interaction along the sampled ray and use it to the
-                # position with derivative tracking
+                # TODO better understand why this is necessary
+                # Reparameterize the camera ray to handle camera translations
+                if dr.grad_enabled(ray.o):
+                    reparam_d, _ = reparam(ray=ray, depth=mi.UInt32(0))
+
+                # Create a fake interaction along the sampled ray and use it to
+                # recompute the position with derivative tracking
                 it = dr.zeros(mi.Interaction3f)
                 it.p = ray.o + reparam_d
                 ds, _ = sensor.sample_direction(it, aperture_sample)
@@ -484,10 +491,9 @@ class ADIntegrator(mi.CppADIntegrator):
                δL: Optional[mi.Spectrum],
                state_in: Any,
                reparam: Optional[
-                   Callable[[mi.Ray3f, mi.Bool],
-                            Tuple[mi.Ray3f, mi.Float]]],
-               active: mi.Bool) -> Tuple[mi.Spectrum,
-                                         mi.Bool]:
+                   Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
+                            Tuple[mi.Vector3f, mi.Float]]],
+               active: mi.Bool) -> Tuple[mi.Spectrum, mi.Bool]:
         """
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -1168,8 +1174,8 @@ class _ReparamWrapper:
                  params: Any,
                  reparam: Callable[
                      [mi.Scene, mi.PCG32, Any,
-                      mi.Ray3f, mi.Bool],
-                     Tuple[mi.Ray3f, mi.Float]],
+                      mi.Ray3f, mi.UInt32, mi.Bool],
+                     Tuple[mi.Vector3f, mi.Float]],
                  wavefront_size : int,
                  seed : int):
 
