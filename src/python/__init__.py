@@ -205,6 +205,8 @@ class MitsubaModule(types.ModuleType):
 
         # Try lookup the cache first
         try:
+            if not hasattr(_tls, 'cache'):
+                _tls.cache = {}
             result = _tls.cache.get((variant, submodule, key))
             if result is not None:
                 return result
