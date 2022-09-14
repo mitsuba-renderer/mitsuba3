@@ -158,12 +158,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
-                EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
                 if (free) {
                     Log(Debug, "Free Embree scene state..");
-
+                    EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
                     rtcReleaseScene(s->accel);
-
                     delete s;
                 }
             },

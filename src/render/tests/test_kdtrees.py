@@ -87,8 +87,11 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
         pytest.skip("EMBREE enabled")
 
     scene = mi.load_dict({
-        "type" : "ply",
-        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+        'type': 'scene',
+        'shape': {
+            "type" : "ply",
+            "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+        }
     })
     b = scene.bbox()
 
