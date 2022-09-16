@@ -145,12 +145,12 @@ public:
         m_radius = dr::norm(m_to_world.value().transform_affine(Vector3f(1.f, 0.f, 0.f)));
         m_center = m_to_world.value().transform_affine(Point3f(0.f));
 
-        if (m_radius.scalar() <= 0.f) {
+        if (S[0][0] <= 0.f) {
             m_radius = dr::abs(m_radius.value());
             m_flip_normals = !m_flip_normals;
         }
 
-        // Reconstruct the to_world transform with uniform scaling and no shear
+        // Compute the to_object transformation with uniform scaling and no shear
         m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());

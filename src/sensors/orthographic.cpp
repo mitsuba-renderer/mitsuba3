@@ -48,7 +48,7 @@ the XY-plane facing along the positive Z direction. Transformed versions
 can be instantiated e.g. as follows:
 
 The exact camera position and orientation is most easily expressed using the
-:monosp:`lookat` tag, i.e.:
+:monosp:`look_at` tag, i.e.:
 
 .. tabs::
     .. code-tab:: xml
@@ -60,14 +60,14 @@ The exact camera position and orientation is most easily expressed using the
 
                 <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
                     and the direction (0, 0, 1) points "up" in the output image -->
-                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+                <look_at origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
             </transform>
         </sensor>
 
     .. code-tab:: python
 
         'type': 'orthographic',
-        'to_world': mi.ScalarTransform4f.lookat(
+        'to_world': mi.ScalarTransform4f.look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
