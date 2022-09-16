@@ -353,8 +353,7 @@ public:
      *
      * This function maps a 2D UV value to a surface interaction data
      * structure. Its behavior is only well-defined in regions where this
-     * mapping is bijective. Only the mesh data structure currently implements
-     * this interface via ray tracing, others are to follow later.
+     * mapping is bijective.
      * The default implementation throws.
      */
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,

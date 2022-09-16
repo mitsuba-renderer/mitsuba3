@@ -145,12 +145,12 @@ public:
         m_radius = dr::norm(m_to_world.value().transform_affine(Vector3f(1.f, 0.f, 0.f)));
         m_center = m_to_world.value().transform_affine(Point3f(0.f));
 
-        if (m_radius.scalar() <= 0.f) {
+        if (S[0][0] <= 0.f) {
             m_radius = dr::abs(m_radius.value());
             m_flip_normals = !m_flip_normals;
         }
 
-        // Reconstruct the to_world transform with uniform scaling and no shear
+        // Compute the to_object transformation with uniform scaling and no shear
         m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
@@ -463,12 +463,12 @@ public:
         Point3f local;
         if constexpr (IsDiff) {
             if (follow_shape) {
-                /* FollowShape glues the interaction point with the sphere,
-                   therefore to also needs to account for a possible differential
-                   rotation in to_world. we first compute a detached intersection
-                   point in local space and transform it back in world space to
-                   get a point rigidly attached to the sphere attached point,
-                   including translation, scaling and rotation */
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
                 Normal3f n = dr::normalize(ray(pi.t) - center);
                 local = to_object.transform_affine(dr::fmadd(n, radius, center));
                 /* With FollowShape the local position should always be static as
@@ -528,7 +528,6 @@ public:
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
-
         si.n = si.sh_frame.n;
 
         if (need_dn_duv) {
