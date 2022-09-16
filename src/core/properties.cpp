@@ -425,6 +425,7 @@ void Properties::set_array3f(const std::string &name, const Array3f &value, bool
     d->entries[name].queried = false;
 }
 
+#if 0
 /// AnimatedTransform setter.
 void Properties::set_animated_transform(const std::string &name,
                                         ref<AnimatedTransform> value,
@@ -497,6 +498,7 @@ ref<AnimatedTransform> Properties::animated_transform(
         const std::string &name, const Transform4f &def_val) const {
     return animated_transform(name, new AnimatedTransform(def_val));
 }
+#endif
 
 ref<Object> Properties::find_object(const std::string &name) const {
     const auto it = d->entries.find(name);

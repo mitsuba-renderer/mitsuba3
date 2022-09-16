@@ -43,8 +43,8 @@ py::object properties_get(const Properties& p, const std::string &key) {
         return py::cast(p.get<dr::Array<PFloat, 3>>(key));
     else if (type == Properties::Type::Transform)
         return py::cast(p.get<Transform<Point<PFloat, 4>>>(key));
-    else if (type == Properties::Type::AnimatedTransform)
-        return py::cast(p.animated_transform(key));
+    // else if (type == Properties::Type::AnimatedTransform)
+        // return py::cast(p.animated_transform(key));
     else if (type == Properties::Type::Object)
         return cast_object((ref<Object>)p.object(key));
     else if (type == Properties::Type::Pointer)
@@ -93,10 +93,10 @@ MI_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(color, Color3d, py::arg(), py::arg().noconvert())
             .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
-            .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
+            // .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
             .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
-            .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
+            // .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
             .def("__getitem__", [](const Properties& p, const std::string &key) {
                 return properties_get(p, key);
             }, "key"_a, "Retrieve an existing property given its name")
@@ -126,7 +126,7 @@ MI_PY_EXPORT(Properties) {
             .value("Float",             Properties::Type::Float)
             .value("Array3f",           Properties::Type::Array3f)
             .value("Transform",         Properties::Type::Transform)
-            .value("AnimatedTransform", Properties::Type::AnimatedTransform)
+            // .value("AnimatedTransform", Properties::Type::AnimatedTransform)
             .value("Color",             Properties::Type::Color)
             .value("String",            Properties::Type::String)
             .value("NamedReference",    Properties::Type::NamedReference)

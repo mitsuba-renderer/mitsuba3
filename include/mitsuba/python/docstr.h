@@ -308,65 +308,6 @@ Parameter ``sample_scale``:
     A scale factor that must be applied to each sample to account for
     the film resolution and number of samples.)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform =
-R"doc(Encapsulates an animated 4x4 homogeneous coordinate transformation
-
-The animation is stored as keyframe animation with linear segments.
-The implementation performs a polar decomposition of each keyframe
-into a 3x3 scale/shear matrix, a rotation quaternion, and a
-translation vector. These will all be interpolated independently at
-eval time.)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Create an empty animated transform)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Represents a single keyframe in an animated transform)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Keyframe = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_eq = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_operator_ne = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_quat = R"doc(Rotation quaternion)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_scale = R"doc(3x3 scale/shear matrix)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_time = R"doc(Time value associated with this keyframe)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_Keyframe_trans = R"doc(3D translation)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_append = R"doc(Append a keyframe to the current animated transform)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_append_2 = R"doc(Append a keyframe to the current animated transform)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_class = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_eval =
-R"doc(Compatibility wrapper, which strips the mask argument and invokes
-eval())doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Determine whether the transformation involves any kind of scaling)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_m_keyframes = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_operator_array = R"doc(Return a Keyframe data structure)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_operator_eq = R"doc(Equality comparison operator)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_operator_ne = R"doc()doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_size = R"doc(Return the number of keyframes)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
-
-static const char *__doc_mitsuba_AnimatedTransform_translation_bounds =
-R"doc(Return an axis-aligned box bounding the amount of translation
-throughout the animation sequence)doc";
-
 static const char *__doc_mitsuba_Appender =
 R"doc(This class defines an abstract destination for logging-relevant
 information)doc";
@@ -5304,8 +5245,6 @@ static const char *__doc_mitsuba_Properties_Properties_3 = R"doc(Copy constructo
 static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Type = R"doc(Supported types of properties)doc";
-
-static const char *__doc_mitsuba_Properties_Type_AnimatedTransform = R"doc(4x4 transform for homogeneous coordinates)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Array3f = R"doc(Floating point value)doc";
 

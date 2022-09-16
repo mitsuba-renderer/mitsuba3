@@ -289,6 +289,7 @@ MI_PY_EXPORT(Transform) {
     py::implicitly_convertible<Matrix4f, Transform4f>();
 }
 
+#if 0
 MI_PY_EXPORT(AnimatedTransform) {
     MI_PY_IMPORT_TYPES()
     using Keyframe      = typename AnimatedTransform::Keyframe;
@@ -327,3 +328,4 @@ MI_PY_EXPORT(AnimatedTransform) {
             .def_method(AnimatedTransform, translation_bounds);
     }
 }
+#endif

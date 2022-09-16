@@ -3,6 +3,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+// WARNING: the AnimatedTransform class is outdated and dysfunctional with the
+// latest version of Mitsuba 3. Please update this code before using it!
+#if 0
+
 AnimatedTransform::~AnimatedTransform() { }
 
 void AnimatedTransform::append(const Keyframe &keyframe) {
@@ -78,5 +82,6 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
 }
 
 MI_IMPLEMENT_CLASS(AnimatedTransform, Object)
+#endif
 
 NAMESPACE_END(mitsuba)

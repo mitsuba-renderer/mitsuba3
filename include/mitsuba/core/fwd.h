@@ -18,7 +18,7 @@ class Object;
 class Class;
 template <typename> class ref;
 
-class AnimatedTransform;
+// class AnimatedTransform;
 class AnnotatedStream;
 class Appender;
 class ArgParser;

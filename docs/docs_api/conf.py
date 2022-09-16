@@ -194,7 +194,6 @@ api_doc_structure = {
               r'mitsuba.Bounding([\w]+)',
               r'mitsuba.Transform([\w]+)',
               r'mitsuba.Chain([\w]*)Transform([\w]+)',
-              r'mitsuba.AnimatedTransform',
               r'mitsuba.Frame([\w]+)',
               r'mitsuba.Color([\w]+)',
               r'mitsuba.Ray([\w]+)'],
