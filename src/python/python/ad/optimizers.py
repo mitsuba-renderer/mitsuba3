@@ -92,8 +92,8 @@ class Optimizer:
         # We use `dr.opaque` so the that the JIT compiler does not include
         # the learning rate as a scalar literal into generated code, which
         # would defeat kernel caching when updating learning rates.
-        if isinstance(lr, float):
-            self.lr_default = lr
+        if isinstance(lr, float) or isinstance(lr, int):
+            self.lr_default = float(lr)
             self.lr_default_v = dr.opaque(dr.detached_t(mi.Float), lr, shape=1)
         elif isinstance(lr, dict):
             for k, v in lr.items():
