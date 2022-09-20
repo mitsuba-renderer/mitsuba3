@@ -46,7 +46,7 @@ MI_PY_EXPORT(rfilter) {
                                     (float *) target.mutable_data(), target_stride,
                                     channels);
             },
-            D(Resampler, resample), "self"_a, "source"_a, "source_stride"_a,
+            D(Resampler, resample), "source"_a, "source_stride"_a, "target"_a,
             "target_stride"_a, "channels"_a);
 
     m.attr("MI_FILTER_RESOLUTION") = MI_FILTER_RESOLUTION;

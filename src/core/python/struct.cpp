@@ -83,6 +83,7 @@ MI_PY_EXPORT(Struct) {
     py::implicitly_convertible<py::dtype, Struct::Type>();
 
     py::enum_<Struct::Flags>(c, "Flags", py::arithmetic())
+        .value("Empty",      Struct::Flags::Empty, D(Struct, Flags, Empty))
         .value("Normalized", Struct::Flags::Normalized, D(Struct, Flags, Normalized))
         .value("Gamma",      Struct::Flags::Gamma,   D(Struct, Flags, Gamma))
         .value("Weight",     Struct::Flags::Weight,  D(Struct, Flags, Weight))

@@ -141,7 +141,7 @@ def process_class(obj):
             properties.append((k, v))
         elif str(v).endswith(k):
             enums.append((k, v))
-    
+
     base = obj.__bases__[0]
     base_module = base.__module__
     base_name = base.__name__
@@ -206,9 +206,11 @@ def process_function(_, obj, indent=0):
         has_doc = len(doc) > 1
 
         # Overload?
-        if l[1] == '.':
+        overload_re = re.compile(r'\d+\.')
+        overload_match = overload_re.match(l)
+        if overload_match is not None:
             w(f"{indent}@overload")
-            w(f"{indent}def {l[3:]}:{'' if has_doc else ' ...'}")
+            w(f"{indent}def {l[overload_match.end() + 1:]}:{'' if has_doc else ' ...'}")
         else:
             w(f"{indent}def {l}:{'' if has_doc else ' ...'}")
 

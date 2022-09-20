@@ -141,8 +141,9 @@ MI_PY_EXPORT(Shape) {
         .def(py::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),
              "name"_a, "vertex_count"_a, "face_count"_a,
-             "props"_a = Properties(), "has_vertex_normals"_a = false,
-             "has_vertex_texcoords"_a = false, D(Mesh, Mesh))
+             py::arg_v("props", Properties(), "Properties()"),
+             "has_vertex_normals"_a = false, "has_vertex_texcoords"_a = false,
+             D(Mesh, Mesh))
         .def_method(Mesh, initialize)
         .def_method(Mesh, vertex_count)
         .def_method(Mesh, face_count)
