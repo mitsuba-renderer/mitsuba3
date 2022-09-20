@@ -226,3 +226,23 @@ def test12_eval_pdf(variant_scalar_rgb):
         v_eval_pdf = bsdf.eval_pdf(ctx, si, wo=wo)
         assert dr.allclose(v_eval, v_eval_pdf[0])
         assert dr.allclose(v_pdf, v_eval_pdf[1])
+
+
+def test13_attached_sampling(variants_all_ad_rgb):
+    bsdf = mi.load_dict({'type': 'roughdielectric', 'alpha' : 0.5})
+
+    angle = mi.Float(0)
+    dr.enable_grad(angle)
+
+    si    = mi.SurfaceInteraction3f()
+    si.p  = [0, 0, 0]
+    si.n  = [dr.sin(angle), 0, dr.cos(angle)]
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = si.sh_frame.to_local([0, 0, 1])
+
+    bs, weight = bsdf.sample(mi.BSDFContext(), si, 0, [0.3, 0.3])
+    assert dr.grad_enabled(weight)
+
+    dr.forward(angle)
+    assert dr.allclose(dr.grad(weight), 0.02079637348651886)
+    

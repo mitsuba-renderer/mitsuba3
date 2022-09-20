@@ -156,3 +156,23 @@ def test05_spot_check(variant_scalar_rgb):
     bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
     assert dr.allclose(bs.pdf, 1 - 0.387704354691473)
     assert dr.allclose(bs.wo, wi)
+
+
+def test06_attached_sampling(variants_all_ad_rgb):
+    bsdf = mi.load_dict({'type': 'dielectric'})
+
+    angle = mi.Float(10 * dr.pi / 180)
+    dr.enable_grad(angle)
+
+    si    = mi.SurfaceInteraction3f()
+    si.p  = [0, 0, 0]
+    si.n  = [dr.sin(angle), 0, dr.cos(angle)]
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = si.sh_frame.to_local([0, 0, 1])
+
+    bs, weight = bsdf.sample(mi.BSDFContext(), si, 0, [0, 0])
+    assert dr.grad_enabled(weight)
+    
+    dr.forward(angle)
+    assert dr.allclose(dr.grad(weight), 0.008912204764783382)
+    
