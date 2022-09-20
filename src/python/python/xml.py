@@ -142,10 +142,13 @@ class WriteXML:
         self.file_stack = []
 
         self.directory, main_file = os.path.split(name)
-        base_name = os.path.splitext(main_file)[0] # Remove the extension
+        base_name = os.path.splitext(main_file)[0]  # Remove the extension
 
-        if not os.path.isdir(self.directory):
-            os.makedirs(self.directory)
+        if len(self.directory) == 0:
+            self.directory = '.'
+        else:
+            if not os.path.isdir(self.directory):
+                os.makedirs(self.directory)
 
         self.file_names.append(name)
         self.files.append(open(self.file_names[Files.MAIN], 'w', encoding='utf-8', newline="\n"))

@@ -7,6 +7,7 @@ from shutil import copy
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
+
 @fresolver_append_path
 def test01_xml_save_plugin(variants_all_rgb, tmp_path):
     filepath = str(tmp_path / 'test_write_xml-test01_output.xml')
@@ -420,7 +421,6 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
     e.match(escape(f"File '{os.path.abspath(d5['light']['intensity']['filename'])}' not found!"))
 
 
-
 @fresolver_append_path
 def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
     fr = mi.Thread.thread().file_resolver()
@@ -510,3 +510,32 @@ def test13_xml_multiple_defaults(variants_all_rgb, tmp_path):
 
     assert scene.sensors()[0].sampler().sample_count() == scene.sensors()[1].sampler().sample_count()
     assert scene.sensors()[1].sampler().sample_count() == 45
+
+
+@fresolver_append_path
+def test13_xml_empty_dir(variants_all_rgb, tmp_path):
+    filepath = str(tmp_path / 'test13_xml_empty_dir.xml')
+    print(f"Output temporary file: {filepath}")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    scene_dict = {
+        "type": "sphere",
+        "center": [0, 0, -10],
+        "radius": 10.0,
+    }
+    mi.xml.dict_to_xml(scene_dict, os.path.split(filepath)[1])
+
+    os.chdir(cwd)
+    s1 = mi.load_dict({
+        'type': 'scene',
+        'sphere': {
+            "type": "sphere",
+            "center": [0, 0, -10],
+            "radius": 10.0,
+        }
+    })
+    s2 = mi.load_file(filepath)
+
+    assert str(s1) == str(s2)
