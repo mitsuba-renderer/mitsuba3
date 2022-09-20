@@ -244,7 +244,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        auto [sin_theta, cos_theta] = dr::sincos(dr::deg_to_rad(sample.y()));
+        auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
         Point3f p(cos_theta, sin_theta, sample.x());
         Normal3f n(cos_theta, sin_theta, 0.f);
@@ -271,7 +271,8 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Point3f local(dr::cos(uv.x()), dr::sin(uv.x()), uv.y());
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.x());
+        Point3f local(cos_phi, sin_phi, uv.y());
         Point3f p = m_to_world.value().transform_affine(local);
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
@@ -332,8 +333,8 @@ public:
         dr::mask_t<FloatP> out_bounds =
             !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
-        Value z_pos_near = oz + dz*near_t,
-              z_pos_far  = oz + dz*far_t;
+        Value z_pos_near = oz + dz * near_t,
+              z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
         dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
@@ -515,8 +516,8 @@ public:
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
             OptixCylinderData data = { bbox(), m_to_object.scalar(),
-                                       (float) m_length.scalar(),
-                                       (float) m_radius.scalar() };
+                                       (float) 1.f,
+                                       (float) 1.f };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
