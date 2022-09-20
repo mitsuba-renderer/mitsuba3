@@ -463,12 +463,12 @@ public:
         Point3f local;
         if constexpr (IsDiff) {
             if (follow_shape) {
-                /* FollowShape glues the interaction point with the sphere,
-                   therefore to also needs to account for a possible differential
-                   rotation in to_world. we first compute a detached intersection
-                   point in local space and transform it back in world space to
-                   get a point rigidly attached to the sphere attached point,
-                   including translation, scaling and rotation */
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
                 Normal3f n = dr::normalize(ray(pi.t) - center);
                 local = to_object.transform_affine(dr::fmadd(n, radius, center));
                 /* With FollowShape the local position should always be static as
@@ -528,7 +528,6 @@ public:
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
-
         si.n = si.sh_frame.n;
 
         if (need_dn_duv) {

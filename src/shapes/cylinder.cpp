@@ -246,10 +246,7 @@ public:
 
         auto [sin_theta, cos_theta] = dr::sincos(dr::deg_to_rad(sample.y()));
 
-        Point3f p(cos_theta * 1.f,
-                  sin_theta * 1.f,
-                  sample.x() * 1.f);
-
+        Point3f p(cos_theta, sin_theta, sample.x());
         Normal3f n(cos_theta, sin_theta, 0.f);
 
         if (m_flip_normals)
@@ -271,6 +268,31 @@ public:
         return m_inv_surface_area;
     }
 
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags,
+                                               Mask active) const override {
+        Point3f local(dr::cos(uv.x()), dr::sin(uv.x()), uv.y());
+        Point3f p = m_to_world.value().transform_affine(local);
+
+        Ray3f ray(p + local, -local, 0, Wavelength(0));
+
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+
+        if (dr::none_or<false>(pi.is_valid()))
+            return dr::zeros<SurfaceInteraction3f>();
+
+        pi.shape = this;
+
+        return pi.compute_surface_interaction(ray, ray_flags, active);
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Ray tracing routines
+    // =============================================================
+
     template <typename FloatP, typename Ray3fP>
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
@@ -284,17 +306,12 @@ public:
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius;
-        Value length;
-        if constexpr (!dr::is_jit_v<Value>) {
+        Value radius(1.0);  // Constant kept for readability
+        Value length(1.0);
+        if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
-            radius = (ScalarValue) m_radius.scalar();
-            length = (ScalarValue) m_length.scalar();
-        } else {
+        else
             ray = m_to_object.value().transform_affine(ray_);
-            radius = (Value) m_radius.value();
-            length = (Value) m_length.value();
-        }
 
         Value maxt = Value(ray.maxt);
 
@@ -346,17 +363,12 @@ public:
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius;
-        Value length;
-        if constexpr (!dr::is_jit_v<Value>) {
+        Value radius(1.0);
+        Value length(1.0);
+        if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
-            radius = (ScalarValue) m_radius.scalar();
-            length = (ScalarValue) m_length.scalar();
-        } else {
+        else
             ray = m_to_object.value().transform_affine(ray_);
-            radius = (Value) m_radius.value();
-            length = (Value) m_length.value();
-        }
 
         Value maxt = Value(ray.maxt);
 
@@ -422,40 +434,55 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
+        si.t = pi.t;
+        si.p = ray(si.t);
+        Point3f local;
         if constexpr (IsDiff) {
             if (follow_shape) {
-                // TODO
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
+                local = to_object.transform_affine(si.p);
+                Float correction = dr::norm(dr::head<2>(local));
+                local.x() /= correction;
+                local.y() /= correction;
+                local = dr::detach(local);
+                si.p = to_world.transform_affine(local);
+                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
             } else {
-                // si.t = dr::replace_grad(si.t, ray_intersect_preliminary(ray, active).t);
-                // TODO
+                /* To ensure that the differential interaction point stays along
+                   the traced ray, we first recompute the intersection distance
+                   in a differentiable way (w.r.t. to the cylindrical parameters) and
+                   then compute the corresponding point along the ray. */
+                si.t = dr::replace_grad(si.t, ray_intersect_preliminary(ray, active).t);
+                si.p = ray(si.t);
+                local = to_object.transform_affine(si.p);
             }
         } else {
-            si.t = pi.t;
+            /* Mitigate roundoff error issues by a normal shift of the computed
+               intersection point */
+            local = to_object.transform_affine(si.p);
+            si.p += si.n * (1.f - dr::norm(dr::head<2>(local)));
         }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
-        si.p = ray(si.t);
 
-        Vector3f local = m_to_object.value().transform_affine(si.p);
-
+        // si.uv
         Float phi = dr::atan2(local.y(), local.x());
         dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
-
         si.uv = Point2f(phi * dr::InvTwoPi<Float>, local.z());
-
+        // si.dp_duv & si.n
         Vector3f dp_du = dr::TwoPi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, 1.f);
-        si.dp_du = m_to_world.value().transform_affine(dp_du);
-        si.dp_dv = m_to_world.value().transform_affine(dp_dv);
+        si.dp_du = to_world.transform_affine(dp_du);
+        si.dp_dv = to_world.transform_affine(dp_dv);
         si.n = Normal3f(dr::normalize(dr::cross(si.dp_du, si.dp_dv)));
 
-        /* Mitigate roundoff error issues by a normal shift of the computed
-           intersection point */
-        si.p += si.n * (1.f - dr::norm(dr::head<2>(local)));
-
         if (m_flip_normals)
-            si.n *= -1.f;
-
+            si.n = -si.n;
         si.sh_frame.n = si.n;
 
         if (likely(need_dn_duv)) {
