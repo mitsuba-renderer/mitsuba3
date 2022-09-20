@@ -422,7 +422,6 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        const Point3f& length = m_length.value();
         const Float& radius = m_radius.value();
         const Transform4f& to_world = m_to_world.value();
         const Transform4f& to_object = m_to_object.value();
@@ -430,7 +429,7 @@ public:
         /* If necessary, temporally suspend gradient tracking for all shape
         parameters to construct a surface interaction completely detach from
         the shape. */
-        dr::suspend_grad<Float> scope(detach_shape, length, radius, to_world, to_object);
+        dr::suspend_grad<Float> scope(detach_shape, radius, to_world, to_object);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
@@ -486,7 +485,7 @@ public:
         si.sh_frame.n = si.n;
 
         if (likely(need_dn_duv)) {
-            si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
+            si.dn_du = si.dp_du / (radius * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }
 

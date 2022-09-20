@@ -187,13 +187,13 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     params = mi.traverse(shape)
 
     # Test 01: When the cylinder is inflating, the point hitting the center will
-    #          move back along the ray. The normal isn't changing nor the UVs.
+    #          move back along the ray. The normal isn't changing.
 
     ray = mi.Ray3f(mi.Vector3f(0, 2, 0.5), mi.Vector3f(0, -1, 0))
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale([1 + theta, 1 + theta, 1])
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -202,9 +202,27 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(si.t), -1)
     assert dr.allclose(dr.grad(si.p), [0, 1, 0])
     assert dr.allclose(dr.grad(si.n), 0, atol=1e-6)
+    assert dr.allclose(dr.grad(si.uv), [0, -0.5])
+
+    # Test 02: With FollowShape, an intersection point at an inflating cylinder
+    #          should move with the cylinder.
+
+    ray = mi.Ray3f(mi.Vector3f(0, 2, 0.5), mi.Vector3f(0, -1, 0))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.t), -1)
+    assert dr.allclose(dr.grad(si.p), [0, 1, 0.5])
+    assert dr.allclose(dr.grad(si.n), 0, atol=1e-6)
     assert dr.allclose(dr.grad(si.uv), 0)
 
-    # Test 02: With FollowShape, an intersection point at a translating cylinder
+    # Test 03: With FollowShape, an intersection point at a translating cylinder
     #          should move with the cylinder. The normal and the UVs should be static.
 
     ray = mi.Ray3f(mi.Vector3f(0, 2, 0.5), mi.Vector3f(0, -1, 0))
@@ -221,7 +239,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(si.n), 0.0)
     assert dr.allclose(dr.grad(si.uv), 0.0)
 
-    # Test 03: With FollowShape, an intersection point and normal at a rotating
+    # Test 04: With FollowShape, an intersection point and normal at a rotating
     #          cylinder should follow the rotation speed along the tangent
     #          direction. The UVs should be static.
 
@@ -239,7 +257,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(si.n), [-dr.pi / 2.0, 0.0, 0.0])
     assert dr.allclose(dr.grad(si.uv), 0.0)
 
-    # Test 04: Without FollowShape, a cylinder that is only rotating shouldn't
+    # Test 05: Without FollowShape, a cylinder that is only rotating shouldn't
     #          produce any gradients for the intersection point and normal, but
     #          for the UVs.
 
@@ -256,3 +274,4 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(si.p), 0.0)
     assert dr.allclose(dr.grad(si.n), 0.0)
     assert dr.allclose(dr.grad(si.uv), [-0.25, 0.0])
+
