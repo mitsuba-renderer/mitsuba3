@@ -268,7 +268,7 @@ public:
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r_i && active;
-            bs.pdf = dr::select(selected_r, r_i, t_i);
+            bs.pdf = dr::detach(dr::select(selected_r, r_i, t_i));
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -337,6 +337,13 @@ public:
         } else {
             if (likely(has_reflection && has_transmission)) {
                 weight = 1.f;
+                /* For differentiable variants, lobe choice has to be detached to avoid bias.
+                    Sampling weights should be computed accordingly. */
+                if constexpr (dr::is_diff_v<Float>) {
+                    if (dr::grad_enabled(r_i)) {
+                        weight = dr::select(selected_r, r_i / dr::detach(r_i), t_i / dr::detach(t_i));
+                    }
+                }
             } else if (has_reflection || has_transmission) {
                 weight = has_reflection ? r_i : t_i;
             }
