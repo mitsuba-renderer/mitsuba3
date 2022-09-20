@@ -175,7 +175,10 @@ if (NOT SKBUILD)
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
 
   set(DRJIT_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES drjit-python)
+  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES
+    drjit-python
+    ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
+  )
   if (MSVC)
     list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-targets-python)
   endif()
@@ -208,7 +211,10 @@ if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
   file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
 
   set(MI_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-  list(APPEND MI_STUB_FILE_DEPENDENCIES mitsuba_ext)
+  list(APPEND MI_STUB_FILE_DEPENDENCIES
+    mitsuba_ext
+    ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
+  )
   foreach (MI_VARIANT ${MI_VARIANTS})
     string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
     list(GET MI_VARIANT 0 MI_VARIANT_NAME)

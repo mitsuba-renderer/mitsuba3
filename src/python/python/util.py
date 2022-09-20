@@ -7,7 +7,7 @@ import mitsuba as mi
 
 import typing
 if typing.TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any, Optional, Union
 
 class SceneParameters(Mapping):
     """
@@ -261,13 +261,13 @@ def _jit_id_hash(value: Any) -> int:
             else:
                 ids.append((value.index, 0))
         elif dr.is_struct_v(value):
-            for k, v in value.DRJIT_STRUCT.items():
+            for k in value.DRJIT_STRUCT.keys():
                 ids.extend(jit_ids(getattr(value, k)))
         else:
             # Scalars: None is used to differentiate from non-diff JIT array case
             try:
                 ids.append((hash(value), None))
-            except TypeError as e:
+            except TypeError:
                 ids.append((id(value), None))
 
         return ids
