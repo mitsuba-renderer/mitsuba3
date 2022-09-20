@@ -136,7 +136,7 @@ MI_PY_EXPORT(Shape) {
 
     using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
-    auto mesh = py::class_<Mesh, PyMesh, Shape, ref<Mesh>>(m, "Mesh", D(Mesh))
+    MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
         .def(py::init<const Properties&>(), "props"_a)
         .def(py::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),

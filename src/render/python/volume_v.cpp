@@ -7,6 +7,8 @@ MI_VARIANT class PyVolume : public Volume<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Volume)
 
+    PyVolume(const Properties &props) : Volume(props) { };
+
     UnpolarizedSpectrum eval(const Interaction3f &it,
                              Mask active = true) const override {
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Volume, eval, it, active);
@@ -51,6 +53,7 @@ MI_PY_EXPORT(Volume) {
     using PyVolume = PyVolume<Float, Spectrum>;
 
     MI_PY_TRAMPOLINE_CLASS(PyVolume, Volume, Object)
+        .def(py::init<const Properties &>(), "props"_a)
         .def_method(Volume, resolution)
         .def_method(Volume, bbox)
         .def_method(Volume, channel_count)

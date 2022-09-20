@@ -109,7 +109,7 @@ MI_PY_EXPORT(BSDF) {
     MI_PY_IMPORT_TYPES(BSDF, BSDFPtr)
     using PyBSDF = PyBSDF<Float, Spectrum>;
 
-    auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
+    auto bsdf = MI_PY_TRAMPOLINE_CLASS(PyBSDF, BSDF, Object)
         .def(py::init<const Properties&>(), "props"_a)
         .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
             "index"_a, "active"_a = true, D(BSDF, flags, 2))

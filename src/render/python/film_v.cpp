@@ -72,7 +72,8 @@ MI_PY_EXPORT(Film) {
     m.def("has_flag", [](uint32_t flags, FilmFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, FilmFlags f) {return has_flag(flags, f);});
 
-    py::class_<Film, PyFilm, Object, ref<Film>>(m, "Film", D(Film))
+    MI_PY_TRAMPOLINE_CLASS(PyFilm, Film, Object)
+        .def(py::init<const Properties &>(), "props"_a)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, develop, "raw"_a = false)

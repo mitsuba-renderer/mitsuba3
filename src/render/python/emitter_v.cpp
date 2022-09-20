@@ -56,7 +56,7 @@ MI_PY_EXPORT(Emitter) {
     m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
 
-    auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
+    MI_PY_TRAMPOLINE_CLASS(PyEmitter, Emitter, Endpoint)
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
         .def_method(Emitter, flags, "active"_a = true)

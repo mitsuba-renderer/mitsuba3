@@ -59,7 +59,7 @@ MI_PY_EXPORT(Sensor) {
     MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
 
-    py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
+    MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(py::init<const Properties&>())
         .def("sample_ray_differential", &Sensor::sample_ray_differential,
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)

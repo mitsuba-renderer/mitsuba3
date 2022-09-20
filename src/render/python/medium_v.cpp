@@ -85,7 +85,7 @@ MI_PY_EXPORT(Medium) {
     MI_PY_IMPORT_TYPES(Medium, MediumPtr, Scene, Sampler)
     using PyMedium = PyMedium<Float, Spectrum>;
 
-    auto medium = py::class_<Medium, PyMedium, Object, ref<Medium>>(m, "Medium", D(Medium))
+    auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
             .def(py::init<const Properties &>())
             .def_method(Medium, id)
             .def_property("m_sample_emitters",
