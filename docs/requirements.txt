@@ -1,4 +1,5 @@
 sphinx>=2.4
+ipykernel
 pygments-mathematica
 pybtex
 nbsphinx==0.8.9
