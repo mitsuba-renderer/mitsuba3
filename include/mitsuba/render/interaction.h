@@ -440,7 +440,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, combined_extinction;
 
-    /// mint used when sampling the given distance "t".
+    /// mint used when sampling the given distance ``t``
     Float mint;
 
     //! @}

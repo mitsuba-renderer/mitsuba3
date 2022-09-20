@@ -29,16 +29,19 @@ def process_type_hint(s):
     sub = s
     type_hints = []
     offset = 0
+
     while True:
-        match = re.search(r'[a-zA-Z]+: ', sub)
+        match = re.search(r'(\(|,|^)\s*[_a-zA-Z][_a-zA-Z0-9]*:[^:\w]', sub)
         if match is None:
-            return s
+            break
+
         i = match.start() + len(match.group())
-        match_next = re.search(r'[a-zA-Z]+: ', sub[i:])
+        match_next = re.search(r'(\(|,|^)\s*[_a-zA-Z][_a-zA-Z0-9]*:[^:\w]', sub[i:])
+
         if match_next is None:
             j = sub.index(')')
         else:
-            j = i + match_next.start() - 2
+            j = i + match_next.start()
 
         type_hints.append((offset + i, offset + j, sub[i:j]))
 
@@ -62,9 +65,21 @@ def process_type_hint(s):
     if '::' in result[result.index(' -> '):]:
         result = result[:result.index(' -> ')]
 
-
     # Remove the specific variant hint
     result = result.replace(f'.{mi.variant()}', '')
+
+    # Fix parameters that have enums as default values
+    default_enum_re = re.compile(r'<')
+    enum_match = default_enum_re.search(result)
+    while enum_match is not None:
+        begin = enum_match.end()
+        end = begin + result[begin:].index('>')
+
+        new_default_value = result[begin:end]
+        new_default_value = new_default_value[:new_default_value.index(':')]
+
+        result = result[:begin - 1] + new_default_value + result[end + 1:]
+        enum_match = default_enum_re.search(result, begin)
 
     return result
 
@@ -126,12 +141,11 @@ def process_class(obj):
             properties.append((k, v))
         elif str(v).endswith(k):
             enums.append((k, v))
-
+    
     base = obj.__bases__[0]
     base_module = base.__module__
-    base_name = base.__qualname__
+    base_name = base.__name__
     has_base = not (base_module == 'builtins' or base_name == 'object' or base_name == 'pybind11_object')
-    base_name = base_module + '.' + base_name
     base_name = base_name.replace(f'.{mi.variant()}', '')
 
     if has_base and not base.__module__.startswith('mitsuba'):
@@ -174,7 +188,7 @@ def process_class(obj):
 
 # ------------------------------------------------------------------------------
 
-def process_function(name, obj, indent=0):
+def process_function(_, obj, indent=0):
     indent = ' ' * indent
     if obj is None or obj.__doc__ is None:
         return
@@ -229,7 +243,7 @@ def process_py_function(name, obj, indent=0):
         new_default_value = new_default_value[:new_default_value.index(':')]
 
         signature = signature[:begin + 1] + new_default_value + signature[end + 1:]
-        enum_match = re.search(r'\=<', signature[begin])
+        enum_match = re.search(r'\=<', signature[begin:])
 
     w(f"{indent}def {name}{signature}:{'' if has_doc else ' ...'}")
 
@@ -245,7 +259,7 @@ def process_py_function(name, obj, indent=0):
 
 # ------------------------------------------------------------------------------
 
-def process_builtin_type(type, name):
+def process_builtin_type(_, name):
     w(f"class {name}: ...")
     w(f'')
 
@@ -305,6 +319,7 @@ def process_module(m, top_module=False):
             submodules.append((module_filename, v))
 
     # Adjust DrJIT type hints manually here
+    buffer = re.sub(r'from drjit(\.scalar|\.llvm|\.cuda)?(\.ad)? ' , 'from mitsuba ', buffer)
     buffer = re.sub(r'drjit\.(scalar|llvm|cuda).(ad\.)?' , 'mitsuba.', buffer)
 
     return buffer, submodules

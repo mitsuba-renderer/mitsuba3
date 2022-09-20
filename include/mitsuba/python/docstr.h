@@ -265,10 +265,6 @@ static const char *__doc_mitsuba_AdjointIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc()doc";
@@ -491,10 +487,6 @@ static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -794,11 +786,11 @@ Parameter ``si``:
     field ``si.wi``.
 
 Parameter ``sample1``:
-    A uniformly distributed sample on $[0,1]$. It is used to select
-    the BSDF lobe in multi-lobe models.
+    A uniformly distributed sample on :math:`[0,1]`. It is used to
+    select the BSDF lobe in multi-lobe models.
 
 Parameter ``sample2``:
-    A uniformly distributed sample on $[0,1]^2$. It is used to
+    A uniformly distributed sample on :math:`[0,1]^2`. It is used to
     generate the sampled direction.
 
 Returns:
@@ -1344,7 +1336,7 @@ static const char *__doc_mitsuba_BoundingBox_BoundingBox =
 R"doc(Create a new invalid bounding box
 
 Initializes the components of the minimum and maximum position to
-$\infty$ and $-\infty$, respectively.)doc";
+:math:`\infty` and :math:`-\infty`, respectively.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_BoundingBox_2 = R"doc(Create a collapsed bounding box from a single point)doc";
 
@@ -1382,9 +1374,10 @@ static const char *__doc_mitsuba_BoundingBox_contains_2 =
 R"doc(Check whether a specified bounding box lies *on* or *within* the
 current bounding box
 
-Note that by definition, an 'invalid' bounding box (where min=$\infty$
-and max=$-\infty$) does not cover any space. Hence, this method will
-always return *true* when given such an argument.
+Note that by definition, an 'invalid' bounding box (where
+min=:math:`\infty` and max=:math:`-\infty`) does not cover any space.
+Hence, this method will always return *true* when given such an
+argument.
 
 Template parameter ``Strict``:
     Set this parameter to ``True`` if the bounding box boundary should
@@ -1452,7 +1445,7 @@ static const char *__doc_mitsuba_BoundingBox_reset =
 R"doc(Mark the bounding box as invalid.
 
 This operation sets the components of the minimum and maximum position
-to $\infty$ and $-\infty$, respectively.)doc";
+to :math:`\infty` and :math:`-\infty`, respectively.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_squared_distance =
 R"doc(Calculate the shortest squared distance between the axis-aligned
@@ -2158,10 +2151,6 @@ static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2248,10 +2237,6 @@ static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -2660,10 +2645,6 @@ static const char *__doc_mitsuba_Film_2 = R"doc()doc";
 static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -3115,10 +3096,6 @@ static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3353,10 +3330,6 @@ static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -3844,10 +3817,6 @@ static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
@@ -3872,7 +3841,7 @@ static const char *__doc_mitsuba_MediumInteraction_combined_extinction = R"doc()
 
 static const char *__doc_mitsuba_MediumInteraction_medium = R"doc(Pointer to the associated medium)doc";
 
-static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when sampling the given distance "t".)doc";
+static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when sampling the given distance ``t``)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
 
@@ -4126,10 +4095,6 @@ static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -4533,10 +4498,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -4551,7 +4512,7 @@ static const char *__doc_mitsuba_NamedReference_NamedReference = R"doc()doc";
 
 static const char *__doc_mitsuba_NamedReference_m_value = R"doc()doc";
 
-static const char *__doc_mitsuba_NamedReference_operator_const_std_1_basic_string = R"doc()doc";
+static const char *__doc_mitsuba_NamedReference_operator_const_std_string = R"doc()doc";
 
 static const char *__doc_mitsuba_NamedReference_operator_eq = R"doc()doc";
 
@@ -4697,10 +4658,6 @@ static const char *__doc_mitsuba_PCG32Sampler_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -4738,10 +4695,6 @@ static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -4864,11 +4817,11 @@ Parameter ``mi``:
     ``mi.wi``.
 
 Parameter ``sample1``:
-    A uniformly distributed sample on $[0,1]$. It is used to select
-    the phase function component in multi-component models.
+    A uniformly distributed sample on :math:`[0,1]`. It is used to
+    select the phase function component in multi-component models.
 
 Parameter ``sample2``:
-    A uniformly distributed sample on $[0,1]^2$. It is used to
+    A uniformly distributed sample on :math:`[0,1]^2`. It is used to
     generate the sampled direction.
 
 Returns:
@@ -5199,10 +5152,6 @@ static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_class = R"doc()doc";
@@ -5246,6 +5195,8 @@ static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Type = R"doc(Supported types of properties)doc";
 
+static const char *__doc_mitsuba_Properties_Type_AnimatedTransform = R"doc(4x4 transform for homogeneous coordinates)doc";
+
 static const char *__doc_mitsuba_Properties_Type_Array3f = R"doc(Floating point value)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Bool = R"doc()doc";
@@ -5265,16 +5216,6 @@ static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(Arbitrary objec
 static const char *__doc_mitsuba_Properties_Type_String = R"doc(Tristimulus color value)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Transform = R"doc(3D array)doc";
-
-static const char *__doc_mitsuba_Properties_animated_transform = R"doc(Retrieve an animated transformation)doc";
-
-static const char *__doc_mitsuba_Properties_animated_transform_2 =
-R"doc(Retrieve an animated transformation (use default value if no entry
-exists))doc";
-
-static const char *__doc_mitsuba_Properties_animated_transform_3 =
-R"doc(Retrieve an animated transformation (default value is a constant
-transform))doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -5355,10 +5296,6 @@ R"doc(Remove a property with the specified name
 
 Returns:
     ``True`` upon success)doc";
-
-static const char *__doc_mitsuba_Properties_set_animated_transform = R"doc(Store an animated transformation in the Properties instance)doc";
-
-static const char *__doc_mitsuba_Properties_set_animated_transform_2 = R"doc(Store a (constant) animated transformation in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_array3f = R"doc(Store a 3D array in the Properties instance)doc";
 
@@ -5679,10 +5616,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -5855,10 +5788,6 @@ static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -5952,10 +5881,6 @@ static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -6044,10 +5969,6 @@ static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -6548,10 +6469,6 @@ static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -6680,10 +6597,6 @@ static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -6691,10 +6604,6 @@ static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -6749,10 +6658,6 @@ static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -8407,10 +8312,6 @@ static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
 static const char *__doc_mitsuba_Texture_D65_2 =
@@ -8936,10 +8837,6 @@ static const char *__doc_mitsuba_Volume_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
-
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -8947,10 +8844,6 @@ static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -10225,11 +10118,11 @@ static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc(//! @{ \name Printing)doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_20 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_20 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_21 = R"doc()doc";
 
@@ -10248,10 +10141,6 @@ static const char *__doc_mitsuba_operator_lshift_27 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_28 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_29 = R"doc()doc";
-
-static const char *__doc_mitsuba_operator_lshift_30 = R"doc()doc";
-
-static const char *__doc_mitsuba_operator_lshift_31 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
@@ -10333,7 +10222,7 @@ static const char *__doc_mitsuba_quad_chebyshev =
 R"doc(Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
 polynomials of the first kind
 
-The output array contains positions on the interval $[-1, 1]$.
+The output array contains positions on the interval :math:`[-1, 1]`.
 
 Parameter ``n``:
     Desired number of points)doc";
@@ -10342,10 +10231,10 @@ static const char *__doc_mitsuba_quad_composite_simpson =
 R"doc(Computes the nodes and weights of a composite Simpson quadrature rule
 with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$, which will be split into
-$(n-1) / 2$ sub-intervals with overlapping endpoints. A 3-point
-Simpson rule is applied per interval, which is exact for polynomials
-of degree three or less.
+Integration is over the interval :math:`[-1, 1]`, which will be split
+into :math:`(n-1) / 2` sub-intervals with overlapping endpoints. A
+3-point Simpson rule is applied per interval, which is exact for
+polynomials of degree three or less.
 
 Parameter ``n``:
     Desired number of evaluation points. Must be an odd number bigger
@@ -10359,10 +10248,10 @@ static const char *__doc_mitsuba_quad_composite_simpson_38 =
 R"doc(Computes the nodes and weights of a composite Simpson 3/8 quadrature
 rule with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$, which will be split into
-$(n-1) / 3$ sub-intervals with overlapping endpoints. A 4-point
-Simpson rule is applied per interval, which is exact for polynomials
-of degree four or less.
+Integration is over the interval :math:`[-1, 1]`, which will be split
+into :math:`(n-1) / 3` sub-intervals with overlapping endpoints. A
+4-point Simpson rule is applied per interval, which is exact for
+polynomials of degree four or less.
 
 Parameter ``n``:
     Desired number of evaluation points. Must be an odd number bigger
@@ -10376,14 +10265,15 @@ static const char *__doc_mitsuba_quad_gauss_legendre =
 R"doc(Computes the nodes and weights of a Gauss-Legendre quadrature (aka
 "Gaussian quadrature") rule with the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$. Gauss-Legendre quadrature
-maximizes the order of exactly integrable polynomials achieves this up
-to degree $2n-1$ (where $n$ is the number of function evaluations).
+Integration is over the interval :math:`[-1, 1]`. Gauss-Legendre
+quadrature maximizes the order of exactly integrable polynomials
+achieves this up to degree :math:`2n-1` (where :math:`n` is the number
+of function evaluations).
 
-This method is numerically well-behaved until about $n=200$ and then
-becomes progressively less accurate. It is generally not a good idea
-to go much higher---in any case, a composite or adaptive integration
-scheme will be superior for large $n$.
+This method is numerically well-behaved until about :math:`n=200` and
+then becomes progressively less accurate. It is generally not a good
+idea to go much higher---in any case, a composite or adaptive
+integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
     Desired number of evaluation points
@@ -10396,17 +10286,17 @@ static const char *__doc_mitsuba_quad_gauss_lobatto =
 R"doc(Computes the nodes and weights of a Gauss-Lobatto quadrature rule with
 the given number of evaluations.
 
-Integration is over the interval $[-1, 1]$. Gauss-Lobatto quadrature
-is preferable to Gauss-Legendre quadrature whenever the endpoints of
-the integration domain should explicitly be included. It maximizes the
-order of exactly integrable polynomials subject to this constraint and
-achieves this up to degree $2n-3$ (where $n$ is the number of function
-evaluations).
+Integration is over the interval :math:`[-1, 1]`. Gauss-Lobatto
+quadrature is preferable to Gauss-Legendre quadrature whenever the
+endpoints of the integration domain should explicitly be included. It
+maximizes the order of exactly integrable polynomials subject to this
+constraint and achieves this up to degree :math:`2n-3` (where
+:math:`n` is the number of function evaluations).
 
-This method is numerically well-behaved until about $n=200$ and then
-becomes progressively less accurate. It is generally not a good idea
-to go much higher---in any case, a composite or adaptive integration
-scheme will be superior for large $n$.
+This method is numerically well-behaved until about :math:`n=200` and
+then becomes progressively less accurate. It is generally not a good
+idea to go much higher---in any case, a composite or adaptive
+integration scheme will be superior for large :math:`n`.
 
 Parameter ``n``:
     Desired number of evaluation points
@@ -11168,9 +11058,13 @@ Returns:
 static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
 
 static const char *__doc_mitsuba_srgb_model_fetch =
-R"doc(Look up the model coefficients for a sRGB color value @param c An sRGB
-color value where all components are in [0, 1]. @return Coefficients
-for use with srgb_model_eval)doc";
+R"doc(Look up the model coefficients for a sRGB color value
+
+Parameter ``c``:
+    An sRGB color value where all components are in [0, 1].
+
+Returns:
+    Coefficients for use with srgb_model_eval)doc";
 
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 
@@ -11394,7 +11288,7 @@ Parameter ``cos_cutoff``:
     Cosine of the cutoff angle
 
 Parameter ``sample``:
-    A uniformly distributed sample on $[0,1]^2$)doc";
+    A uniformly distributed sample on :math:`[0,1]^2`)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_cone_pdf =
 R"doc(Density of square_to_uniform_cone per unit area.
