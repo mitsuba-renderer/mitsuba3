@@ -572,7 +572,7 @@ protected:
     void* m_optix_data_ptr = nullptr;
 #endif
 
-private:
+protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
 };
