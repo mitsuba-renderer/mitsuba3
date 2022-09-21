@@ -117,13 +117,13 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 .. code-block:: bash
 
     # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake ninja-build
+    sudo apt install clang-10 libc++-10-dev libc++abi-10-dev cmake ninja-build
 
-    # Install libraries for image I/O and the graphical user interface
-    sudo apt install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev libxcursor-dev
+    # Install libraries for image I/O
+    sudo apt install libpng-dev libjpeg-dev
 
     # Install required Python packages
-    sudo apt install python3-dev python3-distutils python3-setuptools
+    sudo apt install libpython3-dev python3-distutils
 
 Additional packages are required to run the included test suite or to generate
 HTML documentation (see :ref:`Developer guide <sec-writing-documentation>`). If those are
@@ -141,7 +141,7 @@ CMake will always use the correct compiler.
 
 .. code-block:: bash
 
-    export CC=clang-9 export CXX=clang++-9
+    export CC=clang-10 export CXX=clang++-10
 
 If you installed another version of Clang, the version suffix of course has to
 be adjusted. Now, compilation should be as simple as running the following from
@@ -163,57 +163,48 @@ slight adjustments for the package manager and package names). We have mainly
 worked with software environment listed below, and our instructions should work
 without modifications in that case.
 
-* Ubuntu 19.10
-* clang 9.0.0-2 (tags/RELEASE_900/final)
-* cmake 3.13.4
-* ninja 1.9.0
-* python 3.8
+* Ubuntu 20.04
+* clang 10.0.0
+* cmake 3.16.3
+* ninja 1.10.0
+* python 3.8.2
 
 Windows
 -------
 
-On Windows, a recent version of `Visual Studio 2019
+On Windows, a recent version of `Visual Studio 2022
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
-CMake, or Python (e.g. via `Miniconda 3
-<https://docs.conda.io/en/latest/miniconda.html>`_) might need to be installed
-manually. Mitsuba's build system *requires* access to Python >= 3.8 even if you
-do not plan to use Mitsuba's python interface.
+CMake, or Python might need to be installed manually. Mitsuba's build system
+*requires* access to Python >= 3.8 even if you do not plan to use Mitsuba's
+python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:
 
 .. code-block:: bash
 
     # To be safe, explicitly ask for the 64 bit version of Visual Studio
-    cmake -G "Visual Studio 16 2019" -A x64
+    cmake -G "Visual Studio 17 2022" -A x64 -B build
 
 
-Afterwards, open the generated ``mitsuba.sln`` file and proceed building as
-usual from within Visual Studio. You will probably also want to set the build
-mode to *Release* there.
+Afterwards, open the generated ``mitsuba.sln`` file in the build folder and
+proceed building as usual from within Visual Studio. You will probably also
+want to set the build mode to *Release* there.
 
 It is also possible to directly build from the terminal running the following
 command:
 
 .. code-block:: bash
 
-    cmake --build .. --config Release
-
-Additional packages are required to run the included test suite or to generate
-HTML documentation (see :ref:`Developer guide <sec-devguide>`). If those are
-interesting to you, also enter the following commands:
-
-.. code-block:: bash
-
-    conda install pytest numpy sphinx
+    cmake --build build --config Release
 
 
 **Tested version**
 
 * Windows 10
-* Visual Studio 2019 (Community Edition) Version 16.4.5
-* cmake 3.16.4 (64bit)
-* git 2.25.1 (64bit)
-* Miniconda3 4.7.12.1 (64bit)
+* Visual Studio 2022 (Community Edition) Version 16.4.5
+* cmake 3.22.2 (64bit)
+* git 2.34.1 (64bit)
+* Python 3.10.1 (64bit)
 
 
 macOS
@@ -245,10 +236,10 @@ Now, compilation should be as simple as running the following from inside the
 
 **Tested version**
 
-* macOS Catalina 10.15.2
-* Xcode 11.3.1
-* cmake 3.16.4
-* Python 3.8.0
+* macOS Big Sur 11.5.2
+* Xcode 12.0.5
+* cmake 3.24.2
+* Python 3.9.5
 
 
 Running Mitsuba
@@ -290,35 +281,17 @@ GPU variants
 ------------
 
 Variants of Mitsuba that run on the GPU (e.g. :monosp:`cuda_rgb`,
-:monosp:`cuda_ad_spectral`, etc.) additionally depend on the `NVIDIA CUDA
-Toolkit <https://developer.nvidia.com/cuda-downloads>`_ and `NVIDIA OptiX
-<https://developer.nvidia.com/designworks/optix/download>`_. CUDA needs to be
-installed manually while OptiX 7 ships natively with the latest GPU driver. Make
-sure to have an up-to-date GPU driver if the framework fails to compile the GPU
-variants of Mitsuba.
+:monosp:`cuda_ad_spectral`, etc.) will try to dynamically load the CUDA shared
+libraries from your system. There is no need to manually install any specific
+version of CUDA.
 
-Tested versions of CUDA include 10.0, 10.1, and 10.2. Only OptiX 7 is supported
-at this moment.
+Make sure to have an up-to-date GPU driver if the framework fails to compile
+the GPU variants of Mitsuba. The minimum requirement is currently v495.89.
 
-In case your CUDA installation is not automatically found by CMake (for instance
-because the directory is not in `PATH`), you need to either set the environment
-variable `CUDACXX` or the CMake cache entry `CMAKE_CUDA_COMPILER` to the full
-path to the compiler. E.g.
-
-.. code-block:: bash
-
-    # Environment variable
-    export CUDACXX=/usr/local/cuda/bin/nvcc
-
-    # or
-
-    # As part of the CMake process
-    cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
-
-By default, Mitsuba is able to resolve the OptiX API itself, and therefore does
-not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake flag
-can be used to turn off this feature if a developer wants to experiment with
-parts of the OptiX API not yet exposed to the framework.
+By default, Mitsuba is also able to resolve the OptiX API itself, and therefore
+does not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake
+flag can be used to turn off this feature if a developer wants to experiment
+with parts of the OptiX API not yet exposed to the framework.
 
 Embree
 ------
