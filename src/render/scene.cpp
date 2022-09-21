@@ -301,9 +301,17 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
 
     bool accel_is_dirty = false;
     for (auto &s : m_shapes) {
-        accel_is_dirty = s->dirty();
-        if (accel_is_dirty)
+        if (s->dirty()) {
+            accel_is_dirty = true;
             break;
+        }
+    }
+
+    for (auto &s : m_shapegroups) {
+        if (s->dirty()) {
+            accel_is_dirty = true;
+            break;
+        }
     }
 
     if (accel_is_dirty) {
@@ -352,9 +360,10 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::clear_shapes_dirty() {
-    for (auto &s : m_shapes) {
+    for (auto &s : m_shapes)
         s->m_dirty = false;
-    }
+    for (auto &s : m_shapegroups)
+        s->m_dirty = false;
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
