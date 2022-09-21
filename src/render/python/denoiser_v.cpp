@@ -13,7 +13,7 @@ MI_PY_EXPORT(denoiser) {
                                const TensorXf *>(&Denoiser::denoise),
              "noisy"_a, "albedo"_a = nullptr, "normals"_a = nullptr,
              "flow"_a = nullptr, "previous_denoised"_a = nullptr,
-             D(Denoiser, denoise1))
+             D(Denoiser, denoise))
         .def("denoise",
              py::overload_cast<const ref<Bitmap> &, const std::string &,
                                const std::string &, const std::string &,

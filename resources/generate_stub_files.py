@@ -78,9 +78,10 @@ def process_type_hint(s):
         end = begin + result[begin:].index('>')
 
         new_default_value = result[begin:end]
-        new_default_value = new_default_value[:new_default_value.index(':')]
+        if ':' in new_default_value:
+            new_default_value = new_default_value[:new_default_value.index(':')]
+            result = result[:begin - 1] + new_default_value + result[end + 1:]
 
-        result = result[:begin - 1] + new_default_value + result[end + 1:]
         enum_match = default_enum_re.search(result, begin)
 
     return result
