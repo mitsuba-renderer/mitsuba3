@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB ShapeGroup : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_id)
+    MI_IMPORT_BASE(Shape, m_id, m_dirty)
     MI_IMPORT_TYPES(ShapeKDTree, ShapePtr)
 
     using typename Base::ScalarSize;
@@ -50,8 +50,13 @@ public:
 
     /// Return whether this shapegroup contains triangle mesh shapes
     bool has_meshes() const { return m_has_meshes; }
+
     /// Return whether this shapegroup contains other type of shapes
     bool has_others() const { return m_has_others; }
+
+    void traverse(TraversalCallback *callback) override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
+    bool parameters_grad_enabled() const override;
 
     std::string to_string() const override;
 
@@ -65,12 +70,7 @@ public:
                                      const OptixProgramGroup *program_groups) override;
 
     /// Build OptiX geometry acceleration structures
-    void optix_build_gas(const OptixDeviceContext& context) {
-        if (!optix_accel_ready) {
-            build_gas(context, m_shapes, m_accel);
-            optix_accel_ready = true;
-        }
-    }
+    void optix_build_gas(const OptixDeviceContext& context) override;
 #endif
 
     MI_DECLARE_CLASS()
@@ -84,13 +84,13 @@ private:
 
 #if defined(MI_ENABLE_EMBREE)
     RTCScene m_embree_scene = nullptr;
+    std::vector<int> m_embree_geometries;
 #else
     ref<ShapeKDTree> m_kdtree;
 #endif
 
 #if defined(MI_ENABLE_CUDA)
     OptixAccelData m_accel;
-    bool optix_accel_ready = false;
     /// OptiX hitgroup sbt offset
     uint32_t m_sbt_offset;
 #endif

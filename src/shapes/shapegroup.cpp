@@ -79,7 +79,7 @@ where only a few distinct types of trees have to be kept in memory. An example i
         # Instantiate the shape group without any kind of transformation
         'first_instance': {
             'type': 'instance',
-            'shapegroup: {
+            'shapegroup': {
                 'type': 'ref',
                 'id': 'my_shape_group'
             }
@@ -88,7 +88,7 @@ where only a few distinct types of trees have to be kept in memory. An example i
         # Create instance of the shape group, but rotated, scaled, and translated
         'second_instance': {
             'to_world': mi.ScalarTransform4f.rotate([1, 0, 0], 45).scale([1.5, 1.5, 1.5]).translate([0, 10, 0])
-            'shapegroup: {
+            'shapegroup': {
                 'type': 'ref',
                 'id': 'my_shape_group'
             }
