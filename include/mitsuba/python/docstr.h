@@ -1880,25 +1880,17 @@ static const char *__doc_mitsuba_Denoiser_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Denoiser_denoise = R"doc()doc";
 
-static const char *__doc_mitsuba_Denoiser_denoise1 = R"doc()doc";
-
-static const char *__doc_mitsuba_Denoiser_m_albedo_data = R"doc()doc";
+static const char *__doc_mitsuba_Denoiser_denoise_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Denoiser_m_denoiser = R"doc()doc";
 
-static const char *__doc_mitsuba_Denoiser_m_flow_data = R"doc()doc";
-
 static const char *__doc_mitsuba_Denoiser_m_hdr_intensity = R"doc()doc";
 
-static const char *__doc_mitsuba_Denoiser_m_input_data = R"doc()doc";
-
-static const char *__doc_mitsuba_Denoiser_m_normal_data = R"doc()doc";
+static const char *__doc_mitsuba_Denoiser_m_input_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Denoiser_m_options = R"doc()doc";
 
 static const char *__doc_mitsuba_Denoiser_m_output_data = R"doc()doc";
-
-static const char *__doc_mitsuba_Denoiser_m_previous_output_data = R"doc()doc";
 
 static const char *__doc_mitsuba_Denoiser_m_scratch = R"doc()doc";
 
@@ -3215,8 +3207,7 @@ In addition to receiving samples via the put() method, the image block
 can also be queried via the read() method, in which case the
 reconstruction filter is used to compute suitable interpolation
 weights. This is feature is useful for differentiable rendering, where
-we one needs to evaluate the reverse-mode derivative of the put()
-method.)doc";
+one needs to evaluate the reverse-mode derivative of the put() method.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 
