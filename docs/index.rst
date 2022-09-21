@@ -90,7 +90,7 @@ For the new users, we put together absolute beginner's tutorials for both Dr.Jit
 Video tutorials
 ---------------
 
-The following Youtube playlist contains various video tutorials related
+The following `YouTube playlist <https://www.youtube.com/playlist?list=PLI9y-85z_Po6da-pyTNGTns2n4fhpbLe5>`_ contains various video tutorials related
 to Mitsuba 3 and Dr.Jit, perfect to get you started with those two libraries.
 
 .. youtube:: LCsjK6Cbv6Q
