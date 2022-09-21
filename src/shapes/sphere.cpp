@@ -161,7 +161,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
