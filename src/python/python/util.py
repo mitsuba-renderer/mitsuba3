@@ -99,7 +99,7 @@ class SceneParameters(Mapping):
         type_length = int(max([len(type(v).__name__) for k, v in self.properties.items()]))
         param_list = '\n'
         param_list += '  ' + '-' * (name_length + 53) + '\n'
-        param_list += f"  {'Name':{name_length}}  {'Flags':7}  {'Type':type_length} {'Parent'}\n"
+        param_list += f"  {'Name':{name_length}}  {'Flags':7}  {'Type':{type_length}} {'Parent'}\n"
         param_list += '  ' + '-' * (name_length + 53) + '\n'
         for k, v in self.properties.items():
             value, value_type, node, flags = v
