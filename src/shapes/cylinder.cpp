@@ -118,21 +118,6 @@ public:
         initialize();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-
-        Base::parameters_changed();
-    }
-
     void update() {
          // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = transform_decompose(m_to_world.scalar().matrix, 25);
@@ -159,6 +144,21 @@ public:
 
         dr::make_opaque(m_radius, m_length, m_inv_surface_area);
         mark_dirty();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+
+        Base::parameters_changed();
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -237,7 +237,7 @@ public:
     }
 
     Float surface_area() const override {
-        return 2.f * dr::Pi<ScalarFloat> * m_radius.value() * m_length.value();
+        return dr::TwoPi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -307,7 +307,7 @@ public:
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius(1.0);  // Constant kept for readability
+        Value radius(1.0); // Constant kept for readability
         Value length(1.0);
         if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
@@ -364,7 +364,7 @@ public:
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius(1.0);
+        Value radius(1.0); // Constant kept for readability
         Value length(1.0);
         if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
@@ -446,9 +446,9 @@ public:
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
                 local = to_object.transform_affine(si.p);
-                Float correction = dr::norm(dr::head<2>(local));
-                local.x() /= correction;
-                local.y() /= correction;
+                Float r = dr::norm(dr::head<2>(local));
+                local.x() /= r;
+                local.y() /= r;
                 local = dr::detach(local);
                 si.p = to_world.transform_affine(local);
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
@@ -523,6 +523,10 @@ public:
         }
     }
 #endif
+
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length);
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

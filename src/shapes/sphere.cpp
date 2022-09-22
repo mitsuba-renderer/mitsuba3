@@ -338,10 +338,9 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                dr::is_diff_v<Float>,
-                            dr::float32_array_t<FloatP>,
-                            dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
 
         using ScalarValue  = dr::scalar_t<Value>;
@@ -388,10 +387,9 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                              dr::is_diff_v<Float>,
-                                          dr::float32_array_t<FloatP>,
-                                          dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
         using ScalarValue  = dr::scalar_t<Value>;
         using ScalarValue3 = Vector<ScalarValue, 3>;
