@@ -534,8 +534,9 @@ public:
     // Mark that shape as an instance
     void mark_as_instance() { m_is_instance = true; }
 
-    /// The \c Scene class needs access to \c Shape::m_dirty
+    /// The \c Scene and \c ShapeGroup class needs access to \c Shape::m_dirty
     friend class Scene<Float, Spectrum>;
+    friend class ShapeGroup<Float, Spectrum>;
 
     /// Return whether any shape's parameters require gradients (default return false)
     virtual bool parameters_grad_enabled() const;

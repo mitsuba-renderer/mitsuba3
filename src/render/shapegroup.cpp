@@ -169,7 +169,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_build_gas(const OptixDeviceCo
 MI_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) {
     DRJIT_MARK_USED(device);
     if constexpr (!dr::is_cuda_v<Float>) {
-        if (dirty()) {
+        if (m_dirty) {
             if (m_embree_scene == nullptr)
                 m_embree_scene = rtcNewScene(device);
 
@@ -177,8 +177,8 @@ MI_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice de
                 rtcDetachGeometry(m_embree_scene, geo);
             m_embree_geometries.clear();
 
-            for (Shape *shape : m_shapes) {
-                RTCGeometry geom = shape->embree_geometry(embree_device);
+            for (auto &s : m_shapes) {
+                RTCGeometry geom = s->embree_geometry(device);
                 m_embree_geometries.push_back(rtcAttachGeometry(m_embree_scene, geom));
                 rtcReleaseGeometry(geom);
             }
