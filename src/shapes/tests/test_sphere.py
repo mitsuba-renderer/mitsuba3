@@ -221,6 +221,24 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     shape = mi.load_dict({'type' : 'sphere'})
     params = mi.traverse(shape)
 
+    # Test 00: With DetachShape and no moving rays, the output shouldn't produce
+    #          any gradients.
+
+    ray = mi.Ray3f(mi.Vector3f(0, 0, -2), mi.Vector3f(0, 0, 1))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), 0.0)
+    assert dr.allclose(dr.grad(si.t), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
     # Test 01: When the sphere is inflating, the point hitting the center will
     #          move back along the ray. The normal isn't changing nor the UVs.
 
