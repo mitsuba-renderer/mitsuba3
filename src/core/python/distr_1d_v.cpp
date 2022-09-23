@@ -28,8 +28,8 @@ MI_PY_EXPORT(DiscreteDistribution) {
         .def("eval_cdf_normalized", &DiscreteDistribution::eval_cdf_normalized,
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_cdf_normalized))
         .def_method(DiscreteDistribution, update)
-        .def_method(DiscreteDistribution, sum)
         .def_method(DiscreteDistribution, normalization)
+        .def_method(DiscreteDistribution, sum)
         .def("sample",
             &DiscreteDistribution::sample,
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample))
@@ -77,6 +77,7 @@ MI_PY_EXPORT(ContinuousDistribution) {
         .def_method(ContinuousDistribution, integral)
         .def_method(ContinuousDistribution, normalization)
         .def_method(ContinuousDistribution, interval_resolution)
+        .def_method(ContinuousDistribution, max)
         .def("sample",
             &ContinuousDistribution::sample,
             "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
@@ -120,6 +121,7 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
         .def_method(IrregularContinuousDistribution, integral)
         .def_method(IrregularContinuousDistribution, normalization)
         .def_method(IrregularContinuousDistribution, interval_resolution)
+        .def_method(IrregularContinuousDistribution, max)
         .def("sample",
             &IrregularContinuousDistribution::sample,
             "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))

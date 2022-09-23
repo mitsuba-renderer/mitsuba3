@@ -167,6 +167,7 @@ def test12_cont_eval(variants_vec_backends_once):
     d = mi.ContinuousDistribution([2, 3], [1, 2])
     eps = 1e-6
 
+    assert dr.allclose(d.max(), 2.0)
     assert dr.allclose(d.integral(), 3.0 / 2.0)
     assert dr.allclose(d.normalization(), 2.0 / 3.0)
     assert dr.allclose(
@@ -194,6 +195,7 @@ def test13_cont_func(variants_vec_backends_once):
     y = dr.exp(-dr.sqr(x))
 
     d = mi.ContinuousDistribution([-2, 2], y)
+    assert dr.allclose(d.max(), 1.0)
     assert dr.allclose(d.integral(), dr.sqrt(dr.pi) * dr.erf(2.0))
     assert dr.allclose(d.eval_pdf([1]), [dr.exp(-1)])
     assert dr.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
@@ -241,6 +243,7 @@ def test17_irrcont_neg_prob(variants_all_backends_once):
 def test18_irrcont_simple_function(variants_vec_backends_once):
     # Reference from Mathematica, mi.Float
     d = mi.IrregularContinuousDistribution([1, 1.5, 1.8, 5], [1, 3, 0, 1])
+    assert dr.allclose(d.max(), 3.0)
     assert dr.allclose(d.integral(), 3.05)
     assert dr.allclose(
         d.eval_pdf([0, 1, 2, 3, 4, 5, 6]),
