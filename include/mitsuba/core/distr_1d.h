@@ -804,7 +804,7 @@ private:
         double integral = 0.;
         std::vector<ScalarFloat> cdf(size - 1);
 
-        m_max = nodes[0];
+        m_max = pdf[0];
         for (size_t i = 0; i < size - 1; ++i) {
             double x0 = (double) nodes[0],
                    x1 = (double) nodes[1],
