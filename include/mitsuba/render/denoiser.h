@@ -20,20 +20,20 @@ public:
 
     ~Denoiser();
 
-    TensorXf denoise(const TensorXf &noisy,
-                     bool denoise_alpha = true,
-                     const TensorXf *albedo = nullptr,
-                     const TensorXf *normals = nullptr,
-                     const TensorXf *previous_denoised = nullptr,
-                     const TensorXf *flow = nullptr);
-
-    ref<Bitmap> denoise(const ref<Bitmap> &noisy,
+    TensorXf operator()(const TensorXf &noisy,
                         bool denoise_alpha = true,
-                        const std::string &albedo_ch = "",
-                        const std::string &normals_ch = "",
-                        const std::string &flow_ch = "",
-                        const std::string &previous_denoised_ch = "",
-                        const std::string &noisy_ch = "<root>");
+                        const TensorXf *albedo = nullptr,
+                        const TensorXf *normals = nullptr,
+                        const TensorXf *previous_denoised = nullptr,
+                        const TensorXf *flow = nullptr);
+
+    ref<Bitmap> operator()(const ref<Bitmap> &noisy,
+                           bool denoise_alpha = true,
+                           const std::string &albedo_ch = "",
+                           const std::string &normals_ch = "",
+                           const std::string &flow_ch = "",
+                           const std::string &previous_denoised_ch = "",
+                           const std::string &noisy_ch = "<root>");
 
     virtual std::string to_string() const override;
 

@@ -60,7 +60,7 @@ MI_VARIANT Denoiser<Float, Spectrum>::~Denoiser() {
 }
 
 MI_VARIANT
-typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
+typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::operator()(
     const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
     const TensorXf *normals, const TensorXf *previous_denoised,
     const TensorXf *flow) {
@@ -150,7 +150,7 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
 }
 
 MI_VARIANT
-ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
+ref<Bitmap> Denoiser<Float, Spectrum>::operator()(
     const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
     const std::string &normals_ch, const std::string &flow_ch,
     const std::string &previous_denoised_ch, const std::string &noisy_ch) {
@@ -158,7 +158,7 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
         size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
                                          noisy_->channel_count() };
         TensorXf noisy_tensor(noisy_->data(), 3, noisy_tensor_shape);
-        TensorXf denoised = denoise(noisy_tensor, denoise_alpha);
+        TensorXf denoised = (*this)(noisy_tensor, denoise_alpha);
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
@@ -246,7 +246,7 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
 
     // Generate output
     TensorXf denoised =
-        denoise(noisy_tensor, albedo_tensor.get(), normals_tensor.get(),
+        (*this)(noisy_tensor, albedo_tensor.get(), normals_tensor.get(),
                 flow_tensor.get(), prev_denoised_tensor.get());
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
