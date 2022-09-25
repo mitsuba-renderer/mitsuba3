@@ -34,7 +34,14 @@ include_directories(
 )
 
 if (NOT MI_ENABLE_EMBREE)
-    set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h ${LIBRENDER_EXTRA_SRC})
+  set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h ${LIBRENDER_EXTRA_SRC})
+endif()
+
+if (MI_ENABLE_CUDA)
+  set(LIBRENDER_EXTRA_SRC
+    optixdenoiser.cpp ${INC_DIR}/optixdenoiser.h
+    ${LIBRENDER_EXTRA_SRC}
+  )
 endif()
 
 add_library(mitsuba-render OBJECT
@@ -44,7 +51,6 @@ add_library(mitsuba-render OBJECT
   ${INC_DIR}/records.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
-  denoiser.cpp     ${INC_DIR}/denoiser.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h

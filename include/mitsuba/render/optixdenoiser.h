@@ -1,6 +1,9 @@
 #pragma once
 
+#if defined(MI_ENABLE_CUDA)
+
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/optix_api.h>
 #include <drjit/tensor.h>
@@ -11,14 +14,14 @@ NAMESPACE_BEGIN(mitsuba)
  * OptiX Denoiser
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Denoiser : public Object {
+class MI_EXPORT_LIB OptixDenoiser : public Object {
 public:
     MI_IMPORT_TYPES()
 
-    Denoiser(const ScalarVector2u &input_size, bool albedo, bool normals,
+    OptixDenoiser(const ScalarVector2u &input_size, bool albedo, bool normals,
              bool temporal);
 
-    ~Denoiser();
+    ~OptixDenoiser();
 
     TensorXf operator()(const TensorXf &noisy,
                         bool denoise_alpha = true,
@@ -46,11 +49,13 @@ private:
     uint32_t m_scratch_size;
     OptixDenoiserOptions m_options;
     bool m_temporal;
-    OptixDenoiser m_denoiser;
+    OptixDenoiserStructPtr m_denoiser;
     CUdeviceptr m_hdr_intensity;
     CUdeviceptr m_output_data;
 };
 
-MI_EXTERN_CLASS(Denoiser)
+MI_EXTERN_CLASS(OptixDenoiser)
 
 NAMESPACE_END(mitsuba)
+
+#endif // defined(MI_ENABLE_CUDA)
