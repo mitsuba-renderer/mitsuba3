@@ -40,6 +40,7 @@ MI_VARIANT Denoiser<Float, Spectrum>::Denoiser(const ScalarVector2u &input_size,
     OptixDenoiserSizes sizes = {};
     jit_optix_check(optixDenoiserComputeMemoryResources(
         m_denoiser, input_size.x(), input_size.y(), &sizes));
+
     CUstream stream = jit_cuda_stream();
     m_state_size = sizes.stateSizeInBytes;
     m_state = jit_malloc(AllocType::Device, m_state_size);
@@ -60,8 +61,9 @@ MI_VARIANT Denoiser<Float, Spectrum>::~Denoiser() {
 
 MI_VARIANT
 typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
-    const TensorXf &noisy, const TensorXf *albedo, const TensorXf *normals,
-    const TensorXf *previous_denoised, const TensorXf *flow) {
+    const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
+    const TensorXf *normals, const TensorXf *previous_denoised,
+    const TensorXf *flow) {
     using Array = typename TensorXf::Array;
 
     if ((albedo == nullptr) && m_options.guideAlbedo)
@@ -95,13 +97,13 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
     CUstream stream = jit_cuda_stream();
 
     OptixDenoiserParams params = {};
+    params.blendFactor = 0.0f;
+    params.hdrAverageColor = nullptr;
+    params.denoiseAlpha = denoise_alpha;
     params.hdrIntensity = m_hdr_intensity;
-    params.denoiseAlpha = true;
     jit_optix_check(optixDenoiserComputeIntensity(
         m_denoiser, stream, &layers.input, m_hdr_intensity, m_scratch,
         m_scratch_size));
-    params.blendFactor = 0.0f;
-    params.hdrAverageColor = nullptr;
 
     OptixDenoiserGuideLayer guide_layer = {};
 
@@ -111,11 +113,13 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
 
     std::unique_ptr<TensorXf> corrected_normals = nullptr;
     if (m_options.guideNormal) {
+        // TODO: Only rotate if local camera shading frame has z axis as ray
+        // direction.
+
         // Change from right-handed coordinate system with (X=left, Y=up,
         // Z=forward) to a right-handed system  with (X=right, Y=up, Z=backward)
         corrected_normals = std::make_unique<TensorXf>(*normals);
 
-        // TODO: Understand if this is necessary or not
         /*
         UInt32 x_idx = dr::arange<UInt32>(0, corrected_normals->size(), 3);
         Float x_values = dr::gather<Float>(corrected_normals->array(), x_idx);
@@ -147,15 +151,14 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::denoise(
 
 MI_VARIANT
 ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
-    const ref<Bitmap> &noisy_, const std::string &albedo_ch,
+    const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
     const std::string &normals_ch, const std::string &flow_ch,
     const std::string &previous_denoised_ch, const std::string &noisy_ch) {
     if (noisy_->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
         size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
                                          noisy_->channel_count() };
         TensorXf noisy_tensor(noisy_->data(), 3, noisy_tensor_shape);
-        TensorXf denoised =
-            denoise(noisy_tensor, nullptr, nullptr, nullptr, nullptr);
+        TensorXf denoised = denoise(noisy_tensor, denoise_alpha);
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
@@ -231,6 +234,7 @@ ref<Bitmap> Denoiser<Float, Spectrum>::denoise(
             tensor = std::make_unique<TensorXf>(bmp->data(), 3, shape);
         }
     };
+
     std::unique_ptr<TensorXf> albedo_tensor = nullptr;
     setup_tensor(albedo_bmp, albedo_tensor, 3);
     std::unique_ptr<TensorXf> normals_tensor = nullptr;
