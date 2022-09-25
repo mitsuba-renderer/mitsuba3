@@ -8,18 +8,20 @@ MI_PY_EXPORT(denoiser) {
              "input_size"_a, "albedo"_a = false, "normals"_a = false,
              "temporal"_a = false)
         .def("denoise",
-             py::overload_cast<const TensorXf &, const TensorXf *,
+             py::overload_cast<const TensorXf &, bool, const TensorXf *,
                                const TensorXf *, const TensorXf *,
                                const TensorXf *>(&Denoiser::denoise),
-             "noisy"_a, "albedo"_a = nullptr, "normals"_a = nullptr,
-             "flow"_a = nullptr, "previous_denoised"_a = nullptr,
+             "noisy"_a, "denoise_alpha"_a = true, "albedo"_a = nullptr,
+             "normals"_a = nullptr, "flow"_a = nullptr,
+             "previous_denoised"_a = nullptr,
              D(Denoiser, denoise))
         .def("denoise",
-             py::overload_cast<const ref<Bitmap> &, const std::string &,
+             py::overload_cast<const ref<Bitmap> &, bool, const std::string &,
                                const std::string &, const std::string &,
                                const std::string &, const std::string &>(
                  &Denoiser::denoise),
-             "noisy"_a, "albedo_ch"_a = "", "normals_ch"_a = "",
-             "flow_ch"_a = "", "previous_denoised_ch"_a = "",
-             "noisy_ch"_a = "<root>", D(Denoiser, denoise));
+             "noisy"_a, "denoise_alpha"_a = true, "albedo_ch"_a = "",
+             "normals_ch"_a = "", "flow_ch"_a = "",
+             "previous_denoised_ch"_a = "", "noisy_ch"_a = "<root>",
+             D(Denoiser, denoise));
 }
