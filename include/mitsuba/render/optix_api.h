@@ -25,7 +25,7 @@ using OptixAccelPropertyType = int;
 using OptixProgramGroupKind  = int;
 using OptixDeviceContext     = void*;
 using OptixTask              = void*;
-using OptixDenoiser          = void*;
+using OptixDenoiserStructPtr = void*;
 
 // =====================================================
 //            Commonly used OptiX constants
@@ -317,17 +317,17 @@ D(optixSbtRecordPackHeader, OptixProgramGroup, void *);
 D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
   CUdeviceptr, size_t, OptixTraversableHandle *);
 D(optixDenoiserCreate, OptixDeviceContext, OptixDenoiserModelKind,
-  const OptixDenoiserOptions *, OptixDenoiser *);
-D(optixDenoiserDestroy, OptixDenoiser);
-D(optixDenoiserComputeMemoryResources, const OptixDenoiser, unsigned int,
-  unsigned int, OptixDenoiserSizes *);
-D(optixDenoiserSetup, OptixDenoiser, CUstream, unsigned int, unsigned int,
-  CUdeviceptr, size_t, CUdeviceptr, size_t);
-D(optixDenoiserInvoke, OptixDenoiser, CUstream, const OptixDenoiserParams *,
-  CUdeviceptr, size_t, const OptixDenoiserGuideLayer *,
-  const OptixDenoiserLayer *, unsigned int, unsigned int, unsigned int,
-  CUdeviceptr, size_t);
-D(optixDenoiserComputeIntensity, OptixDenoiser, CUstream,
+  const OptixDenoiserOptions *, OptixDenoiserStructPtr *);
+D(optixDenoiserDestroy, OptixDenoiserStructPtr);
+D(optixDenoiserComputeMemoryResources, const OptixDenoiserStructPtr,
+  unsigned int, unsigned int, OptixDenoiserSizes *);
+D(optixDenoiserSetup, OptixDenoiserStructPtr, CUstream, unsigned int,
+  unsigned int, CUdeviceptr, size_t, CUdeviceptr, size_t);
+D(optixDenoiserInvoke, OptixDenoiserStructPtr, CUstream,
+  const OptixDenoiserParams *, CUdeviceptr, size_t,
+  const OptixDenoiserGuideLayer *, const OptixDenoiserLayer *, unsigned int, 
+  unsigned int, unsigned int, CUdeviceptr, size_t);
+D(optixDenoiserComputeIntensity, OptixDenoiserStructPtr, CUstream,
   const OptixImage2D *inputImage, CUdeviceptr, CUdeviceptr, size_t);
 
 #undef D

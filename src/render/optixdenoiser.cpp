@@ -1,4 +1,4 @@
-#include <mitsuba/render/denoiser.h>
+#include <mitsuba/render/optixdenoiser.h>
 #include <mitsuba/render/optix_api.h>
 #include <drjit-core/optix.h>
 
@@ -6,7 +6,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 static OptixImage2D optixImage2DfromTensor(
-    const typename Denoiser<Float, Spectrum>::TensorXf &tensor,
+    const typename OptixDenoiser<Float, Spectrum>::TensorXf &tensor,
     OptixPixelFormat pixel_format) {
     return { (CUdeviceptr) tensor.data(),
              (unsigned int) tensor.shape(1),
@@ -16,10 +16,12 @@ static OptixImage2D optixImage2DfromTensor(
              pixel_format };
 }
 
-MI_VARIANT Denoiser<Float, Spectrum>::Denoiser(const ScalarVector2u &input_size,
-                                               bool albedo, bool normals,
-                                               bool temporal)
+MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
+    const ScalarVector2u &input_size, bool albedo, bool normals, bool temporal)
     : m_input_size(input_size), m_temporal(temporal) {
+    if constexpr (!dr::is_cuda_v<Float>)
+        Throw("OptixDenoiser is only available in CUDA mode!");
+
     if (normals && !albedo)
         Throw("The denoiser cannot use normals to guide its process without "
               "also providing albedo information!");
@@ -52,7 +54,7 @@ MI_VARIANT Denoiser<Float, Spectrum>::Denoiser(const ScalarVector2u &input_size,
     m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
 }
 
-MI_VARIANT Denoiser<Float, Spectrum>::~Denoiser() {
+MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
     jit_optix_check(optixDenoiserDestroy(m_denoiser));
     jit_free(m_hdr_intensity);
     jit_free(m_state);
@@ -60,7 +62,7 @@ MI_VARIANT Denoiser<Float, Spectrum>::~Denoiser() {
 }
 
 MI_VARIANT
-typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::operator()(
+typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
     const TensorXf *normals, const TensorXf *previous_denoised,
     const TensorXf *flow) {
@@ -150,7 +152,7 @@ typename Denoiser<Float, Spectrum>::TensorXf Denoiser<Float, Spectrum>::operator
 }
 
 MI_VARIANT
-ref<Bitmap> Denoiser<Float, Spectrum>::operator()(
+ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
     const std::string &normals_ch, const std::string &flow_ch,
     const std::string &previous_denoised_ch, const std::string &noisy_ch) {
@@ -263,9 +265,9 @@ ref<Bitmap> Denoiser<Float, Spectrum>::operator()(
 }
 
 MI_VARIANT
-std::string Denoiser<Float, Spectrum>::to_string() const {
+std::string OptixDenoiser<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
-    oss << "Denoiser[" << std::endl
+    oss << "OptixDenoiser[" << std::endl
         << "  albedo = " << m_options.guideAlbedo << "," << std::endl
         << "  normals = " << m_options.guideNormal << "," << std::endl
         << "  temporal = " << m_temporal << std::endl
@@ -273,7 +275,7 @@ std::string Denoiser<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Denoiser, Object, "denoiser")
-MI_INSTANTIATE_CLASS(Denoiser)
+MI_IMPLEMENT_CLASS_VARIANT(OptixDenoiser, Object, "denoiser")
+MI_INSTANTIATE_CLASS(OptixDenoiser)
 
 NAMESPACE_END(mitsuba)

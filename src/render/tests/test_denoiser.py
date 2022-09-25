@@ -15,12 +15,12 @@ def test01_denoiser_construct(variants_any_cuda):
     input_res = [33, 18]
 
     assert (
-        "Denoiser[\n  albedo = 0,\n  normals = 0,\n  temporal = 0\n]""" ==
-        str(mi.Denoiser(input_res))
+        "OptixDenoiser[\n  albedo = 0,\n  normals = 0,\n  temporal = 0\n]""" ==
+        str(mi.OptixDenoiser(input_res))
     )
 
     with pytest.raises(Exception) as e:
-        mi.Denoiser(input_res, albedo=False, normals=True)
+        mi.OptixDenoiser(input_res, albedo=False, normals=True)
     e.match("The denoiser cannot use normals to guide its process without " +
             "also providing albedo information!")
 
@@ -30,7 +30,7 @@ def test02_denoiser_denoise(variant_cuda_ad_rgb):
     noisy = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/noisy.exr"))
     ref = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/ref.exr"))[...,:3]
 
-    denoiser = mi.Denoiser(noisy.shape[:2])
+    denoiser = mi.OptixDenoiser(noisy.shape[:2])
     denoised = mi.util.convert_to_bitmap(
         denoiser(noisy), uint8_srgb=False
     )
@@ -43,12 +43,12 @@ def test02_denoiser_denoise(variant_cuda_ad_rgb):
 
 
 @fresolver_append_path
-def test03_denosier_denoise_albedo(variant_cuda_ad_rgb):
+def test03_denoiser_denoise_albedo(variant_cuda_ad_rgb):
     noisy = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/noisy.exr"))
     albedo = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/albedo.exr"))
     ref = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/ref_albedo.exr"))
 
-    denoiser = mi.Denoiser(noisy.shape[:2], True)
+    denoiser = mi.OptixDenoiser(noisy.shape[:2], True)
     denoised = mi.util.convert_to_bitmap(
         denoiser(noisy, False, albedo), uint8_srgb=False
     )
@@ -65,13 +65,13 @@ def test03_denosier_denoise_albedo(variant_cuda_ad_rgb):
 
 
 @fresolver_append_path
-def test04_denosier_denoise_normals(variant_cuda_ad_rgb):
+def test04_denoiser_denoise_normals(variant_cuda_ad_rgb):
     noisy = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/noisy.exr"))
     albedo = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/albedo.exr"))
     normals = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/normals.exr"))
     ref = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/ref_normals.exr"))
 
-    denoiser = mi.Denoiser(noisy.shape[:2], True, True)
+    denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True)
 
     denoised = mi.util.convert_to_bitmap(
         denoiser(noisy, False, albedo, normals), uint8_srgb=False
@@ -88,13 +88,13 @@ def test04_denosier_denoise_normals(variant_cuda_ad_rgb):
 
 
 #@fresolver_append_path
-#def test05_denosier_denoise_normals(variant_cuda_ad_rgb):
+#def test05_denoiser_denoise_normals(variant_cuda_ad_rgb):
 #    noisy = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/noisy.exr"))
 #    albedo = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/albedo.exr"))
 #    normals = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/normals.exr"))
 #    ref = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/ref_normals.exr"))
 #
-#    denoiser = mi.Denoiser(noisy.shape[:2], True, True, True)
+#    denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True, True)
 #    denoised = mi.util.convert_to_bitmap(
 #        denoiser(noisy, False, albedo, normals), uint8_srgb=False
 #    )
