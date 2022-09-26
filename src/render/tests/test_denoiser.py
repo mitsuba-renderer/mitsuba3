@@ -53,7 +53,6 @@ def test03_denoiser_denoise_albedo(variant_cuda_ad_rgb):
         denoiser(noisy, False, albedo), uint8_srgb=False
     )
     denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
-    mi.Bitmap(denoised).write("/home/nroussel/rgl/mitsuba3/resources/data/tests/denoiser/denoised.exr")
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
     denoised_tensor = mi.TensorXf(denoised)
@@ -71,8 +70,18 @@ def test04_denoiser_denoise_normals(variant_cuda_ad_rgb):
     normals = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/normals.exr"))
     ref = mi.TensorXf(mi.Bitmap("resources/data/tests/denoiser/ref_normals.exr"))
 
-    denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True)
+    # Normals are already in correct frame for OptiX, so we need to rotate them
+    # by 180 degrees first as the OptixDenoiser always does that
+    normals = mi.TensorXf(normals)
+    new_normals = dr.zeros(mi.Normal3f, normals.shape[0] * normals.shape[1])
+    for i in range(3):
+        new_normals[i] = dr.ravel(normals)[i::3]
+    new_normals[0] = -new_normals[0]
+    new_normals[2] = -new_normals[2]
+    for i in range(3):
+        normals[..., i] = new_normals[i]
 
+    denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True)
     denoised = mi.util.convert_to_bitmap(
         denoiser(noisy, False, albedo, normals), uint8_srgb=False
     )

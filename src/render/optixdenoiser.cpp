@@ -18,7 +18,8 @@ static OptixImage2D optixImage2DfromTensor(
 
 MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
     const ScalarVector2u &input_size, bool albedo, bool normals, bool temporal)
-    : m_input_size(input_size), m_temporal(temporal) {
+    : m_input_size(input_size), m_options({ albedo, normals }),
+      m_temporal(temporal) {
     if constexpr (!dr::is_cuda_v<Float>)
         Throw("OptixDenoiser is only available in CUDA mode!");
 
@@ -28,34 +29,12 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 
     optix_initialize();
 
-    OptixDeviceContext context = jit_optix_context();
-    m_denoiser = nullptr;
-    m_options = {};
-    m_options.guideAlbedo = albedo;
-    m_options.guideNormal = normals;
-    OptixDenoiserModelKind model_kind = temporal
-                                            ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
-                                            : OPTIX_DENOISER_MODEL_KIND_HDR;
-    jit_optix_check(
-        optixDenoiserCreate(context, model_kind, &m_options, &m_denoiser));
-
-    OptixDenoiserSizes sizes = {};
-    jit_optix_check(optixDenoiserComputeMemoryResources(
-        m_denoiser, input_size.x(), input_size.y(), &sizes));
-
-    CUstream stream = jit_cuda_stream();
-    m_state_size = sizes.stateSizeInBytes;
-    m_state = jit_malloc(AllocType::Device, m_state_size);
-    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
-    m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
-    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
-                                       input_size.y(), m_state, m_state_size,
-                                       m_scratch, m_scratch_size));
-    m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
+    init(input_size, temporal);
 }
 
 MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
-    jit_optix_check(optixDenoiserDestroy(m_denoiser));
+    if (m_denoiser != nullptr)
+        jit_optix_check(optixDenoiserDestroy(m_denoiser));
     jit_free(m_hdr_intensity);
     jit_free(m_state);
     jit_free(m_scratch);
@@ -64,9 +43,9 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
 MI_VARIANT
 typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
-    const TensorXf *normals, const TensorXf *previous_denoised,
-    const TensorXf *flow) {
-    using Array = typename TensorXf::Array;
+    const TensorXf *normals, const Transform4f* n_frame, const TensorXf *flow,
+    const TensorXf *previous_denoised) const {
+    using TensorArray = typename TensorXf::Array;
 
     if ((albedo == nullptr) && m_options.guideAlbedo)
         Throw("The Denoiser was created with albedo guiding enabled. An albedo "
@@ -93,7 +72,7 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
         optixImage2DfromTensor<Float, Spectrum>(noisy, input_pixel_format);
 
     layers.output = layers.input;
-    Array output_data = dr::empty<Array>(noisy.size());
+    TensorArray output_data = dr::empty<TensorArray>(noisy.size());
     layers.output.data = output_data.data();
 
     CUstream stream = jit_cuda_stream();
@@ -109,31 +88,40 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
 
     OptixDenoiserGuideLayer guide_layer = {};
 
-    if (m_options.guideAlbedo)
+    if (m_options.guideAlbedo) {
         guide_layer.albedo = optixImage2DfromTensor<Float, Spectrum>(
             *albedo, OPTIX_PIXEL_FORMAT_FLOAT3);
+        dr::schedule(albedo);
+    }
 
-    std::unique_ptr<TensorXf> corrected_normals = nullptr;
+    std::unique_ptr<TensorXf> new_normals = nullptr;
     if (m_options.guideNormal) {
-        // TODO: Only rotate if local camera shading frame has z axis as ray
-        // direction.
+        new_normals = std::make_unique<TensorXf>(*normals);
 
-        // Change from right-handed coordinate system with (X=left, Y=up,
-        // Z=forward) to a right-handed system  with (X=right, Y=up, Z=backward)
-        corrected_normals = std::make_unique<TensorXf>(*normals);
+        Normal3f n = dr::empty<Normal3f>(m_input_size.x() * m_input_size.y());
+        for (size_t i = 0; i < 3; ++i) {
+            UInt32 idx = dr::arange<UInt32>(i, new_normals->size(), 3);
+            n[i] = dr::gather<Float>(normals->array(), idx);
+        }
 
-        /*
-        UInt32 x_idx = dr::arange<UInt32>(0, corrected_normals->size(), 3);
-        Float x_values = dr::gather<Float>(corrected_normals->array(), x_idx);
-        dr::scatter(corrected_normals->array(), -x_values, x_idx);
+        // Apply transform and change from coordinate system with (X=left,
+        // Y=up, Z=forward) to a system with (X=right, Y=up, Z=backward)
+        if (n_frame != nullptr)
+            n = (*n_frame) * n;
+        n[0] = -n[0];
+        n[2] = -n[2];
 
-        UInt32 z_idx = dr::arange<UInt32>(2, corrected_normals->size(), 3);
-        Float z_values = dr::gather<Float>(corrected_normals->array(), z_idx);
-        dr::scatter(corrected_normals->array(), -z_values, z_idx);
-        */
+        for (size_t i = 0; i < 3; ++i) {
+            UInt32 idx = dr::arange<UInt32>(i, new_normals->size(), 3);
+            dr::scatter(new_normals->array(), n[i], idx);
+        }
+
+        // TODO: understand why we need to eval n here
+        dr::eval(n, new_normals);
 
         guide_layer.normal = optixImage2DfromTensor<Float, Spectrum>(
-            *corrected_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
+            *new_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
+        dr::schedule(new_normals);
     }
 
     if (m_temporal) {
@@ -141,8 +129,11 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
             *flow, OPTIX_PIXEL_FORMAT_FLOAT2);
         layers.previousOutput = optixImage2DfromTensor<Float, Spectrum>(
             *previous_denoised, input_pixel_format);
+        dr::schedule(flow);
+        dr::schedule(previous_denoised);
     }
 
+    dr::eval(noisy);
     jit_optix_check(optixDenoiserInvoke(m_denoiser, stream, &params, m_state,
                                         m_state_size, &guide_layer, &layers, 1,
                                         0, 0, m_scratch, m_scratch_size));
@@ -154,13 +145,15 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
 MI_VARIANT
 ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
-    const std::string &normals_ch, const std::string &flow_ch,
-    const std::string &previous_denoised_ch, const std::string &noisy_ch) {
+    const std::string &normals_ch, const Transform4f &n_frame,
+    const std::string &flow_ch, const std::string &previous_denoised_ch,
+    const std::string &noisy_ch) const {
     if (noisy_->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
         size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
                                          noisy_->channel_count() };
         TensorXf noisy_tensor(noisy_->data(), 3, noisy_tensor_shape);
-        TensorXf denoised = (*this)(noisy_tensor, denoise_alpha);
+        TensorXf denoised;
+        denoised = (*this)(noisy_tensor, denoise_alpha);
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
@@ -248,8 +241,9 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
 
     // Generate output
     TensorXf denoised =
-        (*this)(noisy_tensor, albedo_tensor.get(), normals_tensor.get(),
-                flow_tensor.get(), prev_denoised_tensor.get());
+        (*this)(noisy_tensor, denoise_alpha, albedo_tensor.get(),
+                normals_tensor.get(), &n_frame, flow_tensor.get(),
+                prev_denoised_tensor.get());
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
     ref<Bitmap> output = new Bitmap(
@@ -273,6 +267,31 @@ std::string OptixDenoiser<Float, Spectrum>::to_string() const {
         << "  temporal = " << m_temporal << std::endl
         << "]";
     return oss.str();
+}
+
+MI_VARIANT
+void OptixDenoiser<Float, Spectrum>::init(const ScalarVector2u &input_size,
+                                          bool temporal) {
+    OptixDeviceContext context = jit_optix_context();
+    OptixDenoiserModelKind model_kind = temporal
+                                            ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
+                                            : OPTIX_DENOISER_MODEL_KIND_HDR;
+    jit_optix_check(
+        optixDenoiserCreate(context, model_kind, &m_options, &m_denoiser));
+
+    OptixDenoiserSizes sizes = {};
+    jit_optix_check(optixDenoiserComputeMemoryResources(
+        m_denoiser, input_size.x(), input_size.y(), &sizes));
+
+    CUstream stream = jit_cuda_stream();
+    m_state_size = sizes.stateSizeInBytes;
+    m_state = jit_malloc(AllocType::Device, m_state_size);
+    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
+    m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
+    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
+                                       input_size.y(), m_state, m_state_size,
+                                       m_scratch, m_scratch_size));
+    m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(OptixDenoiser, Object, "denoiser")
