@@ -30,8 +30,8 @@ def test01_denoiser_construct(variants_any_cuda):
     input_res = [33, 18]
 
     assert (
-        "OptixDenoiser[\n  albedo = 0,\n  normals = 0,\n  temporal = 0\n]""" ==
-        str(mi.OptixDenoiser(input_res))
+        "OptixDenoiser[\n  input_size = [33, 18],\n  albedo = 0,\n  " +
+        "normals = 0,\n  temporal = 0\n]" == str(mi.OptixDenoiser(input_res))
     )
 
     with pytest.raises(Exception) as e:

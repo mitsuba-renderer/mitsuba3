@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
+MI_VARIANT
 static OptixImage2D optixImage2DfromTensor(
     const typename OptixDenoiser<Float, Spectrum>::TensorXf &tensor,
     OptixPixelFormat pixel_format) {
@@ -29,7 +29,26 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 
     optix_initialize();
 
-    init(input_size, temporal);
+    OptixDeviceContext context = jit_optix_context();
+    OptixDenoiserModelKind model_kind = temporal
+                                            ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
+                                            : OPTIX_DENOISER_MODEL_KIND_HDR;
+    jit_optix_check(
+        optixDenoiserCreate(context, model_kind, &m_options, &m_denoiser));
+
+    OptixDenoiserSizes sizes = {};
+    jit_optix_check(optixDenoiserComputeMemoryResources(
+        m_denoiser, input_size.x(), input_size.y(), &sizes));
+
+    CUstream stream = jit_cuda_stream();
+    m_state_size = sizes.stateSizeInBytes;
+    m_state = jit_malloc(AllocType::Device, m_state_size);
+    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
+    m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
+    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
+                                       input_size.y(), m_state, m_state_size,
+                                       m_scratch, m_scratch_size));
+    m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
 }
 
 MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
@@ -41,13 +60,14 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
 }
 
 MI_VARIANT
-typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>::operator()(
-    const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
-    const TensorXf *normals, const Transform4f* normals_transform, const TensorXf *flow,
-    const TensorXf *previous_denoised) const {
+typename OptixDenoiser<Float, Spectrum>::TensorXf
+OptixDenoiser<Float, Spectrum>::operator()(
+    const TensorXf &noisy, bool denoise_alpha, const TensorXf &albedo,
+    const TensorXf &normals, const Transform4f &to_sensor, const TensorXf &flow,
+    const TensorXf &previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
 
-    validate_input(noisy,albedo, normals, flow, previous_denoised);
+    validate_input(noisy, albedo, normals, flow, previous_denoised);
 
     OptixDenoiserLayer layers = {};
     OptixPixelFormat input_pixel_format = (noisy.shape(2) == 3)
@@ -74,33 +94,32 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
     dr::schedule(noisy);
 
     if (m_options.guideAlbedo)
-        dr::schedule(*albedo);
+        dr::schedule(albedo);
 
-    std::unique_ptr<TensorXf> new_normals = nullptr;
+    TensorXf new_normals(normals);
     if (m_options.guideNormal) {
         // Apply transform and change from coordinate system with (X=left,
         // Y=up, Z=forward) to a system with (X=right, Y=up, Z=backward)
-        new_normals = std::make_unique<TensorXf>(*normals);
         Normal3f n = dr::empty<Normal3f>(m_input_size.x() * m_input_size.y());
         for (size_t i = 0; i < 3; ++i) {
-            UInt32 idx = dr::arange<UInt32>(i, new_normals->size(), 3);
-            n[i] = dr::gather<Float>(normals->array(), idx);
+            UInt32 idx = dr::arange<UInt32>(i, new_normals.size(), 3);
+            n[i] = dr::gather<Float>(normals.array(), idx);
         }
-        if (normals_transform != nullptr)
-            n = (*normals_transform) * n;
+
+        n = to_sensor * n;
         n[0] = -n[0];
         n[2] = -n[2];
         for (size_t i = 0; i < 3; ++i) {
-            UInt32 idx = dr::arange<UInt32>(i, new_normals->size(), 3);
-            dr::scatter(new_normals->array(), n[i], idx);
+            UInt32 idx = dr::arange<UInt32>(i, new_normals.size(), 3);
+            dr::scatter(new_normals.array(), n[i], idx);
         }
 
-        dr::schedule(*new_normals);
+        dr::schedule(new_normals);
     }
 
     if (m_temporal) {
-        dr::schedule(*flow);
-        dr::schedule(*previous_denoised);
+        dr::schedule(flow);
+        dr::schedule(previous_denoised);
     }
 
     OptixDenoiserGuideLayer guide_layer = {};
@@ -108,15 +127,15 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
     dr::eval(); // All tensors must be evaluated before passing them to OptiX
     if (m_options.guideAlbedo)
         guide_layer.albedo = optixImage2DfromTensor<Float, Spectrum>(
-            *albedo, OPTIX_PIXEL_FORMAT_FLOAT3);
+            albedo, OPTIX_PIXEL_FORMAT_FLOAT3);
     if (m_options.guideNormal)
         guide_layer.normal = optixImage2DfromTensor<Float, Spectrum>(
-            *new_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
+            new_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
     if (m_temporal) {
         guide_layer.flow = optixImage2DfromTensor<Float, Spectrum>(
-            *flow, OPTIX_PIXEL_FORMAT_FLOAT2);
+            flow, OPTIX_PIXEL_FORMAT_FLOAT2);
         layers.previousOutput = optixImage2DfromTensor<Float, Spectrum>(
-            *previous_denoised, input_pixel_format);
+            previous_denoised, input_pixel_format);
     }
 
     jit_optix_check(optixDenoiserInvoke(m_denoiser, stream, &params, m_state,
@@ -129,31 +148,30 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
 
 MI_VARIANT
 ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
-    const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
-    const std::string &normals_ch, const Transform4f &normals_transform,
+    const ref<Bitmap> &noisy, bool denoise_alpha, const std::string &albedo_ch,
+    const std::string &normals_ch, const Transform4f &to_sensor,
     const std::string &flow_ch, const std::string &previous_denoised_ch,
     const std::string &noisy_ch) const {
-    if (noisy_->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
-        size_t noisy_tensor_shape[3] = { noisy_->height(), noisy_->width(),
-                                         noisy_->channel_count() };
-        TensorXf noisy_tensor(noisy_->data(), 3, noisy_tensor_shape);
-        TensorXf denoised;
-        denoised = (*this)(noisy_tensor, denoise_alpha);
+    if (noisy->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
+        size_t noisy_tensor_shape[3] = { noisy->height(), noisy->width(),
+                                         noisy->channel_count() };
+        TensorXf noisy_tensor(noisy->data(), 3, noisy_tensor_shape);
+        TensorXf denoised = (*this)(noisy_tensor, denoise_alpha);
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
         jit_sync_thread();
 
-        return new Bitmap(noisy_->pixel_format(), Struct::Type::Float32,
+        return new Bitmap(noisy->pixel_format(), Struct::Type::Float32,
                           { denoised.shape(1), denoised.shape(0) },
                           denoised.shape(2), {}, (uint8_t *) denoised_data);
     }
 
-    const Bitmap *noisy_bmp = nullptr;
-    const Bitmap *albedo_bmp = nullptr;
-    const Bitmap *normals_bmp = nullptr;
-    const Bitmap *flow_bmp = nullptr;
-    const Bitmap *prev_denoised_bmp = nullptr;
+    ref<const Bitmap> noisy_bmp;
+    ref<const Bitmap> albedo_bmp;
+    ref<const Bitmap> normals_bmp;
+    ref<const Bitmap> flow_bmp;
+    ref<const Bitmap> prev_denoised_bmp;
 
     bool found_albedo = albedo_ch == "";
     bool found_normals = normals_ch == "";
@@ -161,13 +179,13 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     bool found_prev_denoised = previous_denoised_ch == "";
 
     // Search for each layer
-    std::vector<std::pair<std::string, ref<Bitmap>>> res = noisy_->split();
+    std::vector<std::pair<std::string, ref<Bitmap>>> res = noisy->split();
     auto find_channel = [](const std::pair<std::string, ref<Bitmap>> &layer,
                            const std::string &channel_name, bool &found,
-                           const Bitmap *&bmp) {
+                           ref<const Bitmap> &bmp) {
         if (!found && layer.first == channel_name) {
             found = true;
-            bmp = layer.second.get();
+            bmp = layer.second;
         }
     };
     for (auto &layer : res) {
@@ -187,7 +205,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     // Check that no layer is missing
     auto throw_missing_channel = [&](const std::string &channel) {
         Throw("Could not find layer with channel name '%s' in Bitmap:\n%s",
-              channel, noisy_->to_string());
+              channel, noisy->to_string());
     };
     if (noisy_bmp == nullptr)
         throw_missing_channel(noisy_ch);
@@ -201,33 +219,29 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
         throw_missing_channel(previous_denoised_ch);
 
     // Transfer every layer into a TensorXf object
-    size_t noisy_channel_count = noisy_bmp->channel_count();
-    size_t noisy_tensor_shape[3] = { noisy_bmp->height(), noisy_bmp->width(),
-                                     noisy_channel_count };
-    TensorXf noisy_tensor(noisy_bmp->data(), 3, noisy_tensor_shape);
-
-    auto setup_tensor = [](const Bitmap *bmp, std::unique_ptr<TensorXf> &tensor,
-                           size_t channel_count) {
+    auto setup_tensor = [](ref<const Bitmap> &bmp,
+                           size_t channel_count) -> TensorXf {
         if (bmp != nullptr) {
             size_t shape[3] = { bmp->height(), bmp->width(), channel_count };
-            tensor = std::make_unique<TensorXf>(bmp->data(), 3, shape);
+            return TensorXf(bmp->data(), 3, shape);
+        } else {
+            return TensorXf();
         }
     };
 
-    std::unique_ptr<TensorXf> albedo_tensor = nullptr;
-    setup_tensor(albedo_bmp, albedo_tensor, 3);
-    std::unique_ptr<TensorXf> normals_tensor = nullptr;
-    setup_tensor(normals_bmp, normals_tensor, 3);
-    std::unique_ptr<TensorXf> flow_tensor = nullptr;
-    setup_tensor(flow_bmp, flow_tensor, 2);
-    std::unique_ptr<TensorXf> prev_denoised_tensor = nullptr;
-    setup_tensor(prev_denoised_bmp, prev_denoised_tensor, noisy_channel_count);
+    size_t noisy_channel_count = noisy_bmp->channel_count();
+    TensorXf noisy_tensor = setup_tensor(noisy_bmp, noisy_channel_count);
+    TensorXf albedo_tensor = setup_tensor(albedo_bmp, 3);
+    TensorXf normals_tensor = setup_tensor(normals_bmp, 3);
+    TensorXf flow_tensor = setup_tensor(flow_bmp, 2);
+    TensorXf prev_denoised_tensor =
+        setup_tensor(prev_denoised_bmp, noisy_channel_count);
 
     // Generate output
     TensorXf denoised =
-        (*this)(noisy_tensor, denoise_alpha, albedo_tensor.get(),
-                normals_tensor.get(), &normals_transform, flow_tensor.get(),
-                prev_denoised_tensor.get());
+        (*this) (noisy_tensor, denoise_alpha, albedo_tensor, normals_tensor,
+                 to_sensor, flow_tensor, prev_denoised_tensor);
+
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
     ref<Bitmap> output = new Bitmap(
@@ -244,6 +258,7 @@ MI_VARIANT
 std::string OptixDenoiser<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "OptixDenoiser[" << std::endl
+        << "  input_size = " << m_input_size << "," << std::endl
         << "  albedo = " << m_options.guideAlbedo << "," << std::endl
         << "  normals = " << m_options.guideNormal << "," << std::endl
         << "  temporal = " << m_temporal << std::endl
@@ -252,49 +267,24 @@ std::string OptixDenoiser<Float, Spectrum>::to_string() const {
 }
 
 MI_VARIANT
-void OptixDenoiser<Float, Spectrum>::init(const ScalarVector2u &input_size,
-                                          bool temporal) {
-    OptixDeviceContext context = jit_optix_context();
-    OptixDenoiserModelKind model_kind = temporal
-                                            ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
-                                            : OPTIX_DENOISER_MODEL_KIND_HDR;
-    jit_optix_check(
-        optixDenoiserCreate(context, model_kind, &m_options, &m_denoiser));
-
-    OptixDenoiserSizes sizes = {};
-    jit_optix_check(optixDenoiserComputeMemoryResources(
-        m_denoiser, input_size.x(), input_size.y(), &sizes));
-
-    CUstream stream = jit_cuda_stream();
-    m_state_size = sizes.stateSizeInBytes;
-    m_state = jit_malloc(AllocType::Device, m_state_size);
-    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
-    m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
-    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
-                                       input_size.y(), m_state, m_state_size,
-                                       m_scratch, m_scratch_size));
-    m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
-}
-
-MI_VARIANT
 void OptixDenoiser<Float, Spectrum>::validate_input(
-    const TensorXf &noisy, const TensorXf *albedo, const TensorXf *normals,
-    const TensorXf *flow, const TensorXf *previous_denoised) const {
-    if ((albedo == nullptr) && m_options.guideAlbedo)
+    const TensorXf &noisy, const TensorXf &albedo, const TensorXf &normals,
+    const TensorXf &flow, const TensorXf &previous_denoised) const {
+    if ((albedo.ndim() == 0) && m_options.guideAlbedo)
         Throw("The denoiser was created with albedo guiding enabled. An albedo "
               "layer must be specified!");
-    if ((normals == nullptr) && m_options.guideNormal)
+    if ((normals.ndim() == 0) && m_options.guideNormal)
         Throw("The denoiser was created with normals guiding enabled. A normal"
               "layer must be specified!");
-    if (((flow == nullptr) || (previous_denoised == nullptr)) && m_temporal)
+    if (((flow.ndim() == 0) || (previous_denoised.ndim() == 0)) && m_temporal)
         Throw("The denoiser was created with temporal denoising enabled. Both "
               "the optical flow and the denoised previous frame must be "
               "specified!");
 
     auto check_resolution = [](const TensorXf &tensor,
                                const ScalarVector2u &expected_size) {
-        if (expected_size.x() != tensor.shape(1) ||
-            expected_size.y() != tensor.shape(0))
+        if (tensor.ndim() != 0 && (expected_size.x() != tensor.shape(1) ||
+                                   expected_size.y() != tensor.shape(0)))
             Throw(
                 "The denoiser was created for inputs of size %u x %u (width x "
                 "height). At least one of the input arguments does not have "
@@ -303,24 +293,20 @@ void OptixDenoiser<Float, Spectrum>::validate_input(
                 expected_size.x(), expected_size.y());
     };
     check_resolution(noisy, m_input_size);
-    if (m_options.guideAlbedo)
-        check_resolution(*albedo, m_input_size);
-    if (m_options.guideNormal)
-        check_resolution(*normals, m_input_size);
-    if (m_temporal) {
-        check_resolution(*flow, m_input_size);
-        check_resolution(*previous_denoised, m_input_size);
-    }
+    check_resolution(albedo, m_input_size);
+    check_resolution(normals, m_input_size);
+    check_resolution(flow, m_input_size);
+    check_resolution(previous_denoised, m_input_size);
 
     if (noisy.shape(2) != 3 && noisy.shape(2) != 4)
         Throw("The noisy input must have at least 3 channels and at most 4!");
-    if (m_options.guideAlbedo && (albedo->shape(2) != 3))
+    if (m_options.guideAlbedo && (albedo.shape(2) != 3))
         Throw("The albedo must have exactly 3 channels!");
-    if (m_options.guideNormal && (normals->shape(2) != 3))
+    if (m_options.guideNormal && (normals.shape(2) != 3))
         Throw("The normals must have exactly 3 channels!");
-    if (m_temporal && (flow->shape(2) != 2))
+    if (m_temporal && (flow.shape(2) != 2))
         Throw("The optical flow argument must have exactly 2 channels!");
-    if (m_temporal && (previous_denoised->shape(2) != noisy.shape(2)))
+    if (m_temporal && (previous_denoised.shape(2) != noisy.shape(2)))
         Throw("The denoised previous frame must have the same number of "
               "channels as the noisy input!");
 }

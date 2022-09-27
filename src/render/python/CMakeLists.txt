@@ -2,7 +2,6 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/bsdf_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/optixdenoiser_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/fresnel_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/imageblock_v.cpp
@@ -11,6 +10,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/medium_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/microfacet_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/optixdenoiser_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/phase_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/records_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sampler_v.cpp
