@@ -31,7 +31,7 @@ public:
                         bool denoise_alpha = true,
                         const TensorXf *albedo = nullptr,
                         const TensorXf *normals = nullptr,
-                        const Transform4f *n_frame = nullptr,
+                        const Transform4f *normals_transform = nullptr,
                         const TensorXf *flow = nullptr,
                         const TensorXf *previous_denoised = nullptr) const;
 

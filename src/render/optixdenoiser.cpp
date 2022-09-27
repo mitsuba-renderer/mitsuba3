@@ -43,7 +43,7 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
 MI_VARIANT
 typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &noisy, bool denoise_alpha, const TensorXf *albedo,
-    const TensorXf *normals, const Transform4f* n_frame, const TensorXf *flow,
+    const TensorXf *normals, const Transform4f* normals_transform, const TensorXf *flow,
     const TensorXf *previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
 
@@ -86,13 +86,10 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
         m_denoiser, stream, &layers.input, m_hdr_intensity, m_scratch,
         m_scratch_size));
 
-    OptixDenoiserGuideLayer guide_layer = {};
+    dr::schedule(noisy);
 
-    if (m_options.guideAlbedo) {
-        guide_layer.albedo = optixImage2DfromTensor<Float, Spectrum>(
-            *albedo, OPTIX_PIXEL_FORMAT_FLOAT3);
-        dr::schedule(albedo);
-    }
+    if (m_options.guideAlbedo)
+        dr::schedule(*albedo);
 
     std::unique_ptr<TensorXf> new_normals = nullptr;
     if (m_options.guideNormal) {
@@ -106,8 +103,8 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
 
         // Apply transform and change from coordinate system with (X=left,
         // Y=up, Z=forward) to a system with (X=right, Y=up, Z=backward)
-        if (n_frame != nullptr)
-            n = (*n_frame) * n;
+        if (normals_transform != nullptr)
+            n = (*normals_transform) * n;
         n[0] = -n[0];
         n[2] = -n[2];
 
@@ -116,24 +113,30 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
             dr::scatter(new_normals->array(), n[i], idx);
         }
 
-        // TODO: understand why we need to eval n here
-        dr::eval(n, new_normals);
-
-        guide_layer.normal = optixImage2DfromTensor<Float, Spectrum>(
-            *new_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
-        dr::schedule(new_normals);
+        dr::schedule(*new_normals);
     }
 
+    if (m_temporal) {
+        dr::schedule(*flow);
+        dr::schedule(*previous_denoised);
+    }
+
+    OptixDenoiserGuideLayer guide_layer = {};
+
+    dr::eval(); // All tensors must be evaluated before passing them to OptiX
+    if (m_options.guideAlbedo)
+        guide_layer.albedo = optixImage2DfromTensor<Float, Spectrum>(
+            *albedo, OPTIX_PIXEL_FORMAT_FLOAT3);
+    if (m_options.guideNormal)
+        guide_layer.normal = optixImage2DfromTensor<Float, Spectrum>(
+            *new_normals, OPTIX_PIXEL_FORMAT_FLOAT3);
     if (m_temporal) {
         guide_layer.flow = optixImage2DfromTensor<Float, Spectrum>(
             *flow, OPTIX_PIXEL_FORMAT_FLOAT2);
         layers.previousOutput = optixImage2DfromTensor<Float, Spectrum>(
             *previous_denoised, input_pixel_format);
-        dr::schedule(flow);
-        dr::schedule(previous_denoised);
     }
 
-    dr::eval(noisy);
     jit_optix_check(optixDenoiserInvoke(m_denoiser, stream, &params, m_state,
                                         m_state_size, &guide_layer, &layers, 1,
                                         0, 0, m_scratch, m_scratch_size));
@@ -145,7 +148,7 @@ typename OptixDenoiser<Float, Spectrum>::TensorXf OptixDenoiser<Float, Spectrum>
 MI_VARIANT
 ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     const ref<Bitmap> &noisy_, bool denoise_alpha, const std::string &albedo_ch,
-    const std::string &normals_ch, const Transform4f &n_frame,
+    const std::string &normals_ch, const Transform4f &normals_transform,
     const std::string &flow_ch, const std::string &previous_denoised_ch,
     const std::string &noisy_ch) const {
     if (noisy_->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
@@ -242,7 +245,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     // Generate output
     TensorXf denoised =
         (*this)(noisy_tensor, denoise_alpha, albedo_tensor.get(),
-                normals_tensor.get(), &n_frame, flow_tensor.get(),
+                normals_tensor.get(), &normals_transform, flow_tensor.get(),
                 prev_denoised_tensor.get());
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
