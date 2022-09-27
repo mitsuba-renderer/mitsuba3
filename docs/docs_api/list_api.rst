@@ -1,7 +1,5 @@
 .. autoclass:: mitsuba.AdjointIntegrator
 
-.. autoclass:: mitsuba.AnimatedTransform
-
 .. autoclass:: mitsuba.Appender
 
 .. autoclass:: mitsuba.ArgParser
@@ -136,9 +134,13 @@
 
 .. autofunction:: mitsuba.MI_AUTHORS
 
+.. autofunction:: mitsuba.MI_CIE_D65_NORMALIZATION
+
 .. autofunction:: mitsuba.MI_CIE_MAX
 
 .. autofunction:: mitsuba.MI_CIE_MIN
+
+.. autofunction:: mitsuba.MI_CIE_Y_NORMALIZATION
 
 .. autofunction:: mitsuba.MI_ENABLE_CUDA
 
@@ -211,6 +213,8 @@
 .. autoclass:: mitsuba.Object
 
 .. autoclass:: mitsuba.ObjectPtr
+
+.. autoclass:: mitsuba.OptixDenoiser
 
 .. autoclass:: mitsuba.PCG32
 
@@ -570,6 +574,8 @@
 
 .. autofunction:: mitsuba.cie1931_y
 
+.. autofunction:: mitsuba.cie_d65
+
 .. autofunction:: mitsuba.coordinate_system
 
 .. autofunction:: mitsuba.cornell_box
@@ -672,9 +678,13 @@
 
 .. autofunction:: mitsuba.mueller.diattenuator
 
+.. autofunction:: mitsuba.mueller.left_circular_polarizer
+
 .. autofunction:: mitsuba.mueller.linear_polarizer
 
 .. autofunction:: mitsuba.mueller.linear_retarder
+
+.. autofunction:: mitsuba.mueller.right_circular_polarizer
 
 .. autofunction:: mitsuba.mueller.rotate_mueller_basis
 

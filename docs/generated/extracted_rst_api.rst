@@ -39,80 +39,6 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.AnimatedTransform
-
-    Base class: :py:obj:`mitsuba.Object`
-
-    Encapsulates an animated 4x4 homogeneous coordinate transformation
-
-    The animation is stored as keyframe animation with linear segments.
-    The implementation performs a polar decomposition of each keyframe
-    into a 3x3 scale/shear matrix, a rotation quaternion, and a
-    translation vector. These will all be interpolated independently at
-    eval time.
-
-
-    .. py:method:: __init__(self)
-
-    .. py:method:: __init__(self, arg0)
-
-        Parameter ``arg0`` (:py:obj:`mitsuba.ScalarTransform4f`):
-            *no description available*
-
-    .. py:method:: mitsuba.AnimatedTransform.append(overloaded)
-
-
-        .. py:method:: append(self, arg0, arg1)
-
-            Append a keyframe to the current animated transform
-
-            Parameter ``arg0`` (float):
-                *no description available*
-
-            Parameter ``arg1`` (:py:obj:`mitsuba.ScalarTransform4f`):
-                *no description available*
-
-        .. py:method:: append(self, arg0)
-
-            Parameter ``arg0`` (:py:obj:`mitsuba.AnimatedTransform.Keyframe`):
-                *no description available*
-
-    .. py:method:: mitsuba.AnimatedTransform.eval(self, time, unused=True)
-
-        Compatibility wrapper, which strips the mask argument and invokes
-        eval()
-
-        Parameter ``time`` (drjit.llvm.ad.Float):
-            *no description available*
-
-        Parameter ``unused`` (drjit.llvm.ad.Bool):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Transform4f`:
-            *no description available*
-
-    .. py:method:: mitsuba.AnimatedTransform.has_scale(self)
-
-        Determine whether the transformation involves any kind of scaling
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.AnimatedTransform.size(self)
-
-        Return the number of keyframes
-
-        Returns → int:
-            *no description available*
-
-    .. py:method:: mitsuba.AnimatedTransform.translation_bounds(self)
-
-        Return an axis-aligned box bounding the amount of translation
-        throughout the animation sequence
-
-        Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
-            *no description available*
-
 .. py:class:: mitsuba.Appender
 
     Base class: :py:obj:`mitsuba.Object`
@@ -410,6 +336,17 @@
 
             Returns → int:
                 *no description available*
+
+    .. py:method:: mitsuba.BSDF.get_diffuse_reflectance(self, si, active=True)
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
 
     .. py:method:: mitsuba.BSDF.id(self)
 
@@ -831,6 +768,17 @@
         Returns → :py:obj:`mitsuba.BSDFPtr`:
             *no description available*
 
+    .. py:method:: mitsuba.BSDFPtr.get_diffuse_reflectance(self, si, active=True)
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
     .. py:method:: mitsuba.BSDFPtr.label_(self)
 
         Returns → str:
@@ -1126,7 +1074,7 @@
 
         Members:
 
-        .. py:data:: None
+        .. py:data:: Empty
 
             No transformation (default)
 
@@ -1407,7 +1355,7 @@
     .. py:method:: mitsuba.Bitmap.convert(overloaded)
 
 
-        .. py:method:: convert(self, pixel_format=None, component_format=None, srgb_gamma=None, alpha_transform=<AlphaTransform., None)
+        .. py:method:: convert(self, pixel_format=None, component_format=None, srgb_gamma=None, alpha_transform=<AlphaTransform., Empty)
 
             Convert the bitmap into another pixel and/or component format
 
@@ -1463,7 +1411,7 @@
             Parameter ``alpha_transform`` (:py:obj:`mitsuba.Bitmap.AlphaTransform`):
                 *no description available*
 
-            Parameter ``None`` (0>):
+            Parameter ``Empty`` (0>):
                 *no description available*
 
             Returns → :py:obj:`mitsuba.Bitmap`:
@@ -3670,6 +3618,11 @@
         Returns → float:
             *no description available*
 
+    .. py:method:: mitsuba.ContinuousDistribution.max(self)
+
+        Returns → float:
+            *no description available*
+
     .. py:method:: mitsuba.ContinuousDistribution.normalization(self)
 
         Return the normalization factor (i.e. the inverse of sum())
@@ -3740,7 +3693,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -5018,6 +4971,12 @@
     To avoid lock-related bottlenecks when rendering with many cores,
     rendering threads first store results in an "image block", which is
     then committed to the film using the put() method.
+
+    .. py:method:: __init__(self, props)
+
+        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
 
     .. py:method:: mitsuba.Film.bitmap(self, raw=False)
 
@@ -7853,8 +7812,7 @@
     can also be queried via the read() method, in which case the
     reconstruction filter is used to compute suitable interpolation
     weights. This is feature is useful for differentiable rendering, where
-    we one needs to evaluate the reverse-mode derivative of the put()
-    method.
+    one needs to evaluate the reverse-mode derivative of the put() method.
 
 
     .. py:method:: __init__(self, size, offset, channel_count, rfilter=None, border=False, normalize=False, coalesce=True, warn_negative=False, warn_invalid=False)
@@ -10038,6 +9996,11 @@
         Returns → float:
             *no description available*
 
+    .. py:method:: mitsuba.IrregularContinuousDistribution.max(self)
+
+        Returns → float:
+            *no description available*
+
     .. py:method:: mitsuba.IrregularContinuousDistribution.nodes(self)
 
         Return the nodes of the underlying discretization
@@ -10309,6 +10272,14 @@
 
 .. py:class:: mitsuba.Loop
 
+    .. py:method:: mitsuba.Loop.__call__(self, arg0)
+
+        Parameter ``arg0`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Loop.init(self)
 
         Returns → None:
@@ -10342,6 +10313,10 @@
     :type: str
     :value: Realistic Graphics Lab, EPFL
 
+.. py:data:: mitsuba.MI_CIE_D65_NORMALIZATION
+    :type: float
+    :value: 0.010101273599490354
+
 .. py:data:: mitsuba.MI_CIE_MAX
     :type: float
     :value: 830.0
@@ -10349,6 +10324,10 @@
 .. py:data:: mitsuba.MI_CIE_MIN
     :type: float
     :value: 360.0
+
+.. py:data:: mitsuba.MI_CIE_Y_NORMALIZATION
+    :type: float
+    :value: 0.009367658735689113
 
 .. py:data:: mitsuba.MI_ENABLE_CUDA
     :type: bool
@@ -10364,7 +10343,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.0.1
+    :value: 3.0.2
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10376,7 +10355,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 1
+    :value: 2
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -11634,7 +11613,7 @@
     .. py:method:: mitsuba.MediumInteraction3f.mint
         :property:
 
-        mint used when sampling the given distance "t".
+        mint used when sampling the given distance ``t``
 
     .. py:method:: mitsuba.MediumInteraction3f.sh_frame
         :property:
@@ -12026,13 +12005,7 @@
 
     1. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties`) -> None
 
-    2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties` = Properties[
-      plugin_name = "",
-      id = "",
-      elements = {
-      }
-    ]
-    , has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
+    2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties` = Properties(), has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
 
     Create a new mesh with the given vertex and face data structures
 
@@ -12694,6 +12667,151 @@
     .. py:method:: mitsuba.ObjectPtr.zero_
 
         (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.ObjectPtr`
+
+.. py:class:: mitsuba.OptixDenoiser
+
+    Base class: :py:obj:`mitsuba.Object`
+
+    Wrapper for the OptiX AI denoiser
+
+    The OptiX AI denoiser is wrapped in this object such that it can work
+    directly with Mitsuba types and its conventions.
+
+    The denoiser works best when applied to noisy renderings that were
+    produced with a Film which used the `box` ReconstructionFilter. With a
+    filter that spans multiple pixels, the denoiser might identify some
+    local variance as a feature of the scene and will not denoise it.
+
+    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
+
+        Constructs an OptiX denoiser
+        
+        Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
+            Resolution of noisy images that will be fed to the denoiser.
+        
+        Parameter ``albedo`` (bool):
+            Whether or not albedo information will also be given to the
+            denoiser.
+        
+        Parameter ``normals`` (bool):
+            Whether or not shading normals information will also be given to
+            the Denoiser.
+        
+        Returns:
+            A callable object which will apply the OptiX denoiser.
+
+        Parameter ``temporal`` (bool):
+            *no description available*
+
+        
+    .. py:method:: mitsuba.OptixDenoiser.__call__(overloaded)
+
+
+        .. py:method:: __call__(self, noisy, denoise_alpha=True, albedo=[], normals=[], to_sensor=Transform4f(), flow=[], previous_denoised=[])
+
+            Apply denoiser on inputs which are TensorXf objects.
+
+            Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
+                The noisy input. (tensor shape: (width, height, 3 | 4))
+
+            Parameter ``denoise_alpha`` (bool):
+                Whether or not the alpha channel (if specified in the noisy input)
+                should be denoised too. This parameter is optional, by default it
+                is true.
+
+            Parameter ``albedo`` (drjit.llvm.ad.TensorXf):
+                Albedo information of the noisy rendering. This parameter is
+                optional unless the OptixDenoiser was built with albedo support.
+                (tensor shape: (width, height, 3))
+
+            Parameter ``normals`` (drjit.llvm.ad.TensorXf):
+                Shading normal information of the noisy rendering. The normals
+                must be in the coordinate frame of the sensor which was used to
+                render the noisy input. This parameter is optional unless the
+                OptixDenoiser was built with normals support. (tensor shape:
+                (width, height, 3))
+
+            Parameter ``to_sensor`` (:py:obj:`mitsuba.Transform4f`):
+                A Transform4f which is applied to the ``normals`` parameter before
+                denoising. This should be used to tranform the normals into the
+                correct coordinate frame. This parameter is optional, by default
+                no transformation is applied.
+
+            Parameter ``flow`` (drjit.llvm.ad.TensorXf):
+                With temporal denoising, this parameter is the optical flow
+                between the previous frame and the current one. It should capture
+                the 2D motion of each individual pixel. When this parameter is
+                unknown, it can been set to a zero-initialized TensorXf of the
+                correct size and still produce convincing results. This parameter
+                is optional unless the OptixDenoiser was built with temporal
+                denoising support. (tensor shape: (width, height, 2))
+
+            Parameter ``previous_denoised`` (drjit.llvm.ad.TensorXf):
+                With temporal denoising, the previous denoised frame should be
+                passed here. For the very first frame, the OptiX documentation
+                recommends passing the noisy input for this argument. This
+                parameter is optional unless the OptixDenoiser was built with
+                temporal denoising support. (tensor shape: (width, height, 3 | 4))
+
+            Returns → drjit.llvm.ad.TensorXf:
+                The denoised input.
+
+        .. py:method:: __call__(self, noisy, denoise_alpha=True, albedo_ch='', normals_ch='', to_sensor=Transform4f(), flow_ch='', previous_denoised_ch='', noisy_ch='<root>')
+
+            Apply denoiser on inputs which are Bitmap objects.
+
+            Parameter ``noisy`` (:py:obj:`mitsuba.Bitmap`):
+                The noisy input. When passing additional information like albedo
+                or normals to the denoiser, this Bitmap object must be a
+                MultiChannel bitmap.
+
+            Parameter ``denoise_alpha`` (bool):
+                Whether or not the alpha channel (if specified in the noisy input)
+                should be denoised too. This parameter is optional, by default it
+                is true.
+
+            Parameter ``albedo_ch`` (str):
+                The name of the channel in the ``noisy`` parameter which contains
+                the albedo information of the noisy rendering. This parameter is
+                optional unless the OptixDenoiser was built with albedo support.
+
+            Parameter ``normals_ch`` (str):
+                The name of the channel in the ``noisy`` parameter which contains
+                the shading normal information of the noisy rendering. The normals
+                must be in the coordinate frame of the sensor which was used to
+                render the noisy input. This parameter is optional unless the
+                OptixDenoiser was built with normals support.
+
+            Parameter ``to_sensor`` (:py:obj:`mitsuba.Transform4f`):
+                A Transform4f which is applied to the ``normals`` parameter before
+                denoising. This should be used to tranform the normals into the
+                correct coordinate frame. This parameter is optional, by default
+                no transformation is applied.
+
+            Parameter ``flow_ch`` (str):
+                With temporal denoising, this parameter is name of the channel in
+                the ``noisy`` parameter which contains the optical flow between
+                the previous frame and the current one. It should capture the 2D
+                motion of each individual pixel. When this parameter is unknown,
+                it can been set to a zero-initialized TensorXf of the correct size
+                and still produce convincing results. This parameter is optional
+                unless the OptixDenoiser was built with temporal denoising
+                support.
+
+            Parameter ``previous_denoised_ch`` (str):
+                With temporal denoising, this parameter is name of the channel in
+                the ``noisy`` parameter which contains the previous denoised
+                frame. For the very first frame, the OptiX documentation
+                recommends passing the noisy input for this argument. This
+                parameter is optional unless the OptixDenoiser was built with
+                temporal denoising support.
+
+            Parameter ``noisy_ch`` (str):
+                The name of the channel in the ``noisy`` parameter which contains
+                the shading normal information of the noisy rendering.
+
+            Returns → :py:obj:`mitsuba.Bitmap`:
+                The denoised input.
 
 .. py:class:: mitsuba.PCG32
 
@@ -13571,8 +13689,6 @@
 
             Transform
 
-            AnimatedTransform
-
             Color
 
             String
@@ -13591,20 +13707,6 @@
 
     .. py:method:: mitsuba.Properties.Type.name
         :property:
-
-    .. py:method:: mitsuba.Properties.animated_transform(self, arg0, arg1)
-
-        Retrieve an animated transformation (use default value if no entry
-        exists)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (mitsuba::AnimatedTransform):
-            *no description available*
-
-        Returns → object:
-            *no description available*
 
     .. py:method:: mitsuba.Properties.copy_attribute(self, arg0, arg1, arg2)
 
@@ -13945,6 +14047,16 @@
         Parameter ``maxt`` (drjit.llvm.ad.Float):
             *no description available*
 
+    .. py:method:: mitsuba.Ray2f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2f`:
+            *no description available*
+
     .. py:method:: mitsuba.Ray2f.assign(self, arg0)
 
         Parameter ``arg0`` (:py:obj:`mitsuba.Ray2f`):
@@ -14030,6 +14142,16 @@
             *no description available*
 
         Parameter ``maxt`` (drjit.llvm.ad.Float):
+            *no description available*
+
+    .. py:method:: mitsuba.Ray3f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point3f`:
             *no description available*
 
     .. py:method:: mitsuba.Ray3f.assign(self, arg0)
@@ -14255,18 +14377,18 @@
         Returns → Tuple[float, float]:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.resample(self, self, source, source_stride, target_stride, channels)
+    .. py:method:: mitsuba.Resampler.resample(self, source, source_stride, target, target_stride, channels)
 
         Resample a multi-channel array and clamp the results to a specified
         valid range
 
-        Parameter ``source`` (int):
+        Parameter ``source`` (numpy.ndarray[numpy.float32]):
             Source array of samples
 
-        Parameter ``target``:
+        Parameter ``target`` (numpy.ndarray[numpy.float32]):
             Target array of samples
 
-        Parameter ``source_stride`` (numpy.ndarray[numpy.float32]):
+        Parameter ``source_stride`` (int):
             Stride of samples in the source array. A value of '1' implies that
             they are densely packed.
 
@@ -16802,25 +16924,81 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: mitsuba.Sensor.sample_ray_differential(overloaded)
 
-        Parameter ``time`` (drjit.llvm.ad.Float):
-            *no description available*
 
-        Parameter ``sample1`` (drjit.llvm.ad.Float):
-            *no description available*
+        .. py:method:: sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
-            *no description available*
+            Parameter ``time`` (drjit.llvm.ad.Float):
+                *no description available*
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
-            *no description available*
+            Parameter ``sample1`` (drjit.llvm.ad.Float):
+                *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask to specify active lanes.
+            Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+                *no description available*
 
-        Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
-            *no description available*
+            Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+                *no description available*
+
+            Parameter ``active`` (drjit.llvm.ad.Bool):
+                Mask to specify active lanes.
+
+            Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+                *no description available*
+
+        .. py:method:: sample_ray_differential(self, arg0, arg1, arg2, arg3, arg4)
+
+            Importance sample a ray differential proportional to the sensor's
+            sensitivity profile.
+
+            The sensor profile is a six-dimensional quantity that depends on time,
+            wavelength, surface position, and direction. This function takes a
+            given time value and five uniformly distributed samples on the
+            interval [0, 1] and warps them so that the returned ray the profile.
+            Any discrepancies between ideal and actual sampled profile are
+            absorbed into a spectral importance weight that is returned along with
+            the ray.
+
+            In contrast to Endpoint::sample_ray(), this function returns
+            differentials with respect to the X and Y axis in screen space.
+
+            Parameter ``time``:
+                The scene time associated with the ray_differential to be sampled
+
+            Parameter ``sample1``:
+                A uniformly distributed 1D value that is used to sample the
+                spectral dimension of the sensitivity profile.
+
+            Parameter ``sample2``:
+                This argument corresponds to the sample position in fractional
+                pixel coordinates relative to the crop window of the underlying
+                film.
+
+            Parameter ``sample3``:
+                A uniformly distributed sample on the domain ``[0,1]^2``. This
+                argument determines the position on the aperture of the sensor.
+                This argument is ignored if ``needs_sample_3() == false``.
+
+            Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+                The sampled ray differential and (potentially spectrally varying)
+                importance weights. The latter account for the difference between
+                the sensor profile and the actual used sampling density function.
+
+            Parameter ``arg0`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Parameter ``arg1`` (drjit.llvm.ad.Float):
+                *no description available*
+
+            Parameter ``arg2`` (:py:obj:`mitsuba.Point2f`):
+                *no description available*
+
+            Parameter ``arg3`` (:py:obj:`mitsuba.Point2f`):
+                *no description available*
+
+            Parameter ``arg4`` (drjit.llvm.ad.Bool):
+                *no description available*
 
     .. py:method:: mitsuba.Sensor.sampler(self)
 
@@ -18613,6 +18791,10 @@
 
         Members:
 
+        .. py:data:: Empty
+
+            No flags set (default value)
+
         .. py:data:: Normalized
 
             Specifies whether an integer field encodes a normalized value in the
@@ -18707,7 +18889,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.append(self, name, type, flags=<Flags.???: 0>, default=0.0)
+    .. py:method:: mitsuba.Struct.append(self, name, type, flags=<Flags., Empty, default=0.0)
 
         Append a new field to the ``Struct``; determines size and offset
         automatically
@@ -18719,6 +18901,9 @@
             *no description available*
 
         Parameter ``flags`` (int):
+            *no description available*
+
+        Parameter ``Empty`` (0>):
             *no description available*
 
         Parameter ``default`` (float):
@@ -24962,6 +25147,12 @@
 
     Abstract base class for 3D volumes.
 
+    .. py:method:: __init__(self, props)
+
+        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
     .. py:method:: mitsuba.Volume.bbox(self)
 
         Returns the bounding box of the volume
@@ -26239,6 +26430,18 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
+.. py:function:: mitsuba.cie_d65(wavelength)
+
+    Evaluate the CIE D65 illuminant spectrum given a wavelength in
+    nanometers, normalized to ensures that it integrates to a luminance of
+    1.0.
+
+    Parameter ``wavelength`` (drjit.llvm.ad.Float):
+        *no description available*
+
+    Returns → drjit.llvm.ad.Float:
+        *no description available*
+
 .. py:function:: mitsuba.coordinate_system(n)
 
     Complete the set {a} to an orthonormal basis {a, b, c}
@@ -27143,6 +27346,27 @@
         Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:
             *no description available*
 
+.. py:function:: mitsuba.mueller.left_circular_polarizer(overloaded)
+
+
+    .. py:function:: left_circular_polarizer()
+
+        Constructs the Mueller matrix of a (left) circular polarizer.
+
+        "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+
+        Returns → drjit.llvm.ad.Matrix4f:
+            *no description available*
+
+    .. py:function:: left_circular_polarizer()
+
+        Constructs the Mueller matrix of a (left) circular polarizer.
+
+        "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+
+        Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:
+            *no description available*
+
 .. py:function:: mitsuba.mueller.linear_polarizer(overloaded)
 
 
@@ -27211,6 +27435,27 @@
 
         Parameter ``phase`` (:py:obj:`mitsuba.Color3f`):
             The phase difference between the fast and slow axis
+
+        Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:
+            *no description available*
+
+.. py:function:: mitsuba.mueller.right_circular_polarizer(overloaded)
+
+
+    .. py:function:: right_circular_polarizer()
+
+        Constructs the Mueller matrix of a (right) circular polarizer.
+
+        "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+
+        Returns → drjit.llvm.ad.Matrix4f:
+            *no description available*
+
+    .. py:function:: right_circular_polarizer()
+
+        Constructs the Mueller matrix of a (right) circular polarizer.
+
+        "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
 
         Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:
             *no description available*
@@ -28463,7 +28708,7 @@
     Returns → Tuple[List[float], List[float]]:
         *no description available*
 
-.. py:function:: mitsuba.spectrum_list_to_srgb(wavelengths, values, bounded=True)
+.. py:function:: mitsuba.spectrum_list_to_srgb(wavelengths, values, bounded=True, d65=False)
 
     Parameter ``wavelengths`` (List[float]):
         *no description available*
@@ -28472,6 +28717,9 @@
         *no description available*
 
     Parameter ``bounded`` (bool):
+        *no description available*
+
+    Parameter ``d65`` (bool):
         *no description available*
 
     Returns → :py:obj:`mitsuba.ScalarColor3f`:
