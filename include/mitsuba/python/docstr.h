@@ -4749,7 +4749,16 @@ static const char *__doc_mitsuba_OptixAccelData_meshes = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixAccelData_others = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser = R"doc(OptiX Denoiser)doc";
+static const char *__doc_mitsuba_OptixDenoiser =
+R"doc(Wrapper for the OptiX AI denoiser
+
+The OptiX AI denoiser is wrapped in this object such that it can work
+directly with Mitsuba types and its conventions.
+
+The denoiser works best when applied to noisy renderings that were
+produced with a Film which used the `box` ReconstructionFilter. With a
+filter that spans multiple pixels, the denoiser might identify some
+local variance as a feature of the scene and will not denoise it.)doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_2 = R"doc()doc";
 
@@ -4759,7 +4768,24 @@ static const char *__doc_mitsuba_OptixDenoiser_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser = R"doc()doc";
+static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
+R"doc(Constructs an OptiX denoiser
+
+Parameter ``input_size``:
+    Resolution of noisy images that will be fed to the denoiser.
+
+Parameter ``albedo``:
+    Whether or not albedo information will also be given to the
+    denoiser.
+
+Parameter ``normals``:
+    Whether or not shading normals information will also be given to
+    the Denoiser.
+
+Returns:
+    A callable object which will apply the OptiX denoiser.)doc";
+
+static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_class = R"doc()doc";
 
@@ -4771,8 +4797,6 @@ static const char *__doc_mitsuba_OptixDenoiser_m_input_size = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_m_options = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_m_output_data = R"doc()doc";
-
 static const char *__doc_mitsuba_OptixDenoiser_m_scratch = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_m_scratch_size = R"doc()doc";
@@ -4783,11 +4807,115 @@ static const char *__doc_mitsuba_OptixDenoiser_m_state_size = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_m_temporal = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_operator_call = R"doc()doc";
+static const char *__doc_mitsuba_OptixDenoiser_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_operator_call_2 = R"doc()doc";
+static const char *__doc_mitsuba_OptixDenoiser_operator_call =
+R"doc(Apply denoiser on inputs which are TensorXf objects.
+
+Parameter ``noisy``:
+    The noisy input. (tensor shape: (width, height, 3 | 4))
+
+Parameter ``denoise_alpha``:
+    Whether or not the alpha channel (if specified in the noisy input)
+    should be denoised too. This parameter is optional, by default it
+    is true.
+
+Parameter ``albedo``:
+    Albedo information of the noisy rendering. This parameter is
+    optional unless the OptixDenoiser was built with albedo support.
+    (tensor shape: (width, height, 3))
+
+Parameter ``normals``:
+    Shading normal information of the noisy rendering. The normals
+    must be in the coordinate frame of the sensor which was used to
+    render the noisy input. This parameter is optional unless the
+    OptixDenoiser was built with normals support. (tensor shape:
+    (width, height, 3))
+
+Parameter ``to_sensor``:
+    A Transform4f which is applied to the ``normals`` parameter before
+    denoising. This should be used to tranform the normals into the
+    correct coordinate frame. This parameter is optional, by default
+    no transformation is applied.
+
+Parameter ``flow``:
+    With temporal denoising, this parameter is the optical flow
+    between the previous frame and the current one. It should capture
+    the 2D motion of each individual pixel. When this parameter is
+    unknown, it can been set to a zero-initialized TensorXf of the
+    correct size and still produce convincing results. This parameter
+    is optional unless the OptixDenoiser was built with temporal
+    denoising support. (tensor shape: (width, height, 2))
+
+Parameter ``previous_denoised``:
+    With temporal denoising, the previous denoised frame should be
+    passed here. For the very first frame, the OptiX documentation
+    recommends passing the noisy input for this argument. This
+    parameter is optional unless the OptixDenoiser was built with
+    temporal denoising support. (tensor shape: (width, height, 3 | 4))
+
+Returns:
+    The denoised input.)doc";
+
+static const char *__doc_mitsuba_OptixDenoiser_operator_call_2 =
+R"doc(Apply denoiser on inputs which are Bitmap objects.
+
+Parameter ``noisy``:
+    The noisy input. When passing additional information like albedo
+    or normals to the denoiser, this Bitmap object must be a
+    MultiChannel bitmap.
+
+Parameter ``denoise_alpha``:
+    Whether or not the alpha channel (if specified in the noisy input)
+    should be denoised too. This parameter is optional, by default it
+    is true.
+
+Parameter ``albedo_ch``:
+    The name of the channel in the ``noisy`` parameter which contains
+    the albedo information of the noisy rendering. This parameter is
+    optional unless the OptixDenoiser was built with albedo support.
+
+Parameter ``normals_ch``:
+    The name of the channel in the ``noisy`` parameter which contains
+    the shading normal information of the noisy rendering. The normals
+    must be in the coordinate frame of the sensor which was used to
+    render the noisy input. This parameter is optional unless the
+    OptixDenoiser was built with normals support.
+
+Parameter ``to_sensor``:
+    A Transform4f which is applied to the ``normals`` parameter before
+    denoising. This should be used to tranform the normals into the
+    correct coordinate frame. This parameter is optional, by default
+    no transformation is applied.
+
+Parameter ``flow_ch``:
+    With temporal denoising, this parameter is name of the channel in
+    the ``noisy`` parameter which contains the optical flow between
+    the previous frame and the current one. It should capture the 2D
+    motion of each individual pixel. When this parameter is unknown,
+    it can been set to a zero-initialized TensorXf of the correct size
+    and still produce convincing results. This parameter is optional
+    unless the OptixDenoiser was built with temporal denoising
+    support.
+
+Parameter ``previous_denoised_ch``:
+    With temporal denoising, this parameter is name of the channel in
+    the ``noisy`` parameter which contains the previous denoised
+    frame. For the very first frame, the OptiX documentation
+    recommends passing the noisy input for this argument. This
+    parameter is optional unless the OptixDenoiser was built with
+    temporal denoising support.
+
+Parameter ``noisy_ch``:
+    The name of the channel in the ``noisy`` parameter which contains
+    the shading normal information of the noisy rendering.
+
+Returns:
+    The denoised input.)doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_OptixDenoiser_validate_input = R"doc(Helper function to validate tensor sizes)doc";
 
 static const char *__doc_mitsuba_PCG32Sampler =
 R"doc(Interface for sampler plugins based on the PCG32 random number
@@ -9935,6 +10063,20 @@ recurrence)doc";
 static const char *__doc_mitsuba_math_legendre_pd_diff = R"doc(Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x))doc";
 
 static const char *__doc_mitsuba_math_log2i_ceil = R"doc(Ceiling of base-2 logarithm)doc";
+
+static const char *__doc_mitsuba_math_middle =
+R"doc(This function computes a suitable middle point for use in the bisect()
+function
+
+To mitigate the issue of varying density of floating point numbers on
+the number line, the floats are reinterpreted as unsigned integers. As
+long as sign of both numbers is the same, this maps the floats to the
+evenly spaced set of integers. The middle of these integers ensures
+that the space of numbers is halved on each iteration of the
+bisection.
+
+Note that this strategy does not work if the numbers have different
+sign. In this case the function always returns 0.0 as the middle.)doc";
 
 static const char *__doc_mitsuba_math_modulo = R"doc(Always-positive modulo function)doc";
 

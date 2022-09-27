@@ -80,7 +80,8 @@ extensions.append('sphinx.ext.autodoc')
 # autodoc_typehints = 'description'
 
 autodoc_default_options = {
-    'members': True
+    'members': True,
+    'special-members': '__call__',
 }
 
 autoclass_content = 'both'
@@ -198,6 +199,7 @@ api_doc_structure = {
               r'mitsuba.Color([\w]+)',
               r'mitsuba.Ray([\w]+)'],
     'Constants': [r'mitsuba.MI_([\w]+)', r'mitsuba.is_([\w]+)', 'mitsuba.DEBUG'],
+    'Denoiser': ['mitsuba.OptixDenoiser'],
     'BSDF': [r'mitsuba.BSDF([\w]*)', 'mitsuba.TransportMode',
              r'mitsuba.Microfacet([\w]+)'],
     'Integrator': [r'mitsuba.(.*)Integrator([\w]*)', 'mitsuba.ad.common.mis_weight'],
@@ -217,7 +219,8 @@ api_doc_structure = {
                r'mitsuba.([\w]+)Interaction([\w]+)',
                r'mitsuba.([\w]+)Intersection([\w]+)', ],
     'Spectrum': [r'mitsuba.spectrum_([\w]+)', r'mitsuba.srgb_([\w]+)',
-                 r'mitsuba.cie1931([\w]+)', 'mitsuba.xyz_to_srgb',
+                 r'mitsuba.cie1931([\w]+)', 'mitsuba.cie_d65',
+                 'mitsuba.xyz_to_srgb',
                  'mitsuba.pdf_rgb_spectrum', 'mitsuba.luminance',
                  'mitsuba.eval_reflectance', 'mitsuba.linear_rgb_rec',
                  'mitsuba.sample_rgb_spectrum'],
