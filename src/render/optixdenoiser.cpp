@@ -320,7 +320,7 @@ void OptixDenoiser<Float, Spectrum>::validate_input(
         Throw("The normals must have exactly 3 channels!");
     if (m_temporal && (flow->shape(2) != 2))
         Throw("The optical flow argument must have exactly 2 channels!");
-    if (m_temporal && (previous_denoised->shape(2) != noisy.shape(3)))
+    if (m_temporal && (previous_denoised->shape(2) != noisy.shape(2)))
         Throw("The denoised previous frame must have the same number of "
               "channels as the noisy input!");
 }
