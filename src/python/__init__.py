@@ -35,20 +35,8 @@ if _dr.__version__ != DRJIT_VERSION_REQUIREMENT:
 del DRJIT_VERSION_REQUIREMENT
 
 try:
-    # Use RTLD_DEEPBIND to prevent the DLL to search symbols in the global scope
-    if _os.name != 'nt':
-        old_flags = _sys.getdlopenflags()
-        new_flags = _os.RTLD_LAZY | _os.RTLD_LOCAL
-        if _sys.platform != 'darwin':
-            new_flags |= _os.RTLD_DEEPBIND
-        _sys.setdlopenflags(new_flags)
-        del new_flags
-
-    _import('mitsuba.mitsuba_ext')
-
-    if _os.name != 'nt':
-        _sys.setdlopenflags(old_flags)
-        del old_flags
+    with _dr.scoped_rtld_deepbind():
+        _import('mitsuba.mitsuba_ext')
 
     _tls = threading.local()
     _tls.cache = {}
@@ -113,22 +101,11 @@ class MitsubaVariantModule(types.ModuleType):
 
         if modules is None:
             try:
-                # Use RTLD_DEEPBIND to prevent DLLs to search symbols in the global scope
-                if _os.name != 'nt':
-                    old_flags = _sys.getdlopenflags()
-                    new_flags = _os.RTLD_LAZY | _os.RTLD_LOCAL
-                    if _sys.platform != 'darwin':
-                        new_flags |= _os.RTLD_DEEPBIND
-                    _sys.setdlopenflags(new_flags)
-                    del new_flags
-
-                modules = (
-                    _import('mitsuba.mitsuba_ext'),
-                    _import('mitsuba.mitsuba_' + variant + '_ext'),
-                )
-
-                if _os.name != 'nt':
-                    _sys.setdlopenflags(old_flags)
+                with _dr.scoped_rtld_deepbind():
+                    modules = (
+                        _import('mitsuba.mitsuba_ext'),
+                        _import('mitsuba.mitsuba_' + variant + '_ext'),
+                    )
 
                 super().__setattr__('_modules', modules)
             except ImportError as e:

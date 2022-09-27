@@ -119,7 +119,7 @@ if (NOT SKBUILD)
 
   set(DRJIT_PYTHON_FILES
     __init__.py const.py detail.py generic.py
-    matrix.py router.py traits.py tensor.py
+    matrix.py router.py traits.py tensor.py config.py
   )
 
   foreach(file ${DRJIT_PYTHON_FILES})

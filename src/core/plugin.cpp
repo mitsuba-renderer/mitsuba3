@@ -26,7 +26,10 @@ public:
                       util::last_error());
         #else
             #if defined(__clang__) && !defined(__APPLE__)
-                m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);
+                if (std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
+                    m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
+                else
+                    m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);
             #else
                 m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
             #endif
