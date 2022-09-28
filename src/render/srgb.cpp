@@ -19,10 +19,12 @@ dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
         if (model == nullptr) {
             FileResolver *fr = Thread::thread()->file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();
+            if (!fs::exists(fname))
+                Throw("Could not find sRGB-to-spectrum upsampling model ('data/srgb.coeff')");
             Log(Info, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
             model = rgb2spec_load(fname.c_str());
             if (model == nullptr)
-                Throw("Could not load sRGB-to-spectrum upsampling model ('data/srgb.coeff')");
+                Throw("Could not load sRGB-to-spectrum upsampling model ('%s')", fname.c_str());
             atexit([]{ rgb2spec_free(model); });
         }
     }

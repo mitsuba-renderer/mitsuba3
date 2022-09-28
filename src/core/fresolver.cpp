@@ -1,4 +1,5 @@
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/logger.h>
 #include <sstream>
 #include <algorithm>
 
@@ -21,10 +22,15 @@ bool FileResolver::contains(const fs::path &p) const {
 
 fs::path FileResolver::resolve(const fs::path &path) const {
     if (!path.is_absolute()) {
+        Log(Debug, "Looking for file \"%s\" on the resource search path(s)", path.native());
         for (auto const &base : m_paths) {
             fs::path combined = base / path;
-            if (fs::exists(combined))
+            if (fs::exists(combined)) {
+                Log(Trace, "Found file \"%s\" at %s", path.native(), combined.native());
                 return combined;
+            } else {
+                Log(Trace, "Didn't find file \"%s\" at %s", path.native(), combined.native());
+            }
         }
     }
     return path;
