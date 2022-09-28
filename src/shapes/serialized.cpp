@@ -235,12 +235,13 @@ public:
     }
 
     SerializedMesh(const Properties &props) : Base(props) {
-        auto fail = [&](const std::string &descr) {
-            Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
-        };
-
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
+
+        auto fail = [&](const std::string &descr) {
+            Throw("Error while loading serialized file \"%s\": %s!", file_path.string(), descr);
+        };
+
         m_name = file_path.filename().string();
 
         Log(Debug, "Loading mesh from \"%s\" ..", m_name);

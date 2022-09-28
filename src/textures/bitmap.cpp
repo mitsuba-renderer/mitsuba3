@@ -138,7 +138,7 @@ public:
             FileResolver* fs = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             m_name = file_path.filename().string();
-            Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
+            Log(Debug, "Loading bitmap texture from \"%s\" ..", file_path.string());
             m_bitmap = new Bitmap(file_path);
         }
 

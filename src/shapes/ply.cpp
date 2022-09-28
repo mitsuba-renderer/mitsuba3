@@ -170,10 +170,10 @@ public:
         m_name = file_path.filename().string();
 
         auto fail = [&](const char *descr) {
-            Throw("Error while loading PLY file \"%s\": %s!", m_name, descr);
+            Throw("Error while loading PLY file \"%s\": %s!", file_path.string(), descr);
         };
 
-        Log(Debug, "Loading mesh from \"%s\" ..", m_name);
+        Log(Debug, "Loading mesh from \"%s\" ..", file_path.string());
         if (!fs::exists(file_path))
             fail("file not found");
 
@@ -189,7 +189,7 @@ public:
                     Log(Warn,
                         "\"%s\": performance warning -- this file uses the ASCII PLY format, which "
                         "is slow to parse. Consider converting it to the binary PLY format.",
-                        m_name);
+                        file_path.string());
                 stream = parse_ascii((FileStream *) stream.get(), header.elements);
             }
         } catch (const std::exception &e) {
@@ -417,7 +417,7 @@ public:
 
                 m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
             } else {
-                Log(Warn, "\"%s\": skipping unknown element \"%s\"", m_name, el.name);
+                Log(Warn, "\"%s\": skipping unknown element \"%s\"", file_path.string(), el.name);
                 stream->seek(stream->tell() + el.struct_->size() * el.count);
             }
         }
@@ -426,7 +426,7 @@ public:
             fail("invalid file -- trailing content");
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
-            m_name, m_face_count, m_vertex_count,
+            file_path.string(), m_face_count, m_vertex_count,
             util::mem_string(m_face_count * face_struct->size() +
                              m_vertex_count * vertex_struct->size()),
             util::time_string((float) timer.value())
@@ -435,7 +435,7 @@ public:
         if (!m_face_normals && !has_vertex_normals) {
             Timer timer2;
             recompute_vertex_normals();
-            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
+            Log(Debug, "\"%s\": computed vertex normals (took %s)", file_path.string(),
                 util::time_string((float) timer2.value()));
         }
 
