@@ -251,9 +251,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         pos += film->crop_offset();
 
-        // Cast to floating point, random offset is added in \ref render_sample()
-        Vector2f pos_f = Vector2f(pos);
-
         // Scale factor that will be applied to ray differentials
         ScalarFloat diff_scale_factor = dr::rsqrt((ScalarFloat) spp);
 
@@ -262,8 +259,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         // Potentially render multiple passes
         for (size_t i = 0; i < n_passes; i++) {
-            render_sample(scene, sensor, sampler, block,
-                          aovs.get(), pos, diff_scale_factor);
+            render_sample(scene, sensor, sampler, block, aovs.get(), pos,
+                          diff_scale_factor);
 
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
@@ -340,10 +337,10 @@ MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *s
             if (dr::any(pos >= block->size()))
                 continue;
 
-            ScalarPoint2f pos_f = ScalarPoint2f(Point2i(pos) + block->offset());
+            Point2f pos_f = Point2f(Point2i(pos) + block->offset());
             for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
-                render_sample(scene, sensor, sampler, block, aovs,
-                              pos_f, diff_scale_factor);
+                render_sample(scene, sensor, sampler, block, aovs, pos_f,
+                              diff_scale_factor);
                 sampler->advance();
             }
         }
@@ -372,6 +369,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    Mask active) const {
     const Film *film = sensor->film();
     const bool has_alpha = has_flag(film->flags(), FilmFlags::Alpha);
+    const bool box_filter = film->rfilter()->is_box_filter();
 
     ScalarVector2f scale = 1.f / ScalarVector2f(film->crop_size()),
                    offset = -ScalarVector2f(film->crop_offset()) * scale;
@@ -430,7 +428,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         }
     }
 
-    block->put(sample_pos, aovs, active);
+    // With box filter, ignore random offset to prevent numerical instabilities
+    block->put(box_filter ? pos : sample_pos, aovs, active);
 }
 
 MI_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>

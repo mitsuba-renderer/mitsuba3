@@ -133,8 +133,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
 }
 
 MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
-                                                  const Float *values,
-                                                  Mask active) {
+                                                 const Float *values,
+                                                 Mask active) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
     constexpr bool JIT = dr::is_jit_v<Float>;
 
@@ -175,7 +175,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
 
         // The sample could be out of bounds
-        active = active && dr::all(p < m_size);
+        active &= dr::all(p < m_size);
 
         // Accumulate!
         if constexpr (!JIT) {
