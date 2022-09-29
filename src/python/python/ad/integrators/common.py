@@ -407,7 +407,10 @@ class ADIntegrator(mi.CppADIntegrator):
                 # Return a reparameterized image position
                 pos_f = ds.uv + film.crop_offset()
 
-        return ray, weight, pos_f, reparam_det
+        # With box filter, ignore random offset to prevent numerical instabilities
+        splatting_pos = mi.Vector2f(pos) if rfilter.is_box_filter() else pos_f
+
+        return ray, weight, splatting_pos, reparam_det
 
     def prepare(self,
                 sensor: mi.Sensor,
