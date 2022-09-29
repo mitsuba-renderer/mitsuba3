@@ -232,7 +232,7 @@ depends on the color representation of the variant being compiled.
 Since ``if constexpr`` is resolved at compile-time, this branch does not cause
 any runtime overheads. Another useful feature of ``if constexpr`` is that it
 suppresses compilation errors in disabled branches. This makes it possible to
-generic code that could potentially produce compilation errors when expressed
+write generic code that could potentially produce compilation errors when expressed
 using ordinary (non-``constexpr``) ``if`` statements (for example, by accessing
 a member of a class that may not exist in all variants).
 

@@ -287,7 +287,7 @@ Here is an example:
     ...
 
 Mitsuba provides a function (:py:meth:`mitsuba.spectrum_to_file`) to create such
-file, given the wavelenths and its values.
+file, given the wavelengths and its values.
 
 For more details regarding spectral information in Mitsuba 3, please have a look
 at the :ref:`corresponding section <sec-spectra>` in the plugin documentation.
