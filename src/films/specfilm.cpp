@@ -197,7 +197,7 @@ public:
         }
 
         // Compute resolution of the discretized PDF used for sampling
-        size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution);
+        size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution + 1);
         FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
         Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points);
 
