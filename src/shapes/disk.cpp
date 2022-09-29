@@ -268,7 +268,7 @@ public:
         Transform4f to_world = m_to_world.value();
         Transform4f to_object = m_to_object.value();
 
-        dr::suspend_grad<Float> scope(detach_shape, to_world, m_frame);
+        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Point2f prim_uv = pi.prim_uv;
@@ -281,9 +281,9 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
+                Point3f local = to_object.transform_affine(ray(pi.t));
                 /* With FollowShape the local position should always be static as
                    the intersection point follows any motion of the sphere. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
                 local = dr::detach(local);
                 si.p = to_world.transform_affine(local);
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));

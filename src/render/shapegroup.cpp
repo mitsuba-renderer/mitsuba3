@@ -157,7 +157,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::ve
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_build_gas(const OptixDeviceContext& context) {
-    if (dirty()) {
+    if (m_dirty) {
         build_gas(context, m_shapes, m_accel);
         for (auto &s : m_shapes)
             s->m_dirty = false;
