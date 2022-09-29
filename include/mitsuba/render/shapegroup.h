@@ -70,7 +70,7 @@ public:
                                      const OptixProgramGroup *program_groups) override;
 
     /// Build OptiX geometry acceleration structures
-    void optix_build_gas(const OptixDeviceContext& context) override;
+    void optix_build_gas(const OptixDeviceContext& context);
 #endif
 
     MI_DECLARE_CLASS()
