@@ -132,7 +132,6 @@ public:
      *
      * \param ray
      *     The ray to be tested for an intersection
-     *
      */
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                 Mask active = true) const;
