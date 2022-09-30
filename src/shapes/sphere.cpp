@@ -467,8 +467,7 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
-                Normal3f n = dr::normalize(ray(pi.t) - center);
-                local = to_object.transform_affine(dr::fmadd(n, radius, center));
+                local = to_object.transform_affine(ray(pi.t));
                 /* With FollowShape the local position should always be static as
                    the intersection point follows any motion of the sphere. */
                 local = dr::detach(local);
