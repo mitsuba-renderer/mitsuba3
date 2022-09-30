@@ -264,6 +264,18 @@ public:
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
 
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+            dr::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                dr::mask_t<FloatP> active) const;
+
+    template <typename FloatP, typename Ray3fP>
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
+                                    dr::mask_t<FloatP> active) const;
+    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
+
+
 #if defined(MI_ENABLE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) override;

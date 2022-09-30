@@ -621,6 +621,45 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
     return {w, u, v};
 }
 
+MI_VARIANT
+template <typename FloatP, typename Ray3fP>
+std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+           dr::uint32_array_t<FloatP>>
+Mesh<Float, Spectrum>::ray_intersect_preliminary_impl(
+    const Ray3fP &ray, dr::mask_t<FloatP> active) const {
+    MI_MASK_ARGUMENT(active);
+
+    FloatP t = dr::Infinity<FloatP>;
+    Point<FloatP, 2> uv = dr::NaN<FloatP>;
+    dr::uint32_array_t<FloatP> prim_index = (uint32_t) -1;
+    for (size_t index = 0; index < m_face_count; ++index) {
+        auto [prim_t, prim_uv] = ray_intersect_triangle_impl<FloatP>(index, ray, active);
+        dr::mask_t<FloatP> valid = dr::isfinite(prim_t) && (prim_t < t);
+        dr::masked(t, valid) = prim_t;
+        dr::masked(uv, valid) = prim_uv;
+        dr::masked(prim_index, valid) = index;
+    }
+
+    // Cannot determine the shape index, will be up to the caller.
+    uint32_t shape_index = (uint32_t) -1;
+    return { t, uv, shape_index, prim_index };
+}
+
+MI_VARIANT
+template <typename FloatP, typename Ray3fP>
+dr::mask_t<FloatP>
+Mesh<Float, Spectrum>::ray_test_impl(const Ray3fP &ray,
+                                     dr::mask_t<FloatP> active) const {
+    MI_MASK_ARGUMENT(active);
+
+    dr::mask_t<FloatP> hit = false;
+    for (size_t index = 0; index < m_face_count; ++index) {
+        FloatP prim_t = ray_intersect_triangle_impl<FloatP>(index, ray, active).first;
+        hit |= dr::neq(prim_t, dr::Infinity<FloatP>);
+    }
+
+    return hit;
+}
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
