@@ -61,10 +61,22 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     for (Sensor *sensor: m_sensors)
         sensor->set_scene(this);
 
-    if constexpr (dr::is_cuda_v<Float>)
-        accel_init_gpu(props);
-    else
-        accel_init_cpu(props);
+    // Decide whether to use acceleration data structures for ray intersections
+    // TODO: do we even want a heuristic? Could lead to surprising changes in performance for the user.
+    bool naive_intersection_desirable = m_shapes.size() <= 5;
+    m_use_naive_intersection =
+        props.get<bool>("use_naive_intersection", naive_intersection_desirable);
+    if (m_use_naive_intersection)
+        Log(Info, "The scene will not use acceleration data structures "
+                  "for ray intersections.");
+
+    // Build acceleration data structures if needed
+    if (!m_use_naive_intersection) {
+        if constexpr (dr::is_cuda_v<Float>)
+            accel_init_gpu(props);
+        else
+            accel_init_cpu(props);
+    }
 
     if (!m_emitters.empty()) {
         // Inform environment emitters etc. about the scene bounds
@@ -84,10 +96,12 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
-    if constexpr (dr::is_cuda_v<Float>)
-        accel_release_gpu();
-    else
-        accel_release_cpu();
+    if (!m_use_naive_intersection) {
+        if constexpr (dr::is_cuda_v<Float>)
+            accel_release_gpu();
+        else
+            accel_release_cpu();
+    }
 
     // Trigger deallocation of all instances
     m_emitters.clear();
@@ -111,6 +125,27 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
 
+    if (m_use_naive_intersection) {
+        // Naive intersection mode: bypass all acceleration data structures,
+        // test for intersections explicitly against each shape.
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
+
+        for (size_t shape_index = 0; shape_index < m_shapes.size(); ++shape_index) {
+            PreliminaryIntersection3f prim_pi =
+                m_shapes[shape_index]->ray_intersect_preliminary(ray, active);
+            // TODO: fix masked struct assignment
+            Mask valid = prim_pi.is_valid() && prim_pi.t < pi.t;
+            dr::masked(pi.t, valid) = prim_pi.t;
+            dr::masked(pi.prim_uv, valid) = prim_pi.prim_uv;
+            dr::masked(pi.prim_index, valid) = prim_pi.prim_index;
+            dr::masked(pi.shape, valid) = prim_pi.shape;
+            dr::masked(pi.instance, valid) = prim_pi.instance;
+            dr::masked(pi.shape_index, valid) = shape_index;
+        }
+        return pi.compute_surface_interaction(ray, ray_flags,
+                                              active && pi.is_valid());
+    }
+
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_gpu(ray, ray_flags, active);
     else
@@ -120,6 +155,28 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coherent, Mask active) const {
     DRJIT_MARK_USED(coherent);
+
+    if (m_use_naive_intersection) {
+        // Naive intersection mode: bypass all acceleration data structures,
+        // test for intersections explicitly against each shape.
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
+
+        for (size_t shape_index = 0; shape_index < m_shapes.size(); ++shape_index) {
+            PreliminaryIntersection3f prim_pi =
+                m_shapes[shape_index]->ray_intersect_preliminary(ray, active);
+            // TODO: fix masked struct assignment
+            Mask valid = prim_pi.is_valid() && prim_pi.t < pi.t;
+            dr::masked(pi.t, valid) = prim_pi.t;
+            dr::masked(pi.prim_uv, valid) = prim_pi.prim_uv;
+            dr::masked(pi.prim_index, valid) = prim_pi.prim_index;
+            dr::masked(pi.shape, valid) = prim_pi.shape;
+            dr::masked(pi.instance, valid) = prim_pi.instance;
+            dr::masked(pi.shape_index, valid) = shape_index;
+        }
+
+        return pi;
+    }
+
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_preliminary_gpu(ray, active);
     else
@@ -130,6 +187,14 @@ MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
+
+    if (m_use_naive_intersection) {
+        Mask hit = false;
+        for (const auto &shape : m_shapes) {
+            hit |= shape->ray_test(ray, active);
+        }
+        return hit;
+    }
 
     if constexpr (dr::is_cuda_v<Float>)
         return ray_test_gpu(ray, active);
@@ -299,18 +364,20 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     if (m_environment)
         m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
 
-    bool accel_is_dirty = false;
-    for (auto &s : m_shapes) {
-        accel_is_dirty = s->dirty();
-        if (accel_is_dirty)
-            break;
-    }
+    if (!m_use_naive_intersection) {
+        bool accel_is_dirty = false;
+        for (auto &s : m_shapes) {
+            accel_is_dirty = s->dirty();
+            if (accel_is_dirty)
+                break;
+        }
 
-    if (accel_is_dirty) {
-        if constexpr (dr::is_cuda_v<Float>)
-            accel_parameters_changed_gpu();
-        else
-            accel_parameters_changed_cpu();
+        if (accel_is_dirty) {
+            if constexpr (dr::is_cuda_v<Float>)
+                accel_parameters_changed_gpu();
+            else
+                accel_parameters_changed_cpu();
+        }
     }
 
     // Check whether any shape parameters have gradient tracking enabled

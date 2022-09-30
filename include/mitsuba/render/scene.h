@@ -574,6 +574,7 @@ protected:
     ScalarFloat m_emitter_pmf;
 
     bool m_shapes_grad_enabled;
+    bool m_use_naive_intersection;
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded
