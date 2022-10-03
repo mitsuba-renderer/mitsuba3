@@ -40,7 +40,8 @@ BSDF_ORDERING = [
     'retarder',
     'circular',
     'measured_polarized',
-    'pplastic'
+    'pplastic',
+    'hair'
 ]
 
 EMITTER_ORDERING = [
