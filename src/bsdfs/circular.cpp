@@ -149,6 +149,11 @@ public:
         }
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_transmittance->eval(si, active);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "CircularPolarizer[" << std::endl

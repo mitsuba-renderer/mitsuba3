@@ -78,6 +78,9 @@ Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
 are meaningless whenever there is only partial pixel coverage or when using a
 wide pixel reconstruction filter as it will result in fractional values.
 
+The :monosp:`albedo` AOV will evaluate the diffuse reflectance
+(\ref BSDF::eval_diffuse_reflectance) of the material. Note that depending on
+the material, this value might only be an approximation.
  */
 
 template <typename Float, typename Spectrum>
@@ -209,7 +212,7 @@ public:
             switch (m_aov_types[i]) {
                 case Type::Albedo: {
                         BSDFPtr bsdf = si.bsdf(ray);
-                        Spectrum spec = bsdf->get_diffuse_reflectance(si, active);
+                        Spectrum spec = bsdf->eval_diffuse_reflectance(si, active);
                         Color3f color;
                         if constexpr (is_spectral_v<Spectrum>)
                             color = spectrum_to_srgb(spec, ray.wavelengths, active);

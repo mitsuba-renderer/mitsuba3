@@ -501,8 +501,8 @@ public:
         return { depolarizer<Spectrum>(value) & active, pdf };
     }
 
-    /// Return the diffuse reflectance value (if any)
-    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
         return m_diffuse_reflectance->eval(si, active);
     }
 

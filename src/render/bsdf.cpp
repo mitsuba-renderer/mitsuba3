@@ -21,11 +21,11 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     return 0.f;
 }
 
-MI_VARIANT Spectrum BSDF<Float, Spectrum>::get_diffuse_reflectance(
+MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
     const SurfaceInteraction3f &si, Mask active) const {
-    Vector3f placeholder = Vector3f(0.0f, 0.0f, 1.0f);
+    Vector3f wo = Vector3f(0.0f, 0.0f, 1.0f);
     BSDFContext ctx;
-    return eval(ctx, si, placeholder, active) * dr::Pi<Float>;
+    return eval(ctx, si, wo, active) * dr::Pi<Float>;
 }
 
 template <typename Index>
