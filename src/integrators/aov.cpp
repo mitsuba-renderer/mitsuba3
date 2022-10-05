@@ -208,19 +208,31 @@ public:
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
         size_t ctr = 0;
 
+        auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
+            UnpolarizedSpectrum spec_u = unpolarized_spectrum(spec);
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return spec_u.x();
+            else if constexpr (is_rgb_v<Spectrum>)
+                return spec_u;
+            else {
+                static_assert(is_spectral_v<Spectrum>);
+                /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
+                auto pdf = pdf_rgb_spectrum(ray.wavelengths);
+                spec_u *= dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
+                return spectrum_to_srgb(spec_u, ray.wavelengths, active);
+            }
+        };
+
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case Type::Albedo: {
                         BSDFPtr bsdf = si.bsdf(ray);
                         Spectrum spec = bsdf->eval_diffuse_reflectance(si, active);
-                        Color3f color;
-                        if constexpr (is_spectral_v<Spectrum>)
-                            color = spectrum_to_srgb(spec, ray.wavelengths, active);
-                        else
-                            color = spec;
-                        *aovs++ = color.r();
-                        *aovs++ = color.g();
-                        *aovs++ = color.b();
+                        Color3f rgb = spectrum_to_color3f(spec, ray, active);
+
+                        *aovs++ = rgb.r();
+                        *aovs++ = rgb.g();
+                        *aovs++ = rgb.b();
                     }
                     break;
                 case Type::Depth:
@@ -288,21 +300,8 @@ public:
                         std::pair<Spectrum, Mask> result_sub =
                             m_integrators[ctr].first->sample(scene, sampler, ray, medium, aovs, active);
                         aovs += m_integrators[ctr].second;
-
-                        UnpolarizedSpectrum spec_u = unpolarized_spectrum(result_sub.first);
-
-                        Color3f rgb;
-                        if constexpr (is_monochromatic_v<Spectrum>) {
-                            rgb = spec_u.x();
-                        } else if constexpr (is_rgb_v<Spectrum>) {
-                            rgb = spec_u;
-                        } else {
-                            static_assert(is_spectral_v<Spectrum>);
-                            /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
-                            auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                            spec_u *= dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
-                            rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
-                        }
+                        Color3f rgb =
+                            spectrum_to_color3f(result_sub.first, ray, active);
 
                         *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
                         *aovs++ = dr::select(result_sub.second, Float(1.f), Float(0.f));
