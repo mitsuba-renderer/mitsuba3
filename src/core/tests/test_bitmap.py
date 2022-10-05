@@ -5,15 +5,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-def find_resource(fname):
-    path = os.path.dirname(os.path.realpath(__file__))
-    while True:
-        full = os.path.join(path, fname)
-        if os.path.exists(full):
-            return full
-        if path == '' or path == '/':
-            raise Exception("find_resource(): could not find \"%s\"" % fname)
-        path = os.path.dirname(path)
+from mitsuba.scalar_rgb.test.util import find_resource
 
 
 def test_read_convert_yc(variant_scalar_rgb, tmpdir):

@@ -10,6 +10,16 @@ from inspect import getframeinfo, stack, signature, _empty
 import pytest
 import drjit as dr
 
+def find_resource(fname):
+    path = os.path.dirname(os.path.realpath(__file__))
+    while True:
+        full = os.path.join(path, fname)
+        if os.path.exists(full):
+            return full
+        if path == '' or path == '/':
+            raise Exception("find_resource(): could not find \"%s\"" % fname)
+        path = os.path.dirname(path)
+
 def fresolver_append_path(func):
     """
     Function decorator that adds the mitsuba project root

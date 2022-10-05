@@ -2,16 +2,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-def find_resource(fname):
-    import os
-    path = os.path.dirname(os.path.realpath(__file__))
-    while True:
-        full = os.path.join(path, fname)
-        if os.path.exists(full):
-            return full
-        if path == '' or path == '/':
-            raise Exception("find_resource(): could not find \"%s\"" % fname)
-        path = os.path.dirname(path)
+from mitsuba.scalar_rgb.test.util import find_resource
 
 def write_kernels(*args, output_dir='kernels', scene_fname=None):
     import os
