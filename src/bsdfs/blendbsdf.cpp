@@ -217,6 +217,13 @@ public:
         return dr::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                     Mask active) const override {
+        Float weight = eval_weight(si, active);
+        return m_nested_bsdf[0]->eval_diffuse_reflectance(si, active) * (1 - weight) +
+               m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BlendBSDF[" << std::endl

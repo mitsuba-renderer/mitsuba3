@@ -707,6 +707,11 @@ public:
         return pdf;
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_base_color->eval(si, active);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "The Thin Principled BSDF :" << std::endl

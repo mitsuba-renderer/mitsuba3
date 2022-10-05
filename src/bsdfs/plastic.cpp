@@ -360,7 +360,8 @@ public:
                  dr::select(active, hemi_pdf * prob_diffuse, 0.f) };
     }
 
-    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
         return m_diffuse_reflectance->eval(si, active);
     }
 

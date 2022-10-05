@@ -220,6 +220,11 @@ public:
         return dr::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_nested_bsdf->eval_diffuse_reflectance(si, active);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Mask[" << std::endl
