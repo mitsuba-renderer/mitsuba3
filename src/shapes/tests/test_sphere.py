@@ -310,9 +310,6 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     assert dr.allclose(dr.grad(si.n), 0.0)
     assert dr.allclose(dr.grad(si.uv), [0.0, -0.5])
 
-
-
-
 def test09_si_singularity(variants_all_rgb):
     scene = mi.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
     ray = mi.Ray3f([0, 0, -1], [0, 0, 1])
