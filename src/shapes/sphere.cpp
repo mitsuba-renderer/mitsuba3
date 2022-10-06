@@ -161,11 +161,15 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
+            // Ensure previous ray-tracing operation are fully evaluated before
+            // modifying the scalar values of the fields in this class
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
             // Update the scalar value of the matrix
             m_to_world = m_to_world.value();
             update();
