@@ -122,7 +122,10 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
-        .def_method(Shape, effective_primitive_count);
+        .def_method(Shape, effective_primitive_count)
+        .def("eval_parameterization", &Shape::eval_parameterization,
+             "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+             D(Shape, eval_parameterization));
 
     bind_shape_generic<Shape *>(shape);
 
@@ -167,10 +170,7 @@ MI_PY_EXPORT(Shape) {
              }, D(Mesh, face_indices), "index"_a, "active"_a = true)
         .def("ray_intersect_triangle", &Mesh::ray_intersect_triangle,
              "index"_a, "ray"_a, "active"_a = true,
-             D(Mesh, ray_intersect_triangle))
-        .def("eval_parameterization", &Mesh::eval_parameterization,
-             "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
-             D(Mesh, eval_parameterization));
+             D(Mesh, ray_intersect_triangle));
 
     MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }
