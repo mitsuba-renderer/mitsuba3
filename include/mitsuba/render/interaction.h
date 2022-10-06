@@ -534,6 +534,20 @@ MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
+// TODO: move to DrJit if this is actually needed
+namespace detail {
+    template <typename T, typename = int>
+    struct unmasked {
+        using type = T;
+    };
+    template <typename T>
+    struct unmasked<T, dr::enable_if_masked_array_t<T>> {
+        using type = typename T::Unmasked;
+    };
+    template <typename T>
+    using unmasked_t = typename unmasked<T>::type;
+}
+
 /**
  * \brief Stores preliminary information related to a ray intersection
  *
@@ -552,13 +566,16 @@ struct PreliminaryIntersection {
     // =============================================================
 
     using Float    = Float_;
-    using ShapePtr = dr::replace_scalar_t<Float, const Shape_ *>;
 
     MI_IMPORT_CORE_TYPES()
-
     using Index = typename CoreAliases::UInt32;
-    using Ray3f = typename Shape_::Ray3f;
-    using Spectrum = typename Ray3f::Spectrum;
+
+    using UnmaskedShape = detail::unmasked_t<Shape_>;
+    using Ray3f         = typename UnmaskedShape::Ray3f;
+    using Spectrum_     = typename Ray3f::Spectrum;
+    using Spectrum      = std::conditional_t<dr::is_masked_array_v<Shape_>,
+                                        dr::masked_t<Spectrum_>, Spectrum_>;
+    using ShapePtr = dr::replace_scalar_t<Float, const UnmaskedShape *>;
 
     //! @}
     // =============================================================

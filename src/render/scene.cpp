@@ -62,10 +62,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         sensor->set_scene(this);
 
     // Decide whether to use acceleration data structures for ray intersections
-    // TODO: do we even want a heuristic? Could lead to surprising changes in performance for the user.
-    bool naive_intersection_desirable = m_shapes.size() <= 5;
-    m_use_naive_intersection =
-        props.get<bool>("use_naive_intersection", naive_intersection_desirable);
+    m_use_naive_intersection = props.get<bool>("use_naive_intersection", false);
     if (m_use_naive_intersection)
         Log(Info, "The scene will not use acceleration data structures "
                   "for ray intersections.");
@@ -133,14 +130,8 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
         for (size_t shape_index = 0; shape_index < m_shapes.size(); ++shape_index) {
             PreliminaryIntersection3f prim_pi =
                 m_shapes[shape_index]->ray_intersect_preliminary(ray, active);
-            // TODO: fix masked struct assignment
             Mask valid = prim_pi.is_valid() && prim_pi.t < pi.t;
-            dr::masked(pi.t, valid) = prim_pi.t;
-            dr::masked(pi.prim_uv, valid) = prim_pi.prim_uv;
-            dr::masked(pi.prim_index, valid) = prim_pi.prim_index;
-            dr::masked(pi.shape, valid) = prim_pi.shape;
-            dr::masked(pi.instance, valid) = prim_pi.instance;
-            dr::masked(pi.shape_index, valid) = shape_index;
+            dr::masked(pi, valid) = prim_pi;
         }
         return pi.compute_surface_interaction(ray, ray_flags,
                                               active && pi.is_valid());
@@ -164,14 +155,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coheren
         for (size_t shape_index = 0; shape_index < m_shapes.size(); ++shape_index) {
             PreliminaryIntersection3f prim_pi =
                 m_shapes[shape_index]->ray_intersect_preliminary(ray, active);
-            // TODO: fix masked struct assignment
-            Mask valid = prim_pi.is_valid() && prim_pi.t < pi.t;
-            dr::masked(pi.t, valid) = prim_pi.t;
-            dr::masked(pi.prim_uv, valid) = prim_pi.prim_uv;
-            dr::masked(pi.prim_index, valid) = prim_pi.prim_index;
-            dr::masked(pi.shape, valid) = prim_pi.shape;
-            dr::masked(pi.instance, valid) = prim_pi.instance;
-            dr::masked(pi.shape_index, valid) = shape_index;
+            Mask valid = prim_pi.is_valid() && (prim_pi.t < pi.t) && (prim_pi.t > 0.f);
+            dr::masked(pi, valid) = prim_pi;
         }
 
         return pi;

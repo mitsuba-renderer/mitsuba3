@@ -67,6 +67,9 @@ def make_test_scene(resx, resy, simple=False, integrator=None, **kwargs):
                 'type': 'diffuse',
                 'reflectance': checkerboard([0, 1, 1]),
             }
+            # 'bsdf': {
+            #     'type': 'dielectric',
+            # },
         },
         'shape5': {
             'type': 'rectangle',
@@ -129,11 +132,13 @@ def make_test_scene(resx, resy, simple=False, integrator=None, **kwargs):
 
 
 @fresolver_append_path
+# def test01_bypass_correctness(variant_scalar_rgb):
 def test01_bypass_correctness(variants_all_backends_once):
     """Rendering with and without acceleration data structures should result in the same images."""
     # Adapted from test_renders.test_render()
     significance_level = 0.01
-    resx, resy = (103, 51)
+    resx, resy = (207, 101)
+    # resx, resy = (103, 51)
 
     # Compute spp budget
     sample_budget = int(1e6)
@@ -149,6 +154,13 @@ def test01_bypass_correctness(variants_all_backends_once):
         bmp = scene.sensors()[0].film().bitmap(raw=False)
         img, var_img = bitmap_extract(bmp, require_variance=True)
         results[bypass] = (img, var_img)
+
+        # TODO: remove this
+        # b = mi.Bitmap(img, mi.Bitmap.PixelFormat.XYZ)
+        # breakpoint()
+        # xyz_to_rgb_bmp(img).write(
+        bmp.split()[0][1].write(
+            f'test_{mi.variant()}_{"naive" if bypass else "accel"}.exr')
 
     # Compute Z-test p-value
     p_value = z_test(results[0][0], spp, results[1][0], results[1][1])
@@ -176,6 +188,8 @@ def test01_bypass_correctness(variants_all_backends_once):
 
 # Useful to investigate performance, but probably not reliable enough
 # to run on the CI.
+# @fresolver_append_path
+# def test02_speed(variant_llvm_ad_rgb):
 @pytest.mark.skip
 @fresolver_append_path
 def test02_speed(variants_all_backends_once):
