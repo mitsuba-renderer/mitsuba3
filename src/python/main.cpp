@@ -127,6 +127,12 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
 
+    // Register a cleanup callback function to wait for pending tasks
+    auto atexit = py::module_::import("atexit");
+    atexit.attr("register")(py::cpp_function([]() {
+        Thread::wait_for_tasks();
+    }));
+
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */
     py::cpp_function cleanup_callback(
