@@ -69,7 +69,7 @@ Currently, the following AOVs types are available:
     - :monosp:`dp_du`, :monosp:`dp_dv`: Position partials wrt. the UV parameterization.
     - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
     - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
-    - :monosp:`shape_index`: Shape index.boundary_test
+    - :monosp:`shape_index`: Shape index.
     - :monosp:`boundary_test`: Boundary test.
 
 Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
