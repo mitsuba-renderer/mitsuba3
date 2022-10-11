@@ -40,10 +40,16 @@ class SceneParameters(Mapping):
     def __contains__(self, key: str):
         return self.properties.__contains__(key)
 
-    def __getitem__(self, key: str):
+    def __get_value(self, key: str):
         value, value_type, node, _ = self.properties[key]
+
         if value_type is not None:
             value = self.get_property(value, value_type, node)
+
+        return value
+
+    def __getitem__(self, key: str):
+        value = self.__get_value(key)
 
         if key not in self.update_candidates:
             self.update_candidates[key] = _jit_id_hash(value)
@@ -193,16 +199,18 @@ class SceneParameters(Mapping):
             for k, v in values.items():
                 if k in self:
                     self[k] = v
-        dr.schedule(self)
 
         update_candidate_keys = list(self.update_candidates.keys())
         for key in update_candidate_keys:
             # Candidate objects might have been modified inplace, we must check
             # the JIT identifiers to see if the object has truly changed.
-            if _jit_id_hash(self[key]) == self.update_candidates[key]:
+            if _jit_id_hash(self.__get_value(key)) == self.update_candidates[key]:
                 continue
 
             self.set_dirty(key)
+
+        for key in self.keys():
+            dr.schedule(self.__get_value(key))
 
         # Notify nodes from bottom to top
         work_list = [(d, n, k) for (d, n), k in self.nodes_to_update.items()]
@@ -260,6 +268,9 @@ def _jit_id_hash(value: Any) -> int:
                 ids.extend(jit_ids(value.array))
             else:
                 ids.append((value.index, 0))
+        elif dr.is_array_v(value) and dr.is_dynamic_array_v(value):
+            for i in range(len(value)):
+                ids.extend(jit_ids(value[i]))
         elif dr.is_struct_v(value):
             for k in value.DRJIT_STRUCT.keys():
                 ids.extend(jit_ids(getattr(value, k)))

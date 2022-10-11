@@ -168,8 +168,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
             (void *) m_accel
         );
     }
-
-    clear_shapes_dirty();
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
