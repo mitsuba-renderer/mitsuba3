@@ -18,7 +18,7 @@ Area light (:monosp:`area`)
 .. pluginparameters::
 
  * - radiance
-   - |spectrum|
+   - |spectrum| or |texture|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
