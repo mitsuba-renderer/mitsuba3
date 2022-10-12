@@ -7,8 +7,8 @@ different adjoint integrators such as `rb`, `prb`, etc... All integrators will
 be tested for their implementation of primal rendering, adjoint forward
 rendering and adjoint backward rendering.
 
-- For primal rendering, the output image will be compared to a groundtruth image
-  precomputed in the `resources/data/tests/integrators` directory.
+- For primal rendering, the output image will be compared to a ground truth
+  image precomputed in the `resources/data/tests/integrators` directory.
 - Adjoint forward rendering will be compared against finite differences.
 - Adjoint backward rendering will be compared against finite differences.
 
@@ -49,7 +49,6 @@ class ConfigBase:
     def __init__(self) -> None:
         self.spp = 1024
         self.res = 32
-        self.max_depth = 3
         self.error_mean_threshold = 0.05
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.05
@@ -68,6 +67,8 @@ class ConfigBase:
                 'width': self.res,
                 'height': self.res,
                 'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
             }
         }
 
@@ -83,7 +84,7 @@ class ConfigBase:
 
         self.sensor_dict['film']['width'] = self.res
         self.sensor_dict['film']['height'] = self.res
-        self.scene_dict['camera'] = self.sensor_dict
+        self.scene_dict['sensor'] = self.sensor_dict
 
         @fresolver_append_path
         def create_scene():
@@ -634,6 +635,41 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
         }
 
 
+# Translate camera
+class TranslateCameraConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'sensor.to_world'
+        self.scene_dict = {
+            'type': 'scene',
+            'sphere': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj',
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.error_mean_threshold = 0.3
+        self.error_max_threshold = 1.6
+        self.error_mean_threshold_bwd = 1.3
+        self.spp = 1024
+        self.res = 16
+        self.ref_fd_epsilon = 1e-3
+        self.integrator_dict = {
+            'max_depth': 2,
+            'reparam_rays': 64,
+            'reparam_kappa': 1e4,
+        }
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key])
+        self.initial_state = mi.Transform4f(self.params[self.key])
+
+    def update(self, theta):
+        self.params[self.key] = mi.Transform4f(self.params[self.key]) @ mi.Transform4f.translate([theta, 0.0, 0.0])
+        self.params.update()
+        dr.eval()
+
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
@@ -658,7 +694,8 @@ REPARAM_CONFIGS_LIST = [
     TranslateOccluderAreaLightConfig,
     TranslateSelfShadowAreaLightConfig,
     # TranslateShadowReceiverAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig
+    TranslateSphereOnGlossyFloorConfig,
+    TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -930,7 +967,7 @@ if __name__ == "__main__":
                         help='Samples per pixel. Default value: 12000')
     args = parser.parse_args()
 
-    mi.set_variant('cuda_ad_rgb')
+    mi.set_variant('cuda_ad_rgb', 'llvm_ad_rgb')
 
     if not exists(output_dir):
         os.makedirs(output_dir)
@@ -956,9 +993,6 @@ if __name__ == "__main__":
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
         })
-        integrator_direct = mi.load_dict({
-            'type': 'direct'
-        })
 
         # Primal render
         image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
@@ -967,11 +1001,17 @@ if __name__ == "__main__":
         mi.util.write_bitmap(filename, image_ref)
 
         # Finite difference
-        theta = mi.Float(config.ref_fd_epsilon)
+        theta = mi.Float(-0.5 * config.ref_fd_epsilon)
         config.update(theta)
+        image_1 = integrator_path.render(config.scene, seed=0, spp=args.spp)
+        dr.eval(image_1)
 
+        theta = mi.Float(0.5 * config.ref_fd_epsilon)
+        config.update(theta)
         image_2 = integrator_path.render(config.scene, seed=0, spp=args.spp)
-        image_fd = (image_2 - image_ref) / config.ref_fd_epsilon
+        dr.eval(image_2)
+
+        image_fd = (image_2 - image_1) / config.ref_fd_epsilon
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
         mi.util.write_bitmap(filename, image_fd)
