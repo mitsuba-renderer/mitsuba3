@@ -127,16 +127,21 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
 
-    // Register a cleanup callback function
-    auto atexit = py::module_::import("atexit");
-    atexit.attr("register")(py::cpp_function([]() {
-        Profiler::static_shutdown();
-        Bitmap::static_shutdown();
-        Logger::static_shutdown();
-        Thread::static_shutdown();
-        Class::static_shutdown();
-        Jit::static_shutdown();
-    }));
+    /* Register a cleanup callback function that is invoked when
+       the 'mitsuba::Object' Python type is garbage collected */
+    py::cpp_function cleanup_callback(
+        [](py::handle weakref) {
+            Profiler::static_shutdown();
+            Bitmap::static_shutdown();
+            Logger::static_shutdown();
+            Thread::static_shutdown();
+            Class::static_shutdown();
+            Jit::static_shutdown();
+            weakref.dec_ref();
+        }
+    );
+
+    (void) py::weakref(m.attr("Object"), cleanup_callback).release();
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba_ext";
