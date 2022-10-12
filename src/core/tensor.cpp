@@ -21,7 +21,7 @@ TensorFile::TensorFile(const fs::path &filename)
         Throw("Invalid tensor file: unknown file version.");
 
     Log(Info, "Loading tensor data from \"%s\" .. (%s, %i field%s)",
-        filename.filename(), util::mem_string(stream->size()), n_fields,
+        filename.string(), util::mem_string(stream->size()), n_fields,
         n_fields > 1 ? "s" : "");
 
     for (uint32_t i = 0; i < n_fields; ++i) {

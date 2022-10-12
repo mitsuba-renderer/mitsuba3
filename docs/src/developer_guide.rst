@@ -44,6 +44,11 @@ We've essentially imported Python's `PEP 8 <https://peps.python.org/pep-0008/>`_
 into the C++ side (which does not specify a recommended naming convention),
 ensuring that code that uses functionality from both languages looks natural.
 
+Further points of guidance include:
+
+* When writing error or log messages that refer to an existing file, include
+  the full path to the file by default.
+
 Contributing
 ------------
 

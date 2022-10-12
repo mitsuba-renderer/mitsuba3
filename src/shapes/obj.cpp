@@ -155,10 +155,10 @@ public:
 
         auto fail = [&](const char *descr, auto... args) {
             Throw(("Error while loading OBJ file \"%s\": " + std::string(descr))
-                      .c_str(), m_name, args...);
+                      .c_str(), file_path.string(), args...);
         };
 
-        Log(Debug, "Loading mesh from \"%s\" ..", m_name);
+        Log(Debug, "Loading mesh from \"%s\" ..", file_path.string());
         if (!fs::exists(file_path))
             fail("file not found");
 
@@ -378,7 +378,7 @@ public:
             vertex_data_bytes += 2 * sizeof(InputFloat);
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
-            m_name, m_face_count, m_vertex_count,
+            file_path.string(), m_face_count, m_vertex_count,
             util::mem_string(m_face_count * 3 * sizeof(ScalarIndex) +
                              m_vertex_count * vertex_data_bytes),
             util::time_string((float) timer.value())
@@ -387,7 +387,7 @@ public:
         if (!m_face_normals && normals.empty()) {
             Timer timer2;
             recompute_vertex_normals();
-            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
+            Log(Debug, "\"%s\": computed vertex normals (took %s)", file_path.string(),
                 util::time_string((float) timer2.value()));
         }
 

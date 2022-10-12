@@ -13,9 +13,9 @@ void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
     auto fs = Thread::thread()->file_resolver();
     fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
-        Log(Error, "\"%s\": file does not exist!", file_path);
+        Log(Error, "\"%s\": file does not exist!", file_path.string());
 
-    Log(Info, "Loading spectral data file \"%s\" ..", file_path);
+    Log(Info, "Loading spectral data file \"%s\" ..", file_path.string());
     std::string extension = string::to_lower(file_path.extension().string());
     if (extension == ".spd") {
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path, false);
