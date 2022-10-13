@@ -129,7 +129,7 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
 
         m_rng.seed(1, v0, v1);
     } else {
-        m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);
+        m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM); // REMOVE THIS COMMENT
     }
 }
 
