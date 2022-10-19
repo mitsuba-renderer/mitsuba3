@@ -395,8 +395,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             },
             (void *) s.ias_buffer
         );
-
-        clear_shapes_dirty();
     }
 }
 
