@@ -268,6 +268,9 @@ def _jit_id_hash(value: Any) -> int:
                 ids.extend(jit_ids(value.array))
             else:
                 ids.append((value.index, 0))
+        elif dr.is_array_v(value) and dr.is_dynamic_array_v(value):
+            for i in range(len(value)):
+                ids.extend(jit_ids(value[i]))
         elif dr.is_struct_v(value):
             for k in value.DRJIT_STRUCT.keys():
                 ids.extend(jit_ids(getattr(value, k)))
