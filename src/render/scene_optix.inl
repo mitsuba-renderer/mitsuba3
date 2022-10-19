@@ -374,7 +374,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 ));
 
                 jit_free(d_temp_buffer);
-                jit_free(build_input.instanceArray.instances);
             }
         }
 
@@ -395,6 +394,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 if (should_free) {
                     Log(Debug, "Free OptiX IAS..");
                     jit_free(payload);
+                    // TODO should also free build_input.instanceArray.instances
                 }
             },
             (void *) s.ias_buffer
