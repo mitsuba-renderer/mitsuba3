@@ -78,3 +78,41 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     ds.d = -ray.d
     w4 = emitter.eval(si) / emitter.pdf_direction(si, ds) * dr.pi
     assert dr.allclose(w4, w, rtol=1e-3)
+
+
+def test03_load_bitmap(variants_all_rgb):
+    rng = mi.PCG32(size=102400)
+    sample = mi.Point2f(
+        rng.next_float32(),
+        rng.next_float32())
+    sample_2 = mi.Point2f(
+        rng.next_float32(),
+        rng.next_float32())
+
+    tempdir = tempfile.TemporaryDirectory()
+    fname = os.path.join(tempdir.name, 'out.exr')
+
+    # Sparse image with 1 pixel turned on
+    img = dr.zeros(mi.TensorXf, [100, 10])
+    img[40, 5] = 1
+    bmp = mi.Bitmap(img)
+    bmp.write(fname)
+
+    emitter_1 = mi.load_dict({
+        "type" : "envmap",
+        "filename" : fname
+    })
+
+    emitter_2 = mi.load_dict({
+        "type" : "envmap",
+        "bitmap" : bmp
+    })
+
+    # Test the sample_direction() interface
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    ds, w = emitter_1.sample_direction(si, sample)
+    si.wi = -ds.d
+    w1 = emitter_1.eval(si)
+    w2 = emitter_2.eval(si)
+
+    assert dr.allclose(w1, w2, rtol=1e-3)

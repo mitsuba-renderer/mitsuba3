@@ -27,6 +27,12 @@ Environment emitter (:monosp:`envmap`)
    - |string|
    - Filename of the radiance-valued input image to be loaded; must be in latitude-longitude format.
 
+ * - bitmap
+   - :monosp:`Bitmap object`
+   - When creating a Environment emitter at runtime, e.g. from Python or C++,
+     an existing Bitmap image instance can be passed directly rather than
+     loading it from the filesystem with :paramtype:`filename`.
+
  * - scale
    - |Float|
    - A scale factor that is applied to the radiance values stored in the input image. (Default: 1.0)
@@ -101,14 +107,28 @@ public:
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        FileResolver *fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
-        m_filename = file_path.filename().string();
+        ref<Bitmap> bitmap;
 
-        ref<Bitmap> bitmap = new Bitmap(file_path);
+        if (props.has_property("bitmap")) {
+            // Creates a Bitmap texture directly from an existing Bitmap object
+            if (props.has_property("filename"))
+                Throw("Cannot specify both \"bitmap\" and \"filename\".");
+            // Note: ref-counted, so we don't have to worry about lifetime
+            ref<Object> other = props.object("bitmap");
+            Bitmap *b = dynamic_cast<Bitmap *>(other.get());
+            if (!b)
+                Throw("Property \"bitmap\" must be a Bitmap instance.");
+            bitmap = b;
+        } else {
+            FileResolver *fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
+            m_filename = file_path.filename().string();
+            bitmap = new Bitmap(file_path);
+        }
+
         if (bitmap->width() < 2 || bitmap->height() < 3)
-            Throw("\"%s\": the environment map resolution must be at "
-                  "least 2x3 pixels", m_filename);
+            Throw("\"%s\": the environment map resolution must be at least "
+                  "2x3 pixels", (m_filename.empty() ? "<Bitmap>" : m_filename));
 
         /* Convert to linear RGBA float bitmap, will undergo further
            conversion into coefficients of a spectral upsampling model below */
@@ -452,9 +472,10 @@ public:
     std::string to_string() const override {
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
         std::ostringstream oss;
-        oss << "EnvironmentMapEmitter[" << std::endl
-            << "  filename = \"" << m_filename << "\"," << std::endl
-            << "  res = \"" << res << "\"," << std::endl
+        oss << "EnvironmentMapEmitter[" << std::endl;
+        if (!m_filename.empty())
+            oss << "  filename = \"" << m_filename << "\"," << std::endl;
+        oss << "  res = \"" << res << "\"," << std::endl
             << "  bsphere = " << string::indent(m_bsphere) << std::endl
             << "]";
         return oss.str();
