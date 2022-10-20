@@ -155,7 +155,7 @@ public:
 
         m_aperture_radius = props.get<ScalarFloat>("aperture_radius");
 
-        if (m_aperture_radius == 0.f) {
+        if (dr::all(dr::eq(m_aperture_radius, 0.f))) {
             Log(Warn, "Can't have a zero aperture radius -- setting to %f", dr::Epsilon<Float>);
             m_aperture_radius = dr::Epsilon<Float>;
         }
@@ -170,10 +170,10 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("focus_distance", m_focus_distance,   +ParamFlags::NonDifferentiable);
-        callback->put_parameter("x_fov", m_x_fov,                     +ParamFlags::NonDifferentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),        +ParamFlags::Differentiable);
+        callback->put_parameter("aperture_radius", m_aperture_radius, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("focus_distance", m_focus_distance,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("x_fov", m_x_fov,                     ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("to_world", *m_to_world.ptr(),        ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -338,7 +338,7 @@ public:
         if (dr::none_or<false>(valid))
             return { ds, dr::zeros<Spectrum>() };
 
-        ds.uv = dr::head<2>(scr) * m_resolution;
+        ds.uv   = dr::head<2>(scr) * m_resolution;
         ds.p    = trafo.transform_affine(aperture_p);
         ds.d    = (ds.p - it.p) * inv_dist;
         ds.dist = dist;

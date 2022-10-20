@@ -196,7 +196,7 @@ public:
     ScalarFloat far_clip() const { return m_far_clip; }
 
     /// Return the distance to the focal plane
-    ScalarFloat focus_distance() const { return m_focus_distance; }
+    Float focus_distance() const { return m_focus_distance; }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("near_clip",      m_near_clip,      +ParamFlags::NonDifferentiable);
@@ -213,7 +213,7 @@ protected:
 protected:
     ScalarFloat m_near_clip;
     ScalarFloat m_far_clip;
-    ScalarFloat m_focus_distance;
+    Float m_focus_distance;
 };
 
 // ========================================================================
