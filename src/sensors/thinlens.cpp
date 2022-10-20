@@ -303,6 +303,54 @@ public:
         return { ray, wav_weight };
     }
 
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     Mask active) const override {
+        // Transform the reference point into the local coordinate system
+        Transform4f trafo = m_to_world.value();
+        Point3f ref_p = trafo.inverse().transform_affine(it.p);
+
+        // Check if it is outside of the clip range
+        DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+        ds.pdf = 0.f;
+        active &= (ref_p.z() >= m_near_clip) && (ref_p.z() <= m_far_clip);
+        if (dr::none_or<false>(active))
+            return { ds, dr::zeros<Spectrum>() };
+
+        // Sample a position on the aperture (in local coordinates)
+        Point2f tmp = warp::square_to_uniform_disk_concentric(sample) * m_aperture_radius;
+        Point3f aperture_p(tmp.x(), tmp.y(), 0);
+
+        // Compute the normalized direction vector from the aperture position to the referent point
+        Vector3f local_d = ref_p - aperture_p;
+        Float dist     = dr::norm(local_d);
+        Float inv_dist = dr::rcp(dist);
+        local_d *= inv_dist;
+
+        // Compute importance value
+        Float ct     = Frame3f::cos_theta(local_d),
+              inv_ct = dr::rcp(ct);
+        Point3f scr = m_camera_to_sample.transform_affine(
+            aperture_p + local_d * (m_focus_distance * inv_ct));
+        Mask valid = dr::all(scr >= 0.f) && dr::all(scr <= 1.f);
+        Float value = dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
+
+        if (dr::none_or<false>(valid))
+            return { ds, dr::zeros<Spectrum>() };
+
+        ds.uv = dr::head<2>(scr) * m_resolution;
+        ds.p    = trafo.transform_affine(aperture_p);
+        ds.d    = (ds.p - it.p) * inv_dist;
+        ds.dist = dist;
+        ds.n    = trafo * Vector3f(0.f, 0.f, 1.f);
+
+        Float aperture_pdf = dr::rcp(dr::Pi<Float> * dr::sqr(m_aperture_radius));
+        ds.pdf = dr::select(valid, aperture_pdf * dist * dist * inv_ct, 0.f);
+
+        return { ds, Spectrum(value * inv_dist * inv_dist) };
+    }
+
+
     ScalarBoundingBox3f bbox() const override {
         ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
