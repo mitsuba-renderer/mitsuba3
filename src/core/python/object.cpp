@@ -1,5 +1,6 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
 extern py::object cast_object(Object *o);
@@ -57,7 +58,13 @@ MI_PY_EXPORT(Object) {
                  }
              },
              "name"_a, "variant"_a, py::return_value_policy::reference,
-             D(PluginManager, get_plugin_class));
+             D(PluginManager, get_plugin_class))
+        .def("create_object", [](PluginManager &pmgr, const Properties &props) {
+            auto mi = py::module_::import("mitsuba");
+            std::string variant = py::cast<std::string>(mi.attr("variant")());
+            const Class *class_ = pmgr.get_plugin_class(props.plugin_name(), variant);
+            return cast_object(pmgr.create_object(props, class_));
+        }, D(PluginManager, create_object));
 
     py::class_<TraversalCallback, PyTraversalCallback>(
         m, "TraversalCallback", D(TraversalCallback))

@@ -266,7 +266,7 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
             }
 
             // Nested dict with type == "ref" specify a reference to another
-            // object previously instanciated
+            // object previously instantiated
             if (type2 == "ref") {
                 if (is_scene)
                     Throw("Reference found at the scene level: %s", key);

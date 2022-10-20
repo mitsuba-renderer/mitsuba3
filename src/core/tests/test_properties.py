@@ -168,8 +168,20 @@ def test08_get_default(variant_scalar_rgb):
     assert p.get('foo', 4.0) == 'test'
 
 
+def test09_create_object(variants_all_rgb):
+    props = mi.Properties()
+    props.set_plugin_name('path')
+    props['max_depth'] = 4
+
+    it = mi.PluginManager.instance().create_object(props)
+
+    assert mi.variant() == it.class_().variant()
+    assert it.class_().name() == 'PathIntegrator'
+    assert 'max_depth = 4' in str(it)
+
+
 @pytest.mark.skip("TODO fix AnimatedTransform")
-def test09_animated_transforms(variant_scalar_rgb):
+def test10_animated_transforms(variant_scalar_rgb):
     """An AnimatedTransform can be built from a given Transform."""
     p = mi.Properties()
     p["trafo"] = mi.Transform4f.translate([1, 2, 3])
