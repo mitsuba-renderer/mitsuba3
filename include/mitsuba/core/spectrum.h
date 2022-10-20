@@ -417,7 +417,12 @@ dr::value_t<Spectrum> luminance(const Spectrum &value,
                                 dr::mask_t<Spectrum> active = true) {
     if constexpr (is_rgb_v<Spectrum>) {
         DRJIT_MARK_USED(active);
+        DRJIT_MARK_USED(wavelengths);
         return luminance(value);
+    } else if constexpr (is_monochromatic_v<Spectrum>) {
+        DRJIT_MARK_USED(active);
+        DRJIT_MARK_USED(wavelengths);
+        return value[0];
     } else {
         return dr::mean(cie1931_y(wavelengths, active) * value);
     }
