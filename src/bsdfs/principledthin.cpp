@@ -188,12 +188,6 @@ public:
                 props.get("diffuse_reflectance_sampling_rate", 1.0f);
 
         initialize_lobes();
-
-        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
-                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                        m_diff_trans, m_eta_thin, m_diff_refl_srate,
-                        m_spec_refl_srate, m_spec_trans_srate,
-                        m_diff_trans_srate);
     }
 
     void initialize_lobes() {
@@ -262,12 +256,6 @@ public:
             m_has_spec_tint = true;
 
         initialize_lobes();
-
-        dr::make_opaque(m_base_color, m_roughness, m_anisotropic, m_sheen,
-                        m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                        m_diff_trans, m_eta_thin, m_diff_refl_srate,
-                        m_spec_refl_srate, m_spec_trans_srate,
-                        m_diff_trans_srate);
     }
 
     std::pair<BSDFSample3f, Spectrum>
