@@ -132,7 +132,6 @@ def bitmap_extract(bmp, require_variance=True):
     # AVOs from the moment integrator are in XYZ (float32)
     split = bmp.split()
     if len(split) == 1:
-        print('hello!')
         if require_variance:
             raise RuntimeError(
                 'Could not extract variance image from bitmap. '
