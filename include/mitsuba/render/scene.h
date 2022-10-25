@@ -36,7 +36,7 @@ template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Scene : public Object {
 public:
     MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
-                     ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
+                    ShapeGroup, Sensor, Integrator, Medium, MediumPtr, Mesh)
 
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);

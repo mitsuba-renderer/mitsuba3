@@ -111,6 +111,9 @@ MI_PY_EXPORT(Shape) {
             "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
         .def("pdf_direction", &Shape::pdf_direction,
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
+        .def("eval_parameterization", &Shape::eval_parameterization,
+             "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+             D(Shape, eval_parameterization))
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<ScalarUInt32>(

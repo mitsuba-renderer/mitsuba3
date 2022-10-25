@@ -49,6 +49,8 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_COMPILE_OPTIMIZATION_LEVEL_0       0x2340
 #define OPTIX_COMPILE_DEBUG_LEVEL_NONE           0x2350
 #define OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL        0x2351
+#define OPTIX_COMPILE_DEBUG_LEVEL_MODERATE       0x2353
+#define OPTIX_COMPILE_DEBUG_LEVEL_FULL           0x2352
 
 #define OPTIX_BUILD_FLAG_ALLOW_COMPACTION  2
 #define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE 4
@@ -325,7 +327,7 @@ D(optixDenoiserSetup, OptixDenoiserStructPtr, CUstream, unsigned int,
   unsigned int, CUdeviceptr, size_t, CUdeviceptr, size_t);
 D(optixDenoiserInvoke, OptixDenoiserStructPtr, CUstream,
   const OptixDenoiserParams *, CUdeviceptr, size_t,
-  const OptixDenoiserGuideLayer *, const OptixDenoiserLayer *, unsigned int, 
+  const OptixDenoiserGuideLayer *, const OptixDenoiserLayer *, unsigned int,
   unsigned int, unsigned int, CUdeviceptr, size_t);
 D(optixDenoiserComputeIntensity, OptixDenoiserStructPtr, CUstream,
   const OptixImage2D *inputImage, CUdeviceptr, CUdeviceptr, size_t);
