@@ -49,7 +49,6 @@ class SceneParameters(Mapping):
         return value
 
     def __getitem__(self, key: str):
-        print('__getitem__', key)
         value = self.__get_value(key)
 
         if key not in self.update_candidates:
@@ -58,7 +57,6 @@ class SceneParameters(Mapping):
         return value
 
     def __setitem__(self, key: str, value):
-        print('__setitem__', key)
         cur, value_type, node, _ = self.properties[key]
 
         cur_value = cur
