@@ -13,9 +13,9 @@ if _sys.version_info < (3, 8):
     raise ImportError("Mitsuba requires Python 3.8 or greater.")
 
 mi_dir = _os.path.dirname(_os.path.realpath(__file__))
-if _os.name != 'nt' and _os.path.relpath(_dr.__path__[0], mi_dir) != '../drjit':
-    drjit_loc = _os.path.realpath(_dr.__path__[0])
-    drjit_expected_loc = _os.path.realpath(_os.path.join(mi_dir, "..", "drjit"))
+drjit_expected_loc = _os.path.realpath(_os.path.join(mi_dir, "..", "drjit"))
+drjit_loc = _os.path.realpath(_dr.__path__[0])
+if _os.name != 'nt' and drjit_expected_loc != drjit_loc:
     logging.warning("The `mitsuba` package relies on `drjit` and needs it "
                     "to be installed at a specific location. Currently, "
                     "`drjit` is located at \"%s\" when it is expected to be "
@@ -23,7 +23,7 @@ if _os.name != 'nt' and _os.path.relpath(_dr.__path__[0], mi_dir) != '../drjit':
                     "installed in the same Python environment. You will very "
                     "likely experience linking issues if you do not fix this."
                     % (drjit_loc, drjit_expected_loc))
-del mi_dir
+del mi_dir, drjit_expected_loc, drjit_loc
 
 from .config import DRJIT_VERSION_REQUIREMENT
 if _dr.__version__ != DRJIT_VERSION_REQUIREMENT:
