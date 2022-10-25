@@ -49,6 +49,7 @@ class SceneParameters(Mapping):
         return value
 
     def __getitem__(self, key: str):
+        print('__getitem__', key)
         value = self.__get_value(key)
 
         if key not in self.update_candidates:
@@ -57,6 +58,7 @@ class SceneParameters(Mapping):
         return value
 
     def __setitem__(self, key: str, value):
+        print('__setitem__', key)
         cur, value_type, node, _ = self.properties[key]
 
         cur_value = cur
@@ -263,11 +265,10 @@ def _jit_id_hash(value: Any) -> int:
                 ids.extend(jit_ids(value[i]))
         elif dr.is_diff_v(value):
             ids.append((value.index, value.index_ad))
+        elif dr.is_tensor_v(value):
+            ids.extend(jit_ids(value.array))
         elif dr.is_jit_v(value):
-            if dr.is_tensor_v(value):
-                ids.extend(jit_ids(value.array))
-            else:
-                ids.append((value.index, 0))
+            ids.append((value.index, 0))
         elif dr.is_array_v(value) and dr.is_dynamic_array_v(value):
             for i in range(len(value)):
                 ids.extend(jit_ids(value[i]))
