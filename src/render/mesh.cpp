@@ -497,6 +497,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh->initialize();
 
     props.set_object("mesh", mesh.get());
+
+    if (m_scene)
+        props.set_object("parent_scene", m_scene);
+
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
 

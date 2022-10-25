@@ -2,6 +2,7 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/integrator.h>
 
@@ -23,6 +24,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         m_children.push_back(kv.second.get());
 
         Shape *shape           = dynamic_cast<Shape *>(kv.second.get());
+        Mesh *mesh             = dynamic_cast<Mesh *>(kv.second.get());
         Emitter *emitter       = dynamic_cast<Emitter *>(kv.second.get());
         Sensor *sensor         = dynamic_cast<Sensor *>(kv.second.get());
         Integrator *integrator = dynamic_cast<Integrator *>(kv.second.get());
@@ -38,6 +40,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_bbox.expand(shape->bbox());
                 m_shapes.push_back(shape);
             }
+            if (mesh)
+                mesh->set_scene(this);
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))

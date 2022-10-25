@@ -245,7 +245,7 @@ public:
      *    A direction sampling record, which specifies the query location.
      *
      * \return
-     *    The incident direct radiance/importance accoated with the sample.
+     *    The incident direct radiance/importance associated with the sample.
      */
     virtual Spectrum
     eval_direction(const Interaction3f &ref,

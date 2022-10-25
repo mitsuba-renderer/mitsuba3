@@ -184,6 +184,8 @@ public:
                                                        uint32_t ray_flags = +RayFlags::All,
                                                        Mask active = true) const override;
 
+    void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
+
     /** \brief Ray-triangle intersection test
      *
      * Uses the algorithm by Moeller and Trumbore discussed at
@@ -460,6 +462,9 @@ protected:
 
     /// Optional: used in eval_parameterization()
     ref<Scene<Float, Spectrum>> m_parameterization;
+
+    /// Pointer to the scene that owns this mesh
+    Scene<Float, Spectrum>* m_scene = nullptr;
 };
 
 MI_EXTERN_CLASS(Mesh)

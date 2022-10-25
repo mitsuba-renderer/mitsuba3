@@ -220,6 +220,12 @@ def test09_eval_parameterization(variants_all_rgb):
     shape = mi.load_dict({
         "type" : "obj",
         "filename" : "resources/data/common/meshes/rectangle.obj",
+        "emitter": {
+            "type": "area",
+            "radiance": {
+                "type": "checkerboard",
+            }
+        }
     })
 
     si = shape.eval_parameterization([-0.01, 0.5])
@@ -233,6 +239,18 @@ def test09_eval_parameterization(variants_all_rgb):
     si = shape.eval_parameterization([.2, .3])
     assert dr.all(si.is_valid())
     assert dr.allclose(si.p, [-.6, -.4, 0])
+
+    # Test with symbolic virtual function call
+    if not 'scalar' in mi.variant():
+        emitter = shape.emitter()
+        N = 4
+        mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
+        emitters = dr.select(mask, mi.EmitterPtr(emitter), dr.zeros(mi.EmitterPtr))
+        it = dr.zeros(mi.Interaction3f, N)
+        it.p = [0, 0, -3]
+        it.t = 0
+        uv = emitters.sample_direction(it, [0.5, 0.5])[0].uv
+        assert dr.allclose(uv, dr.select(mask, mi.Point2f(0.5), mi.Point2f(0.0)))
 
 
 @fresolver_append_path
