@@ -584,9 +584,11 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     if (dr::none_or<false>(pi.is_valid()))
         return dr::zeros<SurfaceInteraction3f>();
 
-    pi.shape = this;
+    SurfaceInteraction3f si =
+        compute_surface_interaction(ray, pi, ray_flags, 0, active);
+    si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
-    return pi.compute_surface_interaction(ray, ray_flags, active);
+    return si;
 }
 
 MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
