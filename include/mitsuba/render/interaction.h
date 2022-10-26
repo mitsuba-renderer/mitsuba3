@@ -9,6 +9,69 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * \brief This list of flags is used to determine which members of \ref SurfaceInteraction
+ * should be computed when calling \ref compute_surface_interaction().
+ *
+ * It also specifies whether the \ref SurfaceInteraction should be differentiable with
+ * respect to the shapes parameters.
+ */
+enum class RayFlags : uint32_t {
+
+    // =============================================================
+    //             Surface interaction compute flags
+    // =============================================================
+
+    /// No flags set
+    Empty = 0x0,
+
+    /// Compute position and geometric normal
+    Minimal = 0x1,
+
+    /// Compute UV coordinates
+    UV = 0x2,
+
+    /// Compute position partials wrt. UV coordinates
+    dPdUV = 0x4,
+
+    /// Compute shading normal and shading frame
+    ShadingFrame = 0x8,
+
+    /// Compute the geometric normal partials wrt. the UV coordinates
+    dNGdUV = 0x10,
+
+    /// Compute the shading normal partials wrt. the UV coordinates
+    dNSdUV = 0x20,
+
+    /// Compute the boundary-test used in reparameterized integrators
+    BoundaryTest = 0x40,
+
+    // =============================================================
+    //!              Differentiability compute flags
+    // =============================================================
+
+    /// Derivatives of the SurfaceInteraction fields follow shape's motion
+    FollowShape = 0x80,
+
+    /// Derivatives of the SurfaceInteraction fields ignore shape's motion
+    DetachShape = 0x100,
+
+    // =============================================================
+    //!                 Compound compute flags
+    // =============================================================
+
+    /* \brief Default: compute all fields of the surface interaction data
+       structure except shading/geometric normal derivatives */
+    All = UV | dPdUV | ShadingFrame,
+
+    /// Compute all fields of the surface interaction ignoring shape's motion
+    AllNonDifferentiable = All | DetachShape,
+};
+
+MI_DECLARE_ENUM_OPERATORS(RayFlags)
+
+// -----------------------------------------------------------------------------
+
 /// Generic surface interaction data structure
 template <typename Float_, typename Spectrum_>
 struct Interaction {
@@ -103,6 +166,9 @@ private:
 };
 
 // -----------------------------------------------------------------------------
+
+template <typename Float_, typename Shape_>
+struct PreliminaryIntersection;
 
 /// Stores information related to a surface scattering interaction
 template <typename Float_, typename Spectrum_>
@@ -396,6 +462,42 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return dr::any_nested(dr::neq(dn_du, 0.f) || dr::neq(dn_dv, 0.f));
     }
 
+    /**
+     * \brief Fills uninitialized fields after a call to \ref Shape::compute_surface_interaction()
+     *
+     * \param pi
+     *      Preliminary intersection which was used to during the call to
+     *      \ref Shape::compute_surface_interaction()
+     * \param ray
+     *      Ray associated with the ray intersection
+     * \param ray_flags
+     *      Flags specifying which information should be computed
+     */
+    void finalize_surface_interaction(
+        const PreliminaryIntersection<Float, Shape> &pi, const Ray3f &ray,
+        uint32_t ray_flags, Mask active) {
+        dr::masked(t, !active) = dr::Infinity<Float>;
+        active &= is_valid();
+
+        dr::masked(shape, !active)    = nullptr;
+        dr::masked(instance, !active) = nullptr;
+
+        prim_index  = pi.prim_index;
+        time        = ray.time;
+        wavelengths = ray.wavelengths;
+
+        if (has_flag(ray_flags, RayFlags::ShadingFrame))
+            initialize_sh_frame();
+
+        // Incident direction in local coordinates
+        wi = dr::select(active, to_local(-ray.d), -ray.d);
+
+        duv_dx = duv_dy = dr::zeros<Point2f>();
+
+        if (has_flag(ray_flags, RayFlags::BoundaryTest))
+            boundary_test = dr::select(active, dr::detach(boundary_test), 1e8f);
+    }
+
     //! @}
     // =============================================================
 
@@ -468,69 +570,6 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };
-
-// -----------------------------------------------------------------------------
-
-/**
- * \brief This list of flags is used to determine which members of \ref SurfaceInteraction
- * should be computed when calling \ref compute_surface_interaction().
- *
- * It also specifies whether the \ref SurfaceInteraction should be differentiable with
- * respect to the shapes parameters.
- */
-enum class RayFlags : uint32_t {
-
-    // =============================================================
-    //             Surface interaction compute flags
-    // =============================================================
-
-    /// No flags set
-    Empty = 0x0,
-
-    /// Compute position and geometric normal
-    Minimal = 0x1,
-
-    /// Compute UV coordinates
-    UV = 0x2,
-
-    /// Compute position partials wrt. UV coordinates
-    dPdUV = 0x4,
-
-    /// Compute shading normal and shading frame
-    ShadingFrame = 0x8,
-
-    /// Compute the geometric normal partials wrt. the UV coordinates
-    dNGdUV = 0x10,
-
-    /// Compute the shading normal partials wrt. the UV coordinates
-    dNSdUV = 0x20,
-
-    /// Compute the boundary-test used in reparameterized integrators
-    BoundaryTest = 0x40,
-
-    // =============================================================
-    //!              Differentiability compute flags
-    // =============================================================
-
-    /// Derivatives of the SurfaceInteraction fields follow shape's motion
-    FollowShape = 0x80,
-
-    /// Derivatives of the SurfaceInteraction fields ignore shape's motion
-    DetachShape = 0x100,
-
-    // =============================================================
-    //!                 Compound compute flags
-    // =============================================================
-
-    /* \brief Default: compute all fields of the surface interaction data
-       structure except shading/geometric normal derivatives */
-    All = UV | dPdUV | ShadingFrame,
-
-    /// Compute all fields of the surface interaction ignoring shape's motion
-    AllNonDifferentiable = All | DetachShape,
-};
-
-MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
@@ -638,28 +677,7 @@ struct PreliminaryIntersection {
             ShapePtr target = dr::select(dr::eq(instance, nullptr), shape, instance);
             SurfaceInteraction3f si =
                 target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
-
-            dr::masked(si.t, !active) = dr::Infinity<Float>;
-            active &= si.is_valid();
-
-            dr::masked(si.shape,    !active) = nullptr;
-            dr::masked(si.instance, !active) = nullptr;
-
-            si.prim_index  = prim_index;
-            si.time        = ray.time;
-            si.wavelengths = ray.wavelengths;
-
-            if (has_flag(ray_flags, RayFlags::ShadingFrame))
-                si.initialize_sh_frame();
-
-            // Incident direction in local coordinates
-            si.wi = dr::select(active, si.to_local(-ray.d), -ray.d);
-
-            si.duv_dx = si.duv_dy = dr::zeros<Point2f>();
-
-            if (has_flag(ray_flags, RayFlags::BoundaryTest))
-                si.boundary_test =
-                    dr::select(active, dr::detach(si.boundary_test), 1e8f);
+            si.finalize_surface_interaction(*this, ray, ray_flags, active);
 
             return si;
         }

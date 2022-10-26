@@ -197,9 +197,11 @@ public:
         if (dr::none_or<false>(pi.is_valid()))
             return dr::zeros<SurfaceInteraction3f>();
 
-        pi.shape = this;
+        SurfaceInteraction3f si =
+            compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
-        return pi.compute_surface_interaction(ray, ray_flags, active);
+        return si;
     }
 
     //! @}
