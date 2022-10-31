@@ -14,6 +14,7 @@ struct EmbreeState {
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    bool is_nested_scene = false;
 };
 
 static void embree_error_callback(void * /*user_ptr */, RTCError code, const char *str) {
@@ -80,7 +81,7 @@ void rtcIntersect32(const int *valid, RTCScene scene,
 }
 
 MI_VARIANT void
-Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
+Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     if (!embree_device) {
         embree_threads = std::max((uint32_t) 1, pool_size());
         std::string config_str = tfm::format(
@@ -93,6 +94,14 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
 
     m_accel = new EmbreeState<Float>();
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
+    // Check if another scene was passed to the constructor
+    for (auto &[k, v] : props.objects()) {
+        if (dynamic_cast<Scene *>(v.get())) {
+            s.is_nested_scene = true;
+            break;
+        }
+    }
 
     s.accel = rtcNewScene(embree_device);
     rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
@@ -138,12 +147,17 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
-    dr::parallel_for(
-        dr::blocked_range<size_t>(0, embree_threads, 1),
-        [&](const dr::blocked_range<size_t> &) {
-            rtcJoinCommitScene(s.accel);
-        }
-    );
+    // Avoid getting in a deadlock when building a nested scene while rendering
+    if (s.is_nested_scene) {
+        rtcCommitScene(s.accel);
+    } else {
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, embree_threads, 1),
+            [&](const dr::blocked_range<size_t> &) {
+                rtcJoinCommitScene(s.accel);
+            }
+        );
+    }
 
     /* Set up a callback on the handle variable to release the Embree
        acceleration data structure (IAS) when this variable is freed. This

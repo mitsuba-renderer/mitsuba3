@@ -20,14 +20,16 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
-    for (auto &kv : props.objects()) {
-        m_children.push_back(kv.second.get());
+    for (auto &[k, v] : props.objects()) {
+        Scene *scene           = dynamic_cast<Scene *>(v.get());
+        Shape *shape           = dynamic_cast<Shape *>(v.get());
+        Mesh *mesh             = dynamic_cast<Mesh *>(v.get());
+        Emitter *emitter       = dynamic_cast<Emitter *>(v.get());
+        Sensor *sensor         = dynamic_cast<Sensor *>(v.get());
+        Integrator *integrator = dynamic_cast<Integrator *>(v.get());
 
-        Shape *shape           = dynamic_cast<Shape *>(kv.second.get());
-        Mesh *mesh             = dynamic_cast<Mesh *>(kv.second.get());
-        Emitter *emitter       = dynamic_cast<Emitter *>(kv.second.get());
-        Sensor *sensor         = dynamic_cast<Sensor *>(kv.second.get());
-        Integrator *integrator = dynamic_cast<Integrator *>(kv.second.get());
+        if (!scene)
+            m_children.push_back(v.get());
 
         if (shape) {
             if (shape->is_emitter())
