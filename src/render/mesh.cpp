@@ -580,8 +580,9 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     PreliminaryIntersection3f pi =
         m_parameterization->ray_intersect_preliminary(
             ray, /* coherent = */ true, active);
+    active &= pi.is_valid();
 
-    if (dr::none_or<false>(pi.is_valid()))
+    if (dr::none_or<false>(active))
         return dr::zeros<SurfaceInteraction3f>();
 
     SurfaceInteraction3f si =

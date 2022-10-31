@@ -179,8 +179,9 @@ public:
         Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
 
         PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        active &= pi.is_valid();
 
-        if (dr::none_or<false>(pi.is_valid()))
+        if (dr::none_or<false>(active))
             return dr::zeros<SurfaceInteraction3f>();
 
         SurfaceInteraction3f si =
