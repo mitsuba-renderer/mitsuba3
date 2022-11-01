@@ -581,56 +581,57 @@ private:
 MI_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)
 
-#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \
-    using typename Base::FloatP##N;                                            \
-    using typename Base::UInt32P##N;                                           \
-    using typename Base::MaskP##N;                                             \
-    using typename Base::Point2fP##N;                                          \
-    using typename Base::Point3fP##N;                                          \
-    using typename Base::Ray3fP##N;                                            \
-    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                 \
-    ray_intersect_preliminary_packet(                                          \
-        const Ray3fP##N &ray, MaskP##N active) const override {                \
-        (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_v<Float>)                             \
-            return ray_intersect_preliminary_impl<FloatP##N>(ray, active);     \
+#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                   \
+    std::tuple<typename Base::FloatP##N, typename Base::Point2fP##N,           \
+               typename Base::UInt32P##N, typename Base::UInt32P##N>           \
+    ray_intersect_preliminary_packet(const typename Base::Ray3fP##N &ray,      \
+                                     typename Base::MaskP##N active)           \
+        const override {                                                       \
+        (void) ray;                                                            \
+        (void) active;                                                         \
+        if constexpr (!dr::is_cuda_v<Float>)                                   \
+            return ray_intersect_preliminary_impl<typename Base::FloatP##N>(   \
+                ray, active);                                                  \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
     }                                                                          \
-    MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
+    typename Base::MaskP##N ray_test_packet(                                   \
+        const typename Base::Ray3fP##N &ray, typename Base::MaskP##N active)   \
         const override {                                                       \
-        (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_v<Float>)                             \
-            return ray_test_impl<FloatP##N>(ray, active);                      \
+        (void) ray;                                                            \
+        (void) active;                                                         \
+        if constexpr (!dr::is_cuda_v<Float>)                                   \
+            return ray_test_impl<typename Base::FloatP##N>(ray, active);       \
         else                                                                   \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
-#define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                               \
+#define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                \
     PreliminaryIntersection3f ray_intersect_preliminary(                       \
         const Ray3f &ray, Mask active) const override {                        \
-        MI_MASK_ARGUMENT(active);                                             \
-        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();  \
+        MI_MASK_ARGUMENT(active);                                              \
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>(); \
         std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
             ray_intersect_preliminary_impl<Float>(ray, active);                \
         pi.shape = this;                                                       \
         return pi;                                                             \
     }                                                                          \
     Mask ray_test(const Ray3f &ray, Mask active) const override {              \
-        MI_MASK_ARGUMENT(active);                                             \
+        MI_MASK_ARGUMENT(active);                                              \
         return ray_test_impl<Float>(ray, active);                              \
     }                                                                          \
-    using typename Base::ScalarRay3f;                                          \
     std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>         \
-    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {  \
+    ray_intersect_preliminary_scalar(const typename Base::ScalarRay3f &ray)    \
+        const override {                                                       \
         return ray_intersect_preliminary_impl<ScalarFloat>(ray, true);         \
     }                                                                          \
-    ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {        \
+    ScalarMask ray_test_scalar(const typename Base::ScalarRay3f &ray)          \
+        const override {                                                       \
         return ray_test_impl<ScalarFloat>(ray, true);                          \
     }                                                                          \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                      \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                      \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                       \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                       \
     MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------

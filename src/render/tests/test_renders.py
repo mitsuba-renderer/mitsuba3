@@ -129,10 +129,9 @@ def read_rgb_bmp_to_xyz(fname):
 
 def bitmap_extract(bmp, require_variance=True):
     """Extract different channels from moment integrator AOVs"""
-    # AVOs from the moment integrator are in XYZ (float32)
+    # AOVs from the moment integrator are in XYZ (float32)
     split = bmp.split()
     if len(split) == 1:
-        print('hello!')
         if require_variance:
             raise RuntimeError(
                 'Could not extract variance image from bitmap. '
@@ -231,7 +230,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
     else:
-        print('Reject the null hypothesis (min(p-value) = %f, significance level = %f)' %
+        print('Rejected the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
 
         output_dir = join(dirname(scene_fname), 'error_output')
