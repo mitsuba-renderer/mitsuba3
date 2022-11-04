@@ -8,8 +8,8 @@ from .common import RBIntegrator, mis_weight
 def index_spectrum(spec, idx):
     m = spec[0]
     if mi.is_rgb:
-        m[dr.eq(idx, 1)] = spec[1]
-        m[dr.eq(idx, 2)] = spec[2]
+        m[mi.Bool(dr.eq(idx, 1))] = spec[1]
+        m[mi.Bool(dr.eq(idx, 2))] = spec[2]
     return m
 
 class PRBVolpathIntegrator(RBIntegrator):
