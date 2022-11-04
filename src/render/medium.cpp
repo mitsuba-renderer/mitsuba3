@@ -117,7 +117,6 @@ Medium<Float, Spectrum>::old_phase_function() const {
     return m_phase_function.get();
 }
 
-
 MI_VARIANT
 std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
           typename Medium<Float, Spectrum>::UnpolarizedSpectrum>

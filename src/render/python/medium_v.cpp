@@ -45,8 +45,8 @@ public:
         PYBIND11_OVERRIDE_PURE(Return, Medium, get_scattering_coefficients, mi, active);
     }
 
-    PhaseFunction *old_phase_function() const override {
-        PYBIND11_OVERRIDE_PURE(PhaseFunction*, Medium, phase_function);
+    const PhaseFunction *old_phase_function() const override {
+        PYBIND11_OVERRIDE_PURE(PhaseFunction*, Medium, old_phase_function);
     }
 
     std::string to_string() const override {
