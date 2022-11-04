@@ -82,6 +82,43 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 }
 
 MI_VARIANT
+std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f,
+          typename Medium<Float, Spectrum>::MediumInteraction3f>
+Medium<Float, Spectrum>::sample_interaction_twostates(const Ray3f &ray, Float sample,
+                                            UInt32 channel, Mask active) const {
+    MI_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+    MediumInteraction3f mi = sample_interaction(ray, sample, channel, active);
+    // No 2 states by default, just return the sampled interaction twice
+    return { mi, mi };
+}
+
+MI_VARIANT
+typename Medium<Float, Spectrum>::UnpolarizedSpectrum
+Medium<Float, Spectrum>::eval_tr_old(const MediumInteraction3f &mi,
+                                     const SurfaceInteraction3f &si,
+                                     Mask active) const {
+    MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+    Float t = dr::minimum(mi.t, si.t) - mi.mint;
+    return dr::exp(-t * mi.combined_extinction);
+}
+
+MI_VARIANT
+typename Medium<Float, Spectrum>::UnpolarizedSpectrum
+Medium<Float, Spectrum>::eval_tr_new(const MediumInteraction3f &mi,
+                                     const SurfaceInteraction3f &si,
+                                     Mask active) const {
+    MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+    return eval_tr_old(mi, si, active);
+}
+
+MI_VARIANT
+const typename Medium<Float, Spectrum>::PhaseFunction *
+Medium<Float, Spectrum>::old_phase_function() const {
+    return m_phase_function.get();
+}
+
+
+MI_VARIANT
 std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
           typename Medium<Float, Spectrum>::UnpolarizedSpectrum>
 Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,

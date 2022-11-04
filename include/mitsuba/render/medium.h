@@ -50,6 +50,19 @@ public:
     MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
                                            UInt32 channel, Mask active) const;
 
+    // sample a given medium interaction, with the previous and old states
+    virtual std::pair<MediumInteraction3f, MediumInteraction3f>
+    sample_interaction_twostates(const Ray3f &ray, Float sample,
+                       UInt32 channel, Mask active) const;
+
+    virtual UnpolarizedSpectrum
+    eval_tr_old(const MediumInteraction3f &mi,
+                const SurfaceInteraction3f &si, Mask active) const;
+
+    virtual UnpolarizedSpectrum
+    eval_tr_new(const MediumInteraction3f &mi,
+                const SurfaceInteraction3f &si, Mask active) const;
+
     /**
      * \brief Compute the transmittance and PDF
      *
@@ -73,6 +86,9 @@ public:
     MI_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();
     }
+
+    /// Return the phase function of this medium
+    const virtual PhaseFunction *old_phase_function() const;
 
     /// Returns whether this specific medium instance uses emitter sampling
     MI_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
@@ -127,6 +143,10 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_METHOD(get_majorant)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
+    DRJIT_VCALL_METHOD(old_phase_function)
+    DRJIT_VCALL_METHOD(eval_tr_old)
+    DRJIT_VCALL_METHOD(eval_tr_new)
+    DRJIT_VCALL_METHOD(sample_interaction_twostates)
     DRJIT_VCALL_METHOD(eval_tr_and_pdf)
     DRJIT_VCALL_METHOD(get_scattering_coefficients)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)

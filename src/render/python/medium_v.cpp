@@ -7,13 +7,32 @@
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Medium, Sampler, Scene)
+    MI_IMPORT_TYPES(Medium, Sampler, Scene, PhaseFunction)
 
     PyMedium(const Properties &props) : Medium(props) {}
 
     std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f &ray) const override {
         using Return = std::tuple<Mask, Float, Float>;
         PYBIND11_OVERRIDE_PURE(Return, Medium, intersect_aabb, ray);
+    }
+
+    UnpolarizedSpectrum eval_tr_old(const MediumInteraction3f &mi,
+                                    const SurfaceInteraction3f &si,
+                                    Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, eval_tr_old, mi, si, active);
+    }
+
+    UnpolarizedSpectrum eval_tr_new(const MediumInteraction3f &mi,
+                                    const SurfaceInteraction3f &si,
+                                    Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, eval_tr_new, mi, si, active);
+    }
+
+    std::pair<MediumInteraction3f, MediumInteraction3f>
+    sample_interaction_twostates(const Ray3f &ray, Float sample,
+                       UInt32 channel, Mask active) const override {
+        using Return = std::pair<MediumInteraction3f, MediumInteraction3f>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, sample_interaction_twostates, ray, sample, channel, active);
     }
 
     UnpolarizedSpectrum get_majorant(const MediumInteraction3f &mi, Mask active = true) const override {
@@ -24,6 +43,10 @@ public:
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
         using Return = std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Medium, get_scattering_coefficients, mi, active);
+    }
+
+    PhaseFunction *old_phase_function() const override {
+        PYBIND11_OVERRIDE_PURE(PhaseFunction*, Medium, phase_function);
     }
 
     std::string to_string() const override {
@@ -40,6 +63,9 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
 
     cls.def("phase_function",
             [](Ptr ptr) { return ptr->phase_function(); },
+            D(Medium, phase_function))
+        .def("old_phase_function",
+            [](Ptr ptr) { return ptr->old_phase_function(); },
             D(Medium, phase_function))
        .def("use_emitter_sampling",
             [](Ptr ptr) { return ptr->use_emitter_sampling(); },
@@ -65,6 +91,23 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->sample_interaction(ray, sample, channel, active); },
             "ray"_a, "sample"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction))
+       .def("sample_interaction_twostates",
+            [](Ptr ptr, const Ray3f &ray, Float sample, UInt32 channel, Mask active) {
+                return ptr->sample_interaction_twostates(ray, sample, channel, active); },
+            "ray"_a, "sample"_a, "channel"_a, "active"_a,
+            "Sample a medium interaction and evaluate it for 2 states")
+       .def("eval_tr_old",
+            [](Ptr ptr, const MediumInteraction3f &mi,
+               const SurfaceInteraction3f &si, Mask active) {
+                return ptr->eval_tr_old(mi, si, active); },
+            "mi"_a, "si"_a, "active"_a,
+            "Evaluate the old transmittance")
+       .def("eval_tr_new",
+            [](Ptr ptr, const MediumInteraction3f &mi,
+               const SurfaceInteraction3f &si, Mask active) {
+                return ptr->eval_tr_new(mi, si, active); },
+            "mi"_a, "si"_a, "active"_a,
+            "Evaluate the new transmittance")
        .def("eval_tr_and_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
