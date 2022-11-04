@@ -45,6 +45,13 @@ public:
         PYBIND11_OVERRIDE_PURE(Spectrum, BSDF, eval, ctx, si, wo, active);
     }
 
+    Spectrum eval_old(const BSDFContext &ctx,
+                      const SurfaceInteraction3f &si,
+                      const Vector3f &wo,
+                      Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(Spectrum, BSDF, eval_old, ctx, si, wo, active);
+    }
+
     Float pdf(const BSDFContext &ctx,
               const SurfaceInteraction3f &si,
               const Vector3f &wo,
@@ -87,6 +94,11 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
                 const Vector3f &wo,
                 Mask active) { return bsdf->eval(ctx, si, wo, active);
              }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+        .def("eval_old",
+             [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                const Vector3f &wo,
+                Mask active) { return bsdf->eval_old(ctx, si, wo, active);
+             }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, "eval old")
         .def("pdf",
              [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
                 const Vector3f &wo,

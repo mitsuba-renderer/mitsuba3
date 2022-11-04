@@ -8,6 +8,14 @@ MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
 
 MI_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
 
+MI_VARIANT Spectrum
+BSDF<Float, Spectrum>::eval_old(const BSDFContext &ctx,
+                                const SurfaceInteraction3f &si,
+                                const Vector3f &wo,
+                                Mask active) const {
+    return eval(ctx, si, wo, active);
+}
+
 MI_VARIANT std::pair<Spectrum, Float>
 BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si,
