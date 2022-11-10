@@ -7,7 +7,7 @@
 //
 
 .version 7.6
-.target sm_61
+.target sm_50
 .address_size 64
 
 	// .globl	__intersection__cylinder
