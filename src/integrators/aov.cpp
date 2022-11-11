@@ -209,6 +209,7 @@ public:
         size_t ctr = 0;
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
+            DRJIT_MARK_USED(active);
             UnpolarizedSpectrum spec_u = unpolarized_spectrum(spec);
             if constexpr (is_monochromatic_v<Spectrum>)
                 return spec_u.x();
