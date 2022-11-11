@@ -278,6 +278,10 @@ public:
                                              const OptixProgramGroup *) override {
         /* no op */
     }
+
+    virtual void optix_prepare_geometry() {
+        /* no op */
+    }
 #endif
 
     bool parameters_grad_enabled() const override {

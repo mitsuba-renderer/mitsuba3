@@ -69,6 +69,9 @@ public:
     void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
                                      const OptixProgramGroup *program_groups) override;
 
+
+    void optix_prepare_geometry() override;
+
     /// Build OptiX geometry acceleration structures
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
