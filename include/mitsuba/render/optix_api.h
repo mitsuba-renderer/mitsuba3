@@ -309,12 +309,10 @@ D(optixModuleCreateFromPTXWithTasks, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const char *, size_t, char *, size_t *, OptixModule *, OptixTask *);
 D(optixModuleGetCompilationState, OptixModule, int *);
-D(optixModuleDestroy, OptixModule);
 D(optixTaskExecute, OptixTask, OptixTask *, unsigned int, unsigned int *);
 D(optixProgramGroupCreate, OptixDeviceContext, const OptixProgramGroupDesc *,
   unsigned int, const OptixProgramGroupOptions *, char *, size_t *,
   OptixProgramGroup *);
-D(optixProgramGroupDestroy, OptixProgramGroup);
 D(optixSbtRecordPackHeader, OptixProgramGroup, void *);
 D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
   CUdeviceptr, size_t, OptixTraversableHandle *);
@@ -336,7 +334,15 @@ D(optixDenoiserComputeIntensity, OptixDenoiserStructPtr, CUstream,
 
 NAMESPACE_BEGIN(mitsuba)
 extern MI_EXPORT_LIB void optix_initialize();
-extern MI_EXPORT_LIB void optix_shutdown();
+
+/**
+ * \brief RAII wrapper which sets the CUDA context associated to the OptiX
+ * context for the current scope.
+ */
+struct scoped_optix_context {
+    scoped_optix_context();
+    ~scoped_optix_context();
+};
 NAMESPACE_END(mitsuba)
 
 #endif // defined(MI_ENABLE_CUDA)

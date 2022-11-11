@@ -172,6 +172,8 @@ void build_gas(const OptixDeviceContext &context,
         handle.count = (uint32_t) shapes_count;
     };
 
+    scoped_optix_context guard;
+
     build_single_gas(shape_meshes, out_accel.meshes);
     build_single_gas(shape_others, out_accel.others);
 }

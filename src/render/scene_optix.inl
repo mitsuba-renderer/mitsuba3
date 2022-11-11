@@ -413,6 +413,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 s.ias_buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
+                scoped_optix_context guard;
+
                 jit_optix_check(optixAccelBuild(
                     config.context,
                     (CUstream) jit_cuda_stream(),
