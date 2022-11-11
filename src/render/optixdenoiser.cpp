@@ -29,6 +29,8 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 
     optix_initialize();
 
+    scoped_optix_context guard;
+
     OptixDeviceContext context = jit_optix_context();
     OptixDenoiserModelKind model_kind = temporal
                                             ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
@@ -66,6 +68,8 @@ OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &normals, const Transform4f &to_sensor, const TensorXf &flow,
     const TensorXf &previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
+
+    scoped_optix_context guard;
 
     validate_input(noisy, albedo, normals, flow, previous_denoised);
 
