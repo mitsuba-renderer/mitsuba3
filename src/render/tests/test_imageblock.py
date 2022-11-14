@@ -49,12 +49,12 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
             size = mi.ScalarVector2u(6, 6)
 
             block = mi.ImageBlock(size=size,
-                               offset=offset,
-                               channel_count=1,
-                               rfilter=rfilter,
-                               border=border,
-                               normalize=normalize,
-                               coalesce=coalesce)
+                                  offset=offset,
+                                  channel_count=1,
+                                  rfilter=rfilter,
+                                  border=border,
+                                  normalize=normalize,
+                                  coalesce=coalesce)
 
             block.put(pos=pos, values=[1])
 

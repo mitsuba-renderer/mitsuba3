@@ -119,8 +119,6 @@ public:
     BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f())
                           .extract();
-        if (m_transform != ScalarTransform3f())
-            dr::make_opaque(m_transform);
 
         if (props.has_property("bitmap")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
@@ -676,9 +674,6 @@ protected:
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
-
-        if (m_transform != ScalarTransform3f())
-            dr::make_opaque(m_transform);
 
         const ScalarFloat *ptr = data.data();
 

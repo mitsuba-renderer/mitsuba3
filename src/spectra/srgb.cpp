@@ -61,8 +61,6 @@ public:
             m_value = color;
         else
             m_value = luminance(color);
-
-        dr::make_opaque(m_value);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -70,7 +68,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
+
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

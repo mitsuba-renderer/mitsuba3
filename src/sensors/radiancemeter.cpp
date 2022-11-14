@@ -79,7 +79,6 @@ public:
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
                 m_to_world = ScalarTransform4f::look_at(origin, target, up);
-                dr::make_opaque(m_to_world);
             }
         }
 

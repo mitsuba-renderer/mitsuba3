@@ -73,8 +73,6 @@ public:
             m_position = ScalarPoint3f(m_to_world.scalar().translation());
         }
 
-        dr::make_opaque(m_position);
-
         m_intensity = props.texture_d65<Texture>("intensity", 1.f);
 
         if (m_intensity->is_spatially_varying())
@@ -93,7 +91,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "position")) {
             m_position = m_position.value(); // update scalar part as well
-            dr::make_opaque(m_position);
         }
     }
 

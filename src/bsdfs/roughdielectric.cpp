@@ -234,7 +234,6 @@ public:
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_inv_eta = dr::rcp(m_eta);
-        dr::make_opaque(m_eta, m_inv_eta);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

@@ -110,7 +110,6 @@ public:
                 m_value = color;
             }
 
-            dr::make_opaque(m_value);
             m_has_value = true;
         }
 
@@ -134,8 +133,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        if (m_has_value)
-            dr::make_opaque(m_value);
+
     }
 
     std::vector<ref<Object>> expand() const override {
