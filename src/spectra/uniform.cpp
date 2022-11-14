@@ -59,7 +59,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
+
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f & /*si*/,

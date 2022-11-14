@@ -202,7 +202,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale([1 + theta, 1 + 2 * theta, 0])
+    params['to_world'] = mi.Transform4f.scale([1 + theta, 1 + 2 * theta, 1])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 

@@ -229,6 +229,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) {
+    DRJIT_MARK_USED(props);
     if constexpr (dr::is_cuda_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
