@@ -379,7 +379,7 @@ public:
                       const Vector3f &wo,
                       Mask active = true) const = 0;
 
-/**
+    /**
      * \brief Jointly evaluate the BSDF f(wi, wo) and the probability per unit
      * solid angle of sampling the given direction. The result from the evaluated
      * BSDF is multiplied by the cosine foreshortening term.
@@ -416,6 +416,46 @@ public:
                                                 const SurfaceInteraction3f &si,
                                                 const Vector3f &wo,
                                                 Mask active = true) const;
+
+    /**
+     * \brief Jointly evaluate the BSDF f(wi, wo), the probability per unit
+     * solid angle of sampling the given direction \c wo and importance sample
+     * the BSDF model.
+     *
+     * This is simply a wrapper around two separate function calls to eval_pdf()
+     * and sample(). The function exists to perform a smaller number of virtual
+     * function calls, which has some performance benefits on highly vectorized
+     * JIT variants of the renderer. (A ~20% performance improvement for the
+     * basic path tracer on CUDA)
+     *
+     * \param ctx
+     *     A context data structure describing which lobes to evaluate,
+     *     and whether radiance or importance are being transported.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
+     *
+     * \param wo
+     *     The outgoing direction
+     *
+     * \param sample1
+     *     A uniformly distributed sample on \f$[0,1]\f$. It is used
+     *     to select the BSDF lobe in multi-lobe models.
+     *
+     * \param sample2
+     *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
+     *     used to generate the sampled direction.
+     */
+    virtual std::tuple<Spectrum, Float, BSDFSample3<Float, Spectrum>, Spectrum>
+    eval_pdf_sample(const BSDFContext &ctx,
+                    const SurfaceInteraction3f &si,
+                    const Vector3f &wo,
+                    Float sample1,
+                    const Point2f &sample2,
+                    Mask active = true) const;
+
 
     /**
      * \brief Evaluate un-scattered transmission component of the BSDF
@@ -558,6 +598,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_VCALL_METHOD(eval_null_transmission)
     DRJIT_VCALL_METHOD(pdf)
     DRJIT_VCALL_METHOD(eval_pdf)
+    DRJIT_VCALL_METHOD(eval_pdf_sample)
     DRJIT_VCALL_METHOD(eval_diffuse_reflectance)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
