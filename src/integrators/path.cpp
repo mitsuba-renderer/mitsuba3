@@ -1,4 +1,4 @@
-#include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
