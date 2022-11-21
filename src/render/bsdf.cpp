@@ -16,7 +16,7 @@ BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
     return { eval(ctx, si, wo, active), pdf(ctx, si, wo, active) };
 }
 
-MI_VARIANT std::tuple<Spectrum, Float, BSDFSample3<Float, Spectrum>, Spectrum>
+MI_VARIANT std::tuple<Spectrum, Float, typename BSDF<Float, Spectrum>::BSDFSample3f, Spectrum>
 BSDF<Float, Spectrum>::eval_pdf_sample(const BSDFContext &ctx,
                                        const SurfaceInteraction3f &si,
                                        const Vector3f &wo,

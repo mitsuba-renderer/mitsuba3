@@ -448,7 +448,7 @@ public:
      *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
      *     used to generate the sampled direction.
      */
-    virtual std::tuple<Spectrum, Float, BSDFSample3<Float, Spectrum>, Spectrum>
+    virtual std::tuple<Spectrum, Float, BSDFSample3f, Spectrum>
     eval_pdf_sample(const BSDFContext &ctx,
                     const SurfaceInteraction3f &si,
                     const Vector3f &wo,
