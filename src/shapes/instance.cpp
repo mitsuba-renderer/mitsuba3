@@ -283,7 +283,7 @@ public:
 #endif
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world) | m_shapegroup->parameters_grad_enabled();
+        return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
     }
 
     MI_DECLARE_CLASS()
