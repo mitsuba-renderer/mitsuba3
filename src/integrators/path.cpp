@@ -243,9 +243,9 @@ public:
                 ray = dr::detach<true>(ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
-                Vector3f wo = si.to_local(ray.d);
-                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(bsdf_ctx, si, wo, active);
-                bsdf_weight[bsdf_pdf > 0.f] = bsdf_val / dr::detach(bsdf_pdf);
+                Vector3f wo_2 = si.to_local(ray.d);
+                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2, active);
+                bsdf_weight[bsdf_pdf_2 > 0.f] = bsdf_val_2 / dr::detach(bsdf_pdf_2);
             }
 
             // ------ Update loop variables based on current interaction ------

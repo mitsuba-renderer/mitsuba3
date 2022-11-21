@@ -493,7 +493,7 @@ private:
 
             double value = 0.5 * interval_size * (y0 + y1);
 
-            m_max = dr::maximum(m_max, y1);
+            m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;
@@ -813,7 +813,7 @@ private:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_max = dr::maximum(m_max, y1);
+            m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
             m_range.x() = dr::minimum(m_range.x(), (ScalarFloat) x0);
             m_range.y() = dr::maximum(m_range.y(), (ScalarFloat) x1);

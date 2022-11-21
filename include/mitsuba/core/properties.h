@@ -287,7 +287,7 @@ public:  // Type-specific getters and setters ----------------------------------
             mark_queried(name);
             return (Texture *) Texture::D65((Texture *) object.get()).get();
         } else if (p_type == Properties::Type::Float) {
-            return (Texture *) Texture::D65(get<Float>(name)).get();
+            return (Texture *) Texture::D65((typename Texture::ScalarFloat) get<Float>(name)).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
                   " <spectrum> or <texture>).", name);

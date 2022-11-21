@@ -176,7 +176,7 @@ public:
             /* Temporally suspend gradient tracking when `to_world` need to be
                differentiated as the various terms of `si` will be recomputed
                to account for the motion of `si` already. */
-            dr::suspend_grad<Float> scope(grad_enabled);
+            dr::suspend_grad<Float> scope2(grad_enabled);
             si = m_shapegroup->compute_surface_interaction(
                 to_object.transform_affine(ray), pi, ray_flags,
                 recursion_depth, active);

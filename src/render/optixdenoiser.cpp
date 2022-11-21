@@ -41,9 +41,9 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
         m_denoiser, input_size.x(), input_size.y(), &sizes));
 
     CUstream stream = jit_cuda_stream();
-    m_state_size = sizes.stateSizeInBytes;
+    m_state_size = (uint32_t) sizes.stateSizeInBytes;
     m_state = jit_malloc(AllocType::Device, m_state_size);
-    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
+    m_scratch_size = (uint32_t) sizes.withoutOverlapScratchSizeInBytes;
     m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
     jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
                                        input_size.y(), m_state, m_state_size,

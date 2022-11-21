@@ -204,7 +204,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     size_t emitter_count = m_emitters.size();
     if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
-        EmitterPtr emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
+        emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
 
         std::tie(ray, weight) =
             emitter->sample_ray(time, sample_1_re, sample2, sample3, active);
