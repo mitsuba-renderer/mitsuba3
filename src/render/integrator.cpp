@@ -198,8 +198,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                    dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (wavefront_size > wavefront_size_limit) {
-            spp_per_pass /= (wavefront_size + wavefront_size_limit - 1) /
-                            wavefront_size_limit;
+            spp_per_pass /= (uint32_t) ((wavefront_size + wavefront_size_limit - 1) / wavefront_size_limit);
             n_passes = spp / spp_per_pass;
             wavefront_size = (size_t) film_size.x() * (size_t) film_size.y() *
                              (size_t) spp_per_pass;
@@ -631,8 +630,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
 
         if (samples_per_pass > wavefront_size_limit) {
-            spp_per_pass /= (samples_per_pass + wavefront_size_limit - 1) /
-                            wavefront_size_limit;
+            spp_per_pass /= (uint32_t) ((samples_per_pass + wavefront_size_limit - 1) / wavefront_size_limit);
             n_passes = spp / spp_per_pass;
             samples_per_pass = (size_t) film_size.x() * (size_t) film_size.y() *
                                (size_t) spp_per_pass;
