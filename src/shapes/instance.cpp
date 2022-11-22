@@ -72,6 +72,8 @@ public:
 
         if (!m_shapegroup)
             Throw("A reference to a 'shapegroup' must be specified!");
+
+        dr::make_opaque(m_to_world, m_to_object);
     }
 
     void traverse(TraversalCallback *callback) override {

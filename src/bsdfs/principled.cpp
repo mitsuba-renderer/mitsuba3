@@ -230,6 +230,10 @@ public:
         }
 
         initialize_lobes();
+
+        dr::make_opaque(m_eta);
+        if (!m_eta_specular)
+            dr::make_opaque(m_specular);
     }
 
     void initialize_lobes() {
@@ -320,6 +324,10 @@ public:
         }
 
         initialize_lobes();
+
+        dr::make_opaque(m_eta);
+        if (!m_eta_specular)
+            dr::make_opaque(m_specular);
     }
 
     std::pair<BSDFSample3f, Spectrum>

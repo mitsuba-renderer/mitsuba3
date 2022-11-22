@@ -134,7 +134,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-
+        dr::make_opaque(m_eta);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

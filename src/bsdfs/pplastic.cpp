@@ -210,6 +210,8 @@ public:
             s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
+
+        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

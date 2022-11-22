@@ -519,6 +519,11 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
+        if constexpr (dr::is_jit_v<Float>) {
+            if (!is_mesh())
+                dr::make_opaque(m_to_world, m_to_object);
+        }
+
         if (m_emitter)
             m_emitter->parameters_changed({"parent"});
         if (m_sensor)
@@ -536,6 +541,11 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
+    if constexpr (dr::is_jit_v<Float>) {
+        if (!is_mesh())
+            dr::make_opaque(m_to_world, m_to_object);
+    }
+
     // Explicitly register this shape as the parent of the provided sub-objects
     if (m_emitter)
         m_emitter->set_shape(this);

@@ -76,6 +76,7 @@ public:
             auto [up, unused] = coordinate_system(direction);
 
             m_to_world = ScalarTransform4f::look_at(0.0f, ScalarPoint3f(direction), up);
+            dr::make_opaque(m_to_world);
         }
 
         m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);

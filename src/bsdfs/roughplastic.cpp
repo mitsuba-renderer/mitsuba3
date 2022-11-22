@@ -250,6 +250,8 @@ public:
             m_internal_reflectance =
                 dr::mean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
+        dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+                        m_internal_reflectance);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

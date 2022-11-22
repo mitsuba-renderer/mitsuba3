@@ -192,6 +192,9 @@ public:
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
+
+        dr::make_opaque(m_to_world, m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_x_fov,
+                        m_image_rect, m_normalization, m_principal_point_offset);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,

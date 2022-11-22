@@ -142,6 +142,7 @@ public:
 
         m_inv_surface_area = dr::rcp(surface_area());
 
+        dr::make_opaque(m_radius, m_length, m_inv_surface_area);
         mark_dirty();
     }
 
