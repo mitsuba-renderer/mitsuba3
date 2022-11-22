@@ -341,7 +341,7 @@ public:
 
             // XYZ/Y mode: don't gather color, will be computed below
             if (to_xyz || to_y)
-                value_mask = values_idx >= color_ch;
+                value_mask = channel_idx >= color_ch;
 
             // Gather the pixel values from the image data buffer
             Float weight = dr::gather<Float>(data, weight_idx),
