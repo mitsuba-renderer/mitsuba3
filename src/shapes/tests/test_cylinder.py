@@ -11,7 +11,7 @@ def test01_create(variant_scalar_rgb):
     s = mi.load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert dr.allclose(s.surface_area(), 2*dr.pi)
+    assert dr.allclose(s.surface_area(), 2 * dr.pi)
 
     # Test transforms order in constructor
     rot = T.rotate([1.0, 0.0, 0.0], 35)
@@ -272,6 +272,6 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     dr.forward(theta)
 
     assert dr.allclose(dr.grad(si.p), 0.0)
-    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0, atol=1e-7)
     assert dr.allclose(dr.grad(si.uv), [-0.25, 0.0])
 
