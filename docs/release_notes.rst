@@ -9,8 +9,35 @@ strive to document breaking API changes in the release notes below.
 Incoming Release
 ----------------
 
-- Various minor improvements to the Python typing stub generation `[b7ef349] <https://github.com/mitsuba-renderer/mitsuba3/commit/f883834a50e3dab694b4fe4ceafdfa1ae3712782>`_ .. `[ad72a53] <https://github.com/mitsuba-renderer/mitsuba3/commit/ad72a5361889bcef1f19b702a28956c1549d26e3>`_
+New features
+^^^^^^^^^^^^
 
+- Enable ray tracing against two different scenes in a single kernel `[df79cb] <https://github.com/mitsuba-renderer/mitsuba3/commit/df79cb3e2837e9296bc3e4ff2afb57416af102f4>`_
+- Make ``ShapeGroup`` traversable and updatable `[e0871a] <https://github.com/mitsuba-renderer/mitsuba3/commit/e0871aa8ab58b64216247ed189a77e5e009297d2>`_
+- Enable differentiation of ``to_world`` in ``instance`` `[54d2d3] <https://github.com/mitsuba-renderer/mitsuba3/commit/54d2d3ab785f8fee4ade8581649ed82d653847cb>`_
+- Enable differentiation of ``to_world`` in ``sphere``, ``rectangle``, ``disk`` and ``cylinder`` `[f5dbed] <https://github.com/mitsuba-renderer/mitsuba3/commit/f5dbedec9bab3c45d31255532da07b0c01f5374c>`_ .. `[b5d8c] <https://github.com/mitsuba-renderer/mitsuba3/commit/b5d8c5dc8f33b65613ca27819771950ab9909824>`_
+- Enable differentiation of ``to_world`` in ``perspective`` and ``thinlens`` `[ef9f55] <https://github.com/mitsuba-renderer/mitsuba3/commit/ef9f559e0989fd01b43acce90892ba9e0dea255b>`_ .. `[ea513f] <https://github.com/mitsuba-renderer/mitsuba3/commit/ea513f73b65b8776afb75fdc8d40db4b1140345e>`_
+- Add ``BSDF::eval_diffuse_reflectance()`` to most BSDF plugins `[59af88] <https://github.com/mitsuba-renderer/mitsuba3/commit/59af884e6fae3a50074921136329d80462b32413>`_
+- Add ``mi.OptixDenoiser`` class for simple denoising in Python `[13234] <https://github.com/mitsuba-renderer/mitsuba3/commit/1323497f4e675a8004529eef8404cdc541ade7cf>`_ .. `[55293] <https://github.com/mitsuba-renderer/mitsuba3/commit/552931890df648a5416b0d54d15488f6e766797a>`_
+- ``envmap`` plugin can be constructed from ``mi.Bitmap`` object `[9389c8] <https://github.com/mitsuba-renderer/mitsuba3/commit/9389c8d1d16aa7a46d0a54f64eec1d10a1ae1ffd>`_
+
+Other improvements
+^^^^^^^^^^^^^^^^^^
+
+- Major performance improvements in ``cuda_*`` variants with new version of Dr.Jit
+- Deprecated ``samples_per_pass`` parameter `[8ba85] <https://github.com/mitsuba-renderer/mitsuba3/commit/8ba8528abbad6add1f6a97b30b79ce53c4ff37bf>`_
+- Fix rendering progress bar on Windows `[d8db80] <https://github.com/mitsuba-renderer/mitsuba3/commit/d8db806ae286358b31ade67dc714de666b25443f>`_
+- ``obj`` file parsing performance improvements on Windows `[28660f] <https://github.com/mitsuba-renderer/mitsuba3/commit/28660f3ab9db8f1da58cc38d2fd309cff4871e7e>`_
+- Fix ``mi.luminance()`` for monochromatic modes `[61b95] <https://github.com/mitsuba-renderer/mitsuba3/commit/61b9516a742f29e3a5d20e41c50be90d04509539>`_
+- Add bindings for ``PluginManager.create_object()`` `[4ebf70] <https://github.com/mitsuba-renderer/mitsuba3/commit/4ebf700c61e92bb494d605527961882da47a71c0>`_
+- Fix ``SceneParameters.update()`` unnecessary hash computation `[f57e74] <https://github.com/mitsuba-renderer/mitsuba3/commit/f57e7416ac263445e1b74eeaf661361f4ba94855>`_
+- Fix numerical instabilities with ``box`` filter splatting `[2d8976] <https://github.com/mitsuba-renderer/mitsuba3/commit/2d8976266588e9b782f63f689c68648424b4898d>`_
+- Improve ``math::bisect`` algorithm `[7ca09a] <https://github.com/mitsuba-renderer/mitsuba3/commit/7ca09a3ad95cec306c538493fa8450a096560891>`_
+- Fix syntax highlighting in documentation and tutorials `[5aa271] <https://github.com/mitsuba-renderer/mitsuba3/commit/5aa271684424eca5a46f93946536bc7d0c1bc099>`_
+- Fix ``Optimizer.set_learning_rate`` for ``int`` values `[53143d] <https://github.com/mitsuba-renderer/mitsuba3/commit/53143db05739b964b7a489f58dbd1bd4da87533c>`_
+- Various minor improvements to the Python typing stub generation `[b7ef349] <https://github.com/mitsuba-renderer/mitsuba3/commit/f883834a50e3dab694b4fe4ceafdfa1ae3712782>`_ .. `[ad72a53] <https://github.com/mitsuba-renderer/mitsuba3/commit/ad72a5361889bcef1f19b702a28956c1549d26e3>`_
+- Minor improvements to the documentation
+- Various other minor fixes
 
 Mitsuba 3.0.2
 ----------------
