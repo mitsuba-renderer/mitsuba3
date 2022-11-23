@@ -65,6 +65,12 @@ MI_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Propert
     }
 
     m_samples_per_pass = props.get<uint32_t>("samples_per_pass", (uint32_t) -1);
+    if (m_samples_per_pass != (uint32_t) -1) {
+        Log(Warn, "The 'samples_per_pass' is deprecated, as a poor choice of "
+                  "this parameter can have a detrimental effect on performance. "
+                  "Please leave it undefined; Mitsuba will then automatically "
+                  "choose the necessary number of passes.");
+    }
 }
 
 MI_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
