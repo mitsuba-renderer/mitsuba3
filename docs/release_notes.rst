@@ -6,8 +6,8 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 strive to document breaking API changes in the release notes below.
 
 
-Incoming Release
-----------------
+Mitsuba 3.1.0
+-------------
 
 New features
 ^^^^^^^^^^^^
@@ -40,7 +40,7 @@ Other improvements
 - Various other minor fixes
 
 Mitsuba 3.0.2
-----------------
+-------------
 
 *September 13, 2022*
 
