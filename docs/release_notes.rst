@@ -6,6 +6,14 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 strive to document breaking API changes in the release notes below.
 
 
+Mitsuba 3.1.1
+-------------
+
+Other improvements
+^^^^^^^^^^^^^^^^^^
+
+- Fixed maximum limits for OptiX kernel launches `[a8e698] <https://github.com/mitsuba-renderer/mitsuba3/commit/a8e69898eacde51954bbc91b34924448b4f8c954>`_
+
 Mitsuba 3.1.0
 -------------
 
