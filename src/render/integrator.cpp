@@ -200,22 +200,22 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     } else {
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
-               wavefront_size_limit =
-                   dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
+               wavefront_size_limit = 0xffffffffu;
 
         if (wavefront_size > wavefront_size_limit) {
-            spp_per_pass /= (uint32_t) ((wavefront_size + wavefront_size_limit - 1) / wavefront_size_limit);
-            n_passes = spp / spp_per_pass;
+            spp_per_pass /=
+                (uint32_t)((wavefront_size + wavefront_size_limit - 1) /
+                           wavefront_size_limit);
+            n_passes       = spp / spp_per_pass;
             wavefront_size = (size_t) film_size.x() * (size_t) film_size.y() *
                              (size_t) spp_per_pass;
 
             Log(Warn,
                 "The requested rendering task involves %zu Monte Carlo "
-                "samples, which exceeds the upper limit of 2^%zu = %zu for "
-                "this variant. Mitsuba will instead split the rendering task "
-                "%zu smaller passes to avoid exceeding the limits.",
-                wavefront_size, dr::log2i(wavefront_size_limit + 1),
-                wavefront_size_limit, n_passes);
+                "samples, which exceeds the upper limit of 2^32 = 4294967296 "
+                "for this variant. Mitsuba will instead split the rendering "
+                "task into %zu smaller passes to avoid exceeding the limits.",
+                wavefront_size, n_passes);
         }
 
         dr::sync_thread(); // Separate from scene initialization (for timings)
@@ -632,22 +632,21 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
-        size_t wavefront_size_limit =
-            dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
-
+        constexpr size_t wavefront_size_limit = 0xffffffffu;
         if (samples_per_pass > wavefront_size_limit) {
-            spp_per_pass /= (uint32_t) ((samples_per_pass + wavefront_size_limit - 1) / wavefront_size_limit);
+            spp_per_pass /=
+                (uint32_t)((samples_per_pass + wavefront_size_limit - 1) /
+                           wavefront_size_limit);
             n_passes = spp / spp_per_pass;
             samples_per_pass = (size_t) film_size.x() * (size_t) film_size.y() *
                                (size_t) spp_per_pass;
 
             Log(Warn,
                 "The requested rendering task involves %zu Monte Carlo "
-                "samples, which exceeds the upper limit of 2^%zu = %zu for "
-                "this variant. Mitsuba will instead split the rendering task "
-                "%zu smaller passes to avoid exceeding the limits.",
-                samples_per_pass, dr::log2i(wavefront_size_limit + 1),
-                wavefront_size_limit, n_passes);
+                "samples, which exceeds the upper limit of 2^32 = 4294967296 "
+                "for this variant. Mitsuba will instead split the rendering "
+                "task into %zu smaller passes to avoid exceeding the limits.",
+                samples_per_pass, n_passes);
         }
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",

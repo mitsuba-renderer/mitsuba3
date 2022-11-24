@@ -32,7 +32,7 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
 MI_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
-                                                uint32_t wavefront_size) {
+                                               uint32_t wavefront_size) {
     if constexpr (dr::is_array_v<Float>) {
         // Only overwrite when specified
         if (wavefront_size != (uint32_t) -1) {

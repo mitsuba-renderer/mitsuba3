@@ -67,8 +67,8 @@ template <typename Float, typename Spectrum>
 class StratifiedSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
-                    m_samples_per_wavefront, m_dimension_index,
-                    current_sample_index, compute_per_sequence_seed)
+                   m_samples_per_wavefront, m_dimension_index,
+                   current_sample_index, compute_per_sequence_seed)
     MI_IMPORT_TYPES()
 
     StratifiedSampler(const Properties &props) : Base(props) {
