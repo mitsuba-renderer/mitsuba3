@@ -5,14 +5,25 @@
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
+#if PY_VERSION_HEX >= 0x03090000
+    PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
+    PyCodeObject *f_code = PyFrame_GetCode(frame);
+#else
     PyFrameObject *frame = PyThreadState_Get()->frame;
+    PyCodeObject *f_code = frame->f_code;
+#endif
 
     std::string name =
-        py::cast<std::string>(py::handle(frame->f_code->co_name));
+        py::cast<std::string>(py::handle(f_code->co_name));
     std::string filename =
-        py::cast<std::string>(py::handle(frame->f_code->co_filename));
+        py::cast<std::string>(py::handle(f_code->co_filename));
     std::string fmt = "%s: %s";
     int lineno = PyFrame_GetLineNumber(frame);
+
+#if PY_VERSION_HEX >= 0x03090000
+    Py_DECREF(f_code);
+    Py_DECREF(frame);
+#endif
 
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
