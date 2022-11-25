@@ -227,6 +227,24 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
                     return dr::reinterpret_array<UInt32>(a);
                 });
     }
+
+    if constexpr (dr::is_jit_v<Array>) {
+        cls.def_static("registry_get_max_", []() {
+            return jit_registry_get_max(dr::backend_v<Array>, Array::CallSupport::Domain);
+        });
+
+        cls.def_static("registry_get_ptr_", [](uint32_t i) -> py::object {
+            void *ptr = jit_registry_get_ptr(dr::backend_v<Array>, Array::CallSupport::Domain, i);
+            if (ptr) {
+                py::object mitsuba_ext = py::module::import("mitsuba.mitsuba_ext");
+                using Caster = py::object(*)(mitsuba::Object *);
+                Caster cast_object = (Caster) (void *)((py::capsule) mitsuba_ext.attr("cast_object"));
+                return cast_object((mitsuba::Object *) ptr);
+            } else {
+                return py::none();
+            }
+        });
+    }
 }
 
 #define MI_PY_CHECK_ALIAS(Type, Name)                \
