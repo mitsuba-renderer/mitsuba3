@@ -246,21 +246,28 @@ ColorMode variant_to_color_mode() {
 }
 
 struct XMLParseContext {
+    std::string variant;
+    bool parallel;
+
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
-    std::string variant;
-    bool parallel;
+    uint32_t backend = 0;
 
     XMLParseContext(const std::string &variant, bool parallel)
         : variant(variant), parallel(parallel) {
         color_mode = MI_INVOKE_VARIANT(variant, variant_to_color_mode);
+
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+        if (string::starts_with(variant, "cuda_"))
+            backend = (uint32_t) JitBackend::CUDA;
+        else if (string::starts_with(variant, "llvm_"))
+            backend = (uint32_t) JitBackend::LLVM;
+#endif
     }
 
-    bool is_cuda() const { return string::starts_with(variant, "cuda_"); }
-    bool is_llvm() const { return string::starts_with(variant, "llvm_"); }
-    bool is_jit()  const { return is_cuda() || is_llvm(); }
+    bool is_jit()  const { return backend != 0; }
 };
 
 /// Helper function to check if attributes are fully specified
@@ -1166,6 +1173,10 @@ static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string 
     ThreadEnvironment env;
     std::unordered_map<std::string, Task*> task_map;
     instantiate_node(ctx, id, env, task_map, true);
+    #if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+    if (ctx.is_jit() && ctx.parallel)
+        jit_new_scope((JitBackend) ctx.backend);
+    #endif
     return ctx.instances.find(id)->second.object;
 }
 
