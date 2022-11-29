@@ -86,9 +86,8 @@ public:
      *    Disabled by default.
      *
      * \param coalesce
-     *   This parameter is only relevant for JIT variants (it is enabled by
-     *   default only in LLVM mode), where it subtly affects the behavior of
-     *   the performance-critical \ref put() method.
+     *   This parameter is only relevant for JIT variants, where it subtly
+     *   affects the behavior of the performance-critical \ref put() method.
      *
      *   In coalesced mode, \ref put() conservatively bounds the footprint
      *   and traverses it in lockstep across the whole wavefront. This causes
@@ -121,7 +120,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = dr::is_llvm_v<Float>,
+               bool coalesce = dr::is_jit_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -142,7 +141,7 @@ public:
                const ReconstructionFilter *rfilter = nullptr,
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
-               bool coalesce = dr::is_llvm_v<Float>,
+               bool coalesce = dr::is_jit_v<Float>,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
