@@ -259,7 +259,7 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              dr::is_llvm_v<Float> /* coalesce */,
+                              dr::is_jit_v<Float> /* coalesce */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
     }
