@@ -1,5 +1,14 @@
 #pragma once
 
+/* GCC emits lots of warnings about unused 'weight_parameter' fields
+   for parameter-free distributions. Those warnings cannot be disabled
+   with the usual DRJIT_MARK_USED() macro */
+
+#if defined(__GNUC__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunused-value"
+#endif
+
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/util.h>
 #include <drjit/dynamic.h>
@@ -1451,3 +1460,8 @@ protected:
 // =======================================================================
 
 NAMESPACE_END(mitsuba)
+
+#if defined(__GNUC__)
+#  pragma GCC diagnostic pop
+#  pragma GCC diagnostic ignored "-Wunused-value"
+#endif
