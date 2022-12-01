@@ -477,10 +477,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 
         if (s->own_sbt) {
             /* This will decrease the reference count of the shader binding table
-            JIT variable which might trigger the release of the OptiX SBT if no
-            ray tracing calls are pending. */
-            UInt32 handle = UInt32::steal(s->sbt_jit_index);
-            handle = 0;
+               JIT variable which might trigger the release of the OptiX SBT if
+               no ray tracing calls are pending. */
+            (void) UInt32::steal(s->sbt_jit_index);
         }
 
         delete s;
@@ -497,10 +496,9 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
             OptixConfig &config = optix_configs[j];
             if (config.pipeline_jit_index) {
                 /* Decrease the reference count of the pipeline JIT variable.
-                This will trigger the release of the OptiX pipeline data
-                structure if no ray tracing calls are pending. */
-                UInt32 handle = UInt32::steal(config.pipeline_jit_index);
-                handle = 0;
+                   This will trigger the release of the OptiX pipeline data
+                   structure if no ray tracing calls are pending. */
+                (void) UInt32::steal(config.pipeline_jit_index);
 
                 for (size_t i = 0; i < 2 * CUSTOM_OPTIX_SHAPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);
