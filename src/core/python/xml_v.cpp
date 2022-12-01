@@ -98,11 +98,6 @@ MI_PY_EXPORT(xml) {
 
             py::object out = single_object_or_list(objects);
 
-            if constexpr (dr::is_jit_v<Float>) {
-                dr::eval();
-                dr::sync_thread();
-            }
-
             return out;
         },
         "dict"_a,
