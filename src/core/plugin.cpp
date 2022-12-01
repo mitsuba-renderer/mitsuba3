@@ -196,6 +196,13 @@ ref<Object> PluginManager::create_object(const Properties &props,
     Assert(plugin_class != nullptr);
     ref<Object> object = plugin_class->construct(props);
 
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    // Ensures queued side effects are consistently compiled into cacheable kernels
+    if (string::starts_with(variant, "cuda_") ||
+        string::starts_with(variant, "llvm_"))
+        dr::eval();
+#endif
+
     if (!object->class_()->derives_from(class_)) {
         const Class *oc = object->class_();
         if (oc->parent())

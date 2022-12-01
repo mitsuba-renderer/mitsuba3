@@ -1103,14 +1103,6 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
-            #if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
-                if (ctx.is_jit()) {
-                    // Ensures dr::scatter occurring in object constructors are flushed
-                    dr::eval();
-                    if (ctx.parallel)
-                        dr::sync_thread();
-                }
-            #endif
         } catch (const std::exception &e) {
             Throw("Error while loading \"%s\" (near %s): could not instantiate "
                   "%s plugin of type \"%s\": %s",
