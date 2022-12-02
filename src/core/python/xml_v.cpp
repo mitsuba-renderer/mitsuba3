@@ -53,9 +53,7 @@ MI_PY_EXPORT(xml) {
             std::vector<ref<Object>> objects;
             {
                 py::gil_scoped_release release;
-
-                objects = xml::load_file(name, GET_VARIANT(), param, update_scene,
-                                         parallel);
+                objects = xml::load_file(name, GET_VARIANT(), param, update_scene, parallel);
             }
 
             return single_object_or_list(objects);
@@ -79,9 +77,7 @@ MI_PY_EXPORT(xml) {
             std::vector<ref<Object>> objects;
             {
                 py::gil_scoped_release release;
-
-                objects =
-                    xml::load_string(name, GET_VARIANT(), param, parallel);
+                objects = xml::load_string(name, GET_VARIANT(), param, parallel);
             }
 
             return single_object_or_list(objects);
