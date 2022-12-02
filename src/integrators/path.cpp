@@ -186,9 +186,10 @@ public:
             // Perform emitter sampling?
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
-            DirectionSample3f ds;
-            Spectrum em_weight;
-            Vector3f wo;
+            DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+            Spectrum em_weight = dr::zeros<Spectrum>();
+            Vector3f wo = dr::zeros<Vector3f>();
+
             if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
