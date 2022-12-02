@@ -225,7 +225,7 @@ struct XMLObject {
     size_t location = 0;
     ref<Object> object;
     std::mutex mutex;
-    uint32_t scope;
+    uint32_t scope = 0;
 };
 
 enum class ColorMode {
@@ -580,7 +580,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     inst.offset = src.offset;
                     inst.src_id = src.id;
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-                    // Allocate a scope determinsitically per scene object
+                    // Deterministically assign a scope to each scene object
                     if (ctx.backend && ctx.parallel) {
                         jit_new_scope((JitBackend) ctx.backend);
                         inst.scope = jit_scope((JitBackend) ctx.backend);
@@ -997,7 +997,8 @@ struct ScopedSetJITScope {
 
     ~ScopedSetJITScope() {
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        jit_set_scope((JitBackend) backend, backup);
+        if (backend)
+            jit_set_scope((JitBackend) backend, backup);
 #endif
     }
 
@@ -1292,9 +1293,9 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             return PluginManager::instance()->create_object(props, class_);
         } else {
             /* Pre-integrate against the CIE matching curves. In order to match
-            the behavior of spectral modes, this function should instead
-            pre-integrate against the product of the CIE curves and the CIE D65
-            curve in the case of reflectance values. */
+               the behavior of spectral modes, this function should instead
+               pre-integrate against the product of the CIE curves and the CIE
+               D65 curve in the case of reflectance values. */
             Color3f color = spectrum_list_to_srgb(
                 wavelengths, values,
                 /* bounded */ !(within_emitter || is_unbounded),
@@ -1398,7 +1399,7 @@ std::vector<ref<Object>> load_string(const std::string &string,
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
         Properties props;
-        size_t arg_counter; // Unused
+        size_t arg_counter = 0; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
 
