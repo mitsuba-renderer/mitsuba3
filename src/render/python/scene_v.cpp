@@ -80,36 +80,51 @@ MI_PY_EXPORT(Scene) {
              D(Scene, sample_emitter_ray))
         // Accessors
         .def_method(Scene, bbox)
-        .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
+        .def("sensors",
+             [](const Scene &scene) {
+                 py::list result;
+                 for (const Sensor *s : scene.sensors()) {
+                     const ProjectiveCamera *p =
+                         dynamic_cast<const ProjectiveCamera *>(s);
+                     if (p)
+                         result.append(py::cast(p));
+                     else
+                         result.append(py::cast(s));
+                 }
+                 return result;
+             },
+             D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def("emitters_dr", &Scene::emitters_dr, D(Scene, emitters_dr))
         .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def_method(Scene, environment)
-        .def("shapes", [](const Scene &scene) {
-            py::list result;
-            for (const Shape *s : scene.shapes()) {
-                const Mesh *m = dynamic_cast<const Mesh *>(s);
-                if (m)
-                    result.append(py::cast(m));
-                else
-                    result.append(py::cast(s));
-            }
-            return result;
-        }, D(Scene, shapes))
+        .def("shapes",
+             [](const Scene &scene) {
+                 py::list result;
+                 for (const Shape *s : scene.shapes()) {
+                     const Mesh *m = dynamic_cast<const Mesh *>(s);
+                     if (m)
+                         result.append(py::cast(m));
+                     else
+                         result.append(py::cast(s));
+                 }
+                 return result;
+             },
+             D(Scene, shapes))
         .def("integrator",
-            [](Scene &scene) -> py::object {
-                Integrator *o = scene.integrator();
-                if (!o)
-                    return py::none();
-                if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
-                    return py::cast(tmp);
-                if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
-                    return py::cast(tmp);
-                if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp)
-                    return py::cast(tmp);
-                return py::cast(o);
-            },
-            D(Scene, integrator))
+             [](Scene &scene) -> py::object {
+                 Integrator *o = scene.integrator();
+                 if (!o)
+                     return py::none();
+                 if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
+                     return py::cast(tmp);
+                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
+                     return py::cast(tmp);
+                 if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp)
+                     return py::cast(tmp);
+                 return py::cast(o);
+             },
+             D(Scene, integrator))
         .def_method(Scene, shapes_grad_enabled)
         .def("__repr__", &Scene::to_string);
 }
