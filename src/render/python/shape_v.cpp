@@ -93,7 +93,40 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
                 return shape->ray_test(ray, active);
             },
-            "ray"_a, "active"_a = true, D(Shape, ray_test));
+            "ray"_a, "active"_a = true, D(Shape, ray_test))
+       .def("sample_position",
+            [](Ptr shape, Float time, const Point2f &sample, Mask active) {
+                return shape->sample_position(time, sample, active);
+            },
+            "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
+       .def("pdf_position",
+            [](Ptr shape, const PositionSample3f &ps, Mask active) {
+                return shape->pdf_position(ps, active);
+            },
+            "ps"_a, "active"_a = true, D(Shape, pdf_position))
+       .def("sample_direction",
+            [](Ptr shape, const Interaction3f &it, const Point2f &sample,
+               Mask active) {
+                return shape->sample_direction(it, sample, active);
+            },
+            "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
+       .def("pdf_direction",
+            [](Ptr shape, const Interaction3f &it, const DirectionSample3f &ds,
+               Mask active) {
+                return shape->pdf_direction(it, ds, active);
+            },
+            "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
+       .def("eval_parameterization",
+            [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
+                return shape->eval_parameterization(uv, ray_flags, active);
+            },
+            "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+            D(Shape, eval_parameterization))
+       .def("surface_area",
+            [](Ptr shape) {
+                return shape->surface_area();
+            },
+            D(Shape, surface_area));
 
     if constexpr (dr::is_array_v<Ptr>)
         bind_drjit_ptr_array(cls);
@@ -103,32 +136,17 @@ MI_PY_EXPORT(Shape) {
     MI_PY_IMPORT_TYPES(Shape, Mesh)
 
     auto shape = MI_PY_CLASS(Shape, Object)
-        .def("sample_position", &Shape::sample_position,
-            "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
-        .def("pdf_position", &Shape::pdf_position,
-            "ps"_a, "active"_a = true, D(Shape, pdf_position))
-        .def("sample_direction", &Shape::sample_direction,
-            "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
-        .def("pdf_direction", &Shape::pdf_direction,
-            "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
-        .def("eval_parameterization", &Shape::eval_parameterization,
-             "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
-             D(Shape, eval_parameterization))
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<ScalarUInt32>(
             &Shape::bbox, py::const_), D(Shape, bbox, 2), "index"_a)
         .def("bbox", py::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
             &Shape::bbox, py::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
-        .def_method(Shape, surface_area)
         .def_method(Shape, id)
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
-        .def_method(Shape, effective_primitive_count)
-        .def("eval_parameterization", &Shape::eval_parameterization,
-             "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
-             D(Shape, eval_parameterization));
+        .def_method(Shape, effective_primitive_count);
 
     bind_shape_generic<Shape *>(shape);
 
