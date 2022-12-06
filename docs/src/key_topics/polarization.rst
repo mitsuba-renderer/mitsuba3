@@ -522,7 +522,7 @@ Modern formulations of the Fresnel equations are based on electromagnetic theory
     <video style="max-width:48%;" loop autoplay muted
         src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/p_wave.mp4"></video>
 
-To describe these fields, we have to make some choices regarding coordinate systems. In particular: in which directions should the electric fields be pointing before and after interacting with the interface? Given the electric field direction :math:`E` and the propagation direction of the beam :math:`\mathbf{z}`, the orientation of the magnetic field :math:`H` is always clearly defined by a right-handed coordinate system :math:`E \times B = \alpha \cdot \mathbf{z}` for some constant :math:`\alpha` (Poynting's theorem). The orientation of the electric field itself is however somewhat arbitrary. Incident and reflected field could for instance point in the same or opposite directions of each other.
+To describe these fields, we have to make some choices regarding coordinate systems. In particular: in which directions should the electric fields be pointing before and after interacting with the interface? Given the electric field direction :math:`E` and the propagation direction of the beam :math:`\mathbf{z}`, the orientation of the magnetic field :math:`H` is always clearly defined by a right-handed coordinate system :math:`E \times H = \alpha \cdot \mathbf{z}` for some constant :math:`\alpha` (Poynting's theorem). The orientation of the electric field itself is however somewhat arbitrary. Incident and reflected field could for instance point in the same or opposite directions of each other.
 
 .. warning:: **Electric field conventions**
 
