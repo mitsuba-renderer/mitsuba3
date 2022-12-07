@@ -373,7 +373,7 @@ Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
     Color<Float, 3> res = { dr::mean(XYZ.x() * value),
                             dr::mean(XYZ.y() * value),
                             dr::mean(XYZ.z() * value) };
-    return res * MI_CIE_Y_NORMALIZATION;
+    return res * (dr::scalar_t<Float>) MI_CIE_Y_NORMALIZATION;
 }
 
 /**
@@ -388,7 +388,7 @@ Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
     Color<Float, 3> res = { dr::mean(rgb.x() * value),
                             dr::mean(rgb.y() * value),
                             dr::mean(rgb.z() * value) };
-    return res * MI_CIE_Y_NORMALIZATION;
+    return res * (dr::scalar_t<Float>) MI_CIE_Y_NORMALIZATION;
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
