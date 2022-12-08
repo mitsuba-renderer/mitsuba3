@@ -240,7 +240,7 @@ public:
 
             if constexpr (dr::is_jit_v<Float>) {
                 // Enforce horizontal continuity
-                UInt32 row_index = dr::arange<UInt32>(res.y());
+                UInt32 row_index = dr::arange<UInt32>(res.y()) * res.x();
                 Vector4f v0 = dr::gather<Vector4f>(m_data.array(), row_index);
                 Vector4f v1 = dr::gather<Vector4f>(m_data.array(), row_index + (res.x() - 1));
                 Vector4f v01 = .5f * (v0 + v1);
