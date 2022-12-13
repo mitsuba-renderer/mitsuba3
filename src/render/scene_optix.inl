@@ -218,11 +218,16 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             config.program_groups
         ));
 
+        // Create this variable in the JIT scope 0 to ensure a consistent
+        // ordering in the generated PTX kernel (e.g. for other scenes).
+        uint32_t scope = jit_scope(JitBackend::CUDA);
+        jit_set_scope(JitBackend::CUDA, 0);
         config.pipeline_jit_index = jit_optix_configure_pipeline(
             &config.pipeline_compile_options,
             config.module,
             config.program_groups, PROGRAM_GROUP_COUNT
         );
+        jit_set_scope(JitBackend::CUDA, scope);
     }
 
     return config_index;
