@@ -10,6 +10,7 @@ add_plugin(disk        disk.cpp)
 add_plugin(rectangle   rectangle.cpp)
 add_plugin(sphere      sphere.cpp)
 add_plugin(cube        cube.cpp)
+add_plugin(sdfgrid     sdfgrid.cpp)
 
 add_plugin(shapegroup  shapegroup.cpp)
 add_plugin(instance    instance.cpp)
