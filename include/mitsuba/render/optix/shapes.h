@@ -7,6 +7,7 @@
 #include "disk.cuh"
 #include "mesh.cuh"
 #include "rectangle.cuh"
+#include "sdfgrid.cuh"
 #include "sphere.cuh"
 #include "bsplinecurve.cuh"
 #include "linearcurve.cuh"
@@ -24,10 +25,23 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Mitsuba shapes types supported by OptiX (meshes not included)
 enum OptixShapeType {
-    BSplineCurve, LinearCurve, Disk, Rectangle, Sphere, Cylinder, NumOptixShapeTypes
+    BSplineCurve,
+    LinearCurve,
+    Disk,
+    Rectangle,
+    Sphere,
+    Cylinder,
+    SDFGrid,
+    NumOptixShapeTypes
 };
 static std::string OPTIX_SHAPE_TYPE_NAMES[NumOptixShapeTypes] = {
-    "BSplineCurve", "LinearCurve", "Disk", "Rectangle", "Sphere", "Cylinder"
+    "BSplineCurve",
+    "LinearCurve", 
+    "Disk",  
+    "Rectangle",
+    "Sphere",
+    "Cylinder",
+    "SDFGrid"
 };
 static std::unordered_map<std::string, size_t> OPTIX_SHAPE_TYPE_INDEX = [](){
     std::unordered_map<std::string, size_t> out;
@@ -39,10 +53,12 @@ static std::unordered_map<std::string, size_t> OPTIX_SHAPE_TYPE_INDEX = [](){
 
 /// Defines the ordering of the shapes for OptiX (hitgroups, SBT)
 static OptixShapeType OPTIX_SHAPE_ORDER[] = {
-    BSplineCurve, LinearCurve, Disk, Rectangle, Sphere, Cylinder
+    BSplineCurve, LinearCurve, Disk, Rectangle, Sphere, Cylinder, SDFGrid
 };
 
 static constexpr size_t OPTIX_SHAPE_TYPE_COUNT = std::size(OPTIX_SHAPE_ORDER);
+
+static_assert(OPTIX_SHAPE_TYPE_COUNT == NumOptixShapeTypes);
 
 struct OptixShape {
     std::string name; /// Lowercase version of OPTIX_SHAPE_TYPE_NAMES

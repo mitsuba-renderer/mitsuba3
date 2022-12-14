@@ -2,6 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/sdf.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
@@ -103,8 +104,11 @@ MI_PY_EXPORT(Scene) {
                  py::list result;
                  for (const Shape *s : scene.shapes()) {
                      const Mesh *m = dynamic_cast<const Mesh *>(s);
+                     const SDF *sdf = dynamic_cast<const SDF *>(s);
                      if (m)
                          result.append(py::cast(m));
+                     else if (sdf)
+                         result.append(py::cast(sdf));
                      else
                          result.append(py::cast(s));
                  }
