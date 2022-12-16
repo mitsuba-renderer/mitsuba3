@@ -671,14 +671,6 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
             OptixSceneState &s = *(OptixSceneState *) m_accel;
             const OptixConfig &config = optix_configs[s.config_index];
 
-            // Override optix configuration in drjit-core.
-            // TODO This could be problematic when raytracing calls on other scenes are still pending.
-            jit_optix_configure(
-                &config.pipeline_compile_options,
-                &s.sbt,
-                config.program_groups, ProgramGroupCount
-            );
-
             UInt32 ray_mask(255),
                 ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                             OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),

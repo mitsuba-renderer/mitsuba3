@@ -10,48 +10,6 @@
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 
-// TODO: rewrite this to be more general and move to Dr.Jit
-NAMESPACE_BEGIN(drjit)
-template <typename T>
-std::tuple<T, T, T> meshgrid(const T &x, const T &y, const T &z,
-                             bool index_xy = true) {
-    static_assert(array_depth_v<T> == 1 && is_dynamic_array_v<T>,
-                  "meshgrid(): requires three 1D dynamic DrJit arrays as input!");
-
-    uint32_t lx = (uint32_t) x.size(),
-             ly = (uint32_t) y.size(),
-             lz = (uint32_t) z.size();
-
-    if (lx == 1 || ly == 1 || lz == 1) {
-        // TODO: not sure if this case is correct
-        return { x, y, z };
-    } else {
-        using UInt32 = uint32_array_t<T>;
-        size_t total = lx * ly * lz;
-        UInt32 index = arange<UInt32>(total);
-
-        T inputs[3];
-        inputs[0] = index_xy ? y : x;
-        inputs[1] = index_xy ? x : y;
-        inputs[2] = z;
-
-        // TODO: possible to make this faster with `idivmod`?
-        T result[3];
-        for (size_t k = 0; k < 3; ++k) {
-            total /= inputs[k].size();
-            UInt32 index_v = index / total;
-            index -= index_v * total;
-            result[k] = gather<T>(inputs[k], index_v);
-        }
-
-        if (index_xy)
-            return { result[1], result[0], result[2] };
-        else
-            return { result[0], result[1], result[2] };
-    }
-}
-NAMESPACE_END(drjit)
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
