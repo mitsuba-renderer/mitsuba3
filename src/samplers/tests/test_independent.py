@@ -11,7 +11,6 @@ def test01_construct(variant_scalar_rgb):
     })
     assert sampler is not None
     assert sampler.sample_count() == 58
-    return sampler
 
 
 def test02_sample_vs_pcg32(variant_scalar_rgb):
