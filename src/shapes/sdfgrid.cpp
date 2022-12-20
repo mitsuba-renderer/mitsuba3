@@ -10,7 +10,6 @@
 #include <mitsuba/render/shape.h>
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
-#include <iostream>
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/sdfgrid.cuh"
@@ -323,7 +322,7 @@ public:
 
     void* build_bboxes() {
         auto shape  = m_grid_texture.tensor().shape();
-        float shape_rcp[3] = { 1.f / (shape[2] - 1), 1.f / (shape[1] - 1), 1.f / (shape[0] - 1) };
+        float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1), 1.f / (shape[2] - 1) };
         size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
 
         size_t voxel_index = 0;
@@ -333,16 +332,6 @@ public:
                 for (size_t x = 0; x < shape[2] - 1; ++x) {
                     ScalarBoundingBox3f bbox;
                     ScalarTransform4f to_world = m_to_world.scalar();
-
-                    float off = 0.2f;
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 0) * shape_rcp[2] + off, (y + 0) * shape_rcp[1] + off, (z + 0) * shape_rcp[0] + off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 1) * shape_rcp[2] - off, (y + 0) * shape_rcp[1] + off, (z + 0) * shape_rcp[0] + off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 0) * shape_rcp[2] + off, (y + 1) * shape_rcp[1] - off, (z + 0) * shape_rcp[0] + off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 1) * shape_rcp[2] - off, (y + 1) * shape_rcp[1] - off, (z + 0) * shape_rcp[0] + off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 1) * shape_rcp[2] + off, (y + 0) * shape_rcp[1] + off, (z + 1) * shape_rcp[0] - off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 1) * shape_rcp[2] - off, (y + 0) * shape_rcp[1] + off, (z + 1) * shape_rcp[0] - off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 0) * shape_rcp[2] + off, (y + 1) * shape_rcp[1] - off, (z + 1) * shape_rcp[0] - off)));
-                    //bbox.expand(to_world.transform_affine(ScalarPoint3f( (x + 1) * shape_rcp[2] - off, (y + 1) * shape_rcp[1] - off, (z + 1) * shape_rcp[0] - off)));
 
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
                         (x + 0) * shape_rcp[2], (y + 0) * shape_rcp[1], (z + 0) * shape_rcp[0])));
@@ -361,7 +350,7 @@ public:
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
                         (x + 1) * shape_rcp[2], (y + 1) * shape_rcp[1], (z + 1) * shape_rcp[0])));
 
-                    data[voxel_index] = optix::BoundingBox3f(bbox);
+                    data[voxel_index++] = optix::BoundingBox3f(bbox);
                 }
             }
         }
@@ -380,9 +369,9 @@ public:
             if (m_optix_bboxes)
                 jit_free(m_optix_bboxes);
 
-            size_t resolution[3] = { m_grid_texture.tensor().shape()[0],
+            size_t resolution[3] = { m_grid_texture.tensor().shape()[2],
                                      m_grid_texture.tensor().shape()[1],
-                                     m_grid_texture.tensor().shape()[2] };
+                                     m_grid_texture.tensor().shape()[0] };
 
             m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
             m_optix_bboxes = build_bboxes();
@@ -403,12 +392,6 @@ public:
         size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
 
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-
-        void **bbox_ptrs = new void *[voxel_count]();
-        for (size_t i = 0; i < voxel_count; ++i) {
-            bbox_ptrs[i] = (unsigned long long *) m_optix_bboxes +
-                           i * sizeof(optix::BoundingBox3f);
-        }
 
         build_input.customPrimitiveArray.aabbBuffers = &m_optix_bboxes;
         build_input.customPrimitiveArray.numPrimitives = voxel_count;
