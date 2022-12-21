@@ -4,7 +4,7 @@
 #include <mitsuba/render/optix/common.h>
 
 struct OptixSDFGridData {
-    optix::BoundingBox3f* bboxes; // TODO: Can this computed on-the-fly ?
+    optix::BoundingBox3f* bboxes; // TODO: Compute this on-the-fly
     size_t res_x;
     size_t res_y;
     size_t res_z;
@@ -13,7 +13,6 @@ struct OptixSDFGridData {
 };
 
 #ifdef __CUDACC__
-
 
 __device__ unsigned int vec_to_index(const Vector3u &vec,
                                      const OptixSDFGridData &sdf) {

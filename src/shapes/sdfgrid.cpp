@@ -24,7 +24,16 @@ NAMESPACE_BEGIN(mitsuba)
 SDF Grid (:monosp:`sdfgrid`)
 -------------------------------------------------
 
-Grid position [0, 0, 0] x [1, 1, 1]
+Documentation notes:
+ * Grid position [0, 0, 0] x [1, 1, 1]
+ * Reminder that tensors use [Z, Y, X, C] indexing
+ * Does not emit UVs for texturing
+ * Cannot be used for area emitters
+
+ Temorary issues:
+     * No props to initialize a grid
+     * Rotations not allowed in `to_world`
+     * Embree does not work
  */
 
 template <typename Float, typename Spectrum>
@@ -36,8 +45,8 @@ public:
 
     using typename Base::ScalarSize;
 
-    // Good (props eventually)
     SDFGrid(const Properties &props) : Base(props) {
+        // TODO: Allow intitial grid in props
         float grid_data[8] = { -0.1f, 0.1f, 0.1f, 0.1f, 0.9f, 0.9f, 0.9f, 0.9f };
         size_t shape[4] = {2, 2, 2, 1};
         TensorXf grid = TensorXf(grid_data, 4, shape);
@@ -52,21 +61,18 @@ public:
 #endif
     }
 
-    // Good (check for rotation)
     void update() {
-        // TODO: Check for rotation !
+        // TODO: Check for rotation - rotations are not allowed!
         m_to_object = m_to_world.value().inverse();
         mark_dirty();
    }
 
-    // Good
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
         callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("grid", m_grid_texture.tensor(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
-    // Good
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")  || string::contains(keys, "grid")) {
             // Ensure previous ray-tracing operation are fully evaluated before
@@ -84,8 +90,6 @@ public:
         Base::parameters_changed();
     }
 
-
-    // Good
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
         ScalarTransform4f to_world = m_to_world.scalar();
@@ -154,23 +158,6 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         (void) ray_;
-        //Transform<Point<FloatP, 4>> to_object;
-        //if constexpr (!dr::is_jit_v<FloatP>)
-        //    to_object = m_to_object.scalar();
-        //else
-        //    to_object = m_to_object.value();
-
-        //Ray3fP ray = to_object.transform_affine(ray_);
-        //FloatP t = -ray.o.z() / ray.d.z();
-        //Point<FloatP, 3> local = ray(t);
-
-        //// Is intersection within ray segment and disk?
-        //active = active && t >= 0.f && t <= ray.maxt
-        //                && local.x() * local.x() + local.y() * local.y() <= 1.f;
-
-        //return { dr::select(active, t, dr::Infinity<FloatP>),
-        //         Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
-
         // TODO: embree || differentiable
         return { dr::select(active, 0, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(0, 0), ((uint32_t) -1), 0 };
@@ -179,31 +166,15 @@ public:
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
                                      dr::mask_t<FloatP> active) const {
-        //MI_MASK_ARGUMENT(active);
+        MI_MASK_ARGUMENT(active);
         (void) ray_;
-
-        //Transform<Point<FloatP, 4>> to_object;
-        //if constexpr (!dr::is_jit_v<FloatP>)
-        //    to_object = m_to_object.scalar();
-        //else
-        //    to_object = m_to_object.value();
-
-        //Ray3fP ray = to_object.transform_affine(ray_);
-        //FloatP t   = -ray.o.z() / ray.d.z();
-        //Point<FloatP, 3> local = ray(t);
-
-        //// Is intersection within ray segment and rectangle?
-        //return active && t >= 0.f && t <= ray.maxt
-        //              && local.x() * local.x() + local.y() * local.y() <= 1.f;
-
         // TODO: embree || differentiable
         return active;
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    // Good
-    Normal3f compute_normal(const Point3f& point) const {
+    Normal3f normal(const Point3f& point) const {
         // FALCÃO , P., 2008. Implicit function to distance function.
         // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
 
@@ -217,7 +188,7 @@ public:
             using Array1f = dr::Array<Float, 1>;
             Array1f out;
             Point3f offset_p = p * (1 - inv_shape) + (inv_shape / 2.f);
-            m_grid_texture.eval_nonaccel(offset_p, out.data());
+            m_grid_texture.eval(offset_p, out.data());
             return out[0];
         };
 
@@ -244,8 +215,9 @@ public:
                                                      uint32_t ray_flags,
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
+        // TODO: support for RayFlags::DetachShape
         MI_MASK_ARGUMENT(active);
-        //constexpr bool IsDiff = dr::is_diff_v<Float>;
+        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
@@ -253,62 +225,65 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-        //bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        //bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
-        //Transform4f to_world = m_to_world.value();
-        //Transform4f to_object = m_to_object.value();
-        //dr::suspend_grad<Float> scope(detach_shape, to_world, to_object);
-        //Point2f prim_uv = pi.prim_uv;
-        //if constexpr (IsDiff) {
-        //    if (follow_shape) {
-        //        /* FollowShape glues the interaction point with the shape.
-        //           Therefore, to also account for a possible differential motion
-        //           of the shape, we first compute a detached intersection point
-        //           in local space and transform it back in world space to get a
-        //           point rigidly attached to the shape's motion, including
-        //           translation, scaling and rotation. */
-        //        Point3f local = to_object.transform_affine(ray(pi.t));
-        //        /* With FollowShape the local position should always be static as
-        //           the intersection point follows any motion of the sphere. */
-        //        local = dr::detach(local);
-        //        si.p = to_world.transform_affine(local);
-        //        si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-        //        prim_uv = dr::head<2>(local);
-        //    } else {
-        //        /* To ensure that the differential interaction point stays along
-        //           the traced ray, we first recompute the intersection distance
-        //           in a differentiable way (w.r.t. to the disk parameters) and
-        //           then compute the corresponding point along the ray. */
-        //        PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
-        //        si.t = dr::replace_grad(pi.t, pi_d.t);
-        //        si.p = ray(si.t);
-        //        prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
-        //    }
-        //} else {
+        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        // TODO: Need reprojection?
-        si.t = pi.t;
-        si.p = ray(pi.t);
+        Transform4f to_world = m_to_world.value();
+        Transform4f to_object = m_to_object.value();
 
-        //}
+        if constexpr (IsDiff) {
+            if (follow_shape) {
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
+                Point3f local = to_object.transform_affine(ray(pi.t));
+                local = dr::detach(local);
+
+                /* With FollowShape the local position should always be static as
+                   the intersection point follows any motion of the sphere. */
+                auto shape = m_grid_texture.tensor().shape();
+                Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+                using Array1f = dr::Array<Float, 1>;
+                Array1f out;
+                Point3f offset_p = local * (1 - inv_shape) + (inv_shape / 2.f);
+
+                m_grid_texture.eval(offset_p, out.data());
+                Float sdf_value = out[0];
+                si.t = dr::replace_grad(pi.t, sdf_value); // TODO: needs projection along ray direction ?
+
+                // Use local ray to capture gradients of `to_world`
+                Ray3f ray_local = to_object.transform_affine(ray);
+                ray_local = dr::detach(ray_local);
+                si.p = to_world.transform_affine(ray_local(si.t));
+            } else {
+                // TODO: Need ray_intersect_preliminary_impl
+                // it doesn't work otherwise
+                si.t = pi.t;
+                si.p = ray(si.t);
+            }
+        } else {
+            // TODO: Can/need a reprojection?
+            si.t = pi.t;
+            si.p = ray(si.t);
+        }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV))) {
-            si.uv = Point2f(0.f, 0.f);
-            si.dp_du = Vector3f(0.f);
-            si.dp_dv = Vector3f(0.f);
-        }
-
-        si.n = compute_normal(m_to_object.value().transform_affine(si.p));
+        // TODO: check if we're not "double-counting" `to_world`'s gradient
+        si.n = normal(m_to_object.value().transform_affine(si.p));
         si.sh_frame.n = si.n;
 
+        si.uv = Point2f(0.f, 0.f);
+        si.dp_du = Vector3f(0.f);
+        si.dp_dv = Vector3f(0.f);
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+
         si.shape    = this;
         si.instance = nullptr;
 
-        // TODO: boundary test ?
+        // TODO: boundary_test
 
         return si;
     }
@@ -321,6 +296,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void* build_bboxes() {
+        // TODO: this can computed on-the-fly in the intersection shader, need to store the voxel index instead
         auto shape  = m_grid_texture.tensor().shape();
         float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1), 1.f / (shape[2] - 1) };
         size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
@@ -388,6 +364,7 @@ public:
     }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
+        //TODO: Only submit voxels with guaranteed surface in them
         auto shape = m_grid_texture.tensor().shape();
         size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
 
@@ -419,6 +396,7 @@ private:
 #if defined(MI_ENABLE_CUDA)
     void* m_optix_bboxes;
 #endif
+    // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
 };
 
