@@ -50,8 +50,7 @@ public:
         float grid_data[8] = { -0.1f, 0.1f, 0.1f, 0.1f, 0.9f, 0.9f, 0.9f, 0.9f };
         size_t shape[4] = {2, 2, 2, 1};
         TensorXf grid = TensorXf(grid_data, 4, shape);
-        m_grid_texture = Texture3f(grid, true, false, dr::FilterMode::Linear,
-                                   dr::WrapMode::Clamp);
+        m_grid_texture = Texture3f(grid);
         update();
         initialize();
     }
@@ -394,7 +393,7 @@ private:
     };
 
 #if defined(MI_ENABLE_CUDA)
-    void* m_optix_bboxes;
+    void* m_optix_bboxes = nullptr;
 #endif
     // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
