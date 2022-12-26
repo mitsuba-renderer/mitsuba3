@@ -4,7 +4,6 @@
 #include <mitsuba/render/optix/common.h>
 
 struct OptixSDFGridData {
-    optix::BoundingBox3f* bboxes; // TODO: Compute this on-the-fly
     size_t res_x;
     size_t res_y;
     size_t res_z;
@@ -19,7 +18,7 @@ __device__ unsigned int vec_to_index(const Vector3u &vec,
     return vec[2] * sdf.res_y * sdf.res_x + vec[1] * sdf.res_x + vec[0];
 }
 
-__device__ Vector3f index_to_vec(unsigned int index,
+__device__ Vector3u index_to_vec(unsigned int index,
                                  const OptixSDFGridData &sdf) {
     size_t x_len = sdf.res_x - 1;
     size_t y_len = sdf.res_y - 1;
@@ -85,29 +84,6 @@ __device__ bool intersect_aabb(const Ray3f &ray,
     }
 
     return true;
-}
-
-__device__ void transform_bbox(BoundingBox3f &bbox,
-                               const optix::Transform4f &transform) {
-    Vector3f min = {
-        bbox.min[0],
-        bbox.min[1],
-        bbox.min[2],
-    };
-    Vector3f max = {
-        bbox.max[0],
-        bbox.max[1],
-        bbox.max[2],
-    };
-    min = transform.transform_point(min);
-    max = transform.transform_point(max);
-
-    bbox.min[0] = min[0];
-    bbox.min[1] = min[1];
-    bbox.min[2] = min[2];
-    bbox.max[0] = max[0];
-    bbox.max[1] = max[1];
-    bbox.max[2] = max[2];
 }
 
 __device__ bool sdf_solve_cubic(float t_beg, float t_end, float c3, float c2,
@@ -201,8 +177,19 @@ extern "C" __global__ void __intersection__sdfgrid() {
     Ray3f ray = get_ray();
     ray = sdf.to_object.transform_ray(ray); // object-space
 
-    BoundingBox3f bbox_local = sdf.bboxes[prim_index];
-    transform_bbox(bbox_local, sdf.to_object);
+    Vector3f bbox_min = index_to_vec(prim_index, sdf);
+    Vector3f bbox_max = bbox_min + Vector3f(1.f, 1.f, 1.f);
+    Vector3f grid_resolution = 1.f / Vector3f(sdf.res_x - 1, sdf.res_y - 1 , sdf.res_z - 1);
+    bbox_min *= grid_resolution;
+    bbox_max *= grid_resolution;
+
+    BoundingBox3f bbox_local;
+    bbox_local.min[0] = bbox_min[0];
+    bbox_local.min[1] = bbox_min[1];
+    bbox_local.min[2] = bbox_min[2];
+    bbox_local.max[0] = bbox_max[0];
+    bbox_local.max[1] = bbox_max[1];
+    bbox_local.max[2] = bbox_max[2];
 
     float t_beg = 0;
     float t_end = 0;
@@ -213,7 +200,6 @@ extern "C" __global__ void __intersection__sdfgrid() {
         return;
     }
 
-    Vector3u tmp = index_to_vec(prim_index, sdf);
     optix::Transform4f to_voxel;
     to_voxel.matrix[0][0] = (float) (sdf.res_x - 1);
     to_voxel.matrix[0][1] = 0.f;
@@ -230,9 +216,10 @@ extern "C" __global__ void __intersection__sdfgrid() {
     to_voxel.matrix[2][2] = (float) (sdf.res_z - 1);
     to_voxel.matrix[2][3] = 0.f;
 
-    to_voxel.matrix[3][0] = -1.f * ((float) tmp.x()); 
-    to_voxel.matrix[3][1] = -1.f * ((float) tmp.y());
-    to_voxel.matrix[3][2] = -1.f * ((float) tmp.z());
+    Vector3u voxel_position = index_to_vec(prim_index, sdf);
+    to_voxel.matrix[3][0] = -1.f * ((float) voxel_position.x()); 
+    to_voxel.matrix[3][1] = -1.f * ((float) voxel_position.y());
+    to_voxel.matrix[3][2] = -1.f * ((float) voxel_position.z());
     to_voxel.matrix[3][3] = 1.f;
 
     ray = to_voxel.transform_ray(ray); // voxel-space [0, 1] x [0, 1] x [0, 1]
@@ -242,7 +229,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
        Tracing of Signed Distance Function Grids, Journal of Computer Graphics
        Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
     */
-    Vector3u v000 = index_to_vec(prim_index, sdf);
+    Vector3u v000 = voxel_position;
     Vector3u v100 = v000 + Vector3u(1, 0, 0);
     Vector3u v010 = v000 + Vector3u(0, 1, 0);
     Vector3u v110 = v000 + Vector3u(1, 1, 0);

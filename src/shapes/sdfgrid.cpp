@@ -29,9 +29,10 @@ Documentation notes:
  * Reminder that tensors use [Z, Y, X, C] indexing
  * Does not emit UVs for texturing
  * Cannot be used for area emitters
+ * Grid data must be initialized by using `mi.traverse()` (by default the plugin
+   is initialized with a 2x2x2 grid of ones)
 
  Temorary issues:
-     * No props to initialize a grid
      * Rotations not allowed in `to_world`
      * Embree does not work
  */
@@ -46,14 +47,14 @@ public:
     using typename Base::ScalarSize;
 
     SDFGrid(const Properties &props) : Base(props) {
-        // TODO: Allow intitial grid in props
-        float grid_data[8] = { -0.1f, 0.1f, 0.1f, 0.1f, 0.9f, 0.9f, 0.9f, 0.9f };
+        float grid_data[8] = { 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f };
         size_t shape[4] = {2, 2, 2, 1};
         TensorXf grid = TensorXf(grid_data, 4, shape);
         m_grid_texture = Texture3f(grid);
         update();
         initialize();
     }
+
     ~SDFGrid() {
 #if defined(MI_ENABLE_CUDA)
         jit_free(m_optix_bboxes);
@@ -61,7 +62,13 @@ public:
     }
 
     void update() {
-        // TODO: Check for rotation - rotations are not allowed!
+        auto [S, Q, T] = dr::transform_decompose(m_to_world.scalar().matrix, 25);
+        if (dr::abs(Q[0]) > 1e-6f || dr::abs(Q[1]) > 1e-6f ||
+            dr::abs(Q[2]) > 1e-6f || dr::abs(Q[3] - 1) > 1e-6f)
+            Log(Warn, "'to_world' transform shouldn't perform any rotations, "
+                      "use instancing (`shapegroup` and `instance` plugins) "
+                      "instead!");
+
         m_to_object = m_to_world.value().inverse();
         mark_dirty();
    }
@@ -351,8 +358,7 @@ public:
             m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
             m_optix_bboxes = build_bboxes();
 
-            OptixSDFGridData data = { (optix::BoundingBox3f *) m_optix_bboxes,
-                                      resolution[0],
+            OptixSDFGridData data = { resolution[0],
                                       resolution[1],
                                       resolution[2],
                                       m_grid_texture.tensor().array().data(),
