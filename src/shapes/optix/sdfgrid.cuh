@@ -4,6 +4,7 @@
 #include <mitsuba/render/optix/common.h>
 
 struct OptixSDFGridData {
+    size_t* voxel_indices;
     size_t res_x;
     size_t res_y;
     size_t res_z;
@@ -172,12 +173,12 @@ extern "C" __global__ void __intersection__sdfgrid() {
     const OptixHitGroupData *sbt_data =
         (OptixHitGroupData *) optixGetSbtDataPointer();
     OptixSDFGridData &sdf = *((OptixSDFGridData *) sbt_data->data);
-    unsigned int prim_index = optixGetPrimitiveIndex();
+    unsigned int voxel_index = sdf.voxel_indices[optixGetPrimitiveIndex()];
 
     Ray3f ray = get_ray();
     ray = sdf.to_object.transform_ray(ray); // object-space
 
-    Vector3f bbox_min = index_to_vec(prim_index, sdf);
+    Vector3f bbox_min = index_to_vec(voxel_index, sdf);
     Vector3f bbox_max = bbox_min + Vector3f(1.f, 1.f, 1.f);
     Vector3f grid_resolution = 1.f / Vector3f(sdf.res_x - 1, sdf.res_y - 1 , sdf.res_z - 1);
     bbox_min *= grid_resolution;
@@ -216,7 +217,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
     to_voxel.matrix[2][2] = (float) (sdf.res_z - 1);
     to_voxel.matrix[2][3] = 0.f;
 
-    Vector3u voxel_position = index_to_vec(prim_index, sdf);
+    Vector3u voxel_position = index_to_vec(voxel_index, sdf);
     to_voxel.matrix[3][0] = -1.f * ((float) voxel_position.x()); 
     to_voxel.matrix[3][1] = -1.f * ((float) voxel_position.y());
     to_voxel.matrix[3][2] = -1.f * ((float) voxel_position.z());

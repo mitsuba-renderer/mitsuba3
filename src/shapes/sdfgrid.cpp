@@ -30,7 +30,7 @@ Documentation notes:
  * Does not emit UVs for texturing
  * Cannot be used for area emitters
  * Grid data must be initialized by using `mi.traverse()` (by default the plugin
-   is initialized with a 2x2x2 grid of ones)
+   is initialized with a 2x2x2 grid of minus ones)
 
  Temorary issues:
      * Rotations not allowed in `to_world`
@@ -47,10 +47,10 @@ public:
     using typename Base::ScalarSize;
 
     SDFGrid(const Properties &props) : Base(props) {
-        float grid_data[8] = { 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f };
+        float grid_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
         size_t shape[4] = {2, 2, 2, 1};
         TensorXf grid = TensorXf(grid_data, 4, shape);
-        m_grid_texture = Texture3f(grid);
+        m_grid_texture = Texture3f(grid, true, false);
         update();
         initialize();
     }
@@ -58,6 +58,7 @@ public:
     ~SDFGrid() {
 #if defined(MI_ENABLE_CUDA)
         jit_free(m_optix_bboxes);
+        jit_free(m_optix_voxel_indices);
 #endif
     }
 
@@ -184,7 +185,7 @@ public:
         // FALCÃO , P., 2008. Implicit function to distance function.
         // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
 
-        Float epsilon = dr::Epsilon<Float> * 100000;
+        Float epsilon = 0.001f;
         auto shape = m_grid_texture.tensor().shape();
 
         // TODO: make this more efficient
@@ -301,20 +302,52 @@ public:
 #if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
 
-    void* build_bboxes() {
-        // TODO: this can computed on-the-fly in the intersection shader, need to store the voxel index instead
-        auto shape  = m_grid_texture.tensor().shape();
+    /* \brief Only computes AABBs for voxel that contain a surface in it.
+     * Returns a device pointer to the array of AABBs, a device pointer to
+     * an array of voxel indices of the former AABBs and the count of voxels with
+     * surface in them.
+     */
+    std::tuple<void*, void*, size_t> build_bboxes() {
+        auto shape = m_grid_texture.tensor().shape();
+        size_t shape_v[3]  = { shape[2], shape[1], shape[0] };
         float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1), 1.f / (shape[2] - 1) };
-        size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
+        size_t max_voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
+        ScalarTransform4f to_world = m_to_world.scalar();
 
-        size_t voxel_index = 0;
-        optix::BoundingBox3f* data = new optix::BoundingBox3f[voxel_count]();
+        float *grid = (float *) jit_malloc_migrate(
+            m_grid_texture.tensor().array().data(), AllocType::Host, false);
+        jit_sync_thread();
+
+        size_t count = 0;
+        optix::BoundingBox3f* aabbs = new optix::BoundingBox3f[max_voxel_count]();
+        size_t* voxel_indices = new size_t[max_voxel_count]();
         for (size_t z = 0; z < shape[0] - 1; ++z) {
             for (size_t y = 0; y < shape[1] - 1 ; ++y) {
                 for (size_t x = 0; x < shape[2] - 1; ++x) {
-                    ScalarBoundingBox3f bbox;
-                    ScalarTransform4f to_world = m_to_world.scalar();
+                    size_t v000 = (x + 0) + (y + 0) * shape_v[0] + (z + 0) * shape_v[0] * shape_v[1];
+                    size_t v100 = (x + 1) + (y + 0) * shape_v[0] + (z + 0) * shape_v[0] * shape_v[1];
+                    size_t v010 = (x + 0) + (y + 1) * shape_v[0] + (z + 0) * shape_v[0] * shape_v[1];
+                    size_t v110 = (x + 1) + (y + 1) * shape_v[0] + (z + 0) * shape_v[0] * shape_v[1];
+                    size_t v001 = (x + 0) + (y + 0) * shape_v[0] + (z + 1) * shape_v[0] * shape_v[1];
+                    size_t v101 = (x + 1) + (y + 0) * shape_v[0] + (z + 1) * shape_v[0] * shape_v[1];
+                    size_t v011 = (x + 0) + (y + 1) * shape_v[0] + (z + 1) * shape_v[0] * shape_v[1];
+                    size_t v111 = (x + 1) + (y + 1) * shape_v[0] + (z + 1) * shape_v[0] * shape_v[1];
 
+                    float f000 = grid[v000];
+                    float f100 = grid[v100];
+                    float f010 = grid[v010];
+                    float f110 = grid[v110];
+                    float f001 = grid[v001];
+                    float f101 = grid[v101];
+                    float f011 = grid[v011];
+                    float f111 = grid[v111];
+
+                    // No surface within voxel
+                    if (f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
+                        f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0)
+                        continue;
+
+                    ScalarBoundingBox3f bbox;
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
                         (x + 0) * shape_rcp[2], (y + 0) * shape_rcp[1], (z + 0) * shape_rcp[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
@@ -332,15 +365,24 @@ public:
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
                         (x + 1) * shape_rcp[2], (y + 1) * shape_rcp[1], (z + 1) * shape_rcp[0])));
 
-                    data[voxel_index++] = optix::BoundingBox3f(bbox);
+                    size_t voxel_index =
+                        (x + 0) + (y + 0) * (shape_v[0] - 1) +
+                        (z + 0) * (shape_v[0] - 1) * (shape_v[1] - 1);
+                    voxel_indices[count] = voxel_index;
+                    aabbs[count] = optix::BoundingBox3f(bbox);
+
+                    count++;
                 }
             }
         }
 
-        void* data_ptr = jit_malloc(AllocType::Device, sizeof(optix::BoundingBox3f) * voxel_count);
-        jit_memcpy(JitBackend::CUDA, data_ptr, data, sizeof(optix::BoundingBox3f) * voxel_count);
+        void *aabbs_ptr = jit_malloc(AllocType::Device, sizeof(optix::BoundingBox3f) * count);
+        jit_memcpy(JitBackend::CUDA, aabbs_ptr, aabbs, sizeof(optix::BoundingBox3f) * count);
 
-        return data_ptr;
+        void *voxel_indices_ptr = jit_malloc(AllocType::Device, sizeof(size_t) * count);
+        jit_memcpy(JitBackend::CUDA, voxel_indices_ptr, voxel_indices, sizeof(size_t) * count);
+
+        return {aabbs_ptr, voxel_indices_ptr, count};
     }
 
     void optix_prepare_geometry() override {
@@ -350,33 +392,32 @@ public:
                 jit_free(m_optix_data_ptr);
             if (m_optix_bboxes)
                 jit_free(m_optix_bboxes);
+            if (m_optix_voxel_indices)
+                jit_free(m_optix_voxel_indices);
+
+            std::tie(m_optix_bboxes, m_optix_voxel_indices, m_filled_voxel_count) = build_bboxes();
+            if (m_filled_voxel_count == 0) 
+                Throw("SDFGrid should at least have one non-empty voxel!");
 
             size_t resolution[3] = { m_grid_texture.tensor().shape()[2],
                                      m_grid_texture.tensor().shape()[1],
                                      m_grid_texture.tensor().shape()[0] };
 
-            m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
-            m_optix_bboxes = build_bboxes();
-
-            OptixSDFGridData data = { resolution[0],
+            OptixSDFGridData data = { (size_t*) m_optix_voxel_indices,
+                                      resolution[0],
                                       resolution[1],
                                       resolution[2],
                                       m_grid_texture.tensor().array().data(),
                                       m_to_object.scalar() };
-
+            m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixSDFGridData));
         }
     }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
-        //TODO: Only submit voxels with guaranteed surface in them
-        auto shape = m_grid_texture.tensor().shape();
-        size_t voxel_count = (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
-
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-
-        build_input.customPrimitiveArray.aabbBuffers = &m_optix_bboxes;
-        build_input.customPrimitiveArray.numPrimitives = voxel_count;
+        build_input.customPrimitiveArray.aabbBuffers   = &m_optix_bboxes;
+        build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
         build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
         build_input.customPrimitiveArray.flags         = optix_geometry_flags;
         build_input.customPrimitiveArray.numSbtRecords = 1;
@@ -400,9 +441,11 @@ private:
 
 #if defined(MI_ENABLE_CUDA)
     void* m_optix_bboxes = nullptr;
+    void* m_optix_voxel_indices = nullptr;
 #endif
     // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
+    size_t m_filled_voxel_count = 0;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
