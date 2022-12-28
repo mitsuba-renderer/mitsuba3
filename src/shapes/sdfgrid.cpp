@@ -35,6 +35,10 @@ Documentation notes:
  Temorary issues:
      * Rotations not allowed in `to_world`
      * Embree does not work
+
+Props:
+ * "normals": type of normal computation method (analytic, smoth, falcao)
+
  */
 
 template <typename Float, typename Spectrum>
@@ -51,6 +55,18 @@ public:
         size_t shape[4] = {2, 2, 2, 1};
         TensorXf grid = TensorXf(grid_data, 4, shape);
         m_grid_texture = Texture3f(grid, true, false);
+
+        std::string normals_mode_str = props.string("normals", "smooth");
+        if (normals_mode_str == "analytic")
+            m_normal_method = Analytic;
+        else if (normals_mode_str == "smooth")
+            m_normal_method = Smooth;
+        else if (normals_mode_str == "falcao")
+            m_normal_method = Falcao;
+        else
+            Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", "
+                  "\"smooth\" or \"falcao\"!", normals_mode_str);
+
         update();
         initialize();
     }
@@ -181,21 +197,19 @@ public:
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    Normal3f normal(const Point3f& point) const {
+    Normal3f falcao(const Point3f& point) const {
         // FALCÃO , P., 2008. Implicit function to distance function.
         // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
 
-        Float epsilon = 0.001f;
+        Float epsilon = dr::Epsilon<Float> * 10000; // TODO: tune with grid resolution
         auto shape = m_grid_texture.tensor().shape();
 
         // TODO: make this more efficient
         Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
 
         auto v = [&](const Point3f& p){
-            using Array1f = dr::Array<Float, 1>;
-            Array1f out;
-            Point3f offset_p = p * (1 - inv_shape) + (inv_shape / 2.f);
-            m_grid_texture.eval(offset_p, out.data());
+            dr::Array<Float, 1> out;
+            m_grid_texture.eval(rescale_point(p), out.data());
             return out[0];
         };
 
@@ -252,11 +266,8 @@ public:
                    the intersection point follows any motion of the sphere. */
                 auto shape = m_grid_texture.tensor().shape();
                 Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-                using Array1f = dr::Array<Float, 1>;
-                Array1f out;
-                Point3f offset_p = local * (1 - inv_shape) + (inv_shape / 2.f);
-
-                m_grid_texture.eval(offset_p, out.data());
+                dr::Array<Float, 1> out;
+                m_grid_texture.eval(rescale_point(local), out.data());
                 Float sdf_value = out[0];
                 si.t = dr::replace_grad(pi.t, sdf_value); // TODO: needs projection along ray direction ?
 
@@ -279,7 +290,20 @@ public:
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         // TODO: check if we're not "double-counting" `to_world`'s gradient
-        si.n = normal(m_to_object.value().transform_affine(si.p));
+        switch (m_normal_method) {
+            case Analytic:
+                si.n = dr::normalize(grad(m_to_object.value().transform_affine(si.p)));
+                break;
+            case Smooth:
+                NotImplementedError("Soon"); // TODO
+                break;
+            case Falcao:
+                si.n = falcao(m_to_object.value().transform_affine(si.p));
+                break;
+            default:
+                Throw("Unknown normal computation.");
+        }
+
         si.sh_frame.n = si.n;
 
         si.uv = Point2f(0.f, 0.f);
@@ -301,6 +325,68 @@ public:
 
 #if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
+
+    void optix_prepare_geometry() override {
+        if constexpr (dr::is_cuda_v<Float>) {
+            // TODO: more efficient memory allocations
+            if (m_optix_data_ptr)
+                jit_free(m_optix_data_ptr);
+            if (m_optix_bboxes)
+                jit_free(m_optix_bboxes);
+            if (m_optix_voxel_indices)
+                jit_free(m_optix_voxel_indices);
+
+            std::tie(m_optix_bboxes, m_optix_voxel_indices, m_filled_voxel_count) = build_bboxes();
+            if (m_filled_voxel_count == 0)
+                Throw("SDFGrid should at least have one non-empty voxel!");
+
+            size_t resolution[3] = { m_grid_texture.tensor().shape()[2],
+                                     m_grid_texture.tensor().shape()[1],
+                                     m_grid_texture.tensor().shape()[0] };
+
+            OptixSDFGridData data = { (size_t*) m_optix_voxel_indices,
+                                      resolution[0],
+                                      resolution[1],
+                                      resolution[2],
+                                      m_grid_texture.tensor().array().data(),
+                                      m_to_object.scalar() };
+            m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
+            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixSDFGridData));
+        }
+    }
+
+    void optix_build_input(OptixBuildInput &build_input) const override {
+        build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+        build_input.customPrimitiveArray.aabbBuffers   = &m_optix_bboxes;
+        build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
+        build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
+        build_input.customPrimitiveArray.flags         = optix_geometry_flags;
+        build_input.customPrimitiveArray.numSbtRecords = 1;
+    }
+#endif
+
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "SDFgrid[" << std::endl
+            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
+            << "  " << string::indent(get_children_string()) << std::endl
+            << "]";
+        return oss.str();
+    }
+
+    MI_DECLARE_CLASS()
+private:
+    /* \brief Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
+     * its corresponding point in the texture. This is usually necessary because
+     * dr::Texture objects assume that the value of a pixel is positionned in
+     * the middle of the pixel. For a 3D grid, this means that values are not
+     * at the corners, but in the middle of the voxels.
+     */
+    MI_INLINE Point3f rescale_point(const Point3f& p) const {
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+        return p * (1 - inv_shape) + (inv_shape / 2.f);
+    }
 
     /* \brief Only computes AABBs for voxel that contain a surface in it.
      * Returns a device pointer to the array of AABBs, a device pointer to
@@ -385,58 +471,47 @@ public:
         return {aabbs_ptr, voxel_indices_ptr, count};
     }
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            // TODO: more efficient memory allocations
-            if (m_optix_data_ptr)
-                jit_free(m_optix_data_ptr);
-            if (m_optix_bboxes)
-                jit_free(m_optix_bboxes);
-            if (m_optix_voxel_indices)
-                jit_free(m_optix_voxel_indices);
+    Vector3f grad(const Point3f& p) const {
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
 
-            std::tie(m_optix_bboxes, m_optix_voxel_indices, m_filled_voxel_count) = build_bboxes();
-            if (m_filled_voxel_count == 0) 
-                Throw("SDFGrid should at least have one non-empty voxel!");
+        dr::Array<Float, 3> eval_result[6];
+        Point3f query;
 
-            size_t resolution[3] = { m_grid_texture.tensor().shape()[2],
-                                     m_grid_texture.tensor().shape()[1],
-                                     m_grid_texture.tensor().shape()[0] };
+        Point3u min_voxel_index(p * resolution);
+        Point3f voxel_size = 1.f / resolution;
+        Point3f p000 = Point3f(min_voxel_index) * voxel_size;
 
-            OptixSDFGridData data = { (size_t*) m_optix_voxel_indices,
-                                      resolution[0],
-                                      resolution[1],
-                                      resolution[2],
-                                      m_grid_texture.tensor().array().data(),
-                                      m_to_object.scalar() };
-            m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixSDFGridData));
-        }
+        query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
+        m_grid_texture.eval(query, eval_result[0].data());
+        query = rescale_point(Point3f(p000[0], p[1], p[2]));
+        m_grid_texture.eval(query, eval_result[1].data());
+
+        query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
+        m_grid_texture.eval(query, eval_result[2].data());
+        query = rescale_point(Point3f(p[0], p000[1], p[2]));
+        m_grid_texture.eval(query, eval_result[3].data());
+
+        query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
+        m_grid_texture.eval(query, eval_result[4].data());
+        query = rescale_point(Point3f(p[0], p[1], p000[2] ));
+        m_grid_texture.eval(query, eval_result[5].data());
+
+        Float dx = eval_result[0][0] - eval_result[1][0]; // f(1, y, z) - f(0, y, z)
+        Float dy = eval_result[2][0] - eval_result[3][0]; // f(x, 1, z) - f(x, 0, z)
+        Float dz = eval_result[4][0] - eval_result[5][0]; // f(x, y, 1) - f(x, y, 0)
+
+        return Vector3f(dx, dy, dz);
     }
 
-    void optix_build_input(OptixBuildInput &build_input) const override {
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers   = &m_optix_bboxes;
-        build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
-        build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
-        build_input.customPrimitiveArray.flags         = optix_geometry_flags;
-        build_input.customPrimitiveArray.numSbtRecords = 1;
-    }
-#endif
-
-    std::string to_string() const override {
-        std::ostringstream oss;
-        oss << "SDFgrid[" << std::endl
-            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
-            << "  " << string::indent(get_children_string()) << std::endl
-            << "]";
-        return oss.str();
-    }
-
-    MI_DECLARE_CLASS()
-private:
     static constexpr uint32_t optix_geometry_flags[1] = {
         OPTIX_GEOMETRY_FLAG_NONE
+    };
+
+    enum NormalMethod {
+        Analytic,
+        Smooth,
+        Falcao,
     };
 
 #if defined(MI_ENABLE_CUDA)
@@ -446,6 +521,7 @@ private:
     // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
     size_t m_filled_voxel_count = 0;
+    NormalMethod m_normal_method = Smooth;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
