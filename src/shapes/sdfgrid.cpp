@@ -197,40 +197,6 @@ public:
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    Normal3f falcao(const Point3f& point) const {
-        // FALCÃO , P., 2008. Implicit function to distance function.
-        // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
-
-        Float epsilon = dr::Epsilon<Float> * 10000; // TODO: tune with grid resolution
-        auto shape = m_grid_texture.tensor().shape();
-
-        // TODO: make this more efficient
-        Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-
-        auto v = [&](const Point3f& p){
-            dr::Array<Float, 1> out;
-            m_grid_texture.eval(rescale_point(p), out.data());
-            return out[0];
-        };
-
-        Point3f p1(point.x() + epsilon, point.y() - epsilon, point.z() - epsilon);
-        Point3f p2(point.x() - epsilon, point.y() - epsilon, point.z() + epsilon);
-        Point3f p3(point.x() - epsilon, point.y() + epsilon, point.z() - epsilon);
-        Point3f p4(point.x() + epsilon, point.y() + epsilon, point.z() + epsilon);
-
-        Float v1 = v(p1);
-        Float v2 = v(p2);
-        Float v3 = v(p3);
-        Float v4 = v(p4);
-
-        Normal3f out =
-            dr::normalize(Vector3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
-                                   ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
-                                   ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f)));
-
-        return out;
-    }
-
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
@@ -266,9 +232,8 @@ public:
                    the intersection point follows any motion of the sphere. */
                 auto shape = m_grid_texture.tensor().shape();
                 Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-                dr::Array<Float, 1> out;
-                m_grid_texture.eval(rescale_point(local), out.data());
-                Float sdf_value = out[0];
+                Float sdf_value;
+                m_grid_texture.eval(rescale_point(local), &sdf_value);
                 si.t = dr::replace_grad(pi.t, sdf_value); // TODO: needs projection along ray direction ?
 
                 // Use local ray to capture gradients of `to_world`
@@ -295,7 +260,7 @@ public:
                 si.n = dr::normalize(grad(m_to_object.value().transform_affine(si.p)));
                 break;
             case Smooth:
-                NotImplementedError("Soon"); // TODO
+                si.n = smooth(m_to_object.value().transform_affine(si.p));
                 break;
             case Falcao:
                 si.n = falcao(m_to_object.value().transform_affine(si.p));
@@ -471,37 +436,120 @@ private:
         return {aabbs_ptr, voxel_indices_ptr, count};
     }
 
-    Vector3f grad(const Point3f& p) const {
+    /// Computes the gradient for a specific gradient
+    Vector3f voxel_grad(const Point3f& p, const Point3i& voxel_index) const {
         auto shape = m_grid_texture.tensor().shape();
         Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
 
-        dr::Array<Float, 3> eval_result[6];
+        Float f[6];
         Point3f query;
 
-        Point3u min_voxel_index(p * resolution);
         Point3f voxel_size = 1.f / resolution;
-        Point3f p000 = Point3f(min_voxel_index) * voxel_size;
+        Point3f p000 = Point3f(voxel_index) * voxel_size;
 
         query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
-        m_grid_texture.eval(query, eval_result[0].data());
+        m_grid_texture.eval(query, &f[0]);
         query = rescale_point(Point3f(p000[0], p[1], p[2]));
-        m_grid_texture.eval(query, eval_result[1].data());
+        m_grid_texture.eval(query, &f[1]);
 
         query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
-        m_grid_texture.eval(query, eval_result[2].data());
+        m_grid_texture.eval(query, &f[2]);
         query = rescale_point(Point3f(p[0], p000[1], p[2]));
-        m_grid_texture.eval(query, eval_result[3].data());
+        m_grid_texture.eval(query, &f[3]);
 
         query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
-        m_grid_texture.eval(query, eval_result[4].data());
+        m_grid_texture.eval(query, &f[4]);
         query = rescale_point(Point3f(p[0], p[1], p000[2] ));
-        m_grid_texture.eval(query, eval_result[5].data());
+        m_grid_texture.eval(query, &f[5]);
 
-        Float dx = eval_result[0][0] - eval_result[1][0]; // f(1, y, z) - f(0, y, z)
-        Float dy = eval_result[2][0] - eval_result[3][0]; // f(x, 1, z) - f(x, 0, z)
-        Float dz = eval_result[4][0] - eval_result[5][0]; // f(x, y, 1) - f(x, y, 0)
+        Float dx = f[0] - f[1]; // f(1, y, z) - f(0, y, z)
+        Float dy = f[2] - f[3]; // f(x, 1, z) - f(x, 0, z)
+        Float dz = f[4] - f[5]; // f(x, y, 1) - f(x, y, 0)
 
         return Vector3f(dx, dy, dz);
+    }
+
+    Vector3f grad(const Point3f& p) const {
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Point3i min_voxel_index(p * resolution);
+
+        return voxel_grad(p, min_voxel_index);
+    }
+
+    Normal3f smooth(const Point3f& p) const {
+        /**
+           Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
+           Tracing of Signed Distance Function Grids, Journal of Computer Graphics
+           Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
+        */
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Point3f scaled_p = p * resolution;
+
+        Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
+        Point3i v100 = v000 + Vector3i(1, 0, 0);
+        Point3i v010 = v000 + Vector3i(0, 1, 0);
+        Point3i v110 = v000 + Vector3i(1, 1, 0);
+        Point3i v001 = v000 + Vector3i(0, 0, 1);
+        Point3i v101 = v000 + Vector3i(1, 0, 1);
+        Point3i v011 = v000 + Vector3i(0, 1, 1);
+        Point3i v111 = v000 + Vector3i(1, 1, 1);
+
+        Vector3f n000 = voxel_grad(p, v000);
+        Vector3f n100 = voxel_grad(p, v100);
+        Vector3f n010 = voxel_grad(p, v010);
+        Vector3f n110 = voxel_grad(p, v110);
+        Vector3f n001 = voxel_grad(p, v001);
+        Vector3f n101 = voxel_grad(p, v101);
+        Vector3f n011 = voxel_grad(p, v011);
+        Vector3f n111 = voxel_grad(p, v111);
+
+        Vector3f diff = scaled_p - Vector3f(v111) + Vector3f(0.5);
+        Float u = diff[0];
+        Float v = diff[1];
+        Float w = diff[2];
+
+        Vector3f n =
+            (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) + v * ((1 - u) * n010 + u * n110)) +
+                  w * ((1 - v) * ((1 - u) * n001 + u * n101) + v * ((1 - u) * n011 + u * n111));
+
+        return dr::normalize(n);
+    }
+
+    /// Very efficient normals (faceted appearance)
+    Normal3f falcao(const Point3f& point) const {
+        // FALCÃO , P., 2008. Implicit function to distance function.
+        // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
+
+        Float epsilon = dr::Epsilon<Float> * 10000; // TODO: tune with grid resolution
+        auto shape = m_grid_texture.tensor().shape();
+
+        // TODO: make this more efficient
+        Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+
+        auto v = [&](const Point3f& p){
+            Float out;
+            m_grid_texture.eval(rescale_point(p), &out);
+            return out;
+        };
+
+        Point3f p1(point.x() + epsilon, point.y() - epsilon, point.z() - epsilon);
+        Point3f p2(point.x() - epsilon, point.y() - epsilon, point.z() + epsilon);
+        Point3f p3(point.x() - epsilon, point.y() + epsilon, point.z() - epsilon);
+        Point3f p4(point.x() + epsilon, point.y() + epsilon, point.z() + epsilon);
+
+        Float v1 = v(p1);
+        Float v2 = v(p2);
+        Float v3 = v(p3);
+        Float v4 = v(p4);
+
+        Normal3f out =
+            dr::normalize(Vector3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
+                                   ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
+                                   ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f)));
+
+        return out;
     }
 
     static constexpr uint32_t optix_geometry_flags[1] = {
