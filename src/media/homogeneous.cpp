@@ -51,6 +51,7 @@ Homogeneous medium (:monosp:`homogeneous`)
    - A nested phase function that describes the directional scattering properties of
      the medium. When none is specified, the renderer will automatically use an instance of
      isotropic.
+   - |exposed|, |differentiable|
 
 This class implements a homogeneous participating medium with support for arbitrary
 phase functions. This medium can be used to model effects such as fog or subsurface scattering.

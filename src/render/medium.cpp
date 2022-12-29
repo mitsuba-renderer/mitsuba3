@@ -33,6 +33,10 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {}
 
+MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_object("phase_function", m_phase_function.get(), +ParamFlags::Differentiable);
+}
+
 MI_VARIANT
 typename Medium<Float, Spectrum>::MediumInteraction3f
 Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,

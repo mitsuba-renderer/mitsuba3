@@ -85,6 +85,8 @@ public:
         return m_has_spectral_extinction;
     }
 
+    void traverse(TraversalCallback *callback) override;
+
     /// Return a string identifier
     std::string id() const override { return m_id; }
 
