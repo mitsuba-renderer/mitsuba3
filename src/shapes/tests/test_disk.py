@@ -234,7 +234,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
-    dr.forward(theta, dr.ADFlag.ClearNone)
+    dr.forward(theta)
 
     assert dr.allclose(dr.grad(si.p), [1.0, 0.0, 0.0])
     assert dr.allclose(dr.grad(si.n), 0.0)
