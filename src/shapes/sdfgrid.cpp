@@ -24,6 +24,9 @@ NAMESPACE_BEGIN(mitsuba)
 SDF Grid (:monosp:`sdfgrid`)
 -------------------------------------------------
 
+Props:
+ * "normals": type of normal computation method (analytic, smoth, falcao)
+
 Documentation notes:
  * Grid position [0, 0, 0] x [1, 1, 1]
  * Reminder that tensors use [Z, Y, X, C] indexing
@@ -33,13 +36,11 @@ Documentation notes:
    is initialized with a 2x2x2 grid of minus ones)
 
  Temorary issues:
-     * Rotations not allowed in `to_world`
      * Embree does not work
+     *
 
-Props:
- * "normals": type of normal computation method (analytic, smoth, falcao)
-
- */
+//TODO: Test that instancing works
+*/
 
 template <typename Float, typename Spectrum>
 class SDFGrid final : public Shape<Float, Spectrum> {
@@ -51,11 +52,6 @@ public:
     using typename Base::ScalarSize;
 
     SDFGrid(const Properties &props) : Base(props) {
-        float grid_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
-        size_t shape[4] = {2, 2, 2, 1};
-        TensorXf grid = TensorXf(grid_data, 4, shape);
-        m_grid_texture = Texture3f(grid, true, false);
-
         std::string normals_mode_str = props.string("normals", "smooth");
         if (normals_mode_str == "analytic")
             m_normal_method = Analytic;
@@ -66,6 +62,22 @@ public:
         else
             Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", "
                   "\"smooth\" or \"falcao\"!", normals_mode_str);
+
+        std::string interpolation_mode_str = props.string("interpolation", "linear");
+        if (interpolation_mode_str == "cubic") {
+            m_interpolation = Cubic;
+            NotImplementedError("Soon"); //FIXME: remove
+        } else if (interpolation_mode_str == "linear")
+            m_interpolation = Linear;
+        else
+            Throw("Invalid interpolation mode \"%s\", must be one of: "
+                  "\"linear\" or \"cubic\"!", interpolation_mode_str);
+
+        float grid_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
+        size_t shape[4] = {2, 2, 2, 1};
+        TensorXf grid = TensorXf(grid_data, 4, shape);
+        m_grid_texture = Texture3f(grid, true, false, dr::FilterMode::Linear,
+                                   dr::WrapMode::Clamp);
 
         update();
         initialize();
@@ -111,6 +123,10 @@ public:
         }
 
         Base::parameters_changed();
+    }
+
+    ScalarSize primitive_count() const override {
+        return m_filled_voxel_count;
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -202,7 +218,6 @@ public:
                                                      uint32_t ray_flags,
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
-        // TODO: support for RayFlags::DetachShape
         MI_MASK_ARGUMENT(active);
         constexpr bool IsDiff = dr::is_diff_v<Float>;
 
@@ -212,10 +227,14 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         Transform4f to_world = m_to_world.value();
         Transform4f to_object = m_to_object.value();
+
+        // TODO: Make sure this is the proper way to detach dr::Texture objects
+        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_grid_texture.tensor().array());
 
         if constexpr (IsDiff) {
             if (follow_shape) {
@@ -225,51 +244,82 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
-                local = dr::detach(local);
+                Point3f local_p = dr::detach(to_object.transform_affine(ray(pi.t)));
+                Normal3f local_n = dr::detach(dr::normalize(grad(local_p)));
+                Ray3f local_ray = dr::detach(to_object.transform_affine(ray));
 
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                auto shape = m_grid_texture.tensor().shape();
-                Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+                /* Note: Only when applying a motion to the entire shape is the
+                 * interaction point truly "glued" to the shape. For a single
+                 * voxel, the motion of the surface is ambiguous and therefore
+                 * the interaction point is not "glued" to the shape. */
+
+                // Capture gradients of `m_grid_texture`
                 Float sdf_value;
-                m_grid_texture.eval(rescale_point(local), &sdf_value);
-                si.t = dr::replace_grad(pi.t, sdf_value); // TODO: needs projection along ray direction ?
+                m_grid_texture.eval(rescale_point(local_p), &sdf_value);
+                Float t_diff = sdf_value / dr::dot(local_n, -local_ray.d);
+                t_diff = dr::replace_grad(pi.t, t_diff);
 
-                // Use local ray to capture gradients of `to_world`
-                Ray3f ray_local = to_object.transform_affine(ray);
-                ray_local = dr::detach(ray_local);
-                si.p = to_world.transform_affine(ray_local(si.t));
+                // Capture gradients of `m_to_world`
+                si.p = to_world.transform_affine(local_ray(t_diff));
+                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
             } else {
-                // TODO: Need ray_intersect_preliminary_impl
-                // it doesn't work otherwise
-                si.t = pi.t;
+                /* To ensure that the differential interaction point stays along
+                   the traced ray, we first recompute the intersection distance
+                   in a differentiable way (w.r.t. to the grid parameters) and
+                   then compute the corresponding point along the ray. (Instead
+                   of computing an intersection with the SDF, we compute an
+                   intersection with the tangent plane.) */
+                Point3f local_p = dr::detach(to_object.transform_affine(ray(pi.t)));
+                Ray3f local_ray = dr::detach(to_object.transform_affine(ray));
+
+                /// Differntiable tangent plane normal
+                // Capture gradients of `m_grid_texture`
+                Normal3f local_n = dr::normalize(grad(local_p));
+                // Capture gradients of `m_to_world`
+                Normal3f n = to_world.transform_affine(local_n);
+
+                /// Differentiable tangent plane point
+                // Capture gradients of `m_grid_texture`
+                Float sdf_value;
+                m_grid_texture.eval(rescale_point(local_p), &sdf_value);
+                Float t_diff = sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
+                t_diff = dr::replace_grad(pi.t, t_diff);
+                // Capture gradients of `m_to_world`
+                Point3f p = to_world.transform_affine(local_ray(t_diff));
+
+                si.t = dr::dot(p - ray.o, n) / dr::dot(n, ray.d);
                 si.p = ray(si.t);
             }
         } else {
-            // TODO: Can/need a reprojection?
             si.t = pi.t;
             si.p = ray(si.t);
         }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        // TODO: check if we're not "double-counting" `to_world`'s gradient
-        switch (m_normal_method) {
-            case Analytic:
-                si.n = dr::normalize(grad(m_to_object.value().transform_affine(si.p)));
-                break;
-            case Smooth:
-                si.n = smooth(m_to_object.value().transform_affine(si.p));
-                break;
-            case Falcao:
-                si.n = falcao(m_to_object.value().transform_affine(si.p));
-                break;
-            default:
-                Throw("Unknown normal computation.");
-        }
+        si.n = m_to_world.value().transform_affine(
+            Normal3f(dr::normalize(grad(m_to_object.value().transform_affine(si.p))))
+        );
 
-        si.sh_frame.n = si.n;
+        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
+            switch (m_normal_method) {
+                case Analytic:
+                    si.sh_frame.n = si.n;
+                    break;
+                case Smooth:
+                    si.sh_frame.n = m_to_world.value().transform_affine(
+                        normalize(smooth(m_to_object.value().transform_affine(si.p)))
+                    );
+                    break;
+                case Falcao:
+                    si.sh_frame.n = m_to_world.value().transform_affine(
+                        falcao(m_to_object.value().transform_affine(si.p))
+                    );
+                    break;
+                default:
+                    Throw("Unknown normal computation.");
+            }
+        }
 
         si.uv = Point2f(0.f, 0.f);
         si.dp_du = Vector3f(0.f);
@@ -279,7 +329,11 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        // TODO: boundary_test
+        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest))) {
+            Float dp = dr::dot(si.n, -ray.d);
+            // Add non-linearity by squaring the returned value
+            si.boundary_test = dr::sqr(dp);
+        }
 
         return si;
     }
@@ -349,6 +403,7 @@ private:
      */
     MI_INLINE Point3f rescale_point(const Point3f& p) const {
         auto shape = m_grid_texture.tensor().shape();
+        // TODO: save inv_shape to memory?
         Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
         return p * (1 - inv_shape) + (inv_shape / 2.f);
     }
@@ -522,11 +577,10 @@ private:
         // FALCÃO , P., 2008. Implicit function to distance function.
         // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
 
-        Float epsilon = dr::Epsilon<Float> * 10000; // TODO: tune with grid resolution
+        // Scale epsilon w.r.t inverse resolution
         auto shape = m_grid_texture.tensor().shape();
-
-        // TODO: make this more efficient
-        Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+        Vector3f epsilon =
+            0.1 * Vector3f(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
 
         auto v = [&](const Point3f& p){
             Float out;
@@ -534,22 +588,21 @@ private:
             return out;
         };
 
-        Point3f p1(point.x() + epsilon, point.y() - epsilon, point.z() - epsilon);
-        Point3f p2(point.x() - epsilon, point.y() - epsilon, point.z() + epsilon);
-        Point3f p3(point.x() - epsilon, point.y() + epsilon, point.z() - epsilon);
-        Point3f p4(point.x() + epsilon, point.y() + epsilon, point.z() + epsilon);
+        Point3f p1(point.x() + epsilon.x(), point.y() - epsilon.y(), point.z() - epsilon.z());
+        Point3f p2(point.x() - epsilon.x(), point.y() - epsilon.y(), point.z() + epsilon.z());
+        Point3f p3(point.x() - epsilon.x(), point.y() + epsilon.y(), point.z() - epsilon.z());
+        Point3f p4(point.x() + epsilon.x(), point.y() + epsilon.y(), point.z() + epsilon.z());
 
         Float v1 = v(p1);
         Float v2 = v(p2);
         Float v3 = v(p3);
         Float v4 = v(p4);
 
-        Normal3f out =
-            dr::normalize(Vector3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
-                                   ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
-                                   ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f)));
+        Normal3f out = Vector3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
+                                ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
+                                ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f));
 
-        return out;
+        return dr::normalize(out);
     }
 
     static constexpr uint32_t optix_geometry_flags[1] = {
@@ -562,6 +615,11 @@ private:
         Falcao,
     };
 
+    enum Interpolation {
+        Linear,
+        Cubic,
+    };
+
 #if defined(MI_ENABLE_CUDA)
     void* m_optix_bboxes = nullptr;
     void* m_optix_voxel_indices = nullptr;
@@ -569,7 +627,8 @@ private:
     // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
     size_t m_filled_voxel_count = 0;
-    NormalMethod m_normal_method = Smooth;
+    NormalMethod m_normal_method;
+    Interpolation m_interpolation;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
