@@ -348,8 +348,8 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (dr::is_cuda_v<Float>) {
             // TODO: more efficient memory allocations
-            if (m_optix_data_ptr)
-                jit_free(m_optix_data_ptr);
+            if (!m_optix_data_ptr)
+                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
             if (m_optix_bboxes)
                 jit_free(m_optix_bboxes);
             if (m_optix_voxel_indices)
@@ -369,7 +369,6 @@ public:
                                       resolution[2],
                                       m_grid_texture.tensor().array().data(),
                                       m_to_object.scalar() };
-            m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixSDFGridData));
         }
     }
@@ -482,6 +481,9 @@ private:
             }
         }
 
+        jit_free(grid);
+
+        //TODO: async memcpy
         void *aabbs_ptr = jit_malloc(AllocType::Device, sizeof(optix::BoundingBox3f) * count);
         jit_memcpy(JitBackend::CUDA, aabbs_ptr, aabbs, sizeof(optix::BoundingBox3f) * count);
 
