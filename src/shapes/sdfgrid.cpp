@@ -7,7 +7,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/shape.h>
+#include <mitsuba/render/sdf.h>
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
 
@@ -37,15 +37,15 @@ Documentation notes:
 
  Temorary issues:
      * Embree does not work
-     *
 
 //TODO: Test that instancing works
+//TODO: Test what happens with single voxel and tracing ray from inside the shape
 */
 
 template <typename Float, typename Spectrum>
-class SDFGrid final : public Shape<Float, Spectrum> {
+class SDFGrid final : public SDF<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
+    MI_IMPORT_BASE(SDF, m_to_world, m_to_object, m_is_instance, initialize,
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
@@ -698,6 +698,6 @@ private:
     Interpolation m_interpolation;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
+MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, SDF)
 MI_EXPORT_PLUGIN(SDFGrid, "SDFGrid intersection primitive");
 NAMESPACE_END(mitsuba)

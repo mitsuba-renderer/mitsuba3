@@ -5,6 +5,7 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/sdf.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
@@ -21,9 +22,16 @@ public:
         : Mesh(name, vertex_count, face_count, props, has_vertex_normals,
                has_vertex_texcoords) {}
     std::string to_string() const override {
-        PYBIND11_OVERRIDE(std::string, Mesh, to_string,);
+        PYBIND11_OVERRIDE(std::string, Mesh, to_string);
     }
 };
+
+MI_VARIANT class PySDF : public SDF<Float, Spectrum> {
+public:
+    MI_IMPORT_TYPES(SDF)
+    PySDF(const Properties &props) : SDF(props) { }
+};
+
 
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
@@ -133,7 +141,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
 }
 
 MI_PY_EXPORT(Shape) {
-    MI_PY_IMPORT_TYPES(Shape, Mesh)
+    MI_PY_IMPORT_TYPES(Shape, Mesh, SDF)
 
     auto shape = MI_PY_CLASS(Shape, Object)
         .def("bbox", py::overload_cast<>(
@@ -194,4 +202,18 @@ MI_PY_EXPORT(Shape) {
              D(Mesh, ray_intersect_triangle));
 
     MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
+
+    using PySDF = PySDF<Float, Spectrum>;
+    using ScalarSize = typename SDF::ScalarSize;
+    MI_PY_TRAMPOLINE_CLASS(PySDF, SDF, Shape)
+        .def(py::init<const Properties&>(), "props"_a)
+        .def("smooth_sh", [](const SDF &sdf, Point3f p) {
+                return sdf.smooth_sh(p, nullptr, nullptr, nullptr);
+             }, D(SDF, smooth), "p"_a)
+        .def("smooth", [](const SDF &sdf, Point3f p) {
+                return sdf.smooth(p);
+             }, D(SDF, smooth), "p"_a)
+        .def("smooth_hessian", [](const SDF &sdf, Point3f p) {
+                return sdf.smooth_hessian(p);
+             }, D(SDF, smooth_hessian), "p"_a);
 }

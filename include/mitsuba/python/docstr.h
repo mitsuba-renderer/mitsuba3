@@ -2456,6 +2456,8 @@ static const char *__doc_mitsuba_Endpoint_operator_new = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_operator_new_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_parameters_changed = R"doc()doc";
+
 static const char *__doc_mitsuba_Endpoint_pdf_direction =
 R"doc(Evaluate the probability density of the *direct* sampling method
 implemented by the sample_direction() method.
@@ -6058,6 +6060,32 @@ static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the 
 
 static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
 
+static const char *__doc_mitsuba_SDF = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_SDF = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_SDF_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_class = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_smooth = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_smooth_hessian = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_smooth_sh = R"doc(//! @{ \name Accessors (normals, hessians, normals, etc))doc";
+
+static const char *__doc_mitsuba_SDF_traverse = R"doc(@})doc";
+
 static const char *__doc_mitsuba_Sampler =
 R"doc(Base class of all sample generators.
 
@@ -7783,17 +7811,29 @@ static const char *__doc_mitsuba_StructConverter_StructConverter =
 R"doc(Construct an optimized conversion routine going from ``source`` to
 ``target``)doc";
 
+static const char *__doc_mitsuba_StructConverter_Value = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_Value_flags = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_Value_type = R"doc()doc";
+
 static const char *__doc_mitsuba_StructConverter_class = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_convert = R"doc(Convert ``count`` elements. Returns ``True`` upon success)doc";
 
 static const char *__doc_mitsuba_StructConverter_convert_2d = R"doc()doc";
 
-static const char *__doc_mitsuba_StructConverter_m_func = R"doc()doc";
+static const char *__doc_mitsuba_StructConverter_linearize = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_load = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_m_dither = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_source = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_target = R"doc()doc";
+
+static const char *__doc_mitsuba_StructConverter_save = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_source = R"doc(Return the source ``Struct`` descriptor)doc";
 
