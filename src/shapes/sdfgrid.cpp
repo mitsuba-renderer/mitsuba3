@@ -26,6 +26,7 @@ SDF Grid (:monosp:`sdfgrid`)
 
 Props:
  * "normals": type of normal computation method (analytic, smoth, falcao)
+ * "watertight": if the SDF should be watertight (default: true)
 
 Documentation notes:
  * Grid position [0, 0, 0] x [1, 1, 1]
@@ -62,6 +63,8 @@ public:
         else
             Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", "
                   "\"smooth\" or \"falcao\"!", normals_mode_str);
+
+        m_watertight = props.get<bool>("watertight", true);
 
         std::string interpolation_mode_str = props.string("interpolation", "linear");
         if (interpolation_mode_str == "cubic") {
@@ -106,6 +109,7 @@ public:
         Base::traverse(callback);
         callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("grid", m_grid_texture.tensor(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("watertight", m_watertight, +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -470,7 +474,9 @@ public:
                                       resolution[1],
                                       resolution[2],
                                       m_grid_texture.tensor().array().data(),
-                                      m_to_object.scalar() };
+                                      m_to_object.scalar(),
+                                      m_watertight
+            };
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixSDFGridData));
         }
     }
@@ -693,6 +699,7 @@ private:
 #endif
     // TODO: Store inverse shape using `rcp`
     Texture3f m_grid_texture;
+    bool m_watertight;
     size_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
     Interpolation m_interpolation;

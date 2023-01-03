@@ -10,6 +10,7 @@ struct OptixSDFGridData {
     size_t res_z;
     float* grid_data;
     optix::Transform4f to_object;
+    bool watertight;
 };
 
 #ifdef __CUDACC__
@@ -282,7 +283,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
     };
 
     // Avoid leaking through cracks
-    if (eval_sdf(t_beg) < 0) {
+    if (sdf.watertight && (eval_sdf(t_beg) < 0)) {
         optixReportIntersection(t_beg, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
         return;
     }
