@@ -245,7 +245,7 @@ public:
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
                 Point3f local_p = dr::detach(to_object.transform_affine(ray(pi.t)));
-                Normal3f local_n = dr::detach(dr::normalize(grad(local_p)));
+                Normal3f local_n = dr::detach(dr::normalize(sdf_grad(local_p)));
                 Ray3f local_ray = dr::detach(to_object.transform_affine(ray));
 
                 /* Note: Only when applying a motion to the entire shape is the
@@ -274,7 +274,7 @@ public:
 
                 /// Differntiable tangent plane normal
                 // Capture gradients of `m_grid_texture`
-                Normal3f local_n = dr::normalize(grad(local_p));
+                Normal3f local_n = dr::normalize(sdf_grad(local_p));
                 // Capture gradients of `m_to_world`
                 Normal3f n = to_world.transform_affine(local_n);
 
@@ -297,9 +297,8 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        si.n = m_to_world.value().transform_affine(
-            Normal3f(dr::normalize(grad(m_to_object.value().transform_affine(si.p))))
-        );
+        Vector3f grad = sdf_grad(m_to_object.value().transform_affine(si.p));
+        si.n = dr::normalize(m_to_world.value().transform_affine(Normal3f(grad)));
 
         if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
             switch (m_normal_method) {
@@ -307,14 +306,10 @@ public:
                     si.sh_frame.n = si.n;
                     break;
                 case Smooth:
-                    si.sh_frame.n = m_to_world.value().transform_affine(
-                        smooth(m_to_object.value().transform_affine(si.p))
-                    );
+                    si.sh_frame.n = smooth(m_to_object.value().transform_affine(si.p));
                     break;
                 case Falcao:
-                    si.sh_frame.n = m_to_world.value().transform_affine(
-                        falcao(m_to_object.value().transform_affine(si.p))
-                    );
+                    si.sh_frame.n = falcao(m_to_object.value().transform_affine(si.p));
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -336,6 +331,113 @@ public:
         }
 
         return si;
+    }
+
+    Normal3f smooth_sh(const Point3f &p, const Float *u_ptr, const Float *v_ptr,
+                       const Float *w_ptr) const override {
+        /**
+           Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
+           Tracing of Signed Distance Function Grids, Journal of Computer
+           Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
+        */
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Point3f scaled_p = p * resolution;
+
+        Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
+        Point3i v100 = v000 + Vector3i(1, 0, 0);
+        Point3i v010 = v000 + Vector3i(0, 1, 0);
+        Point3i v110 = v000 + Vector3i(1, 1, 0);
+        Point3i v001 = v000 + Vector3i(0, 0, 1);
+        Point3i v101 = v000 + Vector3i(1, 0, 1);
+        Point3i v011 = v000 + Vector3i(0, 1, 1);
+        Point3i v111 = v000 + Vector3i(1, 1, 1);
+
+        // Detect voxels that are outside of the grid, their normals will not
+        // be used in the interpolation
+        Bool s000 = !dr::any(v000 < 0);
+        Bool s100 = !dr::any(v100 < 0);
+        Bool s010 = !dr::any(v010 < 0);
+        Bool s110 = !dr::any(v110 < 0);
+        Bool s001 = !dr::any(v001 < 0);
+        Bool s101 = !dr::any(v101 < 0);
+        Bool s011 = !dr::any(v011 < 0);
+        Bool s111 = !dr::any(v111 < 0);
+
+        Vector3f n000 = dr::select(s000, dr::normalize(voxel_grad(p, v000)), Vector3f(0.f));
+        Vector3f n100 = dr::select(s100, dr::normalize(voxel_grad(p, v100)), Vector3f(0.f));
+        Vector3f n010 = dr::select(s010, dr::normalize(voxel_grad(p, v010)), Vector3f(0.f));
+        Vector3f n110 = dr::select(s110, dr::normalize(voxel_grad(p, v110)), Vector3f(0.f));
+        Vector3f n001 = dr::select(s001, dr::normalize(voxel_grad(p, v001)), Vector3f(0.f));
+        Vector3f n101 = dr::select(s101, dr::normalize(voxel_grad(p, v101)), Vector3f(0.f));
+        Vector3f n011 = dr::select(s011, dr::normalize(voxel_grad(p, v011)), Vector3f(0.f));
+        Vector3f n111 = dr::select(s111, dr::normalize(voxel_grad(p, v111)), Vector3f(0.f));
+
+        Vector3f diff = scaled_p - Vector3f(v111) + Vector3f(0.5);
+        Float& u = diff[0];
+        Float& v = diff[1];
+        Float& w = diff[2];
+        if (u_ptr)
+            u = *u_ptr;
+        if (v_ptr)
+            v = *v_ptr;
+        if (w_ptr)
+            w = *w_ptr;
+
+        // Disable weighting on invalid axis
+        Bool invalid_x_0 = !s000 && !s010 && !s001 && !s011;
+        Bool invalid_x_1 = !s100 && !s110 && !s101 && !s111;
+        Bool invalid_y_0 = !s000 && !s100 && !s001 && !s101;
+        Bool invalid_y_1 = !s010 && !s110 && !s011 && !s111;
+        Bool invalid_z_0 = !s000 && !s100 && !s010 && !s110;
+        Bool invalid_z_1 = !s001 && !s101 && !s011 && !s111;
+
+        u = dr::select(invalid_x_0, 1, u);
+        u = dr::select(invalid_x_1, 0, u);
+        v = dr::select(invalid_y_0, 1, v);
+        v = dr::select(invalid_y_1, 0, v);
+        w = dr::select(invalid_z_0, 1, w);
+        w = dr::select(invalid_z_1, 0, w);
+
+        Normal3f n =
+            (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) + v * ((1 - u) * n010 + u * n110)) +
+                  w * ((1 - v) * ((1 - u) * n001 + u * n101) + v * ((1 - u) * n011 + u * n111));
+
+        return n;
+    };
+
+    Normal3f smooth(const Point3f &p) const override {
+        Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
+        return dr::normalize(m_to_world.value().transform_affine(Normal3f(n)));
+    }
+
+    Matrix3f smooth_hessian(const Point3f& p) const override {
+        Float one = 1;
+        Float zero = 0;
+
+        Normal3f n1vw = smooth_sh(p, &one,    nullptr, nullptr);
+        Normal3f n0vw = smooth_sh(p, &zero,   nullptr, nullptr);
+        Normal3f nu1w = smooth_sh(p, nullptr, &one,    nullptr);
+        Normal3f nu0w = smooth_sh(p, nullptr, &zero,   nullptr);
+        Normal3f nuv1 = smooth_sh(p, nullptr, nullptr, &one);
+        Normal3f nuv0 = smooth_sh(p, nullptr, nullptr, &zero);
+
+        Normal3f dx = n1vw - n0vw;
+        Normal3f dy = nu1w - nu0w;
+        Normal3f dz = nuv1 - nuv0;
+
+        Matrix3f hessian;
+        hessian(0, 0) = dx[0];
+        hessian(0, 1) = dx[1];
+        hessian(0, 2) = dx[2];
+        hessian(1, 0) = dy[0];
+        hessian(1, 1) = dy[1];
+        hessian(1, 2) = dy[2];
+        hessian(2, 0) = dz[0];
+        hessian(2, 1) = dz[1];
+        hessian(2, 2) = dz[2];
+
+        return hessian; // normalizazion and to_world transform ?
     }
 
     bool parameters_grad_enabled() const override {
@@ -526,7 +628,7 @@ private:
         return Vector3f(dx, dy, dz);
     }
 
-    Vector3f grad(const Point3f& p) const {
+    Vector3f sdf_grad(const Point3f& p) const {
         auto shape = m_grid_texture.tensor().shape();
         Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
         Point3i min_voxel_index(p * resolution);
@@ -534,121 +636,18 @@ private:
         return voxel_grad(p, min_voxel_index);
     }
 
-    Normal3f smooth(const Point3f& p) const override {
-        /**
-           Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
-           Tracing of Signed Distance Function Grids, Journal of Computer Graphics
-           Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
-        */
-        auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
-        Point3f scaled_p = p * resolution;
-
-        Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
-        Point3i v100 = v000 + Vector3i(1, 0, 0);
-        Point3i v010 = v000 + Vector3i(0, 1, 0);
-        Point3i v110 = v000 + Vector3i(1, 1, 0);
-        Point3i v001 = v000 + Vector3i(0, 0, 1);
-        Point3i v101 = v000 + Vector3i(1, 0, 1);
-        Point3i v011 = v000 + Vector3i(0, 1, 1);
-        Point3i v111 = v000 + Vector3i(1, 1, 1);
-
-        // Detect voxels that are outside of the grid, their normals will not
-        // be used in the interpolation
-        Bool s000 = !dr::any(v000 < 0);
-        Bool s100 = !dr::any(v100 < 0);
-        Bool s010 = !dr::any(v010 < 0);
-        Bool s110 = !dr::any(v110 < 0);
-        Bool s001 = !dr::any(v001 < 0);
-        Bool s101 = !dr::any(v101 < 0);
-        Bool s011 = !dr::any(v011 < 0);
-        Bool s111 = !dr::any(v111 < 0);
-
-        Vector3f n000 = dr::select(s000, dr::normalize(voxel_grad(p, v000)), Vector3f(0.f));
-        Vector3f n100 = dr::select(s100, dr::normalize(voxel_grad(p, v100)), Vector3f(0.f));
-        Vector3f n010 = dr::select(s010, dr::normalize(voxel_grad(p, v010)), Vector3f(0.f));
-        Vector3f n110 = dr::select(s110, dr::normalize(voxel_grad(p, v110)), Vector3f(0.f));
-        Vector3f n001 = dr::select(s001, dr::normalize(voxel_grad(p, v001)), Vector3f(0.f));
-        Vector3f n101 = dr::select(s101, dr::normalize(voxel_grad(p, v101)), Vector3f(0.f));
-        Vector3f n011 = dr::select(s011, dr::normalize(voxel_grad(p, v011)), Vector3f(0.f));
-        Vector3f n111 = dr::select(s111, dr::normalize(voxel_grad(p, v111)), Vector3f(0.f));
-
-        Vector3f diff = scaled_p - Vector3f(v111) + Vector3f(0.5);
-        Float u = diff[0];
-        Float v = diff[1];
-        Float w = diff[2];
-
-        // Disable weighting on invalid axis
-        Bool invalid_x_0 = !s000 && !s010 && !s001 && !s011;
-        Bool invalid_x_1 = !s100 && !s110 && !s101 && !s111;
-        Bool invalid_y_0 = !s000 && !s100 && !s001 && !s101;
-        Bool invalid_y_1 = !s010 && !s110 && !s011 && !s111;
-        Bool invalid_z_0 = !s000 && !s100 && !s010 && !s110;
-        Bool invalid_z_1 = !s001 && !s101 && !s011 && !s111;
-
-        u = dr::select(invalid_x_0, 1, u);
-        u = dr::select(invalid_x_1, 0, u);
-        v = dr::select(invalid_y_0, 1, v);
-        v = dr::select(invalid_y_1, 0, v);
-        w = dr::select(invalid_z_0, 1, w);
-        w = dr::select(invalid_z_1, 0, w);
-
-        Vector3f n =
-            (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) + v * ((1 - u) * n010 + u * n110)) +
-                  w * ((1 - v) * ((1 - u) * n001 + u * n101) + v * ((1 - u) * n011 + u * n111));
-
-        return dr::normalize(n);
-    }
-
-    Normal3f smooth_sh(const Point3f& p) const override {
-        /**
-           Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
-           Tracing of Signed Distance Function Grids, Journal of Computer Graphics
-           Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
-        */
-        auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
-        Point3f scaled_p = p * resolution;
-
-        Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
-        Point3i v100 = v000 + Vector3i(1, 0, 0);
-        Point3i v010 = v000 + Vector3i(0, 1, 0);
-        Point3i v110 = v000 + Vector3i(1, 1, 0);
-        Point3i v001 = v000 + Vector3i(0, 0, 1);
-        Point3i v101 = v000 + Vector3i(1, 0, 1);
-        Point3i v011 = v000 + Vector3i(0, 1, 1);
-        Point3i v111 = v000 + Vector3i(1, 1, 1);
-
-        Vector3f n000 = voxel_grad(p, v000);
-        Vector3f n100 = voxel_grad(p, v100);
-        Vector3f n010 = voxel_grad(p, v010);
-        Vector3f n110 = voxel_grad(p, v110);
-        Vector3f n001 = voxel_grad(p, v001);
-        Vector3f n101 = voxel_grad(p, v101);
-        Vector3f n011 = voxel_grad(p, v011);
-        Vector3f n111 = voxel_grad(p, v111);
-
-        Vector3f diff = scaled_p - Vector3f(v111) + Vector3f(0.5);
-        Float u = diff[0];
-        Float v = diff[1];
-        Float w = diff[2];
-
-        Vector3f n =
-            (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) + v * ((1 - u) * n010 + u * n110)) +
-                  w * ((1 - v) * ((1 - u) * n001 + u * n101) + v * ((1 - u) * n011 + u * n111));
-
-        return dr::normalize(n);
-    }
 
     /// Very efficient normals (faceted appearance)
     Normal3f falcao(const Point3f& point) const {
         // FALCÃO , P., 2008. Implicit function to distance function.
         // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
 
+        // FIXME: Something is numerically unstable ?!
+
         // Scale epsilon w.r.t inverse resolution
         auto shape = m_grid_texture.tensor().shape();
         Vector3f epsilon =
-            0.1 * Vector3f(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
+            0.1f * Vector3f(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
 
         auto v = [&](const Point3f& p){
             Float out;
@@ -666,11 +665,11 @@ private:
         Float v3 = v(p3);
         Float v4 = v(p4);
 
-        Normal3f out = Vector3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
+        Normal3f out = Normal3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
                                 ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
                                 ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f));
 
-        return dr::normalize(out);
+        return dr::normalize(m_to_world.value().transform_affine(out));
     }
 
     static constexpr uint32_t optix_geometry_flags[1] = {
