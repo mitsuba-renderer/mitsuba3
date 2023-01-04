@@ -107,7 +107,6 @@ class PRBIntegrator(RBIntegrator):
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
-
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray,
                                          ray_flags=mi.RayFlags.All,

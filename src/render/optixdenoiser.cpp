@@ -40,15 +40,15 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 
     OptixDenoiserSizes sizes = {};
     jit_optix_check(optixDenoiserComputeMemoryResources(
-        m_denoiser, input_size.x(), input_size.y(), &sizes));
+        m_denoiser, input_size.y(), input_size.x(), &sizes));
 
     CUstream stream = jit_cuda_stream();
     m_state_size = (uint32_t) sizes.stateSizeInBytes;
     m_state = jit_malloc(AllocType::Device, m_state_size);
     m_scratch_size = (uint32_t) sizes.withoutOverlapScratchSizeInBytes;
     m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
-    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
-                                       input_size.y(), m_state, m_state_size,
+    jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.y(),
+                                       input_size.x(), m_state, m_state_size,
                                        m_scratch, m_scratch_size));
     m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
 }
@@ -292,8 +292,8 @@ void OptixDenoiser<Float, Spectrum>::validate_input(
 
     auto check_resolution = [](const TensorXf &tensor,
                                const ScalarVector2u &expected_size) {
-        if (tensor.ndim() != 0 && (expected_size.x() != tensor.shape(1) ||
-                                   expected_size.y() != tensor.shape(0)))
+        if (tensor.ndim() != 0 && (expected_size.x() != tensor.shape(0) ||
+                                   expected_size.y() != tensor.shape(1)))
             Throw(
                 "The denoiser was created for inputs of size %u x %u (width x "
                 "height). At least one of the input arguments does not have "
