@@ -242,5 +242,5 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_c
 
     dr.forward(theta)
 
-    assert dr.allclose(dr.grad(si.p), [0, 0, 1]) # Ambiguous motion?
+    assert dr.allclose(dr.grad(si.p), [0, 0.5, 0.5]) # Direction of surface normal
     assert dr.allclose(dr.grad(si.n), 0, atol=1e-7)

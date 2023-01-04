@@ -40,7 +40,6 @@ Documentation notes:
      * Embree does not work
 
 //TODO: Test that instancing works
-//TODO: Test what happens with single voxel and tracing ray from inside the shape
 */
 
 template <typename Float, typename Spectrum>
@@ -249,7 +248,8 @@ public:
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
                 Point3f local_p = dr::detach(to_object.transform_affine(ray(pi.t)));
-                Normal3f local_n = dr::detach(dr::normalize(sdf_grad(local_p)));
+                Vector3f local_grad = dr::detach(sdf_grad(local_p));
+                Normal3f local_n = dr::normalize(local_grad);
                 Ray3f local_ray = dr::detach(to_object.transform_affine(ray));
 
                 /* Note: Only when applying a motion to the entire shape is the
@@ -260,11 +260,11 @@ public:
                 // Capture gradients of `m_grid_texture`
                 Float sdf_value;
                 m_grid_texture.eval(rescale_point(local_p), &sdf_value);
-                Float t_diff = sdf_value / dr::dot(local_n, -local_ray.d);
-                t_diff = dr::replace_grad(pi.t, t_diff);
+                Point3f local_motion = sdf_value * (-local_n) / dr::dot(local_n, local_grad);
+                local_p = dr::replace_grad(local_p, local_motion);
 
                 // Capture gradients of `m_to_world`
-                si.p = to_world.transform_affine(local_ray(t_diff));
+                si.p = to_world.transform_affine(local_p);
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
             } else {
                 /* To ensure that the differential interaction point stays along
@@ -641,7 +641,6 @@ private:
 
         return voxel_grad(p, min_voxel_index);
     }
-
 
     /// Very efficient normals (faceted appearance)
     Normal3f falcao(const Point3f& point) const {
