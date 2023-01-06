@@ -1,8 +1,10 @@
+:tocdepth: 3
 .. _sec-api:
 
 .. image:: ../resources/data/docs/images/banners/banner_07.jpg
     :width: 100%
     :align: center
+
 
 API reference
 =============
