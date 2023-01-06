@@ -5,9 +5,34 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Upcoming changes
+----------------
+
+- Upgrade Dr.Jit to v0.3.3
+
+  - Various bug fixes
+  - Stability improvements (race conditions, invalid code generation)
+  - Removed 4 billion variable limit
+- Add missing Python bindings for ``Shape`` and ``ShapePtr``
+  `[bdce950] <https://github.com/mitsuba-renderer/mitsuba3/commit/bdce9509f0504163678e81c6afdd7a8bc9c45340>`_
+- Fix Python bindings for ``Scene``
+  `[4cd5585] <https://github.com/mitsuba-renderer/mitsuba3/commit/4cd558587d711fb35444d5e21c2ab32f74776e65>`_
+- Fix bug which would break the AD graph in ``spectral`` variants
+  `[f3ac81b] <https://github.com/mitsuba-renderer/mitsuba3/commit/f3ac81bc5c6ce65d5843dde3a1d5f230353453e3>`_
+- Parallel scene loading in JIT variants
+  `[48c14a7] <https://github.com/mitsuba-renderer/mitsuba3/commit/48c14a709dcc6da9e44583e85eda5735f1888093>`_ .. `[187da96] <https://github.com/mitsuba-renderer/mitsuba3/commit/187da96afd45e14c17d82909fbbf50cb713c8196f4c0db0bb48b1f36de30659082355316de1da863>`_
+- Fix sampling of ``hg`` ``PhaseFunction``
+  `[10d3514] <https://github.com/mitsuba-renderer/mitsuba3/commit/10d3514a0295cad4ac6d440c7ff326561c6da6a2>`_
+- Fix `envmap` updating in JIT variants
+  `[7bf132f] <https://github.com/mitsuba-renderer/mitsuba3/commit/7bf132f6ae3ec46085a7b24bdb1fcce84983425e>`_
+- Expose ``PhaseFunction`` of ``Medium`` objects through ``mi.traverse()``
+  `[cca5791] <https://github.com/mitsuba-renderer/mitsuba3/commit/cca5791aac22cdf7b3b12cd7a69f7a6800fc715b>`_
+
 
 Mitsuba 3.1.1
 -------------
+
+*November 25, 2022*
 
 - Fixed maximum limits for OptiX kernel launches
   `[a8e6989] <https://github.com/mitsuba-renderer/mitsuba3/commit/a8e69898eacde51954bbc91b34924448b4f8c954>`_
