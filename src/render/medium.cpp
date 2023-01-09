@@ -27,11 +27,19 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
     }
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
-    dr::set_attr(this, "use_emitter_sampling", m_sample_emitters);
-    dr::set_attr(this, "phase_function", m_phase_function.get());
+    // dr::set_attr(this, "use_emitter_sampling", m_sample_emitters);
+    // dr::set_attr(this, "phase_function", m_phase_function.get());
 }
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {}
+
+MI_VARIANT bool Medium<Float, Spectrum>::use_emitter_sampling() const { return m_sample_emitters;}
+
+MI_VARIANT bool Medium<Float, Spectrum>::is_homogeneous() const { return m_is_homogeneous; }
+
+MI_VARIANT bool Medium<Float, Spectrum>::has_spectral_extinction() const {
+    return m_has_spectral_extinction;
+}
 
 MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_object("phase_function", m_phase_function.get(), +ParamFlags::Differentiable);
@@ -114,6 +122,12 @@ Medium<Float, Spectrum>::eval_tr_new(const MediumInteraction3f &mi,
 MI_VARIANT
 const typename Medium<Float, Spectrum>::PhaseFunction *
 Medium<Float, Spectrum>::old_phase_function() const {
+    return m_phase_function.get();
+}
+
+MI_VARIANT
+const typename Medium<Float, Spectrum>::PhaseFunction *
+Medium<Float, Spectrum>::phase_function() const {
     return m_phase_function.get();
 }
 

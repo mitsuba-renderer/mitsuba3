@@ -47,8 +47,9 @@ public:
      *                 The MediumInteraction will always be valid,
      *                 except if the ray missed the Medium's bounding box.
      */
-    MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
-                                           UInt32 channel, Mask active) const;
+    virtual MediumInteraction3f
+    sample_interaction(const Ray3f &ray, Float sample,
+                       UInt32 channel, Mask active) const;
 
     // sample a given medium interaction, with the previous and old states
     virtual std::pair<MediumInteraction3f, MediumInteraction3f>
@@ -78,28 +79,24 @@ public:
      * \return   This method returns a pair of (Transmittance, PDF).
      *
      */
-    std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
+    virtual std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     eval_tr_and_pdf(const MediumInteraction3f &mi,
                     const SurfaceInteraction3f &si, Mask active) const;
 
     /// Return the phase function of this medium
-    MI_INLINE const PhaseFunction *phase_function() const {
-        return m_phase_function.get();
-    }
+    const virtual PhaseFunction *phase_function() const;
 
     /// Return the phase function of this medium
     const virtual PhaseFunction *old_phase_function() const;
 
     /// Returns whether this specific medium instance uses emitter sampling
-    MI_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
+    virtual bool use_emitter_sampling() const;
 
     /// Returns whether this medium is homogeneous
-    MI_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
+    virtual bool is_homogeneous() const;
 
     /// Returns whether this medium has a spectrally varying extinction
-    MI_INLINE bool has_spectral_extinction() const {
-        return m_has_spectral_extinction;
-    }
+    virtual bool has_spectral_extinction() const;
 
     void traverse(TraversalCallback *callback) override;
 
@@ -136,13 +133,13 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
-    DRJIT_VCALL_GETTER(phase_function, const typename Class::PhaseFunction*)
-    DRJIT_VCALL_GETTER(use_emitter_sampling, bool)
-    DRJIT_VCALL_GETTER(is_homogeneous, bool)
-    DRJIT_VCALL_GETTER(has_spectral_extinction, bool)
+    DRJIT_VCALL_METHOD(use_emitter_sampling)
+    DRJIT_VCALL_METHOD(is_homogeneous)
+    DRJIT_VCALL_METHOD(has_spectral_extinction)
     DRJIT_VCALL_METHOD(get_majorant)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
+    DRJIT_VCALL_METHOD(phase_function)
     DRJIT_VCALL_METHOD(old_phase_function)
     DRJIT_VCALL_METHOD(eval_tr_old)
     DRJIT_VCALL_METHOD(eval_tr_new)

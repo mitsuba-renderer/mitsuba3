@@ -28,11 +28,24 @@ public:
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, eval_tr_new, mi, si, active);
     }
 
+    std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
+    eval_tr_and_pdf(const MediumInteraction3f &mi,
+                    const SurfaceInteraction3f &si,
+                    Mask active) const override {
+        using Return = std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, eval_tr_and_pdf, mi, si, active);
+    }
+
     std::pair<MediumInteraction3f, MediumInteraction3f>
     sample_interaction_twostates(const Ray3f &ray, Float sample,
                        UInt32 channel, Mask active) const override {
         using Return = std::pair<MediumInteraction3f, MediumInteraction3f>;
         PYBIND11_OVERRIDE_PURE(Return, Medium, sample_interaction_twostates, ray, sample, channel, active);
+    }
+
+    MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
+                                           UInt32 channel, Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(MediumInteraction3f, Medium, sample_interaction, ray, sample, channel, active);
     }
 
     UnpolarizedSpectrum get_majorant(const MediumInteraction3f &mi, Mask active = true) const override {
@@ -49,13 +62,26 @@ public:
         PYBIND11_OVERRIDE_PURE(PhaseFunction*, Medium, old_phase_function);
     }
 
+    const PhaseFunction *phase_function() const override {
+        PYBIND11_OVERRIDE_PURE(PhaseFunction*, Medium, phase_function);
+    }
+
+    bool is_homogeneous() const override {
+        PYBIND11_OVERRIDE_PURE(bool, Medium, is_homogeneous);
+    }
+
+    bool has_spectral_extinction() const override {
+        PYBIND11_OVERRIDE_PURE(bool, Medium, has_spectral_extinction);
+    }
+
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, Medium, to_string, );
     }
 
-    using Medium::m_sample_emitters;
-    using Medium::m_is_homogeneous;
-    using Medium::m_has_spectral_extinction;
+    bool use_emitter_sampling() const override {
+        PYBIND11_OVERRIDE_PURE(bool, Medium, use_emitter_sampling, );
+    }
+
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
@@ -131,27 +157,6 @@ MI_PY_EXPORT(Medium) {
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
             .def(py::init<const Properties &>())
             .def_method(Medium, id)
-            .def_property("m_sample_emitters",
-                [](PyMedium &medium){ return medium.m_sample_emitters; },
-                [](PyMedium &medium, bool value){
-                    medium.m_sample_emitters = value;
-                    dr::set_attr(&medium, "sample_emitters", value);
-                }
-            )
-            .def_property("m_is_homogeneous",
-                [](PyMedium &medium){ return medium.m_is_homogeneous; },
-                [](PyMedium &medium, bool value){
-                    medium.m_is_homogeneous = value;
-                    dr::set_attr(&medium, "is_homogeneous", value);
-                }
-            )
-            .def_property("m_has_spectral_extinction",
-                [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
-                [](PyMedium &medium, bool value){
-                    medium.m_has_spectral_extinction = value;
-                    dr::set_attr(&medium, "has_spectral_extinction", value);
-                }
-            )
             .def("__repr__", &Medium::to_string);
 
     bind_medium_generic<Medium *>(medium);
