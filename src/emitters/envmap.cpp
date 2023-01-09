@@ -47,7 +47,7 @@ Environment emitter (:monosp:`envmap`)
    - |bool|
    - Compensate sampling for the presence of other Monte Carlo techniques that
      will be combined using multiple importance sampling (MIS)? This is
-     extremely cheap to do and can slightly reduce variance. (Default: true)
+     extremely cheap to do and can slightly reduce variance. (Default: false)
 
  * - data
    - |tensor|
