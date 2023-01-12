@@ -97,7 +97,7 @@ public:
                below. */
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
-            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
+            // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,
                                                         Vector3f(1.f, 0.f, 0.f),
                                                         mueller::stokes_basis(forward));

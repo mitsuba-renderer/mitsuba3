@@ -164,7 +164,7 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
     # another matrix that works in b_45 =[0.707, 0.707, 0] instead.
     # 'rotate_mueller_basis' does exactly that:
     # R(b_00 -> b_45) * M * R(b_45 -> b_00) = R(+45˚) * M * R(-45˚) which is
-    # equivalent to rotating the elemnt by -45˚.
+    # equivalent to rotating the element by -45˚.
     b_45 = rotate_vector(b_00, w, +45.0)
     M_rotated_bases = mi.mueller.rotate_mueller_basis(M,
                                                       w, b_00, b_45,

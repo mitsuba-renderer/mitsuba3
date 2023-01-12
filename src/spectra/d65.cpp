@@ -90,7 +90,7 @@ public:
 
         if (props.has_property("color")) {
             if (m_nested_texture)
-                Throw("Color and child texture object shouldn't be specifed at "
+                Throw("Color and child texture object shouldn't be specified at "
                       "the same time.");
 
             ScalarColor3f color = props.get<ScalarColor3f>("color");

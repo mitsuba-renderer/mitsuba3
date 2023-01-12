@@ -167,7 +167,7 @@ public:
      *    Sample value associated with the specified wavelengths
      *
      * \param alpha
-     *    Alpha value assocated with the sample
+     *    Alpha value associated with the sample
      */
     void put(const Point2f &pos,
              const Wavelength &wavelengths,

@@ -45,7 +45,7 @@ def process_wheel_info_file(file):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        raise RuntimeError("Exactly two arugments are expected: the wheel "
+        raise RuntimeError("Exactly two arguments are expected: the wheel "
                            "archive file and the output directory!")
 
     wheel_loc = sys.argv[1]

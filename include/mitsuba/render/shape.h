@@ -514,7 +514,7 @@ public:
      * The default implementation creates a new HitGroupSbtRecord and fills its
      * \ref data field with \ref m_optix_data_ptr. It then calls \ref
      * optixSbtRecordPackHeader with one of the OptixProgramGroup of the \ref
-     * program_groups array (the actual program group index is infered by the
+     * program_groups array (the actual program group index is inferred by the
      * type of the Shape, see \ref get_shape_descr_idx()).
      */
     virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,

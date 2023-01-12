@@ -1478,7 +1478,7 @@ extern "C" {
     METHODDEF(void) jpeg_error_exit(j_common_ptr cinfo) {
         char msg[JMSG_LENGTH_MAX];
         (*cinfo->err->format_message) (cinfo, msg);
-        Throw("Critcal libjpeg error: %s", msg);
+        Throw("Critical libjpeg error: %s", msg);
     }
 };
 

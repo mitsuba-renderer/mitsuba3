@@ -2034,7 +2034,7 @@ public:
         if (m_query_cost <= 0)
             Throw("The query cost must be > 0");
         if (m_traversal_cost <= 0)
-            Throw("The traveral cost must be > 0");
+            Throw("The traversal cost must be > 0");
         if (m_empty_space_bonus <= 0 || m_empty_space_bonus > 1)
             Throw("The empty space bonus must be in [0, 1]");
     }

@@ -7985,7 +7985,7 @@
             Sample value associated with the specified wavelengths
 
         Parameter ``alpha``:
-            Alpha value assocated with the sample
+            Alpha value associated with the sample
 
         Parameter ``block`` (:py:obj:`mitsuba.ImageBlock`):
             *no description available*
@@ -12733,7 +12733,7 @@
 
             Parameter ``to_sensor`` (:py:obj:`mitsuba.Transform4f`):
                 A Transform4f which is applied to the ``normals`` parameter before
-                denoising. This should be used to tranform the normals into the
+                denoising. This should be used to transform the normals into the
                 correct coordinate frame. This parameter is optional, by default
                 no transformation is applied.
 
@@ -12784,7 +12784,7 @@
 
             Parameter ``to_sensor`` (:py:obj:`mitsuba.Transform4f`):
                 A Transform4f which is applied to the ``normals`` parameter before
-                denoising. This should be used to tranform the normals into the
+                denoising. This should be used to transform the normals into the
                 correct coordinate frame. This parameter is optional, by default
                 no transformation is applied.
 
