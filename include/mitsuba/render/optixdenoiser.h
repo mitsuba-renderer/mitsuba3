@@ -76,7 +76,7 @@ public:
      *
      * \param to_sensor
      *      A \ref Transform4f which is applied to the \c normals parameter
-     *      before denoising. This should be used to tranform the normals into
+     *      before denoising. This should be used to transform the normals into
      *      the correct coordinate frame.
      *      This parameter is optional, by default no transformation is
      *      applied.
@@ -138,7 +138,7 @@ public:
      *
      * \param to_sensor
      *      A \ref Transform4f which is applied to the \c normals parameter
-     *      before denoising. This should be used to tranform the normals into
+     *      before denoising. This should be used to transform the normals into
      *      the correct coordinate frame.
      *      This parameter is optional, by default no transformation is
      *      applied.

@@ -1366,7 +1366,7 @@ Implementation
 We now turn to the actual implementation of polarized rendering im Mitsuba 3. Due to its :ref:`retargetable architecture <sec-variants>`, the whole system is already built on top of a templated ``Spectrum`` type and in principle it is very easy to use this mechanism to introduce the required Mueller/Stokes representations but some manual extra effort needs to be made to carefully place the correct Stokes coordinate system rotations.
 Implementing various forms of Mueller matrices (linear polarizers, retarders, Fresnel equations, ...) covered in Section `Mathematics of polarized light`_ and Section `Fresnel equations`_ are also more or less straightforward and they can be found in the corresponding source file ``include/mitsuba/render/mueller.h``.
 
-As often is the case however, the devil lies in the details and throughout the developement we ran into various issues related to coordinate systems and sign flips. In hindsight, these can all be attributed to mixing conventions from different sources :cite:`Muller1969` or misconceptions about what they mean.
+As often is the case however, the devil lies in the details and throughout the development we ran into various issues related to coordinate systems and sign flips. In hindsight, these can all be attributed to mixing conventions from different sources :cite:`Muller1969` or misconceptions about what they mean.
 
 We briefly list these here for reference and to help people avoid these issues in the future:
 
@@ -1976,7 +1976,7 @@ The output EXR images produced by this encodes the Stokes vectors with 16 channe
 - (**10-12**): :math:`\mathbf{s}_2` (diagonal linear polarization) as an RGB image.
 - (**13-15**): :math:`\mathbf{s}_3` (right vs. left circular polarization) as an RGB image.
 
-Currently, the Stokes components (:math:`\mathbf{s}_0, \dots, \mathbf{s}_3`) will all go through the usual color conversion process at the end. In spectral mode, this can be problematic as Stokes vectors for different wavelengths will be integrated against XYZ sensitivity curves and finally converted to RGB colors (while still being signed quantities). This is likely not ideal for all applications, so alternatively we suggest to render images at fixed wavelenghts. This can be achieved for instance by constructing scenes carefully s.t. only uniform spectra are used everywhere. Monochromatic or RGB rendering modes can be a useful tool here as these use "raw" floating point inputs and outputs. In comparison, spectral modes use an upsampling step to determine plausible spectra based on input RGB values which might not work as expected.
+Currently, the Stokes components (:math:`\mathbf{s}_0, \dots, \mathbf{s}_3`) will all go through the usual color conversion process at the end. In spectral mode, this can be problematic as Stokes vectors for different wavelengths will be integrated against XYZ sensitivity curves and finally converted to RGB colors (while still being signed quantities). This is likely not ideal for all applications, so alternatively we suggest to render images at fixed wavelengths. This can be achieved for instance by constructing scenes carefully s.t. only uniform spectra are used everywhere. Monochromatic or RGB rendering modes can be a useful tool here as these use "raw" floating point inputs and outputs. In comparison, spectral modes use an upsampling step to determine plausible spectra based on input RGB values which might not work as expected.
 
 Internally, the Stokes integrator has to perform a last coordinate frame rotation to make sure the Stokes vector is saved in a consistent format, where its reference basis is aligned with the horizontal axis of the camera frame:
 
@@ -2001,7 +2001,7 @@ Or in source code:
     // Get the camera transformation and evaluate for the current sampled `time`
     Transform4f transform = scene->sensors()[0]->world_transform()->eval(ray.time);
 
-    // Compute the output Stokes reference that alignes horizontally with the camera
+    // Compute the output Stokes reference that aligns horizontally with the camera
     Vector3f vertical = transform * Vector3f(0.f, 1.f, 0.f);
     Vector3f basis_cam = dr::cross(ray.d, vertical);
 

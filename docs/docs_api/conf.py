@@ -333,7 +333,7 @@ def parse_overload_signature(signature):
 
 
 def insert_params_and_return_docstring(lines, params, next_idx, indent=''):
-    """Add parameter descriptions to the docstring if neccessary (could
+    """Add parameter descriptions to the docstring if necessary (could
        already be added by the \param doxygen macro). Also add a line
        for the return value if any. It returns the number of lines added
        through this process.
@@ -497,7 +497,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
                 # Iterate over the enum members
                 while next_idx < len(lines) and not '__init__' in lines[next_idx]:
                     l = lines[next_idx]
-                    # Skip empy lines
+                    # Skip empty lines
                     if not l == '':
                         # Check if this line defines a enum member
                         if re.match(r'  [a-zA-Z\_0-9]+ : .*', l):
@@ -540,7 +540,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         if cached_signature == '(overloaded)':
             process_overload_block(lines, what)
         else:
-            # Find where to insert next parameter if neccessary
+            # Find where to insert next parameter if necessary
             # For this we look for the 'Returns:', otherwise we insert at the end
             next_idx = len(lines)
             for i, l in enumerate(lines):
@@ -664,7 +664,7 @@ def write_rst_file_callback(app, exception):
     # Register last block
     rst_block_range[last_block_name] = [block_line_start, len(extracted_rst)]
 
-    # Given a class/fucntion "block" name, add an RST 'include' directive with the
+    # Given a class/function "block" name, add an RST 'include' directive with the
     # corresponding start/end-line to the output file.
     def write_block(f, block_name):
         f.write('.. include:: generated/extracted_rst_api.rst\n')

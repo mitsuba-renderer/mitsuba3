@@ -252,7 +252,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         active &= dr::neq(ds.pdf, 0.f);
 
-        // Mark occluded samles as invalid if requested by the user
+        // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {
             Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
             dr::masked(spec, occluded) = 0.f;
@@ -264,7 +264,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         active &= dr::neq(ds.pdf, 0.f);
 
-        // Mark occluded samles as invalid if requested by the user
+        // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {
             Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
             dr::masked(spec, occluded) = 0.f;

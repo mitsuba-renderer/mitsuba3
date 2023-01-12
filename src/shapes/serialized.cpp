@@ -417,7 +417,7 @@ public:
     }
 
     /**
-     * Simply advances the stream without outputing to the mesh.
+     * Simply advances the stream without outputting to the mesh.
      * Since compressed streams do not provide `tell` and `seek`
      * implementations, we have to read and discard the data.
      */

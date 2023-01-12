@@ -8,7 +8,7 @@
 # 2. trailing spaces
 # 3. missing space between keyword and parenthesis, e.g.: for(, if(, while(
 # 4. opening brace on its own line. It should always be on the same line as the
-#    if/while/for/do statment.
+#    if/while/for/do statement.
 # 5. Missing space between right parenthesis and brace, e.g. 'for (...){'
 #
 # Invoke as: resources/check-style.sh

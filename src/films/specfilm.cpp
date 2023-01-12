@@ -206,7 +206,7 @@ public:
 
         for (auto srf : m_srfs) {
             UnpolarizedSpectrum values = srf->eval(si);
-            // Each wavelenght is duplicated with the size of the Spectrum
+            // Each wavelength is duplicated with the size of the Spectrum
             // (default constructor while initialized with only a number)
             mis_data += values.x();
         }

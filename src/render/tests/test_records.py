@@ -1,5 +1,5 @@
 """
-These tests intend to thoroughly check the accessors, slicing and assigmnent
+These tests intend to thoroughly check the accessors, slicing and assignment
 mechanics for data structures that support dynamically-sized vectorization.
 """
 

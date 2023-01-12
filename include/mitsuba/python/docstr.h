@@ -3338,7 +3338,7 @@ Parameter ``value``:
     Sample value associated with the specified wavelengths
 
 Parameter ``alpha``:
-    Alpha value assocated with the sample)doc";
+    Alpha value associated with the sample)doc";
 
 static const char *__doc_mitsuba_ImageBlock_put_2 =
 R"doc(Accumulate a single sample or a wavefront of samples into the image
@@ -4834,7 +4834,7 @@ Parameter ``normals``:
 
 Parameter ``to_sensor``:
     A Transform4f which is applied to the ``normals`` parameter before
-    denoising. This should be used to tranform the normals into the
+    denoising. This should be used to transform the normals into the
     correct coordinate frame. This parameter is optional, by default
     no transformation is applied.
 
@@ -4884,7 +4884,7 @@ Parameter ``normals_ch``:
 
 Parameter ``to_sensor``:
     A Transform4f which is applied to the ``normals`` parameter before
-    denoising. This should be used to tranform the normals into the
+    denoising. This should be used to transform the normals into the
     correct coordinate frame. This parameter is optional, by default
     no transformation is applied.
 
@@ -7226,7 +7226,7 @@ Parameter ``program_groups``:
 The default implementation creates a new HitGroupSbtRecord and fills
 its data field with m_optix_data_ptr. It then calls
 optixSbtRecordPackHeader with one of the OptixProgramGroup of the
-program_groups array (the actual program group index is infered by the
+program_groups array (the actual program group index is inferred by the
 type of the Shape, see get_shape_descr_idx()).)doc";
 
 static const char *__doc_mitsuba_Shape_optix_prepare_geometry =
@@ -7640,7 +7640,7 @@ static const char *__doc_mitsuba_Stream_skip = R"doc(Skip ahead by a given numbe
 
 static const char *__doc_mitsuba_Stream_tell = R"doc(Gets the current position inside the stream)doc";
 
-static const char *__doc_mitsuba_Stream_to_string = R"doc(Returns a human-readable desriptor of the stream)doc";
+static const char *__doc_mitsuba_Stream_to_string = R"doc(Returns a human-readable descriptor of the stream)doc";
 
 static const char *__doc_mitsuba_Stream_truncate =
 R"doc(Truncates the stream to a given size.
@@ -10816,7 +10816,7 @@ Parameter ``s``:
     definite matrix.
 
 Returns:
-    The probablity of sampling a certain normal)doc";
+    The probability of sampling a certain normal)doc";
 
 static const char *__doc_mitsuba_sggx_projected_area =
 R"doc(Evaluates the projected area of the SGGX microflake distribution

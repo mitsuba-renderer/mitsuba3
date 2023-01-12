@@ -802,7 +802,7 @@ private:
             }
 
             char chpostfix = postfix[0];
-            // If this is the first occurence of this attribute, we look for the postfix index
+            // If this is the first occurrence of this attribute, we look for the postfix index
             if (!reading_attribute) {
                 int32_t postfix_index = -1;
                 for (size_t j = 0; j < valid_postfix_count; ++j) {

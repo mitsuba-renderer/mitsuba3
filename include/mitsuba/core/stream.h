@@ -54,7 +54,7 @@ public:
      */
     Stream();
 
-    /// Returns a human-readable desriptor of the stream
+    /// Returns a human-readable descriptor of the stream
     virtual std::string to_string() const override;
 
     /** \brief Closes the stream.

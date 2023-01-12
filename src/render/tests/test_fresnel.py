@@ -148,7 +148,7 @@ def test06_phase_tir(variant_scalar_rgb):
     eta = 1/1.5
     critical = dr.asin(eta)
 
-    # At critcal angle: both phases are zero.
+    # At critical angle: both phases are zero.
     a_s, a_p, _, _, _ = mi.fresnel_polarized(dr.cos(critical), eta)
     assert dr.allclose(dr.arg(a_s), 0.0)
     assert dr.allclose(dr.arg(a_p), 0.0)

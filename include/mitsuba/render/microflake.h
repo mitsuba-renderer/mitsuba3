@@ -80,7 +80,7 @@ Normal<Float, 3> sggx_sample_vndf(const Vector<Float, 3> &wi,
  *      needs to ensure that the parameters indeed represent a positive
  *      definite matrix.
  *
- * \return The probablity of sampling a certain normal
+ * \return The probability of sampling a certain normal
  */
 template <typename Float>
 Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const dr::Array<Float, 6> &s) {
