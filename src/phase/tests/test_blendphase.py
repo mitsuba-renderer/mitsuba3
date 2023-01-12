@@ -61,7 +61,7 @@ def test02_eval_all(variant_scalar_rgb):
     assert dr.allclose(value, expected)
 
 
-def test03_sample_all(variant_scalar_rgb):
+def test03_sample_all(variants_all_rgb):
     weight = 0.2
     g = 0.2
 
