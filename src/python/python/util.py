@@ -496,14 +496,7 @@ def render(scene: mi.Scene,
         raise Exception('No integrator specified! Add an integrator in the scene '
                         'description or provide an integrator directly as argument.')
 
-    if isinstance(sensor, int):
-        if len(scene.sensors()) == 0:
-            raise Exception('No sensor specified! Add a sensor in the scene '
-                            'description or provide a sensor directly as argument.')
-        sensor = scene.sensors()[sensor]
-
     assert isinstance(integrator, mi.Integrator)
-    assert isinstance(sensor, mi.Sensor)
 
     if spp_grad == 0:
         spp_grad = spp
