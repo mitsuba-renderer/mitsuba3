@@ -579,6 +579,39 @@ Medium<Float, Spectrum>::extract_channel(Spectrum value, UInt32 channel) {
     return result;
 }
 
+MI_VARIANT
+MI_INLINE size_t
+Medium<Float, Spectrum>::majorant_resolution_factor() const {
+    return m_majorant_resolution_factor;
+}
+
+MI_VARIANT
+MI_INLINE void
+Medium<Float, Spectrum>::set_majorant_resolution_factor(size_t factor) {
+    m_majorant_resolution_factor = factor;
+}
+
+MI_VARIANT
+MI_INLINE ref<typename Medium<Float, Spectrum>::Volume>
+Medium<Float, Spectrum>::majorant_grid() const {
+    return m_majorant_grid;
+}
+
+MI_VARIANT
+MI_INLINE bool
+Medium<Float, Spectrum>::has_majorant_grid() const {
+    return (bool) m_majorant_grid;
+}
+
+MI_VARIANT
+MI_INLINE typename Medium<Float, Spectrum>::Vector3f
+Medium<Float, Spectrum>::majorant_grid_voxel_size() const {
+    if (m_majorant_grid)
+        return m_majorant_grid->voxel_size();
+    else
+        return dr::zeros<Vector3f>();
+}
+
 MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
 MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)

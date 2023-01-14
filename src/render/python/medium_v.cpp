@@ -7,7 +7,7 @@
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Medium, Sampler, Scene, PhaseFunction)
+    MI_IMPORT_TYPES(Medium, Sampler, Scene, PhaseFunction, Volume)
 
     PyMedium(const Properties &props) : Medium(props) {}
 
@@ -46,6 +46,33 @@ public:
     MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
                                            UInt32 channel, Mask active) const override {
         PYBIND11_OVERRIDE_PURE(MediumInteraction3f, Medium, sample_interaction, ray, sample, channel, active);
+    }
+
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_real(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                            Mask active) const override {
+        using Return = std::pair<MediumInteraction3f, Spectrum>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, sample_interaction_real, ray, sampler, channel, active);
+    }
+
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drt(const Ray3f &ray, Sampler *sampler,
+                                           UInt32 channel, Mask active) const override {
+        using Return = std::pair<MediumInteraction3f, Spectrum>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, sample_interaction_drt, ray, sampler, channel, active);
+    }
+
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drrt(const Ray3f &ray, Sampler *sampler,
+                                           UInt32 channel, Mask active) const override {
+        using Return = std::pair<MediumInteraction3f, Spectrum>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, sample_interaction_drrt, ray, sampler, channel, active);
+    }
+
+    std::tuple<MediumInteraction3f, Float, Float, Mask>
+    prepare_interaction_sampling(const Ray3f &ray, Mask active) const override {
+        using Return = std::tuple<MediumInteraction3f, Float, Float, Mask>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, prepare_interaction_sampling, ray, active);
     }
 
     UnpolarizedSpectrum get_majorant(const MediumInteraction3f &mi, Mask active = true) const override {
@@ -88,6 +115,31 @@ public:
 
     bool use_emitter_sampling() const override {
         PYBIND11_OVERRIDE_PURE(bool, Medium, use_emitter_sampling, );
+    }
+
+    std::tuple<Float, Vector3f, Vector3f> prepare_dda_traversal(const Volume *majorant_grid, const Ray3f &ray, Float mint, Float maxt, Mask active) const override {
+        using Return = std::tuple<Float, Vector3f, Vector3f>;
+        PYBIND11_OVERRIDE_PURE(Return, Medium, prepare_dda_traversal, majorant_grid, ray, mint, maxt, active);
+    }
+
+    size_t majorant_resolution_factor() const override {
+        PYBIND11_OVERRIDE_PURE(size_t, Medium, majorant_resolution_factor);
+    }
+
+    void set_majorant_resolution_factor(size_t factor) override {
+        PYBIND11_OVERRIDE_PURE(void, Medium, set_majorant_resolution_factor, factor);
+    }
+
+    ref<Volume> majorant_grid() const override {
+        PYBIND11_OVERRIDE_PURE(ref<Volume>, Medium, majorant_grid);
+    }
+
+    bool has_majorant_grid() const override {
+        PYBIND11_OVERRIDE_PURE(bool, Medium, has_majorant_grid);
+    }
+
+    Vector3f majorant_grid_voxel_size() const override {
+        PYBIND11_OVERRIDE_PURE(Vector3f, Medium, majorant_grid_voxel_size);
     }
 
 };
@@ -180,7 +232,12 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_scattering_coefficients(mi, active); },
             "mi"_a, "active"_a=true,
-            D(Medium, get_scattering_coefficients));
+            D(Medium, get_scattering_coefficients))
+        .def("prepare_dda_traversal",
+            [](Ptr ptr, const Volume *majorant_grid, const Ray3f &ray, Float mint, Float maxt, Mask active) {
+                return ptr->prepare_dda_traversal(majorant_grid, ray, mint, maxt, active); },
+            "majorant_grid"_a, "ray"_a, "mint"_a, "maxt"_a, "active"_a=true,
+            "");
 
     if constexpr (dr::is_array_v<Ptr>)
         bind_drjit_ptr_array(cls);

@@ -83,7 +83,7 @@ public:
      * Similar to \ref sample_interaction, but ensures that a real interaction
      * is sampled.
      */
-    std::pair<MediumInteraction3f, Spectrum>
+    virtual std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_real(const Ray3f &ray, Sampler *sampler, UInt32 channel,
                             Mask active) const;
 
@@ -98,7 +98,7 @@ public:
      * to decide whether to perform attached or detached lookups for
      * these quantities.
      */
-    std::pair<MediumInteraction3f, Spectrum>
+    virtual std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_drt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
                            Mask active) const;
 
@@ -113,7 +113,7 @@ public:
      * to decide whether to perform attached or detached lookups for
      * these quantities.
      */
-    std::pair<MediumInteraction3f, Spectrum>
+    virtual std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_drrt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
                             Mask active) const;
 
@@ -141,7 +141,7 @@ public:
      * medium interaction to be filled by a sampling routine.
      * Exposed as part of the API to enable testing.
      */
-    std::tuple<MediumInteraction3f, Float, Float, Mask>
+    virtual std::tuple<MediumInteraction3f, Float, Float, Mask>
     prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
 
     /**
@@ -149,7 +149,7 @@ public:
      *
      * Returns (initial t, tmax, tdelta).
      */
-    std::tuple<Float, Vector3f, Vector3f>
+    virtual std::tuple<Float, Vector3f, Vector3f>
     prepare_dda_traversal(const Volume *majorant_grid, const Ray3f &ray,
                           Float mint, Float maxt, Mask active) const;
 
@@ -163,35 +163,23 @@ public:
      * Returns the current majorant supergrid resolution factor
      * w.r.t. the sigma_t grid resolution.
      */
-    MI_INLINE size_t majorant_resolution_factor() const {
-        return m_majorant_resolution_factor;
-    }
+    virtual size_t majorant_resolution_factor() const;
     /**
      * Set the majorant supergrid resolution factor
      * w.r.t. the sigma_t grid resolution.
      * One should call \ref parameters_changed() to ensure
      * that the supergrid is regenerated.
      */
-    MI_INLINE void set_majorant_resolution_factor(size_t factor) {
-        m_majorant_resolution_factor = factor;
-    }
+    virtual void set_majorant_resolution_factor(size_t factor);
 
     /// Returns a reference to the majorant supegrid, if any
-    MI_INLINE ref<Volume> majorant_grid() const {
-        return m_majorant_grid;
-    }
+    virtual ref<Volume> majorant_grid() const;
+
     /// Return true if a majorant supergrid is available.
-    MI_INLINE bool has_majorant_grid() const {
-        return (bool) m_majorant_grid;
-    }
+    virtual bool has_majorant_grid() const;
 
     /// Return the size of a voxel in the majorant grid, if any
-    MI_INLINE Vector3f majorant_grid_voxel_size() const {
-        if (m_majorant_grid)
-            return m_majorant_grid->voxel_size();
-        else
-            return dr::zeros<Vector3f>();
-    }
+    virtual Vector3f majorant_grid_voxel_size() const;
 
     /// Returns whether this specific medium instance uses emitter sampling
     virtual bool use_emitter_sampling() const;
@@ -267,6 +255,12 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_METHOD(sample_interaction_drrt)
     DRJIT_VCALL_METHOD(eval_tr_and_pdf)
     DRJIT_VCALL_METHOD(prepare_interaction_sampling)
+    DRJIT_VCALL_METHOD(prepare_dda_traversal)
+    DRJIT_VCALL_METHOD(majorant_resolution_factor)
+    DRJIT_VCALL_METHOD(set_majorant_resolution_factor)
+    DRJIT_VCALL_METHOD(majorant_grid)
+    DRJIT_VCALL_METHOD(has_majorant_grid)
+    DRJIT_VCALL_METHOD(majorant_grid_voxel_size)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}
