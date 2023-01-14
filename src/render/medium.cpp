@@ -111,7 +111,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         sampled_t = dr::select(reached, dda_t, dr::Infinity<Float>);
     } else {
         // --- A single majorant for the whole volume.
-        mei.combined_extinction = dr::detach(get_majorant(mei, active));
+        mei.combined_extinction = get_majorant(mei, active);
         Float m                = extract_channel(mei.combined_extinction, channel);
         sampled_t              = mint + (desired_tau / m);
     }
