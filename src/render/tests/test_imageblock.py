@@ -192,3 +192,28 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                     ref /= dr.sum(weight)
 
             assert dr.allclose(value, ref, atol=1e-5)
+
+
+@pytest.mark.parametrize("coalesce", [ False, True ])
+@pytest.mark.parametrize("normalize", [ False, True ])
+def test05_boundary_effects(variants_vec_rgb, coalesce, normalize):
+    # Check that everything works correctly even when the image block
+    # is smaller than the filter kernel
+    rfilter = mi.load_dict({'type':'gaussian'})
+    ib = mi.ImageBlock(
+        size=(1, 1),
+        offset=(0, 0),
+        channel_count=1,
+        rfilter=rfilter,
+        normalize=normalize,
+        coalesce=coalesce
+    )
+    ib.put(pos=(0.49, 0.49), values=(dr.ones(mi.Float, 1),))
+
+    v1 = 0.9996645373720975
+    v2 = 0.13499982060871019
+    if normalize:
+        ref = v1 / (v1 + 2*v2)**2
+    else:
+        ref = v1
+    assert dr.allclose(ib.tensor().array, ref, rtol=1e-2)

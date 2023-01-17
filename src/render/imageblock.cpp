@@ -242,13 +242,14 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
         // Compute the number of filter evaluations needed along each axis
         ScalarVector2u count;
+        uint32_t count_max = dr::ceil2int<uint32_t>(2.f * radius);
         if constexpr (!JIT) {
             if (dr::any(pos_0_u > pos_1_u))
                 return;
             count = count_u;
         } else {
             // Conservative bounds must be used in the vectorized case
-            count = dr::ceil2int<uint32_t>(2.f * radius);
+            count = count_max;
             active &= dr::all(pos_0_u <= pos_1_u);
         }
 
@@ -264,16 +265,15 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                   *weights_y = (Float *) alloca(sizeof(Float) * count.y());
 
             // Evaluate filters weights along the X and Y axes
-
-            for (uint32_t i = 0; i < count.x(); ++i) {
-                new (weights_x + i)
+            for (uint32_t x = 0; x < count.x(); ++x) {
+                new (weights_x + x)
                     Float(JIT ? m_rfilter->eval(rel_f.x())
                               : m_rfilter->eval_discretized(rel_f.x()));
                 rel_f.x() += 1.f;
             }
 
-            for (uint32_t i = 0; i < count.y(); ++i) {
-                new (weights_y + i)
+            for (uint32_t y = 0; y < count.y(); ++y) {
+                new (weights_y + y)
                     Float(JIT ? m_rfilter->eval(rel_f.y())
                               : m_rfilter->eval_discretized(rel_f.y()));
                 rel_f.y() += 1.f;
@@ -283,11 +283,14 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             if (unlikely(m_normalize)) {
                 Float wx = 0.f, wy = 0.f;
 
-                for (uint32_t i = 0; i < count.x(); ++i)
-                    wx += weights_x[i];
-
-                for (uint32_t i = 0; i < count.y(); ++i)
-                    wy += weights_y[i];
+                Point2f rel_f2 = dr::ceil(pos_0_f) - pos_f;
+                for (uint32_t i = 0; i < count_max; ++i) {
+                    wx += JIT ? m_rfilter->eval(rel_f2.x())
+                              : m_rfilter->eval_discretized(rel_f2.x());
+                    wy += JIT ? m_rfilter->eval(rel_f2.y())
+                              : m_rfilter->eval_discretized(rel_f2.y());
+                    rel_f2 += 1.f;
+                }
 
                 Float factor = dr::detach(wx * wy);
 
@@ -416,17 +419,11 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                   *weights_y = (Float *) alloca(sizeof(Float) * count);
 
             for (uint32_t i = 0; i < count; ++i) {
-                Float weight_x = m_rfilter->eval(rel_f.x()),
-                      weight_y = m_rfilter->eval(rel_f.y());
-
-                if (unlikely(m_normalize)) {
-                    dr::masked(weight_x, x + i >= size.x()) = 0.f;
-                    dr::masked(weight_y, y + i >= size.y()) = 0.f;
-                }
+                Float weight_x = m_rfilter->eval(rel_f.x());
+                Float weight_y = m_rfilter->eval(rel_f.y());
 
                 new (weights_x + i) Float(weight_x);
                 new (weights_y + i) Float(weight_y);
-
                 rel_f += 1;
             }
 
