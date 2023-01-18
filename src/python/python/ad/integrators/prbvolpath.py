@@ -177,7 +177,9 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 # Handle null and real scatter events
                 if self.handle_null_scattering:
-                    scatter_prob = index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel)
+                    majorant = index_spectrum(mei.combined_extinction, channel)
+                    s = index_spectrum(mei.sigma_t, channel) / majorant
+                    scatter_prob = dr.select(dr.neq(majorant, 0.0), s, 0.0)
                     act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                     act_medium_scatter = ~act_null_scatter & active_medium
                     weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
@@ -364,7 +366,9 @@ class PRBVolpathIntegrator(RBIntegrator):
             active_medium &= mei.is_valid()
             ray.o[active_medium] = dr.detach(mei.p)
             si.t[active_medium] = dr.detach(si.t - mei.t)
-            tr_multiplier[active_medium] *= mei.sigma_n / mei.combined_extinction
+            tr_multiplier[active_medium] *= dr.select(dr.neq(mei.combined_extinction, 0.0),
+                                                        mei.sigma_n / mei.combined_extinction,
+                                                        mei.sigma_n)
 
             # Handle interactions with surfaces
             active_surface |= escaped_medium
