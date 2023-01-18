@@ -11,11 +11,12 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2u &size,
                                         uint32_t channel_count,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
-                                        bool coalesce, bool warn_negative,
-                                        bool warn_invalid)
+                                        bool coalesce, bool compensate,
+                                        bool warn_negative, bool warn_invalid)
     : m_offset(offset), m_size(0), m_channel_count(channel_count),
       m_rfilter(rfilter), m_normalize(normalize), m_coalesce(coalesce),
-      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid) {
+      m_compensate(compensate), m_warn_negative(warn_negative),
+      m_warn_invalid(warn_invalid) {
 
     // Detect if a box filter is being used, and just discard it in that case
     if (rfilter && rfilter->is_box_filter())
@@ -33,13 +34,13 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
                                         const ScalarPoint2i &offset,
                                         const ReconstructionFilter *rfilter,
                                         bool border, bool normalize,
-                                        bool coalesce, bool warn_negative,
-                                        bool warn_invalid)
+                                        bool coalesce, bool compensate,
+                                        bool warn_negative, bool warn_invalid)
     : m_offset(offset), m_rfilter(rfilter), m_normalize(normalize),
-      m_coalesce(coalesce), m_warn_negative(warn_negative),
-      m_warn_invalid(warn_invalid) {
+      m_coalesce(coalesce), m_compensate(compensate),
+      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid) {
 
-	if (tensor.ndim() != 3)
+    if (tensor.ndim() != 3)
 		Throw("ImageBlock(const TensorXf&): expected a 3D tensor (height x width x channels)!");
 
     // Detect if a box filter is being used, and just discard it in that case
@@ -75,6 +76,9 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
     m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
+
+    if (m_compensate)
+        m_tensor_compensation = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
 }
 
 MI_VARIANT void
@@ -90,7 +94,42 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
            shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
 
     m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
+
+    if (m_compensate)
+        m_tensor_compensation = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
+
     m_size = size;
+}
+
+MI_VARIANT typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Float, Spectrum>::tensor() {
+    if constexpr (dr::is_jit_v<Float>) {
+        if (m_compensate) {
+            Float &comp = m_tensor_compensation.array();
+            m_tensor.array() += comp;
+            comp = dr::zeros<Float>(comp.size());
+        }
+    }
+    return m_tensor;
+}
+
+MI_VARIANT const typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Float, Spectrum>::tensor() const {
+    return const_cast<ImageBlock&>(*this).tensor();
+}
+
+MI_VARIANT void ImageBlock<Float, Spectrum>::accum(Float value, UInt32 index, Bool active) {
+    if constexpr (dr::is_jit_v<Float>) {
+        if (m_compensate)
+            dr::scatter_reduce_kahan(m_tensor.array(),
+                                     m_tensor_compensation.array(),
+                                     value, index, active);
+        else
+            dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
+                               value, index, active);
+    } else {
+        DRJIT_MARK_USED(value);
+        DRJIT_MARK_USED(index);
+        DRJIT_MARK_USED(active);
+    }
 }
 
 MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) {
@@ -186,12 +225,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 *ptr++ += values[k];
         } else {
-            for (uint32_t k = 0; k < m_channel_count; ++k) {
-                if (!values[k].is_literal() || values[k][0] != 0)
-                    dr::scatter_reduce(ReduceOp::Add, m_tensor.array(), values[k],
-                                       index, active);
-                index++;
-            }
+            for (uint32_t k = 0; k < m_channel_count; ++k)
+                accum(values[k], index++, active);
         }
 
         return;
@@ -326,9 +361,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                             DRJIT_MARK_USED(active_2);
                             ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
                         } else {
-                            if (!values[k].is_literal() || values[k][0] != 0)
-                                dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                                   values[k] * weight, index, active_2);
+                            accum(values[k] * weight, index, active_2);
                         }
 
                         index++;
@@ -364,11 +397,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                           weight = weight_x * weight_y;
 
                     Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                           values[k] * weight, index, active_2);
-                        index++;
-                    }
+                    for (uint32_t k = 0; k < m_channel_count; ++k)
+                        accum(values[k] * weight, index++, active_2);
 
                     xs++;
                 }
@@ -451,12 +481,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Mask active_2 = active_1 && x < size.x();
                     Float weight = weights_y[ys] * weights_x[xs];
 
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        if (!values[k].is_literal() || values[k][0] != 0)
-                            dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                               values[k] * weight, index, active_2);
-                        index++;
-                    }
+                    for (uint32_t k = 0; k < m_channel_count; ++k)
+                        accum(values[k] * weight, index++, active_2);
 
                     x++;
                 }
@@ -492,11 +518,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                           weight = weight_x * weight_y;
 
                     Mask active_2 = active_1 && (x + xs < size.x());
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
-                                           values[k] * weight, index, active_2);
-                        index++;
-                    }
+                    for (uint32_t k = 0; k < m_channel_count; ++k)
+                        accum(values[k] * weight, index++, active_2);
 
                     xs++;
                 }
@@ -740,6 +763,7 @@ MI_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
         << "  border_size = " << m_border_size << "," << std::endl
         << "  normalize = " << m_normalize << "," << std::endl
         << "  coalesce = " << m_coalesce << "," << std::endl
+        << "  compensate = " << m_compensate << "," << std::endl
         << "  warn_negative = " << m_warn_negative << "," << std::endl
         << "  warn_invalid = " << m_warn_invalid << "," << std::endl
         << "  rfilter = " << (m_rfilter ? string::indent(m_rfilter) : "BoxFilter[]")
