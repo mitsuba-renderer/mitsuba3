@@ -440,6 +440,9 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mei,
                                          const SurfaceInteraction3f &si,
                                          Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+    // TODO: This is actually wrong if we use a majorant supergrid.
+    // It only works if the extinction is not spectrally varying
+    // since this function doesnn't need to be called then
 
     Float t                 = dr::minimum(mei.t, si.t) - mei.mint;
     UnpolarizedSpectrum tr  = dr::exp(-t * mei.combined_extinction);

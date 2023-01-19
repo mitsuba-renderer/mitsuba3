@@ -166,11 +166,16 @@ class PRBVolpathIntegrator(RBIntegrator):
                 needs_intersection &= ~active_medium
                 mei.t[active_medium & (si.t < mei.t)] = dr.inf
 
-                # Evaluate ratio of transmittance and free-flight PDF
-                tr, free_flight_pdf = medium.eval_tr_and_pdf(mei, si, active_medium)
-                tr_pdf = index_spectrum(free_flight_pdf, channel)
                 weight = mi.Spectrum(1.0)
-                weight[active_medium] *= dr.select(tr_pdf > 0.0, tr / dr.detach(tr_pdf), 0.0)
+
+                if not self.handle_null_scattering:
+                    # evaluate free flight pdf, is only used for homogeneous media
+                    # heterogeneous media are handled in the scattering event, that uses the
+                    # fact that these terms cancel out
+                    # TODO: This is less general, but works for the deadline, shoulc be fixed better before merging
+                    tr, free_flight_pdf = medium.eval_tr_and_pdf(mei, si, active_medium)
+                    tr_pdf = index_spectrum(free_flight_pdf, channel)
+                    weight[active_medium] *= dr.select(tr_pdf > 0.0, tr / dr.detach(tr_pdf), 0.0)
 
                 escaped_medium = active_medium & ~mei.is_valid()
                 active_medium &= mei.is_valid()
@@ -182,10 +187,12 @@ class PRBVolpathIntegrator(RBIntegrator):
                     scatter_prob = dr.select(dr.neq(majorant, 0.0), s, 0.0)
                     act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                     act_medium_scatter = ~act_null_scatter & active_medium
-                    weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
+                    # TODO: Here we removed terms that cancel out. This might be problematic for differentiation,
+                    # Double check that
                 else:
                     scatter_prob = mi.Float(1.0)
                     act_medium_scatter = active_medium
+
 
                 depth[act_medium_scatter] += 1
                 last_scatter_event[act_medium_scatter] = dr.detach(mei)
@@ -197,7 +204,11 @@ class PRBVolpathIntegrator(RBIntegrator):
                     ray.o[act_null_scatter] = dr.detach(mei.p)
                     si.t[act_null_scatter] = si.t - dr.detach(mei.t)
 
-                weight[act_medium_scatter] *= mei.sigma_s / dr.detach(scatter_prob)
+                if self.handle_null_scattering:
+                    weight[act_medium_scatter] *= mei.sigma_s / dr.detach(mei.sigma_t)
+                else:
+                    weight[act_medium_scatter] *= mei.sigma_s
+
                 throughput[active_medium] *= dr.detach(weight)
 
                 mei = dr.detach(mei)
