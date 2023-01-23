@@ -77,12 +77,6 @@ class ADIntegrator(mi.CppADIntegrator):
             # Generate a set of rays starting at the sensor
             ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
 
-            # Assume rays were perfectly sampled
-            pos = mi.Point2f(
-                0.5 + mi.Float(dr.arange(mi.UInt32, dr.width(rays)) // spp),
-                0.5
-            )
-
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, state = self.sample(
                 mode=dr.ADMode.Primal,
@@ -350,7 +344,8 @@ class ADIntegrator(mi.CppADIntegrator):
         pos += mi.Vector2i(film.crop_offset())
 
         # Cast to floating point and add random offset
-        pos_f = mi.Vector2f(pos) + sampler.next_2d()
+        # pos_f = mi.Vector2f(pos) + sampler.next_2d()
+        pos_f = mi.Vector2f(pos) + 0.5
 
         # Re-scale the position to [0, 1]^2
         scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
