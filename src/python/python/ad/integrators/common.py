@@ -77,6 +77,12 @@ class ADIntegrator(mi.CppADIntegrator):
             # Generate a set of rays starting at the sensor
             ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
 
+            # Assume rays were perfectly sampled
+            pos = mi.Point2f(
+                0.5 + mi.Float(dr.arange(mi.UInt32, dr.width(rays)) // spp),
+                0.5
+            )
+
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, state = self.sample(
                 mode=dr.ADMode.Primal,
