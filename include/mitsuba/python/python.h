@@ -63,7 +63,21 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
             (void) new Class(                                                  \
                 name, #Name, variant,                                          \
                 [=](const Properties &p) {                                     \
-                    py::object o = constructor(&p);                            \
+                    /* The thread-local python variant information might not
+                    have been set on this thread */                            \
+                    py::gil_scoped_acquire gil;                                \
+                    py::module mi = py::module::import("mitsuba");             \
+                    py::object py_variant = mi.attr("variant")();              \
+                    if (py_variant.is(py::none()) ||                           \
+                        py_variant.cast<std::string>() != variant)             \
+                        mi.attr("set_variant")(variant);                       \
+                                                                               \
+                    py::object o;                                              \
+                    {                                                          \
+                        py::gil_scoped_release release;                        \
+                        o = constructor(&p);                                   \
+                    }                                                          \
+                                                                               \
                     ref<Name> o2 = o.cast<Name*>();                            \
                     o.release();                                               \
                     return o2;                                                 \
