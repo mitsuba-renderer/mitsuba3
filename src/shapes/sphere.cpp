@@ -41,6 +41,7 @@ Sphere (:monosp:`sphere`)
    -  Specifies an optional linear object-to-world transformation.
       Note that non-uniform scales and shears are not permitted!
       (Default: none, i.e. object space = world space)
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_sphere_basic.jpg

@@ -32,7 +32,7 @@ Disk (:monosp:`disk`)
    - |transform|
    - Specifies a linear object-to-world transformation. Note that non-uniform scales are not
      permitted! (Default: none, i.e. object space = world space)
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_disk.jpg

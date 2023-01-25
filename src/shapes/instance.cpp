@@ -29,6 +29,7 @@ Instance (:monosp:`instance`)
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))
+   - |exposed|, |differentiable|, |discontinuous|
 
 This plugin implements a geometry instance used to efficiently replicate geometry many times. For
 details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.

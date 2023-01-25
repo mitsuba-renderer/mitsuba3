@@ -30,7 +30,7 @@ Rectangle (:monosp:`rectangle`)
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_rectangle.jpg
