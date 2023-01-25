@@ -411,3 +411,17 @@ def test30_invalid_parameter_name(variant_scalar_rgb):
         </scene>
         """)
     e.match('Invalid character in parameter name')
+
+
+def test31_python_plugins_parallel(variants_vec_backends_once_rgb):
+    class DummyBSDF(mi.BSDF):
+        def __init__(self, props):
+            mi.BSDF.__init__(self, props)
+
+    mi.register_bsdf('dummy', DummyBSDF)
+
+    mi.load_string(""""
+    <scene version='3.0.0'>
+        <bsdf type='dummy'/>
+    </scene>
+    """, parallel=True)
