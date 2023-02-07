@@ -366,8 +366,26 @@ public:
 
         Value maxt = Value(ray.maxt);
 
-        Value3 o = Value3(ray.o) - center;
+        // We define a plane which is perpendicular to the ray direction and
+        // contains the sphere center and intersect it. We then solve the
+        // ray-sphere intersection as if the ray origin was this new
+        // intersection point. This additional step makes the whole intersection
+        // routine numerically more robust.
+
+        Value3 l = ray.o - center;
         Value3 d(ray.d);
+        Value plane_t = dot(-l, d) / norm(d);
+
+        // Ray is perpendicular to plane
+        dr::mask_t<FloatP> no_hit =
+            dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
+
+        Value3 plane_p = ray(plane_t);
+
+        // Intersection with plane outside of the sphere
+        no_hit &= (norm(plane_p - center) > radius);
+
+        Value3 o = plane_p - center;
 
         Value A = dr::squared_norm(d);
         Value B = dr::scalar_t<Value>(2.f) * dr::dot(o, d);
@@ -375,13 +393,16 @@ public:
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
+        near_t += plane_t;
+        far_t += plane_t;
+
         // Sphere doesn't intersect with the segment on the ray
         dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
         dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
-        active &= solution_found && !out_bounds && !in_bounds;
+        active &= solution_found && !no_hit && !out_bounds && !in_bounds;
 
         FloatP t = dr::select(
             active, dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t)),
