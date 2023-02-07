@@ -5,12 +5,16 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Incoming release
+----------------
+- Fix and add missing Python bindings for ``Endpoint``/``Emitter``/``Sensor``
+
 Mitsuba 3.2.0
 -------------
 
 *January 6, 2023*
 
-- Upgrade Dr.Jit to v0.3.3
+- Upgrade Dr.Jit to v0.4.0
 
   - Various bug fixes
   - Stability improvements (race conditions, invalid code generation)
