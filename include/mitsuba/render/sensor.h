@@ -64,7 +64,6 @@ public:
                             const Point2f &sample2, const Point2f &sample3,
                             Mask active = true) const;
 
-
     /**
      * \brief Importance sample a set of wavelengths proportional to the
      * sensitivity spectrum.
@@ -313,10 +312,13 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_VCALL_METHOD(sample_ray)
+    DRJIT_VCALL_METHOD(sample_ray_differential)
     DRJIT_VCALL_METHOD(sample_direction)
     DRJIT_VCALL_METHOD(pdf_direction)
     DRJIT_VCALL_METHOD(eval_direction)
     DRJIT_VCALL_METHOD(sample_position)
+    DRJIT_VCALL_METHOD(pdf_position)
+    DRJIT_VCALL_METHOD(eval)
     DRJIT_VCALL_METHOD(sample_wavelengths)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     DRJIT_VCALL_GETTER(shape, const typename Class::Shape *)

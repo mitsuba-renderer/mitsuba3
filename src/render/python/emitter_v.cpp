@@ -31,8 +31,33 @@ public:
         PYBIND11_OVERRIDE_PURE(Float, Emitter, pdf_direction, ref, ds, active);
     }
 
+    Spectrum eval_direction(const Interaction3f &ref,
+                            const DirectionSample3f &ds,
+                            Mask active)  const override {
+        PYBIND11_OVERRIDE_PURE(Spectrum, Emitter, eval_direction, ref, ds, active);
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f &sample,
+                    Mask active) const override {
+        using Return = std::pair<PositionSample3f, Float>;
+        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_position, time, sample, active);
+    }
+
+    Float pdf_position(const PositionSample3f &ps,
+                               Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(Float, Emitter, pdf_position, ps, active);
+    }
+
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         PYBIND11_OVERRIDE_PURE(Spectrum, Emitter, eval, si, active);
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        using Return = std::pair<Wavelength, Spectrum>;
+        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_wavelengths, si, sample, active);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -85,33 +110,45 @@ MI_PY_EXPORT(Emitter) {
                 D(Endpoint, sample_ray))
         .def("sample_direction",
                 [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
-                return ptr->sample_direction(it, sample, active);
+                    return ptr->sample_direction(it, sample, active);
                 },
                 "it"_a, "sample"_a, "active"_a = true,
                 D(Endpoint, sample_direction))
-        .def("sample_position",
-                [](EmitterPtr ptr, Float time, const Point2f &sample, Mask active) {
-                return ptr->sample_position(time, sample, active);
-                },
-                "time"_a, "sample"_a, "active"_a = true,
-                D(Endpoint, sample_position))
-        .def("sample_wavelengths",
-                [](EmitterPtr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
-                return ptr->sample_wavelengths(si, sample, active);
-                },
-                "si"_a, "sample"_a, "active"_a = true,
-                D(Endpoint, sample_wavelengths))
         .def("pdf_direction",
                 [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
                     return ptr->pdf_direction(it, ds, active);
                 },
                 "it"_a, "ds"_a, "active"_a = true,
                 D(Endpoint, pdf_direction))
+        .def("eval_direction",
+                [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+                    return ptr->eval_direction(it, ds, active);
+                },
+                "it"_a, "ds"_a, "active"_a = true,
+                D(Endpoint, eval_direction))
+        .def("sample_position",
+                [](EmitterPtr ptr, Float time, const Point2f &sample, Mask active) {
+                    return ptr->sample_position(time, sample, active);
+                },
+                "time"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_position))
+        .def("pdf_position",
+                [](EmitterPtr ptr, const PositionSample3f &ps, Mask active) {
+                    return ptr->pdf_position(ps, active);
+                },
+                "ps"_a, "active"_a = true,
+                D(Endpoint, pdf_position))
         .def("eval",
                 [](EmitterPtr ptr, const SurfaceInteraction3f &si, Mask active) {
                     return ptr->eval(si, active);
                 },
                 "si"_a, "active"_a = true, D(Endpoint, eval))
+        .def("sample_wavelengths",
+                [](EmitterPtr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
+                    return ptr->sample_wavelengths(si, sample, active);
+                },
+                "si"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_wavelengths))
         .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
         .def("shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
         .def("is_environment",
