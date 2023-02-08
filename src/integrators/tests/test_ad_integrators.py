@@ -910,9 +910,6 @@ def test04_render_custom_op(variants_all_ad_rgb):
         mi.util.write_bitmap(filename, image_primal)
         assert False
 
-    filename = f"test_render_custom_op_image_primal.exr"
-    mi.util.write_bitmap(filename, image_primal)
-
     # Backward comparison
     obj = dr.mean(image_primal)
     dr.backward(obj)
