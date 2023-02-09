@@ -19,7 +19,7 @@ Perspective pinhole camera (:monosp:`perspective`)
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - fov
    - |float|
@@ -67,7 +67,7 @@ Perspective pinhole camera (:monosp:`perspective`)
  * - x_fov
    - |float|
    - Denotes the camera's field of view in degrees along the horizontal axis.
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
