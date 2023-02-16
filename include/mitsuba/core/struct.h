@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
- #if defined(DRJIT_X86_64)
+ #if defined(DRJIT_X86_64) && defined(DRJIT_X86_SSE42)
  #  define MI_STRUCTCONVERTER_USE_JIT 1
  #else
  #  define MI_STRUCTCONVERTER_USE_JIT 0
