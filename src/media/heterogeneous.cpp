@@ -51,7 +51,6 @@ Heterogeneous medium (:monosp:`heterogeneous`)
    - A nested phase function that describes the directional scattering properties of
      the medium. When none is specified, the renderer will automatically use an instance of
      isotropic.
-   - |exposed|, |differentiable|
 
 
 This plugin provides a flexible heterogeneous medium implementation, which acquires its data

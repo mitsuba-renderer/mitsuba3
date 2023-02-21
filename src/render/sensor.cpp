@@ -78,27 +78,29 @@ MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                                                  const Point2f &sample3, Mask active) const {
+    // a macro that logs the start of the function's execution in the profiler.
     MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+    auto [result_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
 
-    auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
+    // auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
+    
+    // RayDifferential result_ray(temp_ray);
 
-    RayDifferential result_ray(temp_ray);
+    // Vector2f dx(1.f / m_resolution.x(), 0.f);
+    // Vector2f dy(0.f, 1.f / m_resolution.y());
 
-    Vector2f dx(1.f / m_resolution.x(), 0.f);
-    Vector2f dy(0.f, 1.f / m_resolution.y());
+    // // Sample a result_ray for X+1
+    // std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, active);
 
-    // Sample a result_ray for X+1
-    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, active);
+    // result_ray.o_x = temp_ray.o;
+    // result_ray.d_x = temp_ray.d;
 
-    result_ray.o_x = temp_ray.o;
-    result_ray.d_x = temp_ray.d;
+    // // Sample a result_ray for Y+1
+    // std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dy, sample3, active);
 
-    // Sample a result_ray for Y+1
-    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dy, sample3, active);
-
-    result_ray.o_y = temp_ray.o;
-    result_ray.d_y = temp_ray.d;
-    result_ray.has_differentials = true;
+    // result_ray.o_y = temp_ray.o;
+    // result_ray.d_y = temp_ray.d;
+    // result_ray.has_differentials = true;
 
     return { result_ray, result_spec };
 }

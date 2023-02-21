@@ -82,43 +82,46 @@ after which it remains at the maximum value. A projection texture may optionally
  */
 
 template <typename Float, typename Spectrum>
-class SpotLight final : public Emitter<Float, Spectrum> {
+class PhotonEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
     MI_IMPORT_TYPES(Scene, Texture)
 
-    SpotLight(const Properties &props) : Base(props) {
+    PhotonEmitter(const Properties &props) : Base(props) {
+        /// The emitter lies at a single point in space
         m_flags = +EmitterFlags::DeltaPosition;
+        // m_flags = +EmitterFlags::Empty;
         m_intensity = props.texture_d65<Texture>("intensity", 1.f);
-        m_texture = props.texture_d65<Texture>("texture", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
 
-        if (props.has_property("texture")) {
-            if (!m_texture->is_spatially_varying())
-                Throw("The parameter 'texture' must be spatially varying (e.g. bitmap type)!");
-            m_flags |= +EmitterFlags::SpatiallyVarying;
-        }
         dr::set_attr(this, "flags", m_flags);
-
-        m_cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
-        m_beam_width   = props.get<ScalarFloat>("beam_width", m_cutoff_angle * 3.0f / 4.0f);
-        m_cutoff_angle = dr::deg_to_rad(m_cutoff_angle);
-        m_beam_width   = dr::deg_to_rad(m_beam_width);
+        // degree to radiance: degree * pi / 180
+        m_cutoff_angle = dr::deg_to_rad(0.05f);
+        m_beam_width   = dr::deg_to_rad(0.05f*3.0f / 4.0f);
+        // if the m_cutoff_angle is equal to m_beam_width, the denominator will be 0, it's impossible!
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
+        
         m_cos_cutoff_angle = dr::cos(m_cutoff_angle);
         m_cos_beam_width   = dr::cos(m_beam_width);
         Assert(m_cutoff_angle >= m_beam_width);
         m_uv_factor = dr::tan(m_cutoff_angle);
+
+
+
+
+        
     }
 
+    // Traverse the attributes and object graph of this instance
+    // Implementing this function enables recursive traversal of C++ scene graphs. It is e.g. used to determine the set of differentiable parameters when using Mitsuba for optimization.
     void traverse(TraversalCallback *callback) override {
         callback->put_object("intensity",   m_intensity.get(), +ParamFlags::Differentiable);
-        callback->put_object("texture",     m_texture.get(),   +ParamFlags::Differentiable);
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
+    // This function should be invoked when attributes (obtained via \ref traverse) are modified in some way. The object can then update its internal state so that derived quantities are consistent with the change.
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
             // Update the scalar value of the matrix
@@ -134,7 +137,7 @@ public:
         return Point2f(
             0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
             0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor)
-        ); 
+        );
     }
 
     /**
@@ -144,13 +147,15 @@ public:
      * Does not include the emitted radiance in that direction.
      */
     Float falloff_curve(const Vector3f &d, Mask /*active*/) const {
-        Vector3f local_dir = dr::normalize(d);
-        Float cos_theta    = local_dir.z();
-        Float beam_res = dr::select(
-            cos_theta >= m_cos_beam_width, 1.f,
-            (m_cutoff_angle - dr::acos(cos_theta)) * m_inv_transition_width);
+        // Vector3f local_dir = dr::normalize(d);
+        // Float cos_theta    = local_dir.z();
+        // Float beam_res = dr::select(
+        //     // acos: Arccosine approximation based on the CEPHES library.
+        //     cos_theta >= m_cos_beam_width, 1.f,
+        //     (m_cutoff_angle - dr::acos(cos_theta)) * m_inv_transition_width);
 
-        return dr::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
+        // return dr::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
+        return 1.0f;
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -160,22 +165,30 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample directional component
-        Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float) m_cos_cutoff_angle);
+        // generates a random 3D vector
+        // Uniformly sample a vector that lies within a given cone of angles around the Z axis
+        // Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float) m_cos_cutoff_angle);
+        Vector3f fixed_dir = Vector3f(0.f, 0.f, 1.f);
+        // Vector3f local_dir (0.f,0.f,1.f);
+        Vector3f local_dir = dr::normalize(fixed_dir);
+
+        // calculate the probability density function, for weighting the contribution of this sample in a Monte Carlo integration.
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float) m_cos_cutoff_angle);
 
         // 2. Sample spectrum
+        // defining a SurfaceInteraction3f object si and initializing its position, time and UV values
         auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
         si.p    = m_to_world.value().translation();
         si.uv   = direction_to_uv(local_dir);
+        // generate a set of random wavelengths and the corresponding spectral weight
         auto [wavelengths, spec_weight] =
             sample_wavelengths(si, wavelength_sample, active);
-
+        //  compute a falloff value for the given direction and active component.
         Float falloff = falloff_curve(local_dir, active);
-
         return { Ray3f(si.p, m_to_world.value() * local_dir, time, wavelengths),
                  depolarizer<Spectrum>(spec_weight * falloff / pdf_dir) };
-    }
+    } 
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f &/*sample*/,
@@ -195,7 +208,6 @@ public:
         Float inv_dist = dr::rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = m_to_world.value().inverse() * -ds.d;
-
         // Evaluate emitted radiance & falloff profile
         Float falloff = falloff_curve(local_d, active);
         active &= falloff > 0.f;  // Avoid invalid texture lookups
@@ -206,10 +218,6 @@ public:
         si.wavelengths               = it.wavelengths;
         si.p                         = ds.p;
         UnpolarizedSpectrum radiance = m_intensity->eval(si, active);
-        if (m_texture->is_spatially_varying()) {
-            si.uv = direction_to_uv(local_d);
-            radiance *= m_texture->eval(si, active);
-        }
 
         return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist)) };
     }
@@ -237,18 +245,8 @@ public:
                        Mask active) const override {
         Wavelength wav;
         Spectrum weight;
-
-        if (m_texture->is_spatially_varying()) {
-            std::tie(wav, weight) = m_texture->sample_spectrum(
+        std::tie(wav, weight) = m_intensity->sample_spectrum(
                 si, math::sample_shifted<Wavelength>(sample), active);
-
-            SurfaceInteraction3f si2 = si;
-            si2.wavelengths = wav;
-            weight *= m_intensity->eval(si2, active);
-        } else {
-            std::tie(wav, weight) = m_intensity->sample_spectrum(
-                si, math::sample_shifted<Wavelength>(sample), active);
-        }
 
         return { wav, weight };
     }
@@ -264,12 +262,11 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "SpotLight[" << std::endl
+        oss << "PhotonEmitter[" << std::endl
             << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
             << "  beam_width = " << m_beam_width << "," << std::endl
-            << "  texture = " << (m_texture ? string::indent(m_texture) : "")
             << "  medium = " << (m_medium ? string::indent(m_medium) : "")
             << "]";
         return oss.str();
@@ -278,12 +275,11 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Texture> m_intensity;
-    ref<Texture> m_texture;
     ScalarFloat m_beam_width, m_cutoff_angle, m_uv_factor;
     ScalarFloat m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
 };
 
 
-MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
-MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
+MI_IMPLEMENT_CLASS_VARIANT(PhotonEmitter, Emitter)
+MI_EXPORT_PLUGIN(PhotonEmitter, "Photon emitter")
 NAMESPACE_END(mitsuba)

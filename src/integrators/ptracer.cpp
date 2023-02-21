@@ -92,6 +92,7 @@ public:
     void sample_visible_emitters(const Scene *scene, const Sensor *sensor,
                                  Sampler *sampler, ImageBlock *block,
                                  ScalarFloat sample_scale) const {
+
         // 1. Time sampling
         Float time = sensor->shutter_open();
         if (sensor->shutter_open_time() > 0)
@@ -164,7 +165,7 @@ public:
         connect_sensor(scene, si, sensor_ds, nullptr, weight, block, sample_scale, active);
     }
 
-    /// Samples a ray from a random emitter in the scene.
+    // Samples a ray from a random emitter in the scene.
     std::pair<Ray3f, Spectrum> prepare_ray(const Scene *scene,
                                            const Sensor *sensor,
                                            Sampler *sampler) const {
@@ -182,6 +183,23 @@ public:
             time, wavelength_sample, direction_sample, position_sample);
 
         return { ray, ray_weight };
+
+
+        // // Choose a random emitter
+        // auto emitter_idx = sampler->next_1d() * scene->m_emitters.size();
+        // EmitterPtr emitter = scene->emitters()[emitter_idx];
+
+        // // Sample a point on the emitter
+        // Point2f u = sampler->next_2d();
+        // Interaction3f it = emitter->sample_position(0.f, u);
+
+        // // Compute direction towards the point on the emitter
+        // Vector3f d = normalize(it.p - sensor->position());
+
+        // // Create and return ray
+        // Ray3f ray(sensor->position(), d);
+        // Spectrum throughput = emitter->eval(it) / scene->emitter_pdf(emitter);
+        // return { ray, throughput };
     }
 
     /**

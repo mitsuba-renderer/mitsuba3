@@ -50,15 +50,14 @@ MI_PY_EXPORT(xml) {
                     );
             }
 
-            std::vector<ref<Object>> objects;
-            {
-                py::gil_scoped_release release;
-                objects = xml::load_file(name, GET_VARIANT(), param, update_scene, parallel);
-            }
+            py::gil_scoped_release release;
+
+            std::vector<ref<Object>> objects = xml::load_file(
+                name, GET_VARIANT(), param, update_scene, parallel);
 
             return single_object_or_list(objects);
         },
-        "path"_a, "update_scene"_a = false, "parallel"_a = true,
+        "path"_a, "update_scene"_a = false, "parallel"_a = !dr::is_jit_v<Float>,
         D(xml, load_file));
 
     m.def(
@@ -74,15 +73,14 @@ MI_PY_EXPORT(xml) {
                     );
             }
 
-            std::vector<ref<Object>> objects;
-            {
-                py::gil_scoped_release release;
-                objects = xml::load_string(name, GET_VARIANT(), param, parallel);
-            }
+            py::gil_scoped_release release;
+
+            std::vector<ref<Object>> objects = xml::load_string(
+                name, GET_VARIANT(), param, parallel);
 
             return single_object_or_list(objects);
         },
-        "string"_a, "parallel"_a = true,
+        "string"_a, "parallel"_a = !dr::is_jit_v<Float>,
         D(xml, load_string));
 
     m.def(
@@ -93,6 +91,11 @@ MI_PY_EXPORT(xml) {
                 load_dict<Float, Spectrum>("", dict, instances);
 
             py::object out = single_object_or_list(objects);
+
+            if constexpr (dr::is_jit_v<Float>) {
+                dr::eval();
+                dr::sync_thread();
+            }
 
             return out;
         },

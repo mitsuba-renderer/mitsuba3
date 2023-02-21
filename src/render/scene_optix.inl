@@ -33,7 +33,6 @@ struct OptixSceneState {
     void* ias_buffer = nullptr;
     size_t config_index;
     uint32_t sbt_jit_index;
-    bool own_sbt;
 };
 
 /**
@@ -177,7 +176,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             optixModuleGetCompilationState(config.module, &compilation_state));
         if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
             Throw("Optix configuration initialization failed! The OptiX module "
-                  "compilation did not complete successfully. The module's "
+                  "compilation did not complete succesfully. The module's "
                   "compilation state is: %#06x", compilation_state);
 
         // =====================================================
@@ -218,23 +217,17 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             config.program_groups
         ));
 
-        // Create this variable in the JIT scope 0 to ensure a consistent
-        // ordering in the generated PTX kernel (e.g. for other scenes).
-        uint32_t scope = jit_scope(JitBackend::CUDA);
-        jit_set_scope(JitBackend::CUDA, 0);
         config.pipeline_jit_index = jit_optix_configure_pipeline(
             &config.pipeline_compile_options,
             config.module,
             config.program_groups, PROGRAM_GROUP_COUNT
         );
-        jit_set_scope(JitBackend::CUDA, scope);
     }
 
     return config_index;
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) {
-    DRJIT_MARK_USED(props);
+MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
     if constexpr (dr::is_cuda_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
@@ -244,112 +237,61 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         m_accel = new OptixSceneState();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
 
-        // Check if another scene was passed to the constructor
-        Scene *other_scene = nullptr;
-        for (auto &[k, v] : props.objects()) {
-            other_scene = dynamic_cast<Scene *>(v.get());
-            if (other_scene)
-                break;
+        // =====================================================
+        //  Initialize OptiX configuration
+        // =====================================================
+
+        bool has_meshes = false;
+        bool has_others = false;
+        bool has_instances = false;
+
+        for (auto& shape : m_shapes) {
+            has_meshes    |= shape->is_mesh();
+            has_others    |= !shape->is_mesh() && !shape->is_instance();
+            has_instances |= shape->is_instance();
         }
 
-        /* When another scene is passed via props, the new scene should re-use
-           the same configuration, pipeline and update the shader binding table
-           rather than constructing a new one from scratch. This is necessary for
-           two scenes to be ray traced within the same megakernel. */
-        if (other_scene) {
-            Log(Debug, "Re-use OptiX config, pipeline and update SBT ..");
-            OptixSceneState &s2 = *(OptixSceneState *) other_scene->m_accel;
-
-            const OptixConfig &config = optix_configs[s2.config_index];
-
-            HitGroupSbtRecord* prev_data
-                = (HitGroupSbtRecord*) jit_malloc_migrate(s2.sbt.hitgroupRecordBase, AllocType::Host, 1);
-            dr::sync_thread();
-
-            std::vector<HitGroupSbtRecord> hg_sbts;
-            hg_sbts.assign(prev_data, prev_data + s2.sbt.hitgroupRecordCount);
-            jit_free(prev_data);
-
-            fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
-            for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
-
-            size_t shapes_count = hg_sbts.size();
-
-            s2.sbt.hitgroupRecordBase = jit_malloc(
-                AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
-            s2.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
-
-            jit_memcpy_async(JitBackend::CUDA, s2.sbt.hitgroupRecordBase, hg_sbts.data(),
-                             shapes_count * sizeof(HitGroupSbtRecord));
-
-            s2.sbt.hitgroupRecordBase =
-                jit_malloc_migrate(s2.sbt.hitgroupRecordBase, AllocType::Device, 1);
-
-            jit_optix_update_sbt(s2.sbt_jit_index, &s2.sbt);
-
-            memcpy(&s.sbt, &s2.sbt, sizeof(OptixShaderBindingTable));
-            s.sbt_jit_index = s2.sbt_jit_index;
-            s.config_index = s2.config_index;
-            s.own_sbt = false;
-        } else {
-            // =====================================================
-            //  Initialize OptiX configuration
-            // =====================================================
-
-            bool has_meshes = false;
-            bool has_others = false;
-            bool has_instances = false;
-
-            for (auto& shape : m_shapes) {
-                has_meshes    |= shape->is_mesh();
-                has_others    |= !shape->is_mesh() && !shape->is_instance();
-                has_instances |= shape->is_instance();
-            }
-
-            for (auto& shape : m_shapegroups) {
-                has_meshes |= !shape->has_meshes();
-                has_others |= !shape->has_others();
-            }
-
-            s.config_index = init_optix_config(has_meshes, has_others, has_instances);
-            const OptixConfig &config = optix_configs[s.config_index];
-
-            // =====================================================
-            //  Shader Binding Table generation
-            // =====================================================
-
-            s.sbt.missRecordBase =
-                jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
-            s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
-            s.sbt.missRecordCount = 1;
-
-            jit_optix_check(optixSbtRecordPackHeader(config.program_groups[0],
-                                                     s.sbt.missRecordBase));
-
-            std::vector<HitGroupSbtRecord> hg_sbts;
-            fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
-            for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
-
-            size_t shapes_count = hg_sbts.size();
-
-            s.sbt.hitgroupRecordBase = jit_malloc(
-                AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
-            s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-            s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
-
-            jit_memcpy_async(JitBackend::CUDA, s.sbt.hitgroupRecordBase, hg_sbts.data(),
-                             shapes_count * sizeof(HitGroupSbtRecord));
-
-            s.sbt.missRecordBase =
-                jit_malloc_migrate(s.sbt.missRecordBase, AllocType::Device, 1);
-            s.sbt.hitgroupRecordBase =
-                jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
-
-            s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
-            s.own_sbt = true;
+        for (auto& shape : m_shapegroups) {
+            has_meshes |= !shape->has_meshes();
+            has_others |= !shape->has_others();
         }
+
+        s.config_index = init_optix_config(has_meshes, has_others, has_instances);
+        const OptixConfig &config = optix_configs[s.config_index];
+
+        // =====================================================
+        //  Shader Binding Table generation
+        // =====================================================
+
+        std::vector<HitGroupSbtRecord> hg_sbts;
+        fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
+        for (auto& shapegroup: m_shapegroups)
+            shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
+
+        size_t shapes_count = hg_sbts.size();
+
+        s.sbt.missRecordBase =
+            jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
+        s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
+        s.sbt.missRecordCount = 1;
+
+        s.sbt.hitgroupRecordBase = jit_malloc(
+            AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
+        s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
+        s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
+
+        jit_optix_check(optixSbtRecordPackHeader(config.program_groups[0],
+                                                 s.sbt.missRecordBase));
+
+        jit_memcpy_async(JitBackend::CUDA, s.sbt.hitgroupRecordBase, hg_sbts.data(),
+                         shapes_count * sizeof(HitGroupSbtRecord));
+
+        s.sbt.missRecordBase =
+            jit_malloc_migrate(s.sbt.missRecordBase, AllocType::Device, 1);
+        s.sbt.hitgroupRecordBase =
+            jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
+
+        s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
 
         // =====================================================
         //  Acceleration data structure building
@@ -377,10 +319,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             std::vector<OptixInstance> ias;
             prepare_ias(config.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
-            // If we expect only a single IAS, no need to build the "master" IAS
-            if (config.pipeline_compile_options.traversableGraphFlags == OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS) {
-                if (ias.size() != 1)
-                    Throw("OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS used but found multiple IASs.");
+            // If there is only a single IAS, no need to build the "master" IAS
+            if (ias.size() == 1) {
                 s.ias_buffer = nullptr;
                 s.ias_handle = ias[0].traversableHandle;
             } else {
@@ -417,8 +357,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
                 s.ias_buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
-
-                scoped_optix_context guard;
 
                 jit_optix_check(optixAccelBuild(
                     config.context,
@@ -468,8 +406,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
-        Log(Debug, "Scene GPU acceleration release ..");
-
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
@@ -480,12 +416,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 
         OptixSceneState *s = (OptixSceneState *) m_accel;
 
-        if (s->own_sbt) {
-            /* This will decrease the reference count of the shader binding table
-               JIT variable which might trigger the release of the OptiX SBT if
-               no ray tracing calls are pending. */
-            (void) UInt32::steal(s->sbt_jit_index);
-        }
+        /* This will decrease the reference count of the shader binding table
+           JIT variable which might trigger the release of the OptiX SBT if no
+           ray tracing calls are pending. */
+        UInt32 handle = UInt32::steal(s->sbt_jit_index);
+        handle = 0;
 
         delete s;
 
@@ -496,14 +431,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
-        Log(Debug, "Scene static GPU acceleration shutdown ..");
         for (size_t j = 0; j < OPTIX_CONFIG_COUNT; j++) {
             OptixConfig &config = optix_configs[j];
             if (config.pipeline_jit_index) {
                 /* Decrease the reference count of the pipeline JIT variable.
-                   This will trigger the release of the OptiX pipeline data
-                   structure if no ray tracing calls are pending. */
-                (void) UInt32::steal(config.pipeline_jit_index);
+                This will trigger the release of the OptiX pipeline data
+                structure if no ray tracing calls are pending. */
+                UInt32 handle = UInt32::steal(config.pipeline_jit_index);
+                handle = 0;
 
                 for (size_t i = 0; i < 2 * CUSTOM_OPTIX_SHAPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);

@@ -1,6 +1,5 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/mmap.h>
 #include <mitsuba/core/util.h>
@@ -8,7 +7,6 @@
 #include <mitsuba/core/profiler.h>
 
 #include <array>
-
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -150,8 +148,8 @@ public:
            Enabled by default, for consistence with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
-        auto fr = Thread::thread()->file_resolver();
-        fs::path file_path = fr->resolve(props.string("filename"));
+        auto fs = Thread::thread()->file_resolver();
+        fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
 
 
@@ -164,6 +162,7 @@ public:
         if (!fs::exists(file_path))
             fail("file not found");
 
+        ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
 
         using ScalarIndex3 = std::array<ScalarIndex, 3>;
@@ -181,23 +180,7 @@ public:
         std::vector<ScalarIndex3> triangles;
         std::vector<VertexBinding> vertex_map;
 
- #if !defined(_WIN32)
-        ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
-        size_t file_size           = mmap->size();
-        const char *ptr            = (const char *) mmap->data();
-#else
-        // Memory-mapped IO performs surprisingly poorly on Windows
-        ref<FileStream> fs = new FileStream(file_path);
-        size_t file_size = fs->size();
-        std::unique_ptr<char[]> tmp(new char[file_size]);
-        fs->read(tmp.get(), file_size);
-        const char *ptr = tmp.get();
-#endif
-
-        size_t vertex_guess = file_size / 100;
-        const char *eof     = ptr + file_size;
-        char buf[1025];
-
+        size_t vertex_guess = mmap->size() / 100;
         vertices.reserve(vertex_guess);
         normals.reserve(vertex_guess);
         texcoords.reserve(vertex_guess);
@@ -206,6 +189,9 @@ public:
 
         ScalarIndex vertex_ctr = 0;
 
+        const char *ptr = (const char *) mmap->data();
+        const char *eof = ptr + mmap->size();
+        char buf[1025];
         Timer timer;
 
         while (ptr < eof) {
