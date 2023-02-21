@@ -1224,4 +1224,6 @@ def mis_weight(pdf_a, pdf_b):
     of two sampling strategies according to the power heuristic.
     """
     a2 = dr.sqr(pdf_a)
-    return dr.detach(dr.select(pdf_a > 0, a2 / dr.fma(pdf_b, pdf_b, a2), 0), True)
+    b2 = dr.sqr(pdf_b)
+    w = a2 / (a2 + b2)
+    return dr.detach(dr.select(dr.isfinite(w), w, 0))
