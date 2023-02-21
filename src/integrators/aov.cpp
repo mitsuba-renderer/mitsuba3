@@ -209,6 +209,7 @@ public:
         size_t ctr = 0;
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
+            DRJIT_MARK_USED(active);
             UnpolarizedSpectrum spec_u = unpolarized_spectrum(spec);
             if constexpr (is_monochromatic_v<Spectrum>)
                 return spec_u.x();
@@ -226,9 +227,17 @@ public:
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case Type::Albedo: {
-                        BSDFPtr bsdf = si.bsdf(ray);
-                        Spectrum spec = bsdf->eval_diffuse_reflectance(si, active);
-                        Color3f rgb = spectrum_to_color3f(spec, ray, active);
+                        Color3f rgb(0.f);
+                        if (dr::any_or<true>(si.is_valid()))
+                        {
+                            Mask valid = active && si.is_valid();
+                            BSDFPtr m_bsdf = si.bsdf(ray);
+
+                            Spectrum spec =
+                                m_bsdf->eval_diffuse_reflectance(si, valid);
+                            dr::masked(rgb, valid) =
+                                spectrum_to_color3f(spec, ray, valid);
+                        }
 
                         *aovs++ = rgb.r();
                         *aovs++ = rgb.g();

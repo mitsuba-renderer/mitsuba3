@@ -122,8 +122,8 @@ public:
             return { wo, pdf };
         }
 
-        Vector3f wo;
-        Float pdf;
+        Vector3f wo = dr::zeros<Vector3f>();
+        Float pdf = dr::zeros<Float>();
 
         Mask m0 = active && sample1 > weight,
              m1 = active && sample1 <= weight;

@@ -19,7 +19,7 @@ Perspective pinhole camera (:monosp:`perspective`)
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - fov
    - |float|
@@ -67,7 +67,7 @@ Perspective pinhole camera (:monosp:`perspective`)
  * - x_fov
    - |float|
    - Denotes the camera's field of view in degrees along the horizontal axis.
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
@@ -90,7 +90,7 @@ Alternatively, it is also possible to specify a field of view in degrees
 along a given axis (see the :monosp:`fov` and :monosp:`fov_axis` parameters).
 
 The exact camera position and orientation is most easily expressed using the
-:monosp:`lookat` tag, i.e.:
+:monosp:`look_at` tag, i.e.:
 
 .. tabs::
     .. code-tab:: xml
@@ -101,7 +101,7 @@ The exact camera position and orientation is most easily expressed using the
             <transform name="to_world">
                 <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
                     and the direction (0, 0, 1) points "up" in the output image -->
-                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+                <look_at origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
             </transform>
             <!-- film -->
             <!-- sampler -->
@@ -111,7 +111,7 @@ The exact camera position and orientation is most easily expressed using the
 
         'type': 'perspective',
         'fov': 45,
-        'to_world': mi.ScalarTransform4f.lookat(
+        'to_world': mi.ScalarTransform4f.look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]

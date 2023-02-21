@@ -134,7 +134,7 @@ public:
         return Point2f(
             0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
             0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor)
-        ); 
+        );
     }
 
     /**

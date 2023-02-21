@@ -132,7 +132,6 @@ def bitmap_extract(bmp, require_variance=True):
     # AVOs from the moment integrator are in XYZ (float32)
     split = bmp.split()
     if len(split) == 1:
-        print('hello!')
         if require_variance:
             raise RuntimeError(
                 'Could not extract variance image from bitmap. '
@@ -290,11 +289,12 @@ def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):
             continue
 
         for variant_ in mi.variants():
-            if not variant.split('_')[0] == 'scalar' or variant_.endswith('double'):
-                continue
+            if variant is not None:
+                if not variant.split('_')[0] == 'scalar' or variant_.endswith('double'):
+                    continue
 
-            if variant is not None and variant != variant_:
-                continue
+                if variant != variant_:
+                    continue
 
             if 'polarized' in variant_ and os.path.split(scene_dir)[1] in POLARIZED_EXCLUDE_FOLDERS:
                 continue

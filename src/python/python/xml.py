@@ -337,7 +337,7 @@ class WriteXML:
                 scene_dict[key] = self.configure_defaults(value)
             elif key in self.defaults:
                 if not '$%s'%self.defaults[key] in self.scene_data[Files.MAIN]:
-                    # Store the value of the first occurence of the parameter in the default
+                    # Store the value of the first occurrence of the parameter in the default
                     params = {
                         'type': 'default',
                         'name': self.defaults[key],

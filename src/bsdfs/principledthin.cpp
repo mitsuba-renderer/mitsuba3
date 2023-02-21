@@ -543,12 +543,10 @@ public:
                Fss90 used to "flatten" retro reflection based on
                roughness. */
             if (m_has_flatness) {
-                Float Fss90 = Rr / 2.0f;
-                Float Fss = dr::lerp(1.0, Fss90, Fo) * dr::lerp(1.0, Fss90, Fi);
-                Float f_ss = 1.25f * (Fss * (1.0f / (dr::abs(cos_theta_o) +
-                        dr::abs(cos_theta_i)) -
-                                0.5f) +
-                                        0.5f);
+                Float Fss90 = Rr / 2.f;
+                Float Fss = dr::lerp(1.f, Fss90, Fo) * dr::lerp(1.f, Fss90, Fi);
+                Float f_ss = 1.25f * (Fss * (1.f / (dr::abs(cos_theta_o) +
+                        dr::abs(cos_theta_i)) - 0.5f) + 0.5f);
 
                 // Adding diffuse, retro and fake subsurface components.
                 dr::masked(value, diffuse_reflect_active) +=

@@ -65,6 +65,12 @@ MI_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Propert
     }
 
     m_samples_per_pass = props.get<uint32_t>("samples_per_pass", (uint32_t) -1);
+    if (m_samples_per_pass != (uint32_t) -1) {
+        Log(Warn, "The 'samples_per_pass' is deprecated, as a poor choice of "
+                  "this parameter can have a detrimental effect on performance. "
+                  "Please leave it undefined; Mitsuba will then automatically "
+                  "choose the necessary number of passes.");
+    }
 }
 
 MI_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
@@ -192,31 +198,37 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (develop)
             result = film->develop();
     } else {
+        size_t wavefront_size = (size_t) film_size.x() *
+                                (size_t) film_size.y() * (size_t) spp_per_pass,
+               wavefront_size_limit = 0xffffffffu;
+
+        if (wavefront_size > wavefront_size_limit) {
+            spp_per_pass /=
+                (uint32_t)((wavefront_size + wavefront_size_limit - 1) /
+                           wavefront_size_limit);
+            n_passes       = spp / spp_per_pass;
+            wavefront_size = (size_t) film_size.x() * (size_t) film_size.y() *
+                             (size_t) spp_per_pass;
+
+            Log(Warn,
+                "The requested rendering task involves %zu Monte Carlo "
+                "samples, which exceeds the upper limit of 2^32 = 4294967296 "
+                "for this variant. Mitsuba will instead split the rendering "
+                "task into %zu smaller passes to avoid exceeding the limits.",
+                wavefront_size, n_passes);
+        }
+
         dr::sync_thread(); // Separate from scene initialization (for timings)
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
-            n_passes > 1 ? tfm::format(", %u passes,", n_passes) : "");
+            n_passes > 1 ? tfm::format(", %u passes", n_passes) : "");
 
         if (n_passes > 1 && !evaluate) {
             Log(Warn, "render(): forcing 'evaluate=true' since multi-pass "
                       "rendering was requested.");
             evaluate = true;
         }
-
-        size_t wavefront_size = (size_t) film_size.x() *
-                                (size_t) film_size.y() * (size_t) spp_per_pass,
-               wavefront_size_limit =
-                   dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
-
-        if (wavefront_size > wavefront_size_limit)
-            Throw("Tried to perform a %s-based rendering with a total sample "
-                  "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
-                  "for this backend). Please use fewer samples per pixel or "
-                  "render using multiple passes.",
-                  dr::is_llvm_v<Float> ? "LLVM JIT" : "OptiX",
-                  wavefront_size, dr::log2i(wavefront_size_limit + 1),
-                  wavefront_size_limit);
 
         // Inform the sampler about the passes (needed in vectorized modes)
         sampler->set_samples_per_wavefront(spp_per_pass);
@@ -514,7 +526,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     uint32_t n_passes = spp / spp_per_pass;
 
-    size_t samples_per_pass = spp_per_pass * (size_t) dr::prod(film_size);
+    size_t samples_per_pass =
+        (size_t) film_size.x() * (size_t) film_size.y() * (size_t) spp_per_pass;
 
     std::vector<std::string> aovs = aov_names();
     if (!aovs.empty())
@@ -619,23 +632,26 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             evaluate = true;
         }
 
-        size_t wavefront_size = (size_t) film_size.x() *
-                                (size_t) film_size.y() * (size_t) spp_per_pass,
-               wavefront_size_limit =
-                   dr::is_llvm_v<Float> ? 0xffffffffu : 0x40000000u;
+        constexpr size_t wavefront_size_limit = 0xffffffffu;
+        if (samples_per_pass > wavefront_size_limit) {
+            spp_per_pass /=
+                (uint32_t)((samples_per_pass + wavefront_size_limit - 1) /
+                           wavefront_size_limit);
+            n_passes = spp / spp_per_pass;
+            samples_per_pass = (size_t) film_size.x() * (size_t) film_size.y() *
+                               (size_t) spp_per_pass;
 
-        if (wavefront_size > wavefront_size_limit)
-            Throw("Tried to perform a %s-based rendering with a total sample "
-                  "count of %zu, which exceeds 2^%zu = %zu (the upper limit "
-                  "for this backend). Please use fewer samples per pixel or "
-                  "render using multiple passes.",
-                  dr::is_llvm_v<Float> ? "LLVM JIT" : "OptiX",
-                  wavefront_size, dr::log2i(wavefront_size_limit + 1),
-                  wavefront_size_limit);
+            Log(Warn,
+                "The requested rendering task involves %zu Monte Carlo "
+                "samples, which exceeds the upper limit of 2^32 = 4294967296 "
+                "for this variant. Mitsuba will instead split the rendering "
+                "task into %zu smaller passes to avoid exceeding the limits.",
+                samples_per_pass, n_passes);
+        }
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
-            n_passes > 1 ? tfm::format(", %u passes,", n_passes) : "");
+            n_passes > 1 ? tfm::format(", %u passes", n_passes) : "");
 
         // Inform the sampler about the passes (needed in vectorized modes)
         sampler->set_samples_per_wavefront(spp_per_pass);

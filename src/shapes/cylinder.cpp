@@ -48,7 +48,7 @@ Cylinder (:monosp:`cylinder`)
    - |transform|
    - Specifies an optional linear object-to-world transformation. Note that non-uniform scales are
      not permitted! (Default: none, i.e. object space = world space)
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_onesided.jpg
@@ -118,20 +118,6 @@ public:
         initialize();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-        Base::parameters_changed();
-    }
-
     void update() {
          // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = transform_decompose(m_to_world.scalar().matrix, 25);
@@ -143,17 +129,16 @@ public:
         if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
-        m_radius = S[0][0];
-        m_length = S[2][2];
+        m_radius = dr::norm(m_to_world.value().transform_affine(Vector3f(1.f, 0.f, 0.f)));
+        m_length = dr::norm(m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f)));
 
-        if (m_radius.scalar() <= 0.f) {
-            m_radius = dr::abs(m_radius.scalar());
+        if (S[0][0] <= 0.f) {
+            m_radius = dr::abs(m_radius.value());
             m_flip_normals = !m_flip_normals;
         }
 
-        // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = dr::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
-        m_to_object = m_to_world.scalar().inverse();
+        // Compute the to_object transformation with uniform scaling and no shear
+        m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -161,13 +146,32 @@ public:
         mark_dirty();
     }
 
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Ensure previous ray-tracing operation are fully evaluated before
+            // modifying the scalar values of the fields in this class
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+
+        Base::parameters_changed();
+    }
+
     ScalarBoundingBox3f bbox() const override {
-        ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(m_radius.scalar(), 0.f, 0.f),
-                       x2 = m_to_world.scalar() * ScalarVector3f(0.f, m_radius.scalar(), 0.f),
+        ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(1.f, 0.f, 0.f),
+                       x2 = m_to_world.scalar() * ScalarVector3f(0.f, 1.f, 0.f),
                        x  = dr::sqrt(dr::sqr(x1) + dr::sqr(x2));
 
         ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
-                      p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, m_length.scalar());
+                      p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 1.f);
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
@@ -184,7 +188,7 @@ public:
 
         ScalarPoint3f cyl_p = m_to_world.scalar().transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
         ScalarVector3f cyl_d =
-            m_to_world.scalar().transform_affine(ScalarVector3f(0.f, 0.f, m_length.scalar()));
+            m_to_world.scalar().transform_affine(ScalarVector3f(0.f, 0.f, 1.f));
 
         // Compute a base bounding box
         ScalarBoundingBox3f bbox(this->bbox());
@@ -237,19 +241,16 @@ public:
     }
 
     Float surface_area() const override {
-        return 2.f * dr::Pi<ScalarFloat> * m_radius.value() * m_length.value();
+        return dr::TwoPi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        auto [sin_theta, cos_theta] = dr::sincos(2.f * dr::Pi<Float> * sample.y());
+        auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
-        Point3f p(cos_theta * m_radius.value(),
-                  sin_theta * m_radius.value(),
-                  sample.x() * m_length.value());
-
+        Point3f p(cos_theta, sin_theta, sample.x());
         Normal3f n(cos_theta, sin_theta, 0.f);
 
         if (m_flip_normals)
@@ -271,6 +272,35 @@ public:
         return m_inv_surface_area;
     }
 
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags,
+                                               Mask active) const override {
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.x());
+        Point3f local(cos_phi, sin_phi, uv.y());
+        Point3f p = m_to_world.value().transform_affine(local);
+
+        Ray3f ray(p + local, -local, 0, Wavelength(0));
+
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        active &= pi.is_valid();
+
+        if (dr::none_or<false>(active))
+            return dr::zeros<SurfaceInteraction3f>();
+
+        SurfaceInteraction3f si =
+            compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+
+        return si;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Ray tracing routines
+    // =============================================================
+
     template <typename FloatP, typename Ray3fP>
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
@@ -278,24 +308,18 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                              dr::is_diff_v<Float>,
-                                          dr::float32_array_t<FloatP>,
-                                          dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius;
-        Value length;
-        if constexpr (!dr::is_jit_v<Value>) {
+        Value radius(1.0); // Constant kept for readability
+        Value length(1.0);
+        if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
-            radius = (ScalarValue) m_radius.scalar();
-            length = (ScalarValue) m_length.scalar();
-        } else {
+        else
             ray = m_to_object.value().transform_affine(ray_);
-            radius = (Value) m_radius.value();
-            length = (Value) m_length.value();
-        }
 
         Value maxt = Value(ray.maxt);
 
@@ -316,8 +340,8 @@ public:
         dr::mask_t<FloatP> out_bounds =
             !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
-        Value z_pos_near = oz + dz*near_t,
-              z_pos_far  = oz + dz*far_t;
+        Value z_pos_near = oz + dz * near_t,
+              z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
         dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
@@ -341,24 +365,18 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                              dr::is_diff_v<Float>,
-                                          dr::float32_array_t<FloatP>,
-                                          dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using ScalarValue = dr::scalar_t<Value>;
 
         Ray3fP ray;
-        Value radius;
-        Value length;
-        if constexpr (!dr::is_jit_v<Value>) {
+        Value radius(1.0); // Constant kept for readability
+        Value length(1.0);
+        if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_object.scalar().transform_affine(ray_);
-            radius = (ScalarValue) m_radius.scalar();
-            length = (ScalarValue) m_length.scalar();
-        } else {
+        else
             ray = m_to_object.value().transform_affine(ray_);
-            radius = (Value) m_radius.value();
-            length = (Value) m_length.value();
-        }
 
         Value maxt = Value(ray.maxt);
 
@@ -400,47 +418,82 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
+        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Recompute ray intersection to get differentiable prim_uv and t
-        Float t = pi.t;
-        if constexpr (dr::is_diff_v<Float>)
-            t = dr::replace_grad(t, ray_intersect_preliminary(ray, active).t);
+        // Fields requirement dependencies
+        bool need_dn_duv  = has_flag(ray_flags, RayFlags::dNSdUV) ||
+                            has_flag(ray_flags, RayFlags::dNGdUV);
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
+        const Float& radius = m_radius.value();
+        const Transform4f& to_world = m_to_world.value();
+        const Transform4f& to_object = m_to_object.value();
+
+        /* If necessary, temporally suspend gradient tracking for all shape
+        parameters to construct a surface interaction completely detach from
+        the shape. */
+        dr::suspend_grad<Float> scope(detach_shape, radius, to_world, to_object);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.t = dr::select(active, t, dr::Infinity<Float>);
-        si.p = ray(t);
 
-        Vector3f local = m_to_object.value().transform_affine(si.p);
+        si.t = pi.t;
+        si.p = ray(si.t);
+        Point3f local;
+        if constexpr (IsDiff) {
+            if (follow_shape) {
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
+                local = to_object.transform_affine(si.p);
+                Float r = dr::norm(dr::head<2>(local));
+                local.x() /= r;
+                local.y() /= r;
+                local = dr::detach(local);
+                si.p = to_world.transform_affine(local);
+                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
+            } else {
+                /* To ensure that the differential interaction point stays along
+                   the traced ray, we first recompute the intersection distance
+                   in a differentiable way (w.r.t. to the cylindrical parameters) and
+                   then compute the corresponding point along the ray. */
+                si.t = dr::replace_grad(si.t, ray_intersect_preliminary(ray, active).t);
+                si.p = ray(si.t);
+                local = to_object.transform_affine(si.p);
+            }
+        } else {
+            /* Mitigate roundoff error issues by a normal shift of the computed
+               intersection point */
+            local = to_object.transform_affine(si.p);
+            si.p += si.n * (1.f - dr::norm(dr::head<2>(local)));
+        }
 
+        si.t = dr::select(active, si.t, dr::Infinity<Float>);
+
+        // si.uv
         Float phi = dr::atan2(local.y(), local.x());
-        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-
-        si.uv = Point2f(phi * dr::InvTwoPi<Float>, local.z() / m_length.value());
-
-        Vector3f dp_du = 2.f * dr::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
-        Vector3f dp_dv = Vector3f(0.f, 0.f, m_length.value());
-        si.dp_du = m_to_world.value().transform_affine(dp_du);
-        si.dp_dv = m_to_world.value().transform_affine(dp_dv);
+        dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
+        si.uv = Point2f(phi * dr::InvTwoPi<Float>, local.z());
+        // si.dp_duv & si.n
+        Vector3f dp_du = dr::TwoPi<Float> * Vector3f(-local.y(), local.x(), 0.f);
+        Vector3f dp_dv = Vector3f(0.f, 0.f, 1.f);
+        si.dp_du = to_world.transform_affine(dp_du);
+        si.dp_dv = to_world.transform_affine(dp_dv);
         si.n = Normal3f(dr::normalize(dr::cross(si.dp_du, si.dp_dv)));
 
-        /* Mitigate roundoff error issues by a normal shift of the computed
-           intersection point */
-        si.p += si.n * (m_radius.value() - dr::norm(dr::head<2>(local)));
-
         if (m_flip_normals)
-            si.n *= -1.f;
-
+            si.n = -si.n;
         si.sh_frame.n = si.n;
 
-        if (has_flag(ray_flags, RayFlags::dNSdUV) ||
-            has_flag(ray_flags, RayFlags::dNGdUV)) {
-            si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
+        if (likely(need_dn_duv)) {
+            si.dn_du = si.dp_du / (radius * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }
 
@@ -470,13 +523,17 @@ public:
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
             OptixCylinderData data = { bbox(), m_to_object.scalar(),
-                                       (float) m_length.scalar(),
-                                       (float) m_radius.scalar() };
+                                       (float) 1.f,
+                                       (float) 1.f };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
     }
 #endif
+
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length);
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

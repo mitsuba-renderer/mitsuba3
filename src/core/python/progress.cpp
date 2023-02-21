@@ -128,7 +128,7 @@ MI_PY_EXPORT(ProgressReporter) {
     try {
         // First try to import ipywidgets
         py::module_::import("ipywidgets");
-    } catch(const std::exception& e) {
+    } catch(const std::exception&) {
         py::print("\033[93m[mitsuba] Warning: Couldn't import the ipywidgets "
                   "package. Installing this package is required for the system "
                   "to properly log messages and print in Jupyter notebooks!");

@@ -246,7 +246,7 @@ public:
             m_max = m_volume_grid->max();
             m_max_per_channel.resize(m_volume_grid->channel_count());
             m_volume_grid->max_per_channel(m_max_per_channel.data());
-            m_channel_count = m_volume_grid->channel_count();
+            m_channel_count = (uint32_t) m_volume_grid->channel_count();
         }
 
         if (props.get<bool>("use_grid_bbox", false)) {

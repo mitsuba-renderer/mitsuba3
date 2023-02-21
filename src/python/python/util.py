@@ -96,9 +96,10 @@ class SceneParameters(Mapping):
         if len(self) == 0:
             return f'SceneParameters[]'
         name_length = int(max([len(k) for k in self.properties.keys()]) + 2)
+        type_length = int(max([len(type(v).__name__) for k, v in self.properties.items()]))
         param_list = '\n'
         param_list += '  ' + '-' * (name_length + 53) + '\n'
-        param_list += f"  {'Name':{name_length}}  {'Flags':7}  {'Type':15} {'Parent'}\n"
+        param_list += f"  {'Name':{name_length}}  {'Flags':7}  {'Type':{type_length}} {'Parent'}\n"
         param_list += '  ' + '-' * (name_length + 53) + '\n'
         for k, v in self.properties.items():
             value, value_type, node, flags = v
@@ -112,7 +113,7 @@ class SceneParameters(Mapping):
             if (flags & mi.ParamFlags.Discontinuous) != 0:
                 flags_str += ', D'
 
-            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:15} {node.class_().name()}\n'
+            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:{type_length}} {node.class_().name()}\n'
         return f'SceneParameters[{param_list}]'
 
     def __iter__(self):

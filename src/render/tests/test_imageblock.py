@@ -33,10 +33,14 @@ def test01_construct(variant_scalar_rgb):
 @pytest.mark.parametrize("offset", [ [0, 0], [1, 2] ])
 @pytest.mark.parametrize("normalize", [ False, True ])
 @pytest.mark.parametrize("coalesce", [ False, True ])
-def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
+@pytest.mark.parametrize("compensate", [ False, True ])
+def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, compensate):
     # Checks the result of the ImageBlock::put() method
     # against a brute force reference
     scalar = 'scalar' in mi.variant()
+
+    if compensate and not 'cuda' in mi.variant():
+        pytest.skip('for now, error compensation is just enabled in CUDA modes')
 
     rfilter = mi.load_dict({ 'type' : filter_name })
 
@@ -49,20 +53,27 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
             size = mi.ScalarVector2u(6, 6)
 
             block = mi.ImageBlock(size=size,
-                               offset=offset,
-                               channel_count=1,
-                               rfilter=rfilter,
-                               border=border,
-                               normalize=normalize,
-                               coalesce=coalesce)
+                                  offset=offset,
+                                  channel_count=1,
+                                  rfilter=rfilter,
+                                  border=border,
+                                  compensate=compensate,
+                                  normalize=normalize,
+                                  coalesce=coalesce)
 
             block.put(pos=pos, values=[1])
 
             size += 2 * block.border_size()
             Array1f = mi.Float if not scalar else dr.scalar.ArrayXf
 
-            shift = 0.5 - pos - block.border_size() + block.offset()
+            shift = 0.5 - pos - block.border_size()
             p = dr.meshgrid(
+                dr.arange(Array1f, size[0]) + shift[0],
+                dr.arange(Array1f, size[1]) + shift[1]
+            )
+
+            shift += block.offset()
+            p_offset = dr.meshgrid(
                 dr.arange(Array1f, size[0]) + shift[0],
                 dr.arange(Array1f, size[1]) + shift[1]
             )
@@ -70,22 +81,29 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce):
             import numpy as np
             if scalar:
                 ref = dr.zeros(mi.TensorXf, block.tensor().shape)
+                ref_norm = dr.zeros(mi.TensorXf, block.tensor().shape)
                 if filter_name == 'box':
                     eval_method = rfilter.eval
                 else:
                     eval_method = rfilter.eval_discretized
 
                 out = ref.array
+                out_norm = ref_norm.array
                 for i in range(dr.prod(size)):
-                    out[i] = eval_method(-p[0][i]) * \
-                             eval_method(-p[1][i])
+                    out[i] = eval_method(-p_offset[0][i]) * \
+                             eval_method(-p_offset[1][i])
+                    out_norm[i] = eval_method(-p[0][i]) * \
+                                  eval_method(-p[1][i])
             else:
-                ref = mi.TensorXf(rfilter.eval(-p[0]) *
-                                  rfilter.eval(-p[1]),
+                ref = mi.TensorXf(rfilter.eval(-p_offset[0]) *
+                                  rfilter.eval(-p_offset[1]),
                                   block.tensor().shape)
+                ref_norm = mi.TensorXf(rfilter.eval(-p[0]) *
+                                       rfilter.eval(-p[1]),
+                                       block.tensor().shape)
 
             if normalize:
-                value = dr.sum(ref)
+                value = dr.sum(ref_norm)
                 if dr.all(value > 0):
                     ref /= value
             match = dr.allclose(block.tensor(), ref, atol=1e-5)
@@ -192,3 +210,50 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                     ref /= dr.sum(weight)
 
             assert dr.allclose(value, ref, atol=1e-5)
+
+
+@pytest.mark.parametrize("coalesce", [ False, True ])
+@pytest.mark.parametrize("normalize", [ False, True ])
+def test05_boundary_effects(variants_vec_rgb, coalesce, normalize):
+    # Check that everything works correctly even when the image block
+    # is smaller than the filter kernel
+    rfilter = mi.load_dict({'type':'gaussian'})
+    ib = mi.ImageBlock(
+        size=(1, 1),
+        offset=(0, 0),
+        channel_count=1,
+        rfilter=rfilter,
+        normalize=normalize,
+        coalesce=coalesce
+    )
+    ib.put(pos=(0.49, 0.49), values=(dr.ones(mi.Float, 1),))
+
+    v1 = 0.9996645373720975
+    v2 = 0.13499982060871019
+    if normalize:
+        ref = v1 / (v1 + 2*v2)**2
+    else:
+        ref = v1
+    assert dr.allclose(ib.tensor().array, ref, rtol=1e-2)
+
+@pytest.mark.parametrize("compensate", [ False, True ])
+def test06_error_compensation(variants_any_cuda, compensate):
+    with dr.scoped_set_flag(dr.JitFlag.AtomicReduceLocal, False):
+        ib = mi.ImageBlock(
+            size=(1, 1),
+            offset=(0, 0),
+            channel_count=1,
+            rfilter=None,
+            normalize=False,
+            coalesce=False,
+            compensate=compensate
+        )
+        ib.put(
+            pos=(0.5, 0.5),
+            values = (dr.ones(mi.Float, 2**24+1024),)
+        )
+        print(ib.tensor().array[0])
+        print("vs")
+        print(2**24 + 1024)
+        print(2**24)
+        assert ib.tensor().array[0] ==  2**24 + (1024 if compensate else 0)

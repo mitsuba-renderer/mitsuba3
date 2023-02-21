@@ -129,10 +129,10 @@ def test05_sample_direct(variant_scalar_rgb):
         for xi_2 in dr.linspace(Float, 1e-3, 1 - 1e-3, 10):
             sample = sphere.sample_direction(it, [xi_2, 1 - xi_1])
             d = sample_cone([xi_1, xi_2], cos_cone_angle)
-            its = sphere.ray_intersect(mi.Ray3f(it.p, d))
+            si = sphere.ray_intersect(mi.Ray3f(it.p, d))
             assert dr.allclose(d, sample.d, atol=1e-5, rtol=1e-5)
-            assert dr.allclose(its.t, sample.dist, atol=1e-5, rtol=1e-5)
-            assert dr.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)
+            assert dr.allclose(si.t, sample.dist, atol=1e-5, rtol=1e-5)
+            assert dr.allclose(si.p, sample.p, atol=1e-5, rtol=1e-5)
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
@@ -217,16 +217,121 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(ray.o), [0, 0, -1])
 
 
-def test08_si_singularity(variants_all_rgb):
+def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
+    shape = mi.load_dict({'type' : 'sphere'})
+    params = mi.traverse(shape)
+
+    # Test 00: With DetachShape and no moving rays, the output shouldn't produce
+    #          any gradients.
+
+    ray = mi.Ray3f(mi.Vector3f(0, 0, -2), mi.Vector3f(0, 0, 1))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), 0.0)
+    assert dr.allclose(dr.grad(si.t), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 01: When the sphere is inflating, the point hitting the center will
+    #          move back along the ray. The normal isn't changing nor the UVs.
+
+    ray = mi.Ray3f(mi.Vector3f(0, 0, -2), mi.Vector3f(0, 0, 1))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.t), -1)
+    assert dr.allclose(dr.grad(si.p), [0, 0, -1])
+    assert dr.allclose(dr.grad(si.n), 0)
+    assert dr.allclose(dr.grad(si.uv), 0)
+
+    # Test 02: With FollowShape, an intersection point at the pole of a translating
+    #          sphere should move with the pole. The normal and the UVs should be static.
+
+    ray = mi.Ray3f(mi.Vector3f(0.0, 0.0, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.translate([theta, 0.0, 0.0])
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), [1.0, 0.0, 0.0])
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 03: With FollowShape, an intersection point and normal at the pole of
+    #          a rotating sphere should follow the rotation speed along the
+    #          tangent direction. The UVs should be static.
+
+    ray = mi.Ray3f(mi.Vector3f(0.0, 0.0, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.rotate([0, 1, 0], 90 * theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), [-dr.pi / 2.0, 0.0, 0.0])
+    assert dr.allclose(dr.grad(si.n), [-dr.pi / 2.0, 0.0, 0.0])
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 04: Without FollowShape, a sphere that is only rotating shouldn't
+    #          produce any gradients for the intersection point and normal, but
+    #          for the UVs.
+
+    ray = mi.Ray3f(mi.Vector3f(0.0, -2.0, 0.0), mi.Vector3f(0.0, 1.0, 0.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.rotate([1, 0, 0], 90 * theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), [0.0, -0.5])
+
+
+def test09_si_singularity(variants_all_rgb):
     scene = mi.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
     ray = mi.Ray3f([0, 0, -1], [0, 0, 1])
 
     si = scene.ray_intersect(ray)
-
-    print(f"si: {si}")
 
     assert dr.allclose(si.dp_du, [0, 0, 0])
     assert dr.allclose(si.dp_dv, [dr.pi, 0, 0])
     assert dr.allclose(si.sh_frame.s, [1, 0, 0])
     assert dr.allclose(si.sh_frame.t, [0, -1, 0])
     assert dr.allclose(si.sh_frame.n, [0, 0, -1])
+
+
+def test10_si_singularity_centered(variants_all_rgb):
+    scene = mi.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
+    ray = mi.Ray3f([0, 0, 0], [0, 0, 1])
+
+    si = scene.ray_intersect(ray)
+
+    assert dr.allclose(si.dp_du, [0, 0, 0])
+    assert dr.allclose(si.dp_dv, [dr.pi, 0, 0])
+    assert dr.allclose(si.sh_frame.s, [1, 0, 0])
+    assert dr.allclose(si.sh_frame.t, [0, 1, 0])
+    assert dr.allclose(si.sh_frame.n, [0, 0, 1])

@@ -156,7 +156,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
 
     results_scalar = [np.array(res) for res in results_scalar]
 
-    # Evaluate and compate vectorized kernel
+    # Evaluate and compare vectorized kernel
     for variant in variants:
         # Set variant
         mi.set_variant(variant)

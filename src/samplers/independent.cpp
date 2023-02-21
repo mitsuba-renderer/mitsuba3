@@ -68,8 +68,8 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed,
-                    seeded, m_samples_per_wavefront, m_wavefront_size,
-                    schedule_state)
+                   seeded, m_samples_per_wavefront, m_wavefront_size,
+                   schedule_state)
     MI_IMPORT_TYPES()
 
     IndependentSampler(const Properties &props) : Base(props) { }

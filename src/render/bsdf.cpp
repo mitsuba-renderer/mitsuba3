@@ -16,6 +16,18 @@ BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
     return { eval(ctx, si, wo, active), pdf(ctx, si, wo, active) };
 }
 
+MI_VARIANT std::tuple<Spectrum, Float, typename BSDF<Float, Spectrum>::BSDFSample3f, Spectrum>
+BSDF<Float, Spectrum>::eval_pdf_sample(const BSDFContext &ctx,
+                                       const SurfaceInteraction3f &si,
+                                       const Vector3f &wo,
+                                       Float sample1,
+                                       const Point2f &sample2,
+                                       Mask active) const {
+        auto [e_val, pdf_val] = eval_pdf(ctx, si, wo, active);
+        auto [bs, bsdf_weight] = sample(ctx, si, sample1, sample2, active);
+        return { e_val, pdf_val, bs, bsdf_weight };
+}
+
 MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     const SurfaceInteraction3f & /* si */, Mask /* active */) const {
     return 0.f;

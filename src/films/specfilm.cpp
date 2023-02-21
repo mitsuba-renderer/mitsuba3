@@ -44,6 +44,15 @@ Spectral film (:monosp:`specfilm`)
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
 
+ * - compensate
+   - |bool|
+   - If set to |true|, sample accumulation will be performed using Kahan-style
+     error-compensated accumulation. This can be useful to avoid roundoff error
+     when accumulating very many samples to compute reference solutions using
+     single precision variants of Mitsuba. This feature is currently only supported
+     in JIT variants and can make sample accumulation quite a bit more expensive.
+     (Default: |false|, i.e. disabled)
+
  * - (Nested plugin)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
@@ -176,6 +185,8 @@ public:
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
 
+        m_compensate = props.get<bool>("compensate", false);
+
         m_flags = FilmFlags::Spectral | FilmFlags::Special;
 
         compute_srf_sampling();
@@ -206,7 +217,7 @@ public:
 
         for (auto srf : m_srfs) {
             UnpolarizedSpectrum values = srf->eval(si);
-            // Each wavelenght is duplicated with the size of the Spectrum
+            // Each wavelength is duplicated with the size of the Spectrum
             // (default constructor while initialized with only a number)
             mis_data += values.x();
         }
@@ -259,7 +270,8 @@ public:
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
-                              dr::is_llvm_v<Float> /* coalesce */,
+                              dr::is_jit_v<Float> /* coalesce */,
+                              m_compensate /* compensate */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
     }
@@ -436,6 +448,7 @@ public:
             << "  crop_size = " << m_crop_size << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  sample_border = " << m_sample_border << "," << std::endl
+            << "  compensate = " << m_compensate << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
@@ -453,6 +466,7 @@ protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
     Struct::Type m_component_format;
+    bool m_compensate;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;

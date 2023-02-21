@@ -49,7 +49,7 @@ public:
 
     HGPhaseFunction(const Properties &props) : Base(props) {
         ScalarFloat g = props.get<ScalarFloat>("g", 0.8f);
-        if (g >= 1 || g <= -1)
+        if (g >= 1.f || g <= -1.f)
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
         m_g = g;
 
@@ -59,12 +59,14 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("g", m_g, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("g", m_g, ParamFlags::Differentiable |
+                                          ParamFlags::Discontinuous);
     }
 
     MI_INLINE Float eval_hg(Float cos_theta) const {
-        Float temp = 1.0f + m_g * m_g + 2.0f * m_g * cos_theta;
-        return dr::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * dr::sqrt(temp));
+        Float temp = 1.f + dr::sqr(m_g) + 2.f * m_g * cos_theta;
+        return dr::InvFourPi<ScalarFloat> * (1.f - dr::sqr(m_g)) /
+               (temp * dr::sqrt(temp));
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
@@ -74,16 +76,19 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
-        Float sqr_term = (1 - m_g * m_g) / (1 - m_g + 2 * m_g * sample2.x());
-        Float cos_theta = (1 + m_g * m_g - sqr_term * sqr_term) / (2 * m_g);
-        dr::masked(cos_theta, m_g < dr::Epsilon<ScalarFloat>) = 1 - 2 * sample2.x();
+        Float sqr_term  = (1.f - dr::sqr(m_g)) / (1.f - m_g + 2.f * m_g * sample2.x()),
+              cos_theta = (1.f + dr::sqr(m_g) - dr::sqr(sqr_term)) / (2.f * m_g);
 
-        Float sin_theta = dr::safe_sqrt(1.0f - cos_theta * cos_theta);
-        auto [sin_phi, cos_phi] = dr::sincos(2 * dr::Pi<ScalarFloat> * sample2.y());
-        auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, -cos_theta);
-        wo = mi.to_world(wo);
-        Float pdf = eval_hg(-cos_theta);
-        return { wo, pdf };
+        // Diffuse fallback
+        dr::masked(cos_theta, dr::abs(m_g) < dr::Epsilon<ScalarFloat>) = 1.f - 2.f * sample2.x();
+
+        Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
+        auto [sin_phi, cos_phi] = dr::sincos(2.f * dr::Pi<ScalarFloat> * sample2.y());
+
+        Vector3f wo = mi.to_world(
+            Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, -cos_theta));
+
+        return { wo, eval_hg(-cos_theta) };
     }
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,
@@ -103,7 +108,6 @@ public:
     MI_DECLARE_CLASS()
 private:
     Float m_g;
-
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(HGPhaseFunction, PhaseFunction)

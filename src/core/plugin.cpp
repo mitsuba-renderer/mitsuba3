@@ -177,10 +177,21 @@ ref<Object> PluginManager::create_object(const Properties &props,
     if (class_->name() == "Scene")
        return class_->construct(props);
 
-    const Class *plugin_class = get_plugin_class(props.plugin_name(), class_->variant());
+    std::string variant = class_->variant();
+    const Class *plugin_class = get_plugin_class(props.plugin_name(), variant);
+
+    /* Construct each plugin in its own scope to isolate them from each other.
+     * This is important when plugins are created in parallel. */
 
     Assert(plugin_class != nullptr);
     ref<Object> object = plugin_class->construct(props);
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    // Ensures queued side effects are consistently compiled into cacheable kernels
+    if (string::starts_with(variant, "cuda_") ||
+        string::starts_with(variant, "llvm_"))
+        dr::eval();
+#endif
 
     if (!object->class_()->derives_from(class_)) {
         const Class *oc = object->class_();

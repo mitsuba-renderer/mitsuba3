@@ -41,6 +41,7 @@ Sphere (:monosp:`sphere`)
    -  Specifies an optional linear object-to-world transformation.
       Note that non-uniform scales and shears are not permitted!
       (Default: none, i.e. object space = world space)
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_sphere_basic.jpg
@@ -142,22 +143,40 @@ public:
         if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f && dr::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
-        m_radius = S[0][0];
-        m_center = ScalarPoint3f(T);
+        m_radius = dr::norm(m_to_world.value().transform_affine(Vector3f(1.f, 0.f, 0.f)));
+        m_center = m_to_world.value().transform_affine(Point3f(0.f));
 
-        if (m_radius.scalar() <= 0.f) {
-            m_radius = dr::abs(m_radius.scalar());
+        if (S[0][0] <= 0.f) {
+            m_radius = dr::abs(m_radius.value());
             m_flip_normals = !m_flip_normals;
         }
 
-        // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = dr::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(m_radius.scalar()), Q, T);
-        m_to_object = m_to_world.scalar().inverse();
+        // Compute the to_object transformation with uniform scaling and no shear
+        m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
 
         dr::make_opaque(m_radius, m_center, m_inv_surface_area);
         mark_dirty();
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Ensure previous ray-tracing operation are fully evaluated before
+            // modifying the scalar values of the fields in this class
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+
+        Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -293,6 +312,27 @@ public:
         );
     }
 
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags,
+                                               Mask active) const override {
+        Point3f local = warp::square_to_uniform_sphere(uv);
+        Point3f p = dr::fmadd(local, m_radius.value(), m_center.value());
+
+        Ray3f ray(p + local, -local, 0, Wavelength(0));
+
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        active &= pi.is_valid();
+
+        if (dr::none_or<false>(active))
+            return dr::zeros<SurfaceInteraction3f>();
+
+        SurfaceInteraction3f si =
+            compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+
+        return si;
+    }
+
     //! @}
     // =============================================================
 
@@ -306,12 +346,11 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                              dr::is_diff_v<Float>,
-                                          dr::float32_array_t<FloatP>,
-                                          dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
+
         using ScalarValue  = dr::scalar_t<Value>;
         using ScalarValue3 = Vector<ScalarValue, 3>;
 
@@ -327,8 +366,26 @@ public:
 
         Value maxt = Value(ray.maxt);
 
-        Value3 o = Value3(ray.o) - center;
+        // We define a plane which is perpendicular to the ray direction and
+        // contains the sphere center and intersect it. We then solve the
+        // ray-sphere intersection as if the ray origin was this new
+        // intersection point. This additional step makes the whole intersection
+        // routine numerically more robust.
+
+        Value3 l = ray.o - center;
         Value3 d(ray.d);
+        Value plane_t = dot(-l, d) / norm(d);
+
+        // Ray is perpendicular to plane
+        dr::mask_t<FloatP> no_hit =
+            dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
+
+        Value3 plane_p = ray(plane_t);
+
+        // Intersection with plane outside of the sphere
+        no_hit &= (norm(plane_p - center) > radius);
+
+        Value3 o = plane_p - center;
 
         Value A = dr::squared_norm(d);
         Value B = dr::scalar_t<Value>(2.f) * dr::dot(o, d);
@@ -336,13 +393,16 @@ public:
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
+        near_t += plane_t;
+        far_t += plane_t;
+
         // Sphere doesn't intersect with the segment on the ray
         dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
         dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
-        active &= solution_found && !out_bounds && !in_bounds;
+        active &= solution_found && !no_hit && !out_bounds && !in_bounds;
 
         FloatP t = dr::select(
             active, dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t)),
@@ -356,10 +416,9 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> ||
-                                              dr::is_diff_v<Float>,
-                                          dr::float32_array_t<FloatP>,
-                                          dr::float64_array_t<FloatP>>;
+        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
+                                         dr::float32_array_t<FloatP>,
+                                         dr::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
         using ScalarValue  = dr::scalar_t<Value>;
         using ScalarValue3 = Vector<ScalarValue, 3>;
@@ -402,35 +461,69 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
+        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Recompute ray intersection to get differentiable t
-        Float t = pi.t;
-        if constexpr (dr::is_diff_v<Float>)
-            t = dr::replace_grad(t, ray_intersect_preliminary(ray, active).t);
-
-        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
-
         // Fields requirement dependencies
-        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV) ||
-                           has_flag(ray_flags, RayFlags::dNGdUV);
-        bool need_dp_duv = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
-        bool need_uv     = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
+        bool need_dn_duv  = has_flag(ray_flags, RayFlags::dNSdUV) ||
+                            has_flag(ray_flags, RayFlags::dNGdUV);
+        bool need_dp_duv  = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
+        bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
+
+        const Point3f& center = m_center.value();
+        const Float& radius = m_radius.value();
+        const Transform4f& to_world = m_to_world.value();
+        const Transform4f& to_object = m_to_object.value();
+
+        /* If necessary, temporally suspend gradient tracking for all shape
+           parameters to construct a surface interaction completely detach from
+           the shape. */
+        dr::suspend_grad<Float> scope(detach_shape, center, radius, to_world, to_object);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.t = dr::select(active, t, dr::Infinity<Float>);
 
-        si.sh_frame.n = dr::normalize(ray(t) - m_center.value());
+        Point3f local;
+        if constexpr (IsDiff) {
+            if (follow_shape) {
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
+                local = to_object.transform_affine(ray(pi.t));
+                /* With FollowShape the local position should always be static as
+                   the intersection point follows any motion of the sphere. */
+                local = dr::detach(local);
+                si.p = to_world.transform_affine(local);
+                si.sh_frame.n = (si.p - center) / radius;
+                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
+            } else {
+                /* To ensure that the differential interaction point stays along
+                   the traced ray, we first recompute the intersection distance
+                   in a differentiable way (w.r.t. to the sphere parameters) and
+                   then compute the corresponding point along the ray. */
+                si.t = dr::replace_grad(pi.t, ray_intersect_preliminary(ray, active).t);
+                si.p = ray(si.t);
+                si.sh_frame.n = dr::normalize(si.p - center);
+                local = to_object.transform_affine(si.p);
+            }
+        } else {
+            si.t = pi.t;
+            si.sh_frame.n = dr::normalize(ray(si.t) - center);
+            // Re-project onto the sphere to improve accuracy
+            si.p = dr::fmadd(si.sh_frame.n, radius, center);
+            local = to_object.transform_affine(si.p);
+        }
 
-        // Re-project onto the sphere to improve accuracy
-        si.p = dr::fmadd(si.sh_frame.n, m_radius.value(), m_center.value());
+        si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         if (likely(need_uv)) {
-            Vector3f local = m_to_object.value().transform_affine(si.p);
-
             Float rd_2  = dr::sqr(local.x()) + dr::sqr(local.y()),
                   theta = unit_angle_z(local),
                   phi   = dr::atan2(local.y(), local.x());
@@ -454,19 +547,18 @@ public:
                 if (unlikely(dr::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-                si.dp_du = m_to_world.value() * si.dp_du * (2.f * dr::Pi<Float>);
-                si.dp_dv = m_to_world.value() * si.dp_dv * dr::Pi<Float>;
+                si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
+                si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
             }
         }
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
-
         si.n = si.sh_frame.n;
 
         if (need_dn_duv) {
             Float inv_radius =
-                (m_flip_normals ? -1.f : 1.f) * dr::rcp(m_radius.value());
+                (m_flip_normals ? -1.f : 1.f) * dr::rcp(radius);
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;
         }
@@ -480,22 +572,12 @@ public:
         return si;
     }
 
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center);
+    }
+
     //! @}
     // =============================================================
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-        Base::parameters_changed();
-    }
 
 #if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;

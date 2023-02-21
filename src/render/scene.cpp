@@ -2,6 +2,7 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/integrator.h>
 
@@ -19,13 +20,16 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
-    for (auto &kv : props.objects()) {
-        m_children.push_back(kv.second.get());
+    for (auto &[k, v] : props.objects()) {
+        Scene *scene           = dynamic_cast<Scene *>(v.get());
+        Shape *shape           = dynamic_cast<Shape *>(v.get());
+        Mesh *mesh             = dynamic_cast<Mesh *>(v.get());
+        Emitter *emitter       = dynamic_cast<Emitter *>(v.get());
+        Sensor *sensor         = dynamic_cast<Sensor *>(v.get());
+        Integrator *integrator = dynamic_cast<Integrator *>(v.get());
 
-        Shape *shape           = dynamic_cast<Shape *>(kv.second.get());
-        Emitter *emitter       = dynamic_cast<Emitter *>(kv.second.get());
-        Sensor *sensor         = dynamic_cast<Sensor *>(kv.second.get());
-        Integrator *integrator = dynamic_cast<Integrator *>(kv.second.get());
+        if (!scene)
+            m_children.push_back(v.get());
 
         if (shape) {
             if (shape->is_emitter())
@@ -38,6 +42,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_bbox.expand(shape->bbox());
                 m_shapes.push_back(shape);
             }
+            if (mesh)
+                mesh->set_scene(this);
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))
@@ -198,7 +204,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     size_t emitter_count = m_emitters.size();
     if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
-        EmitterPtr emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
+        emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
 
         std::tie(ray, weight) =
             emitter->sample_ray(time, sample_1_re, sample2, sample3, active);
@@ -246,7 +252,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         active &= dr::neq(ds.pdf, 0.f);
 
-        // Mark occluded samles as invalid if requested by the user
+        // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {
             Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
             dr::masked(spec, occluded) = 0.f;
@@ -258,7 +264,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         active &= dr::neq(ds.pdf, 0.f);
 
-        // Mark occluded samles as invalid if requested by the user
+        // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {
             Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
             dr::masked(spec, occluded) = 0.f;
@@ -301,9 +307,17 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
 
     bool accel_is_dirty = false;
     for (auto &s : m_shapes) {
-        accel_is_dirty = s->dirty();
-        if (accel_is_dirty)
+        if (s->dirty()) {
+            accel_is_dirty = true;
             break;
+        }
+    }
+
+    for (auto &s : m_shapegroups) {
+        if (s->dirty()) {
+            accel_is_dirty = true;
+            break;
+        }
     }
 
     if (accel_is_dirty) {
@@ -352,9 +366,10 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::clear_shapes_dirty() {
-    for (auto &s : m_shapes) {
+    for (auto &s : m_shapes)
         s->m_dirty = false;
-    }
+    for (auto &s : m_shapegroups)
+        s->m_dirty = false;
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }

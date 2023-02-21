@@ -67,7 +67,7 @@ public:
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        UInt32 index(position_sample.x() * (ScalarFloat) m_sensors.size());
+        UInt32 index = (UInt32) (position_sample.x() * (ScalarFloat) m_sensors.size());
         RayDifferential3f result_1 = dr::zeros<RayDifferential3f>();
         Spectrum result_2 = dr::zeros<Spectrum>();
 

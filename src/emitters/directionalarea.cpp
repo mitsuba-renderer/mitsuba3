@@ -96,10 +96,10 @@ public:
         // 3. Sample spectral component
         SurfaceInteraction3f si(ps, dr::zeros<Wavelength>());
         auto [wavelength, wav_weight] = sample_wavelengths(si, wavelength_sample, active);
+        si.time = time;
+        si.wavelengths = wavelength;
 
-        // Note: ray.mint will ensure we don't immediately self-intersect
-        Ray3f ray(ps.p, d, time, wavelength);
-        return { ray, m_area * wav_weight };
+        return { si.spawn_ray(d), m_area * wav_weight };
     }
 
     /**

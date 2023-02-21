@@ -14,13 +14,32 @@ struct OptixSphereData {
 
 extern "C" __global__ void __intersection__sphere() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData*) optixGetSbtDataPointer();
-    OptixSphereData *sphere = (OptixSphereData *)sbt_data->data;
+    OptixSphereData *sphere = (OptixSphereData*) sbt_data->data;
 
     // Ray in instance-space
     Ray3f ray = get_ray();
 
-    Vector3f o = ray.o - sphere->center;
+    // We define a plane which is perpendicular to the ray direction and
+    // contains the sphere center and intersect it. We then solve the ray-sphere
+    // intersection as if the ray origin was this new intersection point. This
+    // additional step makes the whole intersection routine numerically more
+    // robust.
+
+    Vector3f l = ray.o - sphere->center;
     Vector3f d = ray.d;
+    float plane_t = dot(-l, d) / norm(d);
+
+    // Ray is perpendicular to plane
+    if (plane_t == 0 && ray.o != sphere->center)
+        return;
+
+    Vector3f plane_p = ray(plane_t);
+
+    // Intersection with plane outside of the sphere
+    if (norm(plane_p - sphere->center) > sphere->radius)
+        return;
+
+    Vector3f o = plane_p - sphere->center;
 
     float A = squared_norm(d);
     float B = 2.f * dot(o, d);
@@ -28,6 +47,9 @@ extern "C" __global__ void __intersection__sphere() {
 
     float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
+
+    near_t += plane_t;
+    far_t += plane_t;
 
     // Sphere doesn't intersect with the segment on the ray
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals

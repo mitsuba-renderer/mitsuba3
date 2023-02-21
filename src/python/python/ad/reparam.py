@@ -18,7 +18,7 @@ def _sample_warp_field(scene: mi.Scene,
     Helper function for reparameterizing rays based on the paper
 
       "Unbiased Warped-Area Sampling for Differentiable Rendering"
-      (Procedings of SIGGRAPH'20) by Sai Praveen Bangaru,
+      (Proceedings of SIGGRAPH'20) by Sai Praveen Bangaru,
       Tzu-Mao Li, and Frédo Durand.
 
     The function is an implementation of the _ReparameterizeOp class below

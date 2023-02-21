@@ -86,11 +86,6 @@ Options:
         supported width is legal and causes arithmetic operations to be
         replicated multiple times.
 
-    -P
-        Force parallel scene loading, which is disabled by default
-        in JIT modes since interferes with the ability to reuse
-        cached compiled kernels across separate runs of the renderer.
-
 )";
 }
 
@@ -177,7 +172,6 @@ int main(int argc, char *argv[]) {
 
     // Specialized flags for the JIT compiler
     auto arg_optim_lev = parser.add(StringVec{ "-O" }, true);
-    auto arg_load_par  = parser.add(StringVec{ "-P" });
     auto arg_wavefront = parser.add(StringVec{ "-W" });
     auto arg_source    = parser.add(StringVec{ "-S" });
     auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
@@ -316,8 +310,6 @@ int main(int argc, char *argv[]) {
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
-        bool parallel_loading = !(llvm || cuda) || (*arg_load_par);
-
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
         ref<FileResolver> fr = thread->file_resolver();
@@ -362,7 +354,7 @@ int main(int argc, char *argv[]) {
             // Try and parse a scene from the passed file.
             std::vector<ref<Object>> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params,
-                               *arg_update, parallel_loading);
+                               *arg_update, true);
 
             if (parsed.size() != 1)
                 Throw("Root element of the input file is expanded into "

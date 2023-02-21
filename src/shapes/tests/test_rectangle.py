@@ -171,3 +171,116 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.t)
     assert dr.allclose(dr.grad(ray.o), [0, 0, -1])
+
+
+def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
+    shape = mi.load_dict({'type' : 'rectangle'})
+    params = mi.traverse(shape)
+
+    # Test 00: With DetachShape and no moving rays, the output shouldn't produce
+    #          any gradients.
+
+    ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, -2), mi.Vector3f(0, 0, 1))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.t), 0.0)
+    assert dr.allclose(dr.grad(si.p), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 01: When the rectangle is stretched, the point will not move along
+    #          the ray. The normal isn't changing but the UVs are.
+
+    ray = mi.Ray3f(mi.Vector3f(0.1, 0.2, -2), mi.Vector3f(0, 0, 1))
+
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.scale([1 + theta, 1 + 2 * theta, 1])
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All)
+
+    dr.forward(theta)
+
+    d_uv = mi.Point2f(-0.1 / 2, -0.2)
+
+    assert dr.allclose(dr.grad(si.t), 0)
+    assert dr.allclose(dr.grad(si.p), 0)
+    assert dr.allclose(dr.grad(si.n), 0)
+    assert dr.allclose(dr.grad(si.uv), d_uv)
+
+    # Test 02: With FollowShape, any intersection point with translating rectangle
+    #          should move according to the translation. The normal and the
+    #          UVs should be static.
+
+    ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.translate([theta, 0.0, 0.0])
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+
+    dr.forward(theta, dr.ADFlag.ClearNone)
+
+    assert dr.allclose(dr.grad(si.p), [1.0, 0.0, 0.0])
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 03: With FollowShape, an off-center intersection point with a
+    #          rotating rectangle and its normal should follow the rotation speed
+    #          along the tangent direction. The UVs should be static.
+
+    ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+
+    dr.forward(theta)
+
+    assert dr.allclose(dr.grad(si.p), [-dr.pi * 0.1 / 2, dr.pi * 0.1 / 2, 0.0])
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), 0.0)
+
+    # Test 04: Without FollowShape, a rectangle that is only rotating shouldn't
+    #          produce any gradients for the intersection point and normal, but
+    #          for the UVs.
+
+    ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
+
+    theta = mi.Float(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params.update()
+    si = shape.ray_intersect(ray, mi.RayFlags.All)
+
+    dr.forward(theta)
+
+    d_uv = [dr.pi * 0.1 / 4, -dr.pi * 0.1 / 4]
+
+    assert dr.allclose(dr.grad(si.p), 0.0)
+    assert dr.allclose(dr.grad(si.n), 0.0)
+    assert dr.allclose(dr.grad(si.uv), d_uv)
+
+
+def test09_eval_parameterization(variants_all_ad_rgb):
+    shape = mi.load_dict({'type' : 'rectangle'})
+    transform = mi.Transform4f().scale(0.2).translate([0.1, 0.2, 0.3]).rotate([1.0, 0, 0], 45)
+
+    si_before = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
+
+    params = mi.traverse(shape)
+    params['to_world'] = transform
+    params.update()
+
+    si_after = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
+    assert dr.allclose(si_before.uv, si_after.uv)

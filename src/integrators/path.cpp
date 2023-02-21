@@ -1,4 +1,4 @@
-#include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -179,15 +179,20 @@ public:
             if (dr::none_or<false>(active_next))
                 break; // early exit for scalar mode
 
+            BSDFPtr bsdf = si.bsdf(ray);
+
             // ---------------------- Emitter sampling ----------------------
 
             // Perform emitter sampling?
-            BSDFPtr bsdf = si.bsdf(ray);
             Mask active_em = active_next && has_flag(bsdf->flags(), BSDFFlags::Smooth);
+
+            DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+            Spectrum em_weight = dr::zeros<Spectrum>();
+            Vector3f wo = dr::zeros<Vector3f>();
 
             if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
-                auto [ds, em_weight] = scene->sample_emitter_direction(
+                std::tie(ds, em_weight) = scene->sample_emitter_direction(
                     si, sampler->next_2d(), true, active_em);
                 active_em &= dr::neq(ds.pdf, 0.f);
 
@@ -199,10 +204,20 @@ public:
                     em_weight = dr::select(dr::neq(ds.pdf, 0), em_val / ds.pdf, 0);
                 }
 
-                // Evaluate BSDF * cos(theta)
-                Vector3f wo = si.to_local(ds.d);
-                auto [bsdf_val, bsdf_pdf] =
-                    bsdf->eval_pdf(bsdf_ctx, si, wo, active_em);
+                wo = si.to_local(ds.d);
+            }
+
+            // ------ Evaluate BSDF * cos(theta) and sample direction -------
+
+            Float sample_1 = sampler->next_1d();
+            Point2f sample_2 = sampler->next_2d();
+
+            auto [bsdf_val, bsdf_pdf, bsdf_sample, bsdf_weight]
+                = bsdf->eval_pdf_sample(bsdf_ctx, si, wo, sample_1, sample_2);
+
+            // --------------- Emitter sampling contribution ----------------
+
+            if (dr::any_or<true>(active_em)) {
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 // Compute the MIS weight
@@ -216,11 +231,6 @@ public:
 
             // ---------------------- BSDF sampling ----------------------
 
-            Float sample_1 = sampler->next_1d();
-            Point2f sample_2 = sampler->next_2d();
-
-            auto [bsdf_sample, bsdf_weight] =
-                bsdf->sample(bsdf_ctx, si, sample_1, sample_2, active_next);
             bsdf_weight = si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, si.wi);
 
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
@@ -234,9 +244,9 @@ public:
                 ray = dr::detach<true>(ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
-                Vector3f wo = si.to_local(ray.d);
-                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(bsdf_ctx, si, wo, active);
-                bsdf_weight[bsdf_pdf > 0.f] = bsdf_val / dr::detach(bsdf_pdf);
+                Vector3f wo_2 = si.to_local(ray.d);
+                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2, active);
+                bsdf_weight[bsdf_pdf_2 > 0.f] = bsdf_val_2 / dr::detach(bsdf_pdf_2);
             }
 
             // ------ Update loop variables based on current interaction ------

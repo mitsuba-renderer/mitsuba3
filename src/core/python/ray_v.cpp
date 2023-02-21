@@ -12,13 +12,13 @@ void bind_ray(py::module &m, const char *name) {
             .def(py::init<>(), "Create an uninitialized ray")
             .def(py::init<const Ray &>(), "Copy constructor", "other"_a)
             .def(py::init<Point, Vector, Float, const Wavelength &>(),
-                 D(Ray, Ray, 5),
+                 D(Ray, Ray, 2),
                  "o"_a, "d"_a, "time"_a=0.0, "wavelengths"_a=Wavelength())
             .def(py::init<Point, Vector, Float, Float, const Wavelength &>(),
-                 D(Ray, Ray, 6),
+                 D(Ray, Ray, 3),
                 "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
             .def(py::init<const Ray &, Float>(),
-                D(Ray, Ray, 7), "other"_a, "maxt"_a)
+                D(Ray, Ray, 4), "other"_a, "maxt"_a)
             .def("__call__", &Ray::operator(), D(Ray, operator, call), "t"_a)
             .def_field(Ray, o,           D(Ray, o))
             .def_field(Ray, d,           D(Ray, d))

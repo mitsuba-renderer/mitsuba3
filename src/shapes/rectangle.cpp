@@ -30,7 +30,7 @@ Rectangle (:monosp:`rectangle`)
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))
-   - |exposed|
+   - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_rectangle.jpg
@@ -98,26 +98,12 @@ public:
         initialize();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
-        Base::traverse(callback);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
-        }
-        Base::parameters_changed();
-    }
-
     void update() {
-        m_to_object = m_to_world.scalar().inverse();
+        m_to_object = m_to_world.value().inverse();
 
-        Vector3f dp_du = m_to_world.scalar() * Vector3f(2.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world.scalar() * Vector3f(0.f, 2.f, 0.f);
-        Normal3f normal = dr::normalize(m_to_world.scalar() * Normal3f(0.f, 0.f, 1.f));
+        Vector3f dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
+        Normal3f normal = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du, dp_dv, normal);
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -127,11 +113,32 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
-        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        ScalarTransform4f to_world = m_to_world.scalar();
+
+        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+
         return bbox;
+    }
+
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Ensure previous ray-tracing operation are fully evaluated before
+            // modifying the scalar values of the fields in this class
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
+            update();
+        }
+        Base::parameters_changed();
     }
 
     Float surface_area() const override {
@@ -164,18 +171,23 @@ public:
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                               uint32_t /*ray_flags*/,
-                                               Mask /*active*/) const override {
-        auto si = dr::zeros<SurfaceInteraction3f>();
-        si.t    = 0.f;  // Mark interaction as valid
-        si.p    = m_to_world.value().transform_affine(
+                                               uint32_t ray_flags,
+                                               Mask active) const override {
+        Point3f p = m_to_world.value().transform_affine(
             Point3f(uv.x() * 2.f - 1.f, uv.y() * 2.f - 1.f, 0.f));
-        si.n        = m_frame.n;
-        si.shape    = this;
-        si.uv       = uv;
-        si.sh_frame = m_frame;
-        si.dp_du    = m_frame.s;
-        si.dp_dv    = m_frame.t;
+
+        Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
+
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        active &= pi.is_valid();
+
+        if (dr::none_or<false>(active))
+            return dr::zeros<SurfaceInteraction3f>();
+
+        SurfaceInteraction3f si =
+            compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+
         return si;
     }
 
@@ -241,29 +253,57 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
+        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Recompute ray intersection to get differentiable prim_uv and t
-        Float t = pi.t;
-        Point2f prim_uv = pi.prim_uv;
-        if constexpr (dr::is_diff_v<Float>) {
-            PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
-            prim_uv = dr::replace_grad(prim_uv, pi_d.prim_uv);
-            t = dr::replace_grad(t, pi_d.t);
-        }
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
+        Transform4f to_world = m_to_world.value();
+        Transform4f to_object = m_to_object.value();
+
+        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.t = dr::select(active, t, dr::Infinity<Float>);
+        Point2f prim_uv = pi.prim_uv;
 
-        // Re-project onto the rectangle to improve accuracy
-        Point3f p = ray(t);
-        Float dist = dr::dot(m_to_world.value().translation() - p, m_frame.n);
-        si.p = p + dist * m_frame.n;
+        if constexpr (IsDiff) {
+            if (follow_shape) {
+                /* FollowShape glues the interaction point with the shape.
+                   Therefore, to also account for a possible differential motion
+                   of the shape, we first compute a detached intersection point
+                   in local space and transform it back in world space to get a
+                   point rigidly attached to the shape's motion, including
+                   translation, scaling and rotation. */
+                Point3f local = to_object.transform_affine(ray(pi.t));
+                /* With FollowShape the local position should always be static as
+                   the intersection point follows any motion of the sphere. */
+                local = dr::detach(local);
+                si.p = to_world.transform_affine(local);
+                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
+                prim_uv = dr::head<2>(local);
+            } else {
+                /* To ensure that the differential interaction point stays along
+                   the traced ray, we first recompute the intersection distance
+                   in a differentiable way (w.r.t. to the rectangle parameters)
+                   and then compute the corresponding point along the ray. */
+                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
+                si.t = dr::replace_grad(pi.t, pi_d.t);
+                si.p = ray(si.t);
+                prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
+            }
+        } else {
+            si.t = pi.t;
+            // Re-project onto the rectangle to improve accuracy
+            Point3f p = ray(pi.t);
+            Float dist = dr::dot(to_world.translation() - p, m_frame.n);
+            si.p = p + dist * m_frame.n;
+        }
+
+        si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;

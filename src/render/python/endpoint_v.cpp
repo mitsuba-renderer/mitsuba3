@@ -20,6 +20,10 @@ MI_PY_EXPORT(Endpoint) {
              "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
         .def("eval_direction", &Endpoint::eval_direction,
              "it"_a, "ds"_a, "active"_a = true, D(Endpoint, eval_direction))
+        .def("sample_position", &Endpoint::sample_position,
+             "ref"_a, "ds"_a, "active"_a = true, D(Endpoint, sample_position))
+        .def("pdf_position", &Endpoint::pdf_position,
+             "ps"_a, "active"_a = true, D(Endpoint, pdf_position))
         .def("eval", &Endpoint::eval,
              "si"_a, "active"_a = true, D(Endpoint, eval))
         .def("sample_wavelengths", &Endpoint::sample_wavelengths,

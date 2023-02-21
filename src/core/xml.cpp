@@ -225,6 +225,7 @@ struct XMLObject {
     size_t location = 0;
     ref<Object> object;
     std::mutex mutex;
+    uint32_t scope = 0;
 };
 
 enum class ColorMode {
@@ -246,21 +247,26 @@ ColorMode variant_to_color_mode() {
 }
 
 struct XMLParseContext {
-    std::unordered_map<std::string, XMLObject> instances;
-    Transform4f transform;
-    size_t id_counter = 0;
-    ColorMode color_mode;
     std::string variant;
     bool parallel;
+
+    std::unordered_map<std::string, XMLObject> instances;
+    Transform4f transform;
+    ColorMode color_mode;
+    uint32_t id_counter = 0;
+    uint32_t backend = 0;
 
     XMLParseContext(const std::string &variant, bool parallel)
         : variant(variant), parallel(parallel) {
         color_mode = MI_INVOKE_VARIANT(variant, variant_to_color_mode);
-    }
 
-    bool is_cuda() const { return string::starts_with(variant, "cuda_"); }
-    bool is_llvm() const { return string::starts_with(variant, "llvm_"); }
-    bool is_jit()  const { return is_cuda() || is_llvm(); }
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (string::starts_with(variant, "cuda_"))
+            backend = (uint32_t) JitBackend::CUDA;
+        else if (string::starts_with(variant, "llvm_"))
+            backend = (uint32_t) JitBackend::LLVM;
+#endif
+    }
 };
 
 /// Helper function to check if attributes are fully specified
@@ -530,7 +536,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                           "underscores are reserved for internal identifiers.",
                     id, node.name());
         } else if (current_is_object) {
-            node.append_attribute("id") = tfm::format("_unnamed_%i", ctx.id_counter++).c_str();
+            node.append_attribute("id") = tfm::format("_unnamed_%u", ctx.id_counter++).c_str();
         }
 
         switch (tag) {
@@ -573,6 +579,13 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     inst.class_ = it2->second;
                     inst.offset = src.offset;
                     inst.src_id = src.id;
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+                    // Deterministically assign a scope to each scene object
+                    if (ctx.backend && ctx.parallel) {
+                        jit_new_scope((JitBackend) ctx.backend);
+                        inst.scope = jit_scope((JitBackend) ctx.backend);
+                    }
+#endif
                     inst.location = node.offset_debug();
                     return std::make_pair(name, id);
                 }
@@ -972,6 +985,27 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
+struct ScopedSetJITScope {
+    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend) {
+            backup = jit_scope((JitBackend) backend);
+            jit_set_scope((JitBackend) backend, scope);
+        }
+#endif
+    }
+
+    ~ScopedSetJITScope() {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend)
+            jit_set_scope((JitBackend) backend, backup);
+#endif
+    }
+
+    uint32_t backend, backup;
+};
+
+
 static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
                                                     const fs::path &filename_,
                                                     ParameterList param,
@@ -1049,6 +1083,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
     Properties &props = inst.props;
     const auto &named_references = props.named_references();
+    uint32_t scope = inst.scope;
 
     // Recursive graph traversal to gather dependency tasks
     std::vector<Task *> deps;
@@ -1061,8 +1096,9 @@ static Task *instantiate_node(XMLParseContext &ctx,
         deps.push_back(task_map.find(child_id)->second);
     }
 
-    auto instantiate = [&ctx, &env, id]() {
+    auto instantiate = [&ctx, &env, id, scope]() {
         ScopedSetThreadEnvironment set_env(env);
+        ScopedSetJITScope set_scope(ctx.parallel ? ctx.backend : 0u, scope);
 
         auto it = ctx.instances.find(id);
         if (it == ctx.instances.end())
@@ -1096,14 +1132,6 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
-            #if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
-                if (ctx.is_jit()) {
-                    // Ensures dr::scatter occurring in object constructors are flushed
-                    dr::eval();
-                    if (ctx.parallel)
-                        dr::sync_thread();
-                }
-            #endif
         } catch (const std::exception &e) {
             Throw("Error while loading \"%s\" (near %s): could not instantiate "
                   "%s plugin of type \"%s\": %s",
@@ -1265,9 +1293,9 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             return PluginManager::instance()->create_object(props, class_);
         } else {
             /* Pre-integrate against the CIE matching curves. In order to match
-            the behavior of spectral modes, this function should instead
-            pre-integrate against the product of the CIE curves and the CIE D65
-            curve in the case of reflectance values. */
+               the behavior of spectral modes, this function should instead
+               pre-integrate against the product of the CIE curves and the CIE
+               D65 curve in the case of reflectance values. */
             Color3f color = spectrum_list_to_srgb(
                 wavelengths, values,
                 /* bounded */ !(within_emitter || is_unbounded),
@@ -1371,7 +1399,7 @@ std::vector<ref<Object>> load_string(const std::string &string,
         pugi::xml_node root = doc.document_element();
         detail::XMLParseContext ctx(variant, parallel);
         Properties props;
-        size_t arg_counter; // Unused
+        size_t arg_counter = 0; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
                                           param, arg_counter, 0).second;
 

@@ -29,6 +29,8 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 
     optix_initialize();
 
+    scoped_optix_context guard;
+
     OptixDeviceContext context = jit_optix_context();
     OptixDenoiserModelKind model_kind = temporal
                                             ? OPTIX_DENOISER_MODEL_KIND_TEMPORAL
@@ -41,9 +43,9 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
         m_denoiser, input_size.x(), input_size.y(), &sizes));
 
     CUstream stream = jit_cuda_stream();
-    m_state_size = sizes.stateSizeInBytes;
+    m_state_size = (uint32_t) sizes.stateSizeInBytes;
     m_state = jit_malloc(AllocType::Device, m_state_size);
-    m_scratch_size = sizes.withoutOverlapScratchSizeInBytes;
+    m_scratch_size = (uint32_t) sizes.withoutOverlapScratchSizeInBytes;
     m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
     jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
                                        input_size.y(), m_state, m_state_size,
@@ -66,6 +68,8 @@ OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &normals, const Transform4f &to_sensor, const TensorXf &flow,
     const TensorXf &previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
+
+    scoped_optix_context guard;
 
     validate_input(noisy, albedo, normals, flow, previous_denoised);
 
@@ -160,11 +164,16 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
-        jit_sync_thread();
+        ref<Bitmap> output =
+            new Bitmap(noisy->pixel_format(), Struct::Type::Float32,
+                       { denoised.shape(1), denoised.shape(0) },
+                       denoised.shape(2), {});
 
-        return new Bitmap(noisy->pixel_format(), Struct::Type::Float32,
-                          { denoised.shape(1), denoised.shape(0) },
-                          denoised.shape(2), {}, (uint8_t *) denoised_data);
+        jit_sync_thread(); // Wait for `denoised_data` to be ready
+        memcpy(output->data(), denoised_data, output->buffer_size());
+        jit_free(denoised_data);
+
+        return output;
     }
 
     ref<const Bitmap> noisy_bmp;

@@ -257,7 +257,7 @@ int terminal_width() {
         if (h != INVALID_HANDLE_VALUE && h != nullptr) {
             CONSOLE_SCREEN_BUFFER_INFO bufferInfo = {0};
             GetConsoleScreenBufferInfo(h, &bufferInfo);
-            cached_width = bufferInfo.dwSize.X;
+            cached_width = bufferInfo.dwSize.X - 1;
         }
 #else
         struct winsize w;

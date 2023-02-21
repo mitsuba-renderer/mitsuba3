@@ -47,7 +47,7 @@ Environment emitter (:monosp:`envmap`)
    - |bool|
    - Compensate sampling for the presence of other Monte Carlo techniques that
      will be combined using multiple importance sampling (MIS)? This is
-     extremely cheap to do and can slightly reduce variance. (Default: true)
+     extremely cheap to do and can slightly reduce variance. (Default: false)
 
  * - data
    - |tensor|
@@ -102,6 +102,11 @@ public:
 
     using Warp = Hierarchical2D<Float, 0>;
 
+    /* In RGB variants: 3-channel array for R, G, and B components
+       In spectral variants: 4-channel array for polynomial coefficients & scale */
+    using PixelData = dr::Array<Float, is_spectral_v<Spectrum> ? 4 : 3>;
+    using ScalarPixelData = dr::Array<ScalarFloat, is_spectral_v<Spectrum> ? 4 : 3>;
+
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
@@ -132,7 +137,10 @@ public:
 
         /* Convert to linear RGBA float bitmap, will undergo further
            conversion into coefficients of a spectral upsampling model below */
-        bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<Float>, false);
+        Bitmap::PixelFormat pixel_format = Bitmap::PixelFormat::RGB;
+        if constexpr (is_spectral_v<Spectrum>)
+            pixel_format = Bitmap::PixelFormat::RGBA;
+        bitmap = bitmap->convert(pixel_format, struct_type_v<Float>, false);
 
         /* Allocate a larger image including an extra column to
            account for the periodic boundary */
@@ -176,6 +184,7 @@ public:
                 luminance_offset = 0.f; // disable
         }
 
+        size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
             ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
@@ -184,11 +193,11 @@ public:
 
                 ScalarFloat lum = mitsuba::luminance(rgb);
 
-                ScalarVector4f coeff;
+                ScalarPixelData coeff;
                 if constexpr (is_monochromatic_v<Spectrum>) {
-                    coeff = ScalarVector4f(lum, lum, lum, 1.f);
+                    coeff = ScalarPixelData(lum);
                 } else if constexpr (is_rgb_v<Spectrum>) {
-                    coeff = dr::concat(rgb, dr::Array<ScalarFloat, 1>(1.f));
+                    coeff = rgb;
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
                     /* Evaluate the spectral upsampling model. This requires a
@@ -205,19 +214,19 @@ public:
 
                 *lum_ptr++ = lum * sin_theta;
                 dr::store(out_ptr, coeff);
-                in_ptr += 4;
-                out_ptr += 4;
+                in_ptr += pixel_width;
+                out_ptr += pixel_width;
             }
 
             // Last column of pixels mirrors first
             ScalarFloat temp = *(lum_ptr - bitmap->size().x());
             *lum_ptr++ = temp;
-            dr::store(out_ptr, dr::load<ScalarVector4f>(
-                                   out_ptr - bitmap->size().x() * 4));
-            out_ptr += 4;
+            dr::store(out_ptr, dr::load<ScalarPixelData>(
+                                   out_ptr - bitmap->size().x() * pixel_width));
+            out_ptr += pixel_width;
         }
 
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), pixel_width };
         m_data = TensorXf(bitmap_2->data(), 3, shape);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
@@ -240,10 +249,10 @@ public:
 
             if constexpr (dr::is_jit_v<Float>) {
                 // Enforce horizontal continuity
-                UInt32 row_index = dr::arange<UInt32>(res.y());
-                Vector4f v0 = dr::gather<Vector4f>(m_data.array(), row_index);
-                Vector4f v1 = dr::gather<Vector4f>(m_data.array(), row_index + (res.x() - 1));
-                Vector4f v01 = .5f * (v0 + v1);
+                UInt32 row_index = dr::arange<UInt32>(res.y()) * res.x();
+                PixelData v0 = dr::gather<PixelData>(m_data.array(), row_index);
+                PixelData v1 = dr::gather<PixelData>(m_data.array(), row_index + (res.x() - 1));
+                PixelData v01 = .5f * (v0 + v1);
                 dr::scatter(m_data.array(), v01, row_index);
                 dr::scatter(m_data.array(), v01, row_index + (res.x() - 1));
             }
@@ -259,35 +268,37 @@ public:
             ScalarFloat *ptr     = (ScalarFloat *) data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
+            size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
+
             ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
             for (size_t y = 0; y < res.y(); ++y) {
                 ScalarFloat sin_theta = dr::sin(y * theta_scale);
 
                 if constexpr (!dr::is_jit_v<Float>) {
                     // Enforce horizontal continuity
-                    ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
-                    ScalarVector4f v0  = dr::load_aligned<ScalarVector4f>(ptr),
-                                   v1  = dr::load_aligned<ScalarVector4f>(ptr2),
-                                   v01 = .5f * (v0 + v1);
+                    ScalarFloat *ptr2 = ptr + pixel_width * (res.x() - 1);
+                    ScalarPixelData v0  = dr::load_aligned<ScalarPixelData>(ptr),
+                                    v1  = dr::load_aligned<ScalarPixelData>(ptr2),
+                                    v01 = .5f * (v0 + v1);
                     dr::store_aligned(ptr, v01),
                     dr::store_aligned(ptr2, v01);
                 }
 
                 for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarVector4f coeff = dr::load_aligned<ScalarVector4f>(ptr);
+                    ScalarPixelData coeff = dr::load_aligned<ScalarPixelData>(ptr);
                     ScalarFloat lum;
 
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = mitsuba::luminance(ScalarColor3f(dr::head<3>(coeff)));
+                        lum = mitsuba::luminance(ScalarColor3f(coeff));
                     } else {
                         static_assert(is_spectral_v<Spectrum>);
                         lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
                     }
 
                     *lum_ptr++ = lum * sin_theta;
-                    ptr += 4;
+                    ptr += pixel_width;
                 }
             }
 
@@ -498,10 +509,10 @@ protected:
         const uint32_t width = res.x();
         UInt32 index = dr::fmadd(pos.y(), width, pos.x());
 
-        Vector4f v00 = dr::gather<Vector4f>(m_data.array(), index, active),
-                 v10 = dr::gather<Vector4f>(m_data.array(), index + 1, active),
-                 v01 = dr::gather<Vector4f>(m_data.array(), index + width, active),
-                 v11 = dr::gather<Vector4f>(m_data.array(), index + width + 1, active);
+        PixelData v00 = dr::gather<PixelData>(m_data.array(), index, active),
+                  v10 = dr::gather<PixelData>(m_data.array(), index + 1, active),
+                  v01 = dr::gather<PixelData>(m_data.array(), index + width, active),
+                  v11 = dr::gather<PixelData>(m_data.array(), index + width + 1, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
@@ -531,14 +542,14 @@ protected:
             return result;
         } else {
             DRJIT_MARK_USED(wavelengths);
-            Vector4f v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
-                     v1 = dr::fmadd(w0.x(), v01, w1.x() * v11),
-                     v  = dr::fmadd(w0.y(), v0, w1.y() * v1);
+            PixelData v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
+                      v1 = dr::fmadd(w0.x(), v01, w1.x() * v11),
+                      v  = dr::fmadd(w0.y(), v0, w1.y() * v1);
 
             if constexpr (is_monochromatic_v<Spectrum>)
                 return dr::head<1>(v) * m_scale;
             else
-                return dr::head<3>(v) * m_scale;
+                return v * m_scale;
         }
     }
 
