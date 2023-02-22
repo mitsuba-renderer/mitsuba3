@@ -373,8 +373,9 @@ public:
         return { result, valid_ray };
     }
 
+    template <typename Interaction>
     std::tuple<WeightMatrix, WeightMatrix, Spectrum, DirectionSample3f>
-    sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
+    sample_emitter(const Interaction &ref_interaction, const Scene *scene,
                    Sampler *sampler, MediumPtr medium,
                    const WeightMatrix &p_over_f, UInt32 channel,
                    Mask active) const {
@@ -391,6 +392,11 @@ public:
         }
 
         Ray3f ray = ref_interaction.spawn_ray(ds.d);
+
+        // Potentially escaping the medium if this is the current medium's boundary
+        if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
+            dr::masked(medium, ref_interaction.is_medium_transition()) =
+                ref_interaction.target_medium(ray.d);
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
