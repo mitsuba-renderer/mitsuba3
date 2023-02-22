@@ -5,8 +5,11 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Incoming release
-----------------
+
+Mitsuba 3.2.1
+-------------
+
+*February 22, 2023*
 
 - Upgrade Dr.Jit to v0.4.1
 - ``Film`` plugins can now have error-compensated accumulation in JIT modes 
