@@ -141,8 +141,11 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         Spiral spiral(film_size, film->crop_offset(), block_size, n_passes);
 
-        ref<ProgressReporter> progress = new ProgressReporter("Rendering");
         std::mutex mutex;
+        ref<ProgressReporter> progress;
+        Logger* logger = mitsuba::Thread::thread()->logger();
+        if (logger && Info >= logger->log_level())
+            progress = new ProgressReporter("Rendering");
 
         // Total number of blocks to be handled, including multiple passes.
         uint32_t total_blocks = spiral.block_count() * n_passes,
@@ -186,7 +189,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
                     film->put_block(block);
 
-                    /* Critical section: update progress bar */ {
+                    /* Critical section: update progress bar */
+                    if (progress) {
                         std::lock_guard<std::mutex> lock(mutex);
                         blocks_done++;
                         progress->update(blocks_done / (float) total_blocks);

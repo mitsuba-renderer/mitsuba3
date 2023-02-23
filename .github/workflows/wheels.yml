@@ -73,7 +73,7 @@ jobs:
           echo "MI_CMAKE_TOOLCHAIN_FILE=$(pwd)/.github/workflows/macOS_arm64_toolchain.cmake" >> $GITHUB_ENV && \
           echo "CIBW_BEFORE_BUILD_MACOS=\
           rm -rf /tmp/drjit_wheel && mkdir -p /tmp/drjit_wheel/ && cd /tmp/drjit_wheel && \
-          pip download --platform=macosx_11_0_arm64 --only-binary=:all: drjit==0.4.0 && \
+          pip download --platform=macosx_11_0_arm64 --only-binary=:all: drjit==0.4.1 && \
           unzip *.whl" >> $GITHUB_ENV && \
           echo "MI_DRJIT_CMAKE_DIR=/tmp/drjit_wheel/drjit/share/cmake/drjit" >> $GITHUB_ENV && \
           echo "MI_SRGB_COEFF_FILE=$(pwd)/build/data/srgb.coeff" >> $GITHUB_ENV && \
