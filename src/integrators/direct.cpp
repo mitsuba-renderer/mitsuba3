@@ -179,7 +179,7 @@ public:
             Mask active_b = active && dr::any(dr::neq(unpolarized_spectrum(bsdf_val), 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
-            SurfaceInteraction si_bsdf =
+            SurfaceInteraction3f si_bsdf =
                 scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
             // Retain only rays that hit an emitter

@@ -299,7 +299,7 @@ public:
                 dr::masked(throughput, active_surface) *= bsdf_val;
                 dr::masked(eta, active_surface) *= bs.eta;
 
-                Ray bsdf_ray                    = si.spawn_ray(si.to_world(bs.wo));
+                Ray3f bsdf_ray                  = si.spawn_ray(si.to_world(bs.wo));
                 dr::masked(ray, active_surface) = bsdf_ray;
                 needs_intersection |= active_surface;
 
