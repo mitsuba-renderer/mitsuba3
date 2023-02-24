@@ -28,11 +28,12 @@ import mitsuba as mi
 import importlib
 
 import pytest, os, argparse
-from os.path import join, realpath, exists
+from os.path import join, exists
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import find_resource
 
-output_dir = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/integrators'))
+output_dir = find_resource('resources/data/tests/integrators')
 
 # -------------------------------------------------------------------
 #                          Test configs
