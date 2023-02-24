@@ -200,7 +200,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        Point it_local = m_to_world.value().inverse().transform_affine(it.p);
+        Point3f it_local = m_to_world.value().inverse().transform_affine(it.p);
 
         // 2. Map to UV coordinates
         Point2f uv = dr::head<2>(m_camera_to_sample * it_local);

@@ -82,7 +82,7 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
 
     auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
 
-    RayDifferential result_ray(temp_ray);
+    RayDifferential3f result_ray(temp_ray);
 
     Vector2f dx(1.f / m_resolution.x(), 0.f);
     Vector2f dy(0.f, 1.f / m_resolution.y());
