@@ -7,6 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/render/mipmap.h>
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
 #include <mutex>
@@ -112,11 +113,11 @@ at all.
 */
 
 template <typename Float, typename Spectrum>
-class BitmapTexture final : public Texture<Float, Spectrum> {
+class BitmapTexture2 final : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
 
-    BitmapTexture(const Properties &props) : Texture(props) {
+    BitmapTexture2(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f())
                           .extract();
         if (m_transform != ScalarTransform3f())
@@ -200,6 +201,7 @@ public:
         m_bitmap =
             m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
+        // Upsampling to 2x2
         if (dr::any(m_bitmap->size() < 2)) {
             Log(Warn,
                 "Image must be at least 2x2 pixels in size, up-sampling..");
@@ -250,7 +252,7 @@ public:
 
         if (exceed_unit_range && !m_raw)
             Log(Warn,
-                "BitmapTexture: texture named \"%s\" contains pixels that "
+                "BitmapTexture2: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!",
                 m_name);
 
@@ -261,6 +263,43 @@ public:
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
                               m_accel, filter_mode, wrap_mode);
+
+
+        // Generate MIP map hierarchy; downsample using a 2-lobed Lanczos reconstruction filter
+        std::string mip_filter_str = props.string("mipmap_filter_type", "trilinear");
+        if (mip_filter_str == "nearest")
+            m_mip_filter = MIPFilterType::Nearest;
+        else if (mip_filter_str == "bilinear")
+            m_mip_filter = MIPFilterType::Bilinear;
+        else if (mip_filter_str == "trilinear"){
+            if (filter_mode_str == "nearest"){
+                Log(Warn, "Mipmap filter may not be compatible with texture filter");
+            }
+            m_mip_filter = MIPFilterType::Trilinear;
+        }
+        else if (mip_filter_str == "ewa")
+            m_mip_filter = MIPFilterType::EWA;
+        else
+            Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
+                  "\"bilinear\"! or \"trilinear\", or \"ewa\" ", filter_mode_str);
+
+        // get Anisotropy of EWA
+        m_maxAnisotropy = props.get<ScalarFloat>("maxAnisotropy", 20);
+
+        // get mipmap filter
+        using ReconstructionFilter = Bitmap::ReconstructionFilter;
+        Properties rfilterProps("lanczos");
+        rfilterProps.set_int("lobes", 2);
+        ref<ReconstructionFilter> rfilter = static_cast<ReconstructionFilter *> (
+            PluginManager::instance()->create_object<ReconstructionFilter>(rfilterProps));
+
+        if (pixel_format == Bitmap::PixelFormat::Y){
+            m_mipmap = new MIPMap<Float, Spectrum>(m_bitmap, pixel_format, struct_type_v<ScalarFloat>, rfilter, wrap_mode, filter_mode, m_mip_filter);
+        }
+        else{
+            m_mipmap = new MIPMap<Float, Spectrum>(m_bitmap, pixel_format, struct_type_v<ScalarFloat>, rfilter, wrap_mode, filter_mode, m_mip_filter);
+        }
+        
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -560,7 +599,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "BitmapTexture[" << std::endl
+        oss << "BitmapTexture2[" << std::endl
             << "  name = \"" << m_name << "\"," << std::endl
             << "  resolution = \"" << resolution() << "\"," << std::endl
             << "  raw = " << (int) m_raw << "," << std::endl
@@ -637,13 +676,24 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Float out;
-        if (m_accel)
-            m_texture.eval(uv, &out, active);
-        else
-            m_texture.eval_nonaccel(uv, &out, active);
+        if (m_mip_filter == MIPFilterType::Nearest || m_mip_filter == MIPFilterType::Bilinear){
+            Float out;
+            if (m_accel)
+                m_texture.eval(uv, &out, active);
+            else
+                m_texture.eval_nonaccel(uv, &out, active);
 
-        return out;
+            return out;
+        }
+        else{
+            Vector2f duvdx = si.duv_dx;
+            Vector2f duvdy = si.duv_dy;
+            // TODO: get correctly transformed dst/dxy
+
+            m_mipmap->eval_1(uv, duvdx, duvdy, active);
+
+        }
+
     }
 
     /**
@@ -671,7 +721,7 @@ protected:
      * \brief Recompute mean and 2D sampling distribution (if requested)
      * following an update
      */
-    void rebuild_internals(bool init_mean, bool init_distr) {
+    void rebuild_internals(bool init_mean, bool init_distr, bool init_pyramid = true) {
         auto&& data = dr::migrate(m_texture.value(), AllocType::Host);
 
         if constexpr (dr::is_jit_v<Float>)
@@ -726,9 +776,13 @@ protected:
         if (init_mean)
             m_mean = dr::opaque<Float>(ScalarFloat(mean / pixel_count));
 
+        if (init_pyramid){
+            m_mipmap->rebuild_pyramid();
+        }
+
         if (exceed_unit_range && !m_raw)
             Log(Warn,
-                "BitmapTexture: texture named \"%s\" contains pixels that "
+                "BitmapTexture2: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!",
                 m_name);
     }
@@ -737,8 +791,8 @@ protected:
     MI_INLINE void init_distr() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
-            auto self = const_cast<BitmapTexture *>(this);
-            self->rebuild_internals(false, true);
+            auto self = const_cast<BitmapTexture2 *>(this);
+            self->rebuild_internals(false, true, false);
         }
     }
 
@@ -754,9 +808,13 @@ protected:
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
+
+    ScalarFloat m_maxAnisotropy;
+    ref<MIPMap<Float, Spectrum>> m_mipmap; 
+    MIPFilterType m_mip_filter;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MI_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture2, Texture)
+MI_EXPORT_PLUGIN(BitmapTexture2, "Bitmap texture")
 
 NAMESPACE_END(mitsuba)
