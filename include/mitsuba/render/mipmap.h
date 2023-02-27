@@ -131,21 +131,21 @@ public:
         Float root = dr::hypot(A-C, B),
               Aprime = 0.5f * (A + C - root),
               Cprime = 0.5f * (A + C + root),
-              majorRadius = dr::select(Aprime != 0, dr::sqrt(F / Aprime), 0),
-              minorRadius = dr::select(Cprime != 0, dr::sqrt(F / Cprime), 0);
+              majorRadius = dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
+              minorRadius = dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(dr::abs(du0), dr::abs(du1)), dr::maximum(dr::abs(dv0), dr::abs(dv1))), dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
             Int32 lower = dr::floor2int<Int32>(level);
             Float alpha = level - lower;
 
             // defalt level: 0
-            Mask isZero = dr::select(lower < 0, true, false);
+            Mask isZero = lower < 0;
 
-            Float c_lower = 0;
-            Float c_upper = 0;
+            Float c_lower = 1;
+            Float c_upper = 1;
             Float c_tmp = 0;
             Float out = 0;
 
@@ -175,9 +175,8 @@ public:
                 }
             }
 
-            // std::cout<<level<<std::endl;
             // std::cout<<out<<std::endl;
-            dr::masked(out, active & isTri & !isZero)  = c_upper * (1.0f - alpha) + c_lower * alpha;
+            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.0 - alpha);
             // std::cout<<out<<std::endl;
             // std::cin.get();
 

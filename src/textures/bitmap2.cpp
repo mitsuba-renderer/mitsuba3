@@ -304,7 +304,6 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("mipmap",  m_mipmap, +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
     }
 
@@ -692,8 +691,18 @@ protected:
             Vector2f duvdx = si.duv_dx;
             Vector2f duvdy = si.duv_dy;
             // TODO: get correctly transformed dst/dxy
+            const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-            out = m_mipmap->eval_1(uv, duvdx, duvdy, active);
+            Vector2f duv_dx = dr::abs(Vector2f{
+                uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+                uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+            });
+            Vector2f duv_dy = dr::abs(Vector2f{
+                uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+                uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+            });            
+
+            out = m_mipmap->eval_1(uv, duv_dx, duv_dy, active);
             // m_texture.eval_nonaccel(uv, &out, active);
             return out;
         }
@@ -723,10 +732,21 @@ protected:
         else{
             Vector2f duvdx = si.duv_dx;
             Vector2f duvdy = si.duv_dy;
-
             // TODO: get correctly transformed dst/dxy
+            const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-            out = m_mipmap->eval_3(uv, duvdx, duvdy, active);            
+            Vector2f duv_dx = dr::abs(Vector2f{
+                uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+                uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+            });
+            Vector2f duv_dy = dr::abs(Vector2f{
+                uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+                uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+            });            
+
+            out = m_mipmap->eval_3(uv, duv_dx, duv_dy, active);
+            // m_texture.eval_nonaccel(uv, &out, active);
+            return out;        
         }
 
         return out;
