@@ -304,6 +304,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
+        callback->put_parameter("mipmap",  m_mipmap, +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
     }
 
@@ -387,6 +388,8 @@ public:
     Vector2f eval_1_grad(const SurfaceInteraction3f &si,
                          Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
+        std::cout<<"computing grad 1"<<std::endl;
 
         const size_t channels = m_texture.shape()[2];
         if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {

@@ -137,10 +137,8 @@ public:
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(dr::abs(du0), dr::abs(du1)), dr::maximum(dr::abs(dv0), dr::abs(dv1))), dr::Epsilon<Float>));
             Int32 lower = dr::floor2int<Int32>(level);
-
-            // For test
             Float alpha = level - lower;
 
             // defalt level: 0
@@ -177,14 +175,18 @@ public:
                 }
             }
 
+            // std::cout<<level<<std::endl;
+            // std::cout<<out<<std::endl;
             dr::masked(out, active & isTri & !isZero)  = c_upper * (1.0f - alpha) + c_lower * alpha;
+            // std::cout<<out<<std::endl;
+            // std::cin.get();
 
             // TODO: EWA
             return out;  
     }
 
     Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
-        const Vector2i &size = m_pyramid[0].tensor().size();
+        const ScalarVector2u size = resolution[0];
         Float du0 = d0.x() * size.x(), dv0 = d0.y() * size.y(),
               du1 = d1.x() * size.x(), dv1 = d1.y() * size.y();
 
@@ -203,45 +205,49 @@ public:
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
             Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
-            Int32 ilevel = dr::floor2int<Int32>(level);
-            Float alpha = level - ilevel;
+            Int32 lower = dr::floor2int<Int32>(level);
 
-            /* Bilinear interpolation (lookup is smaller than 1 pixel) */
+            // For test
+            Float alpha = level - lower;
 
             // defalt level: 0
-            Mask isZero = dr::select(ilevel < 0, true, false);
+            Mask isZero = dr::select(lower < 0, true, false);
 
-            TensorXf t_lower(m_pyramid[0].tensor());
-            TensorXf t_upper(m_pyramid[0].tensor());
+            Color3f c_lower = 0;
+            Color3f c_upper = 0;
+            Color3f c_tmp = 0;
+            Color3f out = 0;
 
-            // If level >= 0, use this scalar texture
-            for(int i = 0; i<m_levels-1; i++){
-                dr::masked(t_lower, dr::eq(i, ilevel) & active & isTri & !isZero) = m_pyramid[i].tensor();
-                dr::masked(t_upper, dr::eq(i, ilevel) & active & isTri & !isZero) = m_pyramid[i+1].tensor();
-            }
-
-            Color3f out_lower;
-            Color3f out_upper;
-            Color3f out;
-            Texture2f tex_lower(t_lower, m_accel, m_accel, m_texture_filter, m_bc);
-            Texture2f tex_upper(t_upper, m_accel, m_accel, m_texture_filter, m_bc);
-
+            // For level < 0
             if (m_accel){
-                tex_lower.eval(uv, out.data(), active & isTri & isZero);
-                tex_lower.eval(uv, out_lower.data(), active & isTri & !isZero);
-                tex_upper.eval(uv, out_upper.data(), active & isTri & !isZero);
+                m_pyramid[0].eval(uv, out.data(), active & isTri & isZero);
             }
             else{
-                tex_lower.eval(uv, out.data(), active & isTri & isZero);
-                tex_lower.eval_nonaccel(uv, out_lower.data(), active & isTri & !isZero);
-                tex_upper.eval_nonaccel(uv, out_upper.data(), active & isTri & !isZero);
+                m_pyramid[0].eval_nonaccel(uv, out.data(), active & isTri & isZero);
             }
 
-            dr::masked(out, active & isTri & !isZero)  = out_upper * (1.0f - alpha) + out_lower * alpha;
+            // For level >= 0
+            for(int i = 0; i<m_levels-1; i++){
+                if (m_accel){
+                    m_pyramid[i].eval(uv, c_tmp.data(), active);
+                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+
+                    m_pyramid[i+1].eval(uv, c_tmp.data(), active);
+                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                }
+                else{
+                    m_pyramid[i].eval_nonaccel(uv, c_tmp.data(), active);
+                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+
+                    m_pyramid[i+1].eval_nonaccel(uv, c_tmp.data(), active);
+                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                }
+            }
+
+            dr::masked(out, active & isTri & !isZero)  = c_upper * (1.0f - alpha) + c_lower * alpha;
 
             // TODO: EWA
-
-            return out;          
+            return out;  
     }
 
 
