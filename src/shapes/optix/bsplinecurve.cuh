@@ -4,7 +4,7 @@
 
 #ifdef __CUDACC__
 
-extern "C" __global__ void __closesthit__linearcurve() {
+extern "C" __global__ void __closesthit__bsplinecurve() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
     unsigned int prim_index = optixGetPrimitiveIndex();
 

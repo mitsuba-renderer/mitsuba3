@@ -9017,8 +9017,8 @@ $L__BB8_2:
 	ret;
 
 }
-	// .globl	__closesthit__linearcurve
-.visible .entry __closesthit__linearcurve()
+	// .globl	__closesthit__bsplinecurve
+.visible .entry __closesthit__bsplinecurve()
 {
 	.reg .pred 	%p<2>;
 	.reg .f32 	%f<2>;
@@ -9078,8 +9078,8 @@ $L__BB9_2:
 	ret;
 
 }
-	// .globl	__closesthit__bsplinecurve
-.visible .entry __closesthit__bsplinecurve()
+	// .globl	__closesthit__linearcurve
+.visible .entry __closesthit__linearcurve()
 {
 	.reg .pred 	%p<2>;
 	.reg .f32 	%f<2>;
