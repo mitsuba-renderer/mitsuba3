@@ -39,7 +39,7 @@ public:
 
     MIPMap(ref<Bitmap> bitmap,
             Bitmap::PixelFormat pixelFormat, // channels
-            Struct::Type componentFormat, // channel format
+            Struct::Type /*componentFormat*/, // channel format
             const ref<Bitmap::ReconstructionFilter> rfilter,
             dr::WrapMode wrap_mode,
             dr::FilterMode tex_filter,
@@ -47,16 +47,16 @@ public:
             size_t channels = 3,
             Float maxAnisotropy = 20.0f,
             bool accel = true,
-            ScalarFloat maxValue = 1.0f
+            ScalarFloat /*maxValue*/ = 1.0f
             ):
                 m_pixelFormat(pixelFormat), 
                 m_texture_filter(tex_filter),
                 m_mipmap_filter(mip_filter),
                 m_bc(wrap_mode),
-                m_weightLut(NULL), 
                 m_maxAnisotropy(maxAnisotropy),
                 m_accel(accel),
-                m_channels(channels){
+                m_channels(channels),
+                m_weightLut(NULL) {
 
         // Compuate the total levles
         channels = bitmap->channel_count();
@@ -119,6 +119,14 @@ public:
 
 
     Float eval_1(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
+        Float out = 0;
+        if (m_mipmap_filter == MIPFilterType::Nearest || m_mipmap_filter == MIPFilterType::Bilinear){
+            if (m_accel)
+                m_pyramid[0].eval(uv, &out, active);
+            else
+                m_pyramid[0].eval_nonaccel(uv, &out, active);
+            return out;         
+        }
         const ScalarVector2u size = resolution[0];
         Float du0 = d0.x() * size.x(), dv0 = d0.y() * size.y(),
               du1 = d1.x() * size.x(), dv1 = d1.y() * size.y();
@@ -147,7 +155,6 @@ public:
             Float c_lower = 1;
             Float c_upper = 1;
             Float c_tmp = 0;
-            Float out = 0;
 
             // For level < 0
             if (m_accel){
@@ -185,6 +192,14 @@ public:
     }
 
     Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
+        Color3f out(0);
+        if (m_mipmap_filter == MIPFilterType::Nearest || m_mipmap_filter == MIPFilterType::Bilinear){
+            if (m_accel)
+                m_pyramid[0].eval(uv, out.data(), active);
+            else
+                m_pyramid[0].eval_nonaccel(uv, out.data(), active);
+            return out;         
+        }
         const ScalarVector2u size = resolution[0];
         Float du0 = d0.x() * size.x(), dv0 = d0.y() * size.y(),
               du1 = d1.x() * size.x(), dv1 = d1.y() * size.y();
@@ -203,7 +218,7 @@ public:
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>));
             Int32 lower = dr::floor2int<Int32>(level);
 
             // For test
@@ -215,7 +230,6 @@ public:
             Color3f c_lower = 0;
             Color3f c_upper = 0;
             Color3f c_tmp = 0;
-            Color3f out = 0;
 
             // For level < 0
             if (m_accel){
@@ -268,6 +282,5 @@ private:
     Float m_average;
     std::vector<ScalarVector2u> resolution;
 };
-
 
 NAMESPACE_END(mitsuba)

@@ -680,33 +680,19 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Float out;
-        if (m_mip_filter == MIPFilterType::Nearest || m_mip_filter == MIPFilterType::Bilinear){
-            if (m_accel)
-                m_texture.eval(uv, &out, active);
-            else
-                m_texture.eval_nonaccel(uv, &out, active);
-        }
-        else{
-            Vector2f duvdx = si.duv_dx;
-            Vector2f duvdy = si.duv_dy;
-            // TODO: get correctly transformed dst/dxy
-            const ScalarMatrix3f uv_tm = m_transform.matrix;
+        // Get correctly transformed dst/dxy. TODO: Optimization?
+        const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-            Vector2f duv_dx = dr::abs(Vector2f{
-                uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
-                uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
-            });
-            Vector2f duv_dy = dr::abs(Vector2f{
-                uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
-                uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
-            });            
+        Vector2f duv_dx = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+            uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+        });
+        Vector2f duv_dy = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+            uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+        });            
 
-            out = m_mipmap->eval_1(uv, duv_dx, duv_dy, active);
-            // m_texture.eval_nonaccel(uv, &out, active);
-            return out;
-        }
-
+        Float out = m_mipmap->eval_1(uv, duv_dx, duv_dy, active);
         return out;
     }
 
@@ -722,33 +708,19 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Color3f out;
-        if (m_mip_filter == MIPFilterType::Nearest || m_mip_filter == MIPFilterType::Bilinear){
-            if (m_accel)
-                m_texture.eval(uv, out.data(), active);
-            else
-                m_texture.eval_nonaccel(uv, out.data(), active);
-        }
-        else{
-            Vector2f duvdx = si.duv_dx;
-            Vector2f duvdy = si.duv_dy;
-            // TODO: get correctly transformed dst/dxy
-            const ScalarMatrix3f uv_tm = m_transform.matrix;
+        // Get correctly transformed dst/dxy. TODO: Optimization?
+        const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-            Vector2f duv_dx = dr::abs(Vector2f{
-                uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
-                uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
-            });
-            Vector2f duv_dy = dr::abs(Vector2f{
-                uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
-                uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
-            });            
+        Vector2f duv_dx = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+            uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+        });
+        Vector2f duv_dy = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+            uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+        });            
 
-            out = m_mipmap->eval_3(uv, duv_dx, duv_dy, active);
-            // m_texture.eval_nonaccel(uv, &out, active);
-            return out;        
-        }
-
+        Color3f out = m_mipmap->eval_3(uv, duv_dx, duv_dy, active);
         return out;
     }
 
