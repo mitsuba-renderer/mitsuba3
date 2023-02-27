@@ -681,23 +681,12 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Float out;
-        if (m_mip_filter == MIPFilterType::Nearest || m_mip_filter == MIPFilterType::Bilinear){
-            if (m_accel)
-                m_texture.eval(uv, &out, active);
-            else
-                m_texture.eval_nonaccel(uv, &out, active);
-        }
-        else{
-            Vector2f duvdx = si.duv_dx;
-            Vector2f duvdy = si.duv_dy;
-            // TODO: get correctly transformed dst/dxy
+        Vector2f duvdx = si.duv_dx;
+        Vector2f duvdy = si.duv_dy;
+        // TODO: get correctly transformed dst/dxy
 
-            out = m_mipmap->eval_1(uv, duvdx, duvdy, active);
-            // m_texture.eval_nonaccel(uv, &out, active);
-            return out;
-        }
-
+        Float out = m_mipmap->eval_1(uv, duvdx, duvdy, active);
+        // m_texture.eval_nonaccel(uv, &out, active);
         return out;
     }
 
@@ -713,23 +702,11 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Color3f out;
-        if (m_mip_filter == MIPFilterType::Nearest || m_mip_filter == MIPFilterType::Bilinear){
-            if (m_accel)
-                m_texture.eval(uv, out.data(), active);
-            else
-                m_texture.eval_nonaccel(uv, out.data(), active);
-        }
-        else{
-            Vector2f duvdx = si.duv_dx;
-            Vector2f duvdy = si.duv_dy;
+        Vector2f duvdx = si.duv_dx;
+        Vector2f duvdy = si.duv_dy;
 
-            // TODO: get correctly transformed dst/dxy
-
-            out = m_mipmap->eval_3(uv, duvdx, duvdy, active);            
-        }
-
-        return out;
+        // TODO: get correctly transformed dst/dxy
+        return m_mipmap->eval_3(uv, duvdx, duvdy, active);            
     }
 
     /**

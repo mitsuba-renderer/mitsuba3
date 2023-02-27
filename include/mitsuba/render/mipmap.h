@@ -39,7 +39,7 @@ public:
 
     MIPMap(ref<Bitmap> bitmap,
             Bitmap::PixelFormat pixelFormat, // channels
-            Struct::Type componentFormat, // channel format
+            Struct::Type /*componentFormat*/, // channel format
             const ref<Bitmap::ReconstructionFilter> rfilter,
             dr::WrapMode wrap_mode,
             dr::FilterMode tex_filter,
@@ -47,16 +47,16 @@ public:
             size_t channels = 3,
             Float maxAnisotropy = 20.0f,
             bool accel = true,
-            ScalarFloat maxValue = 1.0f
+            ScalarFloat /*maxValue*/ = 1.0f
             ):
                 m_pixelFormat(pixelFormat), 
                 m_texture_filter(tex_filter),
                 m_mipmap_filter(mip_filter),
                 m_bc(wrap_mode),
-                m_weightLut(NULL), 
                 m_maxAnisotropy(maxAnisotropy),
                 m_accel(accel),
-                m_channels(channels){
+                m_channels(channels),
+                m_weightLut(NULL) {
 
         // Compuate the total levles
         channels = bitmap->channel_count();
@@ -142,7 +142,7 @@ public:
             Float alpha = level - lower;
 
             // defalt level: 0
-            Mask isZero = dr::select(lower < 0, true, false);
+            Mask isZero = lower < 0;
 
             Float c_lower = 0;
             Float c_upper = 0;
@@ -269,6 +269,5 @@ private:
     Float m_average;
     std::vector<ScalarVector2u> resolution;
 };
-
 
 NAMESPACE_END(mitsuba)
