@@ -72,11 +72,14 @@ public:
 
         // Allocate pyramid
         m_pyramid.init_(m_levels);
+        resolution.resize(m_levels);
         
         // Initialize level 0
         ScalarVector2u res = ScalarVector2u(bitmap->size());
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         m_pyramid[0] = Texture2f(TensorXf(bitmap->data(), 3, shape), m_accel, m_accel, tex_filter, wrap_mode);
+
+        resolution[0] = res;
 
         // Downsample until 1x1
         if (mip_filter != MIPFilterType::Nearest && mip_filter != MIPFilterType::Bilinear){
@@ -93,6 +96,8 @@ public:
                 size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), channels };
                 m_pyramid[m_levels] = Texture2f(TensorXf(bitmap->data(), 3, shape), m_accel, m_accel, tex_filter, wrap_mode);
 
+                resolution[m_levels] = size; 
+
                 // Test if the pyramid is built
                 // FileStream* str = new FileStream(std::to_string(m_levels)+".exr", FileStream::ETruncReadWrite);
                 // bitmap->write(str);
@@ -104,6 +109,7 @@ public:
         if (m_mipmap_filter == MIPFilterType::EWA){
             // TODO: ewa weights
         }
+        std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
     }
 
     void rebuild_pyramid(){
@@ -111,17 +117,73 @@ public:
         std::cout<<"Not implemented yet..."<<std::endl;
     }
 
-    Float evalTexel(int level, Point2f uv, Mask active){
-        Color3f out;
-        if (m_accel){
-            m_pyramid[level].eval(uv, out.data(), active);
-        }
-        else{
-            m_pyramid[level].eval_nonaccel(uv, out.data(), active);
-        }
-    }
 
     Float eval_1(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
+        const ScalarVector2u size = resolution[0];
+        Float du0 = d0.x() * size.x(), dv0 = d0.y() * size.y(),
+              du1 = d1.x() * size.x(), dv1 = d1.y() * size.y();
+
+        Float A = dv0*dv0 + dv1*dv1,
+              B = -2.0f * (du0*dv0 + du1*dv1),
+              C = du0*du0 + du1*du1,
+              F = A*C - B*B*0.25f;
+
+        Float root = dr::hypot(A-C, B),
+              Aprime = 0.5f * (A + C - root),
+              Cprime = 0.5f * (A + C + root),
+              majorRadius = dr::select(Aprime != 0, dr::sqrt(F / Aprime), 0),
+              minorRadius = dr::select(Cprime != 0, dr::sqrt(F / Cprime), 0);
+
+            // If isTri, perform trilinear filter
+            Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
+
+            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
+            Int32 lower = dr::floor2int<Int32>(level);
+
+            // For test
+            Float alpha = level - lower;
+
+            // defalt level: 0
+            Mask isZero = dr::select(lower < 0, true, false);
+
+            Float c_lower = 0;
+            Float c_upper = 0;
+            Float c_tmp = 0;
+            Float out = 0;
+
+            // For level < 0
+            if (m_accel){
+                m_pyramid[0].eval(uv, &out, active & isTri & isZero);
+            }
+            else{
+                m_pyramid[0].eval_nonaccel(uv, &out, active & isTri & isZero);
+            }
+
+            // For level >= 0
+            for(int i = 0; i<m_levels-1; i++){
+                if (m_accel){
+                    m_pyramid[i].eval(uv, &c_tmp, active);
+                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+
+                    m_pyramid[i+1].eval(uv, &c_tmp, active);
+                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                }
+                else{
+                    m_pyramid[i].eval_nonaccel(uv, &c_tmp, active);
+                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+
+                    m_pyramid[i+1].eval_nonaccel(uv, &c_tmp, active);
+                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                }
+            }
+
+            dr::masked(out, active & isTri & !isZero)  = c_upper * (1.0f - alpha) + c_lower * alpha;
+
+            // TODO: EWA
+            return out;  
+    }
+
+    Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
         const Vector2i &size = m_pyramid[0].tensor().size();
         Float du0 = d0.x() * size.x(), dv0 = d0.y() * size.y(),
               du1 = d1.x() * size.x(), dv1 = d1.y() * size.y();
@@ -142,39 +204,44 @@ public:
 
             Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
             Int32 ilevel = dr::floor2int<Int32>(level);
-
-            Mask isZero = false;
-            isZero = dr::select(ilevel < 0, true, false);
-
+            Float alpha = level - ilevel;
 
             /* Bilinear interpolation (lookup is smaller than 1 pixel) */
-            // Float out_zero;
-            // if (m_accel)
-            //     dr::gather<Texture2f>(m_pyramid, Int32(0), active & isZero); //.eval(uv, &out_zero, active);
-            // else
-            //     dr::gather<Texture2f>(m_pyramid, Int32(0), active & isZero); //.eval_nonaccel(uv, &out_zero, active);
 
+            // defalt level: 0
+            Mask isZero = dr::select(ilevel < 0, true, false);
 
-            // /* Trilinear interpolation between two mipmap levels */
-            // Float a = level - ilevel;
-            // Float out_upper;
-            // if (m_accel)
-            //     dr::gather<Texture2f>(m_pyramid, ilevel+1, active & !isZero); //.eval(uv, &out_upper, active);
-            // else
-            //     dr::gather<Texture2f>(m_pyramid, ilevel+1, active & !isZero); //.eval_nonaccel(uv, &out_upper, active);
+            TensorXf t_lower(m_pyramid[0].tensor());
+            TensorXf t_upper(m_pyramid[0].tensor());
 
-            // Float out_lower;
-            // if (m_accel)
-            //     dr::gather<Texture2f>(m_pyramid, ilevel, active & !isZero); //.eval(uv, &out_lower, active);
-            // else
-            //     dr::gather<Texture2f>(m_pyramid, ilevel, active & !isZero); //.eval_nonaccel(uv, &out_lower, active);
+            // If level >= 0, use this scalar texture
+            for(int i = 0; i<m_levels-1; i++){
+                dr::masked(t_lower, dr::eq(i, ilevel) & active & isTri & !isZero) = m_pyramid[i].tensor();
+                dr::masked(t_upper, dr::eq(i, ilevel) & active & isTri & !isZero) = m_pyramid[i+1].tensor();
+            }
 
-            // Float out = out_upper * (1.0f - a) + out_lower * a;
-            // dr::select(out, isZero, out_zero);
+            Color3f out_lower;
+            Color3f out_upper;
+            Color3f out;
+            Texture2f tex_lower(t_lower, m_accel, m_accel, m_texture_filter, m_bc);
+            Texture2f tex_upper(t_upper, m_accel, m_accel, m_texture_filter, m_bc);
 
-            Float out;
-            return out;
-                
+            if (m_accel){
+                tex_lower.eval(uv, out.data(), active & isTri & isZero);
+                tex_lower.eval(uv, out_lower.data(), active & isTri & !isZero);
+                tex_upper.eval(uv, out_upper.data(), active & isTri & !isZero);
+            }
+            else{
+                tex_lower.eval(uv, out.data(), active & isTri & isZero);
+                tex_lower.eval_nonaccel(uv, out_lower.data(), active & isTri & !isZero);
+                tex_upper.eval_nonaccel(uv, out_upper.data(), active & isTri & !isZero);
+            }
+
+            dr::masked(out, active & isTri & !isZero)  = out_upper * (1.0f - alpha) + out_lower * alpha;
+
+            // TODO: EWA
+
+            return out;          
     }
 
 
@@ -194,7 +261,7 @@ private:
     ScalarFloat m_minimum; // this is got from bitmap
     ScalarFloat m_maximum;
     Float m_average;
-    Point2i resolution;
+    std::vector<ScalarVector2u> resolution;
 };
 
 
