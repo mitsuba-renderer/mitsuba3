@@ -375,6 +375,15 @@ public:
     /// Is this shape a triangle mesh?
     bool is_mesh() const;
 
+    /// Is this shape a curve ?
+    virtual bool is_curve() const;
+
+    /// Is this shape a curve ?
+    virtual bool is_bspline_curve() const;
+
+    /// Is this shape a curve ?
+    virtual bool is_linear_curve() const;
+
     /// Is this shape a shapegroup?
     bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
 
@@ -641,6 +650,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(eval_attribute)
     DRJIT_VCALL_METHOD(eval_attribute_1)
     DRJIT_VCALL_METHOD(eval_attribute_3)
+    DRJIT_VCALL_METHOD(eval_parameterization)
     DRJIT_VCALL_METHOD(ray_intersect_preliminary)
     DRJIT_VCALL_METHOD(ray_intersect)
     DRJIT_VCALL_METHOD(ray_test)
@@ -648,7 +658,6 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(pdf_position)
     DRJIT_VCALL_METHOD(sample_direction)
     DRJIT_VCALL_METHOD(pdf_direction)
-    DRJIT_VCALL_METHOD(eval_parameterization)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
     DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)
