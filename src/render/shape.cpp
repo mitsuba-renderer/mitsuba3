@@ -85,6 +85,18 @@ MI_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
     return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
 }
 
+MI_VARIANT bool Shape<Float, Spectrum>::is_curve() const {
+    return false;
+}
+
+MI_VARIANT bool Shape<Float, Spectrum>::is_bspline_curve() const {
+    return false;
+}
+
+MI_VARIANT bool Shape<Float, Spectrum>::is_linear_curve() const {
+    return false;
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
 Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,
                                         Mask /*active*/) const {
@@ -520,7 +532,7 @@ MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_v<Float>) {
-            if (!is_mesh())
+            if (!is_mesh() && !is_curve())
                 dr::make_opaque(m_to_world, m_to_object);
         }
 
@@ -542,7 +554,7 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        if (!is_mesh())
+        if (!is_mesh() && !is_curve())
             dr::make_opaque(m_to_world, m_to_object);
     }
 
