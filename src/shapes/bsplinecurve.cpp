@@ -32,12 +32,22 @@ NAMESPACE_BEGIN(mitsuba)
  * - Internally, we should only make use of `m_vertex` and `m_radius` for
  *   gradient tracking, otherwise the mi.render() function will behave
  *   "un-expectedly".
+ *
+ * - Documentation:
+ *      - Scalar modes not supported
+ *      - Orthographic broken in CUDA
+ *      - Endcaps
+ *      - Backface culling  CUDA
+ *      - File format description
+ *
+ * TODO:
+ * - Check that instancing works
  */
 
 template <typename Float, typename Spectrum>
 class BSplineCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, initialize,
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
@@ -45,8 +55,7 @@ public:
     using typename Base::ScalarSize;
 
     using InputFloat = float;
-    using InputPoint3f  = Point<InputFloat, 3>;
-    using InputVector3f = Vector<InputFloat, 3>;
+    using InputPoint3f = dr::replace_scalar_t<ScalarPoint3f, InputFloat>;
     using FloatStorage = DynamicBuffer<dr::replace_scalar_t<Float, InputFloat>>;
 
     using UInt32Storage = DynamicBuffer<UInt32>;
@@ -54,6 +63,11 @@ public:
 
 
     BSplineCurve(const Properties &props) : Base(props) {
+#if !defined(MI_ENABLE_EMBREE)
+        if constexpr (!is_jit_v<Float>)
+            Throw("The B-spline curve is only available with Embree in scalar "
+                  "variants!");
+#endif
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -61,28 +75,34 @@ public:
 
         // used for throwing an error later
         auto fail = [&](const char *descr, auto... args) {
-            Throw(("Error while loading bspline curve file \"%s\": " + std::string(descr))
+            Throw(("Error while loading B-spline curve(s) from \"%s\": " + std::string(descr))
                       .c_str(), m_name, args...);
         };
 
-        Log(Debug, "Loading a bspline curve file from \"%s\" ..", m_name);
+        Log(Debug, "Loading B-spline curve(s) from \"%s\" ..", m_name);
         if (!fs::exists(file_path))
-            fail("file not found");
+            fail("file not found!");
 
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
 
-        // temporary buffer for vertices and per-vertex radius
-        std::vector<InputVector3f> vertices;
+        // Temporary buffers for vertices and radius
+        std::vector<InputPoint3f> vertices;
         std::vector<InputFloat> radius;
         ScalarSize vertex_guess = mmap->size() / 100;
         vertices.reserve(vertex_guess);
+        radius.reserve(vertex_guess);
 
-        // load data from the given .txt file
+        // Load data from the given file
         const char *ptr = (const char *) mmap->data();
         const char *eof = ptr + mmap->size();
         char buf[1025];
         Timer timer;
+
+        m_segment_count = 0;
+        std::vector<size_t> curve_idx;
+        curve_idx.reserve(vertex_guess / 4);
+        bool new_curve = true;
 
         while (ptr < eof) {
             // Determine the offset of the next newline
@@ -92,36 +112,59 @@ public:
             // Copy buf into a 0-terminated buffer
             ScalarSize size = next - ptr;
             if (size >= sizeof(buf) - 1)
-                fail("file contains an excessively long line! (%i characters)", size);
+                fail("file contains an excessively long line! (%i characters)!", size);
             memcpy(buf, ptr, size);
             buf[size] = '\0';
 
-            // handle current line: v.x v.y v.z radius
-            // skip whitespace
+            // Skip whitespace(s)
             const char *cur = buf, *eol = buf + size;
             advance<true>(&cur, eol, " \t\r");
             bool parse_error = false;
 
+            // Empty line
+            if (*cur == '\0') {
+                // Finish a curve
+                if (!new_curve) {
+                    size_t num_control_points =
+                        vertices.size() - curve_idx[curve_idx.size() - 1];
+                    if (unlikely((num_control_points < 4) &&
+                                 (num_control_points > 0)))
+                        fail("B-spline must have at least four control points!");
+
+                    if (likely(num_control_points > 0))
+                        m_segment_count += (num_control_points - 3);
+                }
+
+                new_curve = true;
+                ptr = next + 1;
+                continue;
+            }
+
+            // Handle current line: v.x v.y v.z radius
+            if (new_curve) {
+                curve_idx.push_back(vertices.size());
+                new_curve = false;
+            }
+
             // Vertex position
             InputPoint3f p;
-            InputFloat r;
             for (ScalarSize i = 0; i < 3; ++i) {
                 const char *orig = cur;
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
+            p = m_to_world.scalar().transform_affine(p);
 
-            // parse per-vertex radius
+            // Vertex radius
+            InputFloat r;
             const char *orig = cur;
             r = string::strtof<InputFloat>(cur, (char **) &cur);
             parse_error |= cur == orig;
 
-            p = m_to_world.scalar().transform_affine(p);
-
             if (unlikely(!all(dr::isfinite(p))))
-                fail("bspline control point contains invalid vertex position data");
+                fail("B-spline control point contains invalid position data (line: \"%s\")!", buf);
             if (unlikely(!dr::isfinite(r)))
-                fail("bspline control point contains invalid radius data");
+                fail("B-spline control point contains invalid radius data (line: \"%s\")!", buf);
 
             // TODO: how to calculate bspline's bbox
             // just expand using control points for now
@@ -131,56 +174,55 @@ public:
             radius.push_back(r);
 
             if (unlikely(parse_error))
-                fail("could not parse line \"%s\"", buf);
+                fail("Could not parse line \"%s\"!", buf);
             ptr = next + 1;
         }
 
+        if (curve_idx.size() == 0)
+            fail("Empty B-spline file: no control points were read!");
+
+        // Last curve
+        if (!new_curve) {
+            size_t num_control_points = vertices.size() - curve_idx[curve_idx.size() - 1];
+            if (unlikely((num_control_points < 4) && (num_control_points > 0)))
+                fail("B-spline must have at least four control points!");
+            if (likely(num_control_points > 0))
+                m_segment_count += (num_control_points - 3);
+        }
+
         m_control_point_count = vertices.size();
-        m_segment_count = m_control_point_count - 3;
-        if (unlikely(m_control_point_count < 4))
-            fail("bspline must have at least four control points");
-        for (ScalarIndex i = 0; i < m_control_point_count; i++)
-            Log(Debug, "Loaded a control point %s with radius %f",
-                vertices[i], radius[i]);
 
-        // store the data from the previous temporary buffer
-        std::unique_ptr<float[]> vertex_positions_radius(new float[m_control_point_count * 4]);
-        std::unique_ptr<ScalarIndex[]> indices(new ScalarIndex[m_segment_count]);
-
-        // for OptiX
-        std::unique_ptr<float[]> vertex_position(new float[m_control_point_count * 3]);
-        std::unique_ptr<float[]> vertex_radius(new float[m_control_point_count * 1]);
-
+        std::unique_ptr<InputFloat[]> positions =
+            std::make_unique<InputFloat[]>(m_control_point_count * 3);
         for (ScalarIndex i = 0; i < vertices.size(); i++) {
-            InputFloat* position_ptr = vertex_positions_radius.get() + i * 4;
-            InputFloat* radius_ptr   = vertex_positions_radius.get() + i * 4 + 3;
-
-            dr::store(position_ptr, vertices[i]);
-            dr::store(radius_ptr, radius[i]);
-
-            // OptiX
-            position_ptr = vertex_position.get() + i * 3;
-            radius_ptr = vertex_radius.get() + i;
-            dr::store(position_ptr, vertices[i]);
-            dr::store(radius_ptr, radius[i]);
+            InputFloat *vertex_ptr = positions.get() + i * 3;
+            dr::store(vertex_ptr, vertices[i]);
         }
 
-        for (ScalarIndex i = 0; i < m_segment_count; i++) {
-            u_int32_t* index_ptr = indices.get() + i;
-            dr::store(index_ptr, i);
+        std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(m_segment_count);
+        size_t segment_index = 0;
+        for (size_t i = 0; i < curve_idx.size(); ++i) {
+            size_t next_curve_idx = i + 1 < curve_idx.size() ? curve_idx[i + 1] : vertices.size();
+            size_t curve_segment_count = next_curve_idx - curve_idx[i] - 3;
+            for (size_t j = 0; j < curve_segment_count; ++j)
+                indices[segment_index++] = curve_idx[i] + j;
         }
-
-        m_vertex_with_radius = dr::load<FloatStorage>(vertex_positions_radius.get(), m_control_point_count * 4);
         m_indices = dr::load<UInt32Storage>(indices.get(), m_segment_count);
 
-        // OptiX
-        m_vertex = dr::load<FloatStorage>(vertex_position.get(), m_control_point_count * 3);
-        m_radius = dr::load<FloatStorage>(vertex_radius.get(), m_control_point_count * 1);
+        // Merge buffers into m_control_point_count
+        m_control_points = dr::empty<FloatStorage>(m_control_point_count * 4);
+        FloatStorage vertex_buffer = dr::load<FloatStorage>(positions.get(), m_control_point_count * 3);
+        FloatStorage radius_buffer = dr::load<FloatStorage>(radius.data(), m_control_point_count * 1);
+        UInt32 idx = dr::arange<UInt32>(m_control_point_count);
+        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
+        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
+        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
+        dr::scatter(m_control_points, dr::gather<Float>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
 
-        ScalarSize vertex_data_bytes = 8 * sizeof(InputFloat);
+        ScalarSize control_point_bytes = 4 * sizeof(InputFloat);
         Log(Debug, "\"%s\": read %i control points (%s in %s)",
             m_name, m_control_point_count,
-            util::mem_string(m_control_point_count * vertex_data_bytes),
+            util::mem_string(m_control_point_count * control_point_bytes),
             util::time_string((float) timer.value())
         );
 
@@ -204,15 +246,7 @@ public:
         *start_ = start;
     }
 
-    Float globalu_to_u(Float global_u) const {
-        return (global_u - 1.5f / m_control_point_count) /
-               (1.f - 3.f / m_control_point_count);
-    }
-
-    Float u_to_globalu(Float u) const {
-        return u * (1.f - 3.f / m_control_point_count) + 1.5f /
-               m_control_point_count;
-    }
+    ScalarSize primitive_count() const override { return dr::width(m_indices); }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
@@ -284,14 +318,10 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        const Transform4f& to_world = m_to_world.value();
-        const Transform4f& to_object = m_to_object.value();
-
         /* If necessary, temporally suspend gradient tracking for all shape
            parameters to construct a surface interaction completely detach from
            the shape. */
-        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
-                                      m_vertex, m_radius);
+        dr::suspend_grad<Float> scope(detach_shape, m_control_points);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
@@ -384,12 +414,11 @@ public:
             v *= dr::InvTwoPi<Float>;
 
             // TODO: U gradients are wrong w/o FollowShape
-            // how to compute to compute U from si.p?
+            // how to compute U from si.p?
             // does set_grad(u, dc_du) work?
             si.uv = Point2f(u, v);
             if (follow_shape)
                 si.uv = dr::detach(si.uv);
-
         }
 
         if (likely(need_dp_duv)) {
@@ -408,37 +437,32 @@ public:
         if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
             si.boundary_test = dr::dot(si.sh_frame.n, -ray.d);
 
-
         return si;
     }
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
         callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("control_points",      m_vertex,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("radiuses",            m_radius,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("control_points",      m_control_points,       ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "control_points") || string::contains(keys, "radiuses")) {
-             update();
-             mark_dirty();
+        if (keys.empty() || string::contains(keys, "control_points")) {
+            mark_dirty();
         }
         Base::parameters_changed();
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_vertex);
+        return dr::grad_enabled(m_control_points);
     }
-
 
 #if defined(MI_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
+        dr::eval(m_control_points); // Make sure the buffer is evaluated
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
-
-        dr::eval(m_vertex_with_radius); // Make sure m_vertex_with_radius is up to date
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4,
-                                   m_vertex_with_radius.data(), 0, 4 * sizeof(InputFloat),
+                                   m_control_points.data(), 0, 4 * sizeof(InputFloat),
                                    m_control_point_count);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,
                                    m_indices.data(), 0, 1 * sizeof(ScalarIndex),
@@ -448,25 +472,25 @@ public:
     }
 #endif
 
-
 #if defined(MI_ENABLE_CUDA)
     void optix_prepare_geometry() override { }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
-        m_vertex_buffer_ptr = (void*) m_vertex.data(); // triggers dr::eval()
-        m_radius_buffer_ptr = (void*) m_radius.data(); // triggers dr::eval()
-        m_index_buffer_ptr  = (void*) m_indices.data(); // triggers dr::eval()
+        dr::eval(m_control_points); // Make sure the buffer is evaluated
+        m_vertex_buffer_ptr = (CUdeviceptr*) m_control_points.data();
+        m_radius_buffer_ptr = (CUdeviceptr*) (m_control_points.data() + 3);
+        m_index_buffer_ptr  = (CUdeviceptr*) m_indices.data();
 
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CURVES;
-        build_input.curveArray.curveType = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
+        build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
+        build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
         build_input.curveArray.numPrimitives        = m_segment_count;
 
         build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
         build_input.curveArray.numVertices          = m_control_point_count;
-        build_input.curveArray.vertexStrideInBytes  = sizeof( InputFloat ) * 3;
+        build_input.curveArray.vertexStrideInBytes  = sizeof( InputFloat ) * 4;
 
         build_input.curveArray.widthBuffers         = (CUdeviceptr*) &m_radius_buffer_ptr;
-        build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat );
+        build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat ) * 4;
 
         build_input.curveArray.indexBuffer          = (CUdeviceptr) m_index_buffer_ptr;
         build_input.curveArray.indexStrideInBytes   = sizeof( ScalarIndex );
@@ -475,20 +499,9 @@ public:
         build_input.curveArray.normalStrideInBytes  = 0;
         build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_NONE;
         build_input.curveArray.primitiveIndexOffset = 0;
-        build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_ON;
+        build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
     }
 #endif
-
-    void update() {
-        UInt32 idx = dr::arange<UInt32>(m_control_point_count);
-        dr::scatter(m_vertex_with_radius, dr::gather<Float>(m_vertex, idx * 3u + 0u), idx * 4u + 0u);
-        dr::scatter(m_vertex_with_radius, dr::gather<Float>(m_vertex, idx * 3u + 1u), idx * 4u + 1u);
-        dr::scatter(m_vertex_with_radius, dr::gather<Float>(m_vertex, idx * 3u + 2u), idx * 4u + 2u);
-        dr::scatter(m_vertex_with_radius, dr::gather<Float>(m_radius, idx * 1u + 0u), idx * 4u + 3u);
-        dr::eval(m_vertex_with_radius);
-
-        m_to_object = m_to_world.value().inverse();
-    }
 
     bool is_bspline_curve() const override {
         return true;
@@ -511,14 +524,18 @@ public:
 private:
     std::tuple<Point3f, Vector3f, Vector3f, Float, Float, Float>
     cubic_interpolation(const Float u, const Index &idx, Mask active) const {
-        Point3f v0 = dr::gather<Point3f>(m_vertex, idx + 0, active),
-                v1 = dr::gather<Point3f>(m_vertex, idx + 1, active),
-                v2 = dr::gather<Point3f>(m_vertex, idx + 2, active),
-                v3 = dr::gather<Point3f>(m_vertex, idx + 3, active);
-        Float r0 = dr::gather<Float>(m_radius, idx + 0, active),
-              r1 = dr::gather<Float>(m_radius, idx + 1, active),
-              r2 = dr::gather<Float>(m_radius, idx + 2, active),
-              r3 = dr::gather<Float>(m_radius, idx + 3, active);
+        Point4f c0 = dr::gather<Point4f>(m_control_points, idx + 0, active),
+                c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
+                c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
+                c3 = dr::gather<Point4f>(m_control_points, idx + 3, active);
+        Point3f v0 = Point3f(c0.x(), c0.y(), c0.z()),
+                v1 = Point3f(c1.x(), c1.y(), c1.z()),
+                v2 = Point3f(c2.x(), c2.y(), c2.z()),
+                v3 = Point3f(c3.x(), c3.y(), c3.z());
+        Float r0 = c0.w(),
+              r1 = c1.w(),
+              r2 = c2.w(),
+              r3 = c3.w();
 
         Float u2 = dr::sqr(u), u3 = u2 * u;
         Float multiplier = 1.f / 6.f;
@@ -563,6 +580,18 @@ private:
         return { c, dc_du, dc_duu, radius, dr_du, dr_duu};
     }
 
+    Float globalu_to_u(Float global_u) const {
+        //TODO: FIXME
+        return (global_u - 1.5f / m_control_point_count) /
+               (1.f - 3.f / m_control_point_count);
+    }
+
+    Float u_to_globalu(Float u) const {
+        //TODO: FIXME
+        return u * (1.f - 3.f / m_control_point_count) + 1.5f /
+               m_control_point_count;
+    }
+
     std::tuple<Vector3f, Vector3f>
     local_frame(const Vector3f &dc_du_normalized) const {
         // Define consistent local frame
@@ -588,17 +617,13 @@ private:
 
     mutable UInt32Storage m_indices;
 
-    // storage for Embree
-    mutable FloatStorage m_vertex_with_radius;
-    // separate storage of control points and per-vertex radius for OptiX
-    mutable FloatStorage m_vertex;
-    mutable FloatStorage m_radius;
+    mutable FloatStorage m_control_points;
 
-    // for OptiX build input
 #if defined(MI_ENABLE_CUDA)
-    mutable void* m_vertex_buffer_ptr = nullptr;
-    mutable void* m_radius_buffer_ptr = nullptr;
-    mutable void* m_index_buffer_ptr = nullptr;
+    // For OptiX build input
+    mutable CUdeviceptr* m_vertex_buffer_ptr = nullptr;
+    mutable CUdeviceptr* m_radius_buffer_ptr = nullptr;
+    mutable CUdeviceptr* m_index_buffer_ptr = nullptr;
 #endif
 };
 

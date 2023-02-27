@@ -201,10 +201,10 @@ void build_gas(const OptixDeviceContext &context,
             (CUstream) jit_cuda_stream(),
             &accel_options,
             build_inputs.data(),
-            (unsigned int) shapes_count, // num build inputs
-            (CUdeviceptr)d_temp_buffer,
+            (unsigned int) shapes_count,
+            (CUdeviceptr) d_temp_buffer,
             buffer_sizes.tempSizeInBytes,
-            (CUdeviceptr)output_buffer,
+            (CUdeviceptr) output_buffer,
             buffer_sizes.outputSizeInBytes,
             &accel,
             &emit_property,  // emitted property list
