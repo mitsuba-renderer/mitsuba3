@@ -1,7 +1,7 @@
 Integrator "directlighting"
 
-LookAt 0, 2, -50 # eye 
-       0, 2, 0  # look at point
+LookAt 0 2 -50 # eye 
+       0 2 0  # look at point
        0.0 1.0 0 # up vector
 Rotate 22.5 0 1 0
 Camera "perspective" 
@@ -21,7 +21,7 @@ Texture "check_tex"
     "string filename" ["figures/check16.png"]
     "float uscale" [16]
     "float vscale" [16]
-    "bool trilinear" ["false"]
+    "bool trilinear" ["true"]
     
     
 MakeNamedMaterial "checkboard_color" 
@@ -30,12 +30,12 @@ MakeNamedMaterial "checkboard_color"
     
 AttributeBegin
    NamedMaterial "checkboard_color"
-   Include "../../figures/meshes/Plane.pbrt"
+   Include "figures/meshes/Plane.pbrt"
 AttributeEnd
 
 LightSource "distant"  
     "point from" [ 0 0 0 ]
-    "point to" [ 0, -1, -1]
+    "point to" [ 0 -1 -1]
     "color L" [2 2 2]
 
 WorldEnd

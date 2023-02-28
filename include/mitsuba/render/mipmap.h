@@ -84,8 +84,8 @@ public:
         // Downsample until 1x1
         if (mip_filter != MIPFilterType::Nearest && mip_filter != MIPFilterType::Bilinear){
             // Initialize wrap mode of filter. Is it related to texture wrap mode???
-            if (wrap_mode == dr::WrapMode::Clamp){
-                m_bc = {FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp};
+            if (wrap_mode == dr::WrapMode::Repeat){
+                m_bc = {FilterBoundaryCondition::Repeat, FilterBoundaryCondition::Repeat};
             }
             else if (wrap_mode == dr::WrapMode::Mirror){
                 m_bc = {FilterBoundaryCondition::Mirror, FilterBoundaryCondition::Mirror};
@@ -98,7 +98,7 @@ public:
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
 
-                // Resample to be new size
+                // Resample to be new size; set the minimum value to zero
                 bitmap = bitmap->resample(size, 
                     rfilter, 
                     m_bc, 
@@ -110,8 +110,8 @@ public:
                 resolution[m_levels] = size; 
 
                 // Test if the pyramid is built
-                FileStream* str = new FileStream(std::to_string(m_levels)+".exr", FileStream::ETruncReadWrite);
-                bitmap->write(str);
+                // FileStream* str = new FileStream(std::to_string(m_levels)+".exr", FileStream::ETruncReadWrite);
+                // bitmap->write(str);
 
                 ++m_levels;
             }            
@@ -156,12 +156,13 @@ public:
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>));
             Int32 lower = dr::floor2int<Int32>(level);
             Float alpha = level - lower;
 
             // defalt level: 0
             Mask isZero = lower < 0;
+            Mask isInf = (lower >= m_levels-1);
 
             Float c_lower = 1;
             Float c_upper = 1;
@@ -169,37 +170,39 @@ public:
 
             // For level < 0
             if (m_accel){
-                m_pyramid[0].eval(uv, &out, active & isTri & isZero);
+                m_pyramid[0].eval(uv, &c_tmp, active & isTri);
             }
             else{
-                m_pyramid[0].eval_nonaccel(uv, &out, active & isTri & isZero);
+                m_pyramid[0].eval_nonaccel(uv, &c_tmp, active & isTri);
             }
+
+            // This is just for level = 0
+            out = c_tmp;
 
             // For level >= 0
-            for(int i = 0; i<m_levels-1; i++){
+            for(int i = 1; i<m_levels; i++){
                 if (m_accel){
-                    m_pyramid[i].eval(uv, &c_tmp, active);
-                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    dr::masked(c_lower, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
 
-                    m_pyramid[i+1].eval(uv, &c_tmp, active);
-                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    m_pyramid[i].eval(uv, &c_tmp, active);
+                    dr::masked(c_upper, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
                 }
                 else{
-                    m_pyramid[i].eval_nonaccel(uv, &c_tmp, active);
-                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    dr::masked(c_lower, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
 
-                    m_pyramid[i+1].eval_nonaccel(uv, &c_tmp, active);
-                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    m_pyramid[i].eval_nonaccel(uv, &c_tmp, active);
+                    dr::masked(c_upper, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
                 }
             }
 
-            // std::cout<<out<<std::endl;
+            // Deal with level < 0
             dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.0 - alpha);
-            // std::cout<<out<<std::endl;
-            // std::cin.get();
+
+            // Now c_tmp is evaluated at m_pyramid[m_levels-1]. Deal with level >= m_levels-1
+            dr::masked(out, isInf & active & isTri & !isZero) = c_tmp;
 
             // TODO: EWA
-            return out;  
+            return out; // level / m_pyramid.size(); // (lower + 1.0)/ m_pyramid.size();   
     }
 
     Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
@@ -244,14 +247,14 @@ public:
 
             // For level < 0
             if (m_accel){
-                m_pyramid[0].eval(uv, out.data(), active & isTri);
+                m_pyramid[0].eval(uv, c_tmp.data(), active & isTri);
             }
             else{
-                m_pyramid[0].eval_nonaccel(uv, out.data(), active & isTri);
+                m_pyramid[0].eval_nonaccel(uv, c_tmp.data(), active & isTri);
             }
 
             // This is just for level = 0
-            c_tmp = out;
+            out = c_tmp;
 
             // For level >= 0
             for(int i = 1; i<m_levels; i++){
@@ -269,7 +272,7 @@ public:
                 }
             }
 
-            dr::masked(out, active & isTri & !isZero)  = c_upper * (1.0f - alpha) + c_lower * alpha;
+            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.0 - alpha);
 
             // TODO: EWA
             return out;  
