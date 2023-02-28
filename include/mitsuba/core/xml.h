@@ -10,6 +10,26 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
+struct ScopedSetJITScope {
+    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend) {
+            backup = jit_scope((JitBackend) backend);
+            jit_set_scope((JitBackend) backend, scope);
+        }
+#endif
+    }
+
+    ~ScopedSetJITScope() {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend)
+            jit_set_scope((JitBackend) backend, backup);
+#endif
+    }
+
+    uint32_t backend, backup;
+};
+
 /// Used to pass key=value pairs to the parser
 using ParameterList = std::vector<std::tuple<std::string, std::string, bool>>;
 
@@ -29,6 +49,9 @@ using ParameterList = std::vector<std::tuple<std::string, std::string, bool>>;
  * \param update_scene
  *     When Mitsuba updates scene to a newer version, should the
  *     updated XML file be written back to disk?
+ *
+ * \param parallel
+ *     Whether the loading should be executed on multiple threads in parallel
  */
 extern MI_EXPORT_LIB std::vector<ref<Object>> load_file(
                                         const fs::path &path,
