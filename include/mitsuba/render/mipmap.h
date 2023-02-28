@@ -52,7 +52,7 @@ public:
                 m_pixelFormat(pixelFormat), 
                 m_texture_filter(tex_filter),
                 m_mipmap_filter(mip_filter),
-                m_bc(wrap_mode),
+                m_wrap_mode(wrap_mode),
                 m_maxAnisotropy(maxAnisotropy),
                 m_accel(accel),
                 m_channels(channels),
@@ -83,6 +83,14 @@ public:
 
         // Downsample until 1x1
         if (mip_filter != MIPFilterType::Nearest && mip_filter != MIPFilterType::Bilinear){
+            // Initialize wrap mode of filter. Is it related to texture wrap mode???
+            if (wrap_mode == dr::WrapMode::Clamp){
+                m_bc = {FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp};
+            }
+            else if (wrap_mode == dr::WrapMode::Mirror){
+                m_bc = {FilterBoundaryCondition::Mirror, FilterBoundaryCondition::Mirror};
+            }
+
             ScalarVector2u size = bitmap->size();
             m_levels = 1;
             while (size.x() > 1 || size.y() > 1) {
@@ -91,7 +99,10 @@ public:
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
 
                 // Resample to be new size
-                bitmap = bitmap->resample(size, rfilter);
+                bitmap = bitmap->resample(size, 
+                    rfilter, 
+                    m_bc, 
+                    {0, dr::Infinity<mitsuba::Bitmap::ScalarFloat>});
 
                 size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), channels };
                 m_pyramid[m_levels] = Texture2f(TensorXf(bitmap->data(), 3, shape), m_accel, m_accel, tex_filter, wrap_mode);
@@ -99,8 +110,8 @@ public:
                 resolution[m_levels] = size; 
 
                 // Test if the pyramid is built
-                // FileStream* str = new FileStream(std::to_string(m_levels)+".exr", FileStream::ETruncReadWrite);
-                // bitmap->write(str);
+                FileStream* str = new FileStream(std::to_string(m_levels)+".exr", FileStream::ETruncReadWrite);
+                bitmap->write(str);
 
                 ++m_levels;
             }            
@@ -218,7 +229,7 @@ public:
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
             Int32 lower = dr::floor2int<Int32>(level);
 
             // For test
@@ -233,27 +244,28 @@ public:
 
             // For level < 0
             if (m_accel){
-                m_pyramid[0].eval(uv, out.data(), active & isTri & isZero);
+                m_pyramid[0].eval(uv, out.data(), active & isTri);
             }
             else{
-                m_pyramid[0].eval_nonaccel(uv, out.data(), active & isTri & isZero);
+                m_pyramid[0].eval_nonaccel(uv, out.data(), active & isTri);
             }
 
-            // For level >= 0
-            for(int i = 0; i<m_levels-1; i++){
-                if (m_accel){
-                    m_pyramid[i].eval(uv, c_tmp.data(), active);
-                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+            // This is just for level = 0
+            c_tmp = out;
 
-                    m_pyramid[i+1].eval(uv, c_tmp.data(), active);
-                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+            // For level >= 0
+            for(int i = 1; i<m_levels; i++){
+                if (m_accel){
+                    dr::masked(c_lower, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
+
+                    m_pyramid[i].eval(uv, c_tmp.data(), active);
+                    dr::masked(c_upper, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
                 }
                 else{
-                    m_pyramid[i].eval_nonaccel(uv, c_tmp.data(), active);
-                    dr::masked(c_lower, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    dr::masked(c_lower, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
 
-                    m_pyramid[i+1].eval_nonaccel(uv, c_tmp.data(), active);
-                    dr::masked(c_upper, dr::eq(i, lower) & active & isTri & !isZero) = c_tmp;
+                    m_pyramid[i].eval_nonaccel(uv, c_tmp.data(), active);
+                    dr::masked(c_upper, dr::eq(i-1, lower) & active & isTri & !isZero) = c_tmp;
                 }
             }
 
@@ -268,7 +280,7 @@ private:
     Bitmap::PixelFormat m_pixelFormat;
     dr::FilterMode m_texture_filter;
     MIPFilterType m_mipmap_filter;
-    dr::WrapMode m_bc;
+    dr::WrapMode m_wrap_mode; // useless here?
     Float m_maxAnisotropy;
     bool m_accel;
     size_t m_channels;
@@ -276,11 +288,9 @@ private:
     dr::DynamicArray<Texture2f> m_pyramid;
     dr::DynamicArray<Float> m_weightLut;
     int m_levels;
-    
-    ScalarFloat m_minimum; // this is got from bitmap
-    ScalarFloat m_maximum;
-    Float m_average;
+
     std::vector<ScalarVector2u> resolution;
+    std::pair<FilterBoundaryCondition, FilterBoundaryCondition> m_bc = {FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp}; // Default value of the filter resample function
 };
 
 NAMESPACE_END(mitsuba)
