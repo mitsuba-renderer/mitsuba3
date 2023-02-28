@@ -985,27 +985,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
-struct ScopedSetJITScope {
-    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend) {
-            backup = jit_scope((JitBackend) backend);
-            jit_set_scope((JitBackend) backend, scope);
-        }
-#endif
-    }
-
-    ~ScopedSetJITScope() {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend)
-            jit_set_scope((JitBackend) backend, backup);
-#endif
-    }
-
-    uint32_t backend, backup;
-};
-
-
 static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
                                                     const fs::path &filename_,
                                                     ParameterList param,

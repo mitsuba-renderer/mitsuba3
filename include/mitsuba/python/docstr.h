@@ -11743,7 +11743,10 @@ Parameter ``variant``:
 
 Parameter ``update_scene``:
     When Mitsuba updates scene to a newer version, should the updated
-    XML file be written back to disk?)doc";
+    XML file be written back to disk?
+
+Parameter ``parallel``:
+    Whether the loading should be executed on multiple threads in parallel)doc";
 
 static const char *__doc_mitsuba_xml_load_string = R"doc(Load a Mitsuba scene from an XML string)doc";
 
