@@ -175,6 +175,15 @@ public:
         return { ds, depolarizer<Spectrum>(spec) };
     }
 
+    Spectrum eval_direction(const Interaction3f & it,
+                        const DirectionSample3f & /*ds*/,
+                        Mask active) const override {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+        return depolarizer<Spectrum>(m_irradiance->eval(si, active));
+    }
+
+
     Float pdf_direction(const Interaction3f & /*it*/,
                         const DirectionSample3f & /*ds*/,
                         Mask /*active*/) const override {
