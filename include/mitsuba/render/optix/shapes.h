@@ -21,7 +21,7 @@
 NAMESPACE_BEGIN(mitsuba)
 /// List of the custom shapes supported by OptiX
 static std::string CUSTOM_OPTIX_SHAPE_NAMES[] = {
-    "Disk", "Rectangle", "Sphere", "Cylinder", "BSplineCurve", "LinearCurve"
+    "BSplineCurve", "LinearCurve", "Disk", "Rectangle", "Sphere", "Cylinder",
 };
 static constexpr size_t CUSTOM_OPTIX_SHAPE_COUNT = std::size(CUSTOM_OPTIX_SHAPE_NAMES);
 
@@ -118,8 +118,6 @@ void build_gas(const OptixDeviceContext &context,
         OptixAccelBuildOptions accel_options = {};
         accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
                                    OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-        if (shape_subset.size() > 1 && shape_subset[0]->is_curve())
-            accel_options.buildFlags |= OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS;
 
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
@@ -231,53 +229,29 @@ void prepare_ias(const OptixDeviceContext &context,
                          ? OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM
                          : OPTIX_INSTANCE_FLAG_NONE;
 
-    // Create an OptixInstance for the meshes if necessary
-    if (accel.meshes.handle) {
-        OptixInstance meshes_instance = {
-            { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
-            instance_id, sbt_offset, /* visibilityMask = */ 255,
-            flags, accel.meshes.handle, /* pads = */ { 0, 0 }
-        };
-        out_instances.push_back(meshes_instance);
-        sbt_offset += (unsigned int) accel.meshes.count;
-    }
+    auto build_optix_instance = [&](const OptixAccelData::HandleData &handle) {
+        if (handle.handle) {
+            OptixInstance instance = {
+                { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
+                instance_id, sbt_offset, /* visibilityMask = */ 255,
+                flags, handle.handle, /* pads = */ { 0, 0 }
+            };
+            out_instances.push_back(instance);
+            sbt_offset += (unsigned int) handle.count;
+        }
+    };
 
-    // Create an OptixInstance for the bspline curves if necessary
-    if (accel.bspline_curves.handle) {
-        OptixInstance bspline_curves_instance = {
-            { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
-            instance_id, sbt_offset, /* visibilityMask = */ 255,
-            flags, accel.bspline_curves.handle, /* pads = */ { 0, 0 }
-        };
-        sbt_offset += (unsigned int) accel.bspline_curves.count;
-        out_instances.push_back(bspline_curves_instance);
-    }
-
-    // Create an OptixInstance for the linear curves if necessary
-    if (accel.linear_curves.handle) {
-        OptixInstance linear_curves_instance = {
-            { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
-            instance_id, sbt_offset, /* visibilityMask = */ 255,
-            flags, accel.linear_curves.handle, /* pads = */ { 0, 0 }
-        };
-        sbt_offset += (unsigned int) accel.linear_curves.count;
-        out_instances.push_back(linear_curves_instance);
-    }
-
-    // Create an OptixInstance for the custom shapes if necessary
-    if (accel.custom_shapes.handle) {
-        OptixInstance others_instance = {
-            { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
-            instance_id, sbt_offset, /* visibilityMask = */ 255,
-            flags, accel.custom_shapes.handle, /* pads = */ { 0, 0 }
-        };
-        out_instances.push_back(others_instance);
-    }
+    build_optix_instance(accel.meshes);
+    build_optix_instance(accel.bspline_curves);
+    build_optix_instance(accel.linear_curves);
+    build_optix_instance(accel.custom_shapes);
 
     // Apply the same process to every shape instances
     for (Shape* shape: shapes) {
         if (shape->is_instance())
-            shape->optix_prepare_ias(context, out_instances, jit_registry_get_id(JitBackend::CUDA, shape), transf);
+            shape->optix_prepare_ias(
+                context, out_instances,
+                jit_registry_get_id(JitBackend::CUDA, shape), transf);
     }
 }
 
