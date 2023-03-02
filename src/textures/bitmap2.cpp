@@ -288,8 +288,8 @@ public:
 
         // get mipmap filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
-        Properties rfilterProps("lanczos");
-        rfilterProps.set_int("lobes", 2);
+        Properties rfilterProps("box");
+        // rfilterProps.set_int("lobes", 2);
         ref<ReconstructionFilter> rfilter = static_cast<ReconstructionFilter *> (
             PluginManager::instance()->create_object<ReconstructionFilter>(rfilterProps));
 

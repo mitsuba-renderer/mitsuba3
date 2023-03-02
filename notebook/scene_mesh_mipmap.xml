@@ -29,7 +29,7 @@
       <scale value="$side"/>
     </transform>
   </texture>
-  <texture id="Mipmap-tile" type="bitmap">
+  <texture id="Mipmap-tile" type="bitmap2">
     <string name="filename" value="../../figures/check.png"/>
     <transform name="to_uv">
       <scale value="$side"/>

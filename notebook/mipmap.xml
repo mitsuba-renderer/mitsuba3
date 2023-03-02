@@ -13,7 +13,7 @@
             <rotate y="1" angle="22.5"/>
         </transform>
         <sampler type="independent">
-            <integer name="sample_count" value="32"/>
+            <integer name="sample_count" value="8"/>
         </sampler>
         <film type="hdrfilm">
             <integer name="width"  value="1024"/>
@@ -42,7 +42,8 @@
     </texture> 
 
     <bsdf type="diffuse" id="myCheckboard">
-        <ref name="reflectance" id="test" />
+        <!-- <ref name="reflectance" id="test" /> -->
+        <rgb name="reflectance" value="0.5, 0.5, 0.5"  />
     </bsdf>
 
     <!-- Shapes -->

@@ -156,7 +156,12 @@ public:
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>)); //dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1))
+
+            // std::cout<<level<<std::endl;
+
+            // level = 0;
+
             Int32 lower = dr::floor2int<Int32>(level);
             Float alpha = level - lower;
 
@@ -164,8 +169,8 @@ public:
             Mask isZero = lower < 0;
             Mask isInf = (lower >= m_levels-1);
 
-            Float c_lower = 1;
-            Float c_upper = 1;
+            Float c_lower = 0;
+            Float c_upper = 0;
             Float c_tmp = 0;
 
             // For level < 0
@@ -196,13 +201,13 @@ public:
             }
 
             // Deal with level < 0
-            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.0 - alpha);
+            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
 
             // Now c_tmp is evaluated at m_pyramid[m_levels-1]. Deal with level >= m_levels-1
             dr::masked(out, isInf & active & isTri & !isZero) = c_tmp;
 
             // TODO: EWA
-            return out; // level / m_pyramid.size(); // (lower + 1.0)/ m_pyramid.size();   
+            return (lower + 1.f)/ m_pyramid.size(); // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
     }
 
     Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
@@ -226,20 +231,19 @@ public:
         Float root = dr::hypot(A-C, B),
               Aprime = 0.5f * (A + C - root),
               Cprime = 0.5f * (A + C + root),
-              majorRadius = dr::select(Aprime != 0, dr::sqrt(F / Aprime), 0),
-              minorRadius = dr::select(Cprime != 0, dr::sqrt(F / Cprime), 0);
+              majorRadius = dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
+              minorRadius = dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
             // If isTri, perform trilinear filter
             Mask isTri = (m_mipmap_filter == Trilinear || !(minorRadius > 0) || !(majorRadius > 0) || F < 0);
 
-            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>));
+            Float level = dr::log2(dr::maximum(majorRadius, dr::Epsilon<Float>)); // dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1))
             Int32 lower = dr::floor2int<Int32>(level);
-
-            // For test
             Float alpha = level - lower;
 
             // defalt level: 0
-            Mask isZero = dr::select(lower < 0, true, false);
+            Mask isZero = lower < 0;
+            Mask isInf = (lower >= m_levels-1);
 
             Color3f c_lower = 0;
             Color3f c_upper = 0;
@@ -272,10 +276,14 @@ public:
                 }
             }
 
-            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.0 - alpha);
+            // Deal with level < 0
+            dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
+
+            // Now c_tmp is evaluated at m_pyramid[m_levels-1]. Deal with level >= m_levels-1
+            dr::masked(out, isInf & active & isTri & !isZero) = c_tmp;
 
             // TODO: EWA
-            return out;  
+            return out; // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();
     }
 
 

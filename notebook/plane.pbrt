@@ -8,7 +8,7 @@ Camera "perspective"
     "float fov" 35
     
     
-Sampler "random" "integer pixelsamples" [32]
+Sampler "random" "integer pixelsamples" [8]
 PixelFilter "gaussian"
 Film "image" "string filename" [ "pbrt.exr" ]
 "integer xresolution" [1024] "integer yresolution" [1024]
@@ -30,6 +30,7 @@ MakeNamedMaterial "checkboard_color"
     
 AttributeBegin
    NamedMaterial "checkboard_color"
+   Material "matte"
    Include "figures/meshes/Plane.pbrt"
 AttributeEnd
 
