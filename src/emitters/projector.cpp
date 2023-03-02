@@ -121,12 +121,12 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
-        m_intensity_scale = props.get<ScalarFloat>("scale", 1.f);
+        m_intensity_scale = dr::opaque<Float>(props.get<ScalarFloat>("scale", 1.f));
 
         m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
 
         ScalarVector2i size = m_irradiance->resolution();
-        m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
+        m_x_fov = parse_fov(props, size.x() / (double) size.y());
 
         parameters_changed();
 
@@ -135,9 +135,10 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_intensity_scale, +ParamFlags::Differentiable);
-        callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+        callback->put_parameter("scale",     m_intensity_scale,  +ParamFlags::Differentiable);
+        callback->put_object("irradiance",   m_irradiance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),   +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -145,17 +146,23 @@ public:
             ScalarVector2i size = m_irradiance->resolution();
 
             m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
-                                                        (ScalarFloat) 1e-4f,
-                                                        (ScalarFloat) 1e4f);
+                                                        ScalarFloat(1e-4f),
+                                                        ScalarFloat(1e4f));
             m_sample_to_camera = m_camera_to_sample.inverse();
 
             // Compute
-            ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
-                        pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
-            ScalarBoundingBox2f image_rect(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
-            image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
+            Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
+                        pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
+            BoundingBox2f image_rect(Point2f(pmin.x(), pmin.y()) / pmin.z());
+            image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
             m_sensor_area = image_rect.volume();
+
+            dr::make_opaque(m_camera_to_sample, m_sample_to_camera,
+                            m_intensity_scale, m_sensor_area);
         }
+        dr::make_opaque(m_intensity_scale);
+
+        Base::parameters_changed(keys);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -291,10 +298,10 @@ public:
 protected:
     ref<Texture> m_irradiance;
     Float m_intensity_scale;
-    ScalarTransform4f m_camera_to_sample;
-    ScalarTransform4f m_sample_to_camera;
+    Transform4f m_camera_to_sample;
+    Transform4f m_sample_to_camera;
     ScalarFloat m_x_fov;
-    ScalarFloat m_sensor_area;
+    Float m_sensor_area;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)

@@ -10,6 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(props.id()) {
     m_to_world = (ScalarTransform4f) props.get<ScalarTransform4f>(
         "to_world", ScalarTransform4f());
+    dr::make_opaque(m_to_world);
 
     for (auto &[name, obj] : props.objects(false)) {
         Medium *medium = dynamic_cast<Medium *>(obj.get());
@@ -113,6 +114,13 @@ MI_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f &
 MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *callback) {
     if (m_medium)
         callback->put_object("medium", m_medium.get(), +ParamFlags::Differentiable);
+}
+
+MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    if (keys.empty() || string::contains(keys, "to_world")) {
+        // Update the scalar value of the matrix
+        m_to_world = m_to_world.value();
+    }
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
