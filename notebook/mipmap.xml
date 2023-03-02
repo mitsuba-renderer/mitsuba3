@@ -31,19 +31,19 @@
     </emitter>
 
     <!-- BSDF -->
-    <texture type="bitmap2" id="test">
+    <texture type="bitmap" id="test">
         <string name="filename" value="figures/check16.png" />
         <string name="filter_type" value="bilinear"/>
         <string name="wrap_mode" value="repeat"/>
-        <string name="mipmap_filter_type" value="trilinear"/>
+        <!-- <string name="mipmap_filter_type" value="trilinear"/> -->
         <transform name="to_uv">
             <scale x="16.000000" y="16.000000" />
         </transform>
     </texture> 
 
     <bsdf type="diffuse" id="myCheckboard">
-        <!-- <ref name="reflectance" id="test" /> -->
-        <rgb name="reflectance" value="0.5, 0.5, 0.5"  />
+        <ref name="reflectance" id="test" />
+        <!-- <rgb name="reflectance" value="0.5, 0.5, 0.5"  /> -->
     </bsdf>
 
     <!-- Shapes -->

@@ -207,7 +207,33 @@ public:
             dr::masked(out, isInf & active & isTri & !isZero) = c_tmp;
 
             // TODO: EWA
-            return (lower + 1.f)/ m_pyramid.size(); // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
+            Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
+            Float theta = 0.5f * dr::atan(B / (A-C));
+            auto [sinTheta, cosTheta] = dr::sincos(theta);
+            Float a2 = majorRadius*majorRadius,
+                    b2 = minorRadius*minorRadius,
+                    sinTheta2 = sinTheta*sinTheta,
+                    cosTheta2 = cosTheta*cosTheta,
+                    sin2Theta = 2*sinTheta*cosTheta;
+
+            dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
+            dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
+            dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
+            dr::masked(F, isSkinny) = a2*b2;
+
+            /* Switch to normalized coefficients */
+            Float scale = 1.0f/F;
+            A *= scale; B *= scale; C *= scale;
+
+            level = dr::maximum((Float) 0.0f, dr::log2(minorRadius));
+            lower = dr::floor2int<Int32>(level);
+            alpha = level - lower;
+            
+            Mask isBilinear = (majorRadius < 1 || !(A > 0 && C > 0));
+            dr::masked(out, !isTri & active & isBilinear) = evalEWA(lower, uv, A, B, C);
+
+
+            return out; //(lower + 1.f)/ m_pyramid.size(); // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
     }
 
     Color3f eval_3(const Point2f &uv, const Vector2f &d0, const Vector2f &d1, Mask active) const{
@@ -286,6 +312,11 @@ public:
             return out; // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();
     }
 
+protected:
+    Float evalEWA(Int32 lower, const Point2f &uv, Float A, Float B, Float C) const {
+        // deal with 
+        return 0;
+    }
 
 private:
     Bitmap::PixelFormat m_pixelFormat;

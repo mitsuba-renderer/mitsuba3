@@ -30,7 +30,7 @@ MakeNamedMaterial "checkboard_color"
     
 AttributeBegin
    NamedMaterial "checkboard_color"
-   Material "matte"
+#    Material "matte"
    Include "figures/meshes/Plane.pbrt"
 AttributeEnd
 
