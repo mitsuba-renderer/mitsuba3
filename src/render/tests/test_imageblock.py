@@ -39,8 +39,8 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
     # against a brute force reference
     scalar = 'scalar' in mi.variant()
 
-    if compensate and not 'cuda' in mi.variant():
-        pytest.skip('for now, error compensation is just enabled in CUDA modes')
+    if compensate and scalar:
+        pytest.skip('for now, error compensation is just enabled in JIT modes')
 
     rfilter = mi.load_dict({ 'type' : filter_name })
 
