@@ -106,7 +106,7 @@ reflectance value above 1.0 in such a situation. But in Mitsuba, even a
 small surface that reflects a little more light than it receives will
 likely break the available rendering algorithms, or cause them to produce otherwise
 unpredictable results. In fact, the right solution in this case would be to switch to
-a different the lighting setup that causes more illumination to be received by
+a different lighting setup that causes more illumination to be received by
 the desk and then *reduce* the material's reflectance---after all, it is quite unlikely that
 one could find a real-world desk that reflects 90% of all incident light.
 
