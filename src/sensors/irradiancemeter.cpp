@@ -119,15 +119,15 @@ public:
         using string::indent;
 
         std::ostringstream oss;
-        oss << "IrradianceMeter[" << std::endl
-            << "  surface_area = ";
+        oss << "IrradianceMeter[" << std::endl << "  surface_area = ";
 
-        if (m_shape) oss << m_shape->surface_area();
-            else         oss << " <no shape attached!>";
+        if (m_shape)
+            oss << m_shape->surface_area();
+        else
+            oss << " <no shape attached!>";
         oss << "," << std::endl;
 
-        oss << "  film = " << indent(m_film) << "," << std::endl
-            << "]";
+        oss << "  film = " << indent(m_film) << "," << std::endl << "]";
         return oss.str();
     }
 

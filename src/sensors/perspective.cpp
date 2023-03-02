@@ -143,29 +143,27 @@ public:
         if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
-        update_camera_transforms();
-
         m_principal_point_offset = ScalarPoint2f(
             props.get<ScalarFloat>("principal_point_offset_x", 0.f),
             props.get<ScalarFloat>("principal_point_offset_y", 0.f)
         );
+
+        update_camera_transforms();
     }
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("x_fov", m_x_fov,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("x_fov",     m_x_fov,          ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
+        Base::parameters_changed(keys);
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
         }
 
-        Base::parameters_changed(keys);
         update_camera_transforms();
     }
 
@@ -193,7 +191,7 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
 
-        dr::make_opaque(m_to_world, m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_x_fov,
+        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_x_fov,
                         m_image_rect, m_normalization, m_principal_point_offset);
     }
 

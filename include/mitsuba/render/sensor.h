@@ -135,15 +135,16 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("shutter_open", m_shutter_open,           +ParamFlags::NonDifferentiable);
-        callback->put_parameter("shutter_open_time", m_shutter_open_time, +ParamFlags::NonDifferentiable);
-        callback->put_object("film", m_film.get(),                        +ParamFlags::NonDifferentiable);
-        callback->put_object("sampler", m_sampler.get(),                  +ParamFlags::NonDifferentiable);
         Base::traverse(callback);
+        callback->put_parameter("shutter_open",      m_shutter_open,      +ParamFlags::NonDifferentiable);
+        callback->put_parameter("shutter_open_time", m_shutter_open_time, +ParamFlags::NonDifferentiable);
+        callback->put_object("film",                 m_film.get(),        +ParamFlags::NonDifferentiable);
+        callback->put_object("sampler",              m_sampler.get(),     +ParamFlags::NonDifferentiable);
     }
 
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
         m_resolution = ScalarVector2f(m_film->crop_size());
+        Base::parameters_changed(keys);
     }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Sensor)

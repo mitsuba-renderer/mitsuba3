@@ -95,10 +95,6 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-        }
         Base::parameters_changed(keys);
         update_camera_transforms();
     }
