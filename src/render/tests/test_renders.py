@@ -78,8 +78,7 @@ def list_all_render_test_configs():
                 continue
             if is_polarized and any(ex in scene_fname for ex in POLARIZED_EXCLUDE_FOLDERS):
                 continue
-
-            scene_integrator_type = scene_fname.split('.')[0].rsplit('_', 1)[-1]
+            scene_integrator_type = os.path.splitext(scene_fname)[0].rsplit('_', 1)[-1]
 
             if not is_jit:
                 configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))
