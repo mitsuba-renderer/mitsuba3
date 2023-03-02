@@ -237,8 +237,9 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale",    m_scale,           +ParamFlags::Differentiable);
-        callback->put_parameter("data",     m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        Base::traverse(callback);
+        callback->put_parameter("scale",     m_scale,          +ParamFlags::Differentiable);
+        callback->put_parameter("data",      m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
@@ -304,6 +305,7 @@ public:
 
             m_warp = Warp(luminance.get(), res);
         }
+        Base::parameters_changed(keys);
     }
 
     void set_scene(const Scene *scene) override {

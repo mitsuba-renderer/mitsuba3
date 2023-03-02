@@ -91,8 +91,9 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+        callback->put_object("irradiance",   m_irradiance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),   +ParamFlags::NonDifferentiable);
     }
 
     void set_scene(const Scene *scene) override {

@@ -81,6 +81,7 @@ public:
     void set_shape(Shape *shape) override {
         Base::set_shape(shape);
         m_area = m_shape->surface_area();
+        dr::make_opaque(m_area);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
