@@ -117,7 +117,7 @@ public:
             }            
         }
 
-        if (m_mipmap_filter == MIPFilterType::EWA){
+        if (mip_filter == MIPFilterType::EWA){
             // TODO: ewa weights
         }
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;

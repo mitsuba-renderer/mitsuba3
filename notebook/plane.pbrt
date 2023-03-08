@@ -18,10 +18,10 @@ WorldBegin
 # Textures
 Texture "check_tex" 
     "spectrum" "imagemap" 
-    "string filename" ["figures/check16.png"]
-    "float uscale" [16]
-    "float vscale" [16]
-    "bool trilinear" ["true"]
+    "string filename" ["figures/check1024.png"]
+    "float uscale" [1]
+    "float vscale" [1]
+    "bool trilinear" ["false"]
     
     
 MakeNamedMaterial "checkboard_color" 
