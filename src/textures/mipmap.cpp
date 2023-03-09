@@ -198,7 +198,7 @@ public:
                   "\"bilinear\"! or \"trilinear\", or \"ewa\" ", filter_mode_str);
 
         // Get Anisotropy of EWA
-        m_maxAnisotropy = props.get<ScalarFloat>("maxAnisotropy", 16);
+        m_maxAnisotropy = props.get<ScalarFloat>("maxAnisotropy", 8);
         // if (m_maxAnisotropy < 1){
         //     Log(Warn, "maxAnisotropy clamped to 1");
         //     m_maxAnisotropy = 1;
@@ -599,11 +599,13 @@ protected:
         // Get correctly transformed m_rfilter dst/dxy. TODO: Optimization?
         const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-        Vector2f duv_dx = dr::abs(Vector2f{
+        Vector2f duv_dx =
+            dr::abs(Vector2f{
             uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
             uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
         });
-        Vector2f duv_dy = dr::abs(Vector2f{
+        Vector2f duv_dy =
+            dr::abs(Vector2f{
             uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
             uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
         });            
@@ -621,23 +623,26 @@ protected:
         Float du0 = duv_dx.x() * size.x(), dv0 = duv_dx.y() * size.y(),
               du1 = duv_dy.x() * size.x(), dv1 = duv_dy.y() * size.y();
 
-        Float A = dv0*dv0 + dv1*dv1,
-              B = -2.0f * (du0*dv0 + du1*dv1),
-              C = du0*du0 + du1*du1,
-              F = A*C - B*B*0.25f;
-
-        Float root = dr::hypot(A-C, B),
-              Aprime = 0.5f * (A + C - root),
-              Cprime = 0.5f * (A + C + root),
-              majorRadius = dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
-              minorRadius = dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
+        Float 
+        //       root = dr::hypot(A-C, B),
+        //       Aprime = 0.5f * (A + C - root),
+        //       Cprime = 0.5f * (A + C + root),
+              majorRadius =  dr::norm(Vector2f(du0, dv0)), // dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
+              minorRadius =  dr::norm(Vector2f(du1, dv1));// dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
         // If isTri, perform trilinear filter
-        Mask isTri = (m_mipmap == Trilinear | !(minorRadius > 0) | !(majorRadius > 0) | F < 0);
+        Mask isTri = (m_mipmap == Trilinear | !(minorRadius > 0) | !(majorRadius > 0));
 
         // EWA info
         Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
+        dr::masked(du1, isSkinny) = du1 * majorRadius / (minorRadius * m_maxAnisotropy);
+        dr::masked(dv1, isSkinny) = dv1 * majorRadius / (minorRadius * m_maxAnisotropy);
         dr::masked(minorRadius, isSkinny) = majorRadius / m_maxAnisotropy;
+
+        Float A = dv0*dv0 + dv1*dv1 + 1,
+              B = -2.0f * (du0*dv0 + du1*dv1),
+              C = du0*du0 + du1*du1 + 1,
+              F = A*C - B*B*0.25f;
 
         Float theta = 0.5f * dr::atan(B / (A-C));
         auto [sinTheta, cosTheta] = dr::sincos(theta);
@@ -647,10 +652,10 @@ protected:
                 cosTheta2 = cosTheta*cosTheta,
                 sin2Theta = 2*sinTheta*cosTheta;
 
-        dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
-        dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
-        dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
-        dr::masked(F, isSkinny) = a2*b2;
+        // dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
+        // dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
+        // dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
+        // dr::masked(F, isSkinny) = a2*b2;
 
         /* Switch to normalized coefficients */
         Float scale = 1.0f / F;
@@ -874,11 +879,11 @@ protected:
                     (ScalarFloat) size.y() / (ScalarFloat) m_res[0].y()
                 );
 
-                m_res[m_levels] = size; 
+                m_res[m_levels] = size;
 
                 // Test if the pyramid is built
-                std::string str = std::to_string(m_levels)+".exr";
-                m_bitmap->write(str);
+                // std::string str = std::to_string(m_levels)+".exr";
+                // m_bitmap->write(str);
 
                 ++m_levels;
             }            
@@ -937,30 +942,31 @@ protected:
             Float As = A * MI_MIPMAP_LUT_SIZE,
                 Bs = B * MI_MIPMAP_LUT_SIZE,
                 Cs = C * MI_MIPMAP_LUT_SIZE;
-
-            Float ddq = 2*As, uu0 = (Float) u0 - u;
             
-            Int32 vt = dr::minimum(v0, (Int32)v);
+            Int32 vt = dr::minimum(v0, (Int32)v);            
             dr::Loop<Mask> loop_v("Loop v", vt, denominator, out);
-            // std::cout<<v1<<": "<<v0<<"  "<<u1<<": "<<u0<<std::endl;
             while(loop_v(vt <= v1)){
                 const Float vv = vt - v;
 
-                Float q  = As*uu0*uu0 + (Bs*uu0 + Cs*vv)*vv;
-                Float dq = As*(2*uu0 + 1) + Bs*vv;
                 Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, out);
-
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out);
                 while(loop_u(ut <= u1)){
-                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                    const Float uu = ut - u;
 
+                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+
+                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
                     Float weight = dr::gather<Float>(m_weightLut.data(), qi);
-                    m_pyramid[i].eval_fetch(uv, fetch_values, dr::eq(level, i) & active);
-                    dr::masked(out, dr::eq(level, i) & active) = f00;
+                    m_pyramid[i].eval_fetch({Float(ut)/size.x(), Float(vt)/size.y()}, fetch_values, dr::eq(level, i) & active);
+                    // TODO: fetch which texel!!
+                    dr::masked(out, dr::eq(level, i) & active) += f00 * weight;
                     dr::masked(denominator, dr::eq(i, level) & active) += weight;
 
-                    q += dq;
-                    dq += ddq;
+                    // std::cout<<f00<<" "<<f01<<" "<<f10<<" "<<f11<<" "<<weight<<std::endl;
+                    // std::cin.get();
+
                     ut++;  
                 }
                 vt++;
@@ -969,7 +975,7 @@ protected:
 
         Mask isZero = dr::eq(denominator, 0);
         // std::cout<<denominator<<std::endl;
-        dr::masked(out, !isZero) = out; 
+        dr::masked(out, !isZero) = out / denominator; 
 
         dr::masked(out, isInf) = 0;
 
