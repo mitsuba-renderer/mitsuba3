@@ -76,7 +76,8 @@ The plugin can work with all types of images that are natively supported by Mits
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
 High quality free light probes are available on 
-`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
+`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or 
+`Polyhaven <https://polyhaven.com/hdris>`_.
 
 .. tabs::
     .. code-tab:: xml
