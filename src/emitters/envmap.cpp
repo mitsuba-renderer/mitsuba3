@@ -75,8 +75,7 @@ The plugin can work with all types of images that are natively supported by Mits
 (i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
-High quality free light probes are available on
-`Paul Debevec's <http://gl.ict.usc.edu/Data/HighResProbes>`_ and
+High quality free light probes are available on 
 `Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
 
 .. tabs::
