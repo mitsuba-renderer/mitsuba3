@@ -135,7 +135,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         if mi.is_rgb: # Sample a color channel to sample free-flight distances
             n_channels = dr.size_v(mi.Spectrum)
-            channel = dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1)
+            channel = mi.UInt32(dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1))
 
         loop = mi.Loop(name=f"Path Replay Backpropagation ({mode.name})",
                     state=lambda: (sampler, active, depth, ray, medium, si,
@@ -160,8 +160,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 ray.maxt[active_medium & medium.is_homogeneous() & mei.is_valid()] = mei.t
                 intersect = needs_intersection & active_medium
-                si_new = scene.ray_intersect(ray, intersect)
-                si[intersect] = si_new
+                si[intersect] = scene.ray_intersect(ray, intersect)
 
                 needs_intersection &= ~active_medium
                 mei.t[active_medium & (si.t < mei.t)] = dr.inf
@@ -196,7 +195,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                     si.t[act_null_scatter] = si.t - dr.detach(mei.t)
 
                 weight[act_medium_scatter] *= mei.sigma_s / dr.detach(scatter_prob)
-                throughput[active_medium] *= dr.detach(weight)
+                throughput *= dr.detach(weight)
 
                 mei = dr.detach(mei)
                 if not is_primal and dr.grad_enabled(weight):
@@ -375,12 +374,13 @@ class PRBVolpathIntegrator(RBIntegrator):
             si.t[active_medium] = dr.detach(si.t - mei.t)
             tr_multiplier[active_medium] *= mei.sigma_n / mei.combined_extinction
 
+
             # Handle interactions with surfaces
             active_surface |= escaped_medium
             active_surface &= si.is_valid() & ~active_medium
             bsdf = si.bsdf(ray)
             bsdf_val = bsdf.eval_null_transmission(si, active_surface)
-            tr_multiplier[active_surface] = tr_multiplier * bsdf_val
+            tr_multiplier[active_surface] *= bsdf_val
 
             if not is_primal and dr.grad_enabled(tr_multiplier):
                 active_adj = (active_surface | active_medium) & (tr_multiplier > 0.0)
