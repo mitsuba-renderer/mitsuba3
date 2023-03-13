@@ -2,7 +2,7 @@
 <scene version="2.0.0">
   <!--Specifically left low to demonstrate mipmapping-->
   <default name="spp" value="1"/>
-  <default name="side" value="50"/>
+  <default name="side" value="16"/>
   <default name="pix_width" value="1024"/>
   <integrator type="direct">
   </integrator>
@@ -24,13 +24,17 @@
     </film>
   </sensor>
   <texture id="Mipmap-checkerboard" type="bitmap2">
-    <string name="filename" value="../../figures/check.png"/>
+  <!-- <string name="filter_type" value="nearest"/> -->
+    <string name="filename" value="../../figures/check16.png"/>
+    <string name="mipmap_filter_type" value="bilinear"/>
     <transform name="to_uv">
       <scale value="$side"/>
     </transform>
   </texture>
   <texture id="Mipmap-tile" type="bitmap2">
-    <string name="filename" value="../../figures/check.png"/>
+  <!-- <string name="filter_type" value="nearest"/> -->
+    <string name="filename" value="../../figures/check16.png"/>
+    <string name="mipmap_filter_type" value="bilinear"/>
     <transform name="to_uv">
       <scale value="$side"/>
     </transform>

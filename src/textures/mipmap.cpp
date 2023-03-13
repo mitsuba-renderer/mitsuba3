@@ -198,7 +198,7 @@ public:
                   "\"bilinear\"! or \"trilinear\", or \"ewa\" ", filter_mode_str);
 
         // Get Anisotropy of EWA
-        m_maxAnisotropy = props.get<ScalarFloat>("maxAnisotropy", 8);
+        m_maxAnisotropy = props.get<ScalarFloat>("maxAnisotropy", 16);
         // if (m_maxAnisotropy < 1){
         //     Log(Warn, "maxAnisotropy clamped to 1");
         //     m_maxAnisotropy = 1;
@@ -594,17 +594,17 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
+        Point2f uv = m_transform.transform_affine(si.uv); //{0.00729447091, 0.929102302}; 
 
-        // Get correctly transformed m_rfilter dst/dxy. TODO: Optimization?
+        // Get correctly transformed m_rfilter duv/dxy. TODO: Optimization?
         const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-        Vector2f duv_dx =
+        Vector2f duv_dx = //{0.00571198482, -0.00528087607};
             dr::abs(Vector2f{
             uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
             uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
         });
-        Vector2f duv_dy =
+        Vector2f duv_dy = //{-0.000342758431, -0.00090997509};
             dr::abs(Vector2f{
             uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
             uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
@@ -620,55 +620,41 @@ protected:
             return out;         
         }
         const ScalarVector2u size = m_res[0];
-        Float du0 = duv_dx.x() * size.x(), dv0 = duv_dx.y() * size.y(),
-              du1 = duv_dy.x() * size.x(), dv1 = duv_dy.y() * size.y();
+
+        Vector2f duv0(duv_dx.x() * size.x(), duv_dx.y() * size.y());
+        Vector2f duv1(duv_dy.x() * size.x(), duv_dy.y() * size.y());
+        Vector2f tmp(duv0);
+
+        dr::masked(duv0, dr::norm(duv0) < dr::norm(duv1)) = duv1;
+        dr::masked(duv1, dr::norm(tmp) < dr::norm(duv1)) = tmp;
 
         Float 
         //       root = dr::hypot(A-C, B),
         //       Aprime = 0.5f * (A + C - root),
         //       Cprime = 0.5f * (A + C + root),
-              majorRadius =  dr::norm(Vector2f(du0, dv0)), // dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
-              minorRadius =  dr::norm(Vector2f(du1, dv1));// dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
+              majorRadius =  dr::norm(duv0), // dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
+              minorRadius =  dr::norm(duv1);// dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
         // If isTri, perform trilinear filter
         Mask isTri = (m_mipmap == Trilinear | !(minorRadius > 0) | !(majorRadius > 0));
 
         // EWA info
         Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
-        dr::masked(du1, isSkinny) = du1 * majorRadius / (minorRadius * m_maxAnisotropy);
-        dr::masked(dv1, isSkinny) = dv1 * majorRadius / (minorRadius * m_maxAnisotropy);
+        dr::masked(duv1, isSkinny) = duv1 * majorRadius / (minorRadius * m_maxAnisotropy);
         dr::masked(minorRadius, isSkinny) = majorRadius / m_maxAnisotropy;
 
-        Float A = dv0*dv0 + dv1*dv1 + 1,
-              B = -2.0f * (du0*dv0 + du1*dv1),
-              C = du0*du0 + du1*du1 + 1,
-              F = A*C - B*B*0.25f;
 
-        Float theta = 0.5f * dr::atan(B / (A-C));
-        auto [sinTheta, cosTheta] = dr::sincos(theta);
-        Float a2 = majorRadius*majorRadius,
-                b2 = minorRadius*minorRadius,
-                sinTheta2 = sinTheta*sinTheta,
-                cosTheta2 = cosTheta*cosTheta,
-                sin2Theta = 2*sinTheta*cosTheta;
-
-        // dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
-        // dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
-        // dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
-        // dr::masked(F, isSkinny) = a2*b2;
-
-        /* Switch to normalized coefficients */
-        Float scale = 1.0f / F;
-        A *= scale; B *= scale; C *= scale;
 
         // Trilinear level
-        Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(du0, du1), dr::maximum(dv0, dv1)), dr::Epsilon<Float>));
+        Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(duv0[0], duv1[0]), dr::maximum(duv0[1], duv1[1])), dr::Epsilon<Float>));
         // EWA level select
         dr::masked(level, !isTri) = dr::maximum((Float) 0.0f, dr::log2(minorRadius));
         Int32 lower = dr::floor2int<Int32>(level);
         Float alpha = level - lower;
+
+        // std::cout<<minorRadius/1024<<std::endl;
         
-        Mask isBilinear = !isTri & (!(A > 0 && C > 0)); // majorRadius < 1 | 
+        Mask isBilinear = !isTri; // majorRadius < 1 | 
 
         // defalt level: 0
         Mask isZero = lower < 0;
@@ -715,9 +701,9 @@ protected:
 
         // EWA
         // TODO: Optimize to one call
-        dr::masked(out, active & !isTri) = evalEWA(lower, uv, A, B, C, active & !isTri & !isBilinear) * (1.f - alpha) + evalEWA(lower+1, uv, A, B, C, !isTri & active & !isBilinear) * alpha;
+        dr::masked(out, active & !isTri) = evalEWA(lower+1, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
 
-        return out; //(lower + 1.f)/ m_pyramid.size(); // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
+        return out;  // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
     }
 
     /**
@@ -732,7 +718,7 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        // Get correctly transformed dst/dxy. TODO: Optimization?
+        // Get correctly transformed duv/dxy. TODO: Optimization?
         const ScalarMatrix3f uv_tm = m_transform.matrix;
 
         Vector2f duv_dx = dr::abs(Vector2f{
@@ -889,18 +875,16 @@ protected:
             }            
         }
 
-        if (m_mipmap == MIPFilterType::EWA){
-            m_weightLut.resize(MI_MIPMAP_LUT_SIZE);
-            for (int i=0; i<MI_MIPMAP_LUT_SIZE; ++i) {
-                ScalarFloat r2 = (ScalarFloat) i / (ScalarFloat) (MI_MIPMAP_LUT_SIZE-1);
-                m_weightLut[i] = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-            }
+        m_weightLut.resize(MI_MIPMAP_LUT_SIZE);
+        for (int i=0; i<MI_MIPMAP_LUT_SIZE; ++i) {
+            ScalarFloat r2 = (ScalarFloat) i / (ScalarFloat) (MI_MIPMAP_LUT_SIZE-1);
+            m_weightLut[i] = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
         }
 
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
     }
 
-    Float evalEWA(Int32 level, const Point2f &uv, Float A, Float B, Float C, Mask active = true) const {
+    Float evalEWA(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
         Float f00, f10, f01, f11;
         dr::Array<Float *, 4> fetch_values;
         fetch_values[0] = &f00;
@@ -909,7 +893,7 @@ protected:
         fetch_values[3] = &f11;
         Float out = 0;
         Float c_tmp = 0;
-        Mask isInf = !dr::isfinite(A+B+C+uv.x()+uv.y());
+        Mask isInf = !dr::isfinite(uv.x()+uv.y());
         // TODO: this eval should be box but not bilinear: use eval_fetch, how to handle the 4 value?? 
         // TODO: if accel
         m_pyramid[m_levels-1].eval_fetch(uv, fetch_values, level >= m_levels & active);
@@ -917,6 +901,7 @@ protected:
 
         Float denominator = 0.0f;
         Int32 nSamples = 0;
+
         
         /* Convert to fractional pixel coordinates on the specified level */
         for(int i = 0; i<m_levels; i++){
@@ -924,11 +909,37 @@ protected:
             Float u = uv.x() * size.x() - 0.5f;
             Float v = uv.y() * size.y() - 0.5f;
 
+            Vector2f duv0(duv_dx.x() * size.x(), duv_dx.y() * size.y());
+            Vector2f duv1(duv_dy.x() * size.x(), duv_dy.y() * size.y());
+
+            Float A = duv0[1] * duv0[1] + duv1[1] * duv1[1] + 1,
+                B = -2.0f * (duv0[0] * duv0[1] + duv1[0] * duv1[1]),
+                C = duv0[0] * duv0[0] + duv1[0] * duv1[0] + 1,
+                F = A*C - B*B*0.25f;
+
+            // Float theta = 0.5f * dr::atan(B / (A-C));
+            // auto [sinTheta, cosTheta] = dr::sincos(theta);
+            // Float a2 = majorRadius*majorRadius,
+            //         b2 = minorRadius*minorRadius,
+            //         sinTheta2 = sinTheta*sinTheta,
+            //         cosTheta2 = cosTheta*cosTheta,
+            //         sin2Theta = 2*sinTheta*cosTheta;
+
+            // dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
+            // dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
+            // dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
+            // dr::masked(F, isSkinny) = a2*b2;
+
+            /* Switch to normalized coefficients */
+            Float scale = 1.0f / F;
+            A *= scale; B *= scale; C *= scale;
+
+
             /* Do the same to the ellipse coefficients */
-            const ScalarVector2f ratio = m_sizeRatio[i];
-            dr::masked(A, dr::eq(level, i)) = A / (ratio.x() * ratio.x());
-            dr::masked(B, dr::eq(level, i)) = B / (ratio.x() * ratio.y());
-            dr::masked(C, dr::eq(level, i)) = C / (ratio.y() * ratio.y());
+            // const ScalarVector2f ratio = m_sizeRatio[i];
+            // dr::masked(A, dr::eq(level, i)) = A / (ratio.x() * ratio.x());
+            // dr::masked(B, dr::eq(level, i)) = B / (ratio.x() * ratio.y());
+            // dr::masked(C, dr::eq(level, i)) = C / (ratio.y() * ratio.y());
 
             /* Compute the ellipse's bounding box in texture space */
             Float invDet = 1.0f / (-B*B + 4.0f*A*C),
@@ -943,6 +954,7 @@ protected:
                 Bs = B * MI_MIPMAP_LUT_SIZE,
                 Cs = C * MI_MIPMAP_LUT_SIZE;
             
+            // std::cout<<u0<<" "<<u1<<"  "<<v0<<" "<<v1<<std::endl;
             Int32 vt = dr::minimum(v0, (Int32)v);            
             dr::Loop<Mask> loop_v("Loop v", vt, denominator, out);
             while(loop_v(vt <= v1)){
@@ -959,32 +971,28 @@ protected:
 
                     UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
                     Float weight = dr::gather<Float>(m_weightLut.data(), qi);
-                    m_pyramid[i].eval_fetch({Float(ut)/size.x(), Float(vt)/size.y()}, fetch_values, dr::eq(level, i) & active);
+                    m_pyramid[i].eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, dr::eq(level, i) & active);
                     // TODO: fetch which texel!!
-                    dr::masked(out, dr::eq(level, i) & active) += f00 * weight;
+                    dr::masked(out, dr::eq(level, i) & active) += c_tmp * weight;
                     dr::masked(denominator, dr::eq(i, level) & active) += weight;
-
-                    // std::cout<<f00<<" "<<f01<<" "<<f10<<" "<<f11<<" "<<weight<<std::endl;
-                    // std::cin.get();
+                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                    // std::cout<<out<<std::endl;
 
                     ut++;  
                 }
                 vt++;
             }
+            // std::cin.get();
         }
 
         Mask isZero = dr::eq(denominator, 0);
-        // std::cout<<denominator<<std::endl;
         dr::masked(out, !isZero) = out / denominator; 
-
         dr::masked(out, isInf) = 0;
 
         return out;
     }
     
-
 protected:
-
     Texture2f m_texture;
     ScalarTransform3f m_transform;
     bool m_accel;
