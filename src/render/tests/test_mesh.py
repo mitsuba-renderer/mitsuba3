@@ -34,7 +34,7 @@ def test01_create_mesh(variant_scalar_rgb):
 def test02_ply_triangle(variant_scalar_rgb):
     m = mi.load_dict({
         "type" : "ply",
-        "filename" : "data/triangle.ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
         "face_normals" : True
     })
 
@@ -59,7 +59,7 @@ def test03_ply_computed_normals(variant_scalar_rgb):
     doesn't have them."""
     shape = mi.load_dict({
         "type" : "ply",
-        "filename" : "data/triangle.ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
     })
     params = mi.traverse(shape)
     normals = params['vertex_normals']
@@ -168,7 +168,7 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
 def test07_ply_stored_attribute(variant_scalar_rgb):
     m = mi.load_dict({
         "type" : "ply",
-        "filename" : "data/triangle_face_colors.ply",
+        "filename" : "resources/data/tests/ply/triangle_face_colors.ply",
     })
 
     assert str(m) == """PLYMesh[

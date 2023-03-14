@@ -22,7 +22,7 @@ spectrum_dicts = {
 def create_emitter_and_spectrum(s_key='d65'):
     emitter = mi.load_dict({
         "type": "ply",
-        "filename": "data/triangle.ply",
+        "filename": "resources/data/tests/ply/triangle.ply",
         "emitter" : { "type": "area", "radiance" : spectrum_dicts[s_key] },
         "to_world" : mi.ScalarTransform4f.translate([10, -1, 2])
     })
