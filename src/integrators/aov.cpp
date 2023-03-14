@@ -63,6 +63,7 @@ output file.
 Currently, the following AOVs types are available:
 
     - :monosp:`albedo`: Albedo (diffuse reflectance) of the material.
+    - :monosp:`roughness`: Roughness of the material (returns 1.0 if not applicable).
     - :monosp:`depth`: Distance from the pinhole.
     - :monosp:`position`: World space position value.
     - :monosp:`uv`: UV coordinates.
@@ -80,7 +81,7 @@ wide pixel reconstruction filter as it will result in fractional values.
 
 The :monosp:`albedo` AOV will evaluate the diffuse reflectance
 (\ref BSDF::eval_diffuse_reflectance) of the material. Note that depending on
-the material, this value might only be an approximation.
+the material, this value might only be an approximation. Likewise for the :monosp:`roughness`.
  */
 
 template <typename Float, typename Spectrum>
@@ -91,6 +92,7 @@ public:
 
     enum class Type {
         Albedo,
+        Roughness,
         Depth,
         Position,
         UV,
@@ -120,6 +122,10 @@ public:
                 m_aov_names.push_back(item[0] + ".R");
                 m_aov_names.push_back(item[0] + ".G");
                 m_aov_names.push_back(item[0] + ".B");
+            }
+            else if (item[1] == "roughness") {
+                m_aov_types.push_back(Type::Roughness);
+                m_aov_names.push_back(item[0] + ".R");
             } else if (item[1] == "depth") {
                 m_aov_types.push_back(Type::Depth);
                 m_aov_names.push_back(item[0] + ".T");
@@ -242,6 +248,13 @@ public:
                         *aovs++ = rgb.r();
                         *aovs++ = rgb.g();
                         *aovs++ = rgb.b();
+                    }
+                    break;
+                case Type::Roughness: {
+                        BSDFPtr bsdf = si.bsdf(ray);
+                        Float rough = bsdf->eval_roughness(si, active);
+
+                        *aovs++ = Float(rough);
                     }
                     break;
                 case Type::Depth:
