@@ -213,27 +213,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     auto casters = (std::vector<void *> *) (py::capsule)(mitsuba_ext.attr("casters"));
     casters->push_back((void *) caster);
 
-    /* Increase the reference count of the `mitsuba.core.Object` type to make
-       sure libcore doesn't get destroyed before librender */
-    py::handle mts_object_type = mitsuba_ext.attr("Object");
-    mts_object_type.inc_ref();
-
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Scene' Python type is garbage collected */
     py::cpp_function cleanup_callback(
-        [mts_object_type](py::handle weakref) {
+        [](py::handle weakref) {
             color_management_static_shutdown();
             Scene::static_accel_shutdown();
 
             /* The DrJit python module is responsible for cleaning up the
                JIT state, so jit_shutdown() shouldn't be called here. */
             weakref.dec_ref();
-
-            /* Decrease the reference count of the `mitsuba.core.Object` type as
-               the libcore can now be destroyed. Somehow the reference counter
-               needs to be decremented twice for this to work properly. */
-            mts_object_type.dec_ref();
-            mts_object_type.dec_ref();
         }
     );
 
