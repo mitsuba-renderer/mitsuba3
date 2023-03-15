@@ -590,10 +590,10 @@ private:
     ScalarSize m_control_point_count = 0;
     ScalarSize m_segment_count = 0;
 
-    // storage for Embree & mitsuba
-    mutable FloatStorage m_vertex_with_radius;
     mutable UInt32Storage m_indices;
 
+    // storage for Embree
+    mutable FloatStorage m_vertex_with_radius;
     // separate storage of control points and per-vertex radius for OptiX
     mutable FloatStorage m_vertex;
     mutable FloatStorage m_radius;
