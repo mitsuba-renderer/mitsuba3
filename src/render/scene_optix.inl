@@ -1,4 +1,3 @@
-
 #include <iomanip>
 #include <cstring>
 #include <cstdio>
@@ -23,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 #  define strdup(x) _strdup(x)
 #endif
 
-static constexpr size_t PROGRAM_GROUP_COUNT = 2 + CUSTOM_OPTIX_SHAPE_COUNT;
+static constexpr size_t PROGRAM_GROUP_COUNT = 2 + OPTIX_SHAPE_TYPE_COUNT;
 
 // Per scene OptiX state data structure
 struct OptixSceneState {
@@ -49,11 +48,11 @@ struct OptixSceneState {
 struct OptixConfig {
     OptixDeviceContext context;
     OptixPipelineCompileOptions pipeline_compile_options;
-    OptixModule mainModule;
-    OptixModule bsplineCurveModule; /// Built-in module for B-spline curves
-    OptixModule linearCurveModule; /// Built-in module for linear curves
+    OptixModule main_module;
+    OptixModule bspline_curve_module; /// Built-in module for B-spline curves
+    OptixModule linear_curve_module; /// Built-in module for linear curves
     OptixProgramGroup program_groups[PROGRAM_GROUP_COUNT];
-    char *custom_shapes_program_names[2 * CUSTOM_OPTIX_SHAPE_COUNT];
+    char *custom_shapes_program_names[2 * OPTIX_SHAPE_TYPE_COUNT];
     uint32_t pipeline_jit_index;
 };
 
@@ -74,7 +73,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
     OptixConfig &config = optix_configs[config_index];
 
     // Initialize Optix config if necessary
-    if (!config.mainModule) {
+    if (!config.main_module) {
         Log(Debug, "Initialize Optix configuration (index=%zu)..", config_index);
 
         config.context = jit_optix_context();
@@ -98,15 +97,24 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
         config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
+        bool at_least_two_gas = [&]() {
+            uint32_t counter = 0;
+            for (bool has_gas : { has_meshes, has_bspline_curves,
+                                  has_linear_curves, has_others })
+                if (has_gas)
+                    if (++counter >= 2)
+                        return true;
+            return false;
+        }();
+
+        uint32_t traversable_flag = 0;
         if (has_instances)
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        else if (has_others && has_meshes)
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+        else if (at_least_two_gas)
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
         else
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+        config.pipeline_compile_options.traversableGraphFlags = traversable_flag;
 
     #if !defined(MI_OPTIX_DEBUG)
         config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
@@ -156,7 +164,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             optix_rt_ptx_size,
             optix_log,
             &optix_log_size,
-            &config.mainModule,
+            &config.main_module,
             &task
         ));
 
@@ -183,7 +191,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
 
         int compilation_state = 0;
         check_log(
-            optixModuleGetCompilationState(config.mainModule, &compilation_state));
+            optixModuleGetCompilationState(config.main_module, &compilation_state));
         if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
             Throw("Optix configuration initialization failed! The OptiX module "
                   "compilation did not complete successfully. The module's "
@@ -204,7 +212,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             jit_optix_check(
                 optixBuiltinISModuleGet(config.context, &module_compile_options,
                                         &config.pipeline_compile_options,
-                                        &options, &config.bsplineCurveModule));
+                                        &options, &config.bspline_curve_module));
         }
         if (has_linear_curves) {
             OptixBuiltinISOptions options = {};
@@ -217,7 +225,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             jit_optix_check(
                 optixBuiltinISModuleGet(config.context, &module_compile_options,
                                         &config.pipeline_compile_options,
-                                        &options, &config.linearCurveModule));
+                                        &options, &config.linear_curve_module));
         }
 
         // =====================================================
@@ -228,35 +236,40 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         OptixProgramGroupDesc pgd[PROGRAM_GROUP_COUNT] {};
 
         pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        pgd[0].miss.module                  = config.mainModule;
+        pgd[0].miss.module                  = config.main_module;
         pgd[0].miss.entryFunctionName       = "__miss__ms";
         pgd[1].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[1].hitgroup.moduleCH            = config.mainModule;
+        pgd[1].hitgroup.moduleCH            = config.main_module;
         pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
 
-        for (size_t i = 0; i < CUSTOM_OPTIX_SHAPE_COUNT; i++) {
+        for (size_t i = 0; i < OPTIX_SHAPE_TYPE_COUNT; i++) {
             pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
-            std::string name = string::to_lower(CUSTOM_OPTIX_SHAPE_NAMES[i]);
-            config.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
-            config.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
+            OptixShapeType optix_shape_type = OPTIX_SHAPE_ORDER[i];
+            OptixShape& optix_shape = OPTIX_SHAPES.at(optix_shape_type);
 
-            if (name == "bsplinecurve") {
-                pgd[2+i].hitgroup.moduleCH            = config.mainModule;
-                pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
-                pgd[2+i].hitgroup.moduleIS            = config.bsplineCurveModule;
-                pgd[2+i].hitgroup.entryFunctionNameIS = nullptr;
-            } else if (name == "linearcurve") {
-                pgd[2+i].hitgroup.moduleCH            = config.mainModule;
-                pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
-                pgd[2+i].hitgroup.moduleIS            = config.linearCurveModule;
-                pgd[2+i].hitgroup.entryFunctionNameIS = nullptr;
-            } else {
-                pgd[2+i].hitgroup.moduleCH            = config.mainModule;
-                pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
-                pgd[2+i].hitgroup.moduleIS            = config.mainModule;
-                pgd[2+i].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
+            config.custom_shapes_program_names[2*i]   = strdup(optix_shape.ch_name().c_str());
+            if (optix_shape.is_builtin)
+                config.custom_shapes_program_names[2*i+1] = nullptr;
+            else
+                config.custom_shapes_program_names[2*i+1] = strdup(optix_shape.is_name().c_str());
+
+            pgd[2+i].hitgroup.moduleCH            = config.main_module;
+            pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
+            pgd[2+i].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
+            if (optix_shape.is_builtin) {
+                switch(optix_shape_type) {
+                    case BSplineCurve:
+                        pgd[2 + i].hitgroup.moduleIS = config.bspline_curve_module; break;
+                    case LinearCurve:
+                        pgd[2 + i].hitgroup.moduleIS = config.linear_curve_module; break;
+                    default:
+                        Throw("Unknown builtin OptiX shape type: \"%s\"!",
+                              OPTIX_SHAPE_TYPE_NAMES[optix_shape_type]);
+                }
             }
+            else
+                pgd[2+i].hitgroup.moduleIS = config.main_module;
         }
 
         optix_log_size = sizeof(optix_log);
@@ -276,7 +289,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         jit_set_scope(JitBackend::CUDA, 0);
         config.pipeline_jit_index = jit_optix_configure_pipeline(
             &config.pipeline_compile_options,
-            config.mainModule,
+            config.main_module,
             config.program_groups, PROGRAM_GROUP_COUNT
         );
         jit_set_scope(JitBackend::CUDA, scope);
@@ -562,7 +575,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
                    structure if no ray tracing calls are pending. */
                 (void) UInt32::steal(config.pipeline_jit_index);
 
-                for (size_t i = 0; i < 2 * CUSTOM_OPTIX_SHAPE_COUNT; i++)
+                for (size_t i = 0; i < 2 * OPTIX_SHAPE_TYPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);
             }
         }
