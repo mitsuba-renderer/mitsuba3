@@ -47,7 +47,7 @@ An example in XML looks the following:
             '<parameter_name>' : {
                 'type': '<texture_type>':
                 # .. texture parameters ..
-                'to_uv': mi.ScalarTransform2f.scale([2, 2]) * mi.ScalarTransform2f.translate([0.5, 1.0])
+                'to_uv': mi.ScalarTransform3f.scale([2, 2]) * mi.ScalarTransform3f.translate([0.5, 1.0])
             }
 
             # .. non-spatially varying BSDF parameters ..
