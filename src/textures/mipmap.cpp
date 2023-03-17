@@ -219,8 +219,8 @@ public:
 
         // Get resample filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
-        Properties rfilterProps("box");
-        // rfilterProps.set_int("lobes", 2);
+        Properties rfilterProps("lanczos");
+        rfilterProps.set_int("lobes", 2);
         m_rfilter = static_cast<ReconstructionFilter *> (
             PluginManager::instance()->create_object<ReconstructionFilter>(rfilterProps));
 
@@ -233,9 +233,8 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("data2",  m_pyramid[1].tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("data3",  m_pyramid[2].tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("data4",  m_pyramid[3].tensor(), +ParamFlags::Differentiable);
+        callback->put_parameter("aaa",  aaa, +ParamFlags::Differentiable);
+        callback->put_parameter("bbb",  bbb, +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
     }
 
@@ -665,7 +664,6 @@ protected:
         Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(duv0[0], duv1[0]), dr::maximum(duv0[1], duv1[1])), dr::Epsilon<Float>));
         // EWA level select
         dr::masked(level, !isTri) = dr::maximum((Float) 0.0f, dr::log2(minorRadius));
-        level = 1;
 
         Int32 lower = dr::floor2int<Int32>(level);
         Float alpha = level - lower;
@@ -904,12 +902,12 @@ protected:
             
             // std::cout<<u0<<" "<<u1<<"  "<<v0<<" "<<v1<<std::endl;
             Int32 vt = dr::minimum(v0, (Int32)v);            
-            dr::Loop<Mask> loop_v("Loop v", vt, denominator, out);
+            dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, c_tmp);
             while(loop_v(vt <= v1)){
                 const Float vv = vt - v;
 
                 Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out);
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, c_tmp);
                 while(loop_u(ut <= u1)){
                     const Float uu = ut - u;
 
@@ -1004,7 +1002,6 @@ protected:
     }
 
     TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
-        return curr;
         ScalarVector2u src_res(curr.shape()[0], curr.shape()[1]);
         ScalarFloat filterRadius = m_rfilter->radius();
 
@@ -1192,6 +1189,8 @@ protected:
     }
     
 protected:
+    TensorXf aaa;
+    TensorXf bbb;
     Texture2f m_texture;
     ScalarTransform3f m_transform;
     bool m_accel;
