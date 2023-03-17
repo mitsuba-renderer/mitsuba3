@@ -710,14 +710,23 @@ protected:
         dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
-        dr::masked(out, active & !isTri & !isZero)  = c_lower;
+        dr::masked(out, active & !isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // Now c_tmp is evaluated at m_pyramid[m_levels-1]. Deal with level >= m_levels-1
         dr::masked(out, active & isTri & !isZero & isInf) = c_tmp;
 
+
         // EWA
+        if (m_mipmap == MIPFilterType::EWA && dr::grad_enabled(out)) {
         // TODO: Optimize to one call
-        // dr::masked(out, active & !isTri) = evalEWA(lower+1, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
+            // Float out_copy = Float(out) + 0.f;
+            // dr::masked(out_copy, active & !isTri) = evalEWA(lower+1, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
+            // // replace AD
+            // if constexpr (dr::is_diff_v<Float>){
+            //     std::cout<<"???"<<std::endl;
+            //     // out = dr::replace_grad(out, out_copy);
+            // }
+        }
 
         return out;  // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
     }
@@ -892,23 +901,25 @@ protected:
                 deltaU = 2.0f * dr::sqrt(C * invDet),
                 deltaV = 2.0f * dr::sqrt(A * invDet);
 
-            Int32 u0 = dr::ceil2int<Int32> (u - deltaU), u1 = dr::floor2int<Int32> (u + deltaU);
-            Int32 v0 = dr::ceil2int<Int32> (v - deltaV), v1 = dr::floor2int<Int32> (v + deltaV);
+            Int32 u0 = dr::ceil2int<Int32> (u - deltaU), u1 = dr::floor2int<Int32> (u + deltaU),
+                  v0 = dr::ceil2int<Int32> (v - deltaV), v1 = dr::floor2int<Int32> (v + deltaV);
 
             /* Scale the coefficients by the size of the Gaussian lookup table */
             Float As = A * MI_MIPMAP_LUT_SIZE,
-                Bs = B * MI_MIPMAP_LUT_SIZE,
-                Cs = C * MI_MIPMAP_LUT_SIZE;
+                  Bs = B * MI_MIPMAP_LUT_SIZE,
+                  Cs = C * MI_MIPMAP_LUT_SIZE;
             
             // std::cout<<u0<<" "<<u1<<"  "<<v0<<" "<<v1<<std::endl;
-            Int32 vt = dr::minimum(v0, (Int32)v);            
-            dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, c_tmp);
-            while(loop_v(vt <= v1)){
+            Int32 vt = dr::minimum(v0, (Int32)v);         
+            Mask active1(active);   
+            dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, c_tmp, active1);
+            while(loop_v(active1)){
+                Mask active2(active1);
                 const Float vv = vt - v;
 
                 Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, c_tmp);
-                while(loop_u(ut <= u1)){
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, c_tmp, active2);
+                while(loop_u(active2)){
                     const Float uu = ut - u;
 
                     Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
@@ -918,16 +929,18 @@ protected:
                     UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
                     Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
                     Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    m_pyramid[i].eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, dr::eq(level, i) & active);
+                    m_pyramid[i].eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, dr::eq(level, i) & active2);
                     // TODO: fetch which texel!!
-                    dr::masked(out, dr::eq(level, i) & active) += c_tmp * weight;
-                    dr::masked(denominator, dr::eq(i, level) & active) += weight;
+                    dr::masked(out, dr::eq(level, i) & active2) += c_tmp * weight;
+                    dr::masked(denominator, dr::eq(i, level) & active2) += weight;
                     // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
                     // std::cout<<out<<std::endl;
 
-                    ut++;  
+                    ut++;
+                    active2 &= ut <= u1;
                 }
                 vt++;
+                active1 &= vt <= v1;
             }
             // std::cin.get();
         }
