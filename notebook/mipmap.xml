@@ -41,15 +41,14 @@
         </transform>
     </texture> 
 
-    <bsdf type="diffuse" id="myCheckboard">
-        <ref name="reflectance" id="test" />
-        <!-- <rgb name="reflectance" value="0.5, 0.5, 0.5"  /> -->
-    </bsdf>
 
     <!-- Shapes -->
 
     <shape type="obj" id="floor">
         <string name="filename" value="figures/meshes/Plane.obj"/>
-        <ref id="myCheckboard"/>
+        <bsdf type="diffuse" id="myCheckboard">
+            <!-- <ref name="reflectance" id="test" /> -->
+            <rgb name="reflectance" value="0.5, 0.5, 0.5"  />
+        </bsdf>
     </shape>
 </scene>

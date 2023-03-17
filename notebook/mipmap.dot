@@ -1,0 +1,44 @@
+digraph {
+    rankdir=BT;
+    graph [dpi=50 fontname=Consolas];
+    node [shape=record fontname=Consolas];
+    edge [fontname=Consolas];
+    1 [label="{Label: \"b\"|{a1|S:1|R:2}}" fillcolor=yellowgreen style=filled];
+    2 [label="{Label: \"c\"|{a2|S:1|R:1}}" fillcolor=lightblue2 style=filled];
+    3 [label="{Label: \"myTexture\"|{a3|S:40000|R:2}}" fillcolor=yellowgreen style=filled];
+    6 [label="{unnamed|{a6|S:3145728|R:1}}" fillcolor=salmon style=filled];
+    10 [label="{mul|{a10|S:1|R:1}}" fillcolor=salmon style=filled];
+    729 [label="{sub|{a729|S:40000|R:2}}"];
+    730 [label="{mul|{a730|S:40000|R:1}}"];
+    731 [label="{sum|{a731|S:1|R:1}}"];
+    732 [label="{mul|{a732|S:1|R:1}}" fillcolor=lightblue2 style=filled];
+    733 [label="{Label: \"myTexture\"|{a733|S:40000|R:2}}" fillcolor=yellowgreen style=filled];
+    736 [label="{unnamed|{a736|S:3145728|R:1}}" fillcolor=salmon style=filled];
+    740 [label="{mul|{a740|S:1|R:1}}" fillcolor=salmon style=filled];
+    1164 [label="{scatter_reduce|{a1164|S:4194304|R:1}}" fillcolor=salmon style=filled];
+    2115 [label="{sub|{a2115|S:40000|R:2}}" fillcolor=yellowgreen style=filled];
+    2116 [label="{mul|{a2116|S:40000|R:1}}" fillcolor=yellowgreen style=filled];
+    2117 [label="{sum|{a2117|S:1|R:1}}" fillcolor=yellowgreen style=filled];
+    2118 [label="{mul|{a2118|S:1|R:1}}" fillcolor=yellowgreen style=filled];
+    2119 [label="{unnamed|{a2119|S:40000|R:1}}" fillcolor=salmon style=filled];
+    2120 [label="{unnamed|{a2120|S:40000|R:1}}" fillcolor=salmon style=filled];
+    2121 [label="{unnamed|{a2121|S:40000|R:1}}" fillcolor=salmon style=filled];
+    2 -> 1;
+    729 -> 3;
+    730 -> 729 [label=" 2"];
+    730 -> 729 [label=" 1"];
+    731 -> 730;
+    732 -> 731;
+    2115 -> 733;
+    2116 -> 2115 [label=" 2"];
+    2116 -> 2115 [label=" 1"];
+    2117 -> 2116;
+    2118 -> 2117;
+    subgraph cluster_legend {
+        label="Legend";
+        l4 [style=filled fillcolor=yellowgreen label="Gradient present"];
+        l3 [style=filled fillcolor=salmon label="Input"];
+        l2 [style=filled fillcolor=lightblue2 label="Output"];
+        l1 [style=filled fillcolor=wheat label="Labeled"];
+    }
+}

@@ -1,0 +1,29 @@
+digraph {
+    rankdir=BT;
+    graph [dpi=50 fontname=Consolas];
+    node [shape=record fontname=Consolas];
+    edge [fontname=Consolas];
+    1 [label="{Label: \"b\"|{a1|S:1|R:2}}" fillcolor=yellowgreen style=filled];
+    2 [label="{Label: \"c\"|{a2|S:1|R:1}}" fillcolor=lightblue2 style=filled];
+    3 [label="{Label: \"myTexture\"|{a3|S:40000|R:2}}" fillcolor=yellowgreen style=filled];
+    6 [label="{unnamed|{a6|S:3145728|R:1}}" fillcolor=salmon style=filled];
+    10 [label="{mul|{a10|S:1|R:1}}" fillcolor=salmon style=filled];
+    398 [label="{scatter_reduce|{a398|S:4194304|R:1}}" fillcolor=salmon style=filled];
+    729 [label="{sub|{a729|S:40000|R:2}}"];
+    730 [label="{mul|{a730|S:40000|R:1}}"];
+    731 [label="{sum|{a731|S:1|R:1}}"];
+    732 [label="{mul|{a732|S:1|R:1}}" fillcolor=lightblue2 style=filled];
+    2 -> 1;
+    729 -> 3;
+    730 -> 729 [label=" 2"];
+    730 -> 729 [label=" 1"];
+    731 -> 730;
+    732 -> 731;
+    subgraph cluster_legend {
+        label="Legend";
+        l4 [style=filled fillcolor=yellowgreen label="Gradient present"];
+        l3 [style=filled fillcolor=salmon label="Input"];
+        l2 [style=filled fillcolor=lightblue2 label="Output"];
+        l1 [style=filled fillcolor=wheat label="Labeled"];
+    }
+}
