@@ -375,13 +375,10 @@ public:
     /// Is this shape a triangle mesh?
     bool is_mesh() const;
 
-    /// Is this shape a curve ?
-    virtual bool is_curve() const;
-
-    /// Is this shape a curve ?
+    /// Is this shape a b-spline curve ?
     virtual bool is_bspline_curve() const;
 
-    /// Is this shape a curve ?
+    /// Is this shape a linear curve ?
     virtual bool is_linear_curve() const;
 
     /// Is this shape a shapegroup?

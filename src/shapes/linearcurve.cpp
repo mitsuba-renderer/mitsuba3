@@ -346,10 +346,6 @@ public:
         }
     }
 
-    bool is_curve() const override {
-        return true;
-    }
-
     bool is_linear_curve() const override {
         return true;
     }
