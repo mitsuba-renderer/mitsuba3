@@ -52,7 +52,7 @@ ScopedSignalHandler::~ScopedSignalHandler() {
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
         if constexpr (!dr::is_jit_v<Float>) {
@@ -71,11 +71,10 @@ public:
         py::gil_scoped_acquire gil;
         py::function render_override = py::get_override(this, "render");
 
-        if (render_override) {
+        if (render_override)
             return render_override(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
-        } else {
+        else
             return SamplingIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
-        }
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
@@ -106,6 +105,54 @@ public:
 
     std::string to_string() const override {
         PYBIND11_OVERRIDE(std::string, SamplingIntegrator, to_string, );
+    }
+};
+
+/// Trampoline for derived types implemented in Python
+MI_VARIANT class PyAdjointIntegrator : public AdjointIntegrator<Float, Spectrum> {
+public:
+    MI_IMPORT_TYPES(AdjointIntegrator, Scene, Sensor, Sampler, ImageBlock)
+
+    PyAdjointIntegrator(const Properties &props) : AdjointIntegrator(props) {
+        if constexpr (!dr::is_jit_v<Float>) {
+            Log(Warn, "AdjointIntegrator Python implementations will have "
+                      "terrible performance in scalar_* modes. It is strongly "
+                      "recommended to switch to a cuda_* or llvm_* mode");
+        }
+    }
+
+    TensorXf render(Scene *scene,
+                    Sensor *sensor,
+                    uint32_t seed,
+                    uint32_t spp,
+                    bool develop,
+                    bool evaluate) override {
+        py::gil_scoped_acquire gil;
+        py::function render_override = py::get_override(this, "render");
+
+        if (render_override)
+            return render_override(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
+        else
+            return AdjointIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
+    }
+
+    void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
+                ImageBlock *block, ScalarFloat sample_scale) const override {
+        py::gil_scoped_acquire gil;
+        py::function sample_override = py::get_override(this, "sample");
+
+        if (sample_override)
+            sample_override(scene, sensor, sampler, block, sample_scale);
+        else
+            Throw("AdjointIntegrator doesn't overload the method \"sample\"");
+    }
+
+    std::vector<std::string> aov_names() const override {
+        PYBIND11_OVERRIDE(std::vector<std::string>, AdjointIntegrator, aov_names, );
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERRIDE(std::string, AdjointIntegrator, to_string, );
     }
 };
 
@@ -202,6 +249,7 @@ public:
 MI_PY_EXPORT(Integrator) {
     MI_PY_IMPORT_TYPES()
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
+    using PyAdjointIntegrator = PyAdjointIntegrator<Float, Spectrum>;
     using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
 
@@ -257,7 +305,8 @@ MI_PY_EXPORT(Integrator) {
                PyADIntegrator>(m, "CppADIntegrator")
         .def(py::init<const Properties &>());
 
-    MI_PY_CLASS(AdjointIntegrator, Integrator)
+    MI_PY_TRAMPOLINE_CLASS(PyAdjointIntegrator, AdjointIntegrator, Integrator)
+        .def(py::init<const Properties &>())
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
                     "sampler"_a, "block"_a, "sample_scale"_a);
 }
