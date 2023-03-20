@@ -547,7 +547,6 @@ def test15_xml_volume(variants_all_rgb, tmp_path):
     print(f"Output temporary file: {filepath}")
 
     cwd = os.getcwd()
-    os.chdir(tmp_path)
 
     scene_dict = {
         'type': 'scene',
@@ -562,6 +561,7 @@ def test15_xml_volume(variants_all_rgb, tmp_path):
     }
 
     for i in range(2):
+        os.chdir(tmp_path)
         mi.xml.dict_to_xml(scene_dict, os.path.split(filepath)[1], split_files=(i==0))
         os.chdir(cwd)
 
@@ -576,7 +576,7 @@ def test15_xml_volume(variants_all_rgb, tmp_path):
 
 @fresolver_append_path
 def test16_xml_volume_with_args(variants_all_rgb, tmp_path):
-    filepath = str(tmp_path / 'test_write_xml-test15_output.xml')
+    filepath = str(tmp_path / 'test_write_xml-test16_output.xml')
     print(f"Output temporary file: {filepath}")
 
     cwd = os.getcwd()
@@ -599,6 +599,7 @@ def test16_xml_volume_with_args(variants_all_rgb, tmp_path):
     }
 
     for i in range(2):
+        os.chdir(tmp_path)
         mi.xml.dict_to_xml(scene_dict, os.path.split(filepath)[1], split_files=(i==0))
         os.chdir(cwd)
 
