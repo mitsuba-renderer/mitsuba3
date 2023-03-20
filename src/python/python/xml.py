@@ -17,7 +17,7 @@ class Files:
     GEOM = 2 # Geometry
     EMIT = 3 # Emitters
     CAMS = 4 # Camera and rendering params (sensor, integrator, sampler...)
-    #TODO: Volumes
+    VOLS = 5 # Volumes
 
 class WriteXML:
     '''
@@ -39,7 +39,8 @@ class WriteXML:
                            {}, #MATS
                            {}, #GEOM
                            {}, #EMIT
-                           {}] #CAMS
+                           {}, #CAMS
+                           {}] #VOLS
         self.com_count = 0 # Counter for comment ids
         self.exported_ids = set()
         self.copy_count = {} # Counters for giving unique names to copied files with duplicate names
@@ -198,6 +199,12 @@ class WriteXML:
             self.file_tabs.append(0)
             self.file_stack.append([])
             self.write_header(Files.CAMS, '# Cameras and Render Parameters File')
+
+            self.file_names.append('fragments/%s-volumes.xml' % base_name)
+            self.files.append(open(os.path.join(self.directory, self.file_names[Files.VOLS]), 'w', encoding='utf-8', newline="\n"))
+            self.file_tabs.append(0)
+            self.file_stack.append([])
+            self.write_header(Files.VOLS, '# Volumes File')
 
         self.set_output_file(Files.MAIN)
 
@@ -399,6 +406,8 @@ class WriteXML:
                     elif tag == 'shape':
                         if 'emitter' in value.keys(): # Emitter nested in a shape (area light)
                             self.data_add(key, value, Files.EMIT)
+                        elif 'medium' in value.keys(): # Volume nested in a shape
+                            self.data_add(key, value, Files.VOLS)
                         else:
                             self.data_add(key ,value, Files.GEOM)
                     elif tag == 'bsdf':
@@ -424,7 +433,6 @@ class WriteXML:
             self.scene_data[Files.MAIN].update(self.scene_data[Files.MATS])
 
         self.add_comment("Emitters")
-
         if self.split_files:
             self.add_include(Files.EMIT)
         else:
@@ -435,6 +443,12 @@ class WriteXML:
             self.add_include(Files.GEOM)
         else:
             self.scene_data[Files.MAIN].update(self.scene_data[Files.GEOM])
+
+        self.add_comment("Volumes")
+        if self.split_files:
+            self.add_include(Files.VOLS)
+        else:
+            self.scene_data[Files.MAIN].update(self.scene_data[Files.VOLS])
 
         self.set_output_file(Files.MAIN)
 
@@ -562,10 +576,12 @@ class WriteXML:
                             raise ValueError("Id: %s is already used!" % args['id'])
                         self.exported_ids.add(args['id'])
                     if len(value) > 0: # Open a tag if there is still stuff to write
+                        args['name'] = key
                         self.open_element(tag, args)
                         self.write_dict(value)
                         self.close_element()
                     else:
+                        args['name'] = key
                         self.element(tag, args) # Write dict in one line (e.g. integrator)
                 else:
                     if value_type == 'ref':
@@ -621,7 +637,7 @@ class WriteXML:
         '''
         self.preprocess_scene(scene_dict) # Re order elements
         if self.split_files:
-            for file in [Files.MAIN, Files.CAMS, Files.MATS, Files.GEOM, Files.EMIT]:
+            for file in [Files.MAIN, Files.CAMS, Files.MATS, Files.GEOM, Files.EMIT, Files.VOLS]:
                 self.set_output_file(file)
                 self.write_dict(self.scene_data[file])
         else:
