@@ -12,10 +12,24 @@
 #include <drjit/texture.h>
 #include <drjit/struct.h>
 #include <mutex>
-
 #include "mipmap.h"
 
 NAMESPACE_BEGIN(mitsuba)
+
+#define MI_MIPMAP_LUT_SIZE 128
+
+/// Specifies the desired antialiasing filter
+enum MIPFilterType {
+    /// No filtering, nearest neighbor lookups
+    Nearest = 0,
+    /// No filtering, only bilinear interpolation
+    Bilinear = 1,
+    /// Basic trilinear filtering
+    Trilinear = 2,
+    /// Elliptically weighted average
+    EWA = 3
+};
+
 
 template <typename Float, typename Spectrum>
 class MIPMapTexture final : public Texture<Float, Spectrum> {
@@ -28,7 +42,9 @@ public:
     using DInt = dr::replace_scalar_t<DFloat, int64_t>;
     using DUInt2 = dr::Array<DUInt, 2>;
     using DInt2 = dr::Array<DInt, 2>;
-    using MIPMap2f = MIPMap<Float, 2>;
+
+    using TexPtr = dr::replace_scalar_t<Float, const MiTextureHolder<Float, Spectrum> *>;
+    using texWrapper = drTexWrapper<Float, Spectrum>;
 
 
     MIPMapTexture(const Properties &props) : Texture(props) {
@@ -69,12 +85,15 @@ public:
         std::string wrap_mode_str = props.string("wrap_mode", "repeat");
         if (wrap_mode_str == "repeat"){
             m_wrap_mode = dr::WrapMode::Repeat;
+            m_boundary_cond = FilterBoundaryCondition::Repeat;
         }
         else if (wrap_mode_str == "mirror"){
             m_wrap_mode = dr::WrapMode::Mirror;
+            m_boundary_cond = FilterBoundaryCondition::Mirror;
         }
         else if (wrap_mode_str == "clamp"){
             m_wrap_mode = dr::WrapMode::Clamp;
+            m_boundary_cond = FilterBoundaryCondition::Clamp;
         }
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
@@ -202,8 +221,7 @@ public:
         //     m_maxAnisotropy = 16;
         // }
 
-        // Get resample filter. Default boundary condition is Clamp
-        m_boundary_cond = FilterBoundaryCondition::Clamp;
+        // Get resample filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
         Properties rfilterProps("lanczos");
         rfilterProps.set_int("lobes", 2);
@@ -219,8 +237,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("tensor",  test_tensor, +ParamFlags::Differentiable);
-        callback->put_parameter("pyramid",  m_pyramid.tensor(), +ParamFlags::Differentiable);
+        callback->put_parameter("test_tensor",  test_tensor, +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
     }
 
@@ -644,6 +661,8 @@ protected:
         dr::masked(duv1, isSkinny) = duv1 * majorRadius / (minorRadius * m_maxAnisotropy);
         dr::masked(minorRadius, isSkinny) = majorRadius / m_maxAnisotropy;
 
+
+
         // Trilinear level
         Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(duv0[0], duv1[0]), dr::maximum(duv0[1], duv1[1])), dr::Epsilon<Float>));
         // EWA level select
@@ -675,14 +694,29 @@ protected:
         out = c_tmp;
 
         // For level >= 0
-        m_pyramid.eval(uv, &c_lower, lower, active);
-        m_pyramid.eval(uv, &c_upper, lower+1, active);
+        for(int i = 1; i<m_levels; i++){
+            if (m_accel){
+                dr::masked(c_lower, dr::eq(i-1, lower) & active & !isZero) = c_tmp;
+
+                m_pyramid[i].eval(uv, &c_tmp, active);
+                dr::masked(c_upper, dr::eq(i-1, lower) & active & !isZero) = c_tmp;
+            }
+            else{
+                dr::masked(c_lower, dr::eq(i-1, lower) & active & !isZero) = c_tmp;
+
+                m_pyramid[i].eval_nonaccel(uv, &c_tmp, active);
+                dr::masked(c_upper, dr::eq(i-1, lower) & active & !isZero) = c_tmp;
+            }
+        }
 
         // Deal with level < 0
-        dr::masked(out, active & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
+        dr::masked(out, active & isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
+
+        // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
+        dr::masked(out, active & !isTri & !isZero)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // Now c_tmp is evaluated at m_pyramid[m_levels-1]. Deal with level >= m_levels-1
-        // dr::masked(out, active & isTri & !isZero & isInf) = c_tmp;
+        dr::masked(out, active & isTri & !isZero & isInf) = c_tmp;
 
 
         // EWA
@@ -820,7 +854,7 @@ protected:
         Mask isInf = !dr::isfinite(uv.x()+uv.y());
         // TODO: this eval should be box but not bilinear: use eval_fetch, how to handle the 4 value?? 
         // TODO: if accel
-        // m_pyramid[m_levels-1].eval_fetch(uv, fetch_values, level >= m_levels & active);
+        m_pyramid[m_levels-1].eval_fetch(uv, fetch_values, level >= m_levels & active);
         dr::masked(out, level >= m_levels & active & !isInf)  = f00;
 
         Float denominator = 0.0f;
@@ -898,7 +932,7 @@ protected:
                     UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
                     Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
                     Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    // m_pyramid[i].eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, dr::eq(level, i) & active2);
+                    m_pyramid[i].eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, dr::eq(level, i) & active2);
                     // TODO: fetch which texel!!
                     dr::masked(out, dr::eq(level, i) & active2) += c_tmp * weight;
                     dr::masked(denominator, dr::eq(i, level) & active2) += weight;
@@ -922,68 +956,58 @@ protected:
     }
 
     void build_pyramid(){
-        ScalarVector2u size = ScalarVector2u(m_bitmap->size());
-        size_t total_cols = size.x(),
-               total_rows = size.y();
         // Get #levels
         m_levels = 1;
         if (m_mipmap != MIPFilterType::Nearest && m_mipmap != MIPFilterType::Bilinear){
+            ScalarVector2u size = ScalarVector2u(m_bitmap->size());
             while(size.x() > 1 || size.y() > 1){
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
-                total_rows += size.y();
                 ++m_levels;
             }
         }
-        else{
-            return;
-        }
 
         // Allocate pyramid
-        size_t shape[3] = { total_rows, total_cols, m_bitmap->channel_count() };
-        TensorXf pyramid = TensorXf(dr::zeros<DFloat>(total_rows * total_cols * m_bitmap->channel_count()), 3, shape);
+        // TODO: will "init_" cause memory leak? delete manually?
+        delete[] m_pyramid.data();
+        m_pyramid.init_(m_levels);
         m_res.resize(m_levels);
         m_sizeRatio.resize(m_levels);
+        m_aaa.resize(m_levels, nullptr);
         size_t channels = m_bitmap->channel_count();
 
         // Initialize level 0
         m_res[0] = ScalarVector2u(m_bitmap->size().y(), m_bitmap->size().x()); // [height, width]
         m_sizeRatio[0] = ScalarVector2u(1, 1);
 
-        DFloat curr = m_texture.value();
-        auto [y, x] = dr::meshgrid(dr::arange<DInt>(m_res[0][1]  * channels), dr::arange<DInt>(m_res[0][0]));
+        size_t shape[3] = { (size_t) m_res[0].x(), (size_t) m_res[0].y(), channels };
+        m_pyramid[0] = Texture2f(m_texture.tensor(), m_accel, m_accel, m_filter_mode, m_wrap_mode);
+        TensorXf curr = m_pyramid[0].tensor();
+        m_aaa[0] = new texWrapper(0);
 
-        DInt idx = x * m_res[0].y() * channels + y;
-        dr::scatter(pyramid.array(), curr, idx);
-
-        int curr_height = m_res[0].x();
-
+        // TODO: Use a big TensorXf
         // Downsample until 1x1
         if (m_mipmap != MIPFilterType::Nearest && m_mipmap != MIPFilterType::Bilinear){
             ScalarVector2u size = m_res[0];
             m_levels = 1;
             while (size.x() > 1 || size.y() > 1) {
                 /* Compute the size of the next downsampled layer */
-                ScalarVector2u src_res(size);
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
                 m_res[m_levels] = size;
 
                 // Resample to be new size; set the minimum value to zero
-                // TODO: return array but not tensor which is useless
-                curr = down_sample(curr, size, src_res, channels);
+                curr = down_sample(curr, size, channels);
 
-                auto [y, x] = dr::meshgrid(dr::arange<DInt>(size[1]  * channels), dr::arange<DInt>(size[0]));
-                DInt idx = (x + curr_height) * m_res[0].y() * channels + y;
-                dr::scatter(pyramid.array(), curr, idx);
+                m_pyramid[m_levels] = Texture2f(curr, m_accel, m_accel, m_filter_mode, m_wrap_mode);
 
+                m_aaa[m_levels] = new texWrapper(m_levels);
                 m_sizeRatio[m_levels] = ScalarVector2f(
                     (ScalarFloat) size.x() / (ScalarFloat) m_res[0].x(),
                     (ScalarFloat) size.y() / (ScalarFloat) m_res[0].y()
                 );
 
                 ++m_levels;
-                curr_height += size.x();
             }            
         }
 
@@ -992,15 +1016,16 @@ protected:
             ScalarFloat r2 = (ScalarFloat) i / (ScalarFloat) (MI_MIPMAP_LUT_SIZE-1);
             m_weightLut[i] = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
         }
-        m_pyramid = MIPMap2f(TensorXf(pyramid), m_res, m_accel, m_accel, m_filter_mode, m_wrap_mode);
-
-        test_tensor = TensorXf(pyramid);
 
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
+        test = dr::load<DynamicBuffer<TexPtr>>(m_aaa.data(), m_aaa.size());
+        TexPtr test_1 = dr::gather<TexPtr>(test, 0);
+        test->eval();
         std::cin.get();
     }
 
-    DFloat down_sample(DFloat curr, ScalarVector2u dst_res, ScalarVector2u src_res, int channel){
+    TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
+        ScalarVector2u src_res(curr.shape()[0], curr.shape()[1]);
         ScalarFloat filterRadius = m_rfilter->radius();
 
         /**********************************  ALONG HEIGHT *************************************/
@@ -1082,7 +1107,7 @@ protected:
 
             // get the index in src
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
-            dst_array += dr::gather<DFloat>(curr, index + ch) * weights[i];
+            dst_array += dr::gather<DFloat>(curr.array(), index + ch) * weights[i];
         }
 
         /**********************************  ALONG WIDTH *************************************/
@@ -1173,8 +1198,7 @@ protected:
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
             dst += dr::gather<DFloat>(dst_array, index + ch) * weights[i];
         }
-
-        // std::cout<<"----------------------------------------- downsampling pass test ----------------------------------------------"<<std::endl;
+        // std::cout<<"----------------------------------------- downsampling pass ----------------------------------------------"<<std::endl;
         // for(int i = 0; i<dst_res[0]; i++){
         //     for(int j = 0; j<dst_res[1]; j++){
         //         std::cout<<dst[i * dst_res[1] + j]<<" ";
@@ -1182,6 +1206,7 @@ protected:
         //     std::cout<<std::endl;
         // }
 
+        // return tensor
         size_t shape[3] = {dst_res[0], dst_res[1], (size_t)channel};
         return TensorXf(dst, 3, shape);
     }
@@ -1189,7 +1214,6 @@ protected:
 protected:
     TensorXf test_tensor;
     Texture2f m_texture;
-    MIPMap2f m_pyramid;
     ScalarTransform3f m_transform;
     bool m_accel;
     bool m_raw;
@@ -1209,7 +1233,8 @@ protected:
 
     // Mipmap info
     MIPFilterType m_mipmap;
-    std::vector<dr::Array<uint32_t, 2>> m_res;
+    dr::DynamicArray<Texture2f> m_pyramid;
+    std::vector<ScalarVector2u> m_res;
     int m_levels;
 
     // For anisotropic filter
@@ -1217,6 +1242,9 @@ protected:
     // TODO: use weight loop up table but not computing every time
     std::vector<ScalarFloat> m_weightLut;
     std::vector<ScalarVector2f> m_sizeRatio;
+
+    std::vector<TexPtr> m_aaa;
+    DynamicBuffer<TexPtr> test;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(MIPMapTexture, Texture)
