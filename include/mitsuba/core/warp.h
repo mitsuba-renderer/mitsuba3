@@ -199,7 +199,7 @@ Value interval_to_tent(Value sample) {
     return dr::copysign(1.f - dr::safe_sqrt(dr::fmadd(dr::abs(sample), -2.f, 1.f)), sample);
 }
 
-/// Warp a uniformly distributed sample on [0, 1] to a tent distribution
+/// Warp a tent distribution to a uniformly distributed sample on [0, 1]
 template <typename Value>
 Value tent_to_interval(const Value &value) {
     return 0.5f * (1.f + value * (2.f - dr::abs(value)));
