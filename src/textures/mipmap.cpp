@@ -129,7 +129,7 @@ public:
             m_bitmap->set_srgb_gamma(false);
         }
 
-        m_accel = props.get<bool>("accel", true);
+        m_accel = props.get<bool>("accel", false);
 
         // Convert the image into the working floating point representation
         m_bitmap =
@@ -223,8 +223,8 @@ public:
 
         // Get resample filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
-        Properties rfilterProps("lanczos");
-        rfilterProps.set_int("lobes", 2);
+        Properties rfilterProps("box");
+        // rfilterProps.set_int("lobes", 2);
         m_rfilter = static_cast<ReconstructionFilter *> (
             PluginManager::instance()->create_object<ReconstructionFilter>(rfilterProps));
 
@@ -237,8 +237,8 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("test_tensor",  test_tensor, +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
+        callback->put_parameter("test", test, +ParamFlags::Differentiable);
     }
 
     void
@@ -609,6 +609,7 @@ protected:
      */
     MI_INLINE Float interpolate_1(const SurfaceInteraction3f &si,
                                    Mask active) const {
+
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
@@ -674,37 +675,30 @@ protected:
 
         // Clamp
         lower = dr::clamp(lower, 0, m_levels-1);
-        upper = dr::clamp(lower, 0, m_levels-1);
-
+        upper = dr::clamp(upper, 0, m_levels-1);
 
         // std::cout<<minorRadius/1024<<std::endl;
         
-        Mask isBilinear = !isTri; // majorRadius < 1 | 
-
-        Float c_lower = 0;
-        Float c_upper = 0;
-        Float c_tmp = 0;
+        // Mask isBilinear = !isTri;
 
         // For each level
         TexPtr texture_l = dr::gather<TexPtr>(m_pyramid, lower, active);
         TexPtr texture_u = dr::gather<TexPtr>(m_pyramid, upper, active);
-
-        texture_l->eval(uv, &c_lower, active);
-        texture_u->eval(uv, &c_upper, active);
+        
+        Float c_lower = texture_l->eval(uv, active);
+        Float c_upper = texture_u->eval(uv, active);
 
         // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
         dr::masked(out, active)  = c_upper * alpha + c_lower * (1.f - alpha);
 
-
         // EWA
-        if (m_mipmap == MIPFilterType::EWA && dr::grad_enabled(out)) {
+        if (m_mipmap == MIPFilterType::EWA) {
         // TODO: Optimize to one call
-            Float out_copy = Float(out) + 0.f;
-            dr::masked(out, active & !isTri) = evalEWA(lower+1, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
+            Float out_copy = Float(out);
+            dr::masked(out, active & !isTri) = evalEWA(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
             // replace AD
             if constexpr (dr::is_diff_v<Float>){
-                std::cout<<"???"<<std::endl;
-                // out = dr::replace_grad(out, out_copy);
+                out = dr::replace_grad(out, out_copy);
             }
         }
 
@@ -721,19 +715,17 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
+        // Point2f uv = m_transform.transform_affine(si.uv);
+        // const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-        // Get correctly transformed duv/dxy. TODO: Optimization?
-        const ScalarMatrix3f uv_tm = m_transform.matrix;
-
-        Vector2f duv_dx = dr::abs(Vector2f{
-            uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
-            uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
-        });
-        Vector2f duv_dy = dr::abs(Vector2f{
-            uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
-            uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
-        });            
+        // Vector2f duv_dx = dr::abs(Vector2f{
+        //     uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+        //     uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+        // });
+        // Vector2f duv_dy = dr::abs(Vector2f{
+        //     uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+        //     uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+        // });            
 
         Color3f out;
         return out;
@@ -818,7 +810,6 @@ protected:
         }
     }
 
-
     Float evalEWA(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
         Float f00, f10, f01, f11;
         dr::Array<Float *, 4> fetch_values;
@@ -831,15 +822,15 @@ protected:
         Mask isInf = !dr::isfinite(uv.x()+uv.y());
         // TODO: this eval should be box but not bilinear: use eval_fetch, how to handle the 4 value?? 
         // TODO: if accel
-        m_textures[m_levels-1]->eval_fetch(uv, fetch_values, level >= m_levels & active);
+        m_textures[m_levels-1]->eval_fetch(uv, fetch_values, (level >= m_levels) & active);
         dr::masked(out, (level >= m_levels) & active & !isInf)  = f00;
 
         Float denominator = 0.0f;
-        Int32 nSamples = 0;
-
         
         /* Convert to fractional pixel coordinates on the specified level */
-        const Vector2u &size = dr::gather<Vector2u>(m_res, level);
+        const Vector2u &size = dr::gather<Vector2u>(m_res_dr, level);
+        TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+        
         Float u = uv.x() * size.x() - 0.5f;
         Float v = uv.y() * size.y() - 0.5f;
 
@@ -892,7 +883,7 @@ protected:
         Int32 vt = dr::minimum(v0, (Int32)v);         
         Mask active1(active);   
         dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, c_tmp, active1);
-        TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+
         while(loop_v(active1)){
             Mask active2(active1);
             const Float vv = vt - v;
@@ -909,9 +900,10 @@ protected:
                 UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
                 Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
                 Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                // texture->eval({Float(ut)/size.x(), Float(vt)/size.y()}, &c_tmp, active2);
+                dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+                Float a = texture->eval(curr_uv, active2);
                 // TODO: fetch which texel!!
-                dr::masked(out, active2) += c_tmp * weight;
+                dr::masked(out, active2) += a * weight;
                 dr::masked(denominator, active2) += weight;
                 // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
                 // std::cout<<out<<std::endl;
@@ -922,7 +914,6 @@ protected:
             vt++;
             active1 &= vt <= v1;
         }
-        // std::cin.get();
 
         Mask isZero = dr::eq(denominator, 0);
         dr::masked(out, !isZero) = out / denominator; 
@@ -942,61 +933,65 @@ protected:
                 ++m_levels;
             }
         }
+        else{
+            return;
+        }
 
         // Allocate pyramid
-        // TODO: will "init_" cause memory leak? delete manually?
-        std::vector<ScalarVector2u> res(m_levels);
+        m_res.resize(m_levels);
         m_sizeRatio.resize(m_levels);
         m_textures.resize(m_levels, nullptr);
         size_t channels = m_bitmap->channel_count();
 
         // Initialize level 0
-        res[0] = ScalarVector2u(m_bitmap->size().y(), m_bitmap->size().x()); // [height, width]
+        m_res[0] = ScalarVector2u(m_bitmap->size().y(), m_bitmap->size().x()); // [height, width]
         m_sizeRatio[0] = ScalarVector2u(1, 1);
-
-        size_t shape[3] = { (size_t) res[0].x(), (size_t) res[0].y(), channels };
         m_textures[0] = new texWrapper(m_texture.tensor(), m_accel, m_accel, m_filter_mode, m_wrap_mode);
+
         TensorXf curr = m_textures[0]->tensor();
 
-        // TODO: Use a big TensorXf
         // Downsample until 1x1
         if (m_mipmap != MIPFilterType::Nearest && m_mipmap != MIPFilterType::Bilinear){
-            ScalarVector2u size = res[0];
+            ScalarVector2u size = m_res[0];
             m_levels = 1;
             while (size.x() > 1 || size.y() > 1) {
                 /* Compute the size of the next downsampled layer */
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
-                res[m_levels] = size;
+                m_res[m_levels] = size;
 
                 // Resample to be new size; set the minimum value to zero
                 curr = down_sample(curr, size, channels);
-
                 m_textures[m_levels] = new texWrapper(curr, m_accel, m_accel, m_filter_mode, m_wrap_mode);
 
                 m_sizeRatio[m_levels] = ScalarVector2f(
-                    (ScalarFloat) size.x() / (ScalarFloat) res[0].x(),
-                    (ScalarFloat) size.y() / (ScalarFloat) res[0].y()
+                    (ScalarFloat) size.x() / (ScalarFloat) m_res[0].x(),
+                    (ScalarFloat) size.y() / (ScalarFloat) m_res[0].y()
                 );
 
                 ++m_levels;
             }            
         }
 
+        // Get EWA look-up table
         m_weightLut.resize(MI_MIPMAP_LUT_SIZE);
         for (int i=0; i<MI_MIPMAP_LUT_SIZE; ++i) {
             ScalarFloat r2 = (ScalarFloat) i / (ScalarFloat) (MI_MIPMAP_LUT_SIZE-1);
             m_weightLut[i] = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
         }
 
+        // Get texture ptr
         m_pyramid = dr::load<DynamicBuffer<TexPtr>>(m_textures.data(), m_textures.size());
-        m_res = dr::load<DynamicBuffer<Vector2u>>(res.data(), res.size());
+        m_res_dr = dr::load<DynamicBuffer<Vector2u>>(m_res.data(), m_res.size() * 2);
 
         /**************** TEST VCALL *****************/ 
-        auto tmp = dr::gather<TexPtr>(m_pyramid, dr::arange<UInt32>(m_textures.size()));
-        std::cout<<tmp->test()<<std::endl;
+        auto tmp = dr::gather<TexPtr>(m_pyramid, dr::arange<UInt32>(5));
+        test = tmp->test(2);
+        std::cout<<test<<std::endl;
 
+        /**********************************************/ 
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
+        std::cin.get();
     }
 
     TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
@@ -1022,13 +1017,13 @@ protected:
         weights.init_(taps);
         auto [cc, r] = dr::meshgrid(dr::arange<DInt>(src_res[1] * channel), dr::arange<DInt>(dst_res[0]));
         for(int i = 0; i<taps; i++){
-            for(int j = 0; j<dst_res[0]; j++){
+            for(uint j = 0; j<dst_res[0]; j++){
                 /* Compute the the position where the filter should be evaluated */
                 ScalarFloat center_j = (j + 0.5f) * scale;
                 int64_t start_j = dr::floor2int<int64_t>(center_j - filterRadius + 0.5f);
                 ScalarFloat pos_j = start_j + i + 0.5f - center_j;
                 ScalarFloat weight_j = m_rfilter->eval(pos_j * invScale);
-                for(int k = 0; k < src_res[1] * channel; k++){
+                for(uint k = 0; k < src_res[1] * channel; k++){
                     weight_buffer[j * src_res[1] * channel + k] = weight_j; 
                 }
             }
@@ -1045,7 +1040,7 @@ protected:
         }
 
         // Normalise weights
-        for (unsigned i = 0; i < taps; i++) {
+        for (int i = 0; i < taps; i++) {
             weights[i] = weights[i] / sum;
         }
 
@@ -1106,15 +1101,15 @@ protected:
         cc = tmp.first;
         r = tmp.second;
         for(int i = 0; i<taps; i++){
-            for(int j = 0; j<dst_res[1]; j++){
+            for(uint j = 0; j<dst_res[1]; j++){
                 /* Compute the the position where the filter should be evaluated */
                 ScalarFloat center_j = (j + 0.5f) * scale;
                 int64_t start_j = dr::floor2int<int64_t>(center_j - filterRadius + 0.5f);
                 ScalarFloat pos_j = start_j + i + 0.5f - center_j;
                 ScalarFloat weight_j = m_rfilter->eval(pos_j * invScale); 
-                for(int k = 0; k < dst_res[0] * channel; k++){
-                    int r = k / channel;
-                    int ch = k % channel;
+                for(uint k = 0; k < dst_res[0] * channel; k++){
+                    uint r = k / channel;
+                    uint ch = k % channel;
                     weight_buffer[(r * dst_res[1] + j) * channel + ch] = weight_j;
                 }
             }
@@ -1134,7 +1129,7 @@ protected:
         }
 
         // Normalise weights
-        for (unsigned i = 0; i < taps; i++) {
+        for (int i = 0; i < taps; i++) {
             weights[i] = weights[i] / sum;
         }
 
@@ -1173,13 +1168,13 @@ protected:
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
             dst += dr::gather<DFloat>(dst_array, index + ch) * weights[i];
         }
-        std::cout<<"----------------------------------------- downsampling pass ----------------------------------------------"<<std::endl;
-        for(int i = 0; i<dst_res[0]; i++){
-            for(int j = 0; j<dst_res[1]; j++){
-                std::cout<<dst[i * dst_res[1] + j]<<" ";
-            }
-            std::cout<<std::endl;
-        }
+        // std::cout<<"----------------------------------------- downsampling pass ----------------------------------------------"<<std::endl;
+        // for(int i = 0; i<dst_res[0]; i++){
+        //     for(int j = 0; j<dst_res[1]; j++){
+        //         std::cout<<dst[i * dst_res[1] + j]<<" ";
+        //     }
+        //     std::cout<<std::endl;
+        // }
 
         // return tensor
         size_t shape[3] = {dst_res[0], dst_res[1], (size_t)channel};
@@ -1187,7 +1182,7 @@ protected:
     }
     
 protected:
-    TensorXf test_tensor;
+    Float test;
     Texture2f m_texture;
     ScalarTransform3f m_transform;
     bool m_accel;
@@ -1208,7 +1203,8 @@ protected:
 
     // Mipmap info
     MIPFilterType m_mipmap;
-    DynamicBuffer<Vector2u> m_res;
+    std::vector<ScalarVector2u> m_res;
+    DynamicBuffer<Vector2u> m_res_dr;
     int m_levels;
     std::vector<ref<MiTextureHolder<Float, Spectrum>>> m_textures;
     DynamicBuffer<TexPtr> m_pyramid;

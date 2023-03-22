@@ -16,8 +16,8 @@ class MiTextureHolder: public Object {
 public:
     MI_IMPORT_TYPES()
     MiTextureHolder() = default;
-    virtual int test() const = 0;
-    virtual void eval(const dr::Array<Float, 2> &pos, Float *out, Mask active = true) const = 0;
+    virtual int test(int i) const = 0;
+    virtual Float eval(const dr::Array<Float, 2> &pos, Mask active = true) const = 0;
     virtual const TensorXf &tensor() const = 0;
     virtual void eval_fetch(const dr::Array<Float, 2> &pos,
                         dr::Array<Float *, 1 << 2> &out,
@@ -31,15 +31,16 @@ public:
     MI_IMPORT_BASE(MiTextureHolder)
     MI_IMPORT_TYPES()
 
-    drTexWrapper(const TensorXf &tensor, bool use_accel = true, bool migrate = true,
-                dr::FilterMode filter_mode = dr::FilterMode::Linear,
-                dr::WrapMode wrap_mode = dr::WrapMode::Clamp)
-                :m_tex{tensor, use_accel, use_accel, filter_mode, wrap_mode} { }
-    int test() const override {
-        return 3;
+    drTexWrapper(const TensorXf &tensor, bool use_accel = true, bool migrate = true, dr::FilterMode filter_mode = dr::FilterMode::Linear, dr::WrapMode wrap_mode = dr::WrapMode::Clamp):
+        m_tex{tensor, use_accel, migrate, filter_mode, wrap_mode} { }
+
+    int test(int i) const override {
+        return i;
     }
-    void eval(const dr::Array<Float, 2> &pos, Float *out, Mask active = true) const override {
-        m_tex.eval(pos, out, active);
+    Float eval(const dr::Array<Float, 2> &pos, Mask active = true) const override {
+        Float tmp = 0;
+        m_tex.eval(pos, &tmp, active);
+        return tmp;
     }
     const TensorXf &tensor() const override {
         return m_tex.tensor();
@@ -48,7 +49,6 @@ public:
                             dr::Array<Float *, 1 << 2> &out,
                             Mask active = true) const override{
         m_tex.eval_fetch(pos, out, active);
-
     }
 
 private:
