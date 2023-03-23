@@ -25,10 +25,18 @@ NAMESPACE_BEGIN(mitsuba)
 //     DRJIT_VCALL_REGISTER(Float, mitsuba::MiTextureHolder)
 // };
 
-template <typename Float, typename Spectrum>
+template <typename Float>
 class drTexWrapper: public Object {
 public:
-    MI_IMPORT_TYPES()
+    static constexpr bool IsCUDA = dr::is_cuda_v<Float>;
+    static constexpr bool IsDiff = dr::is_diff_v<Float>;
+    static constexpr bool IsDynamic = dr::is_dynamic_v<Float>;
+    using Int32 = dr::int32_array_t<Float>;
+    using UInt32 = dr::uint32_array_t<Float>;
+    using Mask = dr::mask_t<Float>;
+    using ArrayX = dr::DynamicArray<Float>;
+    using Storage = std::conditional_t<IsDynamic, Float, dr::DynamicArray<Float>>;
+    using TensorXf = dr::Tensor<Storage>;
 
     drTexWrapper(const TensorXf &tensor, bool use_accel = true, bool migrate = true, dr::FilterMode filter_mode = dr::FilterMode::Linear, dr::WrapMode wrap_mode = dr::WrapMode::Clamp):
         m_tex{tensor, use_accel, migrate, filter_mode, wrap_mode} { }
@@ -56,13 +64,11 @@ public:
     }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::drTexWrapper)
-    MI_DECLARE_CLASS()
 
 private:
     dr::Texture<Float, 2> m_tex;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(drTexWrapper, Object)
 NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::drTexWrapper)

@@ -43,8 +43,8 @@ public:
     using DUInt2 = dr::Array<DUInt, 2>;
     using DInt2 = dr::Array<DInt, 2>;
 
-    using TexPtr = dr::replace_scalar_t<Float, const drTexWrapper<Float, Spectrum> *>;
-    using texWrapper = drTexWrapper<Float, Spectrum>;
+    using TexPtr = dr::replace_scalar_t<Float, const drTexWrapper<Float> *>;
+    using texWrapper = drTexWrapper<Float>;
 
 
     MIPMapTexture(const Properties &props) : Texture(props) {
@@ -1207,7 +1207,7 @@ protected:
     std::vector<ScalarVector2u> m_res;
     DynamicBuffer<Vector2u> m_res_dr;
     int m_levels;
-    std::vector<ref<drTexWrapper<Float, Spectrum>>> m_textures;
+    std::vector<ref<drTexWrapper<Float>>> m_textures;
     DynamicBuffer<TexPtr> m_pyramid;
 
     // For anisotropic filter
