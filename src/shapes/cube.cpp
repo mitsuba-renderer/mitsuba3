@@ -12,11 +12,17 @@ Cube (:monosp:`cube`)
 -------------------------
 
 .. pluginparameters::
+ :extra-rows: 2
 
  * - flip_normals
    - |bool|
    - Is the cube inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none (i.e. object space = world space))
 
  * - vertex_count
    - |int|
@@ -52,16 +58,6 @@ Cube (:monosp:`cube`)
    - :paramtype:`float[]`
    - Mesh attribute buffer (flatten)
    - |exposed|, |differentiable|
-
- * - (Mesh attribute)
-   - :paramtype:`float[]`
-   - Mesh attribute buffer (flatten)
-   - |exposed|, |differentiable|
-
- * - to_world
-   - |transform|
-   - Specifies an optional linear object-to-world transformation.
-     (Default: none (i.e. object space = world space))
 
 This shape plugin describes a cube intersection primitive, based on the triangle
 mesh class.  By default, it creates a cube between the world-space positions
