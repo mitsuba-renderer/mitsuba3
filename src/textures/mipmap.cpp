@@ -43,7 +43,7 @@ public:
     using DUInt2 = dr::Array<DUInt, 2>;
     using DInt2 = dr::Array<DInt, 2>;
 
-    using TexPtr = dr::replace_scalar_t<Float, const MiTextureHolder<Float, Spectrum> *>;
+    using TexPtr = dr::replace_scalar_t<Float, const drTexWrapper<Float, Spectrum> *>;
     using texWrapper = drTexWrapper<Float, Spectrum>;
 
 
@@ -223,8 +223,8 @@ public:
 
         // Get resample filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
-        Properties rfilterProps("box");
-        // rfilterProps.set_int("lobes", 2);
+        Properties rfilterProps("lanczos");
+        rfilterProps.set_int("lobes", 2);
         m_rfilter = static_cast<ReconstructionFilter *> (
             PluginManager::instance()->create_object<ReconstructionFilter>(rfilterProps));
 
@@ -234,6 +234,7 @@ public:
 
         build_pyramid();
     }
+
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
@@ -882,14 +883,14 @@ protected:
         // std::cout<<u0<<" "<<u1<<"  "<<v0<<" "<<v1<<std::endl;
         Int32 vt = dr::minimum(v0, (Int32)v);         
         Mask active1(active);   
-        dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, c_tmp, active1);
+        dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, active1);
 
         while(loop_v(active1)){
             Mask active2(active1);
             const Float vv = vt - v;
 
             Int32 ut = dr::minimum(u0, (Int32)u);
-            dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, c_tmp, active2);
+            dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
             while(loop_u(active2)){
                 const Float uu = ut - u;
 
@@ -901,9 +902,9 @@ protected:
                 Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
                 Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
                 dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
-                Float a = texture->eval(curr_uv, active2);
+                Float tmp = texture->eval(curr_uv, active2);
                 // TODO: fetch which texel!!
-                dr::masked(out, active2) += a * weight;
+                dr::masked(out, active2) += tmp * weight;
                 dr::masked(denominator, active2) += weight;
                 // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
                 // std::cout<<out<<std::endl;
@@ -986,12 +987,11 @@ protected:
 
         /**************** TEST VCALL *****************/ 
         auto tmp = dr::gather<TexPtr>(m_pyramid, dr::arange<UInt32>(5));
-        test = tmp->test(2);
+        test = tmp->test();
         std::cout<<test<<std::endl;
 
         /**********************************************/ 
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
-        std::cin.get();
     }
 
     TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
@@ -1178,6 +1178,7 @@ protected:
 
         // return tensor
         size_t shape[3] = {dst_res[0], dst_res[1], (size_t)channel};
+        dst = dr::clamp(dst, 0, dr::Infinity<mitsuba::DynamicBuffer<Float>>);
         return TensorXf(dst, 3, shape);
     }
     
@@ -1206,7 +1207,7 @@ protected:
     std::vector<ScalarVector2u> m_res;
     DynamicBuffer<Vector2u> m_res_dr;
     int m_levels;
-    std::vector<ref<MiTextureHolder<Float, Spectrum>>> m_textures;
+    std::vector<ref<drTexWrapper<Float, Spectrum>>> m_textures;
     DynamicBuffer<TexPtr> m_pyramid;
 
     // For anisotropic filter
