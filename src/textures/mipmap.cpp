@@ -85,15 +85,12 @@ public:
         std::string wrap_mode_str = props.string("wrap_mode", "repeat");
         if (wrap_mode_str == "repeat"){
             m_wrap_mode = dr::WrapMode::Repeat;
-            m_boundary_cond = FilterBoundaryCondition::Repeat;
         }
         else if (wrap_mode_str == "mirror"){
             m_wrap_mode = dr::WrapMode::Mirror;
-            m_boundary_cond = FilterBoundaryCondition::Mirror;
         }
         else if (wrap_mode_str == "clamp"){
             m_wrap_mode = dr::WrapMode::Clamp;
-            m_boundary_cond = FilterBoundaryCondition::Clamp;
         }
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
@@ -223,6 +220,7 @@ public:
 
         // Get resample filter
         using ReconstructionFilter = Bitmap::ReconstructionFilter;
+        m_boundary_cond = FilterBoundaryCondition::Clamp;
         Properties rfilterProps("lanczos");
         rfilterProps.set_int("lobes", 2);
         m_rfilter = static_cast<ReconstructionFilter *> (
@@ -240,6 +238,10 @@ public:
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
         callback->put_parameter("test", test, +ParamFlags::Differentiable);
+        callback->put_parameter("t1", t1, +ParamFlags::Differentiable);
+        callback->put_parameter("t2", t2, +ParamFlags::Differentiable);
+        callback->put_parameter("t3", t3, +ParamFlags::Differentiable);
+        callback->put_parameter("t4", t4, +ParamFlags::Differentiable);
     }
 
     void
@@ -694,7 +696,7 @@ protected:
         if (m_mipmap == MIPFilterType::EWA) {
         // TODO: Optimize to one call
             Float out_copy = Float(out);
-            dr::masked(out, active & !isTri) = evalEWA(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
+            dr::masked(out, active & !isTri) = evalEWA_1(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA_1(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
             // // replace AD
             if constexpr (dr::is_diff_v<Float>){
                 out = dr::replace_grad(out, out_copy);
@@ -714,19 +716,82 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        // Point2f uv = m_transform.transform_affine(si.uv);
-        // const ScalarMatrix3f uv_tm = m_transform.matrix;
+        Point2f uv = m_transform.transform_affine(si.uv);
+        const ScalarMatrix3f uv_tm = m_transform.matrix;
 
-        // Vector2f duv_dx = dr::abs(Vector2f{
-        //     uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
-        //     uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
-        // });
-        // Vector2f duv_dy = dr::abs(Vector2f{
-        //     uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
-        //     uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
-        // });            
+        Vector2f duv_dx = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dx.x() + uv_tm.entry(0, 1) * si.duv_dx.y(),
+            uv_tm.entry(1, 0) * si.duv_dx.x() + uv_tm.entry(1, 1) * si.duv_dx.y() 
+        });
+        Vector2f duv_dy = dr::abs(Vector2f{
+            uv_tm.entry(0, 0) * si.duv_dy.x() + uv_tm.entry(0, 1) * si.duv_dy.y(),
+            uv_tm.entry(1, 0) * si.duv_dy.x() + uv_tm.entry(1, 1) * si.duv_dy.y() 
+        });            
 
-        Color3f out;
+        Color3f out = 0;
+
+        if (m_mipmap == MIPFilterType::Nearest || m_mipmap == MIPFilterType::Bilinear){
+            if (m_accel)
+                m_texture.eval(uv, out.data(), active);
+            else
+                m_texture.eval_nonaccel(uv, out.data(), active);
+            return out;         
+        }
+        const ScalarVector2i size = resolution();
+
+        Vector2f duv0(duv_dx.x() * size.x(), duv_dx.y() * size.y());
+        Vector2f duv1(duv_dy.x() * size.x(), duv_dy.y() * size.y());
+        Vector2f tmp(duv0);
+
+        dr::masked(duv0, dr::norm(duv0) < dr::norm(duv1)) = duv1;
+        dr::masked(duv1, dr::norm(tmp) < dr::norm(duv1)) = tmp;
+
+        Float 
+              majorRadius =  dr::norm(duv0),
+              minorRadius =  dr::norm(duv1);
+
+        // If isTri, perform trilinear filter
+        Mask isTri = ((m_mipmap == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
+
+        // EWA info
+        Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
+        dr::masked(duv1, isSkinny) = duv1 * majorRadius / (minorRadius * m_maxAnisotropy);
+        dr::masked(minorRadius, isSkinny) = majorRadius / m_maxAnisotropy;
+
+        // Trilinear level
+        Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(duv0[0], duv1[0]), dr::maximum(duv0[1], duv1[1])), dr::Epsilon<Float>));
+        // EWA level select
+        dr::masked(level, !isTri) = dr::maximum((Float) 0.0f, dr::log2(minorRadius));
+
+        Int32 lower = dr::floor2int<Int32>(level);
+        Float alpha = level - lower;
+        Int32 upper = lower + 1;
+
+        // Clamp
+        lower = dr::clamp(lower, 0, m_levels-1);
+        upper = dr::clamp(upper, 0, m_levels-1);
+        
+        // Mask isBilinear = !isTri;
+
+        // For each level
+        TexPtr texture_l = dr::gather<TexPtr>(m_pyramid, lower, active);
+        TexPtr texture_u = dr::gather<TexPtr>(m_pyramid, upper, active);
+        
+        Color3f c_lower = texture_l->eval_3(uv, active);
+        Color3f c_upper = texture_u->eval_3(uv, active);
+
+        // // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
+        dr::masked(out, active)  = c_upper * alpha + c_lower * (1.f - alpha);
+
+        // EWA
+        if (m_mipmap == MIPFilterType::EWA) {
+            Color3f out_copy = Color3f(out);
+            dr::masked(out, active & !isTri) = evalEWA_3(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA_3(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
+            // replace AD
+            if constexpr (dr::is_diff_v<Float>){
+                out = dr::replace_grad(out, out_copy);
+            }
+        }
         return out;
     }
 
@@ -809,7 +874,7 @@ protected:
         }
     }
 
-    Float evalEWA(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
+    Float evalEWA_1(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
         Float out = 0;
         Float c_tmp = 0;
         Mask isInf = !dr::isfinite(uv.x()+uv.y());
@@ -914,6 +979,11 @@ protected:
         return out;
     }
 
+    Color3f evalEWA_3(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
+        Color3f out = 0;
+        return out;
+    }
+
     void build_pyramid(){
         // Get #levels
         m_levels = 1;
@@ -977,13 +1047,22 @@ protected:
         m_res_dr = dr::load<DynamicBuffer<Vector2u>>(m_res.data(), m_res.size() * 2);
 
         /**************** TEST VCALL *****************/ 
-        auto tmp = dr::gather<TexPtr>(m_pyramid, dr::arange<UInt32>(5));
-        test = tmp->test();
-        std::cout<<test<<std::endl;
+        // auto tmp = dr::gather<TexPtr>(m_pyramid, dr::arange<UInt32>(5));
+        // test = tmp->test();
+        // std::cout<<test<<std::endl;
+
+
+        /**************** TEST DOWNSAMPLING *****************/ 
+        t1 = TensorXf(m_textures[1]->tensor());
+        t2 = TensorXf(m_textures[2]->tensor());
+        t3 = TensorXf(m_textures[3]->tensor());
+        t4 = TensorXf(m_textures[4]->tensor());
 
         /**********************************************/ 
+
         std::cout<<"MIPMAP BUILT SUCCESS"<<std::endl;
     }
+    
 
     TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
         ScalarVector2u src_res(curr.shape()[0], curr.shape()[1]);
@@ -1068,7 +1147,7 @@ protected:
 
             // get the index in src
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
-            dst_array += dr::gather<DFloat>(curr.array(), index + ch) * weights[i];
+            dst_array += dr::gather<DFloat>(curr.array(), index * channel + ch) * weights[i];
         }
 
         /**********************************  ALONG WIDTH *************************************/
@@ -1157,7 +1236,7 @@ protected:
 
             // get the index in src
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
-            dst += dr::gather<DFloat>(dst_array, index + ch) * weights[i];
+            dst += dr::gather<DFloat>(dst_array, index * channel + ch) * weights[i];
         }
         // std::cout<<"----------------------------------------- downsampling pass ----------------------------------------------"<<std::endl;
         // for(int i = 0; i<dst_res[0]; i++){
@@ -1175,6 +1254,11 @@ protected:
     
 protected:
     Float test;
+    TensorXf t1;
+    TensorXf t2;
+    TensorXf t3;
+    TensorXf t4;
+
     Texture2f m_texture;
     ScalarTransform3f m_transform;
     bool m_accel;
