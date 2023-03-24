@@ -10,20 +10,6 @@
 
 
 NAMESPACE_BEGIN(mitsuba)
-#define Dimenstion 2
-// template <typename Float, typename Spectrum>
-// class MiTextureHolder: public Object {
-// public:
-//     MI_IMPORT_TYPES()
-//     MiTextureHolder() = default;
-//     virtual float test() const = 0;
-//     virtual Float eval(const dr::Array<Float, 2> &pos, Mask active = true) const = 0;
-//     virtual const TensorXf &tensor() const = 0;
-//     virtual void eval_fetch(const dr::Array<Float, 2> &pos,
-//                         dr::Array<Float *, 1 << 2> &out,
-//                         Mask active = true) const = 0;
-//     DRJIT_VCALL_REGISTER(Float, mitsuba::MiTextureHolder)
-// };
 
 template <typename Float>
 class drTexWrapper: public Object {
@@ -34,12 +20,19 @@ public:
     using Int32 = dr::int32_array_t<Float>;
     using UInt32 = dr::uint32_array_t<Float>;
     using Mask = dr::mask_t<Float>;
-    using ArrayX = dr::DynamicArray<Float>;
     using Storage = std::conditional_t<IsDynamic, Float, dr::DynamicArray<Float>>;
     using TensorXf = dr::Tensor<Storage>;
+    using Color3f = mitsuba::Color<Float, 3>;
+    using Point2f = mitsuba::Point<Float, 2>;
+    using Vector2f = dr::Array<Float, 2>;
+    using Vector2i = dr::Array<Int32, 2>;
 
     drTexWrapper(const TensorXf &tensor, bool use_accel = true, bool migrate = true, dr::FilterMode filter_mode = dr::FilterMode::Linear, dr::WrapMode wrap_mode = dr::WrapMode::Clamp):
-        m_tex{tensor, use_accel, migrate, filter_mode, wrap_mode} { }
+        m_tex{tensor, use_accel, migrate, filter_mode, wrap_mode} { 
+            const size_t *shape = m_tex.shape();
+            res[0] = shape[1];
+            res[1] = shape[0];
+        }
 
     virtual ~drTexWrapper() { }
 
@@ -47,9 +40,47 @@ public:
         return m_tex.tensor().array()[0];
     }
 
-    virtual Float eval(const dr::Array<Float, 2> &pos, Mask active = true) const {
+    virtual Float eval_1(const dr::Array<Float, 2> &pos, Mask active) const {
         Float tmp = 0;
         m_tex.eval(pos, &tmp, active);
+        return tmp;
+    }
+
+    virtual Float eval_1_box(const dr::Array<Float, 2> &pos, Mask active) const {
+        Float tmp = 0;
+        if (m_tex.filter_mode() == dr::FilterMode::Nearest){
+            m_tex.eval(pos, &tmp, active);
+        }
+        else{
+            // fetch and find the nearest
+            dr::Array<Float *, 4> fetch_values;
+            Float f00, f10, f01, f11;
+            fetch_values[0] = &f00;
+            fetch_values[1] = &f10;
+            fetch_values[2] = &f01;
+            fetch_values[3] = &f11;
+            m_tex.eval_fetch(pos, fetch_values, active);
+            dr::Array<Float, 2> uv = dr::fmadd(pos, res, -.5f);
+            dr::Array<Float, 2> uv_i = dr::floor2int<Vector2i>(uv);
+            Point2f w1 = uv - Point2f(uv_i);
+
+            dr::masked(w1.x(), w1.x() >= 0.5) = 1;
+            dr::masked(w1.x(), w1.x() < 0.5) = 0;
+            dr::masked(w1.y(), w1.y() >= 0.5) = 1;
+            dr::masked(w1.y(), w1.y() < 0.5) = 0;
+
+            Point2f w0 = 1.f - w1;
+
+            Float f0 = dr::fmadd(w0.x(), f00, w1.x() * f10);
+            Float f1 = dr::fmadd(w0.x(), f01, w1.x() * f11);
+            tmp = dr::fmadd(w0.y(), f0, w1.y() * f1);
+        }
+        return tmp;
+    }
+
+    virtual Color3f eval_3(const dr::Array<Float, 2> &pos, Mask active = true, bool isBox = false) const {
+        Color3f tmp = 0;
+        m_tex.eval(pos, tmp.data(), active);
         return tmp;
     }
 
@@ -67,6 +98,7 @@ public:
 
 private:
     dr::Texture<Float, 2> m_tex;
+    dr::Array<uint, 2> res;
 };
 
 NAMESPACE_END(mitsuba)
@@ -74,6 +106,8 @@ NAMESPACE_END(mitsuba)
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::drTexWrapper)
     DRJIT_VCALL_METHOD(test)
     DRJIT_VCALL_METHOD(tensor)
-    DRJIT_VCALL_METHOD(eval)
+    DRJIT_VCALL_METHOD(eval_1)
+    DRJIT_VCALL_METHOD(eval_1_box)
+    DRJIT_VCALL_METHOD(eval_3)
     DRJIT_VCALL_METHOD(eval_fetch)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::drTexWrapper)

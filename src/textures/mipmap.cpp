@@ -129,7 +129,7 @@ public:
             m_bitmap->set_srgb_gamma(false);
         }
 
-        m_accel = props.get<bool>("accel", false);
+        m_accel = props.get<bool>("accel", true);
 
         // Convert the image into the working floating point representation
         m_bitmap =
@@ -663,8 +663,6 @@ protected:
         dr::masked(duv1, isSkinny) = duv1 * majorRadius / (minorRadius * m_maxAnisotropy);
         dr::masked(minorRadius, isSkinny) = majorRadius / m_maxAnisotropy;
 
-
-
         // Trilinear level
         Float level = dr::log2(dr::maximum(dr::maximum(dr::maximum(duv0[0], duv1[0]), dr::maximum(duv0[1], duv1[1])), dr::Epsilon<Float>));
         // EWA level select
@@ -686,10 +684,10 @@ protected:
         TexPtr texture_l = dr::gather<TexPtr>(m_pyramid, lower, active);
         TexPtr texture_u = dr::gather<TexPtr>(m_pyramid, upper, active);
         
-        Float c_lower = texture_l->eval(uv, active);
-        Float c_upper = texture_u->eval(uv, active);
+        Float c_lower = texture_l->eval_1(uv, active);
+        Float c_upper = texture_u->eval_1(uv, active);
 
-        // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
+        // // This is for EWA with invalid parameters of the ellipse (e.g isBilinear)
         dr::masked(out, active)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // EWA
@@ -697,7 +695,7 @@ protected:
         // TODO: Optimize to one call
             Float out_copy = Float(out);
             dr::masked(out, active & !isTri) = evalEWA(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
-            // replace AD
+            // // replace AD
             if constexpr (dr::is_diff_v<Float>){
                 out = dr::replace_grad(out, out_copy);
             }
@@ -812,19 +810,11 @@ protected:
     }
 
     Float evalEWA(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
-        Float f00, f10, f01, f11;
-        dr::Array<Float *, 4> fetch_values;
-        fetch_values[0] = &f00;
-        fetch_values[1] = &f10;
-        fetch_values[2] = &f01;
-        fetch_values[3] = &f11;
         Float out = 0;
         Float c_tmp = 0;
         Mask isInf = !dr::isfinite(uv.x()+uv.y());
-        // TODO: this eval should be box but not bilinear: use eval_fetch, how to handle the 4 value?? 
-        // TODO: if accel
-        m_textures[m_levels-1]->eval_fetch(uv, fetch_values, (level >= m_levels) & active);
-        dr::masked(out, (level >= m_levels) & active & !isInf)  = f00;
+
+        dr::masked(out, (level >= m_levels) & active & !isInf) = m_textures[m_levels-1]->eval_1_box(uv, (level >= m_levels) & active);
 
         Float denominator = 0.0f;
         
@@ -902,9 +892,10 @@ protected:
                 Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
                 Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
                 dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
-                Float tmp = texture->eval(curr_uv, active2);
-                // TODO: fetch which texel!!
-                dr::masked(out, active2) += tmp * weight;
+
+                c_tmp = texture->eval_1_box(curr_uv, active2);
+
+                dr::masked(out, active2) += c_tmp * weight;
                 dr::masked(denominator, active2) += weight;
                 // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
                 // std::cout<<out<<std::endl;
@@ -1178,7 +1169,7 @@ protected:
 
         // return tensor
         size_t shape[3] = {dst_res[0], dst_res[1], (size_t)channel};
-        dst = dr::clamp(dst, 0, dr::Infinity<mitsuba::DynamicBuffer<Float>>);
+        // dst = dr::clamp(dst, 0, dr::Infinity<mitsuba::DynamicBuffer<Float>>);
         return TensorXf(dst, 3, shape);
     }
     
