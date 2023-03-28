@@ -192,17 +192,17 @@ public:
         // Generate MIP map hierarchy; downsample using a 2-lobed Lanczos reconstruction filter
         std::string mip_filter_str = props.string("mipmap_filter_type", "trilinear");
         if (mip_filter_str == "nearest")
-            m_mipmap = MIPFilterType::Nearest;
+            m_mipmap_filter = MIPFilterType::Nearest;
         else if (mip_filter_str == "bilinear")
-            m_mipmap = MIPFilterType::Bilinear;
+            m_mipmap_filter = MIPFilterType::Bilinear;
         else if (mip_filter_str == "trilinear"){
             if (filter_mode_str == "nearest"){
                 Log(Warn, "Mipmap filter may not be compatible with texture filter");
             }
-            m_mipmap = MIPFilterType::Trilinear;
+            m_mipmap_filter = MIPFilterType::Trilinear;
         }
         else if (mip_filter_str == "ewa")
-            m_mipmap = MIPFilterType::EWA;
+            m_mipmap_filter = MIPFilterType::EWA;
         else
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
                   "\"bilinear\"! or \"trilinear\", or \"ewa\" ", filter_mode_str);
@@ -594,7 +594,7 @@ protected:
             c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
-        } else {
+        } else if (m_texture.filter_mode() == dr::FilterMode::Nearest) {
             Color3f out;
             if (m_accel)
                 m_texture.eval(uv, out.data(), active);
@@ -634,7 +634,7 @@ protected:
 
         Float out = 0;
 
-        if (m_mipmap == MIPFilterType::Nearest || m_mipmap == MIPFilterType::Bilinear){
+        if (m_mipmap_filter == MIPFilterType::Nearest || m_mipmap_filter == MIPFilterType::Bilinear){
             if (m_accel)
                 m_texture.eval(uv, &out, active);
             else
@@ -658,7 +658,7 @@ protected:
               minorRadius =  dr::norm(duv1);// dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
         // If isTri, perform trilinear filter
-        Mask isTri = ((m_mipmap == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
+        Mask isTri = ((m_mipmap_filter == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
 
         // EWA info
         Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
@@ -693,7 +693,7 @@ protected:
         dr::masked(out, active)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // EWA
-        if (m_mipmap == MIPFilterType::EWA) {
+        if (m_mipmap_filter == MIPFilterType::EWA) {
         // TODO: Optimize to one call
             Float out_copy = Float(out);
             dr::masked(out, active & !isTri) = evalEWA_1(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA_1(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
@@ -730,7 +730,7 @@ protected:
 
         Color3f out = 0;
 
-        if (m_mipmap == MIPFilterType::Nearest || m_mipmap == MIPFilterType::Bilinear){
+        if (m_mipmap_filter == MIPFilterType::Nearest || m_mipmap_filter == MIPFilterType::Bilinear){
             if (m_accel)
                 m_texture.eval(uv, out.data(), active);
             else
@@ -751,7 +751,7 @@ protected:
               minorRadius =  dr::norm(duv1);
 
         // If isTri, perform trilinear filter
-        Mask isTri = ((m_mipmap == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
+        Mask isTri = ((m_mipmap_filter == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
 
         // EWA info
         Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
@@ -784,7 +784,7 @@ protected:
         dr::masked(out, active)  = c_upper * alpha + c_lower * (1.f - alpha);
 
         // EWA
-        if (m_mipmap == MIPFilterType::EWA) {
+        if (m_mipmap_filter == MIPFilterType::EWA) {
             Color3f out_copy = Color3f(out);
             dr::masked(out, active & !isTri) = evalEWA_3(upper, uv, duv_dx, duv_dy, !isTri & active) * alpha + evalEWA_3(lower, uv, duv_dx, duv_dy, active & !isTri) * (1.f - alpha);
             // replace AD
@@ -885,7 +885,6 @@ protected:
         
         /* Convert to fractional pixel coordinates on the specified level */
         const Vector2u &size = dr::gather<Vector2u>(m_res_dr, level);
-        TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
         
         Float u = uv.x() * size.x() - 0.5f;
         Float v = uv.y() * size.y() - 0.5f;
@@ -940,37 +939,75 @@ protected:
         Mask active1(active);   
         dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, active1);
 
-        while(loop_v(active1)){
-            Mask active2(active1);
-            const Float vv = vt - v;
+        if constexpr (dr::is_dynamic_array_v<Float>){
+            TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+            while(loop_v(active1)){
+                Mask active2(active1);
+                const Float vv = vt - v;
 
-            Int32 ut = dr::minimum(u0, (Int32)u);
-            dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
-            while(loop_u(active2)){
-                const Float uu = ut - u;
+                Int32 ut = dr::minimum(u0, (Int32)u);
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+                while(loop_u(active2)){
+                    const Float uu = ut - u;
 
-                Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
-                // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
-                // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
 
-                UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
-                Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
-                Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
 
-                c_tmp = texture->eval_1_box(curr_uv, active2);
+                    c_tmp = texture->eval_1_box(curr_uv, active2);
 
-                dr::masked(out, active2) += c_tmp * weight;
-                dr::masked(denominator, active2) += weight;
-                // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
-                // std::cout<<out<<std::endl;
+                    dr::masked(out, active2) += c_tmp * weight;
+                    dr::masked(denominator, active2) += weight;
+                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                    // std::cout<<out<<std::endl;
 
-                ut++;
-                active2 &= ut <= u1;
+                    ut++;
+                    active2 &= ut <= u1;
+                }
+                vt++;
+                active1 &= vt <= v1;
             }
-            vt++;
-            active1 &= vt <= v1;
         }
+        else{
+            ref<texWrapper> texture = m_textures[level];
+            while(loop_v(active1)){
+                Mask active2(active1);
+                const Float vv = vt - v;
+
+                Int32 ut = dr::minimum(u0, (Int32)u);
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+                while(loop_u(active2)){
+                    const Float uu = ut - u;
+
+                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+
+                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+
+                    c_tmp = texture->eval_1_box(curr_uv, active2);
+
+                    dr::masked(out, active2) += c_tmp * weight;
+                    dr::masked(denominator, active2) += weight;
+                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                    // std::cout<<out<<std::endl;
+
+                    ut++;
+                    active2 &= ut <= u1;
+                }
+                vt++;
+                active1 &= vt <= v1;
+            }            
+        }
+
 
         Mask isZero = dr::eq(denominator, 0);
         dr::masked(out, !isZero) = out / denominator; 
@@ -981,13 +1018,150 @@ protected:
 
     Color3f evalEWA_3(Int32 level, const Point2f &uv, Vector2f duv_dx, Vector2f duv_dy, Mask active = true) const {
         Color3f out = 0;
+        Color3f c_tmp = 0;
+        Mask isInf = !dr::isfinite(uv.x()+uv.y());
+
+        dr::masked(out, (level >= m_levels) & active & !isInf) = m_textures[m_levels-1]->eval_1_box(uv, (level >= m_levels) & active);
+
+        Float denominator = 0.0f;
+        
+        /* Convert to fractional pixel coordinates on the specified level */
+        const Vector2u &size = dr::gather<Vector2u>(m_res_dr, level);
+        
+        Float u = uv.x() * size.x() - 0.5f;
+        Float v = uv.y() * size.y() - 0.5f;
+
+        Vector2f duv0(duv_dx.x() * size.x(), duv_dx.y() * size.y());
+        Vector2f duv1(duv_dy.x() * size.x(), duv_dy.y() * size.y());
+
+        Float A = duv0[1] * duv0[1] + duv1[1] * duv1[1] + 1,
+            B = -2.0f * (duv0[0] * duv0[1] + duv1[0] * duv1[1]),
+            C = duv0[0] * duv0[0] + duv1[0] * duv1[0] + 1,
+            F = A*C - B*B*0.25f;
+
+        // Float theta = 0.5f * dr::atan(B / (A-C));
+        // auto [sinTheta, cosTheta] = dr::sincos(theta);
+        // Float a2 = majorRadius*majorRadius,
+        //         b2 = minorRadius*minorRadius,
+        //         sinTheta2 = sinTheta*sinTheta,
+        //         cosTheta2 = cosTheta*cosTheta,
+        //         sin2Theta = 2*sinTheta*cosTheta;
+
+        // dr::masked(A, isSkinny) = a2*cosTheta2 + b2*sinTheta2;
+        // dr::masked(B, isSkinny) = (a2-b2) * sin2Theta;
+        // dr::masked(C, isSkinny) = a2*sinTheta2 + b2*cosTheta2;
+        // dr::masked(F, isSkinny) = a2*b2;
+
+        /* Switch to normalized coefficients */
+        Float scale = 1.0f / F;
+        A *= scale; B *= scale; C *= scale;
+
+
+        /* Do the same to the ellipse coefficients */
+        // const ScalarVector2f ratio = m_sizeRatio[i];
+        // dr::masked(A, dr::eq(level, i)) = A / (ratio.x() * ratio.x());
+        // dr::masked(B, dr::eq(level, i)) = B / (ratio.x() * ratio.y());
+        // dr::masked(C, dr::eq(level, i)) = C / (ratio.y() * ratio.y());
+
+        /* Compute the ellipse's bounding box in texture space */
+        Float invDet = 1.0f / (-B*B + 4.0f*A*C),
+            deltaU = 2.0f * dr::sqrt(C * invDet),
+            deltaV = 2.0f * dr::sqrt(A * invDet);
+
+        Int32 u0 = dr::ceil2int<Int32> (u - deltaU), u1 = dr::floor2int<Int32> (u + deltaU),
+                v0 = dr::ceil2int<Int32> (v - deltaV), v1 = dr::floor2int<Int32> (v + deltaV);
+
+        /* Scale the coefficients by the size of the Gaussian lookup table */
+        Float As = A * MI_MIPMAP_LUT_SIZE,
+                Bs = B * MI_MIPMAP_LUT_SIZE,
+                Cs = C * MI_MIPMAP_LUT_SIZE;
+        
+        // std::cout<<u0<<" "<<u1<<"  "<<v0<<" "<<v1<<std::endl;
+        Int32 vt = dr::minimum(v0, (Int32)v);         
+        Mask active1(active);   
+        dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, active1);
+
+        if constexpr (dr::is_dynamic_array_v<Float>){
+            TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+            while(loop_v(active1)){
+                Mask active2(active1);
+                const Float vv = vt - v;
+
+                Int32 ut = dr::minimum(u0, (Int32)u);
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+                while(loop_u(active2)){
+                    const Float uu = ut - u;
+
+                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+
+                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+
+                    Color3f c_tmp = texture->eval_3_box(curr_uv, active2);
+
+                    dr::masked(out, active2) += c_tmp * weight;
+                    dr::masked(denominator, active2) += weight;
+                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                    // std::cout<<out<<std::endl;
+
+                    ut++;
+                    active2 &= ut <= u1;
+                }
+                vt++;
+                active1 &= vt <= v1;
+            }
+        }
+        else{
+            ref<texWrapper> texture = m_textures[level];
+            while(loop_v(active1)){
+                Mask active2(active1);
+                const Float vv = vt - v;
+
+                Int32 ut = dr::minimum(u0, (Int32)u);
+                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+                while(loop_u(active2)){
+                    const Float uu = ut - u;
+
+                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+
+                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+
+                    c_tmp = texture->eval_3_box(curr_uv, active2);
+
+                    dr::masked(out, active2) += c_tmp * weight;
+                    dr::masked(denominator, active2) += weight;
+                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                    // std::cout<<out<<std::endl;
+
+                    ut++;
+                    active2 &= ut <= u1;
+                }
+                vt++;
+                active1 &= vt <= v1;
+            }            
+        }
+
+
+        Mask isZero = dr::eq(denominator, 0);
+        dr::masked(out, !isZero) = out / denominator; 
+        dr::masked(out, isInf) = 0;
+
         return out;
     }
 
     void build_pyramid(){
         // Get #levels
         m_levels = 1;
-        if (m_mipmap != MIPFilterType::Nearest && m_mipmap != MIPFilterType::Bilinear){
+        if (m_mipmap_filter != MIPFilterType::Nearest && m_mipmap_filter != MIPFilterType::Bilinear){
             ScalarVector2u size = ScalarVector2u(m_bitmap->size());
             while(size.x() > 1 || size.y() > 1){
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
@@ -1013,7 +1187,7 @@ protected:
         TensorXf curr = m_textures[0]->tensor();
 
         // Downsample until 1x1
-        if (m_mipmap != MIPFilterType::Nearest && m_mipmap != MIPFilterType::Bilinear){
+        if (m_mipmap_filter != MIPFilterType::Nearest && m_mipmap_filter != MIPFilterType::Bilinear){
             ScalarVector2u size = m_res[0];
             m_levels = 1;
             while (size.x() > 1 || size.y() > 1) {
@@ -1278,7 +1452,7 @@ protected:
     ref<Bitmap::ReconstructionFilter> m_rfilter;
 
     // Mipmap info
-    MIPFilterType m_mipmap;
+    MIPFilterType m_mipmap_filter;
     std::vector<ScalarVector2u> m_res;
     DynamicBuffer<Vector2u> m_res_dr;
     int m_levels;

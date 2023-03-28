@@ -120,10 +120,10 @@ public:
         return m_tex.tensor();
     }
 
-    virtual void eval_fetch(const dr::Array<Float, 2> &pos,
-                            dr::Array<Float *, 1 << 2> &out,
-                            Mask active = true) const {
+    virtual dr::Array<Float *, 1 << 2> eval_fetch(const dr::Array<Float, 2> &pos, Mask active = true) const {
+        dr::Array<Float *, 4> out;
         m_tex.eval_fetch(pos, out, active);
+        return out;
     }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::drTexWrapper)
