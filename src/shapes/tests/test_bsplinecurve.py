@@ -4,8 +4,6 @@ import mitsuba as mi
 
 from drjit.scalar import ArrayXf as Float
 
-# TODO: Enable CUDA variants aswell (orthographic is broken).
-
 def test01_create(variants_all_rgb):
     s = mi.load_dict({
         "type" : "bsplinecurve",
@@ -24,25 +22,21 @@ def test02_create_multiple_curves(variants_all_rgb):
     assert s.primitive_count() == 6
 
 
-#def test02_bbox(variant_scalar_rgb):
-#    #sy = 2.5
-#    sy = 1
-#    #for sx in [1, 2, 4]:
-#    for sx in [1]:
-#        #for translate in [mi.Vector3f([1.3, -3.0, 5]),
-#        #                  mi.Vector3f([-10000, 3.0, 31])]:
-#        for translate in [mi.Vector3f(0.)]:
-#            s = mi.load_dict({
-#                "type" : "bsplinecurve",
-#                "filename" : "resources/data/common/meshes/curve.txt",
-#                "to_world" : mi.Transform4f.translate(translate) @ mi.Transform4f.scale((sx, sy, 1.0))
-#            })
-#            b = s.bbox()
-#
-#            assert b.valid()
-#            #assert dr.allclose(b.center(), translate)
-#            assert dr.allclose(b.min, translate - [sx, sy, 0.0])
-#            assert dr.allclose(b.max, translate + [sx, sy, 0.0])
+def test02_bbox(variants_all_rgb):
+    for sx in [1, 2, 4]:
+        for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
+                          mi.ScalarVector3f([-10000, 3.0, 31])]:
+            s = mi.load_dict({
+                "type" : "bsplinecurve",
+                "filename" : "resources/data/common/meshes/curve.txt",
+                "to_world" : mi.ScalarTransform4f.translate(translate) @ mi.ScalarTransform4f.scale((sx, 1, 1))
+            })
+            b = s.bbox()
+
+            assert b.valid()
+            assert dr.allclose(b.center(), translate)
+            assert dr.allclose(b.min, translate - [1, 0, 0] - [sx, 1, 1])
+            assert dr.allclose(b.max, translate + [1, 0, 0] + [sx, 1, 1])
 
 
 def test03_parameters_changed(variants_vec_rgb):
@@ -114,6 +108,7 @@ def test03_parameters_changed(variants_vec_rgb):
 #                    assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))
 
 
+# TODO: Enable CUDA variants aswell (orthographic is broken).
 def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
@@ -149,16 +144,15 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     #          along the ray. The normal, point and UVs will not change
     #          (differentiating radii).
 
-    dr.set_flag(dr.JitFlag.VCallRecord, False) # FIXME: remove
-
     ray = mi.Ray3f(mi.Vector3f(0, 0, 2), mi.Vector3f(0, 0, -1))
 
     theta = mi.Float(1)
     dr.enable_grad(theta)
 
-    radii = dr.gather(mi.Float, params[key], dr.arange(mi.UInt32, 4) * 4 + 3)
-    dr.scatter(params[key], radii * theta, dr.arange(mi.UInt32, 4) * 4 + 3)
-    dr.eval(params[key])
+    cp_scaling = mi.Float([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1])
+    cp_scaling *= theta
+    cp_scaling += mi.Float([1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0])
+    params[key] *= cp_scaling;
     params.update()
 
     pi = scene.ray_intersect_preliminary(ray)
@@ -192,8 +186,10 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
 
     assert dr.allclose(dr.grad(si.p), [0, 1, 0])
     assert dr.allclose(dr.grad(si.n), 0, atol=1e-6)
+    assert dr.allclose(dr.grad(si.uv), 0, atol=1e-6)
 
 
+# TODO: Enable CUDA variants aswell (orthographic is broken).
 def test08_eval_parameterization(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
