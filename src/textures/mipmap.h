@@ -40,6 +40,10 @@ public:
         return m_tex.tensor().array()[0];
     }
 
+    virtual dr::Array<Float, 2> resolution() const {
+        return res;
+    }
+
     virtual Float eval_1(const dr::Array<Float, 2> &pos, Mask active = true) const {
         Float tmp = 0;
         m_tex.eval(pos, &tmp, active);
@@ -120,9 +124,25 @@ public:
         return m_tex.tensor();
     }
 
-    virtual dr::Array<Float *, 1 << 2> eval_fetch(const dr::Array<Float, 2> &pos, Mask active = true) const {
-        dr::Array<Float *, 4> out;
-        m_tex.eval_fetch(pos, out, active);
+    virtual dr::Array<Float, 1 << 2> eval_fetch_1(const dr::Array<Float, 2> &pos, Mask active = true) const {
+        dr::Array<Float, 4> out;
+        dr::Array<Float*, 4> fetch_values;
+        fetch_values[0] = &out[0];
+        fetch_values[1] = &out[1];
+        fetch_values[2] = &out[2];
+        fetch_values[3] = &out[3];
+        m_tex.eval_fetch(pos, fetch_values, active);
+        return out;
+    }
+
+    virtual dr::Array<Color3f, 1 << 2> eval_fetch_3(const dr::Array<Float, 2> &pos, Mask active = true) const {
+        dr::Array<Color3f, 4> out;
+        dr::Array<Float*, 4> fetch_values;
+        fetch_values[0] = out[0].data();
+        fetch_values[1] = out[1].data();
+        fetch_values[2] = out[2].data();
+        fetch_values[3] = out[3].data();
+        m_tex.eval_fetch(pos, fetch_values, active);
         return out;
     }
 
@@ -137,10 +157,12 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::drTexWrapper)
     DRJIT_VCALL_METHOD(test)
+    DRJIT_VCALL_METHOD(resolution)
     DRJIT_VCALL_METHOD(tensor)
     DRJIT_VCALL_METHOD(eval_1)
     DRJIT_VCALL_METHOD(eval_1_box)
     DRJIT_VCALL_METHOD(eval_3)
     DRJIT_VCALL_METHOD(eval_3_box)
-    DRJIT_VCALL_METHOD(eval_fetch)
+    DRJIT_VCALL_METHOD(eval_fetch_1)
+    DRJIT_VCALL_METHOD(eval_fetch_3)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::drTexWrapper)
