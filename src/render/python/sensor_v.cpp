@@ -76,6 +76,7 @@ public:
 
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
+    using Sensor::m_film;
 };
 
 MI_PY_EXPORT(Sensor) {
@@ -93,7 +94,8 @@ MI_PY_EXPORT(Sensor) {
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler))
         .def_readwrite("m_needs_sample_2", &PySensor::m_needs_sample_2)
-        .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3);
+        .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3)
+        .def_readwrite("m_film", &PySensor::m_film);
 
     MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
