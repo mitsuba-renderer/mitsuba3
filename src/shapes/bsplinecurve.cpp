@@ -166,10 +166,6 @@ public:
             if (unlikely(!dr::isfinite(r)))
                 fail("B-spline control point contains invalid radius data (line: \"%s\")!", buf);
 
-            // TODO: how to calculate bspline's bbox
-            // just expand using control points for now
-            m_bbox.expand(p);
-
             vertices.push_back(p);
             radius.push_back(r);
 
@@ -192,13 +188,6 @@ public:
 
         m_control_point_count = vertices.size();
 
-        std::unique_ptr<InputFloat[]> positions =
-            std::make_unique<InputFloat[]>(m_control_point_count * 3);
-        for (ScalarIndex i = 0; i < vertices.size(); i++) {
-            InputFloat *vertex_ptr = positions.get() + i * 3;
-            dr::store(vertex_ptr, vertices[i]);
-        }
-
         std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(m_segment_count);
         size_t segment_index = 0;
         for (size_t i = 0; i < curve_idx.size(); ++i) {
@@ -209,15 +198,34 @@ public:
         }
         m_indices = dr::load<UInt32Storage>(indices.get(), m_segment_count);
 
+        std::unique_ptr<InputFloat[]> positions =
+            std::make_unique<InputFloat[]>(m_control_point_count * 3);
+        for (ScalarIndex i = 0; i < vertices.size(); i++) {
+            InputFloat *vertex_ptr = positions.get() + i * 3;
+            dr::store(vertex_ptr, vertices[i]);
+        }
+
         // Merge buffers into m_control_point_count
         m_control_points = dr::empty<FloatStorage>(m_control_point_count * 4);
         FloatStorage vertex_buffer = dr::load<FloatStorage>(positions.get(), m_control_point_count * 3);
         FloatStorage radius_buffer = dr::load<FloatStorage>(radius.data(), m_control_point_count * 1);
-        UInt32 idx = dr::arange<UInt32>(m_control_point_count);
-        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
-        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
-        dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
-        dr::scatter(m_control_points, dr::gather<Float>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+
+        if constexpr (dr::is_jit_v<Float>) {
+            UInt32 idx = dr::arange<UInt32>(m_control_point_count);
+            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
+            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
+            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
+            dr::scatter(m_control_points, dr::gather<Float>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+        } else {
+            for (size_t i = 0; i < m_control_point_count; ++i) {
+                m_control_points[i * 4 + 0] = vertex_buffer[i * 3 + 0];
+                m_control_points[i * 4 + 1] = vertex_buffer[i * 3 + 1];
+                m_control_points[i * 4 + 2] = vertex_buffer[i * 3 + 2];
+                m_control_points[i * 4 + 3] = radius_buffer[i * 1 + 0];
+            }
+        }
+
+        compute_bbox();
 
         ScalarSize control_point_bytes = 4 * sizeof(InputFloat);
         Log(Debug, "\"%s\": read %i control points (%s in %s)",
@@ -448,6 +456,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "control_points")) {
+            compute_bbox();
             mark_dirty();
         }
         Base::parameters_changed();
@@ -578,6 +587,25 @@ private:
             (1.f * u) * r3;
 
         return { c, dc_du, dc_duu, radius, dr_du, dr_duu};
+    }
+
+    void compute_bbox() {
+        auto&& control_points = dr::migrate(m_control_points, AllocType::Host);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
+        const InputFloat *ptr = control_points.data();
+
+        m_bbox.reset();
+        for (ScalarSize i = 0; i < m_control_point_count; ++i) {
+            ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
+            ScalarFloat r(ptr[4 * i + 3]);
+            m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
+            m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
+            m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+        }
     }
 
     Float globalu_to_u(Float global_u) const {
