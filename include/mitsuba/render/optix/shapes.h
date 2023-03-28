@@ -188,11 +188,12 @@ void build_gas(const OptixDeviceContext &context,
         ));
 
         void* d_temp_buffer = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-        void* output_buffer = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes + 8);
+        void* output_buffer = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
+        void* compact_size_buffer = jit_malloc(AllocType::Device, 8);
 
         OptixAccelEmitDesc emit_property = {};
         emit_property.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-        emit_property.result = (CUdeviceptr)((char*)output_buffer + buffer_sizes.outputSizeInBytes);
+        emit_property.result = (CUdeviceptr) compact_size_buffer; // needs to be aligned
 
         OptixTraversableHandle accel;
         jit_optix_check(optixAccelBuild(
