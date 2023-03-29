@@ -21,7 +21,7 @@ public:
     sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                             const Point2f &sample3, Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
                                active);
     }
 
@@ -65,7 +65,7 @@ public:
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
         using Return = std::pair<Wavelength, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_wavelengths, si, sample, active);
+        PYBIND11_OVERRIDE(Return, Sensor, sample_wavelengths, si, sample, active);
     }
 
     ScalarBoundingBox3f bbox() const override {
