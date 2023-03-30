@@ -554,8 +554,6 @@ public:
 
 protected:
     Float get_mipmap_level(const SurfaceInteraction3f &si) const{
-        Point2f uv = m_transform.transform_affine(si.uv); //{0.00729447091, 0.929102302}; 
-
         // Get correctly transformed m_rfilter duv/dxy.
         const ScalarMatrix3f uv_tm = m_transform.matrix;
 
@@ -586,8 +584,8 @@ protected:
               majorRadius =  dr::norm(duv0), // dr::select(dr::neq(Aprime, 0), dr::sqrt(F / Aprime), 0),
               minorRadius =  dr::norm(duv1);// dr::select(dr::neq(Cprime, 0), dr::sqrt(F / Cprime), 0);
 
-        // If isTri, perform trilinear filter
-        Mask isTri = ((m_mipmap_filter == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
+        // // If isTri, perform trilinear filter
+        // Mask isTri = ((m_mipmap_filter == Trilinear) | !(minorRadius > 0) | !(majorRadius > 0));
 
         // EWA info
         Mask isSkinny = (minorRadius * m_maxAnisotropy < majorRadius);
@@ -649,63 +647,65 @@ protected:
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
         }
-        else if (m_mipmap_filter == MIPFilterType::Trilinear){
-            // Get level
-            Float level = get_mipmap_level(si);
-            Int32 lower = dr::floor2int<Int32>(level);
-            Float alpha = level - lower;
-            Int32 upper = lower + 1;
-            // Clamp
-            lower = dr::clamp(lower, 0, m_levels-1);
-            upper = dr::clamp(upper, 0, m_levels-1);
-            // For each level
-            TexPtr texture_l = dr::gather<TexPtr>(m_pyramid, lower, active);
-            TexPtr texture_u = dr::gather<TexPtr>(m_pyramid, upper, active);
-
-            // Get 4 spectral upper
-            UnpolarizedSpectrum l00, l10, l01, l11, l0, l1, l;
-            dr::Array<Color3f, 4> fetched_lower = texture_l->eval_fetch_3(uv, active);
-            l00 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[0], si.wavelengths);
-            l10 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[1], si.wavelengths);
-            l01 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[2], si.wavelengths);
-            l11 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[3], si.wavelengths);
-            {
-            Vector2f res = texture_l->resolution();
-            Vector2f uv_l = dr::fmadd(uv, res, -.5f);
-            Vector2i uv_i = dr::floor2int<Vector2i>(uv_l);
-            // Interpolation weights
-            Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
-            l0 = dr::fmadd(w0.x(), l00, w1.x() * l10);
-            l1 = dr::fmadd(w0.x(), l01, w1.x() * l11);
-            l = dr::fmadd(w0.y(), l0, w1.y() * l1);
-            }
-
-
-            // Get 4 spectral lower
-            UnpolarizedSpectrum u00, u10, u01, u11, u0, u1, u;
-            dr::Array<Color3f, 4> fetched_upper = texture_u->eval_fetch_3(uv, active);
-            u00 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[0], si.wavelengths);
-            u10 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[1], si.wavelengths);
-            u01 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[2], si.wavelengths);
-            u11 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[3], si.wavelengths);
-            {
-            Vector2f res = texture_u->resolution();
-            Vector2f uv_u = dr::fmadd(uv, res, -.5f);
-            Vector2i uv_i = dr::floor2int<Vector2i>(uv_u);
-            // Interpolation weights
-            Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
-            u0 = dr::fmadd(w0.x(), u00, w1.x() * u10);
-            u1 = dr::fmadd(w0.x(), u01, w1.x() * u11);
-            u = dr::fmadd(w0.y(), u0, w1.y() * u1);                
-            }
-
-            // interpolate
-            return dr::fmadd(u, 1-alpha, l * alpha);
-        }
         else{
-            // I need to upsample all pixels in the ellipse > <
-            Throw("EWA for spectral is not implemented!");
+            Throw("MIPMAP FOR SPECTRAL MODE IS NOT IMPLEMENTED!");
         }
+        // else if (m_mipmap_filter == MIPFilterType::Trilinear){
+        //     // Get level
+        //     Float level = get_mipmap_level(si);
+        //     Int32 lower = dr::floor2int<Int32>(level);
+        //     Float alpha = level - lower;
+        //     Int32 upper = lower + 1;
+        //     // Clamp
+        //     lower = dr::clamp(lower, 0, m_levels-1);
+        //     upper = dr::clamp(upper, 0, m_levels-1);
+        //     // For each level
+        //     TexPtr texture_l = dr::gather<TexPtr>(m_pyramid, lower, active);
+        //     TexPtr texture_u = dr::gather<TexPtr>(m_pyramid, upper, active);
+
+        //     // Get 4 spectral lower
+        //     UnpolarizedSpectrum l00, l10, l01, l11, l0, l1, l;
+        //     dr::Array<Color3f, 4> fetched_lower = texture_l->eval_fetch_3(uv, active);
+        //     l00 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[0], si.wavelengths);
+        //     l10 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[1], si.wavelengths);
+        //     l01 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[2], si.wavelengths);
+        //     l11 = srgb_model_eval<UnpolarizedSpectrum>(fetched_lower[3], si.wavelengths);
+        //     {
+        //     Vector2f res = texture_l->resolution();
+        //     Vector2f uv_l = dr::fmadd(uv, res, -.5f);
+        //     Vector2i uv_i = dr::floor2int<Vector2i>(uv_l);
+        //     // Interpolation weights
+        //     Point2f w1 = uv_l - Point2f(uv_i), w0 = 1.f - w1;
+        //     l0 = dr::fmadd(w0.x(), l00, w1.x() * l10);
+        //     l1 = dr::fmadd(w0.x(), l01, w1.x() * l11);
+        //     l = dr::fmadd(w0.y(), l0, w1.y() * l1);
+        //     }
+
+        //     // Get 4 spectral upper
+        //     UnpolarizedSpectrum u00, u10, u01, u11, u0, u1, u;
+        //     dr::Array<Color3f, 4> fetched_upper = texture_u->eval_fetch_3(uv, active);
+        //     u00 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[0], si.wavelengths);
+        //     u10 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[1], si.wavelengths);
+        //     u01 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[2], si.wavelengths);
+        //     u11 = srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[3], si.wavelengths);
+        //     {
+        //     Vector2f res = texture_u->resolution();
+        //     Vector2f uv_u = dr::fmadd(uv, res, -.5f);
+        //     Vector2i uv_i = dr::floor2int<Vector2i>(uv_u);
+        //     // Interpolation weights
+        //     Point2f w1 = uv_u - Point2f(uv_i), w0 = 1.f - w1;
+        //     u0 = dr::fmadd(w0.x(), u00, w1.x() * u10);
+        //     u1 = dr::fmadd(w0.x(), u01, w1.x() * u11);
+        //     u = dr::fmadd(w0.y(), u0, w1.y() * u1);
+        //     }
+
+        //     // interpolate
+        //     return dr::fmadd(l, 1-alpha, u * alpha); // (lower * 1.f)/ m_pyramid.size(); //dr::fmadd(u, 1-alpha, l * alpha); // srgb_model_eval<UnpolarizedSpectrum>(fetched_upper[0], si.wavelengths)
+        // }
+        // else{
+        //     // Need to upsample all pixels in the ellipse > <
+        //     Throw("EWA for spectral is not implemented!");
+        // }
     }
 
     /**
@@ -1204,7 +1204,7 @@ protected:
                     Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
                     dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
 
-                    Color3f c_tmp = texture->eval_3_box(curr_uv, active2);
+                    c_tmp = texture->eval_3_box(curr_uv, active2);
 
                     dr::masked(out, active2) += c_tmp * weight;
                     dr::masked(denominator, active2) += weight;
@@ -1287,21 +1287,24 @@ protected:
         m_sizeRatio[0] = ScalarVector2u(1, 1);
         m_textures[0] = new texWrapper(m_texture.tensor(), m_accel, m_accel, m_filter_mode, m_wrap_mode);
 
-        TensorXf curr = m_textures[0]->tensor();
+        DFloat curr = m_textures[0]->value();
 
         // Downsample until 1x1
         if (m_mipmap_filter != MIPFilterType::Nearest && m_mipmap_filter != MIPFilterType::Bilinear){
             ScalarVector2u size = m_res[0];
+            ScalarVector2u src_res;
             m_levels = 1;
             while (size.x() > 1 || size.y() > 1) {
+                src_res = size;
                 /* Compute the size of the next downsampled layer */
                 size.x() = dr::maximum(1, (size.x() + 1) / 2);
                 size.y() = dr::maximum(1, (size.y() + 1) / 2);
                 m_res[m_levels] = size;
 
                 // Resample to be new size; set the minimum value to zero
-                curr = down_sample(curr, size, channels);
-                m_textures[m_levels] = new texWrapper(curr, m_accel, m_accel, m_filter_mode, m_wrap_mode);
+                curr = down_sample(curr, src_res, size, channels);
+                size_t shape[3] = {size.x(), size.y(), channels};
+                m_textures[m_levels] = new texWrapper(TensorXf(curr, 3, shape), m_accel, m_accel, m_filter_mode, m_wrap_mode);
 
                 m_sizeRatio[m_levels] = ScalarVector2f(
                     (ScalarFloat) size.x() / (ScalarFloat) m_res[0].x(),
@@ -1341,8 +1344,7 @@ protected:
     }
     
 
-    TensorXf down_sample(TensorXf& curr, ScalarVector2u& dst_res, int channel){
-        ScalarVector2u src_res(curr.shape()[0], curr.shape()[1]);
+    DFloat down_sample(DFloat& curr, ScalarVector2u& src_res, ScalarVector2u& dst_res, int channel){
         ScalarFloat filterRadius = m_rfilter->radius();
 
         /**********************************  ALONG HEIGHT *************************************/
@@ -1424,7 +1426,7 @@ protected:
 
             // get the index in src
             auto [ch, index] = dr::meshgrid(dr::arange<DInt>(channel), x_ * src_res[1] + y_);
-            dst_array += dr::gather<DFloat>(curr.array(), index * channel + ch) * weights[i];
+            dst_array += dr::gather<DFloat>(curr, index * channel + ch) * weights[i];
         }
 
         /**********************************  ALONG WIDTH *************************************/
@@ -1523,10 +1525,9 @@ protected:
         //     std::cout<<std::endl;
         // }
 
-        // return tensor
-        size_t shape[3] = {dst_res[0], dst_res[1], (size_t)channel};
-        // dst = dr::clamp(dst, 0, dr::Infinity<mitsuba::DynamicBuffer<Float>>);
-        return TensorXf(dst, 3, shape);
+        // return DFloat
+        dst = dr::select(dst < 0, 0, dst);
+        return dst;
     }
     
 protected:

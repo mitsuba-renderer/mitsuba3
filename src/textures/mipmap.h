@@ -78,6 +78,11 @@ public:
             Float f0 = dr::fmadd(w0.x(), f00, w1.x() * f10);
             Float f1 = dr::fmadd(w0.x(), f01, w1.x() * f11);
             tmp = dr::fmadd(w0.y(), f0, w1.y() * f1);
+
+            // This is slower under scalar mode
+            // dr::Array<Int32, 2> uv_i = dr::floor2int<dr::Array<Int32, 2>>(pos * res);
+            // dr::Array<Float, 2> uv =  (uv_i + 0.5f) / res;
+            // m_tex.eval(uv, &tmp, active);
         }
         return tmp;
     }
@@ -122,6 +127,10 @@ public:
 
     virtual const TensorXf &tensor() const  {
         return m_tex.tensor();
+    }
+
+    virtual const Storage &value() const  {
+        return m_tex.value();
     }
 
     virtual dr::Array<Float, 1 << 2> eval_fetch_1(const dr::Array<Float, 2> &pos, Mask active = true) const {
