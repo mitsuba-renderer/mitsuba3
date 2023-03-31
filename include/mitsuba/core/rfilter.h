@@ -167,6 +167,11 @@ template <typename Scalar_> struct Resampler {
 
                     /* Perform the evaluation and record the weight */
                     auto weight = rfilter->eval(pos * inv_scale);
+
+                    /* Handle the (numerical) edge case of the pixel center missing
+                       the filter support when upsampling using the box filter. */
+                    if (target_res > source_res && rfilter->is_box_filter())
+                        weight = Float(1.0);
                     m_weights[i * m_taps + j] = static_cast<Scalar>(weight);
                     sum += double(weight);
                 }

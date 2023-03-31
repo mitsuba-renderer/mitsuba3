@@ -57,12 +57,20 @@ def test07_resampler_box(variant_scalar_rgb):
     assert resampler.taps() == 1
     resampler.resample(a, 1, b, 1, 1)
 
-    # # Resample to same size
+    # Resample to smaller size
     resampler = mi.Resampler(f, 5, 3)
     b = dr.zeros(Float, 3)
     assert resampler.taps() == 2
     resampler.resample(a, 1, b, 1, 1)
     assert dr.all(b == [0.125, 0.5, 0.875])
+
+    # Resample to larger size
+    a = dr.linspace(Float, 0, 1, 2)
+    resampler = mi.Resampler(f, 2, 3)
+    b = dr.zeros(Float, 3)
+    assert resampler.taps() == 1
+    resampler.resample(a, 1, b, 1, 1)
+    assert dr.all(b == [0.0, 1.0, 1.0])
 
 
 def test08_resampler_boundary_conditions(variant_scalar_rgb):
