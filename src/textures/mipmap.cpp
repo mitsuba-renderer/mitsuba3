@@ -1042,73 +1042,37 @@ protected:
         Mask active1(active);   
         dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, active1);
 
-        if constexpr (dr::is_dynamic_array_v<Float>){
-            TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
-            while(loop_v(active1)){
-                Mask active2(active1);
-                const Float vv = vt - v;
+        TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+        while(loop_v(active1)){
+            Mask active2(active1);
+            const Float vv = vt - v;
 
-                Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
-                while(loop_u(active2)){
-                    const Float uu = ut - u;
+            Int32 ut = dr::minimum(u0, (Int32)u);
+            dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+            while(loop_u(active2)){
+                const Float uu = ut - u;
 
-                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
-                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
-                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+                Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
 
-                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
-                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
-                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+                UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
 
-                    c_tmp = texture->eval_1_box(curr_uv, active2);
+                c_tmp = texture->eval_1_box(curr_uv, active2);
 
-                    dr::masked(out, active2) += c_tmp * weight;
-                    dr::masked(denominator, active2) += weight;
-                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
-                    // std::cout<<out<<std::endl;
+                dr::masked(out, active2) += c_tmp * weight;
+                dr::masked(denominator, active2) += weight;
+                // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                // std::cout<<out<<std::endl;
 
-                    ut++;
-                    active2 &= ut <= u1;
-                }
-                vt++;
-                active1 &= vt <= v1;
+                ut++;
+                active2 &= ut <= u1;
             }
-        }
-        else{
-            ref<texWrapper> texture = m_textures[level];
-            while(loop_v(active1)){
-                Mask active2(active1);
-                const Float vv = vt - v;
-
-                Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
-                while(loop_u(active2)){
-                    const Float uu = ut - u;
-
-                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
-                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
-                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
-
-                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
-                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
-                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
-
-                    c_tmp = texture->eval_1_box(curr_uv, active2);
-
-                    dr::masked(out, active2) += c_tmp * weight;
-                    dr::masked(denominator, active2) += weight;
-                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
-                    // std::cout<<out<<std::endl;
-
-                    ut++;
-                    active2 &= ut <= u1;
-                }
-                vt++;
-                active1 &= vt <= v1;
-            }            
+            vt++;
+            active1 &= vt <= v1;
         }
 
 
@@ -1124,7 +1088,7 @@ protected:
         Color3f c_tmp = 0;
         Mask isInf = !dr::isfinite(uv.x()+uv.y());
 
-        dr::masked(out, (level >= m_levels) & active & !isInf) = m_textures[m_levels-1]->eval_1_box(uv, (level >= m_levels) & active);
+        dr::masked(out, (level >= m_levels) & active & !isInf) = m_textures[m_levels-1]->eval_3_box(uv, (level >= m_levels) & active);
 
         Float denominator = 0.0f;
         
@@ -1184,73 +1148,38 @@ protected:
         Mask active1(active);   
         dr::Loop<Mask> loop_v("Loop v", vt, denominator, out, active1);
 
-        if constexpr (dr::is_dynamic_array_v<Float>){
-            TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
-            while(loop_v(active1)){
-                Mask active2(active1);
-                const Float vv = vt - v;
 
-                Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
-                while(loop_u(active2)){
-                    const Float uu = ut - u;
+        TexPtr texture = dr::gather<TexPtr>(m_pyramid, level, active);
+        while(loop_v(active1)){
+            Mask active2(active1);
+            const Float vv = vt - v;
 
-                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
-                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
-                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
+            Int32 ut = dr::minimum(u0, (Int32)u);
+            dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
+            while(loop_u(active2)){
+                const Float uu = ut - u;
 
-                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
-                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
-                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
+                Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
+                // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
+                // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
 
-                    c_tmp = texture->eval_3_box(curr_uv, active2);
+                UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
+                Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
+                Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
+                dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
 
-                    dr::masked(out, active2) += c_tmp * weight;
-                    dr::masked(denominator, active2) += weight;
-                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
-                    // std::cout<<out<<std::endl;
+                c_tmp = texture->eval_3_box(curr_uv, active2);
 
-                    ut++;
-                    active2 &= ut <= u1;
-                }
-                vt++;
-                active1 &= vt <= v1;
+                dr::masked(out, active2) += c_tmp * weight;
+                dr::masked(denominator, active2) += weight;
+                // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
+                // std::cout<<out<<std::endl;
+
+                ut++;
+                active2 &= ut <= u1;
             }
-        }
-        else{
-            ref<texWrapper> texture = m_textures[level];
-            while(loop_v(active1)){
-                Mask active2(active1);
-                const Float vv = vt - v;
-
-                Int32 ut = dr::minimum(u0, (Int32)u);
-                dr::Loop<Mask> loop_u("Loop u", ut, denominator, out, active2);
-                while(loop_u(active2)){
-                    const Float uu = ut - u;
-
-                    Float q  = (As*uu*uu + (Bs*uu + Cs*vv)*vv);
-                    // std::cout<<A<<" "<<B<<" "<<C<<std::endl;
-                    // std::cout<<q / MI_MIPMAP_LUT_SIZE<<std::endl;
-
-                    UInt32 qi = dr::minimum((UInt32) q, MI_MIPMAP_LUT_SIZE-1);
-                    Float r2 = qi / (ScalarFloat)(MI_MIPMAP_LUT_SIZE-1);
-                    Float weight = dr::exp(-2.0f * r2) - dr::exp(-2.0f);
-                    dr::Array<Float, 2> curr_uv = {Float(ut)/size.x(), Float(vt)/size.y()};
-
-                    c_tmp = texture->eval_3_box(curr_uv, active2);
-
-                    dr::masked(out, active2) += c_tmp * weight;
-                    dr::masked(denominator, active2) += weight;
-                    // std::cout<<vt<<" "<<ut<<" "<<weight<<" "<<q<<std::endl;
-                    // std::cout<<out<<std::endl;
-
-                    ut++;
-                    active2 &= ut <= u1;
-                }
-                vt++;
-                active1 &= vt <= v1;
-            }            
+            vt++;
+            active1 &= vt <= v1;
         }
 
 
