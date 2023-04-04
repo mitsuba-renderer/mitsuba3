@@ -97,7 +97,7 @@ def _sample_warp_field(scene: mi.Scene,
     # Convert into a direction at 'ray.o'. When no surface was intersected,
     # copy the original direction
     hit = si.is_valid()
-    V_direct = dr.select(hit, dr.normalize(si.p - ray.o), ray.d)
+    V_direct = dr.select(hit, (si.p - ray.o) / si.t, ray.d)
 
     with dr.suspend_grad():
         # Boundary term provided by the underlying shape
