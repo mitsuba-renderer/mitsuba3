@@ -550,7 +550,7 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is used
+        if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is not used
             dr::make_opaque(m_to_world, m_to_object);
     }
 
