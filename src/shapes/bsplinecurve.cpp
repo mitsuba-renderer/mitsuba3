@@ -205,7 +205,7 @@ public:
             dr::store(vertex_ptr, vertices[i]);
         }
 
-        // Merge buffers into m_control_point_count
+        // Merge buffers into m_control_points
         m_control_points = dr::empty<FloatStorage>(m_control_point_count * 4);
         FloatStorage vertex_buffer = dr::load<FloatStorage>(positions.get(), m_control_point_count * 3);
         FloatStorage radius_buffer = dr::load<FloatStorage>(radius.data(), m_control_point_count * 1);
@@ -264,38 +264,37 @@ public:
         Float eps = dr::Epsilon<Float>;
 
         // Global u to local u
-        Float u_global = u_to_globalu(uv.x());
-        dr::masked(u_global, u_global < delta * 1.5f + eps) += eps;
-        dr::masked(u_global, u_global > 1.f - delta * 1.5f - eps) -= eps;
-        UInt32 segment_id = dr::floor2int<UInt32>((u_global - delta * 1.5f) / delta);
-        Float u_local = u_global * m_control_point_count - 1.5f - segment_id;
+        Float v_global = v_to_globalv(uv.y());
+        dr::masked(v_global, v_global < delta * 1.5f + eps) += eps;
+        dr::masked(v_global, v_global > 1.f - delta * 1.5f - eps) -= eps;
+        UInt32 segment_id = dr::floor2int<UInt32>((v_global - delta * 1.5f) / delta);
+        Float v_local = v_global * m_control_point_count - 1.5f - segment_id;
 
-        pi.prim_uv.x() = u_local;
-        pi.prim_uv.y() = uv.y();
+        pi.prim_uv.x() = v_local;
+        pi.prim_uv.y() = 0;
         pi.prim_index = segment_id;
         pi.shape = this;
         dr::masked(pi.t, active) = eps * 10;
 
         /* Create a ray at the intersection point and offset it by epsilon in
          the direction of the local surface normal */
-
         Point3f c;
-        Vector3f dc_du;
+        Vector3f dc_dv;
         Float radius;
-        Float dr_du;
-        Vector3f dc_duu;
-        Float dr_duu;
-        std::tie(c, dc_du, dc_duu, radius, dr_du, dr_duu) = cubic_interpolation(u_local, segment_id, active);
-        Vector3f dc_du_normalized = dr::normalize(dc_du);
+        Float dr_dv;
+        Vector3f dc_dvv;
+        Float dr_dvv;
+        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) = cubic_interpolation(v_local, segment_id, active);
+        Vector3f dc_dv_normalized = dr::normalize(dc_dv);
 
-        Vector3f v_rot, v_rad;
-        std::tie(v_rot, v_rad) = local_frame(dc_du_normalized);
+        Vector3f u_rot, v_rad;
+        std::tie(u_rot, v_rad) = local_frame(dc_dv_normalized);
 
-        auto [sin_v, cos_v] = dr::sincos(uv.y() * dr::TwoPi<Float>);
-        Point3f o = c + cos_v * v_rad * (radius + pi.t) + sin_v * v_rot * (radius + pi.t);
+        auto [sin_u, cos_u] = dr::sincos(uv.x() * dr::TwoPi<Float>);
+        Point3f o = c + cos_u * v_rad * (radius + pi.t) + sin_u * u_rot * (radius + pi.t);
 
         Vector3f rad_vec = o - c;
-        Normal3f d = -dr::normalize(dr::norm(dc_du) * rad_vec - (dr_du * radius) * dc_du_normalized);
+        Normal3f d = -dr::normalize(dr::norm(dc_dv) * rad_vec - (dr_dv * radius) * dc_dv_normalized);
 
         Ray3f ray(o, d, 0, Wavelength(0));
 
@@ -333,37 +332,36 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-        Float u_local = pi.prim_uv.x();
+        Float v_local = pi.prim_uv.x();
         Index idx = pi.prim_index;
 
         Point3f c;
-        Vector3f dc_du;
-        Vector3f dc_duu;
+        Vector3f dc_dv;
+        Vector3f dc_dvv;
         Float radius;
-        Float dr_du;
-        Float dr_duu;
-        std::tie(c, dc_du, dc_duu, radius, dr_du, dr_duu) =
-            cubic_interpolation(u_local, idx, active);
-        Vector3f dc_du_normalized = dr::normalize(dc_du);
+        Float dr_dv;
+        Float dr_dvv;
+        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) =
+            cubic_interpolation(v_local, idx, active);
+        Vector3f dc_du_normalized = dr::normalize(dc_dv);
 
-        Vector3f v_rot, v_rad;
-        std::tie(v_rot, v_rad) = local_frame(dc_du_normalized);
+        Vector3f u_rot, u_rad;
+        std::tie(u_rot, u_rad) = local_frame(dc_du_normalized);
 
         if constexpr (IsDiff) {
             Point3f p = ray(pi.t);
             Vector3f rad_vec = p - c;
             Vector3f rad_vec_normalized = dr::normalize(rad_vec);
 
-            Float v = dr::atan2(dr::dot(v_rot, rad_vec_normalized),
-                                dr::dot(v_rad, rad_vec_normalized));
-            v += dr::select(v < 0.f, dr::TwoPi<Float>, 0.f);
-            v *= dr::InvTwoPi<Float>;
-            v = dr::detach(v); // v has no motion for an attached intersection point
+            Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
+                                dr::dot(u_rad, rad_vec_normalized));
+            u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
+            u *= dr::InvTwoPi<Float>;
+            u = dr::detach(u); // v has no motion for an attached intersection point
 
             // Differentiable intersection point (w.r.t curve parameters)
-            auto [sin_v, cos_v] = dr::sincos(v * dr::TwoPi<Float>);
-            Point3f p_diff =
-                c + cos_v * v_rad * radius + sin_v * v_rot * radius;
+            auto [sin_v, cos_v] = dr::sincos(u * dr::TwoPi<Float>);
+            Point3f p_diff = c + cos_v * u_rad * radius + sin_v * u_rot * radius;
             p = dr::replace_grad(p, p_diff);
 
             if (follow_shape) {
@@ -384,10 +382,10 @@ public:
                 Vector3f rad_vec_diff = si.p - c;
                 rad_vec = dr::replace_grad(rad_vec, rad_vec_diff);
                 // Differentiable tangent plane normal
-                Float correction = dr::dot(rad_vec, dc_duu);
+                Float correction = dr::dot(rad_vec, dc_dvv);
                 Vector3f n = dr::normalize(
-                    (dr::squared_norm(dc_du) - correction) * rad_vec -
-                    (dr_du * radius) * dc_du
+                    (dr::squared_norm(dc_dv) - correction) * rad_vec -
+                    (dr_dv * radius) * dc_dv
                 );
 
                 Float t_diff = dr::dot(p - ray.o, n) / dr::dot(n, ray.d);
@@ -404,22 +402,22 @@ public:
         // Normal
         Vector3f rad_vec = si.p - c;
         Vector3f rad_vec_normalized = dr::normalize(rad_vec);
-        Float correction = dr::dot(rad_vec, dc_duu);  // curvature correction
+        Float correction = dr::dot(rad_vec, dc_dvv);  // curvature correction
         Normal3f n = dr::normalize(
-            (dr::squared_norm(dc_du) - correction) * rad_vec -
-            (dr_du * radius) * dc_du
+            (dr::squared_norm(dc_dv) - correction) * rad_vec -
+            (dr_dv * radius) * dc_dv
         );
         si.n = si.sh_frame.n = n;
 
         if (need_uv) {
             // Convert segment-local u to curve-global u
-            Float u_global = (u_local + idx + 1.5f) / m_control_point_count;
-            Float u = globalu_to_u(u_global);
+            Float v_global = (v_local + idx + 1.5f) / m_control_point_count;
+            Float v = globalv_to_v(v_global);
 
-            Float v = dr::atan2(dr::dot(v_rot, rad_vec_normalized),
-                                dr::dot(v_rad, rad_vec_normalized));
-            v += dr::select(v < 0.f, dr::TwoPi<Float>, 0.f);
-            v *= dr::InvTwoPi<Float>;
+            Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
+                                dr::dot(u_rad, rad_vec_normalized));
+            u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
+            u *= dr::InvTwoPi<Float>;
 
             // TODO: U gradients are wrong w/o FollowShape
             // how to compute U from si.p?
@@ -431,8 +429,8 @@ public:
 
         if (likely(need_dp_duv)) {
             // TODO: gradients are wrong w/o FollowShape? need to recompute them w.r.t si.p
-            si.dp_du = (dc_du + rad_vec_normalized * dr_du) / (1.f - 3.f / m_control_point_count);
-            si.dp_dv = dr::cross(rad_vec_normalized, dc_du_normalized) * dr::TwoPi<Float> * radius;
+            si.dp_du = dr::cross(rad_vec_normalized, dc_du_normalized) * dr::TwoPi<Float> * radius;
+            si.dp_dv = (dc_dv + rad_vec_normalized * dr_dv) / (1.f - 3.f / m_control_point_count);
         }
 
         if (need_dn_duv) {
@@ -523,6 +521,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BSpline[" << std::endl
+            << "  control_point_count = " << m_control_point_count << "," << std::endl
+            << "  segment_count = " << m_segment_count << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
@@ -608,15 +608,15 @@ private:
         }
     }
 
-    Float globalu_to_u(Float global_u) const {
+    Float globalv_to_v(Float global_v) const {
         //TODO: FIXME
-        return (global_u - 1.5f / m_control_point_count) /
+        return (global_v - 1.5f / m_control_point_count) /
                (1.f - 3.f / m_control_point_count);
     }
 
-    Float u_to_globalu(Float u) const {
+    Float v_to_globalv(Float v) const {
         //TODO: FIXME
-        return u * (1.f - 3.f / m_control_point_count) + 1.5f /
+        return v * (1.f - 3.f / m_control_point_count) + 1.5f /
                m_control_point_count;
     }
 
@@ -644,7 +644,6 @@ private:
     ScalarSize m_segment_count = 0;
 
     mutable UInt32Storage m_indices;
-
     mutable FloatStorage m_control_points;
 
 #if defined(MI_ENABLE_CUDA)
