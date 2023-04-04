@@ -176,8 +176,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) co
     }
 
     if (has_vertex_texcoords()) {
-        stream->write_line("property float u");
-        stream->write_line("property float v");
+        stream->write_line("property float s");
+        stream->write_line("property float t");
     }
 
     for (const auto&[name, attribute]: vertex_attributes)
