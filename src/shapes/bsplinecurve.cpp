@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mitsuba)
  *   "un-expectedly".
  *
  * - Documentation:
- *      - Scalar modes not supported
+ *      - Scalar mode only supported with EMBREE
  *      - Orthographic broken in CUDA
  *      - Endcaps
  *      - Backface culling  CUDA
@@ -59,8 +59,6 @@ public:
     using FloatStorage = DynamicBuffer<dr::replace_scalar_t<Float, InputFloat>>;
 
     using UInt32Storage = DynamicBuffer<UInt32>;
-    using Index = typename CoreAliases::UInt32;
-
 
     BSplineCurve(const Properties &props) : Base(props) {
 #if !defined(MI_ENABLE_EMBREE)
@@ -99,10 +97,20 @@ public:
         char buf[1025];
         Timer timer;
 
-        m_segment_count = 0;
-        std::vector<size_t> curve_idx;
-        curve_idx.reserve(vertex_guess / 4);
+        size_t segment_count = 0;
+        std::vector<size_t> curve_1st_idx;
+        curve_1st_idx.reserve(vertex_guess / 4);
         bool new_curve = true;
+
+        auto finish_curve = [&]() {
+            if (!new_curve) {
+                size_t num_control_points = vertices.size() - curve_1st_idx[curve_1st_idx.size() - 1];
+                if (unlikely((num_control_points < 4) && (num_control_points > 0)))
+                    fail("B-spline must have at least four control points!");
+                if (likely(num_control_points > 0))
+                    segment_count += (num_control_points - 3);
+            }
+        };
 
         while (ptr < eof) {
             // Determine the offset of the next newline
@@ -123,18 +131,7 @@ public:
 
             // Empty line
             if (*cur == '\0') {
-                // Finish a curve
-                if (!new_curve) {
-                    size_t num_control_points =
-                        vertices.size() - curve_idx[curve_idx.size() - 1];
-                    if (unlikely((num_control_points < 4) &&
-                                 (num_control_points > 0)))
-                        fail("B-spline must have at least four control points!");
-
-                    if (likely(num_control_points > 0))
-                        m_segment_count += (num_control_points - 3);
-                }
-
+                finish_curve();
                 new_curve = true;
                 ptr = next + 1;
                 continue;
@@ -142,7 +139,7 @@ public:
 
             // Handle current line: v.x v.y v.z radius
             if (new_curve) {
-                curve_idx.push_back(vertices.size());
+                curve_1st_idx.push_back(vertices.size());
                 new_curve = false;
             }
 
@@ -173,30 +170,21 @@ public:
                 fail("Could not parse line \"%s\"!", buf);
             ptr = next + 1;
         }
-
-        if (curve_idx.size() == 0)
+        if (curve_1st_idx.size() == 0)
             fail("Empty B-spline file: no control points were read!");
-
-        // Last curve
-        if (!new_curve) {
-            size_t num_control_points = vertices.size() - curve_idx[curve_idx.size() - 1];
-            if (unlikely((num_control_points < 4) && (num_control_points > 0)))
-                fail("B-spline must have at least four control points!");
-            if (likely(num_control_points > 0))
-                m_segment_count += (num_control_points - 3);
-        }
+        finish_curve();
 
         m_control_point_count = vertices.size();
 
-        std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(m_segment_count);
+        std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(segment_count);
         size_t segment_index = 0;
-        for (size_t i = 0; i < curve_idx.size(); ++i) {
-            size_t next_curve_idx = i + 1 < curve_idx.size() ? curve_idx[i + 1] : vertices.size();
-            size_t curve_segment_count = next_curve_idx - curve_idx[i] - 3;
+        for (size_t i = 0; i < curve_1st_idx.size(); ++i) {
+            size_t next_curve_idx = i + 1 < curve_1st_idx.size() ? curve_1st_idx[i + 1] : vertices.size();
+            size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
             for (size_t j = 0; j < curve_segment_count; ++j)
-                indices[segment_index++] = curve_idx[i] + j;
+                indices[segment_index++] = curve_1st_idx[i] + j;
         }
-        m_indices = dr::load<UInt32Storage>(indices.get(), m_segment_count);
+        m_indices = dr::load<UInt32Storage>(indices.get(), segment_count);
 
         std::unique_ptr<InputFloat[]> positions =
             std::make_unique<InputFloat[]>(m_control_point_count * 3);
@@ -211,7 +199,7 @@ public:
         FloatStorage radius_buffer = dr::load<FloatStorage>(radius.data(), m_control_point_count * 1);
 
         if constexpr (dr::is_jit_v<Float>) {
-            UInt32 idx = dr::arange<UInt32>(m_control_point_count);
+            DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(m_control_point_count);
             dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
             dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
             dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
@@ -237,38 +225,19 @@ public:
         initialize();
     }
 
-    template <bool Negate, size_t N>
-    void advance(const char **start_, const char *end, const char (&delim)[N]) {
-        const char *start = *start_;
-
-        while (true) {
-            bool is_delim = false;
-            for (size_t i = 0; i < N; ++i)
-                if (*start == delim[i])
-                    is_delim = true;
-            if ((is_delim ^ Negate) || start == end)
-                break;
-            ++start;
-        }
-
-        *start_ = start;
-    }
-
     ScalarSize primitive_count() const override { return dr::width(m_indices); }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        ScalarFloat delta = 1.f / m_control_point_count;
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
         Float eps = dr::Epsilon<Float>;
 
-        // Global u to local u
-        Float v_global = v_to_globalv(uv.y());
-        dr::masked(v_global, v_global < delta * 1.5f + eps) += eps;
-        dr::masked(v_global, v_global > 1.f - delta * 1.5f - eps) -= eps;
-        UInt32 segment_id = dr::floor2int<UInt32>((v_global - delta * 1.5f) / delta);
-        Float v_local = v_global * m_control_point_count - 1.5f - segment_id;
+        // Convert global v to segment-local v
+        Float v_global = uv.y();
+        size_t segment_count = dr::width(m_indices);
+        UInt32 segment_id = dr::floor2int<UInt32>(v_global * segment_count);
+        Float v_local = v_global * segment_count - segment_id;
 
         pi.prim_uv.x() = v_local;
         pi.prim_uv.y() = 0;
@@ -333,7 +302,7 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         Float v_local = pi.prim_uv.x();
-        Index idx = pi.prim_index;
+        UInt32 prim_idx = pi.prim_index;
 
         Point3f c;
         Vector3f dc_dv;
@@ -342,7 +311,7 @@ public:
         Float dr_dv;
         Float dr_dvv;
         std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) =
-            cubic_interpolation(v_local, idx, active);
+            cubic_interpolation(v_local, prim_idx, active);
         Vector3f dc_du_normalized = dr::normalize(dc_dv);
 
         Vector3f u_rot, u_rad;
@@ -410,10 +379,8 @@ public:
         si.n = si.sh_frame.n = n;
 
         if (need_uv) {
-            // Convert segment-local u to curve-global u
-            Float v_global = (v_local + idx + 1.5f) / m_control_point_count;
-            Float v = globalv_to_v(v_global);
-
+            // Convert segment-local v to global v
+            Float v = (v_local + prim_idx) / dr::width(m_indices);
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
             u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
@@ -449,6 +416,7 @@ public:
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
         callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("segment_indices",     m_indices,             +ParamFlags::NonDifferentiable);
         callback->put_parameter("control_points",      m_control_points,       ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
@@ -473,7 +441,7 @@ public:
                                    m_control_point_count);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,
                                    m_indices.data(), 0, 1 * sizeof(ScalarIndex),
-                                   m_segment_count);
+                                   dr::width(m_indices));
         rtcCommitGeometry(geom);
         return geom;
     }
@@ -490,7 +458,7 @@ public:
 
         build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
         build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
-        build_input.curveArray.numPrimitives        = m_segment_count;
+        build_input.curveArray.numPrimitives        = dr::width(m_indices);
 
         build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
         build_input.curveArray.numVertices          = m_control_point_count;
@@ -522,7 +490,7 @@ public:
         std::ostringstream oss;
         oss << "BSpline[" << std::endl
             << "  control_point_count = " << m_control_point_count << "," << std::endl
-            << "  segment_count = " << m_segment_count << "," << std::endl
+            << "  segment_count = " << dr::width(m_indices) << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
@@ -531,8 +499,25 @@ public:
     MI_DECLARE_CLASS()
 
 private:
+    template <bool Negate, size_t N>
+    void advance(const char **start_, const char *end, const char (&delim)[N]) {
+        const char *start = *start_;
+
+        while (true) {
+            bool is_delim = false;
+            for (size_t i = 0; i < N; ++i)
+                if (*start == delim[i])
+                    is_delim = true;
+            if ((is_delim ^ Negate) || start == end)
+                break;
+            ++start;
+        }
+
+        *start_ = start;
+    }
+
     std::tuple<Point3f, Vector3f, Vector3f, Float, Float, Float>
-    cubic_interpolation(const Float u, const Index &idx, Mask active) const {
+    cubic_interpolation(const Float u, const UInt32 idx, Mask active) const {
         Point4f c0 = dr::gather<Point4f>(m_control_points, idx + 0, active),
                 c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
                 c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
@@ -608,18 +593,6 @@ private:
         }
     }
 
-    Float globalv_to_v(Float global_v) const {
-        //TODO: FIXME
-        return (global_v - 1.5f / m_control_point_count) /
-               (1.f - 3.f / m_control_point_count);
-    }
-
-    Float v_to_globalv(Float v) const {
-        //TODO: FIXME
-        return v * (1.f - 3.f / m_control_point_count) + 1.5f /
-               m_control_point_count;
-    }
-
     std::tuple<Vector3f, Vector3f>
     local_frame(const Vector3f &dc_du_normalized) const {
         // Define consistent local frame
@@ -641,7 +614,6 @@ private:
     ScalarBoundingBox3f m_bbox;
 
     ScalarSize m_control_point_count = 0;
-    ScalarSize m_segment_count = 0;
 
     mutable UInt32Storage m_indices;
     mutable FloatStorage m_control_points;
