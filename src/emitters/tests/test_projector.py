@@ -7,7 +7,8 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 @fresolver_append_path
 def test01_sampling_weights(variants_vec_backends_once_rgb):
     rng = mi.PCG32(size=102400)
-    sample = mi.Point2f(
+    sample = mi.Point3f(
+        rng.next_float32(),
         rng.next_float32(),
         rng.next_float32())
     sample_2 = mi.Point2f(

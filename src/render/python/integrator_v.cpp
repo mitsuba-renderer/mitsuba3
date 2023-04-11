@@ -232,7 +232,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
-                                     const Medium * /* unused */,
+                                     const Medium * initial_medium,
                                      Float *aovs,
                                      Mask active) const override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "sample", true);

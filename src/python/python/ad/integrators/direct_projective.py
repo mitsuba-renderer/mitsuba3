@@ -162,10 +162,12 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
         # Is emitter sampling possible on the current vertex?
         active_em_ = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+        sample_ = sampler.next_2d(active_em_)
+        sample_ = mi.Point3f(sample_.x, sample_.y, 0.0)
 
         # If so, pick an emitter and sample a detached emitter direction
         ds_em, emitter_val = scene.sample_emitter_direction(
-            si, sampler.next_2d(active_em_), test_visibility=True, active=active_em_)
+            si, sample_, test_visibility=True, active=active_em_)
         active_em = active_em_ & (ds_em.pdf != 0.0)
 
         with dr.resume_grad(when=not primal):
@@ -365,7 +367,9 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # Connect `si_boundary` to the sensor
         it = dr.zeros(mi.Interaction3f)
         it.p = si_boundary.p
-        sensor_ds, sensor_weight = sensor.sample_direction(it, sampler.next_2d(active_i), active_i)
+        sample_ = sampler.next_2d(active_i)
+        sample_ = mi.Point3f(sample_.x, sample_.y, 0.0)
+        sensor_ds, sensor_weight = sensor.sample_direction(it, sample_, active_i)
         active_i &= (sensor_ds.pdf != 0)
 
         # Visibility to sensor

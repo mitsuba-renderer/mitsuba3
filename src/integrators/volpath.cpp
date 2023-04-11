@@ -76,7 +76,19 @@ public:
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
+
     VolumetricPathIntegrator(const Properties &props) : Base(props) {
+        auto sampling_mode = props.get<int>("sampling_mode", 0);
+        if (sampling_mode == 0) {
+            m_use_emitter_sampling = true;
+            m_use_uni_sampling     = true;
+        } else if (sampling_mode == 1) {
+            m_use_emitter_sampling = false;
+            m_use_uni_sampling     = true;
+        } else if (sampling_mode == 2) {
+            m_use_emitter_sampling = true;
+            m_use_uni_sampling     = false;
+        }
     }
 
     MI_INLINE
@@ -111,19 +123,20 @@ public:
 
         Spectrum throughput(1.f), result(0.f);
         MediumPtr medium = initial_medium;
-        MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
+        auto mei = dr::zeros<MediumInteraction3f>();
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
 
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
-            uint32_t n_channels = (uint32_t) dr::size_v<Spectrum>;
+            auto n_channels = (uint32_t) dr::size_v<Spectrum>;
             channel = (UInt32) dr::minimum(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        auto si = dr::zeros<SurfaceInteraction3f>();
+        auto last_scatter_event = dr::zeros<Interaction3f>();
+
         Mask needs_intersection = true;
-        Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
@@ -224,77 +237,107 @@ public:
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !active_medium;
-
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
+
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->transmittance_eval_pdf(mei, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->transmittance_eval_pdf(mei, si, active_medium);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);
-                    dr::masked(throughput, is_spectral) *= dr::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
+                    dr::masked(throughput, active_medium) *= dr::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
                 }
 
                 escaped_medium = active_medium && !mei.is_valid();
                 active_medium &= mei.is_valid();
+                is_spectral &= active_medium;
+                not_spectral &= active_medium;
+            }
+
+            if (dr::any_or<true>(active_medium)) {
+                // Compute emission, scatter and null event probabilities
+                auto radiance = medium->get_radiance(mei, active_medium);
+                auto [probabilities, weights] = medium->get_interaction_probabilities(radiance, mei, throughput);
+
+                auto [prob_scatter, prob_null]     = probabilities;
+                auto [weight_scatter, weight_null] = weights;
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(prob_scatter, channel);
 
-                act_null_scatter |= null_scatter && active_medium;
-                act_medium_scatter |= !act_null_scatter && active_medium;
+                act_null_scatter   =  null_scatter && active_medium;
+                act_medium_scatter = !null_scatter && active_medium;
 
-                if (dr::any_or<true>(is_spectral && act_null_scatter))
-                    dr::masked(throughput, is_spectral && act_null_scatter) *=
-                        mei.sigma_n * index_spectrum(mei.combined_extinction, channel) /
-                        index_spectrum(mei.sigma_n, channel);
+                // ---------------- Intersection with emitters ----------------
+                Mask ray_from_camera_medium = active_medium && dr::eq(depth, 0u);
+                Mask count_direct_medium = ray_from_camera_medium || specular_chain;
+                EmitterPtr emitter_medium = mei.emitter(active_medium);
+                Mask active_medium_e = active_medium && dr::neq(emitter_medium, nullptr) &&
+                                       !(dr::eq(depth, 0u) && m_hide_emitters);
+                if (dr::any_or<true>(active_medium_e)) {
+                    Float emitter_pdf = (m_use_emitter_sampling ? 1.0f : 0.0f);
+                    Spectrum weight = 1.0f;
+                    if (m_use_emitter_sampling && dr::any_or<true>(active_medium_e && !count_direct_medium)) {
+                        DirectionSample3f ds(mei, last_scatter_event);
+                        dr::masked(emitter_pdf, active_medium_e && !count_direct_medium) = scene->pdf_emitter_direction(last_scatter_event, ds, active_medium_e);
+
+                        // Get the PDF of sampling this emitter using next event estimation
+                        dr::masked(weight, !count_direct_medium) *= mis_weight(last_scatter_direction_pdf, emitter_pdf);
+                    }
+                    dr::masked(result, active_medium_e) += weight * throughput * radiance;
+                }
+
+                if (dr::any_or<true>(act_null_scatter)) {
+                    dr::masked(throughput, act_null_scatter) *= index_spectrum(weight_null, channel) * mei.sigma_n;
+
+                    // Move the ray along
+                    dr::masked(ray.o, act_null_scatter) = mei.p;
+                    dr::masked(si.t, act_null_scatter)  = si.t - mei.t;
+                }
 
                 dr::masked(depth, act_medium_scatter) += 1;
                 dr::masked(last_scatter_event, act_medium_scatter) = mei;
-            }
 
-            // Dont estimate lighting if we exceeded number of bounces
-            active &= depth < (uint32_t) m_max_depth;
-            act_medium_scatter &= active;
+                // Don't estimate lighting if we exceeded number of bounces
+                active &= depth < (uint32_t) m_max_depth;
+                act_medium_scatter &= active;
 
-            if (dr::any_or<true>(act_null_scatter)) {
-                dr::masked(ray.o, act_null_scatter) = mei.p;
-                dr::masked(si.t, act_null_scatter) = si.t - mei.t;
-            }
+                if (dr::any_or<true>(act_medium_scatter)) {
+                    dr::masked(throughput, act_medium_scatter) *= index_spectrum(weight_scatter, channel) * mei.sigma_s;
 
-            if (dr::any_or<true>(act_medium_scatter)) {
-                if (dr::any_or<true>(is_spectral))
-                    dr::masked(throughput, is_spectral && act_medium_scatter) *=
-                        mei.sigma_s * index_spectrum(mei.combined_extinction, channel) / index_spectrum(mei.sigma_t, channel);
-                if (dr::any_or<true>(not_spectral))
-                    dr::masked(throughput, not_spectral && act_medium_scatter) *= mei.sigma_s / mei.sigma_t;
+                    PhaseFunctionContext phase_ctx(sampler);
+                    auto phase = mei.medium->phase_function();
 
-                PhaseFunctionContext phase_ctx(sampler);
-                auto phase = mei.medium->phase_function();
+                    // --------------------- Emitter sampling ---------------------
+                    if (m_use_emitter_sampling) {
+                        Mask sample_emitters = mei.medium->use_emitter_sampling();
+                        valid_ray |= act_medium_scatter;
+                        specular_chain &= !act_medium_scatter;
+                        specular_chain |= act_medium_scatter && !sample_emitters;
 
-                // --------------------- Emitter sampling ---------------------
-                Mask sample_emitters = mei.medium->use_emitter_sampling();
-                valid_ray |= act_medium_scatter;
-                specular_chain &= !act_medium_scatter;
-                specular_chain |= act_medium_scatter && !sample_emitters;
+                        Mask active_e = act_medium_scatter && sample_emitters;
+                        if (dr::any_or<true>(active_e)) {
+                            auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
+                            auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
+                            auto weight = dr::select(
+                                m_use_uni_sampling,
+                                mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf)),
+                                1.0f
+                            );
+                            dr::masked(result, active_e) += weight * throughput * phase_val * emitted;
+                        }
+                    }
 
-                Mask active_e = act_medium_scatter && sample_emitters;
-                if (dr::any_or<true>(active_e)) {
-                    auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
-                    auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
-                    dr::masked(result, active_e) += throughput * phase_val * emitted *
-                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf));
+                    // ------------------ Phase function sampling -----------------
+                    dr::masked(phase, !act_medium_scatter) = nullptr;
+                    auto [wo, phase_weight, phase_pdf]     = phase->sample(
+                        phase_ctx, mei, sampler->next_1d(act_medium_scatter),
+                        sampler->next_2d(act_medium_scatter),
+                        act_medium_scatter);
+                    act_medium_scatter &= phase_pdf > 0.f;
+                    Ray3f new_ray                       = mei.spawn_ray(wo);
+                    dr::masked(ray, act_medium_scatter) = new_ray;
+                    needs_intersection |= act_medium_scatter;
+                    dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
+                    dr::masked(throughput, act_medium_scatter) *= phase_weight;
                 }
-
-                // ------------------ Phase function sampling -----------------
-                dr::masked(phase, !act_medium_scatter) = nullptr;
-                auto [wo, phase_weight, phase_pdf] = phase->sample(phase_ctx, mei,
-                    sampler->next_1d(act_medium_scatter),
-                    sampler->next_2d(act_medium_scatter),
-                    act_medium_scatter);
-                act_medium_scatter &= phase_pdf > 0.f;
-                Ray3f new_ray  = mei.spawn_ray(wo);
-                dr::masked(ray, act_medium_scatter) = new_ray;
-                needs_intersection |= act_medium_scatter;
-                dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
-                dr::masked(throughput, act_medium_scatter) *= phase_weight;
             }
 
             // --------------------- Surface Interactions ---------------------
@@ -309,14 +352,16 @@ public:
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
                 Mask active_e = active_surface && emitter != nullptr
-                                && !((depth == 0u) && m_hide_emitters);
+                                && !((depth == 0u) && m_hide_emitters)
+                                && !has_flag(emitter->flags(), EmitterFlags::Medium); // Ignore any medium emitters as this simply looks at surface emitters
                 if (dr::any_or<true>(active_e)) {
-                    Float emitter_pdf = 1.0f;
-                    if (dr::any_or<true>(active_e && !count_direct)) {
+                    Float emitter_pdf = (m_use_emitter_sampling ? 1.0f : 0.0f);
+                    if (m_use_emitter_sampling && dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
                         DirectionSample3f ds(scene, si, last_scatter_event);
-                        emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
+                        dr::masked(emitter_pdf, active_e && !count_direct) = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
                     }
+
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = dr::select(count_direct, throughput * emitted,
                                                   throughput * mis_weight(last_scatter_direction_pdf, emitter_pdf) * emitted);
@@ -325,23 +370,26 @@ public:
             }
             active_surface &= si.is_valid();
             if (dr::any_or<true>(active_surface)) {
-                // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
                 BSDFPtr bsdf  = si.bsdf(ray);
-                Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
-                if (likely(dr::any_or<true>(active_e))) {
-                    auto [emitted, ds] = sample_emitter(si, scene, sampler, medium, channel, active_e);
+                // --------------------- Emitter sampling ---------------------
+                if (m_use_emitter_sampling) {
+                    Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
-                    // Query the BSDF for that emitter-sampled direction
-                    Vector3f wo       = si.to_local(ds.d);
-                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
-                    bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
+                    if (likely(dr::any_or<true>(active_e))) {
+                        auto [emitted, ds] = sample_emitter(si, scene, sampler, medium, channel, active_e);
 
-                    // Determine probability of having sampled that same
-                    // direction using BSDF sampling.
-                    Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
-                    result[active_e] += throughput * bsdf_val * mis_weight(ds.pdf, dr::select(ds.delta, 0.f, bsdf_pdf)) * emitted;
+                        // Query the BSDF for that emitter-sampled direction
+                        Vector3f wo       = si.to_local(ds.d);
+                        Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                        bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
+
+                        // Determine probability of having sampled that same
+                        // direction using BSDF sampling.
+                        Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
+                        result[active_e] += throughput * bsdf_val * mis_weight(ds.pdf, dr::select(ds.delta, 0.f, bsdf_pdf)) * emitted;
+                    }
                 }
 
                 // ----------------------- BSDF sampling ----------------------
@@ -366,7 +414,6 @@ public:
                 valid_ray |= non_null_bsdf;
                 specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
-                act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
                 Mask has_medium_trans                = active_surface && si.is_medium_transition();
                 dr::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
@@ -386,9 +433,14 @@ public:
                    UInt32 channel, Mask active) const {
         Spectrum transmittance(1.0f);
 
-        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        /// We conservatively assume that there are volume emitters in the scene and sample 3d points instead of 2d
+        /// This leads to some inefficiencies due to the fact that an extra random number per is generated and unused.
+        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_3d(active), false, active);
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
         active &= (ds.pdf != 0.f);
+
+        Mask is_medium_emitter = active && has_flag(ds.emitter->flags(), EmitterFlags::Medium);
+        dr::masked(emitter_val, is_medium_emitter) = 0.0f;
 
         if (dr::none_or<false>(active)) {
             return { emitter_val, ds };
@@ -399,11 +451,11 @@ public:
 
         // Potentially escaping the medium if this is the current medium's boundary
         if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
-            dr::masked(medium, ref_interaction.is_medium_transition()) =
-                ref_interaction.target_medium(ray.d);
+            dr::masked(medium, ref_interaction.is_medium_transition()) = ref_interaction.target_medium(ray.d);
 
         Float total_dist = 0.f;
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        auto si = dr::zeros<SurfaceInteraction3f>();
+        auto mei = dr::zeros<MediumInteraction3f>();
         Mask needs_intersection = true;
         DirectionSample3f dir_sample = ds;
 
@@ -411,23 +463,29 @@ public:
             Mask active;
             Ray3f ray;
             Float total_dist;
+            Spectrum emitter_val;
             Mask needs_intersection;
+            Mask is_medium_emitter;
             MediumPtr medium;
             SurfaceInteraction3f si;
+            MediumInteraction3f mei;
             Spectrum transmittance;
             DirectionSample3f dir_sample;
             Sampler* sampler;
 
-            DRJIT_STRUCT(LoopState, active, ray, total_dist, \
-                needs_intersection, medium, si, transmittance, \
-                dir_sample, sampler)
+            DRJIT_STRUCT(LoopState, active, ray, total_dist, emitter_val, \
+                needs_intersection, is_medium_emitter, medium, si, mei, \
+                transmittance, dir_sample, sampler)
         } ls = {
             active,
             ray,
             total_dist,
+            emitter_val,
             needs_intersection,
+            is_medium_emitter,
             medium,
             si,
+            mei,
             transmittance,
             dir_sample,
             sampler
@@ -440,9 +498,12 @@ public:
             Mask& active = ls.active;
             Ray3f& ray = ls.ray;
             Float& total_dist = ls.total_dist;
+            Spectrum& emitter_val = ls.emitter_val;
             Mask& needs_intersection = ls.needs_intersection;
+            Mask& is_medium_emitter = ls.is_medium_emitter;
             MediumPtr& medium = ls.medium;
             SurfaceInteraction3f& si = ls.si;
+            MediumInteraction3f& mei = ls.mei;
             Spectrum& transmittance = ls.transmittance;
             DirectionSample3f& dir_sample = ls.dir_sample;
             Sampler* sampler = ls.sampler;
@@ -458,7 +519,7 @@ public:
             Mask active_surface = active && !active_medium;
 
             if (dr::any_or<true>(active_medium)) {
-                auto mei = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                dr::masked(mei, active_medium) = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
                 dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = dr::minimum(mei.t, remaining_dist);
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
@@ -483,14 +544,25 @@ public:
 
                 escaped_medium = active_medium && !mei.is_valid();
                 active_medium &= mei.is_valid();
-                is_spectral &= active_medium;
-                not_spectral &= active_medium;
+
+                EmitterPtr medium_em = mei.emitter(active_medium);
+                Mask is_sampled_medium = active_medium && dr::eq(medium_em, dir_sample.emitter) && is_medium_emitter;
+                if (dr::any_or<true>(is_sampled_medium)) {
+                    PositionSample3f ps(mei);
+                    auto radiance = medium->get_radiance(mei, active_medium);
+                    dr::masked(emitter_val, is_sampled_medium) += transmittance * radiance * dr::rcp(dir_sample.pdf);
+                }
+
+                dr::masked(mei, escaped_medium) = dr::zeros<MediumInteraction3f>();
 
                 dr::masked(total_dist, active_medium) += mei.t;
 
+                is_spectral  &= active_medium;
+                not_spectral &= active_medium;
+
                 if (dr::any_or<true>(active_medium)) {
-                    dr::masked(ray.o, active_medium)    = mei.p;
-                    dr::masked(si.t, active_medium) = si.t - mei.t;
+                    dr::masked(ray.o, active_medium) = mei.p;
+                    dr::masked(si.t, active_medium)  = si.t - mei.t;
 
                     if (dr::any_or<true>(is_spectral))
                         dr::masked(transmittance, is_spectral) *= mei.sigma_n;
@@ -502,7 +574,7 @@ public:
             // Handle interactions with surfaces
             Mask intersect = active_surface && needs_intersection;
             if (dr::any_or<true>(intersect))
-                dr::masked(si, intersect)    = scene->ray_intersect(ray, intersect);
+                dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
             needs_intersection &= !intersect;
             active_surface |= escaped_medium;
             dr::masked(total_dist, active_surface) += si.t;
@@ -532,7 +604,7 @@ public:
         },
         "Volpath integrator emitter sampling");
 
-        return { ls.transmittance * emitter_val, dir_sample };
+        return dr::select(ls.is_medium_emitter, ls.emitter_val, ls.emitter_val * ls.transmittance), dir_sample ;
     }
 
     //! @}
@@ -554,6 +626,8 @@ public:
     };
 
     MI_DECLARE_CLASS()
+protected:
+    bool m_use_emitter_sampling, m_use_uni_sampling;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumetricPathIntegrator, MonteCarloIntegrator);

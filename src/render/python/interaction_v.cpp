@@ -97,7 +97,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
 }
 
 MI_PY_EXPORT(MediumInteraction) {
-    MI_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES(EmitterPtr)
     auto mi =
         nb::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
@@ -114,6 +114,7 @@ MI_PY_EXPORT(MediumInteraction) {
         // Methods
         .def(nb::init<>(), D(MediumInteraction, MediumInteraction))
         .def(nb::init<const MediumInteraction3f &>(), "Copy constructor")
+        .def("get_emitter",  &MediumInteraction3f::emitter, D(MediumInteraction, emitter))
         .def("to_world", &MediumInteraction3f::to_world, "v"_a, D(MediumInteraction, to_world))
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);

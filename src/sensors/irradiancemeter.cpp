@@ -72,14 +72,15 @@ public:
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f & sample2,
+                            const Point3f & sample2,
                             const Point2f & sample3,
                             Mask active) const override {
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
-        PositionSample3f ps = m_shape->sample_position(time, sample2, active);
+        PositionSample3f ps = m_shape->sample_position_surface(
+            time, Point2f(sample2.x(), sample2.y()), active);
 
         // 2. Sample directional component
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
@@ -100,13 +101,14 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        return { m_shape->sample_direction(it, sample, active), dr::Pi<ScalarFloat> };
+    sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
+        return { m_shape->sample_direction_surface(
+                     it, Point2f(sample.x(), sample.y()), active), dr::Pi<ScalarFloat> };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
-        return m_shape->pdf_direction(it, ds, active);
+        return m_shape->pdf_direction_surface(it, ds, active);
     }
 
     Spectrum eval(const SurfaceInteraction3f &/*si*/, Mask /*active*/) const override {

@@ -58,7 +58,7 @@ emitter shape and specify an :monosp:`area` instance as its child:
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium)
+    MI_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium, m_needs_sample_2_3d)
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     AreaLight(const Properties &props) : Base(props) {
@@ -68,6 +68,7 @@ public:
                   "shape.");
 
         m_radiance = props.texture_d65<Texture>("radiance", 1.f);
+        m_needs_sample_2_3d = false;
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
@@ -89,7 +90,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2, const Point2f &sample3,
+                                          const Point3f &sample2, const Point2f &sample3,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -114,7 +115,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         if constexpr (drjit::is_jit_v<Float>) {
@@ -131,13 +132,14 @@ public:
         // One of two very different strategies is used depending on 'm_radiance'
         if (likely(!m_radiance->is_spatially_varying())) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
-            ds = m_shape->sample_direction(it, sample, active);
+            ds = m_shape->sample_direction_surface(
+                it, Point2f(sample.x(), sample.y()), active);
             active &= dr::dot(ds.d, ds.n) < 0.f && (ds.pdf != 0.f);
 
             si = SurfaceInteraction3f(ds, it.wavelengths);
         } else {
             // Importance sample the texture, then map onto the shape
-            auto [uv, pdf] = m_radiance->sample_position(sample, active);
+            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
             active &= (pdf != 0.f);
 
             si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
@@ -182,7 +184,7 @@ public:
 
         Float value;
         if (!m_radiance->is_spatially_varying()) {
-            value = m_shape->pdf_direction(it, ds, active);
+            value = m_shape->pdf_direction_surface(it, ds, active);
         } else {
             // This surface intersection would be nice to avoid..
             SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
@@ -208,7 +210,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
@@ -224,10 +226,11 @@ public:
         PositionSample3f ps;
         if (!m_radiance->is_spatially_varying()) {
             // Radiance not spatially varying, use area-based sampling of shape
-            ps = m_shape->sample_position(time, sample, active);
+            ps = m_shape->sample_position_surface(
+                time, Point2f(sample.x(), sample.y()), active);
         } else {
             // Importance sample texture
-            auto [uv, pdf] = m_radiance->sample_position(sample, active);
+            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
             active &= (pdf != 0.f);
 
             auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);

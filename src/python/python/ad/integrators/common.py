@@ -82,6 +82,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=None,
+                initial_medium=mi.MediumPtr(sensor.medium()),
                 active=mi.Bool(True)
             )
 
@@ -136,6 +137,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
+                    initial_medium=mi.MediumPtr(sensor.medium()),
                     active=mi.Bool(True)
                 )
 
@@ -189,6 +191,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
+                    initial_medium=mi.MediumPtr(sensor.medium()),
                     active=mi.Bool(True)
                 )
 
@@ -282,6 +285,11 @@ class ADIntegrator(mi.CppADIntegrator):
         scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
         offset = -mi.ScalarVector2f(film.crop_offset()) * scale
         pos_adjusted = dr.fma(pos_f, scale, offset)
+        pos_adjusted = mi.Vector3f(
+            pos_adjusted.x,
+            pos_adjusted.y,
+            0.0
+        )
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
@@ -406,6 +414,7 @@ class ADIntegrator(mi.CppADIntegrator):
                δL: Optional[mi.Spectrum],
                δaovs: Optional[mi.Spectrum],
                state_in: Any,
+               initial_medium: Optional[mi.MediumPtr|mi.Medium],
                active: mi.Bool) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float]]:
         """
         This function does the main work of differentiable rendering and
@@ -577,6 +586,7 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
+                initial_medium=mi.MediumPtr(sensor.medium()),
                 active=mi.Bool(True)
             )
 
@@ -590,6 +600,7 @@ class RBIntegrator(ADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=state_out,
+                initial_medium=mi.MediumPtr(sensor.medium()),
                 active=mi.Bool(True)
             )
 
@@ -757,6 +768,7 @@ class RBIntegrator(ADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=None,
+                initial_medium=mi.MediumPtr(sensor.medium()),
                 active=mi.Bool(True)
             )
 
@@ -770,6 +782,7 @@ class RBIntegrator(ADIntegrator):
                 δL=δL,
                 δaovs=δaovs,
                 state_in=state_out,
+                initial_medium=mi.MediumPtr(sensor.medium()),
                 active=mi.Bool(True)
             )
 
@@ -1122,7 +1135,7 @@ class PSIntegrator(ADIntegrator):
         with dr.suspend_grad():
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
-            sensor_ds, _ = sensor.sample_direction(it, mi.Point2f(0))
+            sensor_ds, _ = sensor.sample_direction(it, mi.Point3f(0))
 
         # Particle tracer style imageblock to accumulate primarily visible derivatives
         block = film.create_block(normalize=True)
@@ -1245,6 +1258,7 @@ class PSIntegrator(ADIntegrator):
                state_in: Any,
                active: mi.Bool,
                project: bool = False,
+               initial_medium: Optional[mi.MediumPtr|mi.Medium] = None,
                si_shade: Optional[mi.SurfaceInteraction3f] = None
     ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
         """

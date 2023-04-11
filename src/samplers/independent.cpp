@@ -96,6 +96,13 @@ public:
         return Point2f(f1, f2);
     }
 
+    Point3f next_3d(Mask active = true) override {
+        Float f1 = next_1d(active),
+              f2 = next_1d(active),
+              f3 = next_1d(active);
+        return Point3f(f1, f2, f3);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl

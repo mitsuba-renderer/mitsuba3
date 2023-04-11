@@ -129,7 +129,7 @@ def test05_sample_direct(variant_scalar_rgb):
 
     for xi_1 in dr.linspace(Float, 0, 1, 10):
         for xi_2 in dr.linspace(Float, 1e-3, 1 - 1e-3, 10):
-            sample = sphere.sample_direction(it, [xi_2, 1 - xi_1])
+            sample = sphere.sample_direction_surface(it, [xi_2, 1 - xi_1])
             d = sample_cone([xi_1, xi_2], cos_cone_angle)
             si = sphere.ray_intersect(mi.Ray3f(it.p, d))
             assert dr.allclose(d, sample.d, atol=1e-5, rtol=1e-5)
@@ -469,3 +469,28 @@ def test18_sample_precomputed_silhouette(variants_vec_rgb):
 def test19_shape_type(variant_scalar_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
     assert sphere.shape_type() == mi.ShapeType.Sphere.value;
+
+
+def test20_sample_position_volume(variants_vec_backends_once):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+
+    time = 0.0
+    samples = [[0.25, 0.5, 0.75], [0.1, 0.15, 0.9], [0.05, 0.09, 0.55]]
+
+    ps_inside = sphere.sample_position_volume(time, samples)
+    ps_outside = dr.zeros(mi.PositionSample3f)
+
+    ps_outside.p = mi.Point3f([1.1]*3)
+    ps_outside.n = mi.Point3f([1.1]*3)
+    ps_outside.uv = mi.Point2f([0.0, 0.0])
+    ps_outside.time = time
+    ps_outside.pdf = 0.0
+    ps_outside.delta = False
+
+    assert dr.allclose(ps_inside.pdf, dr.rcp(sphere.volume()))
+    assert dr.allclose(ps_inside.pdf, sphere.pdf_position_volume(ps_inside))
+
+    assert dr.allclose(ps_outside.pdf, 0.0)
+    assert dr.allclose(ps_outside.pdf, sphere.pdf_position_volume(ps_outside))
+
+

@@ -4,6 +4,8 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/volume.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/plugin.h>
 
 #if defined(MI_ENABLE_EMBREE)
@@ -69,6 +71,19 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
+    if (m_emitter && has_flag(m_emitter->flags(), EmitterFlags::Medium)) {
+        if (!m_interior_medium) {
+            Properties props2("homogeneous"), props_sigma_t("constvolume"), props_albedo("constvolume");
+            props_sigma_t.set_color("rgb", { 1.f, 1.f, 1.f });
+            props_albedo.set_color("rgb", { 0.f, 0.f, 0.f });
+            props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t));
+            props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo));
+            m_interior_medium = PluginManager::instance()->create_object<Medium>(props2);
+        }
+        if (m_interior_medium->emitter() != m_emitter.get())
+            m_interior_medium->set_emitter(m_emitter);
+    }
+
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
 
     MI_REGISTRY_PUT("Shape", this);
@@ -85,13 +100,23 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
-Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,
+Shape<Float, Spectrum>::sample_position_surface(Float /*time*/, const Point2f & /*sample*/,
                                         Mask /*active*/) const {
-    NotImplementedError("sample_position");
+    NotImplementedError("sample_position_surface");
 }
 
-MI_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const {
-    NotImplementedError("pdf_position");
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_position_surface(const PositionSample3f & /*ps*/, Mask /*active*/) const {
+    NotImplementedError("pdf_position_surface");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
+Shape<Float, Spectrum>::sample_position_volume(Float /*time*/, const Point3f & /*sample*/,
+                                        Mask /*active*/) const {
+    NotImplementedError("sample_position_volume");
+}
+
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_position_volume(const PositionSample3f & /*ps*/, Mask /*active*/) const {
+    NotImplementedError("pdf_position_volume");
 }
 
 #if defined(MI_ENABLE_EMBREE)
@@ -352,12 +377,12 @@ MI_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build
 #endif
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
-Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
+Shape<Float, Spectrum>::sample_direction_surface(const Interaction3f &it,
                                          const Point2f &sample,
                                          Mask active) const {
     MI_MASK_ARGUMENT(active);
 
-    DirectionSample3f ds(sample_position(it.time, sample, active));
+    DirectionSample3f ds(sample_position_surface(it.time, sample, active));
     ds.d = ds.p - it.p;
 
     Float dist_squared = dr::squared_norm(ds.d);
@@ -371,15 +396,61 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     return ds;
 }
 
-MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction_surface(const Interaction3f & /*it*/,
                                                         const DirectionSample3f &ds,
                                                         Mask active) const {
     MI_MASK_ARGUMENT(active);
 
-    Float pdf = pdf_position(ds, active),
+    Float pdf = pdf_position_surface(ds, active),
            dp = dr::abs_dot(ds.d, ds.n);
 
     pdf *= dr::select(dp != 0.f, (ds.dist * ds.dist) / dp, 0.f);
+
+    return pdf;
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
+Shape<Float, Spectrum>::sample_direction_volume(const Interaction3f &it,
+                                         const Point3f &sample,
+                                         Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    auto ps = sample_position_volume(it.time, sample, active);
+    auto ds = DirectionSample3f(ps);
+
+    ds.time = it.time;
+    ds.p = ps.p;
+    ds.d = ps.p - it.p;
+    auto dist_squared = dr::squared_norm(ds.d);
+    ds.dist = dr::sqrt(dist_squared);
+    ds.d = ds.d / ds.dist;
+
+    ds.n = -ds.d;
+
+    auto [center, radius] = bbox().bounding_sphere();
+    Float min_r = dr::maximum(ds.dist - 2.0f*radius, 0.0f), max_r = ds.dist + 2.0f*radius;
+
+    /// While not exact, here we assume that a given shape has an extent `r`
+    /// defined by the bounding sphere and we simply compute the integral of
+    /// ``p(x)r^2`` from ``max(0, ds.d - 2r)`` to ``ds.d+2r`` assuming that
+    /// p(x) is constant.
+    ds.pdf = ps.pdf * (dr::sqr(max_r)*max_r - dr::sqr(min_r)*min_r)/3.f;
+    ds.delta = ps.delta;
+    ds.uv = dr::zeros<Point2f>();
+
+    return ds;
+}
+
+MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction_volume(const Interaction3f & /*it*/,
+                                                        const DirectionSample3f &ds,
+                                                        Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    Float pdf = pdf_position_volume(ds, active);
+
+    auto [center, radius] = bbox().bounding_sphere();
+    Float min_r = dr::maximum(ds.dist - 2.0f*radius, 0.0f), max_r = ds.dist + 2.0f*radius;
+    pdf *= (dr::sqr(max_r)*max_r - dr::sqr(min_r)*min_r)/3.f;
 
     return pdf;
 }
@@ -556,6 +627,10 @@ MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
 
+MI_VARIANT Float Shape<Float, Spectrum>::volume() const {
+    NotImplementedError("volume");
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
 Shape<Float, Spectrum>::bbox(ScalarIndex) const {
     return bbox();
@@ -627,8 +702,21 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects
-    if (m_emitter)
+    if (m_emitter) {
         m_emitter->set_shape(this);
+        if (has_flag(m_emitter->flags(), EmitterFlags::Medium)) {
+            if (!m_interior_medium) {
+                Properties props2("homogeneous"), props_sigma_t("constvolume"), props_albedo("constvolume");
+                props_sigma_t.set_color("rgb", { 1.f, 1.f, 1.f });
+                props_albedo.set_color("rgb", { 0.f, 0.f, 0.f });
+                props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t));
+                props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo));
+                m_interior_medium = PluginManager::instance()->create_object<Medium>(props2);
+            }
+            if (m_interior_medium->emitter() != m_emitter.get())
+                m_interior_medium->set_emitter(m_emitter);
+        }
+    }
     if (m_sensor)
         m_sensor->set_shape(this);
 

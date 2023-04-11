@@ -282,47 +282,67 @@ public:
             }
 
             if (dr::any_or<true>(active_medium)) {
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                if (dr::any_or<true>(not_spectral)) {
+                    update_weights(p_over_f, 1.0f, dr::rcp(mei.combined_extinction), channel, not_spectral);
+                    update_weights(p_over_f_nee, 1.0f, dr::rcp(mei.combined_extinction), channel, not_spectral);
+                }
+
+                // Compute emission, scatter and null event probabilities
+                auto radiance = medium->get_radiance(mei, active_medium);
+                auto [prob_scatter, prob_null] = std::get<0>(medium->get_interaction_probabilities(radiance, mei, mis_weight(p_over_f)));
+
+                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(prob_scatter, channel);
                 act_null_scatter |= null_scatter && active_medium;
-                act_medium_scatter |= !act_null_scatter && active_medium;
+                act_medium_scatter |= !null_scatter && active_medium;
                 last_event_was_null = act_null_scatter;
 
-                // Count this as a bounce
-                dr::masked(depth, act_medium_scatter) += 1;
-                dr::masked(last_scatter_event, act_medium_scatter) = mei;
-                Mask sample_emitters = mei.medium->use_emitter_sampling();
-
-                active &= depth < (uint32_t) m_max_depth;
-                act_medium_scatter &= active;
-                specular_chain &= !act_medium_scatter;
-                specular_chain |= act_medium_scatter && !sample_emitters;
+                // ---------------- Intersection with emitters ----------------
+                Mask ray_from_camera_medium = active_medium && dr::eq(depth, 0u);
+                Mask count_direct_medium = ray_from_camera_medium || specular_chain;
+                EmitterPtr emitter_medium = mei.emitter();
+                Mask active_medium_e = active_medium
+                                       && dr::neq(emitter_medium, nullptr)
+                                       && !(dr::eq(depth, 0u) && m_hide_emitters);
+                if (dr::any_or<true>(active_medium_e)) {
+                    if (dr::any_or<true>(active_medium_e && !count_direct_medium)) {
+                        // Get the PDF of sampling this emitter using next event estimation
+                        DirectionSample3f ds(mei, last_scatter_event);
+                        Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_medium_e);
+                        update_weights(p_over_f_nee, emitter_pdf, 1.f, channel, active_medium_e);
+                    }
+                    Spectrum contrib = dr::select(count_direct_medium, mis_weight(p_over_f), mis_weight(p_over_f, p_over_f_nee)) * radiance;
+                    dr::masked(result, active_medium_e) += contrib;
+                }
 
                 if (dr::any_or<true>(act_null_scatter)) {
-                    if (dr::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral && act_null_scatter);
-                        update_weights(p_over_f_nee, 1.0f, mei.sigma_n, channel, is_spectral && act_null_scatter);
-                    }
-                    if (dr::any_or<true>(not_spectral)) {
-                       update_weights(p_over_f, mei.sigma_n, mei.sigma_n, channel, not_spectral && act_null_scatter);
-                       update_weights(p_over_f_nee, 1.0f, mei.sigma_n / mei.combined_extinction, channel, not_spectral && act_null_scatter);
-                    }
+                    update_weights(p_over_f, prob_null, mei.sigma_n, channel, act_null_scatter);
+                    update_weights(p_over_f_nee, 1.0f, mei.sigma_n, channel, act_null_scatter);
 
                     dr::masked(ray.o, act_null_scatter) = mei.p;
                     dr::masked(si.t, act_null_scatter) = si.t - mei.t;
                 }
 
+                // Count this as a bounce
+                dr::masked(depth, act_medium_scatter) += 1;
+                dr::masked(last_scatter_event, act_medium_scatter) = mei;
+
+                // Don't estimate lighting if we exceeded number of bounces
+                active &= depth < (uint32_t) m_max_depth;
+                act_medium_scatter &= active;
+
                 if (dr::any_or<true>(act_medium_scatter)) {
-                    if (dr::any_or<true>(is_spectral))
-                        update_weights(p_over_f, mei.sigma_t / mei.combined_extinction, mei.sigma_s, channel, is_spectral && act_medium_scatter);
-                    if (dr::any_or<true>(not_spectral))
-                        update_weights(p_over_f, mei.sigma_t, mei.sigma_s, channel, not_spectral && act_medium_scatter);
+                    update_weights(p_over_f, prob_scatter, mei.sigma_s, channel, act_medium_scatter);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mei.medium->phase_function();
 
                     // --------------------- Emitter sampling ---------------------
+                    Mask sample_emitters = mei.medium->use_emitter_sampling();
+                    specular_chain &= !act_medium_scatter;
+                    specular_chain |= act_medium_scatter && !sample_emitters;
+
                     valid_ray |= act_medium_scatter;
-                    Mask active_e = act_medium_scatter && sample_emitters;
+                    Mask active_e = act_medium_scatter && sample_emitters; // TODO: Enable MIS with volume emitters
                     if (dr::any_or<true>(active_e)) {
                         auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
                             sample_emitter(mei, scene, sampler, medium, p_over_f,
@@ -365,7 +385,10 @@ public:
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && (emitter != nullptr) && !((depth == 0u) && m_hide_emitters);
+                Mask active_e = active_surface
+                                && (emitter != nullptr)
+                                && !((depth == 0u) && m_hide_emitters)
+                                && !has_flag(emitter->flags(), EmitterFlags::Medium); // Ignore any medium emitters as this simply looks at surface emitters
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
@@ -382,7 +405,6 @@ public:
 
             active_surface &= si.is_valid();
             if (dr::any_or<true>(active_surface)) {
-
                 // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
                 BSDFPtr bsdf  = si.bsdf(ray);
@@ -437,7 +459,9 @@ public:
                    Mask active) const {
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
-        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        /// We conservatively assume that there are volume emitters in the scene and sample 3d points instead of 2d
+        /// This leads to some inefficiencies due to the fact that an extra random number per is generated and unused.
+        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_3d(active), false, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
         active &= (ds.pdf != 0.f);

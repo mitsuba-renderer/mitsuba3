@@ -5,32 +5,46 @@ from drjit.scalar import ArrayXf as Float
 import mitsuba as mi
 
 
-def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), atol=1e-6):
+def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), atol=1e-6, is_3d=False):
     """
     Helper routine which compares evaluations of the vectorized and
     non-vectorized version of a warping routine.
     """
 
-    def kernel(u : float, v : float):
-        func_vec     = wrapper(getattr(mi.warp, func_str))
-        pdf_func_vec = wrapper(getattr(mi.warp, func_str + "_pdf"))
+    if is_3d:
+        def kernel(u : float, v : float, w: float):
+            func_vec     = wrapper(getattr(mi.warp, func_str))
+            pdf_func_vec = wrapper(getattr(mi.warp, func_str + "_pdf"))
 
-        result = func_vec([u, v])
-        pdf = pdf_func_vec(result)
+            result = func_vec([u, v, w])
+            pdf = pdf_func_vec(result)
 
-        return result
+            return result
+    else:
+        def kernel(u : float, v : float):
+            func_vec     = wrapper(getattr(mi.warp, func_str))
+            pdf_func_vec = wrapper(getattr(mi.warp, func_str + "_pdf"))
+
+            result = func_vec([u, v])
+            pdf = pdf_func_vec(result)
+
+            return result
 
     from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, atol=atol)
 
 
-def check_inverse(func, inverse, atol=1e-5):
+def check_inverse(func, inverse, atol=1e-5, is_3d=False):
     for x in dr.linspace(Float, 1e-6, 1-1e-6, 10):
         for y in dr.linspace(Float, 1e-6, 1-1e-6, 10):
-            p1 = dr.scalar.Array2f(x, y)
-            p2 = func(p1)
-            p3 = inverse(p2)
-            assert(dr.allclose(p1, p3, atol=atol))
+            if is_3d:
+                points = [dr.scalar.Array3f(x, y, z) for z in dr.linspace(Float, 1e-6, 1-1e-6, 10)]
+            else:
+                points = [dr.scalar.Array2f(x, y)]
+            for p1 in points:
+                p2 = func(p1)
+                p3 = inverse(p2)
+                assert(dr.allclose(p1, p3, atol=atol))
 
 
 def test_square_to_uniform_disk(variant_scalar_rgb):
@@ -95,6 +109,20 @@ def test_square_to_uniform_sphere_vec(variant_scalar_rgb):
 
     check_inverse(mi.warp.square_to_uniform_sphere, mi.warp.uniform_sphere_to_square)
     check_warp_vectorization("square_to_uniform_sphere")
+
+
+def test_cube_to_uniform_sphere_vec(variant_scalar_rgb):
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([0.0, 0.5, 0.0]), [0, 0,  0]))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0, 0]), [0, 0, -1]))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 1, 0.5]), [0, 0, 1]))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0.5, 0]), [1, 0, 0], atol=1e-6))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0.5, 0.25]), [0, 1, 0], atol=1e-6))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0.5, 0.75]), [0, -1, 0], atol=1e-6))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0.5, 0.125]), [1/dr.sqrt(2), 1/dr.sqrt(2), 0], atol=1e-7))
+    assert(dr.allclose(mi.warp.cube_to_uniform_sphere([1, 0.5, 0.5]), [-1, 0, 0], atol=1e-7))
+
+    check_inverse(mi.warp.cube_to_uniform_sphere, mi.warp.uniform_sphere_to_cube, is_3d=True)
+    check_warp_vectorization("cube_to_uniform_sphere", is_3d=True)
 
 
 def test_square_to_uniform_hemisphere(variant_scalar_rgb):

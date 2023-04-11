@@ -93,15 +93,19 @@ public:
     void set_sample_count(uint32_t spp) override {
          // Make sure m_resolution is a prime number
         auto is_prime = [](uint32_t x) {
-            for (uint32_t i = 2; i <= x / 2; ++i)
+            if (x % 2 == 0)
+                return false;
+            for (uint32_t i = 3; i <= ((uint32_t) dr::sqrt((double) x) + 1); ++(++i))
                 if (x % i == 0)
                     return false;
             return true;
         };
 
-        m_resolution = 2;
-        while (dr::square(m_resolution) < spp || !is_prime(m_resolution))
-            m_resolution++;
+        m_resolution = dr::maximum((uint32_t) dr::sqrt((double) spp), (uint32_t) 2);
+        m_resolution = (m_resolution + m_resolution % 2) - 1;
+        while ((dr::square(m_resolution) < spp) || !is_prime(m_resolution)) {
+            m_resolution += m_resolution % 2 + 1;
+        }
 
         if (spp != dr::square(m_resolution))
             Log(Warn, "Sample count should be the square of a prime"
@@ -150,6 +154,14 @@ public:
         Float f1 = next_1d(active),
               f2 = next_1d(active);
         return Point2f(f1, f2);
+    }
+
+    Point3f next_3d(Mask active = true) override {
+        Float f1 = next_1d(active),
+              f2 = next_1d(active),
+              f3 = next_1d(active);
+
+        return Point3f(f1, f2, f3);
     }
 
     void schedule_state() override {

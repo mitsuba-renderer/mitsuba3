@@ -68,7 +68,7 @@ public:
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        auto si = dr::zeros<SurfaceInteraction3f>();
         si.t           = 0.f;
         si.uv          = Point2f(0.f, 0.f);
         si.wavelengths = it.wavelengths;

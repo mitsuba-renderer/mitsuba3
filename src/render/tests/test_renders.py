@@ -6,7 +6,7 @@ import argparse
 import glob
 import numpy as np
 
-from os.path import join, dirname, basename, splitext, exists
+from os.path import join, dirname, basename, splitext, exists, split
 from drjit.scalar import ArrayXf as Float
 from mitsuba.scalar_rgb.test.util import find_resource
 
@@ -82,6 +82,8 @@ def list_all_render_test_configs():
 
             if not is_jit:
                 configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))
+                if scene_integrator_type == "volpath":
+                    configs.append((variant, scene_fname, "volpathmis", 'scalar'))
             else:
                 for k, v in JIT_FLAG_OPTIONS.items():
                     if k == 'scalar':
@@ -193,6 +195,9 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
 
     if os.name == 'nt' and 'test_various_emitters' in ref_fname and 'cuda' in variant:
         pytest.skip('Skipping flaky test (likely an OptiX miscompilation) on Windows')
+
+    if 'emissive' in split(ref_fname)[-1] and integrator_type in ['volpathmis']:
+        pytest.skip(f'Skipping emissive media tests for {integrator_type} that does not have emitter medium sampling implemented.')
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)

@@ -26,6 +26,7 @@ struct PositionSample {
     using Spectrum = Spectrum_;
     MI_IMPORT_RENDER_BASIC_TYPES()
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
+    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;
 
     //! @}
     // =============================================================
@@ -77,6 +78,17 @@ struct PositionSample {
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
           delta(false) { }
 
+    /**
+     * \brief Create a position sampling record from a medium interaction
+     *
+     * This is useful to determine the hypothetical sampling density in a
+     * medium after hitting it using standard ray tracing. This happens for
+     * instance in volumetric path tracing with multiple importance sampling.
+     */
+    PositionSample(const MediumInteraction3f &mei)
+        : p(mei.p), n(mei.sh_frame.n), uv(0.f), time(mei.time), pdf(0.f),
+          delta(false) { }
+
     /// Basic field constructor
     PositionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                    Float time, Float pdf, Mask delta)
@@ -119,7 +131,9 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
 
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
+    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;
     using EmitterPtr           = typename RenderAliases::EmitterPtr;
+    using MediumPtr            = typename RenderAliases::MediumPtr;
 
     //! @}
     // =============================================================
@@ -177,6 +191,29 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
         dist = dr::norm(rel);
         d = select(si.is_valid(), rel / dist, -si.wi);
         emitter = si.emitter(scene);
+    }
+
+    /**
+     * \brief Create a direct sampling record, which can be used to \a query
+     * the density of a medium position with respect to a given reference
+     * position.
+     *
+     * Direction `s` is set so that it points from the reference interaction to
+     * the interacted medium, as required when using e.g. the \ref Endpoint
+     * interface to compute PDF values.
+     *
+     * \param it
+     *     Medium interaction
+     *
+     * \param ref
+     *     Reference position
+     */
+    DirectionSample(const MediumInteraction3f &mei,
+                    const Interaction3f &ref) : Base(mei) {
+        Vector3f rel = mei.p - ref.p;
+        dist = dr::norm(rel);
+        d = select(mei.is_valid(), rel / dist, -mei.wi);
+        emitter = mei.emitter();
     }
 
     /// Element-by-element constructor
