@@ -100,7 +100,7 @@ class PRBIntegrator(RBIntegrator):
                                       prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
         # Specify the max. number of loop iterations (this can help avoid
-        # costly synchronization when when wavefront-style loops are generated)
+        # costly synchronization when wavefront-style loops are generated)
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):

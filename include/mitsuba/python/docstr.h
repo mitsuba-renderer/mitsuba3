@@ -4018,7 +4018,7 @@ static const char *__doc_mitsuba_Medium_eval_tr_and_pdf =
 R"doc(Compute the transmittance and PDF
 
 This function evaluates the transmittance and PDF of sampling a
-certain free-flight distance The returned PDF takes into account if a
+certain free-flight distance. The returned PDF takes into account if a
 medium interaction occurred (mi.t <= si.t) or the ray left the medium
 (mi.t > si.t)
 

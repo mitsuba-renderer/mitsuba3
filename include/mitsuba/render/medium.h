@@ -54,7 +54,7 @@ public:
      * \brief Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain
-     * free-flight distance The returned PDF takes into account if a medium
+     * free-flight distance. The returned PDF takes into account if a medium
      * interaction occurred (mi.t <= si.t) or the ray left the medium (mi.t >
      * si.t)
      *
@@ -62,7 +62,7 @@ public:
      * fact that the free-flight distance sampling distribution can depend on
      * the wavelength.
      *
-     * \return   This method returns a pair of (Transmittance, PDF).
+     * \return This method returns a pair of (Transmittance, PDF).
      *
      */
     std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
