@@ -321,6 +321,24 @@ def test_construct_from_array(variants_all_rgb):
     assert dr.allclose(b_np, np.array(b2))
 
 
+def test_construct_from_non_contiguous_array(variants_all_rgb):
+    flat_arr = np.array([
+        [[0, 1], [3, 4], [6,  7]],
+        [[1, 2], [4, 5], [7,  8]],
+        [[2, 3], [5, 6], [8,  9]],
+        [[3, 4], [6, 7], [9,  10]],
+    ], dtype=np.float32)
+
+    for i in range(2):
+        strided = np.flip(flat_arr, axis=i)
+
+        # Test assumes that `np.flip` will create a strided array
+        assert strided.strides[i] < 0
+
+        b = mi.Bitmap(strided)
+        assert dr.allclose(strided, np.array(b))
+
+
 def test_construct_from_int8_array(variants_all_rgb):
     # test uint8
     b_np = np.reshape(np.arange(16), (4, 4)).astype(np.uint8)
