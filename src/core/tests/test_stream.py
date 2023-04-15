@@ -213,9 +213,12 @@ def test07_memory_stream():
     assert s.can_write()
     assert s.can_read()
 
-    s.write_string('hello world')
+    string = 'hello world'
     s.set_byte_order(Stream.EBigEndian)
+    s.write_string(string)
 
+    reference = int(len(string)).to_bytes(4, 'big') + bytes(string, encoding='ascii')
+    assert s.raw_buffer() == reference
     assert str(s) == """MemoryStream[
   host_byte_order = little-endian,
   byte_order = big-endian,
