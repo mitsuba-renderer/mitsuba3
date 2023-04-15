@@ -94,7 +94,10 @@ MI_PY_EXPORT(MemoryStream) {
         .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
             "capacity"_a = 512)
         .def_method(MemoryStream, capacity)
-        .def_method(MemoryStream, owns_buffer);
+        .def_method(MemoryStream, owns_buffer)
+        .def("raw_buffer", [](MemoryStream &s) -> py::bytes {
+            return py::bytes(reinterpret_cast<const char*>(s.raw_buffer()), s.size());
+        });
 }
 
 MI_PY_EXPORT(ZStream) {

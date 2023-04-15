@@ -110,6 +110,9 @@ public:
     /// Return whether or not the memory stream owns the underlying buffer
     bool owns_buffer() const { return m_owns_buffer; }
 
+    /// Return the underlying raw byte array
+    const uint8_t *raw_buffer() const { return m_data; }
+
     //! @}
     // =========================================================================
 
