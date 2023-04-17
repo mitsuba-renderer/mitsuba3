@@ -63,6 +63,8 @@ class ADIntegrator(mi.CppADIntegrator):
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
+        
+        film = sensor.film()
 
         # Disable derivatives in all of the following
         with dr.suspend_grad():
@@ -91,16 +93,16 @@ class ADIntegrator(mi.CppADIntegrator):
             )
 
             # Prepare an ImageBlock as specified by the film
-            block = sensor.film().create_block()
+            block = film.create_block()
 
             # Only use the coalescing feature when rendering enough samples
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
             alpha = dr.select(valid, mi.Float(1), mi.Float(0))
-            if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
-                aovs = sensor.film().prepare_sample(L * weight, ray.wavelengths,
-                                                    block.channel_count(), alpha=alpha)
+            if mi.has_flag(film.flags(), mi.FilmFlags.Special):
+                aovs = film.prepare_sample(L * weight, ray.wavelengths,
+                                           block.channel_count(), alpha=alpha)
                 block.put(pos, aovs)
                 del aovs
             else:
@@ -111,8 +113,8 @@ class ADIntegrator(mi.CppADIntegrator):
             gc.collect()
 
             # Perform the weight division and return an image tensor
-            sensor.film().put_block(block)
-            self.primal_image = sensor.film().develop()
+            film.put_block(block)
+            self.primal_image = film.develop()
 
             return self.primal_image
 
@@ -172,11 +174,11 @@ class ADIntegrator(mi.CppADIntegrator):
                 #   Σ (fi Li det)
                 #  ---------------
                 #   Σ (fi det)
-                if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                    aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
-                                                        block.channel_count(),
-                                                        weight=det,
-                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
+                    aovs = film.prepare_sample(L * weight * det, ray.wavelengths,
+                                               block.channel_count(),
+                                               weight=det,
+                                               alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
                     block.put(pos, aovs)
                     del aovs
                 else:
@@ -251,11 +253,11 @@ class ADIntegrator(mi.CppADIntegrator):
                 block.set_coalesce(block.coalesce() and spp >= 4)
 
                 # Accumulate into the image block
-                if mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special):
-                    aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
-                                                        block.channel_count(),
-                                                        weight=det,
-                                                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
+                if mi.has_flag(film.flags(), mi.FilmFlags.Special):
+                    aovs = film.prepare_sample(L * weight * det, ray.wavelengths,
+                                               block.channel_count(),
+                                               weight=det,
+                                               alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
                     block.put(pos, aovs)
                     del aovs
                 else:
@@ -267,14 +269,14 @@ class ADIntegrator(mi.CppADIntegrator):
                         alpha=dr.select(valid, mi.Float(1), mi.Float(0))
                     )
 
-                sensor.film().put_block(block)
+                film.put_block(block)
 
                 del valid
                 gc.collect()
 
                 # This step launches a kernel
                 dr.schedule(block.tensor())
-                image = sensor.film().develop()
+                image = film.develop()
 
                 # Differentiate sample splatting and weight division steps to
                 # retrieve the adjoint radiance
@@ -701,8 +703,8 @@ class RBIntegrator(ADIntegrator):
                     sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
 
                     # Deposit samples with gradient tracking for 'pos'.
-                    if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                        aovs = sensor.film().prepare_sample(L * weight * det, ray.wavelengths,
+                    if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
+                        aovs = film.prepare_sample(L * weight * det, ray.wavelengths,
                                                             sample_pos_deriv.channel_count(),
                                                             weight=det,
                                                             alpha=dr.select(valid, mi.Float(1), mi.Float(0)))
@@ -759,10 +761,10 @@ class RBIntegrator(ADIntegrator):
             block.set_coalesce(block.coalesce() and spp >= 4)
 
             # Accumulate into the image block
-            if (dr.all(mi.has_flag(sensor.film().flags(), mi.FilmFlags.Special))):
-                aovs = sensor.film().prepare_sample(δL * weight, ray.wavelengths,
-                                                    block.channel_count(),
-                                                    alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
+            if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
+                aovs = film.prepare_sample(δL * weight, ray.wavelengths,
+                                           block.channel_count(),
+                                           alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)))
                 block.put(pos, aovs)
                 del aovs
             else:
