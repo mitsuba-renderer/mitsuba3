@@ -2874,6 +2874,9 @@ static const char *__doc_mitsuba_Film_put_block =
 R"doc(Merge an image block into the film. This methods should be thread-
 safe.)doc";
 
+static const char *__doc_mitsuba_Film_clear =
+R"doc(Clear the film content to zero.)doc";
+
 static const char *__doc_mitsuba_Film_rfilter = R"doc(Return the image reconstruction filter (const version))doc";
 
 static const char *__doc_mitsuba_Film_sample_border =

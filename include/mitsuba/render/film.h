@@ -60,6 +60,9 @@ public:
     /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put_block(const ImageBlock *block) = 0;
 
+    /// Clear the film contents to zero.
+    virtual void clear() = 0;
+
     /// Return a image buffer object storing the developed image
     virtual TensorXf develop(bool raw = false) const = 0;
 
