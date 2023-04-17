@@ -22,6 +22,10 @@ public:
         PYBIND11_OVERRIDE_PURE(void, Film, put_block, block);
     }
 
+    void clear() override {
+        PYBIND11_OVERRIDE_PURE(void, Film, clear);
+    }
+
     TensorXf develop(bool raw = false) const override {
         PYBIND11_OVERRIDE_PURE(TensorXf, Film, develop, raw);
     }
@@ -76,6 +80,7 @@ MI_PY_EXPORT(Film) {
         .def(py::init<const Properties &>(), "props"_a)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
+        .def_method(Film, clear)
         .def_method(Film, develop, "raw"_a = false)
         .def_method(Film, bitmap, "raw"_a = false)
         .def_method(Film, write, "path"_a)
