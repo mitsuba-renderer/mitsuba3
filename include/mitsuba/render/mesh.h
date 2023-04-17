@@ -128,8 +128,21 @@ public:
     /// @}
     // =========================================================================
 
-    /// Export mesh as a binary PLY file
+    /**
+     * Write the mesh to a binary PLY file
+     *
+     * \param filename
+     *    Target file path on disk
+     */
     void write_ply(const std::string &filename) const;
+
+    /**
+     * Write the mesh encoded in binary PLY format to a stream
+     *
+     * \param stream
+     *    Target stream that will receive the encoded output
+     */
+    void write_ply(Stream *stream) const;
 
     /// Merge two meshes into one
     ref<Mesh> merge(const Mesh *other) const;
