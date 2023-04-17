@@ -468,8 +468,8 @@ class WriteXML:
                 raise ValueError("Invalid entry of type rgb: %s" % entry)
             elif isinstance(entry['value'], (float, int)):
                 entry['value'] = "%f" % entry['value']
-            elif (isinstance(entry['value'], (list, mi.Color3f, np.ndarray)
-                  if 'numpy' in sys.modules else (list, mi.Color3f)) and
+            elif (isinstance(entry['value'], (list, mi.Color3f, mi.Color3d, np.ndarray)
+                  if 'numpy' in sys.modules else (list, mi.Color3f, mi.Color3d)) and
                   len(entry['value']) == 3):
                 entry['value'] = "%f %f %f" % tuple(entry['value'])
             else:
