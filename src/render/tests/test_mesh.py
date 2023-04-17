@@ -956,3 +956,28 @@ def test22_boundary_test_face_normal(variants_all_ad_rgb):
     ray = mi.Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
     B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
     assert dr.all(B > 1e-1)
+
+
+@fresolver_append_path
+def test23_write_stream(variants_all_rgb, tmp_path):
+    filepath = str(tmp_path / 'test_mesh-test23_write_stream.ply')
+    mesh = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
+    })
+    params = mi.traverse(mesh)
+    fs = mi.FileStream(filepath, mi.FileStream.ETruncReadWrite)
+    mesh.write_ply(fs)
+    fs.close()
+
+    mesh_saved = mi.load_dict({
+        'type': 'ply',
+        'filename': filepath
+    })
+    params_saved = mi.traverse(mesh_saved)
+    assert dr.allclose(params_saved['vertex_positions'], params['vertex_positions'])
+
+    ms = mi.MemoryStream()
+    fs = mi.FileStream(filepath, mi.FileStream.ERead)
+    mesh.write_ply(ms)
+    assert fs.size() == ms.size()

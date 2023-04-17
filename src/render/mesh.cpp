@@ -127,7 +127,22 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                                                                dr::maximum(dr::maximum(v0, v1), v2));
 }
 
+
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
+    ref<FileStream> stream =
+        new FileStream(filename, FileStream::ETruncReadWrite);
+
+    Timer timer;
+    Log(Info, "Writing mesh to \"%s\" ..", filename);
+    write_ply(stream);
+    Log(Info, "\"%s\": wrote %i faces, %i vertices (%s in %s)", filename,
+        m_face_count, m_vertex_count,
+        util::mem_string(m_face_count * face_data_bytes() +
+                         m_vertex_count * vertex_data_bytes()),
+        util::time_string((float) timer.value()));
+}
+
+MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
     auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
     auto&& vertex_normals   = dr::migrate(m_vertex_normals, AllocType::Host);
     auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
@@ -152,12 +167,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) co
     if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
-    ref<FileStream> stream =
-        new FileStream(filename, FileStream::ETruncReadWrite);
-
-    Log(Info, "Writing mesh to \"%s\" ..", filename);
-
-    Timer timer;
     stream->write_line("ply");
     if (Struct::host_byte_order() == Struct::ByteOrder::BigEndian)
         stream->write_line("format binary_big_endian 1.0");
@@ -246,12 +255,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) co
             face_attributes_ptr[j] += attribute.size;
         }
     }
-
-    Log(Info, "\"%s\": wrote %i faces, %i vertices (%s in %s)", filename,
-        m_face_count, m_vertex_count,
-        util::mem_string(m_face_count * face_data_bytes() +
-                         m_vertex_count * vertex_data_bytes()),
-        util::time_string((float) timer.value()));
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {

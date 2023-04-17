@@ -1,3 +1,4 @@
+#include <mitsuba/core/stream.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -173,8 +174,12 @@ MI_PY_EXPORT(Shape) {
         .def_method(Mesh, face_count)
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
-        .def("write_ply", &Mesh::write_ply, "filename"_a,
-             "Export mesh as a binary PLY file")
+        .def("write_ply",
+             py::overload_cast<const std::string &>(&Mesh::write_ply, py::const_),
+             "filename"_a, D(Mesh, write_ply))
+        .def("write_ply",
+             py::overload_cast<Stream *>(&Mesh::write_ply, py::const_),
+             "stream"_a, D(Mesh, write_ply))
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute), py::return_value_policy::reference_internal)
         .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {
