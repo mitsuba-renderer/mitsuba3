@@ -99,13 +99,14 @@ MI_PY_EXPORT(Bitmap) {
                    bool srgb_gamma = b.srgb_gamma();
                    if (!srgb.is(py::none()))
                        srgb_gamma = srgb.cast<bool>();
+
+                   py::gil_scoped_release release;
                    return b.convert(pixel_format, component_format, srgb_gamma,
                                     alpha_transform);
             },
              D(Bitmap, convert),
              "pixel_format"_a = py::none(), "component_format"_a = py::none(),
-             "srgb_gamma"_a = py::none(), "alpha_transform"_a = Bitmap::AlphaTransform::Empty,
-             py::call_guard<py::gil_scoped_release>())
+             "srgb_gamma"_a = py::none(), "alpha_transform"_a = Bitmap::AlphaTransform::Empty)
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
              D(Bitmap, convert, 2), "target"_a,
              py::call_guard<py::gil_scoped_release>())
