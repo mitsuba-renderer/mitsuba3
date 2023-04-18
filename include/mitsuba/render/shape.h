@@ -7,6 +7,7 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
 #include <drjit/packet.h>
+#include <unordered_map>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -24,7 +25,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public Object {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
+    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture);
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -560,6 +561,8 @@ protected:
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
     std::string m_id;
+
+    std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
 
     field<Transform4f, ScalarTransform4f> m_to_world;
     field<Transform4f, ScalarTransform4f> m_to_object;
