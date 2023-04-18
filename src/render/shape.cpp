@@ -29,6 +29,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         Sensor *sensor   = dynamic_cast<Sensor *>(obj.get());
         BSDF *bsdf       = dynamic_cast<BSDF *>(obj.get());
         Medium *medium   = dynamic_cast<Medium *>(obj.get());
+        Texture *texture = dynamic_cast<Texture *>(obj.get());
 
         if (emitter) {
             if (m_emitter)
@@ -52,6 +53,8 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
             }
+        } else if (texture) {
+            m_texture_attributes.insert({ name, texture });
         } else {
             continue;
         }
@@ -452,38 +455,51 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
-Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
-                                       const SurfaceInteraction3f & /*si*/,
-                                       Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute");
+Shape<Float, Spectrum>::eval_attribute(const std::string & name,
+                                       const SurfaceInteraction3f & si,
+                                       Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval(si, active);
 }
 
 MI_VARIANT Float
-Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_1");
+Shape<Float, Spectrum>::eval_attribute_1(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_1(si, active);
 }
+
 MI_VARIANT typename Shape<Float, Spectrum>::Color3f
-Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_3");
+Shape<Float, Spectrum>::eval_attribute_3(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_3(si, active);
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {

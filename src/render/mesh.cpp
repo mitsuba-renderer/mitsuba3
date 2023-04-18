@@ -901,12 +901,8 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
                                       const SurfaceInteraction3f &si,
                                       Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_v<Float>)
-            return 0.f;
-        else
-            Throw("Invalid attribute requested %s.", name.c_str());
-    }
+    if (it == m_mesh_attributes.end())
+        return Base::eval_attribute(name, si, active);
 
     const auto& attr = it->second;
     if (attr.size == 1)
@@ -930,12 +926,8 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_v<Float>)
-            return 0.f;
-        else
-            Throw("Invalid attribute requested %s.", name.c_str());
-    }
+    if (it == m_mesh_attributes.end())
+        return Base::eval_attribute_1(name, si, active);
 
     const auto& attr = it->second;
     if (attr.size == 1) {
@@ -953,12 +945,8 @@ Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
-    if (it == m_mesh_attributes.end()) {
-        if constexpr (dr::is_jit_v<Float>)
-            return 0.f;
-        else
-            Throw("Invalid attribute requested %s.", name.c_str());
-    }
+    if (it == m_mesh_attributes.end())
+        return Base::eval_attribute_3(name, si, active);
 
     const auto& attr = it->second;
     if (attr.size == 3) {
