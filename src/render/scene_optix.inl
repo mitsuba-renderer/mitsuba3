@@ -377,8 +377,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             }
 
             for (auto& shape : m_shapegroups) {
-                has_meshes |= !shape->has_meshes();
-                has_others |= !shape->has_others();
+                has_meshes |= shape->has_meshes();
+                has_bspline_curves |= shape->has_bspline_curves();
+                has_linear_curves |= shape->has_linear_curves();
+                has_others |= shape->has_others();
             }
 
             s.config_index = init_optix_config(has_meshes, has_others,

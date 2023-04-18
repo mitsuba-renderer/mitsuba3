@@ -13,6 +13,8 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 #endif
     m_has_meshes = false;
     m_has_others = false;
+    m_has_bspline_curves = false;
+    m_has_linear_curves = false;
 
     // Add children to the underlying data structure
     for (auto &kv : props.objects()) {
@@ -40,8 +42,17 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                 if constexpr (!dr::is_cuda_v<Float>)
                     m_kdtree->add_shape(shape);
 #endif
-                m_has_meshes |= shape->is_mesh();
-                m_has_others |= !shape->is_mesh();
+                bool is_mesh = shape->is_mesh();
+                m_has_meshes |= is_mesh;
+
+                bool is_bspline = shape->is_bspline_curve();
+                m_has_bspline_curves |= is_bspline;
+
+                bool is_linear = shape->is_linear_curve();
+                m_has_linear_curves |= is_linear;
+
+                bool is_other = !is_mesh && !is_bspline && !is_linear;
+                m_has_others |= is_other;
             }
         } else {
             Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
