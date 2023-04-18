@@ -39,9 +39,6 @@ NAMESPACE_BEGIN(mitsuba)
  *      - Endcaps
  *      - Backface culling  CUDA
  *      - File format description
- *
- * TODO:
- * - Check that instancing works
  */
 
 template <typename Float, typename Spectrum>
@@ -253,7 +250,8 @@ public:
         Float dr_dv;
         Vector3f dc_dvv;
         Float dr_dvv;
-        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) = cubic_interpolation(v_local, segment_id, active);
+        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) =
+            cubic_interpolation(v_local, segment_id, active);
         Vector3f dc_dv_normalized = dr::normalize(dc_dv);
 
         Vector3f u_rot, v_rad;
