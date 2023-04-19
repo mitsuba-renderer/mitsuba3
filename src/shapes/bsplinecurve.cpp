@@ -245,12 +245,9 @@ public:
         /* Create a ray at the intersection point and offset it by epsilon in
          the direction of the local surface normal */
         Point3f c;
-        Vector3f dc_dv;
-        Float radius;
-        Float dr_dv;
-        Vector3f dc_dvv;
-        Float dr_dvv;
-        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) =
+        Vector3f dc_dv, dc_dvv;
+        Float radius, dr_dv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
             cubic_interpolation(v_local, segment_id, active);
         Vector3f dc_dv_normalized = dr::normalize(dc_dv);
 
@@ -285,12 +282,13 @@ public:
             return dr::zeros<SurfaceInteraction3f>();
 
         // Fields requirement dependencies
-        bool need_dn_duv  = has_flag(ray_flags, RayFlags::dNSdUV) ||
-                            has_flag(ray_flags, RayFlags::dNGdUV);
+        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV) ||
+                           has_flag(ray_flags, RayFlags::dNGdUV);
         bool need_dp_duv  = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
         bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
+        bool need_boundary_test = has_flag(ray_flags, RayFlags::BoundaryTest);
 
         /* If necessary, temporally suspend gradient tracking for all shape
            parameters to construct a surface interaction completely detach from
@@ -303,19 +301,17 @@ public:
         UInt32 prim_idx = pi.prim_index;
 
         Point3f c;
-        Vector3f dc_dv;
-        Vector3f dc_dvv;
-        Float radius;
-        Float dr_dv;
-        Float dr_dvv;
-        std::tie(c, dc_dv, dc_dvv, radius, dr_dv, dr_dvv) =
+        Vector3f dc_dv, dc_dvv;
+        Float radius, dr_dv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
             cubic_interpolation(v_local, prim_idx, active);
-        Vector3f dc_du_normalized = dr::normalize(dc_dv);
+        Vector3f dc_dv_normalized = dr::normalize(dc_dv);
 
         Vector3f u_rot, u_rad;
-        std::tie(u_rot, u_rad) = local_frame(dc_du_normalized);
+        std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
 
         if constexpr (IsDiff) {
+            // Compute attached interaction point (w.r.t curve parameters)
             Point3f p = ray(pi.t);
             Vector3f rad_vec = p - c;
             Vector3f rad_vec_normalized = dr::normalize(rad_vec);
@@ -324,9 +320,8 @@ public:
                                 dr::dot(u_rad, rad_vec_normalized));
             u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
             u *= dr::InvTwoPi<Float>;
-            u = dr::detach(u); // v has no motion for an attached intersection point
+            u = dr::detach(u); // u has no motion
 
-            // Differentiable intersection point (w.r.t curve parameters)
             auto [sin_v, cos_v] = dr::sincos(u * dr::TwoPi<Float>);
             Point3f p_diff = c + cos_v * u_rad * radius + sin_v * u_rot * radius;
             p = dr::replace_grad(p, p_diff);
@@ -337,8 +332,9 @@ public:
                    of the shape, the interaction point must be completely
                    differentiable w.r.t. the curve parameters. */
                 si.p = p;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) /
-                                dr::squared_norm(ray.d));
+                Float t_diff = dr::sqrt(dr::squared_norm(si.p - ray.o) /
+                                        dr::squared_norm(ray.d));
+                si.t = dr::replace_grad(pi.t, t_diff);
             } else {
                 /* To ensure that the differential interaction point stays along
                    the traced ray, we first recompute the intersection distance
@@ -348,6 +344,7 @@ public:
                    intersection with the tangent plane.) */
                 Vector3f rad_vec_diff = si.p - c;
                 rad_vec = dr::replace_grad(rad_vec, rad_vec_diff);
+
                 // Differentiable tangent plane normal
                 Float correction = dr::dot(rad_vec, dc_dvv);
                 Vector3f n = dr::normalize(
@@ -355,9 +352,28 @@ public:
                     (dr_dv * radius) * dc_dv
                 );
 
+                // Tangent plane intersection
                 Float t_diff = dr::dot(p - ray.o, n) / dr::dot(n, ray.d);
                 si.t = dr::replace_grad(pi.t, t_diff);
                 si.p = ray(si.t);
+
+                // Compute `v_local` with correct (hit point) motion
+                Float v_global = (v_local + prim_idx) / dr::width(m_indices);
+                Vector3f dp_dv;
+                std::tie(std::ignore, dp_dv, std::ignore, std::ignore) =
+                    partials(Point2f(u, v_global), active);
+                dp_dv = dr::detach(dp_dv);
+                Float dp_dv_sqrnorm = dr::squared_norm(dp_dv);
+                Float v_diff = dr::dot(si.p - p_diff, dp_dv) / dp_dv_sqrnorm;
+                v_global = dr::replace_grad(v_global, v_diff);
+                Float v_local_diff = v_global * dr::width(m_indices) - prim_idx;;
+                v_local =  dr::replace_grad(v_local, v_local_diff);
+
+                // Recompute values with new `v_local` motion
+                std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
+                    cubic_interpolation(v_local, prim_idx, active);
+                dc_dv_normalized = dr::normalize(dc_dv);
+                std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
             }
         } else {
             si.t = pi.t;
@@ -377,35 +393,31 @@ public:
         si.n = si.sh_frame.n = n;
 
         if (need_uv) {
-            // Convert segment-local v to global v
-            Float v = (v_local + prim_idx) / dr::width(m_indices);
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
             u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
             u *= dr::InvTwoPi<Float>;
+            Float v = (v_local + prim_idx) / dr::width(m_indices);
 
-            // TODO: U gradients are wrong w/o FollowShape
-            // how to compute U from si.p?
-            // does set_grad(u, dc_du) work?
             si.uv = Point2f(u, v);
-            if (follow_shape)
-                si.uv = dr::detach(si.uv);
         }
 
-        if (likely(need_dp_duv)) {
-            // TODO: gradients are wrong w/o FollowShape? need to recompute them w.r.t si.p
-            si.dp_du = dr::cross(rad_vec_normalized, dc_du_normalized) * dr::TwoPi<Float> * radius;
-            si.dp_dv = (dc_dv + rad_vec_normalized * dr_dv) / (1.f - 3.f / m_control_point_count);
-        }
-
-        if (need_dn_duv) {
-            si.dn_du = si.dn_dv = Vector3f(0);  // TODO
+        if (need_dp_duv) {
+            Vector3f dp_du, dp_dv, dn_du, dn_dv;
+            std::tie(dp_du, dp_dv, dn_du, dn_dv) =
+                partials(si.uv, active);
+            si.dp_du = dp_du;
+            si.dp_dv = dp_dv;
+            if (need_dn_duv) {
+                si.dn_du = dn_du;
+                si.dn_dv = dn_dv;
+            }
         }
 
         si.shape = this;
         si.instance = nullptr;
 
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
+        if (need_boundary_test)
             si.boundary_test = dr::dot(si.sh_frame.n, -ray.d);
 
         return si;
@@ -514,64 +526,6 @@ private:
         *start_ = start;
     }
 
-    std::tuple<Point3f, Vector3f, Vector3f, Float, Float, Float>
-    cubic_interpolation(const Float u, const UInt32 idx, Mask active) const {
-        Point4f c0 = dr::gather<Point4f>(m_control_points, idx + 0, active),
-                c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
-                c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
-                c3 = dr::gather<Point4f>(m_control_points, idx + 3, active);
-        Point3f v0 = Point3f(c0.x(), c0.y(), c0.z()),
-                v1 = Point3f(c1.x(), c1.y(), c1.z()),
-                v2 = Point3f(c2.x(), c2.y(), c2.z()),
-                v3 = Point3f(c3.x(), c3.y(), c3.z());
-        Float r0 = c0.w(),
-              r1 = c1.w(),
-              r2 = c2.w(),
-              r3 = c3.w();
-
-        Float u2 = dr::sqr(u), u3 = u2 * u;
-        Float multiplier = 1.f / 6.f;
-
-        Point3f c = (-u3 + 3.f * u2 - 3.f * u + 1.f) * v0 +
-                    (3.f * u3 - 6.f * u2 + 4.f) * v1 +
-                    (-3.f * u3 + 3.f * u2 + 3.f * u + 1.f) * v2 +
-                    u3 * v3;
-        c *= multiplier;
-
-        Float radius = (-u3 + 3.f * u2 - 3.f * u + 1.f) * r0 +
-                       (3.f * u3 - 6.f * u2 + 4.f) * r1 +
-                       (-3.f * u3 + 3.f * u2 + 3.f * u + 1.f) * r2 +
-                       u3 * r3;
-        radius *= multiplier;
-
-        Vector3f dc_du =
-            (-3.f * u2 + 6.f * u - 3.f) * v0 +
-            (9.f * u2 - 12.f * u) * v1 +
-            (-9.f * u2 + 6.f * u + 3.f) * v2 +
-            (3.f * u2) * v3;
-        dc_du *= multiplier;
-
-        Float dr_du = (-3.f * u2 + 6.f * u - 3.f) * r0 +
-            (9.f * u2 - 12.f * u) * r1 +
-            (-9.f * u2 + 6.f * u + 3.f) * r2 +
-            (3.f * u2) * r3;
-        dr_du *= multiplier;
-
-        Vector3f dc_duu =
-            (-1.f * u + 1.f) * v0 +
-            (3.f * u  - 2.f) * v1 +
-            (-3.f * u + 1.f) * v2 +
-            (1.f * u) * v3;
-
-        Float dr_duu =
-            (-1.f * u + 1.f) * r0 +
-            (3.f * u  - 2.f) * r1 +
-            (-3.f * u + 1.f) * r2 +
-            (1.f * u) * r3;
-
-        return { c, dc_du, dc_duu, radius, dr_du, dr_duu};
-    }
-
     void compute_bbox() {
         auto&& control_points = dr::migrate(m_control_points, AllocType::Host);
         if constexpr (dr::is_jit_v<Float>)
@@ -589,6 +543,152 @@ private:
             m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
             m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
         }
+    }
+
+    std::tuple<Point3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
+    cubic_interpolation(const Float v, const UInt32 idx, Mask active) const {
+        Point4f c0 = dr::gather<Point4f>(m_control_points, idx + 0, active),
+                c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
+                c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
+                c3 = dr::gather<Point4f>(m_control_points, idx + 3, active);
+        Point3f p0 = Point3f(c0.x(), c0.y(), c0.z()),
+                p1 = Point3f(c1.x(), c1.y(), c1.z()),
+                p2 = Point3f(c2.x(), c2.y(), c2.z()),
+                p3 = Point3f(c3.x(), c3.y(), c3.z());
+        Float r0 = c0.w(),
+              r1 = c1.w(),
+              r2 = c2.w(),
+              r3 = c3.w();
+
+        Float v2 = dr::sqr(v), v3 = v2 * v;
+        Float multiplier = 1.f / 6.f;
+
+        Point3f c = (-v3 + 3.f * v2 - 3.f * v + 1.f) * p0 +
+                    (3.f * v3 - 6.f * v2 + 4.f) * p1 +
+                    (-3.f * v3 + 3.f * v2 + 3.f * v + 1.f) * p2 +
+                    v3 * p3;
+        c *= multiplier;
+
+        Vector3f dc_dv =
+            (-3.f * v2 + 6.f * v - 3.f) * p0 +
+            (9.f * v2 - 12.f * v) * p1 +
+            (-9.f * v2 + 6.f * v + 3.f) * p2 +
+            (3.f * v2) * p3;
+        dc_dv *= multiplier;
+
+        Vector3f dc_dvv =
+            (-1.f * v + 1.f) * p0 +
+            (3.f * v  - 2.f) * p1 +
+            (-3.f * v + 1.f) * p2 +
+            (1.f * v) * p3;
+
+        Vector3f dc_dvvv = -p0 + 3.f * p1 - 3.f * p2 + p3;
+
+        Float radius = (-v3 + 3.f * v2 - 3.f * v + 1.f) * r0 +
+                       (3.f * v3 - 6.f * v2 + 4.f) * r1 +
+                       (-3.f * v3 + 3.f * v2 + 3.f * v + 1.f) * r2 +
+                       v3 * r3;
+        radius *= multiplier;
+
+        Float dr_dv = (-3.f * v2 + 6.f * v - 3.f) * r0 +
+                      (9.f * v2 - 12.f * v) * r1 +
+                      (-9.f * v2 + 6.f * v + 3.f) * r2 +
+                      (3.f * v2) * r3;
+        dr_dv *= multiplier;
+
+        Float dr_dvv = (-1.f * v + 1.f) * r0 +
+                       (3.f * v - 2.f) * r1 +
+                       (-3.f * v + 1.f) * r2 +
+                       (1.f * v) * r3;
+
+        return { c, dc_dv, dc_dvv, dc_dvvv, radius, dr_dv, dr_dvv};
+    }
+
+    std::tuple<Vector3f, Vector3f, Vector3f, Vector3f>
+    partials(Point2f uv, Mask active) const {
+        /* To compute the partial devriatives of a point on the curve and of its
+           normal, we start by building the Frenet-Serret (TNB) frame. From the
+           frame we can compute the curves' firt fundamental form. The first
+           fundamental form gives us the position partials. Finally, these are
+           then used in the Weingarten equations to get the normal's partials.
+         */
+        Float v_global = uv.y();
+        size_t segment_count = dr::width(m_indices);
+        UInt32 segment_id = dr::floor2int<UInt32>(v_global * segment_count);
+        Float v_local = v_global * segment_count - segment_id;
+
+        Point3f C;
+        Vector3f Cv, Cvv, Cvvv;
+        Float radius, rv, rvv;
+        std::tie(C, Cv, Cvv, Cvvv, radius, rv, rvv) =
+            cubic_interpolation(v_local, segment_id, active);
+
+        // Frenet-Serret (TNB) frame
+        Float Cv_norm = dr::norm(Cv);
+        Vector3f CvCvv = dr::cross(Cv, Cvv),
+                 Cv_normalized = Cv / Cv_norm;
+        Float Cv_sqrnorm = dr::sqr(Cv_norm),
+              CvCvv_norm = dr::norm(CvCvv),
+              kappa = CvCvv_norm / (Cv_norm * Cv_sqrnorm),
+              tau = dr::dot(Cvvv, CvCvv) / dr::sqr(CvCvv_norm);
+        Vector3f T = Cv / Cv_norm,
+                 N = dr::normalize(dr::cross(CvCvv, Cv)),
+                 B = dr::normalize(dr::cross(T, N));
+
+        // Degenerated TNB frame
+        Mask degenerate = kappa < dr::Epsilon<Float>;
+        dr::masked(kappa, degenerate) = 0.f;
+        dr::masked(tau, degenerate) = 0.f;
+        Normal3f Tn(T);
+        Frame3f frame(Tn);
+        dr::masked(N, degenerate) = frame.s;
+        dr::masked(B, degenerate) = frame.t;
+
+        // Consistent local frame
+        auto [dir_rot, dir_rad] = local_frame(Cv_normalized);
+        auto [s_, c_] = dr::sincos(uv.x() * dr::TwoPi<Float>);
+        Vector3f rad = c_ * dir_rad + s_ * dir_rot;
+        Float cos_theta_u = dr::dot(N, rad),
+              sin_theta_u = dr::dot(B, rad);
+        Normal3f n = dr::normalize(
+            Cv_norm * (1.f - radius * kappa * cos_theta_u) * rad - rv * T);
+
+        // Position partials
+        Vector3f radu  = -sin_theta_u * N + cos_theta_u * B,
+                 radv  = Cv_norm * cos_theta_u * (-kappa * T + tau * B) + Cv_norm * sin_theta_u * (-tau * N),
+                 radvv = Cv_sqrnorm * cos_theta_u * (-kappa * kappa - tau * tau) * N +
+                         Cv_sqrnorm * sin_theta_u * (kappa * tau * T - tau * tau * B),
+                 raduv = -Cv_norm * sin_theta_u * (-kappa * T + tau * B) + Cv_norm * cos_theta_u * (-tau * N);
+        Vector3f Pu  = radius * radu,
+                 Pv  = Cv + rv * rad + radius * radv,
+                 Puu = -radius * rad,
+                 Pvv = Cvv + rvv * rad + 2 * rv * radv + radius * radvv,
+                 Puv = rv * radu + radius * raduv;
+
+        // Rescale (u: [0, 1) -> [0, 2pi), v: local -> global)
+        Pu *= dr::TwoPi<Float>;
+        Puv *= dr::TwoPi<Float>;
+        Puu *= dr::sqr(dr::TwoPi<Float>);
+        ScalarFloat ratio = dr::width(m_indices),
+                    ratio2 = ratio * ratio;
+        Pv  *= ratio;
+        Puv *= ratio;
+        Pvv *= ratio2;
+
+        // Fundamental form
+        Float E = dr::squared_norm(Pu),
+              F = dr::dot(Pu, Pv),
+              G = dr::squared_norm(Pv),
+              e = dr::dot(n, Puu),
+              f = dr::dot(n, Puv),
+              g = dr::dot(n, Pvv);
+
+        // Normal partials
+        Float detI = E * G - F * F;
+        Vector3f Nu = ((f * F - e * G) * Pu + (e * F - f * E) * Pv) / detI,
+                 Nv = ((g * F - f * G) * Pu + (f * F - g * E) * Pv) / detI;
+
+        return {Pu, Pv, Nu, Nv};
     }
 
     std::tuple<Vector3f, Vector3f>
