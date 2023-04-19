@@ -20,25 +20,107 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * NOTES:
- * - Gradients seem to match, there are a few issues still:
- *      - The gradients at the curve extremities do not have the same magnitude,
- *        this might just be because the Epislon used in the FD approach isn't
- *        small enough
- *      - In CUDA variants, something is numerically unstable in the AD graph.
- *        The forward-mode gradients will result in some NaNs.
- *
- * - Internally, we should only make use of `m_vertex` and `m_radius` for
- *   gradient tracking, otherwise the mi.render() function will behave
- *   "un-expectedly".
- *
- * - Documentation:
- *      - Scalar mode only supported with EMBREE
- *      - Orthographic broken in CUDA
- *      - Endcaps
- *      - Backface culling  CUDA
- *      - File format description
+/**!
+
+.. _shape-bsplinecurve:
+
+B-spline curve (:monosp:`bsplinecurve`)
+-------------------------------------------------
+
+.. pluginparameters::
+ :extra-rows: 2
+
+ * - filename
+   - |string|
+   - Filename of the curves to be loaded
+
+ * - to_world
+   - |transform|
+   - Specifies a linear object-to-world transformation. Note that the control
+     points' raddii are invariant to this transformation!
+
+ * - control_point_count
+   - |int|
+   - Total number of control points
+   - |exposed|
+
+ * - segment_indices
+   - :paramtype:`uint32[]`
+   - Starting indices of a B-Spline segment
+   - |exposed|
+
+ * - control_points
+   - :paramtype:`float[]`
+   - Flattened control points buffer pre-multiplied by the object-to-world transformation.
+     Each control point in the buffer is structured as follows: position_x, position_y, position_z, radius
+   - |exposed|, |differentiable|, |discontinuous|
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_bsplinecurve_basic.jpg
+   :caption: Basic example
+.. subfigure:: ../../resources/data/docs/images/render/shape_bsplinecurve_parameterization.jpg
+   :caption: A textured B-spline curve with the default parameterization
+.. subfigend::
+   :label: fig-bsplinecurve
+
+This shape plugin describes multiple cubic B-spline curves. They are hollow
+cylindrical tubes which can have varying radii along their length and are
+open-ended: they do not have endcaps. They can be made watertight by setting the
+radii of the extremities to 0. This shape should always be preferred over curve
+approximations modeled using triangles.
+
+Although it is possible to define multiple curves as multiple separate objects,
+this plugin was intended to be used as an aggregate of curves. Of course,
+if the individual curves need different materials or other individual
+characteristics they need to be defined in separate objects.
+
+The file from which curves are loaded defines a single control point per line
+using four real numbers. The first three encode the position and the last one is
+the radius of the control point. At least four control points need to be
+specified for a single curve. Empty lines between control points are used to
+indicate the beginning of a new curve. Here is an example of two curves, the
+first with 4 control points and static radii and the second with 6 control
+points and increasing radii::
+
+    -1.0 0.1 0.1 0.5
+    -0.3 1.2 1.0 0.5
+     0.3 0.3 1.1 0.5
+     1.0 1.4 1.2 0.5
+
+    -1.0 5.0 2.2 1
+    -2.3 4.0 2.3 2
+     3.3 3.0 2.2 3
+     4.0 2.0 2.3 4
+     4.0 1.0 2.2 5
+     4.0 0.0 2.3 6
+
+.. tabs::
+    .. code-tab:: xml
+        :name: bsplinecurve
+
+        <shape type="bsplinecurve">
+            <transform name="to_world">
+                <scale value="2"/>
+                <translate x="1" y="0" z="0"/>
+            </transform>
+            <string name="filename" type="curves.txt"/>
+        </shape>
+
+    .. code-tab:: python
+
+        'curves': {
+            'type': 'bsplinecurve',
+            'to_world': mi.ScalarTransform4f.scale([2, 2, 2]).translate([1, 0, 0]),
+            'filename': 'curves.txt'
+        },
+
+.. note:: In CUDA variants, the backfaces of the curves are culled. It is
+          therefore impossible to intersect the curve with a ray which's origin
+          is inside of the curve. In addition, prior to the NVIDIA v531.18
+          drivers for Windows and v530.30.02 drivers for Linux,
+          `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
+          in the ray intersection code have been identified.
+          We recommend updating to newer drivers.
  */
 
 template <typename Float, typename Spectrum>
@@ -103,7 +185,7 @@ public:
             if (!new_curve) {
                 size_t num_control_points = vertices.size() - curve_1st_idx[curve_1st_idx.size() - 1];
                 if (unlikely((num_control_points < 4) && (num_control_points > 0)))
-                    fail("B-spline must have at least four control points!");
+                    fail("B-spline curves must have at least four control points!");
                 if (likely(num_control_points > 0))
                     segment_count += (num_control_points - 3);
             }
@@ -210,7 +292,19 @@ public:
             }
         }
 
-        compute_bbox();
+        // Compute bounding box
+        m_bbox.reset();
+        for (ScalarSize i = 0; i < m_control_point_count; ++i) {
+            ScalarPoint3f p(positions[3 * i + 0], positions[3 * i + 1],
+                            positions[3 * i + 2]);
+            ScalarFloat r(radius[i]);
+            m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
+            m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
+            m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
+            m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+        }
 
         ScalarSize control_point_bytes = 4 * sizeof(InputFloat);
         Log(Debug, "\"%s\": read %i control points (%s in %s)",
@@ -251,11 +345,11 @@ public:
             cubic_interpolation(v_local, segment_id, active);
         Vector3f dc_dv_normalized = dr::normalize(dc_dv);
 
-        Vector3f u_rot, v_rad;
-        std::tie(u_rot, v_rad) = local_frame(dc_dv_normalized);
+        Vector3f u_rot, u_rad;
+        std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
 
         auto [sin_u, cos_u] = dr::sincos(uv.x() * dr::TwoPi<Float>);
-        Point3f o = c + cos_u * v_rad * (radius + pi.t) + sin_u * u_rot * (radius + pi.t);
+        Point3f o = c + cos_u * u_rad * (radius + pi.t) + sin_u * u_rot * (radius + pi.t);
 
         Vector3f rad_vec = o - c;
         Normal3f d = -dr::normalize(dr::norm(dc_dv) * rad_vec - (dr_dv * radius) * dc_dv_normalized);
@@ -432,7 +526,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "control_points")) {
-            compute_bbox();
+            recompute_bbox();
             mark_dirty();
         }
         Base::parameters_changed();
@@ -526,7 +620,7 @@ private:
         *start_ = start;
     }
 
-    void compute_bbox() {
+    void recompute_bbox() {
         auto&& control_points = dr::migrate(m_control_points, AllocType::Host);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
@@ -692,18 +786,18 @@ private:
     }
 
     std::tuple<Vector3f, Vector3f>
-    local_frame(const Vector3f &dc_du_normalized) const {
+    local_frame(const Vector3f &dc_dv_normalized) const {
         // Define consistent local frame
         // (1) Consistently define a rotation axis (`v_rot`) that lies in the hemisphere defined by `guide`
         // (2) Rotate `dc_du` by 90 degrees on `v_rot` to obtain `v_rad`
         Vector3f guide = Vector3f(0, 0, 1);
         Vector3f v_rot = dr::normalize(
-            guide - dc_du_normalized * dr::dot(dc_du_normalized, guide));
+            guide - dc_dv_normalized * dr::dot(dc_dv_normalized, guide));
         Mask singular_mask =
-            dr::eq(dr::abs(dr::dot(guide, dc_du_normalized)), 1.f);
+            dr::eq(dr::abs(dr::dot(guide, dc_dv_normalized)), 1.f);
         dr::masked(v_rot, singular_mask) =
             Vector3f(0, 1, 0); // non-consistent at singular points
-        Vector3f v_rad = dr::cross(v_rot, dc_du_normalized);
+        Vector3f v_rad = dr::cross(v_rot, dc_dv_normalized);
 
         return { v_rot, v_rad };
     }
