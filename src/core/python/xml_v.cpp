@@ -433,6 +433,10 @@ Task *instantiate_node(DictParseContext &ctx,
         if (eptr)
             std::rethrow_exception(eptr);
         instantiate();
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend && ctx.parallel)
+            jit_new_scope((JitBackend) backend);
+#endif
         return nullptr;
     } else {
         if (ctx.parallel) {

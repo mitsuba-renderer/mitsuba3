@@ -1173,6 +1173,10 @@ static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string 
     ThreadEnvironment env;
     std::unordered_map<std::string, Task*> task_map;
     instantiate_node(ctx, id, env, task_map, true);
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    if (ctx.backend && ctx.parallel)
+        jit_new_scope((JitBackend) ctx.backend);
+#endif
     return ctx.instances.find(id)->second.object;
 }
 
