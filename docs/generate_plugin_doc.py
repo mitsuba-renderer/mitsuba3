@@ -17,6 +17,7 @@ SHAPE_ORDERING = [
     'disk',
     'cylinder',
     'bsplinecurve',
+    'linearcurve',
     'rectangle',
     'shapegroup',
     'instance'
