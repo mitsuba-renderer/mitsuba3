@@ -267,10 +267,10 @@ public:
 
         if constexpr (dr::is_jit_v<Float>) {
             DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(m_control_point_count);
-            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
-            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
-            dr::scatter(m_control_points, dr::gather<Float>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
-            dr::scatter(m_control_points, dr::gather<Float>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
         } else {
             for (size_t i = 0; i < m_control_point_count; ++i) {
                 m_control_points[i * 4 + 0] = vertex_buffer[i * 3 + 0];
