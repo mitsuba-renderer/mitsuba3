@@ -4297,6 +4297,8 @@ static const char *__doc_mitsuba_Mesh_embree_geometry = R"doc(Return the Embree 
 
 static const char *__doc_mitsuba_Mesh_ensure_pmf_built = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_eval_attribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_eval_attribute_1 = R"doc()doc";
@@ -7119,7 +7121,7 @@ static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter a
 
 static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
 
-static const char *__doc_mitsuba_Shape_eval_attribute =
+static const char *__doc_mitsuba_Shape_has_attribute =
 R"doc(Evaluate a specific shape attribute at the given surface interaction.
 
 Shape attributes are user-provided fields that provide extra
@@ -7127,7 +7129,7 @@ information at an intersection. An example of this would be a per-
 vertex or per-face color on a triangle mesh.
 
 Parameter ``name``:
-    Name of the attribute to evaluate
+    Name of the attribute
 
 Parameter ``si``:
     Surface interaction associated with the query
@@ -7136,6 +7138,12 @@ Returns:
     An unpolarized spectral power distribution or reflectance value
 
 The default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_Shape_eval_attribute =
+R"doc(Returns whether this shape contains the specified attribute.
+
+Parameter ``name``:
+    Name of the attribute to evaluate)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a shape attribute at the given surface
@@ -7152,9 +7160,7 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An scalar intensity or reflectance value
-
-The default implementation throws an exception.)doc";
+    An scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_3 =
 R"doc(Trichromatic evaluation of a shape attribute at the given surface
@@ -7171,9 +7177,7 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An trichromatic intensity or reflectance value
-
-The default implementation throws an exception.)doc";
+    An trichromatic intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_parameterization =
 R"doc(Parameterize the mesh using UV values

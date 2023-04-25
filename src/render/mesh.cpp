@@ -896,6 +896,14 @@ MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
     m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 
+MI_VARIANT typename Mesh<Float, Spectrum>::Mask
+Mesh<Float, Spectrum>::has_attribute(const std::string& name, Mask active) const {
+    const auto& it = m_mesh_attributes.find(name);
+    if (it == m_mesh_attributes.end())
+        return Base::has_attribute(name, active);
+    return true;
+}
+
 MI_VARIANT typename Mesh<Float, Spectrum>::UnpolarizedSpectrum
 Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
                                       const SurfaceInteraction3f &si,

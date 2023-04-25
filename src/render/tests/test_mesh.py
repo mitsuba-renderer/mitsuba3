@@ -981,3 +981,30 @@ def test23_write_stream(variants_all_rgb, tmp_path):
     fs = mi.FileStream(filepath, mi.FileStream.ERead)
     mesh.write_ply(ms)
     assert fs.size() == ms.size()
+
+
+@fresolver_append_path
+def test24_texture_attributes(variants_all_rgb):
+
+    texture = mi.load_dict({
+        "type": "bitmap",
+        "filename" : "resources/data/common/textures/flower.bmp",
+    })
+
+    mesh = mi.load_dict({
+        "type" : "obj",
+        "id" : "rect",
+        "filename" : "resources/data/common/meshes/rectangle.obj",
+        "attribute_1": texture
+    })
+
+    assert dr.all(mesh.has_attribute('attribute_1'))
+    assert not dr.any(mesh.has_attribute('foo'))
+
+    si = mi.SurfaceInteraction3f()
+    si.uv = mi.Point2f(0.5)
+
+    assert dr.allclose(mesh.eval_attribute('attribute_1', si), texture.eval(si))
+
+
+
