@@ -446,6 +446,11 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::Mask
+Shape<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
+    return m_texture_attributes.find(name) != m_texture_attributes.end();
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
 Shape<Float, Spectrum>::eval_attribute(const std::string & name,
                                        const SurfaceInteraction3f & si,

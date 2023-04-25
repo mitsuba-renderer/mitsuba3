@@ -283,6 +283,14 @@ public:
     virtual Float surface_area() const;
 
     /**
+     * \brief Returns whether this shape contains the specified attribute.
+     *
+     * \param name
+     *     Name of the attribute
+     */
+    virtual Mask has_attribute(const std::string &name, Mask active = true) const;
+
+    /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.
      *
      * Shape attributes are user-provided fields that provide extra
@@ -297,8 +305,6 @@ public:
      *
      * \return
      *     An unpolarized spectral power distribution or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
                                                const SurfaceInteraction3f &si,
@@ -319,8 +325,6 @@ public:
      *
      * \return
      *     An scalar intensity or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual Float eval_attribute_1(const std::string &name,
                                    const SurfaceInteraction3f &si,
@@ -341,8 +345,6 @@ public:
      *
      * \return
      *     An trichromatic intensity or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
@@ -641,6 +643,7 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(compute_surface_interaction)
+    DRJIT_VCALL_METHOD(has_attribute)
     DRJIT_VCALL_METHOD(eval_attribute)
     DRJIT_VCALL_METHOD(eval_attribute_1)
     DRJIT_VCALL_METHOD(eval_attribute_3)

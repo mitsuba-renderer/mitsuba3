@@ -56,6 +56,11 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))
+       .def("has_attribute",
+            [](Ptr shape, const std::string &name, const Mask &active) {
+                return shape->has_attribute(name, active);
+            },
+            "name"_a, "active"_a = true, D(Shape, has_attribute))
        .def("eval_attribute",
             [](Ptr shape, const std::string &name,
                const SurfaceInteraction3f &si, const Mask &active) {

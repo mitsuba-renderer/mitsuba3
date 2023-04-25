@@ -183,6 +183,8 @@ public:
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const override;
 
+    virtual Mask has_attribute(const std::string &name, Mask active = true) const override;
+
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
                                                const SurfaceInteraction3f &si,
                                                Mask active = true) const override;
