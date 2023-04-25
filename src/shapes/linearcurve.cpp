@@ -63,10 +63,10 @@ Linear curve (:monosp:`linearcurve`)
    :label: fig-linearcurve
 
 This shape plugin describes multiple linear curves. They are hollow
-cylindrical tubes which can have varying radii along their length and are
-open-ended: they do not have endcaps. They can be made watertight by setting the
-radii of the extremities to 0. This shape should always be preferred over curve
-approximations modeled using triangles.
+cylindrical tubes which can have varying radii along their length. The linear
+segments are connected by a smooth spherical joint, and they are also
+terminated by a spherical endcap. This shape should always be preferred over
+curve approximations modeled using triangles.
 
 Although it is possible to define multiple curves as multiple separate objects,
 this plugin was intended to be used as an aggregate of curves. Of course,

@@ -3822,7 +3822,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -5231,6 +5231,13 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.Bitmap`:
+            *no description available*
+
+    .. py:method:: mitsuba.Film.clear(self)
+
+        Clear the film contents to zero.
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.Film.create_block(self, size=[0, 0], normalize=False, borders=False)
@@ -12328,6 +12335,11 @@
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.MemoryStream.raw_buffer(self)
+
+        Returns → bytes:
+            *no description available*
+
 .. py:class:: mitsuba.Mesh
 
     Base class: :py:obj:`mitsuba.Shape`
@@ -12457,15 +12469,22 @@
         Returns → :py:obj:`mitsuba.Point2f`:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.write_ply(self, filename)
+    .. py:method:: mitsuba.Mesh.write_ply(overloaded)
 
-        Export mesh as a binary PLY file
 
-        Parameter ``filename`` (str):
-            *no description available*
+        .. py:method:: write_ply(self, filename)
 
-        Returns → None:
-            *no description available*
+            Write the mesh to a binary PLY file
+
+            Parameter ``filename`` (str):
+                Target file path on disk
+
+        .. py:method:: write_ply(self, stream)
+
+            Write the mesh encoded in binary PLY format to a stream
+
+            Parameter ``stream`` (:py:obj:`mitsuba.Stream`):
+                Target stream that will receive the encoded output
 
 .. py:class:: mitsuba.MicrofacetDistribution
 
@@ -14069,6 +14088,16 @@
 
     .. py:method:: mitsuba.Properties.Type.name
         :property:
+
+    .. py:method:: mitsuba.Properties.as_string(self, arg0)
+
+        Return one of the parameters (converting it to a string if necessary)
+
+        Parameter ``arg0`` (str):
+            *no description available*
+
+        Returns → str:
+            *no description available*
 
     .. py:method:: mitsuba.Properties.copy_attribute(self, arg0, arg1, arg2)
 
@@ -27546,7 +27575,8 @@
         XML file be written back to disk?
 
     Parameter ``parallel`` (bool):
-        Whether the loading should be executed on multiple threads in parallel
+        Whether the loading should be executed on multiple threads in
+        parallel
 
     Returns → object:
         *no description available*
@@ -27572,7 +27602,7 @@
         Parameter ``value`` (:py:obj:`mitsuba.Color3f`):
             *no description available*
 
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -30396,7 +30426,7 @@
 
 .. py:function:: mitsuba.warp.tent_to_interval(value)
 
-    Warp a uniformly distributed sample on [0, 1] to a tent distribution
+    Warp a tent distribution to a uniformly distributed sample on [0, 1]
 
     Parameter ``value`` (drjit.llvm.ad.Float):
         *no description available*
