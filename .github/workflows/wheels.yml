@@ -39,9 +39,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: Wandalen/wretry.action@v1.0.36
         with:
-          submodules: recursive
+          action: actions/checkout@v3
+          with: |
+            submodules: recursive
+          attempt_limit: 3
+          attempt_delay: 2000
 
       - uses: actions/setup-python@v4
         name: Install Python
