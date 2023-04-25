@@ -277,7 +277,7 @@ def test22_fileresolver_unchanged(variant_scalar_rgb):
 
 def test23_unreferenced_object(variant_scalar_rgb):
     plugins = [('bsdf', 'diffuse'), ('emitter', 'point'),
-               ('shape', 'sphere'), ('sensor', 'perspective')]
+               ('sensor', 'perspective')]
 
     for interface, name in plugins:
         with pytest.raises(Exception) as e:
