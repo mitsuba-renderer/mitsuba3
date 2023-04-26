@@ -129,7 +129,7 @@ public:
 
     LinearCurve(const Properties &props) : Base(props) {
 #if !defined(MI_ENABLE_EMBREE)
-        if constexpr (!is_jit_v<Float>)
+        if constexpr (!dr::is_jit_v<Float>)
             Throw("The linear curve is only available with Embree in scalar "
                   "variants!");
 #endif
