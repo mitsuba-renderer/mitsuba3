@@ -3,7 +3,9 @@ import drjit as dr
 import mitsuba as mi
 
 from drjit.scalar import ArrayXf as Float
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
+@fresolver_append_path
 def test01_create(variants_all_rgb):
     s = mi.load_dict({
         "type" : "bsplinecurve",
@@ -13,6 +15,7 @@ def test01_create(variants_all_rgb):
     assert s.primitive_count() == 1
 
 
+@fresolver_append_path
 def test02_create_multiple_curves(variants_all_rgb):
     s = mi.load_dict({
         "type" : "bsplinecurve",
@@ -22,6 +25,7 @@ def test02_create_multiple_curves(variants_all_rgb):
     assert s.primitive_count() == 6
 
 
+@fresolver_append_path
 def test02_bbox(variants_all_rgb):
     for sx in [1, 2, 4]:
         for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
@@ -39,6 +43,7 @@ def test02_bbox(variants_all_rgb):
             assert dr.allclose(b.max, translate + [1, 0, 0] + [sx, 1, 1])
 
 
+@fresolver_append_path
 def test03_parameters_changed(variants_vec_rgb):
     pytest.importorskip("numpy")
     import numpy as np
@@ -64,6 +69,7 @@ def test03_parameters_changed(variants_vec_rgb):
     assert dr.allclose(dr.ravel(new_control_points), params['control_points'])
 
 
+@fresolver_append_path
 def test04_ray_intersect(variant_scalar_rgb):
     for translate in [mi.Vector3f([0.0, 0.0, 0.0]),
                       mi.Vector3f([0.0, 0.0, 0.0])]:
@@ -139,6 +145,7 @@ def test05_ray_intersect_vec(variant_scalar_rgb):
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
 # TODO: Enable CUDA variants aswell (orthographic is broken).
+@fresolver_append_path
 def test06_differentiable_surface_interaction_ray_forward_follow_shape(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
@@ -220,6 +227,7 @@ def test06_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
 
 
 # TODO: Enable CUDA variants aswell (orthographic is broken).
+@fresolver_append_path
 def test07_eval_parameterization(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
@@ -248,6 +256,7 @@ def test07_eval_parameterization(variant_llvm_ad_rgb):
 
 
 # TODO: Enable CUDA variants aswell (orthographic is broken).
+@fresolver_append_path
 def test08_instancing(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
