@@ -36,6 +36,7 @@ mi_cmake_toolchain_file = os.environ.get("MI_CMAKE_TOOLCHAIN_FILE", "")
 mi_drjit_cmake_dir = os.environ.get("MI_DRJIT_CMAKE_DIR", "")
 mi_srgb_coeff_file = os.environ.get("MI_SRGB_COEFF_FILE", "")
 mi_python_stubs_dir = os.environ.get("MI_PYTHON_STUBS_DIR", "")
+mi_cmake_preset = os.environ.get("MI_CMAKE_PRESET", "eradiate")
 pathlib.Path("./mitsuba").mkdir(exist_ok=True)
 
 setup(
@@ -56,7 +57,8 @@ setup(
         f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
         f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}',
         f'-DMI_SRGB_COEFF_FILE:STRING={mi_srgb_coeff_file}',
-        f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}'
+        f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}',
+        f'--preset {mi_cmake_preset}'
     ],
     install_requires=[f"drjit=={drjit_version}"],
     packages=['mitsuba'],
