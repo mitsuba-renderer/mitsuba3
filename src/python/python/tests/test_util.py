@@ -285,3 +285,30 @@ def test05_render_fwd_assert(variants_all_ad_rgb):
     with pytest.raises(Exception) as e:
         img = mi.render(scene)
         dr.forward_to(img)
+
+
+def test06_variant_context():
+    # Select the first variant which is not 'scalar_rgb'
+    for variant in mi.variants():
+        if variant != "scalar_rgb":
+            override_variant = variant
+            break
+    else:
+        pytest.skip("Only the 'scalar_rgb' variant was compiled.")
+
+    # Now, the test
+    mi.set_variant("scalar_rgb")
+
+    # The active variant is temporarily overridden
+    with mi.variant_context(override_variant):
+        assert mi.variant() == override_variant
+    assert mi.variant() == "scalar_rgb"
+
+    # The initial variant is restored if an exception is raised
+    try:
+        with mi.variant_context(override_variant):
+            assert mi.variant() == override_variant
+            raise RuntimeError
+    except RuntimeError:
+        pass
+    assert mi.variant() == "scalar_rgb"

@@ -1,5 +1,6 @@
 from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
+import contextlib
 from collections.abc import Mapping
 
 import drjit as dr
@@ -696,3 +697,20 @@ def cornell_box():
             }
         },
     }
+
+
+@contextlib.contextmanager
+def variant_context(*args) -> None:
+    '''
+    Temporarily override the active variant. Arguments are interpreted as
+    they are in :func:`mitsuba.set_variant`.
+    '''
+
+    old_variant = mi.variant()
+    try:
+        mi.set_variant(*args)
+        yield
+    except Exception:
+        raise
+    finally:
+        mi.set_variant(old_variant)
