@@ -37,6 +37,8 @@ mi_drjit_cmake_dir = os.environ.get("MI_DRJIT_CMAKE_DIR", "")
 mi_srgb_coeff_file = os.environ.get("MI_SRGB_COEFF_FILE", "")
 mi_python_stubs_dir = os.environ.get("MI_PYTHON_STUBS_DIR", "")
 mi_cmake_preset = os.environ.get("MI_CMAKE_PRESET", None)
+mi_pkg_name = os.environ.get("MI_PKG_NAME", "mitsuba")
+mi_pkg_version = os.environ.get("MI_PKG_VERSION", mitsuba_version)
 pathlib.Path("./mitsuba").mkdir(exist_ok=True)
 
 cmake_args=[
@@ -55,8 +57,8 @@ if mi_cmake_preset:
     cmake_args.append(mi_cmake_preset)
 
 setup(
-    name="eradiate_mitsuba",
-    version=mitsuba_version,
+    name=mi_pkg_name,
+    version=mi_pkg_version,
     author="Realistic Graphics Lab (RGL), EPFL",
     author_email="wenzel.jakob@epfl.ch",
     description="3: A Retargetable Forward and Inverse Renderer",

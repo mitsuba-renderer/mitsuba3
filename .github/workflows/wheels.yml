@@ -6,6 +6,10 @@ on:
         description: 'Upload wheels to PyPI? (0: no, 1: yes)'
         required: true
         default: '0'
+      version_overwrite:
+        description: 'Version used to overwrite the git ref? (optional)'
+        required: false
+        default: ''
 
 env:
   CIBW_BUILD_VERBOSITY: 1
@@ -17,6 +21,10 @@ env:
   CIBW_REPAIR_WHEEL_COMMAND_MACOS: "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} --ignore-missing-dependencies {wheel}"
   CIBW_TEST_COMMAND: "python -c \"import mitsuba as mi; mi.set_variant(\\\"scalar_rgb\\\")\""
   CIBW_TEST_SKIP: "*-macosx_arm64"
+  CIBW_ENVIRONMENT_PASS_LINUX: MI_PKG_VERSION MI_PKG_NAME MI_CMAKE_PRESET
+  MI_PKG_VERSION: ${{ github.event.inputs.version_overwrite || github.ref_name }}
+  MI_PKG_NAME: ${{ vars.PKG_NAME || 'mitsuba' }}
+  MI_CMAKE_PRESET: ${{ vars.CMAKE_PRESET || '' }}
   MACOSX_DEPLOYMENT_TARGET: 10.14
 
 jobs:
@@ -99,16 +107,19 @@ jobs:
   upload_pypi:
     name: Upload wheels to PyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload == '1'}}
+    if: ${{ github.event.inputs.upload == '1' }}
     needs: [build_wheels]
 
     steps:
+
       - uses: actions/download-artifact@v2
+        if: github.event.inputs.version_overwrite || github.ref_type == 'tag'
         with:
           name: wheels
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@v1.5.1
+        if: github.event.inputs.version_overwrite || github.ref_type == 'tag'
         with:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
