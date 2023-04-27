@@ -36,11 +36,26 @@ mi_cmake_toolchain_file = os.environ.get("MI_CMAKE_TOOLCHAIN_FILE", "")
 mi_drjit_cmake_dir = os.environ.get("MI_DRJIT_CMAKE_DIR", "")
 mi_srgb_coeff_file = os.environ.get("MI_SRGB_COEFF_FILE", "")
 mi_python_stubs_dir = os.environ.get("MI_PYTHON_STUBS_DIR", "")
-mi_cmake_preset = os.environ.get("MI_CMAKE_PRESET", "eradiate")
+mi_cmake_preset = os.environ.get("MI_CMAKE_PRESET", None)
 pathlib.Path("./mitsuba").mkdir(exist_ok=True)
 
+cmake_args=[
+    '-DCMAKE_INSTALL_LIBDIR=mitsuba',
+    '-DCMAKE_INSTALL_BINDIR=mitsuba',
+    '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
+    '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data',
+    f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
+    f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}',
+    f'-DMI_SRGB_COEFF_FILE:STRING={mi_srgb_coeff_file}',
+    f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}',
+]
+
+if mi_cmake_preset:
+    cmake_args.append("--preset")
+    cmake_args.append(mi_cmake_preset)
+
 setup(
-    name="mitsuba",
+    name="eradiate_mitsuba",
     version=mitsuba_version,
     author="Realistic Graphics Lab (RGL), EPFL",
     author_email="wenzel.jakob@epfl.ch",
@@ -49,17 +64,7 @@ setup(
     license="BSD",
     long_description=long_description,
     long_description_content_type='text/markdown',
-    cmake_args=[
-        '-DCMAKE_INSTALL_LIBDIR=mitsuba',
-        '-DCMAKE_INSTALL_BINDIR=mitsuba',
-        '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
-        '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data',
-        f'-DCMAKE_TOOLCHAIN_FILE={mi_cmake_toolchain_file}',
-        f'-DMI_DRJIT_CMAKE_DIR:STRING={mi_drjit_cmake_dir}',
-        f'-DMI_SRGB_COEFF_FILE:STRING={mi_srgb_coeff_file}',
-        f'-DMI_PYTHON_STUBS_DIR:STRING={mi_python_stubs_dir}',
-        f'--preset {mi_cmake_preset}'
-    ],
+    cmake_args=cmake_args,
     install_requires=[f"drjit=={drjit_version}"],
     packages=['mitsuba'],
     entry_points={
