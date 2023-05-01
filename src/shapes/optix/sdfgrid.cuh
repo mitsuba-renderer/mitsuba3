@@ -299,13 +299,13 @@ extern "C" __global__ void __intersection__sdfgrid() {
         // Quadratic or linear polynomial
         float root_0;
         float root_1;
-        solve_quadratic(c2, c1, c0, root_0, root_1);
+        bool hit = solve_quadratic(c2, c1, c0, root_0, root_1);
 
-        if (t_beg <= root_0 && root_0 <= t_end)
+        if (hit && t_beg <= root_0 && root_0 <= t_end)
             optixReportIntersection(root_0, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-        else if (t_beg <= root_1 && root_1 <= t_end)
+        else if (hit && t_beg <= root_1 && root_1 <= t_end)
             optixReportIntersection(root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-    } 
+    }
 }
 
 extern "C" __global__ void __closesthit__sdfgrid() {
