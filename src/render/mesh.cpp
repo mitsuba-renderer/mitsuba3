@@ -339,6 +339,11 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         normals = dr::normalize(normals);
 
+        // Disconnect the vertex normal buffer from any pre-existing AD
+        // graph. Otherwise an AD graph might be unnecessarily retained
+        // here, despite the following lines re-initializing the normals.
+        dr::disable_grad(m_vertex_normals);
+
         UInt32 ni = dr::arange<UInt32>(m_vertex_count) * 3;
         for (size_t i = 0; i < 3; ++i)
             dr::scatter(m_vertex_normals,
