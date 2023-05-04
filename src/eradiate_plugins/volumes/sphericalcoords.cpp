@@ -80,10 +80,12 @@ template <typename Float, typename Spectrum>
 class SphericalCoordsVolume final : public Volume<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Volume, m_to_local, m_bbox)
-    MI_IMPORT_TYPES(Volume, VolumeGrid)
+    MI_IMPORT_TYPES(VolumeGrid)
+
+    using VolumeType = Volume<Float, Spectrum>;
 
     SphericalCoordsVolume(const Properties &props) : Base(props) {
-        m_volume = props.volume<Volume>("volume", 1.f);
+        m_volume = props.volume<VolumeType>("volume", 1.f);
 
         m_rmin = props.get<ScalarFloat>("rmin", 0.f);
         m_rmax = props.get<ScalarFloat>("rmax", 1.f);
@@ -169,7 +171,7 @@ public:
 
 protected:
     ScalarFloat m_rmin, m_rmax, m_fillmin, m_fillmax;
-    ref<Volume> m_volume;
+    ref<VolumeType> m_volume;
 
     void update_bbox_sphere() {
         ScalarTransform4f to_world = m_to_local.inverse();
