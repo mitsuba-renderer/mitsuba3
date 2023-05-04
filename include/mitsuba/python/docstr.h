@@ -802,6 +802,14 @@ Parameter ``si``:
     A surface interaction data structure describing the underlying
     surface position.)doc";
 
+static const char *__doc_mitsuba_BSDF_has_attribute = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_eval_attribute = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_eval_attribute_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_eval_attribute_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_BSDF_eval_null_transmission =
 R"doc(Evaluate un-scattered transmission component of the BSDF
 
