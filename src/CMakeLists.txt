@@ -38,6 +38,7 @@ add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 add_subdirectory(volumes)
+add_subdirectory(eradiate_plugins)
 set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
 
 # ----------------------------------------------------------
