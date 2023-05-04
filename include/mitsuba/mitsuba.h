@@ -22,10 +22,20 @@
     MI_TOSTRING(MI_VERSION_PATCH)
 
 /// Year of the current release
-#define MI_YEAR "2022"
+#define MI_YEAR "2023"
+
+#define ERD_MI_VERSION_MAJOR 0
+#define ERD_MI_VERSION_MINOR 0
+#define ERD_MI_VERSION_PATCH 1
+
+/// Current release of the Eradiate patch for Mitsuba
+#define ERD_MI_VERSION                                                             \
+    MI_TOSTRING(ERD_MI_VERSION_MAJOR) "."                                          \
+    MI_TOSTRING(ERD_MI_VERSION_MINOR) "."                                          \
+    MI_TOSTRING(ERD_MI_VERSION_PATCH)
 
 /// Authors list
-#define MI_AUTHORS "Realistic Graphics Lab, EPFL"
+#define MI_AUTHORS "Realistic Graphics Lab, EPFL, Rayference"
 
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/platform.h>
