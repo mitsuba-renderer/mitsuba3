@@ -40,6 +40,42 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
     return eval(ctx, si, wo, active) * dr::Pi<Float>;
 }
 
+
+MI_VARIANT typename BSDF<Float, Spectrum>::Mask
+BSDF<Float, Spectrum>::has_attribute(const std::string& /*name*/, Mask /*active*/) const {
+    return false;
+}
+
+MI_VARIANT typename BSDF<Float, Spectrum>::UnpolarizedSpectrum
+BSDF<Float, Spectrum>::eval_attribute(const std::string & name,
+                                      const SurfaceInteraction3f & /*si*/,
+                                      Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return 0.f;
+    else
+        Throw("Invalid attribute requested %s.", name.c_str());
+}
+
+MI_VARIANT Float
+BSDF<Float, Spectrum>::eval_attribute_1(const std::string& name,
+                                        const SurfaceInteraction3f & /*si*/,
+                                        Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return 0.f;
+    else
+        Throw("Invalid attribute requested %s.", name.c_str());
+}
+
+MI_VARIANT typename BSDF<Float, Spectrum>::Color3f
+BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
+                                        const SurfaceInteraction3f & /*si*/,
+                                        Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return 0.f;
+    else
+        Throw("Invalid attribute requested %s.", name.c_str());
+}
+
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;
