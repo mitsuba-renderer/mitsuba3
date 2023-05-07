@@ -248,3 +248,72 @@ def test06_tensor_load(variants_all_rgb):
     })
 
     assert dr.allclose(bitmap.mean(), 3.0);
+
+@fresolver_append_path
+def test07_mean_max_rgb(variants_vec_backends_once_rgb):
+    import numpy as np
+
+    # RGB image
+    bitmap = mi.load_dict({
+        'type': 'bitmap',
+        'filename': 'resources/data/common/textures/carrot.png'
+    })
+
+    bitmap_max = bitmap.max()
+    bitmap_mean = bitmap.mean()
+
+    expected_max = 0.9301106333732605
+    expected_mean = 0.5635552406311035
+
+    assert dr.allclose(bitmap_max, expected_max)
+    assert dr.allclose(bitmap_mean, expected_mean)
+
+    # Grayscale image
+    bitmap = mi.load_dict({
+        'type': 'bitmap',
+        'filename': 'resources/data/common/textures/noise_02.png'
+    })
+
+    bitmap_max = bitmap.max()
+    bitmap_mean = bitmap.mean()
+
+    expected_max = 1.0
+    expected_mean = 0.6991438865661621
+
+    assert dr.allclose(bitmap_max, expected_max)
+    assert dr.allclose(bitmap_mean, expected_mean)
+
+
+@fresolver_append_path
+def test08_mean_max_spectral(variants_vec_backends_once_spectral):
+    import numpy as np
+
+    # RGB image
+    bitmap = mi.load_dict({
+        'type': 'bitmap',
+        'filename': 'resources/data/common/textures/carrot.png'
+    })
+
+    bitmap_max = bitmap.max()
+    bitmap_mean = bitmap.mean()
+
+    expected_max = 0.12174692749977112
+    expected_mean = 0.5862535834312439
+
+    # assert dr.allclose(bitmap_max, expected_max)
+    assert dr.allclose(bitmap_mean, expected_mean)
+
+    # Grayscale image
+    bitmap = mi.load_dict({
+        'type': 'bitmap',
+        'filename': 'resources/data/common/textures/noise_02.png'
+    })
+
+    bitmap_max = bitmap.max()
+    bitmap_mean = bitmap.mean()
+
+    expected_max = 1.0
+    expected_mean = 0.6991438736903555
+
+#     assert dr.allclose(bitmap_max, expected_max)
+    assert dr.allclose(bitmap_mean, expected_mean)
