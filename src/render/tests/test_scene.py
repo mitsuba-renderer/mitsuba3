@@ -154,3 +154,62 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
 
     import drjit as dr
     dr.eval(pi)
+
+
+def test05_test_discrete_emitter_pdf(variants_all_backends_once):
+    import numpy as np
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'shape': {'type': 'sphere', 'emitter': {'type':'area', 'sampling_weight': 1.0}},
+        'emitter_0': {'type':'point', 'sampling_weight': 1.0},
+        'emitter_1': {'type':'constant', 'sampling_weight': 1.0},
+    })
+
+    assert dr.allclose(scene.pdf_emitter(0), 1.0 / 3.0)
+    assert dr.allclose(scene.pdf_emitter(1), 1.0 / 3.0)
+    assert dr.allclose(scene.pdf_emitter(2), 1.0 / 3.0)
+
+    weights = [1.3, 3.8, 0.0]
+    scene = mi.load_dict({
+        'type': 'scene',
+        'shape': {'type': 'sphere', 'emitter': {'type':'area', 'sampling_weight': weights[0]}},
+        'emitter_0': {'type':'point', 'sampling_weight': weights[1]},
+        'emitter_1': {'type':'constant', 'sampling_weight': weights[2]},
+    })
+
+    weights = [emitter.sampling_weight() for emitter in scene.emitters()]
+    pdf = np.array(weights) / np.sum(weights)
+    assert dr.allclose(scene.pdf_emitter(0), pdf[0])
+    assert dr.allclose(scene.pdf_emitter(1), pdf[1])
+    assert dr.allclose(scene.pdf_emitter(2), pdf[2])
+
+
+def test06_test_discrete_emitter_sampling(variants_all_backends_once):
+    scene = mi.load_dict({
+        'type': 'scene',
+        'shape': {'type': 'sphere', 'emitter': {'type':'area', 'sampling_weight': 1.0}},
+        'emitter_0': {'type':'point', 'sampling_weight': 1.0},
+        'emitter_1': {'type':'constant', 'sampling_weight': 1.0},
+    })
+
+    sample = 0.6
+    index, weight, reused_sample = scene.sample_emitter(sample)
+    assert dr.allclose(index, 1)
+    assert dr.allclose(weight, 3.0)
+    assert dr.allclose(reused_sample, sample * 3 - 1)
+
+    sample = 0.74
+    weights = [1.3, 3.8, 0.0]
+    scene = mi.load_dict({
+        'type': 'scene',
+        'shape': {'type': 'sphere', 'emitter': {'type':'area', 'sampling_weight': weights[0]}},
+        'emitter_0': {'type':'point', 'sampling_weight': weights[1]},
+        'emitter_1': {'type':'constant', 'sampling_weight': weights[2]},
+    })
+    index, weight, reused_sample = scene.sample_emitter(sample)
+    distr = mi.DiscreteDistribution([emitter.sampling_weight() for emitter in scene.emitters()])
+    ref_index, ref_reused_sample, ref_pmf = distr.sample_reuse_pmf(sample)
+    assert dr.allclose(index, ref_index)
+    assert dr.allclose(weight, 1.0 / ref_pmf)
+    assert dr.allclose(reused_sample, ref_reused_sample)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mitsuba/core/distr_1d.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/shapegroup.h>
@@ -554,6 +555,8 @@ protected:
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
+    void update_emitter_pmf();
+
 protected:
     /// Acceleration data structure (IAS) (type depends on implementation)
     void *m_accel = nullptr;
@@ -572,6 +575,7 @@ protected:
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;
     ScalarFloat m_emitter_pmf;
+    std::unique_ptr<DiscreteDistribution<Float>> m_emitter_distr = nullptr;
 
     bool m_shapes_grad_enabled;
 };

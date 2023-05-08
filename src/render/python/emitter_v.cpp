@@ -84,6 +84,7 @@ MI_PY_EXPORT(Emitter) {
     MI_PY_TRAMPOLINE_CLASS(PyEmitter, Emitter, Endpoint)
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
+        .def_method(Emitter, sampling_weight)
         .def_method(Emitter, flags, "active"_a = true)
         .def_readwrite("m_needs_sample_2", &PyEmitter::m_needs_sample_2)
         .def_readwrite("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
@@ -151,6 +152,7 @@ MI_PY_EXPORT(Emitter) {
                 D(Endpoint, sample_wavelengths))
         .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
         .def("shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
+        .def("sampling_weight", [](EmitterPtr ptr) { return ptr->sampling_weight(); }, D(Emitter, sampling_weight))
         .def("is_environment",
              [](EmitterPtr ptr) { return ptr->is_environment(); },
              D(Emitter, is_environment));
