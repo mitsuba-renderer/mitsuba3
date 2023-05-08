@@ -244,6 +244,8 @@ public:
     std::string to_string() const override {
         PYBIND11_OVERRIDE(std::string, Base, to_string, );
     }
+
+    using Base::m_hide_emitters;
 };
 
 MI_PY_EXPORT(Integrator) {
@@ -295,7 +297,8 @@ MI_PY_EXPORT(Integrator) {
                 return std::make_tuple(spec, mask, aovs);
             },
             "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr,
-            "active"_a = true, D(SamplingIntegrator, sample));
+            "active"_a = true, D(SamplingIntegrator, sample))
+        .def_readwrite("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
     MI_PY_REGISTER_OBJECT("register_integrator", Integrator)
 
