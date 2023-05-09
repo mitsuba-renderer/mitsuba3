@@ -2345,6 +2345,8 @@ static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_flags = R"doc(Flags for all components combined.)doc";
 
+static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(The emitter's sampling weight.)doc";
+
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
 static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all properties of this emitter.)doc";

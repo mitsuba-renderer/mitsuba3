@@ -84,9 +84,35 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     m_emitters_dr = dr::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
 
-    m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / m_emitters.size());
+    update_emitter_sampling_distribution();
 
     m_shapes_grad_enabled = false;
+}
+
+MI_VARIANT
+void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
+    // Check if we need to use non-uniform emitter sampling.
+    bool non_uniform_sampling = false;
+    for (auto &e : m_emitters) {
+        if (e->sampling_weight() != ScalarFloat(1.0)) {
+            non_uniform_sampling = true;
+            break;
+        }
+    }
+    size_t n_emitters = m_emitters.size();
+    if (non_uniform_sampling) {
+        std::unique_ptr<ScalarFloat[]> sample_weights(new ScalarFloat[n_emitters]);
+        for (size_t i = 0; i < n_emitters; ++i)
+            sample_weights[i] = m_emitters[i]->sampling_weight();
+        m_emitter_distr = std::make_unique<DiscreteDistribution<Float>>(
+            sample_weights.get(), n_emitters);
+    } else {
+        // By default use uniform sampling with constant PMF
+        m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / n_emitters);
+    }
+    // Clear emitter's dirty flag
+    for (auto &e : m_emitters)
+        e->set_dirty(false);
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
@@ -169,6 +195,11 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
             return { UInt32(-1), 0.f, index_sample };
     }
 
+    if (m_emitter_distr != nullptr) {
+        auto [index, reused_sample, pmf] = m_emitter_distr->sample_reuse_pmf(index_sample);
+        return {index, dr::rcp(pmf), reused_sample};
+    }
+
     uint32_t emitter_count = (uint32_t) m_emitters.size();
     ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
     Float index_sample_scaled = index_sample * emitter_count_f;
@@ -178,9 +209,12 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     return { index, emitter_count_f, index_sample_scaled - Float(index) };
 }
 
-MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
-                                                      Mask /*active*/) const {
-    return m_emitter_pmf;
+MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 index,
+                                                      Mask active) const {
+    if (m_emitter_distr == nullptr)
+        return m_emitter_pmf;
+    else
+        return m_emitter_distr->eval_pmf_normalized(index, active);
 }
 
 MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
@@ -283,7 +317,12 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MI_MASK_ARGUMENT(active);
-    return ds.emitter->pdf_direction(ref, ds, active) * m_emitter_pmf;
+    Float emitter_pmf;
+    if (m_emitter_distr == nullptr)
+        emitter_pmf = m_emitter_pmf;
+    else
+        emitter_pmf = ds.emitter->sampling_weight() * m_emitter_distr->normalization();
+    return ds.emitter->pdf_direction(ref, ds, active) * emitter_pmf;
 }
 
 MI_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
@@ -333,6 +372,15 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
         m_shapes_grad_enabled |= s->parameters_grad_enabled();
         if (m_shapes_grad_enabled)
             break;
+    }
+
+    // Check if emitters were modified and we potentially need to update
+    // the emitter sampling distribution.
+    for (auto &e : m_emitters) {
+        if (e->dirty()) {
+            update_emitter_sampling_distribution();
+            break;
+        }
     }
 }
 
