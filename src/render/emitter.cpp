@@ -18,7 +18,7 @@ void Emitter<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MI_VARIANT
 void Emitter<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    mark_dirty();
+    set_dirty(true);
     Base::parameters_changed(keys);
 }
 

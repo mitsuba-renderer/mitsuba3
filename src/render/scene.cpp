@@ -93,8 +93,8 @@ MI_VARIANT
 void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
     // Check if non-uniform emitter sampling weights are being used.
     bool non_uniform_sampling = false;
-    for (auto &emitter : m_emitters) {
-        if (emitter->sampling_weight() != ScalarFloat(1.0)) {
+    for (auto &e : m_emitters) {
+        if (e->sampling_weight() != ScalarFloat(1.0)) {
             non_uniform_sampling = true;
             break;
         }
@@ -110,6 +110,9 @@ void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
         // By default use uniform sampling with constant PMF
         m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / n_emitters);
     }
+    // Clear emitter's dirty flag
+    for (auto &e : m_emitters)
+        e->set_dirty(false);
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
@@ -373,15 +376,12 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
 
     // Check if emitters were modified and we potentially need to update
     // the emitter sampling distribution.
-    bool emitters_changed = false;
     for (auto &e : m_emitters) {
         if (e->dirty()) {
-            emitters_changed = true;
+            update_emitter_sampling_distribution();
             break;
         }
     }
-    if (emitters_changed)
-        update_emitter_sampling_distribution();
 }
 
 MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {

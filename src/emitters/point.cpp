@@ -96,6 +96,7 @@ public:
             m_position = m_position.value(); // update scalar part as well
             dr::make_opaque(m_position);
         }
+        Base::parameters_changed(keys);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,

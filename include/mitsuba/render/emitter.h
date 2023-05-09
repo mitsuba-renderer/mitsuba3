@@ -74,8 +74,8 @@ public:
     /// Return whether the emitter parameters have changed
     bool dirty() const { return m_dirty; }
 
-    /// Mark that the emitters's parameters have changed
-    void mark_dirty() { m_dirty = true; }
+    /// Modify the emitter's "dirty" flag
+    void set_dirty(bool dirty) { m_dirty = dirty; }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Emitter)
 
@@ -93,7 +93,7 @@ protected:
     ScalarFloat m_sampling_weight;
 
     /// True if the emitters's parameters have changed
-    bool m_dirty;
+    bool m_dirty = false;
 };
 
 MI_EXTERN_CLASS(Emitter)
