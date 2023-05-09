@@ -555,7 +555,8 @@ protected:
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
-    void update_emitter_pmf();
+    /// Updates the discrete distribution used to select an emitter
+    void update_emitter_sampling_distribution();
 
 protected:
     /// Acceleration data structure (IAS) (type depends on implementation)

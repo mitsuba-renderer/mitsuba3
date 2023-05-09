@@ -11,8 +11,15 @@ MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
     }
 MI_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
 
-MI_VARIANT void Emitter<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT
+void Emitter<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_parameter("sampling_weight", m_sampling_weight, +ParamFlags::NonDifferentiable);
+}
+
+MI_VARIANT
+void Emitter<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    mark_dirty();
+    Base::parameters_changed(keys);
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")

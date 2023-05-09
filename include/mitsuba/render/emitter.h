@@ -69,6 +69,14 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
+    void parameters_changed(const std::vector<std::string> &keys = {}) override;
+
+    /// Return whether the emitter parameters have changed
+    bool dirty() const { return m_dirty; }
+
+    /// Mark that the emitters's parameters have changed
+    void mark_dirty() { m_dirty = true; }
+
     DRJIT_VCALL_REGISTER(Float, mitsuba::Emitter)
 
     MI_DECLARE_CLASS()
@@ -83,6 +91,9 @@ protected:
 
     /// Sampling weight
     ScalarFloat m_sampling_weight;
+
+    /// True if the emitters's parameters have changed
+    bool m_dirty;
 };
 
 MI_EXTERN_CLASS(Emitter)
