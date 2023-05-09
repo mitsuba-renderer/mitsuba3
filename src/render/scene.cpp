@@ -91,7 +91,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
 MI_VARIANT
 void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
-    // Check if non-uniform emitter sampling weights are being used.
+    // Check if we need to use non-uniform emitter sampling.
     bool non_uniform_sampling = false;
     for (auto &e : m_emitters) {
         if (e->sampling_weight() != ScalarFloat(1.0)) {
