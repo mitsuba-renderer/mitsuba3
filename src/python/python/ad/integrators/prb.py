@@ -146,9 +146,9 @@ class PRBIntegrator(RBIntegrator):
                 if not primal:
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
-                    ds.d = dr.normalize(ds.p - si.p)
+                    ds.d = dr.replace_grad(ds.d, dr.normalize(ds.p - si.p))
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
-                    em_weight = dr.select(dr.neq(ds.pdf, 0), em_val / ds.pdf, 0)
+                    em_weight = dr.replace_grad(em_weight, dr.select(dr.neq(ds.pdf, 0), em_val / ds.pdf, 0))
                     dr.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
