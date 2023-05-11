@@ -330,8 +330,9 @@ public:
         // taken into account the changing radius: `v_local` is shifted such
         // that the normal can be easily computed as `si.p - c`, 
         // where `c = (1 - c_local) * cp1 + v_local * cp2`
-        Point4f c0 = dr::gather<Point4f>(m_control_points, prim_idx + 0, active),
-                c1 = dr::gather<Point4f>(m_control_points, prim_idx + 1, active);
+        UInt32 idx = dr::gather<UInt32>(m_indices, prim_idx, active);
+        Point4f c0 = dr::gather<Point4f>(m_control_points, idx, active),
+                c1 = dr::gather<Point4f>(m_control_points, idx + 1, active);
         Point3f p0 = Point3f(c0.x(), c0.y(), c0.z()),
                 p1 = Point3f(c1.x(), c1.y(), c1.z());
 

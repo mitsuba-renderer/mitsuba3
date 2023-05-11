@@ -640,7 +640,8 @@ private:
     }
 
     std::tuple<Point3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
-    cubic_interpolation(const Float v, const UInt32 idx, Mask active) const {
+    cubic_interpolation(const Float v, const UInt32 prim_idx, Mask active) const {
+        UInt32 idx = dr::gather<UInt32>(m_indices, prim_idx, active);
         Point4f c0 = dr::gather<Point4f>(m_control_points, idx + 0, active),
                 c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
                 c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
