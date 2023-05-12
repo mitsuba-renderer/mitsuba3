@@ -108,9 +108,8 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
-        active &= cos_theta_i > 0.f;
-        if (unlikely(dr::none_or<false>(active) ||
-                     !ctx.is_enabled(BSDFFlags::DiffuseReflection)))
+        active &= (cos_theta_i > 0.f) && ctx.is_enabled(+BSDFFlags::DiffuseReflection);
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, 0.f };
 
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
@@ -128,8 +127,7 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
-            return 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -146,8 +144,7 @@ public:
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
-            return 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
@@ -163,8 +160,7 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
-            return { 0.f, 0.f };
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);

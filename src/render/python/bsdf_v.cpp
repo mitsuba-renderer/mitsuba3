@@ -23,6 +23,24 @@ MI_PY_EXPORT(BSDFSample) {
     MI_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
 }
 
+MI_PY_EXPORT(BSDFContext) {
+    MI_PY_IMPORT_TYPES()
+
+    auto bc = py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
+        .def(py::init<TransportMode>(),
+            "mode"_a = TransportMode::Radiance, D(BSDFContext, BSDFContext))
+        .def(py::init<TransportMode, UInt32, UInt32>(),
+            "mode"_a, "type_mask"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
+        .def_method(BSDFContext, reverse)
+        .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
+        .def_field(BSDFContext, mode,      D(BSDFContext, mode))
+        .def_field(BSDFContext, type_mask, D(BSDFContext, type_mask))
+        .def_field(BSDFContext, component, D(BSDFContext, component))
+        .def_repr(BSDFContext);
+
+    MI_PY_DRJIT_STRUCT(bc, BSDFContext, mode, type_mask, component);
+}
+
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
 public:

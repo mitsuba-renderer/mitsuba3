@@ -32,16 +32,4 @@ MI_PY_EXPORT(BSDFContext) {
         .def_value(BSDFFlags, All);
 
     MI_PY_DECLARE_ENUM_OPERATORS(BSDFFlags, e)
-
-    py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
-        .def(py::init<TransportMode>(),
-            "mode"_a = TransportMode::Radiance, D(BSDFContext, BSDFContext))
-        .def(py::init<TransportMode, uint32_t, uint32_t>(),
-            "mode"_a, "type_mask"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
-        .def_method(BSDFContext, reverse)
-        .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
-        .def_field(BSDFContext, mode,      D(BSDFContext, mode))
-        .def_field(BSDFContext, type_mask, D(BSDFContext, type_mask))
-        .def_field(BSDFContext, component, D(BSDFContext, component))
-        .def_repr(BSDFContext);
 }

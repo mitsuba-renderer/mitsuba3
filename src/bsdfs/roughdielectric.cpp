@@ -245,8 +245,8 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         // Determine the type of interaction
-        bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_transmission  = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
+        Mask has_reflection    = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_transmission  = ctx.is_enabled(+BSDFFlags::GlossyTransmission, 1);
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
@@ -254,6 +254,10 @@ public:
 
         // Ignore perfectly grazing configurations
         active &= dr::neq(cos_theta_i, 0.f);
+        active &= has_reflection || has_transmission;
+
+        if (unlikely(dr::none_or<false>(active)))
+            return { bs, 0.f };
 
         /* Construct the microfacet distribution matching the roughness values at the current surface position. */
         MicrofacetDistribution distr(m_type,
@@ -278,29 +282,29 @@ public:
             fresnel(dr::dot(si.wi, m), m_eta);
 
         // Select the lobe to be sampled
-        UnpolarizedSpectrum weight;
-        Mask selected_r, selected_t;
-        if (likely(has_reflection && has_transmission)) {
-            selected_r = sample1 <= F && active;
-            weight = 1.f;
-            /* For differentiable variants, lobe choice has to be detached to avoid bias.
-                Sampling weights should be computed accordingly. */
-            if constexpr (dr::is_diff_v<Float>) {
-                if (dr::grad_enabled(F)) {
-                    weight = dr::select(selected_r, F / dr::detach(F), (1 - F) / (1.f - dr::detach(F)));
-                }
-            }
-            bs.pdf *= dr::detach(dr::select(selected_r, F, 1.f - F));
-        } else {
-            if (has_reflection || has_transmission) {
-                selected_r = Mask(has_reflection) && active;
-                weight = has_reflection ? F : (1.f - F);
-            } else {
-                return { bs, 0.f };
+        Mask selected_r = (sample1 <= F || !has_transmission) && has_reflection && active;
+        Mask selected_t = !selected_r && active;
+
+        bs.pdf *= dr::select(
+            has_reflection && has_transmission,
+            dr::detach(dr::select(selected_r, F, 1.f - F)),
+            1.f
+        );
+
+        UnpolarizedSpectrum weight = dr::select(
+            has_reflection && has_transmission,
+            1.f,
+            dr::select(has_reflection, F, (1.f - F))
+        );
+
+        /* For differentiable variants, lobe choice has to be detached to avoid
+           bias. Sampling weights should be computed accordingly. */
+        if constexpr (dr::is_diff_v<Float>) {
+            if (dr::grad_enabled(F)) {
+                dr::masked(weight, has_reflection && has_transmission)
+                    = dr::select(selected_r, F / dr::detach(F), (1 - F) / (1.f - dr::detach(F)));
             }
         }
-
-        selected_t = !selected_r && active;
 
         bs.eta               = dr::select(selected_r, Float(1.f), eta_it);
         bs.sampled_component = dr::select(selected_r, UInt32(0), UInt32(1));
@@ -364,8 +368,8 @@ public:
         active &= dr::neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
-        bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_transmission = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
+        Mask has_reflection   = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_transmission = ctx.is_enabled(+BSDFFlags::GlossyTransmission, 1);
 
         Mask reflect = cos_theta_i * cos_theta_o > 0.f;
 
@@ -397,8 +401,8 @@ public:
 
         UnpolarizedSpectrum result(0.f);
 
-        Mask eval_r = Mask(has_reflection) && reflect && active,
-             eval_t = Mask(has_transmission) && !reflect && active;
+        Mask eval_r = has_reflection && reflect && active,
+             eval_t = has_transmission && !reflect && active;
 
         if (dr::any_or<true>(eval_r)) {
             UnpolarizedSpectrum value = F * D * G / (4.f * dr::abs(cos_theta_i));
@@ -440,12 +444,12 @@ public:
         active &= dr::neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
-        bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_transmission = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
+        Mask has_reflection   = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_transmission = ctx.is_enabled(+BSDFFlags::GlossyTransmission, 1);
 
         Mask reflect = cos_theta_i * cos_theta_o > 0.f;
-        active &= (Mask(has_reflection)   &&  reflect) ||
-                  (Mask(has_transmission) && !reflect);
+        active &= (has_reflection   &&  reflect) ||
+                  (has_transmission && !reflect);
 
         // Determine the relative index of refraction
         Float eta = dr::select(cos_theta_i > 0.f, m_eta, m_inv_eta);
@@ -486,9 +490,10 @@ public:
         // Evaluate the microfacet model sampling density function
         Float prob = sample_distr.pdf(dr::mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
-        if (likely(has_transmission && has_reflection)) {
+        if (dr::any_or<true>(has_transmission && has_reflection)) {
             Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta));
-            prob *= dr::select(reflect, F, 1.f - F);
+            dr::masked(prob, has_transmission && has_reflection)
+                *= dr::select(reflect, F, 1.f - F);
         }
 
         return dr::select(active, prob * dr::abs(dwh_dwo), 0.f);
@@ -507,13 +512,13 @@ public:
         active &= dr::neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
-        bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_transmission = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
+        Mask has_reflection   = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_transmission = ctx.is_enabled(+BSDFFlags::GlossyTransmission, 1);
 
         Mask reflect = cos_theta_i * cos_theta_o > 0.f;
 
-        active &= (Mask(has_reflection)   &&  reflect) ||
-                  (Mask(has_transmission) && !reflect);
+        active &= (has_reflection   &&  reflect) ||
+                  (has_transmission && !reflect);
 
         // Determine the relative index of refraction
         Float eta     = dr::select(cos_theta_i > 0.f, m_eta, m_inv_eta),
@@ -553,8 +558,8 @@ public:
 
         UnpolarizedSpectrum result(0.f);
 
-        Mask eval_r = Mask(has_reflection) && reflect && active,
-             eval_t = Mask(has_transmission) && !reflect && active;
+        Mask eval_r = has_reflection && reflect && active,
+             eval_t = has_transmission && !reflect && active;
 
         if (dr::any_or<true>(eval_r)) {
             UnpolarizedSpectrum value = F * D * G / (4.f * dr::abs(cos_theta_i));
@@ -591,8 +596,8 @@ public:
         // Evaluate the microfacet model sampling density function
         Float pdf = distr.pdf(dr::mulsign(si.wi, cos_theta_i), m);
 
-        if (likely(has_transmission && has_reflection))
-            pdf *= dr::select(reflect, F, 1.f - F);
+        dr::masked(pdf, has_transmission && has_reflection)
+            *= dr::select(reflect, F, 1.f - F);
 
         // Jacobian of the half-direction mapping
         Float dwh_dwo = dr::select(reflect, dr::rcp(4.f * dot_wo_m),

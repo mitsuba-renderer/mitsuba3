@@ -257,7 +257,10 @@ public:
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum value(0.f);
-        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
+
+        active &= ctx.is_enabled(+BSDFFlags::DeltaReflection);
+
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, value };
 
         bs.sampled_component = 0;

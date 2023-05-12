@@ -134,8 +134,8 @@ public:
                     m_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
             if (dr::any_or<true>(back_side)) {
-                if (ctx.component != (uint32_t) -1)
-                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+                Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+                dr::masked(ctx.component, !sample_all) -= (uint32_t) m_brdf[0]->component_count();
 
                 si.wi.z() *= -1.f;
                 dr::masked(result, back_side) =
@@ -168,8 +168,8 @@ public:
                 result = m_brdf[0]->eval(ctx, si, wo, front_side);
 
             if (dr::any_or<true>(back_side)) {
-                if (ctx.component != (uint32_t) -1)
-                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+                Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+                dr::masked(ctx.component, !sample_all) -= (uint32_t) m_brdf[0]->component_count();
 
                 si.wi.z() *= -1.f;
                 wo.z() *= -1.f;
@@ -203,8 +203,8 @@ public:
                 result = m_brdf[0]->pdf(ctx, si, wo, front_side);
 
             if (dr::any_or<true>(back_side)) {
-                if (ctx.component != (uint32_t) -1)
-                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+                Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+                dr::masked(ctx.component, !sample_all) -= (uint32_t) m_brdf[0]->component_count();
 
                 si.wi.z() *= -1.f;
                 wo.z() *= -1.f;
@@ -241,8 +241,8 @@ public:
                 std::tie(value, pdf) = m_brdf[0]->eval_pdf(ctx, si, wo, front_side);
 
             if (dr::any_or<true>(back_side)) {
-                if (ctx.component != (uint32_t) -1)
-                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+                Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+                dr::masked(ctx.component, !sample_all) -= (uint32_t) m_brdf[0]->component_count();
 
                 si.wi.z() *= -1.f;
                 wo.z() *= -1.f;

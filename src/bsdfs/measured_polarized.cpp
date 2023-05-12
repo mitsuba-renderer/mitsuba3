@@ -183,8 +183,10 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
+
         BSDFSample3f bs;
-        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, 0.f };
 
         MicrofacetDistribution distr(MicrofacetType::GGX,
@@ -219,7 +221,9 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
         active &= (cos_theta_i > 0.f && cos_theta_o > 0.f);
 
-        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
+
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         /* Due to the coordinate system rotations for polarization-aware
@@ -323,7 +327,9 @@ public:
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
+
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),

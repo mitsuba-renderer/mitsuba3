@@ -129,7 +129,9 @@ MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * The \ref BSDFContext data structure encodes these preferences and is
  * supplied to most \ref BSDF methods.
  */
-struct MI_EXPORT_LIB BSDFContext {
+template <typename Float, typename Spectrum> struct BSDFContext {
+    using Index = dr::uint32_array_t<Float>;
+
     // =============================================================
     //! @{ \name Fields
     // =============================================================
@@ -141,18 +143,16 @@ struct MI_EXPORT_LIB BSDFContext {
      * Bit mask for requested BSDF component types to be sampled/evaluated
      * The default value (equal to \ref BSDFFlags::All) enables all components.
      */
-    uint32_t type_mask = (uint32_t) 0x1FFu;
+    Index type_mask = (Index) 0x1FFu;
 
     /// Integer value of requested BSDF component index to be sampled/evaluated.
-    uint32_t component = (uint32_t) -1;
+    Index component = (Index) -1;
 
     //! @}
     // =============================================================
 
-    BSDFContext() = default;
-
-    BSDFContext(TransportMode mode, uint32_t type_mask = (uint32_t) 0x1FFu,
-                uint32_t component = (uint32_t) -1)
+    BSDFContext(TransportMode mode, Index type_mask = (Index) 0x1FFu,
+                Index component = (Index) -1)
         : mode(mode), type_mask(type_mask), component(component) { }
 
     /**
@@ -168,11 +168,13 @@ struct MI_EXPORT_LIB BSDFContext {
      * Checks whether a given BSDF component type and BSDF component index are
      * enabled in this context.
      */
-    bool is_enabled(BSDFFlags type_, uint32_t component_ = 0) const {
-        uint32_t type = (uint32_t) type_;
-        return (type_mask == (uint32_t) -1 || (type_mask & type) == type)
-            && (component == (uint32_t) -1 || component == component_);
+    dr::mask_t<Float> is_enabled(Index type_, Index component_ = 0) const {
+        Index type = (Index) type_;
+        return (dr::eq(type_mask, (Index) -1) || dr::eq(type_mask & type, type))
+            && (dr::eq(component, (Index) -1) || dr::eq(component, component_));
     }
+
+    DRJIT_STRUCT(BSDFContext, mode, type_mask, component);
 };
 
 /// Data structure holding the result of BSDF sampling operations.
@@ -550,8 +552,65 @@ protected:
 extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
                                               const TransportMode &mode);
 
-extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
-                                              const BSDFContext& ctx);
+template <typename Index>
+std::string type_mask_to_string(Index type_mask) {
+    std::ostringstream oss;
+    oss << "{ ";
+
+#define PROCESS(flag, name)                                                    \
+    if (has_flag(type_mask, flag)) {                                           \
+        oss << #name << " ";                                                   \
+        type_mask = type_mask & ~flag;                                         \
+    }
+    PROCESS(BSDFFlags::All, all)
+    PROCESS(BSDFFlags::Reflection, reflection)
+    PROCESS(BSDFFlags::Transmission, transmission)
+    PROCESS(BSDFFlags::Smooth, smooth)
+    PROCESS(BSDFFlags::Diffuse, diffuse)
+    PROCESS(BSDFFlags::Glossy, glossy)
+    PROCESS(BSDFFlags::Delta, delta)
+    PROCESS(BSDFFlags::Delta1D, delta_1d)
+    PROCESS(BSDFFlags::DiffuseReflection, diffuse_reflection)
+    PROCESS(BSDFFlags::DiffuseTransmission, diffuse_transmission)
+    PROCESS(BSDFFlags::GlossyReflection, glossy_reflection)
+    PROCESS(BSDFFlags::GlossyTransmission, glossy_transmission)
+    PROCESS(BSDFFlags::DeltaReflection, delta_reflection)
+    PROCESS(BSDFFlags::DeltaTransmission, delta_transmission)
+    PROCESS(BSDFFlags::Delta1DReflection, delta_1d_reflection)
+    PROCESS(BSDFFlags::Delta1DTransmission, delta_1d_transmission)
+    PROCESS(BSDFFlags::Null, null)
+    PROCESS(BSDFFlags::Anisotropic, anisotropic)
+    PROCESS(BSDFFlags::FrontSide, front_side)
+    PROCESS(BSDFFlags::BackSide, back_side)
+    PROCESS(BSDFFlags::SpatiallyVarying, spatially_varying)
+    PROCESS(BSDFFlags::NonSymmetric, non_symmetric)
+#undef PROCESS
+
+    Assert(type_mask == 0);
+    oss << "}";
+    return oss.str();
+}
+
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const BSDFContext<Float, Spectrum>& ctx) {
+    if constexpr (dr::is_jit_v<Float>) {
+        os << "BSDFContext[" << std::endl
+            << "  mode = " << ctx.mode << "," << std::endl
+            << "  type_mask = " << ctx.type_mask << "," << std::endl
+            << "  component = " << ctx.component;
+    } else {
+        os << "BSDFContext[" << std::endl
+            << "  mode = " << ctx.mode << "," << std::endl
+            << "  type_mask = " << type_mask_to_string(ctx.type_mask) << "," << std::endl
+            << "  component = ";
+        if (ctx.component == (uint32_t) -1)
+            os << "all";
+        else
+            os << ctx.component;
+    }
+    os  << std::endl << "]";
+    return os;
+}
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& bs) {

@@ -115,24 +115,27 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        Float weight = eval_weight(si, active);
-        if (unlikely(ctx.component != (uint32_t) -1)) {
-            bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
-            BSDFContext ctx2(ctx);
-            if (!sample_first)
-                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
-            auto [bs, result] = m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
-            result *= weight;
-            return { bs, result };
-        }
-
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
 
-        Mask m0 = active && sample1 >  weight,
-             m1 = active && sample1 <= weight;
+        Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+
+        Float weight = eval_weight(si, active);
+
+        if (dr::any_or<true>(!sample_all)) {
+            Mask sample_first = ctx.component < m_nested_bsdf[0]->component_count();
+            BSDFContext ctx2(ctx);
+            dr::masked(ctx2.component, !sample_first) -= (uint32_t) m_nested_bsdf[0]->component_count();
+            dr::masked(weight, sample_first) = 1.f - weight;
+            auto [bs_, result_] = dr::select(sample_first,
+                                             m_nested_bsdf[0]->sample(ctx2, si, sample1, sample2, active),
+                                             m_nested_bsdf[1]->sample(ctx2, si, sample1, sample2, active));
+            dr::masked(bs, !sample_all) = bs_;
+            dr::masked(result, !sample_all) = result_ * weight;
+        }
+
+        Mask m0 = active && sample1 >  weight && sample_all,
+             m1 = active && sample1 <= weight && sample_all;
 
         if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
@@ -155,36 +158,57 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
+        Spectrum result(0.f);
+
+        Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
         Float weight = eval_weight(si, active);
-        if (unlikely(ctx.component != (uint32_t) -1)) {
-            bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
+
+        if (dr::any_or<true>(!sample_all)) {
+            Mask sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
-            if (!sample_first)
-                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
-            return weight * m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
+            dr::masked(ctx2.component, !sample_first) -= (uint32_t) m_nested_bsdf[0]->component_count();
+            dr::masked(weight, sample_first) = 1.f - weight;
+            dr::masked(result, !sample_all) =
+                weight * dr::select(sample_first,
+                                    m_nested_bsdf[0]->eval(ctx2, si, wo, active),
+                                    m_nested_bsdf[1]->eval(ctx2, si, wo, active));
         }
 
-        return m_nested_bsdf[0]->eval(ctx, si, wo, active) * (1 - weight) +
-               m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
+        if (dr::any_or<true>(sample_all)) {
+            dr::masked(result, sample_all) =
+                m_nested_bsdf[0]->eval(ctx, si, wo, active) * (1 - weight) +
+                m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
+        }
+
+        return result;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (unlikely(ctx.component != (uint32_t) -1)) {
-            bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
+        Float result(0.f);
+
+        Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+
+        if (dr::any_or<true>(!sample_all)) {
+            Mask sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
-            if (!sample_first)
-                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            return m_nested_bsdf[sample_first ? 0 : 1]->pdf(ctx2, si, wo, active);
+            dr::masked(ctx2.component, !sample_first) -= (uint32_t) m_nested_bsdf[0]->component_count();
+            dr::masked(result, !sample_all) =
+                dr::select(sample_first,
+                           m_nested_bsdf[0]->pdf(ctx2, si, wo, active),
+                           m_nested_bsdf[1]->pdf(ctx2, si, wo, active));
         }
 
-        Float weight = eval_weight(si, active);
-        return m_nested_bsdf[0]->pdf(ctx, si, wo, active) * (1 - weight) +
-               m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight;
+        if (dr::any_or<true>(sample_all)) {
+            Float weight = eval_weight(si, active);
+            dr::masked(result, sample_all) =
+                m_nested_bsdf[0]->pdf(ctx, si, wo, active) * (1 - weight) +
+                m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight;
+        }
+
+        return result;
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -193,24 +217,33 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        Float weight = eval_weight(si, active);
-        if (unlikely(ctx.component != (uint32_t) -1)) {
-            bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
-            BSDFContext ctx2(ctx);
-            if (!sample_first)
-                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
+        Spectrum val(0.f);
+        Float pdf(0.f);
 
-            auto [val, pdf] = m_nested_bsdf[sample_first ? 0 : 1]->eval_pdf(ctx2, si, wo, active);
-            return { weight * val, pdf };
+        Mask sample_all = dr::eq(ctx.component, (uint32_t) -1);
+        Float weight = eval_weight(si, active);
+
+        if (dr::any_or<true>(!sample_all)) {
+            Mask sample_first = ctx.component < m_nested_bsdf[0]->component_count();
+            BSDFContext ctx2(ctx);
+            dr::masked(ctx2.component, !sample_first) -= (uint32_t) m_nested_bsdf[0]->component_count();
+            dr::masked(weight, sample_first) = 1.f - weight;
+            auto [val_, pdf_] =
+                dr::select(sample_first,
+                           m_nested_bsdf[0]->eval_pdf(ctx2, si, wo, active),
+                           m_nested_bsdf[1]->eval_pdf(ctx2, si, wo, active));
+            dr::masked(val, !sample_all) = weight * val_;
+            dr::masked(pdf, !sample_all) = pdf_;
         }
 
-        auto [val_0, pdf_0] = m_nested_bsdf[0]->eval_pdf(ctx, si, wo, active);
-        auto [val_1, pdf_1] = m_nested_bsdf[1]->eval_pdf(ctx, si, wo, active);
+        if (dr::any_or<true>(sample_all)) {
+            auto [val_0, pdf_0] = m_nested_bsdf[0]->eval_pdf(ctx, si, wo, active);
+            auto [val_1, pdf_1] = m_nested_bsdf[1]->eval_pdf(ctx, si, wo, active);
+            dr::masked(val, sample_all) = val_0 * (1 - weight) + val_1 * weight;
+            dr::masked(pdf, sample_all) = pdf_0 * (1 - weight) + pdf_1 * weight;
+        }
 
-        return { val_0 * (1 - weight) + val_1 * weight,
-                 pdf_0 * (1 - weight) + pdf_1 * weight };
+        return { val, pdf };
     }
 
     MI_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {

@@ -130,17 +130,15 @@ public:
 
         uint32_t null_index = (uint32_t) component_count() - 1;
 
-        bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
-        bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
+        Mask sample_transmission = ctx.is_enabled(+BSDFFlags::Null, null_index);
+        Mask sample_nested       = dr::eq(ctx.component, (uint32_t) -1) || (ctx.component < null_index);
+        active &= sample_transmission && sample_nested;
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
-        if (unlikely(!sample_transmission && !sample_nested))
-            return { bs, result };
 
         Float opacity = eval_opacity(si, active);
-        if (sample_transmission != sample_nested)
-            opacity = sample_transmission ? 1.f : 0.f;
+        dr::masked(opacity, dr::neq(sample_transmission, sample_nested)) = 1.f;
 
         bs.wo                = -si.wi;
         bs.eta               = 1.f;
@@ -173,15 +171,13 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         uint32_t null_index      = (uint32_t) component_count() - 1;
-        bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
-        bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
-
-        if (!sample_nested)
-            return 0.f;
+        Mask sample_transmission = ctx.is_enabled(+BSDFFlags::Null, null_index);
+        Mask sample_nested       = dr::eq(ctx.component, (uint32_t) -1) || (ctx.component < null_index);
+        active &= sample_nested;
 
         Float result = m_nested_bsdf->pdf(ctx, si, wo, active);
-        if (sample_transmission)
-            result *= eval_opacity(si, active);
+
+        dr::masked(result, sample_transmission) *= eval_opacity(si, active);
 
         return result;
     }
@@ -193,19 +189,16 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         uint32_t null_index      = (uint32_t) component_count() - 1;
-        bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
-        bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
+        Mask sample_transmission = ctx.is_enabled(+BSDFFlags::Null, null_index);
+        Mask sample_nested       = dr::eq(ctx.component, (uint32_t) -1) || (ctx.component < null_index);
+        active &= sample_nested;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, si, wo, active);
 
         Float opacity = eval_opacity(si, active);
         value *= opacity;
 
-        if (!sample_nested)
-            pdf = 0.f;
-
-        if (sample_transmission)
-            pdf *= opacity;
+        dr::masked(pdf, sample_transmission) *= opacity;
 
         return { value, pdf };
     }

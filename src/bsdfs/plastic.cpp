@@ -214,15 +214,17 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::DeltaReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
+        active &= (has_specular || has_diffuse);
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         UnpolarizedSpectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, result };
 
         // Determine which component should be sampled
@@ -230,10 +232,11 @@ public:
               prob_specular = f_i * m_specular_sampling_weight,
               prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
 
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
-        else
-            prob_specular = prob_specular / (prob_specular + prob_diffuse);
+        prob_specular = dr::select(
+            dr::neq(has_specular, has_diffuse),
+            dr::select(has_specular, 1.f, 0.f),
+            prob_specular / (prob_specular + prob_diffuse)
+        );
 
         prob_diffuse = 1.f - prob_specular;
 
@@ -275,14 +278,13 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
-
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
-        if (unlikely(!has_diffuse || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
@@ -305,18 +307,17 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
-        Float prob_diffuse = 1.f;
+        Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta)));
+        Float prob_specular = f_i * m_specular_sampling_weight;
+        Float prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
+        prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
 
-        if (ctx.is_enabled(BSDFFlags::DeltaReflection, 0)) {
-            Float f_i           = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
-                  prob_specular = f_i * m_specular_sampling_weight;
-            prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
-            prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
-        }
+        dr::masked(prob_diffuse, !ctx.is_enabled(+BSDFFlags::DeltaReflection, 0)) = 1.f;
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo) * prob_diffuse;
 
@@ -329,14 +330,13 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
-
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
-        if (unlikely(!has_diffuse || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
@@ -349,12 +349,11 @@ public:
 
         diff *= hemi_pdf * m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
 
-        Float prob_diffuse = 1.f;
-        if (ctx.is_enabled(BSDFFlags::DeltaReflection, 0)) {
-            Float prob_specular = f_i * m_specular_sampling_weight;
-            prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
-            prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
-        }
+        Float prob_specular = f_i * m_specular_sampling_weight;
+        Float prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
+        prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
+
+        dr::masked(prob_diffuse, !ctx.is_enabled(+BSDFFlags::DeltaReflection, 0)) = 1.f;
 
         return { dr::select(active, depolarizer<Spectrum>(diff), 0.f),
                  dr::select(active, hemi_pdf * prob_diffuse, 0.f) };

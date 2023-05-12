@@ -233,8 +233,9 @@ public:
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, 0.f };
 
         /* Construct a microfacet distribution matching the
@@ -312,8 +313,9 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         // Calculate the half-direction vector
@@ -390,8 +392,9 @@ public:
            density computation as well. */
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
                   dr::dot(si.wi, m) > 0.f && dr::dot(wo, m) > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         /* Construct a microfacet distribution matching the
@@ -429,8 +432,9 @@ public:
            density computation as well. */
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
                   dr::dot(si.wi, H) > 0.f && dr::dot(wo, H) > 0.f;
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         /* Construct a microfacet distribution matching the

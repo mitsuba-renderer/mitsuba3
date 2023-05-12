@@ -45,15 +45,16 @@ public:
                                              const Point2f & /*sample2*/,
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
-        bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
+        Mask sample_transmission = ctx.is_enabled(+BSDFFlags::Null, 0);
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
-        if (sample_transmission) {
-            bs.wo                = -si.wi;
-            bs.sampled_component = 0;
-            bs.sampled_type      = UInt32(+BSDFFlags::Null);
-            bs.eta               = 1.f;
-            bs.pdf               = 1.f;
+
+        if (dr::any_or<true>(sample_transmission)) {
+            dr::masked(bs.wo, sample_transmission)                = -si.wi;
+            dr::masked(bs.sampled_component, sample_transmission) = 0;
+            dr::masked(bs.sampled_type, sample_transmission)      = UInt32(+BSDFFlags::Null);
+            dr::masked(bs.eta, sample_transmission)               = 1.f;
+            dr::masked(bs.pdf, sample_transmission)               = 1.f;
 
             /* In an ordinary BSDF we would use depolarizer<Spectrum>(1.f) here
                to construct a depolarizing Mueller matrix. However, the null
@@ -61,7 +62,7 @@ public:
                this is one of the few places where it is safe to directly use a
                scalar (which will broadcast to the identity matrix in polarized
                rendering modes). */
-            result               = 1.f;
+            dr::masked(result, sample_transmission) = 1.f;
         }
 
         return { bs, result };

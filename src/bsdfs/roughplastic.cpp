@@ -261,15 +261,17 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
+        active &= has_specular || has_diffuse;
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+
+        if (unlikely(dr::none_or<false>(active)))
             return { bs, result };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -279,10 +281,11 @@ public:
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
               prob_diffuse  = t_i * (1.f - m_specular_sampling_weight);
 
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
-        else
-            prob_specular = prob_specular / (prob_specular + prob_diffuse);
+        prob_specular = dr::select(
+            dr::neq(has_specular, has_diffuse),
+            dr::select(has_specular, 1.f, 0.f),
+            prob_specular / (prob_specular + prob_diffuse)
+        );
         prob_diffuse = 1.f - prob_specular;
 
         Mask sample_specular = active && (sample1 < prob_specular),
@@ -316,19 +319,20 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= has_specular || has_diffuse;
 
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         UnpolarizedSpectrum value(0.f);
-        if (has_specular) {
+        if (dr::any_or<true>(has_specular)) {
             MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
             // Calculate the reflection half-vector
@@ -344,13 +348,13 @@ public:
             Float G = distr.G(si.wi, wo, H);
 
             // Calculate the specular reflection component
-            value = F * D * G / (4.f * cos_theta_i);
+            dr::masked(value, has_specular) = F * D * G / (4.f * cos_theta_i);
 
             if (m_specular_reflectance)
-                value *= m_specular_reflectance->eval(si, active);
+                dr::masked(value, has_specular) *= m_specular_reflectance->eval(si, active);
         }
 
-        if (has_diffuse) {
+        if (dr::any_or<true>(has_diffuse)) {
             Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
                                     MI_ROUGH_TRANSMITTANCE_RES, active),
                   t_o = lerp_gather(m_external_transmittance, cos_theta_o,
@@ -360,7 +364,7 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            dr::masked(value, has_diffuse) += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
         return depolarizer<Spectrum>(value) & active;
@@ -382,15 +386,16 @@ public:
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= has_specular || has_diffuse;
 
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return 0.f;
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -400,10 +405,11 @@ public:
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
               prob_diffuse  = t_i * (1.f - m_specular_sampling_weight);
 
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
-        else
-            prob_specular = prob_specular / (prob_specular + prob_diffuse);
+        prob_specular = dr::select(
+            dr::neq(has_specular, has_diffuse),
+            dr::select(has_specular, 1.f, 0.f),
+            prob_specular / (prob_specular + prob_diffuse)
+        );
         prob_diffuse = 1.f - prob_specular;
 
         Vector3f H = dr::normalize(wo + si.wi);
@@ -428,15 +434,16 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= has_specular || has_diffuse;
 
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        if (unlikely(dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
         Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
@@ -446,10 +453,11 @@ public:
         Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
               prob_diffuse  = t_i * (1.f - m_specular_sampling_weight);
 
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
-        else
-            prob_specular = prob_specular / (prob_specular + prob_diffuse);
+        prob_specular = dr::select(
+            dr::neq(has_specular, has_diffuse),
+            dr::select(has_specular, 1.f, 0.f),
+            prob_specular / (prob_specular + prob_diffuse)
+        );
         prob_diffuse = 1.f - prob_specular;
 
         // Calculate the reflection half-vector
@@ -473,7 +481,7 @@ public:
         pdf += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
 
         UnpolarizedSpectrum value(0.f);
-        if (has_specular) {
+        if (dr::any_or<true>(has_specular)) {
             // Fresnel term
             Float F = std::get<0>(fresnel(dr::dot(si.wi, H), Float(m_eta)));
 
@@ -481,13 +489,13 @@ public:
             Float G = distr.smith_g1(wo, H) * smith_g1_wi;
 
             // Calculate the specular reflection component
-            value = F * D * G / (4.f * cos_theta_i);
+            dr::masked(value, has_specular) = F * D * G / (4.f * cos_theta_i);
 
             if (m_specular_reflectance)
-                value *= m_specular_reflectance->eval(si, active);
+                dr::masked(value, has_specular) *= m_specular_reflectance->eval(si, active);
         }
 
-        if (has_diffuse) {
+        if (dr::any_or<true>(has_diffuse)) {
             Float t_o = lerp_gather(m_external_transmittance, cos_theta_o,
                                     MI_ROUGH_TRANSMITTANCE_RES, active);
 
@@ -495,7 +503,7 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            dr::masked(value, has_diffuse) += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
         return { depolarizer<Spectrum>(value) & active, pdf };
