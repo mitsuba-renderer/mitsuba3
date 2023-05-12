@@ -1,4 +1,5 @@
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -40,40 +41,96 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
     return eval(ctx, si, wo, active) * dr::Pi<Float>;
 }
 
+template <typename Texture, typename Type>
+struct AttributeCallback : public TraversalCallback {
+    using F1 = std::function<Type(Texture *)>;
+
+    AttributeCallback(std::string name, F1 func_object):
+        name(name), found(false), result(0.f), func_object(func_object) { }
+
+    void put_object(const std::string &name, Object *obj, uint32_t) override {
+        if (this->name == name) {
+            Texture *texture = dynamic_cast<Texture *>(obj);
+            if (texture) {
+                result = func_object(texture);
+                found = true;
+            }
+        }
+    };
+
+    void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &type) override {
+        if (this->name == name) {
+            if (&type == &typeid(Type))
+                result = *((Type *) val);
+            found = true;
+        }
+    };
+
+    std::string name;
+    bool found;
+    Type result;
+    F1 func_object;
+};
 
 MI_VARIANT typename BSDF<Float, Spectrum>::Mask
-BSDF<Float, Spectrum>::has_attribute(const std::string& /*name*/, Mask /*active*/) const {
-    return false;
+BSDF<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
+    AttributeCallback<Texture, float> cb(name, [&](Texture *) { return 0.f; });
+    const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
+    return cb.found;
 }
 
 MI_VARIANT typename BSDF<Float, Spectrum>::UnpolarizedSpectrum
-BSDF<Float, Spectrum>::eval_attribute(const std::string & name,
-                                      const SurfaceInteraction3f & /*si*/,
-                                      Mask /*active*/) const {
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        Throw("Invalid attribute requested %s.", name.c_str());
+BSDF<Float, Spectrum>::eval_attribute(const std::string &name,
+                                      const SurfaceInteraction3f &si,
+                                      Mask active) const {
+    AttributeCallback<Texture, UnpolarizedSpectrum> cb(
+        name,
+        [&](Texture *texture) { return texture->eval(si, active); }
+    );
+    const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
+
+    if (!cb.found) {
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    return cb.result;
 }
 
 MI_VARIANT Float
 BSDF<Float, Spectrum>::eval_attribute_1(const std::string& name,
-                                        const SurfaceInteraction3f & /*si*/,
-                                        Mask /*active*/) const {
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        Throw("Invalid attribute requested %s.", name.c_str());
+                                        const SurfaceInteraction3f & si,
+                                        Mask active) const {
+    AttributeCallback<Texture, Float> cb(
+        name,
+        [&](Texture *texture) { return texture->eval_1(si, active); }
+    );
+    const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
+
+    if (!cb.found) {
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    return cb.result;
 }
 
 MI_VARIANT typename BSDF<Float, Spectrum>::Color3f
 BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
-                                        const SurfaceInteraction3f & /*si*/,
-                                        Mask /*active*/) const {
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        Throw("Invalid attribute requested %s.", name.c_str());
+                                        const SurfaceInteraction3f & si,
+                                        Mask active) const {
+    AttributeCallback<Texture, Color3f> cb(
+        name,
+        [&](Texture *texture) { return texture->eval_3(si, active); }
+    );
+    const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
+
+    if (!cb.found) {
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    return cb.result;
 }
 
 template <typename Index>
