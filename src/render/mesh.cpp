@@ -62,13 +62,11 @@ void Mesh<Float, Spectrum>::initialize() {
     Base::initialize();
 }
 
-MI_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
+MI_VARIANT Mesh<Float, Spectrum>::~Mesh() {}
 
 MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     Base::traverse(callback);
 
-    callback->put_parameter("vertex_count",     m_vertex_count,     +ParamFlags::NonDifferentiable);
-    callback->put_parameter("face_count",       m_face_count,       +ParamFlags::NonDifferentiable);
     callback->put_parameter("faces",            m_faces,            +ParamFlags::NonDifferentiable);
     callback->put_parameter("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -77,10 +75,44 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     // We arbitrarily chose to show all attributes as being differentiable here.
     for (auto &[name, attribute]: m_mesh_attributes)
         callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
+
+
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    if (keys.empty() || string::contains(keys, "vertex_positions")) {
+    bool mesh_attributes_changed = false;
+
+    if (m_vertex_positions.size() != m_vertex_count * 3) {
+        Log(Debug, "parameters_changed(): Vertex count changed, updating it.");
+        mesh_attributes_changed = true;
+        m_vertex_count = m_vertex_positions.size() / 3;
+    }
+    if (m_faces.size() != m_face_count * 3) {
+        Log(Debug, "parameters_changed(): Face count changed, updating it.");
+        mesh_attributes_changed = true;
+        m_face_count = m_faces.size() / 3;
+    }
+    if (has_vertex_normals() && m_vertex_normals.size() != m_vertex_count * 3) {
+        Log(Debug, "parameters_changed(): Vertex normal count changed, updating it.");
+        mesh_attributes_changed = true;
+        m_vertex_normals = dr::zeros<FloatStorage>(m_vertex_count * 3);
+    }
+    if (has_vertex_texcoords() && m_vertex_texcoords.size() != m_vertex_count * 2) {
+        Log(Debug, "parameters_changed(): Vertex count has changed, but no UVs were specified, resetting them.");
+        mesh_attributes_changed = true;
+        m_vertex_texcoords = dr::zeros<FloatStorage>(m_vertex_count * 2);
+    }
+    for (auto &[name, attribute]: m_mesh_attributes) {
+        size_t expected_size = attribute.size * (attribute.type == MeshAttributeType::Vertex ? m_vertex_count : m_face_count);
+
+        if (attribute.buf.size() != expected_size ) {
+            Log(Debug, "parameters_changed(): Vertex or face count changed, but attribute {} was not updated, resetting it.", name);
+            mesh_attributes_changed = true;
+            attribute.buf = dr::zeros<FloatStorage>(expected_size);
+        }
+    }
+
+    if (keys.empty() || string::contains(keys, "vertex_positions") || mesh_attributes_changed) {
         recompute_bbox();
 
         if (has_vertex_normals())
@@ -735,7 +767,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
-
         if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
             uv0 = dr::detach<true>(uv0);
             uv1 = dr::detach<true>(uv1);
