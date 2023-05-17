@@ -53,10 +53,15 @@ class SolveCholesky(dr.CustomOp):
 class LargeSteps():
     """
     Implementation of the algorithm described in the paper "Large Steps in
-    Inverse Rendering of Geometry" (Nicolet et al. 2021)
+    Inverse Rendering of Geometry" (Nicolet et al. 2021).
 
-    It builds the system matrix (I +λL) for a given mesh and hyper parameter λ,
-    and computes its Cholesky factorization.
+    It consists in computing a latent variable u = (I + λL) v from the vertex
+    positions v, where L is the (combinatorial) Laplacian matrix of the input
+    mesh. Optimizing these variables instead of the vertex positions allows to
+    diffuse gradients on the surface, which helps fight their sparsity.
+
+    This class builds the system matrix (I + λL) for a given mesh and hyper
+    parameter λ, and computes its Cholesky factorization.
 
     It can then convert vertex coordinates back and forth between their
     cartesian and differential representations. Both transformations are
@@ -147,6 +152,9 @@ class LargeSteps():
         """
         Convert differential coordinates back to their cartesian form: v = (I +
         λL)⁻¹ u.
+
+        This is done by solving the linear system (I + λL) v = u using the
+        previously computed Cholesky factorization.
 
         This method is typically called at each iteration of the optimization,
         to update the mesh coordinates before rendering.
