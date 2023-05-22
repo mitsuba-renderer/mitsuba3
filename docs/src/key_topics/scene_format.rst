@@ -658,3 +658,21 @@ dictionary. For this purpose, you can specify a nested dictionary with
             }
         }
     }
+
+As in the XML scene description, it is possible to add a path to the list of
+search paths. In the following example, the texture file can be found in the
+``/home/username/data/textures/`` folder. Note that this added path can be
+relative or absolute.
+
+.. code-block:: python
+
+    {
+        "type": "scene",
+        'foo': { 'type': 'resources', 'path': '/home/username/data/textures'},
+        "bsdf": {
+            "type": "diffuse",
+            "reflectance": {
+                "type": "bitmap",
+                "filename": "my_texture.exr", # relative to the folder defined above
+        }
+    }

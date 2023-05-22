@@ -1,4 +1,5 @@
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/xml.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
@@ -109,13 +110,25 @@ MI_PY_EXPORT(xml) {
     m.def(
         "load_dict",
         [](const py::dict dict, bool parallel) {
+            // Make a backup copy of the FileResolver, which will be restored after parsing
+            ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
+            Thread::thread()->set_file_resolver(new FileResolver(*fs_backup));
+
             DictParseContext ctx;
             ctx.parallel = parallel;
-            parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
-            std::unordered_map<std::string, Task*> task_map;
-            instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
-            auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
-            return single_object_or_list(objects);
+            ctx.env = ThreadEnvironment();
+
+            try {
+                parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
+                std::unordered_map<std::string, Task*> task_map;
+                instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
+                auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
+                Thread::thread()->set_file_resolver(fs_backup.get());
+                return single_object_or_list(objects);
+            } catch(...) {
+                Thread::thread()->set_file_resolver(fs_backup.get());
+                throw;
+            }
         },
         "dict"_a, "parallel"_a=true,
         R"doc(Load a Mitsuba scene or object from an Python dictionary
@@ -290,6 +303,26 @@ void parse_dictionary(DictParseContext &ctx,
 
             if (type2 == "spectrum" || type2 == "rgb") {
                 props.set_object(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
+                continue;
+            }
+
+            if (type2 == "resources") {
+                ref<FileResolver> fs = Thread::thread()->file_resolver();
+                std::string path = dict2["path"].template cast<std::string>();
+                fs::path resource_path(path);
+                if (!resource_path.is_absolute()) {
+                    // First try to resolve it starting in the Python file directory
+                    py::module_ inspect = py::module_::import("inspect");
+                    py::object filename = inspect.attr("getfile")(inspect.attr("currentframe")());
+                    fs::path current_file(filename.template cast<std::string>());
+                    resource_path = current_file.parent_path() / resource_path;
+                    // Otherwise try to resolve it with the FileResolver
+                    if (!fs::exists(resource_path))
+                        resource_path = fs->resolve(path);
+                }
+                if (!fs::exists(resource_path))
+                    Throw("path: folder %s not found", resource_path);
+                fs->prepend(resource_path);
                 continue;
             }
 
