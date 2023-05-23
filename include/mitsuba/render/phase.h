@@ -22,19 +22,7 @@ enum class PhaseFunctionFlags : uint32_t {
     Microflake  = 0x04
 };
 
-constexpr uint32_t operator|(PhaseFunctionFlags f1, PhaseFunctionFlags f2) {
-    return (uint32_t) f1 | (uint32_t) f2;
-}
-constexpr uint32_t operator|(uint32_t f1, PhaseFunctionFlags f2) { return f1 | (uint32_t) f2; }
-constexpr uint32_t operator&(PhaseFunctionFlags f1, PhaseFunctionFlags f2) {
-    return (uint32_t) f1 & (uint32_t) f2;
-}
-constexpr uint32_t operator&(uint32_t f1, PhaseFunctionFlags f2) { return f1 & (uint32_t) f2; }
-constexpr uint32_t operator~(PhaseFunctionFlags f1) { return ~(uint32_t) f1; }
-constexpr uint32_t operator+(PhaseFunctionFlags e) { return (uint32_t) e; }
-template <typename UInt32> constexpr auto has_flag(UInt32 flags, PhaseFunctionFlags f) {
-    return (flags & (uint32_t) f) != 0;
-}
+MI_DECLARE_ENUM_OPERATORS(PhaseFunctionFlags)
 
 /**
  * \brief Context data structure for phase function evaluation and sampling
