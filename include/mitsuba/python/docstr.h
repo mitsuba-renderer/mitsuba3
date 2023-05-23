@@ -5183,10 +5183,10 @@ static const char *__doc_mitsuba_PhaseFunction_class = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_component_count = R"doc(Number of components this phase function is comprised of.)doc";
 
-static const char *__doc_mitsuba_PhaseFunction_eval =
-R"doc(Evaluates the phase function model
+static const char *__doc_mitsuba_PhaseFunction_eval_pdf =
+R"doc(Evaluates the phase function model value and pdf
 
-The function returns the value (which equals the PDF) of the phase
+The function returns the value (which often equals the PDF) of the phase
 function in the query direction.
 
 Parameter ``ctx``:
@@ -5202,7 +5202,7 @@ Parameter ``wo``:
     An outgoing direction to evaluate.
 
 Returns:
-    The value of the phase function in direction wo)doc";
+    The value and sampling pdf of the phase function in direction wo)doc";
 
 static const char *__doc_mitsuba_PhaseFunction_flags = R"doc(Flags for this phase function.)doc";
 
@@ -5264,7 +5264,7 @@ Parameter ``sample2``:
     generate the sampled direction.
 
 Returns:
-    A sampled direction wo)doc";
+    A sampled direction wo and the corresponding weight and PDF)doc";
 
 static const char *__doc_mitsuba_PhaseFunction_set_id = R"doc(Set a string identifier)doc";
 

@@ -69,11 +69,11 @@ public:
                (temp * dr::sqrt(temp));
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f &mi,
-                                      Float /* sample1 */,
-                                      const Point2f &sample2,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                                 const MediumInteraction3f &mi,
+                                                 Float /* sample1 */,
+                                                 const Point2f &sample2,
+                                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float sqr_term  = (1.f - dr::sqr(m_g)) / (1.f - m_g + 2.f * m_g * sample2.x()),
@@ -88,13 +88,16 @@ public:
         Vector3f wo = mi.to_world(
             Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, -cos_theta));
 
-        return { wo, eval_hg(-cos_theta) };
+        return { wo, 1.f, eval_hg(-cos_theta) };
     }
 
-    Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,
-               const Vector3f &wo, Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext & /* ctx */,
+                                        const MediumInteraction3f &mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
-        return eval_hg(dr::dot(wo, mi.wi));
+        Float pdf = eval_hg(dr::dot(wo, mi.wi));
+        return { pdf, pdf };
     }
 
     std::string to_string() const override {
