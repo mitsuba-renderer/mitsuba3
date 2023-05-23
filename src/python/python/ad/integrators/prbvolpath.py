@@ -208,12 +208,13 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 valid_ray |= act_medium_scatter
                 with dr.suspend_grad():
-                    wo, phase_pdf = phase.sample(phase_ctx, mei, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
+                    wo, phase_weight, phase_pdf = phase.sample(phase_ctx, mei, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
                 act_medium_scatter &= phase_pdf > 0.0
                 new_ray = mei.spawn_ray(wo)
                 ray[act_medium_scatter] = new_ray
                 needs_intersection |= act_medium_scatter
                 last_scatter_direction_pdf[act_medium_scatter] = phase_pdf
+                throughput[act_medium_scatter] *= phase_weight
 
                 #--------------------- Surface Interactions ---------------------
                 active_surface |= escaped_medium
@@ -259,9 +260,9 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                     # Query the BSDF for that emitter-sampled direction
                     bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, si.to_local(ds.d), active_e_surface)
-                    phase_val = phase.eval(phase_ctx, mei, ds.d, active_e_medium)
+                    phase_val, phase_pdf = phase.eval_pdf(phase_ctx, mei, ds.d, active_e_medium)
                     nee_weight = dr.select(active_e_surface, bsdf_val, phase_val)
-                    nee_directional_pdf = dr.select(ds.delta, 0.0, dr.select(active_e_surface, bsdf_pdf, phase_val))
+                    nee_directional_pdf = dr.select(ds.delta, 0.0, dr.select(active_e_surface, bsdf_pdf, phase_pdf))
 
                     contrib = throughput * nee_weight * mis_weight(ds.pdf, nee_directional_pdf) * emitted
                     L[active_e] += dr.detach(contrib if is_primal else -contrib)

@@ -129,16 +129,16 @@ public:
      *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
      *     used to generate the sampled direction.
      *
-     * \return A sampled direction wo
+     * \return A sampled direction wo and its corresponding weight and PDF
      */
-    virtual std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
-                                              const MediumInteraction3f &mi,
-                                              Float sample1, const Point2f &sample2,
-                                              Mask active = true) const = 0;
+    virtual std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
+                                                         const MediumInteraction3f &mi,
+                                                         Float sample1, const Point2f &sample2,
+                                                         Mask active = true) const = 0;
     /**
-     * \brief Evaluates the phase function model
+     * \brief Evaluates the phase function model value and PDF
      *
-     * The function returns the value (which equals the PDF) of the phase
+     * The function returns the value (which often equals the PDF) of the phase
      * function in the query direction.
      *
      * \param ctx
@@ -153,10 +153,12 @@ public:
      * \param wo
      *     An outgoing direction to evaluate.
      *
-     * \return The value of the phase function in direction wo
+     * \return The value and the sampling PDF of the phase function in direction wo
      */
-    virtual Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
-                       const Vector3f &wo, Mask active = true) const = 0;
+    virtual std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext &ctx,
+                                                const MediumInteraction3f &mi,
+                                                const Vector3f &wo,
+                                                Mask active = true) const = 0;
 
     /**
      * \brief Returns the microflake projected area
@@ -248,7 +250,7 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
     DRJIT_VCALL_METHOD(sample)
-    DRJIT_VCALL_METHOD(eval)
+    DRJIT_VCALL_METHOD(eval_pdf)
     DRJIT_VCALL_METHOD(projected_area)
     DRJIT_VCALL_METHOD(max_projected_area)
     DRJIT_VCALL_GETTER(flags, uint32_t)

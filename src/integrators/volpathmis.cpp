@@ -1,4 +1,5 @@
 #include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -272,9 +273,10 @@ public:
                         auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
                             sample_emitter(mei, scene, sampler, medium, p_over_f,
                                            channel, active_e);
-                        Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
-                        update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
-                        update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_val), phase_val, channel, active_e);
+                        auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
+
+                        update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(phase_val), channel, active_e);
+                        update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_pdf), unpolarized_spectrum(phase_val), channel, active_e);
                         dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                     }
 
@@ -283,7 +285,7 @@ public:
 
                     // ------------------ Phase function sampling -----------------
                     dr::masked(phase, !act_medium_scatter) = nullptr;
-                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
+                    auto [wo, phase_weight, phase_pdf] = phase->sample(phase_ctx, mei,
                         sampler->next_1d(act_medium_scatter),
                         sampler->next_2d(act_medium_scatter),
                         act_medium_scatter);
@@ -291,8 +293,8 @@ public:
                     dr::masked(ray, act_medium_scatter) = new_ray;
                     needs_intersection |= act_medium_scatter;
 
-                    update_weights(p_over_f, phase_pdf, phase_pdf, channel, act_medium_scatter);
-                    update_weights(p_over_f_nee, 1.f, phase_pdf, channel, act_medium_scatter);
+                    update_weights(p_over_f, phase_pdf, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
+                    update_weights(p_over_f_nee, 1.f, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
                 }
             }
 
@@ -334,8 +336,7 @@ public:
                 if (likely(dr::any_or<true>(active_e))) {
                     auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(si, scene, sampler, medium, p_over_f, channel, active_e);
                     Vector3f wo_local       = si.to_local(ds.d);
-                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
-                    Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
+                    auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo_local, active_e);
                     update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_e);
                     update_weights(p_over_f_end, dr::select(ds.delta, 0.f, bsdf_pdf), unpolarized_spectrum(bsdf_val), channel, active_e);
                     dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;

@@ -12,10 +12,11 @@ def test01_create_and_eval(variants_vec_rgb):
         def sample(self, ctx, mei, sample1, sample2, active=True):
             wo = mi.warp.square_to_uniform_sphere(sample2)
             pdf = mi.warp.square_to_uniform_sphere_pdf(wo)
-            return (wo, pdf)
+            return (wo, 1.0, pdf)
 
-        def eval(self, ctx, mei, wo, active=True):
-            return mi.warp.square_to_uniform_sphere_pdf(wo)
+        def eval_pdf(self, ctx, mei, wo, active=True):
+            pdf = mi.warp.square_to_uniform_sphere_pdf(wo)
+            return pdf, pdf
 
         def to_string(self):
             return "MyIsotropicPhaseFunction[]"
@@ -35,6 +36,6 @@ def test01_create_and_eval(variants_vec_rgb):
     ph = dr.linspace(mi.Float, 0, dr.pi, 4)
 
     wo = [dr.sin(theta), 0, dr.cos(theta)]
-    v_eval = p.eval(ctx, mei, wo)
+    v_eval, v_pdf = p.eval_pdf(ctx, mei, wo)
 
-    assert dr.allclose(v_eval, 1.0 / (4 * dr.pi))
+    assert dr.allclose(v_pdf, 1.0 / (4 * dr.pi))

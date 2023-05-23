@@ -1,4 +1,5 @@
 #include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -226,14 +227,14 @@ public:
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (dr::any_or<true>(active_e)) {
                     auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
-                    Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
+                    auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
                     dr::masked(result, active_e) += throughput * phase_val * emitted *
-                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_val));
+                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf));
                 }
 
                 // ------------------ Phase function sampling -----------------
                 dr::masked(phase, !act_medium_scatter) = nullptr;
-                auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
+                auto [wo, phase_weight, phase_pdf] = phase->sample(phase_ctx, mei,
                     sampler->next_1d(act_medium_scatter),
                     sampler->next_2d(act_medium_scatter),
                     act_medium_scatter);
@@ -242,6 +243,7 @@ public:
                 dr::masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
                 dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
+                dr::masked(throughput, act_medium_scatter) *= phase_weight;
             }
 
             // --------------------- Surface Interactions ---------------------

@@ -16,7 +16,7 @@ def test02_eval(variant_scalar_rgb):
     theta  = dr.linspace(mi.Float, dr.pi / 2, 4)
     ph  = dr.linspace(mi.Float, 0, dr.pi, 4)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
-    v_eval = p.eval(ctx, mei, wo)
+    v_eval = p.eval_pdf(ctx, mei, wo)[0]
 
     assert dr.allclose(v_eval, 1.0 / (4 * dr.pi))
 
