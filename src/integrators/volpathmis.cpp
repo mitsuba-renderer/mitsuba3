@@ -216,7 +216,7 @@ public:
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
 
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mei, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->transmittance_eval_pdf(mei, si, is_spectral);
                     update_weights(p_over_f, free_flight_pdf, tr, channel, is_spectral);
                     update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
                 }
