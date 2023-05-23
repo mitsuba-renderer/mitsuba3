@@ -4088,7 +4088,7 @@ static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_eval_tr_and_pdf =
+static const char *__doc_mitsuba_Medium_transmittance_eval_pdf =
 R"doc(Compute the transmittance and PDF
 
 This function evaluates the transmittance and PDF of sampling a

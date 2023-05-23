@@ -66,8 +66,9 @@ public:
      *
      */
     std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
-    eval_tr_and_pdf(const MediumInteraction3f &mi,
-                    const SurfaceInteraction3f &si, Mask active) const;
+    transmittance_eval_pdf(const MediumInteraction3f &mi,
+                           const SurfaceInteraction3f &si,
+                           Mask active) const;
 
     /// Return the phase function of this medium
     MI_INLINE const PhaseFunction *phase_function() const {
@@ -127,7 +128,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_METHOD(get_majorant)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
-    DRJIT_VCALL_METHOD(eval_tr_and_pdf)
+    DRJIT_VCALL_METHOD(transmittance_eval_pdf)
     DRJIT_VCALL_METHOD(get_scattering_coefficients)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)
 

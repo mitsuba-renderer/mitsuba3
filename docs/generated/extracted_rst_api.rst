@@ -181,7 +181,7 @@
         Parameter ``arg0`` (float):
             *no description available*
 
-        
+
 .. py:class:: mitsuba.BSDF
 
     Base class: :py:obj:`mitsuba.Object`
@@ -5205,10 +5205,10 @@
     .. py:method:: __init__(self, p, mode=<EMode., ERead)
 
         Constructs a new FileStream by opening the file pointed by ``p``.
-        
+
         The file is opened in read-only or read/write mode as specified by
         ``mode``.
-        
+
         Throws if trying to open a non-existing file in with write disabled.
         Throws an exception if the file cannot be opened / created.
 
@@ -5221,7 +5221,7 @@
         Parameter ``ERead`` (0>):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.FileStream.EMode
 
         Members:
@@ -7699,15 +7699,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7727,7 +7727,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -7818,15 +7818,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7846,7 +7846,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Hierarchical2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -7937,15 +7937,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7965,7 +7965,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Hierarchical2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -8056,15 +8056,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -8084,7 +8084,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Hierarchical2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10465,7 +10465,7 @@
 
     .. py:data:: Trace
 
-        
+
 
     .. py:data:: Debug
 
@@ -10509,7 +10509,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.LogLevel`):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Logger.add_appender(self, arg0)
 
         Add an appender to this logger
@@ -10780,15 +10780,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10806,7 +10806,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10905,15 +10905,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10931,7 +10931,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalContinuous2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11030,15 +11030,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11056,7 +11056,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalContinuous2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11155,15 +11155,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11181,7 +11181,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalContinuous2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11280,15 +11280,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11306,7 +11306,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11405,15 +11405,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11431,7 +11431,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalDiscrete2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11530,15 +11530,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11556,7 +11556,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalDiscrete2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11655,15 +11655,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-        
+
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-        
+
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-        
+
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11681,7 +11681,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MarginalDiscrete2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11833,7 +11833,7 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    .. py:method:: mitsuba.Medium.eval_tr_and_pdf(self, mi, active)
+    .. py:method:: mitsuba.Medium.transmittance_eval_pdf(self, mi, active)
 
         Compute the transmittance and PDF
 
@@ -12052,7 +12052,7 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.eval_tr_and_pdf(self, mi, active)
+    .. py:method:: mitsuba.MediumPtr.transmittance_eval_pdf(self, mi, active)
 
         Compute the transmittance and PDF
 
@@ -12385,7 +12385,7 @@
         Parameter ``capacity`` (int):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.MemoryStream.capacity(self)
 
         Return the current capacity of the underlying memory buffer
@@ -13116,25 +13116,25 @@
     .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
 
         Constructs an OptiX denoiser
-        
+
         Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
             Resolution of noisy images that will be fed to the denoiser.
-        
+
         Parameter ``albedo`` (bool):
             Whether or not albedo information will also be given to the
             denoiser.
-        
+
         Parameter ``normals`` (bool):
             Whether or not shading normals information will also be given to
             the Denoiser.
-        
+
         Returns:
             A callable object which will apply the OptiX denoiser.
 
         Parameter ``temporal`` (bool):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.OptixDenoiser.__call__(overloaded)
 
 
@@ -13555,19 +13555,19 @@
 
     .. py:data:: Empty
 
-        
+
 
     .. py:data:: Isotropic
 
-        
+
 
     .. py:data:: Anisotropic
 
-        
+
 
     .. py:data:: Microflake
 
-        
+
 
     .. py:method:: __init__(self, value)
 
@@ -14856,22 +14856,22 @@
 
         Create a new Resampler object that transforms between the specified
         resolutions
-        
+
         This constructor precomputes all information needed to efficiently
         perform the desired resampling operation. For that reason, it is most
         efficient if it can be used over and over again (e.g. to resample the
         equal-sized rows of a bitmap)
-        
+
         Parameter ``source_res`` (int):
             Source resolution
-        
+
         Parameter ``target_res`` (int):
             Desired target resolution
 
         Parameter ``rfilter`` (:py:obj:`mitsuba.ReconstructionFilter`):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Resampler.boundary_condition(self)
 
         Return the boundary condition that should be used when looking up
@@ -17333,7 +17333,7 @@
         Private constructor (use
         :py:func:`mitsuba.traverse()` instead)
 
-        
+
     .. py:method:: mitsuba.SceneParameters.items()
 
         Returns → a set-like object providing a view on D's items:
@@ -18915,7 +18915,7 @@
         Parameter ``passes`` (int):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.Spiral.block_count(self)
 
         Return the total number of blocks
@@ -18972,7 +18972,7 @@
 
         .. py:data:: EBigEndian
 
-            
+
 
         .. py:data:: ELittleEndian
 
@@ -19460,14 +19460,14 @@
     .. py:method:: __init__(self, arg0)
 
         Create a new stream appender
-        
+
         Remark:
             This constructor is not exposed in the Python bindings
 
         Parameter ``arg0`` (str):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.StreamAppender.logs_to_file(self)
 
         Does this appender log to a file
@@ -19508,16 +19508,16 @@
         Parameter ``HostByteOrder`` (2>):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.Struct.ByteOrder
 
         Members:
 
-            LittleEndian : 
+            LittleEndian :
 
-            BigEndian : 
+            BigEndian :
 
-            HostByteOrder : 
+            HostByteOrder :
 
         .. py:method:: __init__(self, value)
 
@@ -19650,29 +19650,29 @@
 
         Members:
 
-            Int8 : 
+            Int8 :
 
-            UInt8 : 
+            UInt8 :
 
-            Int16 : 
+            Int16 :
 
-            UInt16 : 
+            UInt16 :
 
-            Int32 : 
+            Int32 :
 
-            UInt32 : 
+            UInt32 :
 
-            Int64 : 
+            Int64 :
 
-            UInt64 : 
+            UInt64 :
 
-            Float16 : 
+            Float16 :
 
-            Float32 : 
+            Float32 :
 
-            Float64 : 
+            Float64 :
 
-            Invalid : 
+            Invalid :
 
 
         .. py:method:: __init__(self, value)
@@ -23303,31 +23303,31 @@
 
         .. py:data:: EIdlePriority
 
-            
+
 
         .. py:data:: ELowestPriority
 
-            
+
 
         .. py:data:: ELowPriority
 
-            
+
 
         .. py:data:: ENormalPriority
 
-            
+
 
         .. py:data:: EHighPriority
 
-            
+
 
         .. py:data:: EHighestPriority
 
-            
+
 
         .. py:data:: ERealtimePriority
 
-            
+
 
         .. py:method:: __init__(self, value)
 
@@ -26217,14 +26217,14 @@
         Parameter ``level`` (int):
             *no description available*
 
-        
+
     .. py:class:: mitsuba.ZStream.EStreamType
 
         Members:
 
         .. py:data:: EDeflateStream
 
-            
+
 
         .. py:data:: EGZipStream
 
@@ -26275,30 +26275,30 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``beta_1``:
             controls the exponential averaging of first order gradient moments
-        
+
         Parameter ``beta_2``:
             controls the exponential averaging of second order gradient moments
-        
+
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
-        
+
         Parameter ``uniform``:
             if enabled, the optimizer will use the 'UniformAdam' variant of Adam
             [Nicolet et al. 2021], where the update rule uses the *maximum* of
             the second moment estimates at the current step instead of the
             per-element second moments.
-        
+
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
         Parameter ``params`` (dict | None):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.ad.Adam.step()
 
         Take a gradient step
@@ -26380,14 +26380,14 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``params`` (:py:class:`dict`):
             Dictionary-like object containing parameters to optimize.
 
         Parameter ``params`` (dict):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
 
         Set the learning rate.
@@ -26428,23 +26428,23 @@
 
         Parameter ``lr``:
             learning rate
-        
+
         Parameter ``momentum``:
             momentum factor
-        
+
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
             See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
-        
+
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
         Parameter ``params`` (dict | None):
             *no description available*
 
-        
+
     .. py:method:: mitsuba.ad.SGD.step()
 
         Take a gradient step
