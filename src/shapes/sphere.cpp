@@ -380,7 +380,7 @@ public:
         dr::mask_t<FloatP> no_hit =
             dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
 
-        Value3 plane_p = ray(plane_t);
+        Value3 plane_p = ray(FloatP(plane_t));
 
         // Intersection with plane outside of the sphere
         no_hit &= (norm(plane_p - center) > radius);

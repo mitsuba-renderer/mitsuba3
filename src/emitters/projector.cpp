@@ -126,7 +126,7 @@ public:
         m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
 
         ScalarVector2i size = m_irradiance->resolution();
-        m_x_fov = parse_fov(props, size.x() / (double) size.y());
+        m_x_fov = ScalarFloat(parse_fov(props, size.x() / (double) size.y()));
 
         parameters_changed();
 

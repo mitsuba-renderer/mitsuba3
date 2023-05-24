@@ -166,7 +166,7 @@ public:
         // Temporary buffers for vertices and radius
         std::vector<InputPoint3f> vertices;
         std::vector<InputFloat> radius;
-        ScalarSize vertex_guess = mmap->size() / 100;
+        ScalarSize vertex_guess = (ScalarSize) mmap->size() / 100;
         vertices.reserve(vertex_guess);
         radius.reserve(vertex_guess);
 
@@ -197,7 +197,7 @@ public:
             advance<false>(&next, eof, "\n");
 
             // Copy buf into a 0-terminated buffer
-            ScalarSize size = next - ptr;
+            ScalarSize size = (ScalarSize) (next - ptr);
             if (size >= sizeof(buf) - 1)
                 fail("file contains an excessively long line! (%i characters)!", size);
             memcpy(buf, ptr, size);
@@ -253,7 +253,7 @@ public:
             fail("Empty B-spline file: no control points were read!");
         finish_curve();
 
-        m_control_point_count = vertices.size();
+        m_control_point_count = (ScalarSize) vertices.size();
 
         std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(segment_count);
         size_t segment_index = 0;
@@ -261,7 +261,7 @@ public:
             size_t next_curve_idx = i + 1 < curve_1st_idx.size() ? curve_1st_idx[i + 1] : vertices.size();
             size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
             for (size_t j = 0; j < curve_segment_count; ++j)
-                indices[segment_index++] = curve_1st_idx[i] + j;
+                indices[segment_index++] = (ScalarIndex) (curve_1st_idx[i] + j);
         }
         m_indices = dr::load<UInt32Storage>(indices.get(), segment_count);
 
@@ -316,7 +316,7 @@ public:
         initialize();
     }
 
-    ScalarSize primitive_count() const override { return dr::width(m_indices); }
+    ScalarSize primitive_count() const override { return (ScalarSize) dr::width(m_indices); }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
@@ -562,7 +562,7 @@ public:
 
         build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
         build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
-        build_input.curveArray.numPrimitives        = dr::width(m_indices);
+        build_input.curveArray.numPrimitives        = (unsigned int) dr::width(m_indices);
 
         build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
         build_input.curveArray.numVertices          = m_control_point_count;
@@ -764,7 +764,7 @@ private:
         Pu *= dr::TwoPi<Float>;
         Puv *= dr::TwoPi<Float>;
         Puu *= dr::sqr(dr::TwoPi<Float>);
-        ScalarFloat ratio = dr::width(m_indices),
+        ScalarFloat ratio = (ScalarFloat) dr::width(m_indices),
                     ratio2 = ratio * ratio;
         Pv  *= ratio;
         Puv *= ratio;
