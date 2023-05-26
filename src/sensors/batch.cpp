@@ -33,7 +33,7 @@ sub-sensors.
 MI_VARIANT class BatchSensor final : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
-    MI_IMPORT_TYPES(Shape)
+    MI_IMPORT_TYPES(Shape, SensorPtr)
 
     BatchSensor(const Properties &props) : Base(props) {
         for (auto [unused, o] : props.objects()) {
@@ -57,6 +57,9 @@ public:
             m_sensors[i]->film()->set_size(ScalarPoint2u(sub_size, size.y()));
             m_sensors[i]->parameters_changed();
         }
+
+        m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(m_sensors.data(),
+                                                          m_sensors.size());
     }
 
     std::pair<RayDifferential3f, Spectrum>
@@ -67,25 +70,21 @@ public:
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        UInt32 index = (UInt32) (position_sample.x() * (ScalarFloat) m_sensors.size());
-        RayDifferential3f result_1 = dr::zeros<RayDifferential3f>();
-        Spectrum result_2 = dr::zeros<Spectrum>();
+        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        UInt32 idx_u = UInt32(idx_f);
 
-        for (size_t i = 0; i < m_sensors.size(); ++i) {
-            Mask active_i = active && dr::eq(index, i);
-            Point2f position_sample_2(
-                dr::fmadd(position_sample.x(), (ScalarFloat) m_sensors.size(), -(ScalarFloat) i),
-                position_sample.y()
-            );
-            auto [rv_1, rv_2] = m_sensors[i]->sample_ray_differential(
-                time, wavelength_sample, position_sample_2, aperture_sample,
-                active_i);
-            result_1[active_i] = rv_1;
-            result_2[active_i] = rv_2;
-        }
+        UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
+        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+
         m_last_index = index;
 
-        return { result_1, result_2 };
+        Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
+
+        auto [ray, spec] = sensor->sample_ray_differential(
+            time, wavelength_sample, position_sample_2, aperture_sample,
+            active);
+
+        return { ray, spec };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -134,6 +133,7 @@ public:
     MI_DECLARE_CLASS()
 private:
     std::vector<ref<Base>> m_sensors;
+    DynamicBuffer<SensorPtr> m_sensors_dr;
     mutable UInt32 m_last_index;
 };
 
