@@ -59,7 +59,7 @@ describes how to import one of the spectral measurements from the database.
         :name: diffuse-srgb
 
         <bsdf type="measured">
-            <rgb name="filename" value="cc_nothern_aurora_spec.bsdf"/>
+            <string name="filename" value="cc_nothern_aurora_spec.bsdf"/>
         </bsdf>
 
     .. code-tab:: python
