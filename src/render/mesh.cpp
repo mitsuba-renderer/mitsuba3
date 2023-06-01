@@ -106,7 +106,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         size_t expected_size = attribute.size * (attribute.type == MeshAttributeType::Vertex ? m_vertex_count : m_face_count);
 
         if (attribute.buf.size() != expected_size ) {
-            Log(Debug, "parameters_changed(): Vertex or face count changed, but attribute {} was not updated, resetting it.", name);
+            Log(Debug, "parameters_changed(): Vertex or face count changed, but attribute \"%s\" was not updated, resetting it.", name);
             mesh_attributes_changed = true;
             attribute.buf = dr::zeros<FloatStorage>(expected_size);
         }
