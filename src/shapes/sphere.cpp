@@ -525,12 +525,11 @@ public:
 
         if (likely(need_uv)) {
             Float rd_2  = dr::sqr(local.x()) + dr::sqr(local.y()),
-                  theta = unit_angle_z(local),
                   phi   = dr::atan2(local.y(), local.x());
 
             dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
 
-            si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
+            si.uv = Point2f(phi * dr::InvTwoPi<Float>, dr::fnmadd(0.5f, local.z(), 0.5f));
             if (likely(need_dp_duv)) {
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 

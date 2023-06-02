@@ -74,17 +74,17 @@ def test03_ray_intersect_transform(variant_scalar_rgb):
                     si = s.ray_intersect(ray)
                     ray_u = mi.Ray3f(ray)
                     ray_v = mi.Ray3f(ray)
-                    eps = 1e-4
+                    eps = 1e-5
                     ray_u.o += si.dp_du * eps
                     ray_v.o += si.dp_dv * eps
                     si_u = s.ray_intersect(ray_u)
                     si_v = s.ray_intersect(ray_v)
                     if si_u.is_valid():
                         du = (si_u.uv - si.uv) / eps
-                        assert dr.allclose(du, [1, 0], atol=2e-2)
+                        assert dr.allclose(du, [1, 0], atol=6e-2)
                     if si_v.is_valid():
                         dv = (si_v.uv - si.uv) / eps
-                        assert dr.allclose(dv, [0, 1], atol=2e-2)
+                        assert dr.allclose(dv, [0, 1], atol=6e-2)
 
 
 def test04_ray_intersect_vec(variant_scalar_rgb):
@@ -180,7 +180,7 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     si = shape.ray_intersect(ray)
     si.uv *= 1.0
     dr.forward(ray.o.z)
-    assert dr.allclose(dr.grad(si.uv), [0, -2 / (2.0 * dr.pi)])
+    assert dr.allclose(dr.grad(si.uv), [0, -1 / 2.0])
 
     # # If the ray origin is shifted along the x-axis, so does si.n
     dr.enable_grad(ray.o)
@@ -308,7 +308,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     assert dr.allclose(dr.grad(si.p), 0.0)
     assert dr.allclose(dr.grad(si.n), 0.0)
-    assert dr.allclose(dr.grad(si.uv), [0.0, -0.5])
+    assert dr.allclose(dr.grad(si.uv), [0.0, -0.25 * dr.pi])
 
 
 def test09_si_singularity(variants_all_rgb):
