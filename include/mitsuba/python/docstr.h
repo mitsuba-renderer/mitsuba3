@@ -2343,13 +2343,17 @@ static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_flags = R"doc(Flags for all components combined.)doc";
+static const char *__doc_mitsuba_Emitter_dirty = R"doc(Return whether the emitter parameters have changed)doc";
 
-static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(The emitter's sampling weight.)doc";
+static const char *__doc_mitsuba_Emitter_flags = R"doc(Flags for all components combined.)doc";
 
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
+static const char *__doc_mitsuba_Emitter_m_dirty = R"doc(True if the emitters's parameters have changed)doc";
+
 static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all properties of this emitter.)doc";
+
+static const char *__doc_mitsuba_Emitter_m_sampling_weight = R"doc(Sampling weight)doc";
 
 static const char *__doc_mitsuba_Emitter_operator_delete = R"doc()doc";
 
@@ -2358,6 +2362,14 @@ static const char *__doc_mitsuba_Emitter_operator_delete_2 = R"doc()doc";
 static const char *__doc_mitsuba_Emitter_operator_new = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(The emitter's sampling weight.)doc";
+
+static const char *__doc_mitsuba_Emitter_set_dirty = R"doc(Modify the emitter's "dirty" flag)doc";
+
+static const char *__doc_mitsuba_Emitter_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Abstract interface subsuming emitters and sensors in Mitsuba.
@@ -4360,8 +4372,6 @@ static const char *__doc_mitsuba_Mesh_embree_geometry = R"doc(Return the Embree 
 
 static const char *__doc_mitsuba_Mesh_ensure_pmf_built = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_eval_attribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_eval_attribute_1 = R"doc()doc";
@@ -4379,6 +4389,8 @@ static const char *__doc_mitsuba_Mesh_face_indices = R"doc(Returns the face indi
 static const char *__doc_mitsuba_Mesh_faces_buffer = R"doc(Return face indices buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_faces_buffer_2 = R"doc(Const variant of faces_buffer.)doc";
+
+static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_has_face_normals = R"doc(Does this mesh use face normals?)doc";
 
@@ -6494,6 +6506,8 @@ static const char *__doc_mitsuba_Scene_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_emitter_distr = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_m_emitter_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
@@ -6888,6 +6902,8 @@ static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable
 
 static const char *__doc_mitsuba_Scene_traverse = R"doc(Traverse the scene graph and invoke the given callback for each object)doc";
 
+static const char *__doc_mitsuba_Scene_update_emitter_sampling_distribution = R"doc(Updates the discrete distribution used to select an emitter)doc";
+
 static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedPhase_ScopedPhase = R"doc()doc";
@@ -7256,7 +7272,7 @@ static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter a
 
 static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
 
-static const char *__doc_mitsuba_Shape_has_attribute =
+static const char *__doc_mitsuba_Shape_eval_attribute =
 R"doc(Evaluate a specific shape attribute at the given surface interaction.
 
 Shape attributes are user-provided fields that provide extra
@@ -7264,21 +7280,13 @@ information at an intersection. An example of this would be a per-
 vertex or per-face color on a triangle mesh.
 
 Parameter ``name``:
-    Name of the attribute
+    Name of the attribute to evaluate
 
 Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An unpolarized spectral power distribution or reflectance value
-
-The default implementation throws an exception.)doc";
-
-static const char *__doc_mitsuba_Shape_eval_attribute =
-R"doc(Returns whether this shape contains the specified attribute.
-
-Parameter ``name``:
-    Name of the attribute to evaluate)doc";
+    An unpolarized spectral power distribution or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a shape attribute at the given surface
@@ -7325,6 +7333,12 @@ static const char *__doc_mitsuba_Shape_exterior_medium = R"doc(Return the medium
 
 static const char *__doc_mitsuba_Shape_get_children_string = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_has_attribute =
+R"doc(Returns whether this shape contains the specified attribute.
+
+Parameter ``name``:
+    Name of the attribute)doc";
+
 static const char *__doc_mitsuba_Shape_id = R"doc(Return a string identifier)doc";
 
 static const char *__doc_mitsuba_Shape_initialize = R"doc()doc";
@@ -7364,6 +7378,8 @@ static const char *__doc_mitsuba_Shape_m_is_instance = R"doc(True if the shape i
 static const char *__doc_mitsuba_Shape_m_optix_data_ptr = R"doc(OptiX hitgroup data buffer)doc";
 
 static const char *__doc_mitsuba_Shape_m_sensor = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_m_texture_attributes = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_to_object = R"doc()doc";
 
