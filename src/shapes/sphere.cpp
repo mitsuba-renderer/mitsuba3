@@ -539,16 +539,16 @@ public:
                       cos_phi = local.x() * inv_rd,
                       sin_phi = local.y() * inv_rd;
 
-                si.dp_dv = Vector3f(local.z() * cos_phi,
-                                    local.z() * sin_phi,
-                                    -rd);
+                si.dp_dv = Vector3f(-local.z() * cos_phi * inv_rd,
+                                    -local.z() * sin_phi * inv_rd,
+                                    1.f);
 
                 Mask singularity_mask = active && dr::eq(rd, 0.f);
                 if (unlikely(dr::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
                 si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
-                si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
+                si.dp_dv = to_world * si.dp_dv * 2.f;
             }
         }
 
