@@ -539,9 +539,9 @@ public:
                       cos_phi = local.x() * inv_rd,
                       sin_phi = local.y() * inv_rd;
 
-                si.dp_dv = Vector3f(-local.z() * cos_phi * inv_rd,
-                                    -local.z() * sin_phi * inv_rd,
-                                    1.f);
+                si.dp_dv = Vector3f(local.z() * cos_phi * inv_rd,
+                                    local.z() * sin_phi * inv_rd,
+                                    -1.f);
 
                 Mask singularity_mask = active && dr::eq(rd, 0.f);
                 if (unlikely(dr::any_or<true>(singularity_mask)))

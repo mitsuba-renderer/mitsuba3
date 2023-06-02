@@ -318,7 +318,7 @@ def test09_si_singularity(variants_all_rgb):
     si = scene.ray_intersect(ray)
 
     assert dr.allclose(si.dp_du, [0, 0, 0])
-    assert dr.allclose(si.dp_dv, [dr.pi, 0, 0])
+    assert dr.allclose(si.dp_dv, [2, 0, 0])
     assert dr.allclose(si.sh_frame.s, [1, 0, 0])
     assert dr.allclose(si.sh_frame.t, [0, -1, 0])
     assert dr.allclose(si.sh_frame.n, [0, 0, -1])
@@ -331,7 +331,7 @@ def test10_si_singularity_centered(variants_all_rgb):
     si = scene.ray_intersect(ray)
 
     assert dr.allclose(si.dp_du, [0, 0, 0])
-    assert dr.allclose(si.dp_dv, [dr.pi, 0, 0])
+    assert dr.allclose(si.dp_dv, [2, 0, 0])
     assert dr.allclose(si.sh_frame.s, [1, 0, 0])
     assert dr.allclose(si.sh_frame.t, [0, 1, 0])
     assert dr.allclose(si.sh_frame.n, [0, 0, 1])
