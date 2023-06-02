@@ -540,6 +540,8 @@
 
 .. autoclass:: mitsuba.ad.Adam
 
+.. autoclass:: mitsuba.ad.LargeSteps
+
 .. autoclass:: mitsuba.ad.Optimizer
 
 .. autoclass:: mitsuba.ad.SGD
@@ -549,6 +551,10 @@
 .. autoclass:: mitsuba.ad.common.RBIntegrator
 
 .. autofunction:: mitsuba.ad.common.mis_weight
+
+.. autoclass:: mitsuba.ad.largesteps.SolveCholesky
+
+.. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
 .. autofunction:: mitsuba.ad.reparameterize_ray
 
@@ -823,6 +829,8 @@
 .. autofunction:: mitsuba.util.write_bitmap
 
 .. autofunction:: mitsuba.variant
+
+.. autofunction:: mitsuba.variant_context
 
 .. autofunction:: mitsuba.variants
 
