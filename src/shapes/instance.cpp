@@ -57,6 +57,7 @@ public:
     MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
+    using typename Base::ScalarIndex;
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
 
     Instance(const Properties &props) : Base(props) {
@@ -121,7 +122,8 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   dr::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active,
+                                   ScalarIndex /*prim_index*/) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
             return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.scalar().transform_affine(ray));
@@ -131,7 +133,9 @@ public:
     }
 
     template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, dr::mask_t<FloatP> active) const {
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, 
+                                     dr::mask_t<FloatP> active,
+                                     ScalarIndex /*prim_index*/) const {
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {

@@ -117,6 +117,7 @@ public:
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
+    using typename Base::ScalarIndex;
 
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
@@ -344,7 +345,8 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   dr::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active,
+                                   ScalarIndex /*prim_index*/) const {
         MI_MASK_ARGUMENT(active);
         using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
                                          dr::float32_array_t<FloatP>,
@@ -413,7 +415,8 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     dr::mask_t<FloatP> active) const {
+                                     dr::mask_t<FloatP> active,
+                                     ScalarIndex /*prim_index*/) const {
         MI_MASK_ARGUMENT(active);
 
         using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,

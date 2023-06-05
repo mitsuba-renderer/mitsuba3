@@ -85,6 +85,7 @@ public:
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
+    using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
@@ -216,7 +217,8 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   dr::mask_t<FloatP> active) const {
+                                   dr::mask_t<FloatP> active,
+                                   ScalarIndex /*prim_index*/) const {
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
             to_object = m_to_object.scalar();
@@ -237,7 +239,8 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     dr::mask_t<FloatP> active) const {
+                                     dr::mask_t<FloatP> active,
+                                     ScalarIndex /*prim_index*/) const {
         MI_MASK_ARGUMENT(active);
 
         Transform<Point<FloatP, 4>> to_object;

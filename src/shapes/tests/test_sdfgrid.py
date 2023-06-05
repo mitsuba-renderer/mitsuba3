@@ -4,7 +4,7 @@ import mitsuba as mi
 
 # TODO: change variants once they're all implemented
 
-def test01_create(variant_cuda_ad_rgb):
+def test01_create(variant_scalar_rgb):
     for normal_method in ["analytic", "smooth", "falcao"]:
         s = mi.load_dict({
             "type" : "sdfgrid",
@@ -13,7 +13,7 @@ def test01_create(variant_cuda_ad_rgb):
         assert s is not None
 
 
-def test02_bbox(variant_cuda_ad_rgb):
+def test02_bbox(variant_scalar_rgb):
     sy = 2.5
     for sx in [1, 2, 4]:
         for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
@@ -31,7 +31,7 @@ def test02_bbox(variant_cuda_ad_rgb):
             assert dr.allclose(b.max, translate +[sx, sy, 1.0])
 
 
-def test03_parameters_changed(variant_cuda_ad_rgb):
+def test03_parameters_changed(variant_scalar_rgb):
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -54,7 +54,7 @@ def test03_parameters_changed(variant_cuda_ad_rgb):
     assert True
 
 
-def test04_ray_intersect(variant_cuda_ad_rgb):
+def test04_ray_intersect(variants_all_ad_rgb):
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -98,7 +98,7 @@ def test04_ray_intersect(variant_cuda_ad_rgb):
                     assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))
 
 
-def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_cuda_ad_rgb):
+def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
     # TODO: remove scenes
 
     dr.set_flag(dr.JitFlag.VCallRecord, False)
