@@ -51,6 +51,7 @@ class SolveCholesky(dr.CustomOp):
     def name(self):
         return "Cholesky solve"
 
+
 class LargeSteps():
     """
     Implementation of the algorithm described in the paper "Large Steps in
