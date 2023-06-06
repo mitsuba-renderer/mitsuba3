@@ -2,7 +2,9 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
+@fresolver_append_path
 def test01_init(variants_all_ad_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
@@ -15,6 +17,7 @@ def test01_init(variants_all_ad_rgb):
     ls = mi.ad.LargeSteps(params['vertex_positions'], params['faces'], lambda_)
 
 
+@fresolver_append_path
 def test02_roundtrip(variants_all_ad_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
