@@ -6,6 +6,8 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_init(variants_all_ad_rgb):
+    pytest.importorskip("cholespy")
+
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/triangle.ply",
@@ -19,6 +21,8 @@ def test01_init(variants_all_ad_rgb):
 
 @fresolver_append_path
 def test02_roundtrip(variants_all_ad_rgb):
+    pytest.importorskip("cholespy")
+
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/triangle.ply",
@@ -34,8 +38,9 @@ def test02_roundtrip(variants_all_ad_rgb):
 
 
 def test03_non_unique_vertices(variants_all_ad_rgb):
-    mesh = mi.Mesh("MyMesh", 5, 2)
+    pytest.importorskip("cholespy")
 
+    mesh = mi.Mesh("MyMesh", 5, 2)
     params = mi.traverse(mesh)
     params['vertex_positions'] = [
         0.0, 0.0, 0.0,
