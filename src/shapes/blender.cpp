@@ -147,9 +147,9 @@ public:
         }
 
         bool has_uvs = props.has_property("uvs");
-        const blender::MLoopUV *uvs = nullptr;
+        const void *uv_ptr = nullptr;
         if (has_uvs)
-            uvs = reinterpret_cast<const blender::MLoopUV *>(props.get<int64_t>("uvs"));
+            uv_ptr = reinterpret_cast<const void *>(props.get<int64_t>("uvs"));
         else
             Log(Warn, "Mesh %s has no texture coordinates!", m_name);
 
@@ -310,9 +310,18 @@ public:
                 vert_key.normal = normal;
 
                 if (has_uvs) {
-                    const blender::MLoopUV &loop_uv = uvs[loop_index];
-                    const InputVector2f uv(loop_uv.uv[0], 1.0f - loop_uv.uv[1]);
-                    vert_key.uv = uv;
+                    if (version[0] < 3 || (version[0] == 3 && version[1] < 5)) {
+                        // Blender 2.xx - 3.4
+                        const blender::MLoopUV *uvs = (const blender::MLoopUV *) uv_ptr;
+                        const blender::MLoopUV &loop_uv = uvs[loop_index];
+                        const InputVector2f uv(loop_uv.uv[0], 1.0f - loop_uv.uv[1]);
+                        vert_key.uv = uv;
+                    } else {
+                        // Blender 3.5+
+                        const float (*uvs)[2] = (const float (*)[2]) uv_ptr;
+                        const InputVector2f uv(uvs[loop_index][0], 1.0f - uvs[loop_index][1]);
+                        vert_key.uv = uv;
+                    }
                 }
 
                 // Vertex index in the blender mesh is the map index
