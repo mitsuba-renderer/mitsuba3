@@ -20,7 +20,7 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
    - |transform|
    - Specifies an optional camera-to-world transformation.
      (Default: none (i.e. camera space = world space))
-   - |exposed|, |differentiable|, |discontinuous|
+   - |exposed|
 
  * - aperture_radius
    - |float|
@@ -170,10 +170,10 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("aperture_radius", m_aperture_radius, ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("focus_distance",  m_focus_distance,  ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("x_fov",           m_x_fov,           ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("to_world",       *m_to_world.ptr(),  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("focus_distance",  m_focus_distance,  +ParamFlags::NonDifferentiable);
+        callback->put_parameter("x_fov",           m_x_fov,           +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world",       *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
