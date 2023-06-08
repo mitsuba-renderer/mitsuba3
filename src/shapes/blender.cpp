@@ -108,10 +108,19 @@ public:
                 m_name, args...);
         };
 
-        std::vector<std::string> necessary_fields = {"name", "mat_nr", "vert_count", "loop_tri_count", "loops", "loop_tris", "polys", "verts"};
+        std::vector<std::string> necessary_fields = {"name", "version", "mat_nr", "vert_count", "loop_tri_count", "loops", "loop_tris", "polys", "verts"};
         for (auto &s : necessary_fields) {
             if (!props.has_property(s))
                 fail("missing property \"%s\"!", s);
+        }
+
+        // get Blender version, this is used to determine the right data layout
+        std::array<int, 3> version;
+        std::istringstream iss(props.string("version"));
+        for (int i = 0; i < 3; ++i) {
+            std::string tmp;
+            std::getline(iss, tmp, '.');
+            version[i] = std::stoi(tmp);
         }
 
         m_name     = props.string("name");
@@ -124,6 +133,8 @@ public:
             reinterpret_cast<const blender::MLoopTri *>(props.get<int64_t>("loop_tris"));
         const blender::MPoly *polygons =
             reinterpret_cast<const blender::MPoly *>(props.get<int64_t>("polys"));
+        const int *mat_indices =
+            reinterpret_cast<const int *>(props.get<int64_t>("mat_indices"));
 
         // The type of vertex buffer will depend on the version of blender used.
         void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
@@ -229,7 +240,9 @@ public:
 
             // We only export the part of the mesh corresponding to the given
             // material id
-            if (face.mat_nr != mat_nr)
+            if (version[0] >= 3 && version[1] >= 4 && mat_indices != nullptr && mat_indices[tri_loop.poly] != mat_nr)
+                continue;
+            else if (version[0] <= 3 && version[1] < 4 && face.mat_nr != mat_nr)
                 continue;
 
             ScalarIndex3 triangle;
