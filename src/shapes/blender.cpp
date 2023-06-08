@@ -55,11 +55,6 @@ NAMESPACE_BEGIN(blender)
         char padding[2];
     };
 
-    // Vertex normal data structure for Blender 3.xx
-    struct MVertNormal {
-        float no[3];
-    };
-
 NAMESPACE_END(blender)
 
 NAMESPACE_BEGIN(mitsuba)
@@ -138,15 +133,9 @@ public:
 
         // The type of vertex buffer will depend on the version of blender used.
         void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
-        const blender::MVertBlender2 *verts_blender2 = (const blender::MVertBlender2 *) verts_ptr;
-        const blender::MVertBlender3 *verts_blender3 = (const blender::MVertBlender3 *) verts_ptr;
 
-        const blender::MVertNormal *normals_blender3 =
-            reinterpret_cast<const blender::MVertNormal *>(props.get<int64_t>("normals", 0));
-
-        // Blender 3.xx uses a slightly different memory layout for storing
-        // vertices information. E.g. vertex normals are stored in a separate buffer.
-        bool blender_3 = normals_blender3 != nullptr;
+		// Normals are stored in a separate buffer in Blender 3.1+
+        const float (*normals)[3] = reinterpret_cast<const float (*)[3]>(props.get<int64_t>("normals", 0));
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
@@ -248,14 +237,24 @@ public:
             ScalarIndex3 triangle;
 
             const float *co_0, *co_1, *co_2;
-            if (blender_3) {
-                co_0 = verts_blender3[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts_blender3[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts_blender3[loops[tri_loop.tri[2]].v].co;
+            if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
+                // Blender 2.xx - 3.0
+                const blender::MVertBlender2 *verts = (const blender::MVertBlender2 *) verts_ptr;
+                co_0 = verts[loops[tri_loop.tri[0]].v].co;
+                co_1 = verts[loops[tri_loop.tri[1]].v].co;
+                co_2 = verts[loops[tri_loop.tri[2]].v].co;
+            } else if (version[1] < 5) {
+                // Blender 3.1 - 3.4
+                const blender::MVertBlender3 *verts = (const blender::MVertBlender3 *) verts_ptr;
+                co_0 = verts[loops[tri_loop.tri[0]].v].co;
+                co_1 = verts[loops[tri_loop.tri[1]].v].co;
+                co_2 = verts[loops[tri_loop.tri[2]].v].co;
             } else {
-                co_0 = verts_blender2[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts_blender2[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts_blender2[loops[tri_loop.tri[2]].v].co;
+                // Blender 3.5+
+                const float (*verts)[3] = (const float (*)[3]) verts_ptr;
+                co_0 = verts[loops[tri_loop.tri[0]].v];
+                co_1 = verts[loops[tri_loop.tri[1]].v];
+                co_2 = verts[loops[tri_loop.tri[2]].v];
             }
 
             dr::Array<InputPoint3f, 3> face_points;
@@ -285,12 +284,14 @@ public:
 
                 Key vert_key;
                 if (blender::ME_SMOOTH & face.flag || m_face_normals) {
-                    if (!blender_3) {
-                        const short *no = verts_blender2[vert_index].no;
+                    if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
+                        // Blender 2.xx - 3.0
+                        const blender::MVertBlender2 *verts= (const blender::MVertBlender2 *) verts_ptr;
+                        const short *no = verts[vert_index].no;
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     } else {
-                        const float *no = normals_blender3[vert_index].no;
+                        const float *no = normals[vert_index];
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     }
