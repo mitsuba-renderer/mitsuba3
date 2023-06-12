@@ -122,14 +122,24 @@ public:
         short mat_nr = (short) props.get<int>("mat_nr");
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
-        const blender::MLoop *loops =
-            reinterpret_cast<const blender::MLoop *>(props.get<int64_t>("loops"));
-        const blender::MLoopTri *tri_loops =
-            reinterpret_cast<const blender::MLoopTri *>(props.get<int64_t>("loop_tris"));
-        const blender::MPoly *polygons =
-            reinterpret_cast<const blender::MPoly *>(props.get<int64_t>("polys"));
-        const int *mat_indices =
-            reinterpret_cast<const int *>(props.get<int64_t>("mat_indices"));
+
+        // Before Blender 3.6, this points to an array of MLoop, after it is just an array of ints
+        const int *loops = reinterpret_cast<const int *>(props.get<int64_t>("loops"));
+        const blender::MLoop *loops_old = (const blender::MLoop *) loops;
+
+        // Before Blender 3.6, this points to an array of MLoopTri, after it is just an array of ints
+        const unsigned int (*tri_loops)[3] = reinterpret_cast<const unsigned int (*)[3]>(props.get<int64_t>("loop_tris"));
+        const blender::MLoopTri *tri_loops_old = (const blender::MLoopTri *) tri_loops;
+
+        // Before Blender 3.6, this points to an array of MPoly, after it is just an array of ints
+        const int *polys = reinterpret_cast<const int *>(props.get<int64_t>("polys"));
+        const blender::MPoly *polys_old = (const blender::MPoly *) polys;
+
+        // Blender 3.4+ layout
+        const int *mat_indices = reinterpret_cast<const int *>(props.get<int64_t>("mat_indices", 0));
+
+        // Blender 3.6+ layout
+        const bool *sharp_faces = reinterpret_cast<const bool *>(props.get<int64_t>("sharp_face", 0));
 
         // The type of vertex buffer will depend on the version of blender used.
         void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
@@ -157,14 +167,26 @@ public:
         // Blender meshes can be partially smooth AND flat (e.g. with edge split modifier)
         // In this case, flat face vertices will be duplicated.
         m_face_normals = true;
-        for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
-            const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
-            const blender::MPoly &face        = polygons[tri_loop.poly];
-            if (blender::ME_SMOOTH & face.flag) {
-                // If at least one face is smooth shaded, we need to disable face normals
-                // and duplicate the (potential) flat shaded face vertices.
-                m_face_normals = false;
-                break;
+        if (version[0] >= 3 && version[1] >= 6 && sharp_faces == nullptr)
+            // In this case, the mesh is globally smooth shaded, no need to go through all vertices
+            m_face_normals = false;
+        else {
+            if (version[0] >= 3 && version[1] >= 6) {
+                for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+                    if (!sharp_faces[polys[tri_loop_id]]) {
+                        // At least one smooth face, we can't use global face normals
+                        m_face_normals = false;
+                        break;
+                    }
+                }
+            }
+            else {
+                for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+                    if (blender::ME_SMOOTH & polys_old[tri_loops_old[tri_loop_id].poly].flag) {
+                        m_face_normals = false;
+                        break;
+                    }
+                }
             }
         }
 
@@ -224,37 +246,55 @@ public:
 
         size_t duplicates_ctr = 0;
         for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
-            const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
-            const blender::MPoly &face        = polygons[tri_loop.poly];
+            int face_id;
+            if (version[0] >= 3 && version[1] >= 6)
+                face_id = polys[tri_loop_id];
+             else
+                face_id = tri_loops_old[tri_loop_id].poly;
 
             // We only export the part of the mesh corresponding to the given
             // material id
-            if (version[0] >= 3 && version[1] >= 4 && mat_indices != nullptr && mat_indices[tri_loop.poly] != mat_nr)
+            if (version[0] >= 3 && version[1] >= 4 && mat_indices != nullptr && mat_indices[face_id] != mat_nr)
                 continue;
-            else if (version[0] <= 3 && version[1] < 4 && face.mat_nr != mat_nr)
-                continue;
+            else if (version[0] <= 3 && version[1] < 4) {
+                if (polys_old[face_id].mat_nr != mat_nr)
+                    continue;
+            }
 
             ScalarIndex3 triangle;
+
+            int v0, v1, v2;
+            if (version[0] >= 3 && version[1] >= 6) {
+                const unsigned int *tri_loop = tri_loops[tri_loop_id];
+                v0 = loops[tri_loop[0]];
+                v1 = loops[tri_loop[1]];
+                v2 = loops[tri_loop[2]];
+            } else {
+                const blender::MLoopTri &tri_loop = tri_loops_old[tri_loop_id];
+                v0 = loops_old[tri_loop.tri[0]].v;
+                v1 = loops_old[tri_loop.tri[1]].v;
+                v2 = loops_old[tri_loop.tri[2]].v;
+            }
 
             const float *co_0, *co_1, *co_2;
             if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
                 // Blender 2.xx - 3.0
                 const blender::MVertBlender2 *verts = (const blender::MVertBlender2 *) verts_ptr;
-                co_0 = verts[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts[loops[tri_loop.tri[2]].v].co;
+                co_0 = verts[v0].co;
+                co_1 = verts[v1].co;
+                co_2 = verts[v2].co;
             } else if (version[1] < 5) {
                 // Blender 3.1 - 3.4
                 const blender::MVertBlender3 *verts = (const blender::MVertBlender3 *) verts_ptr;
-                co_0 = verts[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts[loops[tri_loop.tri[2]].v].co;
+                co_0 = verts[v0].co;
+                co_1 = verts[v1].co;
+                co_2 = verts[v2].co;
             } else {
                 // Blender 3.5+
                 const float (*verts)[3] = (const float (*)[3]) verts_ptr;
-                co_0 = verts[loops[tri_loop.tri[0]].v];
-                co_1 = verts[loops[tri_loop.tri[1]].v];
-                co_2 = verts[loops[tri_loop.tri[2]].v];
+                co_0 = verts[v0];
+                co_1 = verts[v1];
+                co_2 = verts[v2];
             }
 
             dr::Array<InputPoint3f, 3> face_points;
@@ -263,7 +303,14 @@ public:
             face_points[2] = InputPoint3f(co_2[0], co_2[1], co_2[2]);
 
             InputNormal3f normal(0.f);
-            if (!(blender::ME_SMOOTH & face.flag) && !m_face_normals) {
+            bool smooth_face;
+            if (version[0] >= 3 && version[1] >= 6) {
+                // Blender 3.6+ layout
+                smooth_face = sharp_faces == nullptr || !sharp_faces[face_id];
+            } else {
+                smooth_face = blender::ME_SMOOTH & polys_old[face_id].flag;
+            }
+            if (!smooth_face && !m_face_normals) {
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
@@ -277,13 +324,21 @@ public:
             InputFloat color_factor = dr::rcp(255.f);
 
             for (int i = 0; i < 3; i++) {
-                const size_t loop_index = tri_loop.tri[i];
-                const size_t vert_index = loops[loop_index].v;
+                size_t loop_index, vert_index;
+                if (version[0] >= 3 && version[1] >= 6) {
+                    const int *tri_loop = (const int *) tri_loops[tri_loop_id];
+                    loop_index = tri_loop[i];
+                    vert_index = loops[loop_index];
+                } else {
+                    loop_index = tri_loops_old[tri_loop_id].tri[i];
+                    vert_index = loops_old[loop_index].v;
+                }
+
                 if (unlikely((vert_index >= vertex_count)))
                     fail("reference to invalid vertex %i!", vert_index);
 
                 Key vert_key;
-                if (blender::ME_SMOOTH & face.flag || m_face_normals) {
+                if (smooth_face || m_face_normals) {
                     if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
                         // Blender 2.xx - 3.0
                         const blender::MVertBlender2 *verts= (const blender::MVertBlender2 *) verts_ptr;
@@ -304,7 +359,7 @@ public:
                 } else {
                     // vert_key.smooth = false (default), flat shading
                     // Store the referenced polygon (face)
-                    vert_key.poly = tri_loop.poly;
+                    vert_key.poly = face_id;
                 }
 
                 vert_key.normal = normal;
