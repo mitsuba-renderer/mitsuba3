@@ -51,6 +51,10 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
     m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
     m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
+    m.attr("ERD_MI_VERSION")       = ERD_MI_VERSION;
+    m.attr("ERD_MI_VERSION_MAJOR") = ERD_MI_VERSION_MAJOR;
+    m.attr("ERD_MI_VERSION_MINOR") = ERD_MI_VERSION_MINOR;
+    m.attr("ERD_MI_VERSION_PATCH") = ERD_MI_VERSION_PATCH;
     m.attr("MI_YEAR")          = MI_YEAR;
     m.attr("MI_AUTHORS")       = MI_AUTHORS;
 
