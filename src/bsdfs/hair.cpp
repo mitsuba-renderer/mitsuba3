@@ -98,15 +98,14 @@ public:
         Float _pdf  = Float(0);
         Vector3f wi = dr::normalize(si.wi);
         Vector3f wo;
-        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.y()) + dr::sqr(wi.z())));
-        gammaI = dr::select(wi.y() < 0, gammaI, -gammaI);
+        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.x()) + dr::sqr(wi.z())));
+        gammaI = dr::select(wi.x() < 0, gammaI, -gammaI);
         Float h = dr::sin(gammaI);
 
         // Compute hair coordinate system terms related to _wo_
-        Float sinThetaI = wi.x();
+        Float sinThetaI = wi.y();
         Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phiI      = dr::atan2(wi.z(), wi.y());
-        
+        Float phiI      = dr::atan2(wi.z(), wi.x());
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
         Point2f u[2] = { {sample1, 0}, sample2 };
@@ -196,7 +195,7 @@ public:
 
         // Compute _wi_ from sampled hair scattering angles
         Float phiO = phiI + dphi;
-        wo = Vector3f(sinThetaO, cosThetaO * dr::cos(phiO),
+        wo = Vector3f(cosThetaO * dr::cos(phiO), sinThetaO,
                       cosThetaO * dr::sin(phiO));
 
         // Compute PDF for sampled hair scattering direction _wi_
@@ -268,21 +267,21 @@ public:
         }
 
         Vector3f wi = dr::normalize(si.wi);
-        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.y()) + dr::sqr(wi.z())));
-        gammaI = dr::select(wi.y() < 0, gammaI, -gammaI);
+        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.x()) + dr::sqr(wi.z())));
+        gammaI = dr::select(wi.x() < 0, gammaI, -gammaI);
         Float h = dr::sin(gammaI);
 
 
         // Compute the BSDF
         // Compute hair coordinate system terms related to _wi_
-        Float sinThetaO = wo.x();
+        Float sinThetaO = wo.y();
         Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
-        Float phiO      = dr::atan2(wo.z(), wo.y());
+        Float phiO      = dr::atan2(wo.z(), wo.x());
 
         // Compute hair coordinate system terms related to _wi_
-        Float sinThetaI = wi.x();
+        Float sinThetaI = wi.y();
         Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phiI      = dr::atan2(wi.z(), wi.y());
+        Float phiI      = dr::atan2(wi.z(), wi.x());
 
         // Compute $\cos \thetat$ for refracted ray
         Float sinThetaT = sinThetaI / m_eta;
@@ -362,19 +361,18 @@ public:
         }
 
         Vector3f wi = dr::normalize(si.wi);
-        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.y()) + dr::sqr(wi.z())));
-        gammaI = dr::select(wi.y() < 0, gammaI, -gammaI);
+        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.x()) + dr::sqr(wi.z())));
+        gammaI = dr::select(wi.x() < 0, gammaI, -gammaI);
         Float h = dr::sin(gammaI);
 
-        Float sinThetaO = wo.x();
+        Float sinThetaO = wo.y();
         Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
-        Float phiO      = dr::atan2(wo.z(), wo.y());
+        Float phiO      = dr::atan2(wo.z(), wo.x());
 
         // Compute hair coordinate system terms related to _wi_
-        Float sinThetaI = wi.x();
+        Float sinThetaI = wi.y();
         Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phiI      = dr::atan2(wi.z(), wi.y());
-        
+        Float phiI      = dr::atan2(wi.z(), wi.x());
         // Compute $\gammat$ for refracted ray
         Float etap = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sinThetaI)) / cosThetaI;
         Float sinGammaT = h / etap;
@@ -444,18 +442,18 @@ public:
         }
 
         Vector3f wi = dr::normalize(si.wi);
-        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.y()) + dr::sqr(wi.z())));
-        gammaI = dr::select(wi.y() < 0, gammaI, -gammaI);
+        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.x()) + dr::sqr(wi.z())));
+        gammaI = dr::select(wi.x() < 0, gammaI, -gammaI);
         Float h = dr::sin(gammaI);
 
-        Float sinThetaO = wo.x();
+        Float sinThetaO = wo.y();
         Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
-        Float phiO      = dr::atan2(wo.z(), wo.y());
+        Float phiO      = dr::atan2(wo.z(), wo.x());
 
         // Compute hair coordinate system terms related to _wi_
-        Float sinThetaI = wi.x();
+        Float sinThetaI = wi.y();
         Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phiI      = dr::atan2(wi.z(), wi.y());
+        Float phiI      = dr::atan2(wi.z(), wi.x());
 
         // Compute $\gammat$ for refracted ray
         Float etap = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sinThetaI)) / cosThetaI;
@@ -664,8 +662,8 @@ private:
                                             const SurfaceInteraction3f &si) const {
 
         Vector3f wi = dr::normalize(si.wi);
-        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.y()) + dr::sqr(wi.z())));
-        gammaI = dr::select(wi.y() < 0, gammaI, -gammaI);
+        Float gammaI    = dr::safe_acos(wi.z() / dr::safe_sqrt(dr::sqr(wi.x()) + dr::sqr(wi.z())));
+        gammaI = dr::select(wi.x() < 0, gammaI, -gammaI);
         Float h = dr::sin(gammaI);
 
         // Compute array of A_p values for cosThetaI
