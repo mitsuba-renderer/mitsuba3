@@ -142,7 +142,9 @@ public:
         const bool *sharp_faces = reinterpret_cast<const bool *>(props.get<int64_t>("sharp_face", 0));
 
         // The type of vertex buffer will depend on the version of blender used.
-        void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
+        const float (*verts)[3] = reinterpret_cast<const float (*)[3]>(props.get<int64_t>("verts"));
+        const blender::MVertBlender2 *verts_old_2 = (const blender::MVertBlender2 *) verts;
+        const blender::MVertBlender3 *verts_old_3 = (const blender::MVertBlender3 *) verts;
 
 		// Normals are stored in a separate buffer in Blender 3.1+
         const float (*normals)[3] = reinterpret_cast<const float (*)[3]>(props.get<int64_t>("normals", 0));
@@ -279,19 +281,16 @@ public:
             const float *co_0, *co_1, *co_2;
             if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
                 // Blender 2.xx - 3.0
-                const blender::MVertBlender2 *verts = (const blender::MVertBlender2 *) verts_ptr;
-                co_0 = verts[v0].co;
-                co_1 = verts[v1].co;
-                co_2 = verts[v2].co;
+                co_0 = verts_old_2[v0].co;
+                co_1 = verts_old_2[v1].co;
+                co_2 = verts_old_2[v2].co;
             } else if (version[1] < 5) {
                 // Blender 3.1 - 3.4
-                const blender::MVertBlender3 *verts = (const blender::MVertBlender3 *) verts_ptr;
-                co_0 = verts[v0].co;
-                co_1 = verts[v1].co;
-                co_2 = verts[v2].co;
+                co_0 = verts_old_3[v0].co;
+                co_1 = verts_old_3[v1].co;
+                co_2 = verts_old_3[v2].co;
             } else {
                 // Blender 3.5+
-                const float (*verts)[3] = (const float (*)[3]) verts_ptr;
                 co_0 = verts[v0];
                 co_1 = verts[v1];
                 co_2 = verts[v2];
@@ -341,8 +340,7 @@ public:
                 if (smooth_face || m_face_normals) {
                     if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
                         // Blender 2.xx - 3.0
-                        const blender::MVertBlender2 *verts= (const blender::MVertBlender2 *) verts_ptr;
-                        const short *no = verts[vert_index].no;
+                        const short *no = verts_old_2[vert_index].no;
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     } else {
