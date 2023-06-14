@@ -118,6 +118,11 @@ public:
      */
     virtual std::string to_string() const;
 
+    /// Set a cleanup callback for Python-defined plugins.
+    void set_py_cleanup(const std::function<void()> &callback) {
+        m_py_cleanup_callback = callback;
+    }
+
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)
@@ -128,6 +133,9 @@ private:
     mutable std::atomic<int> m_ref_count { 0 };
 
     static Class *m_class;
+
+    // Cleanup function for Python-defined objects.
+    std::function<void()> m_py_cleanup_callback;
 };
 
 /**
