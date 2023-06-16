@@ -226,6 +226,8 @@ public:
     /// Set a string identifier
     void set_id(const std::string& id) override { m_id = id; };
 
+    DRJIT_VCALL_REGISTER(Float, mitsuba::Texture)
+
     MI_DECLARE_CLASS()
 
 protected:
@@ -238,3 +240,23 @@ protected:
 
 MI_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)
+
+
+// -----------------------------------------------------------------------
+//! @{ \name Dr.Jit support for vectorized function calls
+// -----------------------------------------------------------------------
+
+DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Texture)
+    DRJIT_VCALL_METHOD(eval)
+    DRJIT_VCALL_METHOD(sample_spectrum)
+    DRJIT_VCALL_METHOD(pdf_spectrum)
+    DRJIT_VCALL_METHOD(sample_position)
+    DRJIT_VCALL_METHOD(pdf_position)
+    DRJIT_VCALL_METHOD(eval_1)
+    DRJIT_VCALL_METHOD(eval_1_grad)
+    DRJIT_VCALL_METHOD(eval_3)
+    DRJIT_VCALL_METHOD(mean)
+DRJIT_VCALL_TEMPLATE_END(mitsuba::Texture)
+
+//! @}
+// -----------------------------------------------------------------------
