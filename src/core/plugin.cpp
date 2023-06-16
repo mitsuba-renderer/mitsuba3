@@ -147,6 +147,7 @@ const Class *PluginManager::get_plugin_class(const std::string &name,
 
     auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(),
                         name + "@" + variant);
+
     if (it != d->m_python_plugins.end()) {
         plugin_class = Class::for_name(name, variant);
     } else {
@@ -178,6 +179,7 @@ ref<Object> PluginManager::create_object(const Properties &props,
        return class_->construct(props);
 
     std::string variant = class_->variant();
+
     const Class *plugin_class = get_plugin_class(props.plugin_name(), variant);
 
     /* Construct each plugin in its own scope to isolate them from each other.
