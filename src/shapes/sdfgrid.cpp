@@ -39,11 +39,6 @@ Documentation notes:
  * Cannot be used for area emitters
  * Grid data must be initialized by using `mi.traverse()` (by default the plugin
    is initialized with a 2x2x2 grid of minus ones)
-
- Temorary issues:
-     * Embree does not work
-
-//TODO: Test that instancing works
 */
 
 template <typename Float, typename Spectrum>
@@ -62,26 +57,14 @@ public:
             m_normal_method = Analytic;
         else if (normals_mode_str == "smooth")
             m_normal_method = Smooth;
-        else if (normals_mode_str == "falcao")
-            m_normal_method = Falcao;
         else
-            Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", "
-                  "\"smooth\" or \"falcao\"!",
+            Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", " 
+                  "or \"smooth\"!",
                   normals_mode_str);
 
         m_watertight = props.get<bool>("watertight", true);
 
-        std::string interpolation_mode_str =
-            props.string("interpolation", "linear");
-        if (interpolation_mode_str == "cubic") {
-            m_interpolation = Cubic;
-            NotImplementedError("Soon"); // FIXME: remove
-        } else if (interpolation_mode_str == "linear")
-            m_interpolation = Linear;
-        else
-            Throw("Invalid interpolation mode \"%s\", must be one of: "
-                  "\"linear\" or \"cubic\"!",
-                  interpolation_mode_str);
+        m_interpolation = Linear;
 
         float grid_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
         size_t shape[4]    = { 2, 2, 2, 1 };
@@ -356,10 +339,6 @@ public:
                 case Smooth:
                     si.sh_frame.n =
                         smooth(m_to_object.value().transform_affine(si.p));
-                    break;
-                case Falcao:
-                    si.sh_frame.n =
-                        falcao(m_to_object.value().transform_affine(si.p));
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -850,10 +829,14 @@ private:
             grid = m_grid_texture.tensor().array().data();
         }
 
+#if defined(MI_ENABLE_CUDA)
         using BoundingBoxType =
             typename std::conditional<dr::is_cuda_v<Float>,
                                       optix::BoundingBox3f,
                                       ScalarBoundingBox3f>::type;
+#else
+        using BoundingBoxType = ScalarBoundingBox3f;
+#endif
 
         size_t count           = 0;
         BoundingBoxType* aabbs = (BoundingBoxType *) jit_malloc(
@@ -938,9 +921,9 @@ private:
         if constexpr (dr::is_cuda_v<Float>) {
             // TODO: async memcpy
             aabbs_ptr = jit_malloc(AllocType::Device,
-                                   sizeof(optix::BoundingBox3f) * count);
+                                   sizeof(BoundingBoxType) * count);
             jit_memcpy(JitBackend::CUDA, aabbs_ptr, aabbs,
-                       sizeof(optix::BoundingBox3f) * count);
+                       sizeof(BoundingBoxType) * count);
 
             voxel_indices_ptr = (size_t *) jit_malloc(AllocType::Device,
                                                       sizeof(size_t) * count);
@@ -1003,58 +986,19 @@ private:
         return voxel_grad(p, min_voxel_index);
     }
 
-    /// Very efficient normals (faceted appearance)
-    Normal3f falcao(const Point3f &point) const {
-        // FALCÃO , P., 2008. Implicit function to distance function.
-        // URL: https://www.pouet.net/topic.php?which=5604&page=3#c233266.
-
-        // FIXME: Something is numerically unstable ?!
-
-        // Scale epsilon w.r.t inverse resolution
-        auto shape = m_grid_texture.tensor().shape();
-        Vector3f epsilon =
-            0.1f * Vector3f(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-
-        auto v = [&](const Point3f &p) {
-            Float out;
-            m_grid_texture.eval(rescale_point(p), &out);
-            return out;
-        };
-
-        Point3f p1(point.x() + epsilon.x(), point.y() - epsilon.y(),
-                   point.z() - epsilon.z());
-        Point3f p2(point.x() - epsilon.x(), point.y() - epsilon.y(),
-                   point.z() + epsilon.z());
-        Point3f p3(point.x() - epsilon.x(), point.y() + epsilon.y(),
-                   point.z() - epsilon.z());
-        Point3f p4(point.x() + epsilon.x(), point.y() + epsilon.y(),
-                   point.z() + epsilon.z());
-
-        Float v1 = v(p1);
-        Float v2 = v(p2);
-        Float v3 = v(p3);
-        Float v4 = v(p4);
-
-        Normal3f out = Normal3f(((v4 + v1) / 2.f) - ((v3 + v2) / 2.f),
-                                ((v3 + v4) / 2.f) - ((v1 + v2) / 2.f),
-                                ((v2 + v4) / 2.f) - ((v3 + v1) / 2.f));
-
-        return dr::normalize(m_to_world.value().transform_affine(out));
-    }
-
+#if defined(MI_ENABLE_CUDA)
     static constexpr uint32_t optix_geometry_flags[1] = {
         OPTIX_GEOMETRY_FLAG_NONE
     };
+#endif
 
     enum NormalMethod {
         Analytic,
         Smooth,
-        Falcao,
     };
 
     enum Interpolation {
         Linear,
-        Cubic,
     };
 
     // TODO: Store inverse shape using `rcp`
