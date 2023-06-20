@@ -92,18 +92,18 @@ public:
             dr::make_opaque(m_to_world);
         }
 
-        Float angular_diameter = SUN_ANGULAR_DIAMETER;
+        ScalarFloat angular_diameter = SUN_ANGULAR_DIAMETER;
         if (props.has_property("angular_diameter"))
-            angular_diameter = props.get<Float>("angular_diameter");
+            angular_diameter = props.get<ScalarFloat>("angular_diameter");
 
-        Float m_angular_radius = dr::deg_to_rad(angular_diameter / 2.f);
+        ScalarFloat m_angular_radius = dr::deg_to_rad(angular_diameter / 2.f);
         m_cos_angular_radius   = dr::cos(m_angular_radius);
         if (dr::any((1.f <= m_cos_angular_radius) |
                     (m_cos_angular_radius < 0.f))) {
             Throw("Invalid angular diameter specified! (must be in ]0, 180[°)");
         }
 
-        m_omega      = 2.f * dr::Pi<Float> * (1.f - m_cos_angular_radius);
+        m_omega      = 2.f * dr::Pi<ScalarFloat> * (1.f - m_cos_angular_radius);
         m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
         Log(Debug,
             "angular_radius: %s; angular_radius_cos: %s; solid angle omega: %s",
