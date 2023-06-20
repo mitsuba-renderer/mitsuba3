@@ -2,6 +2,7 @@
 #include <drjit/texture.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
@@ -10,6 +11,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sdf.h>
+#include <mitsuba/render/volumegrid.h>
 
 #if defined(MI_ENABLE_EMBREE)
 #include <embree3/rtcore.h>
@@ -28,18 +30,72 @@ NAMESPACE_BEGIN(mitsuba)
 SDF Grid (:monosp:`sdfgrid`)
 -------------------------------------------------
 
-Props:
- * "normals": type of normal computation method (analytic, smoth, falcao)
- * "watertight": if the SDF should be watertight (default: true)
+.. pluginparameters::
+ :extra-rows: 3
 
-Documentation notes:
- * Grid position [0, 0, 0] x [1, 1, 1]
- * Reminder that tensors use [Z, Y, X, C] indexing
- * Does not emit UVs for texturing
- * Cannot be used for area emitters
- * Grid data must be initialized by using `mi.traverse()` (by default the plugin
-   is initialized with a 2x2x2 grid of minus ones)
-*/
+ * - filename
+   - |string|
+   - Filename of the SDF grid data to be loaded. The expected file format 
+     aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`
+
+ * - watertight
+   - |bool|
+   - Is the associated surface watertight, i.e. does the surface contain no holes? (Default: |true|)
+
+ * - normals
+   - |string|
+   - Specifies the method for computing normals. The options are
+     :monosp:`analytic` or :monosp:`smooth`. (Default: :monosp:`smooth`)
+
+ * - grid
+   - |tensor|
+   - Tensor array containing the grid data.
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - to_world
+   - |transform|
+   - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))
+   - |exposed|, |differentiable|, |discontinuous|
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_sdf_analytic.jpg
+   :caption: An SDF grid using analytic normals
+.. subfigure:: ../../resources/data/docs/images/render/shape_sdf_smooth.jpg
+   :caption: An SDF grid using smooth normals
+.. subfigend::
+   :label: fig-sdfgrid
+
+This shape plugin describes a signed distance function (SDF) grid shape 
+primitive --- that is, an SDF sampled onto a three-dimensional grid.
+The grid object-space is mapped over the range :math:`[0,0,0]\times[1,1,1]`.
+
+A smooth method for computing normals :cite:`Hansson-Soderlund2022SDF` is 
+selected as the default approach to ensure continuity across grid cells.
+
+.. warning::
+
+   - An SDF grid shape does not emit UV coordinates for texturing.
+
+
+The following XML snippet showcases a simple example of a SDF Grid:
+
+.. tabs::
+    .. code-tab:: xml
+        :name: sdfgrid
+
+        <shape type="sdfgrid">
+            <string name="filename" value="data.sdf"/>
+            <bsdf type="diffuse"/>
+        </shape>
+
+    .. code-tab:: python
+
+        'type': 'sdfgrid',
+        'filename': 'data.sdf'
+        'bsdf': {
+            'type': 'diffuse'
+        }
+ */
 
 template <typename Float, typename Spectrum>
 class SDFGrid final : public SDF<Float, Spectrum> {
@@ -66,12 +122,31 @@ public:
 
         m_interpolation = Linear;
 
-        float grid_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
-        size_t shape[4]    = { 2, 2, 2, 1 };
-        TensorXf grid      = TensorXf(grid_data, 4, shape);
-        m_grid_texture = Texture3f(grid, true, false, dr::FilterMode::Linear,
-                                   dr::WrapMode::Clamp);
 
+        if (props.has_property("filename")) {
+            FileResolver *fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
+            if (!fs::exists(file_path))
+                Log(Error, "\"%s\": file does not exist!", file_path);
+            VolumeGrid<Float,Spectrum> vol_grid(file_path);
+            ScalarVector3i res = vol_grid.size();
+            size_t shape[4] = {
+                (size_t) res.z(),
+                (size_t) res.y(),
+                (size_t) res.x(),
+                1
+            };
+
+            m_grid_texture = Texture3f(TensorXf(vol_grid.data(), 4, shape), 
+                                       true, false,  dr::FilterMode::Linear, 
+                                       dr::WrapMode::Clamp);
+        } else {
+            float default_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
+            size_t default_shape[4] = {2, 2, 2, 1};
+            m_grid_texture = Texture3f(TensorXf(default_data, 4, default_shape), 
+                                       true, false,  dr::FilterMode::Linear, 
+                                       dr::WrapMode::Clamp);
+        }
         update();
         initialize();
     }
@@ -108,15 +183,13 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
         callback->put_parameter("to_world", *m_to_world.ptr(),
                                 ParamFlags::Differentiable |
                                     ParamFlags::Discontinuous);
         callback->put_parameter("grid", m_grid_texture.tensor(),
                                 ParamFlags::Differentiable |
                                     ParamFlags::Discontinuous);
-        callback->put_parameter("watertight", m_watertight,
-                                +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
