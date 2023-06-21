@@ -683,21 +683,20 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
      * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
      *
      * Includes modifications for numerical robustness described here:
-     * https://publons.com/publon/2803
+     * https://dl.acm.org/doi/10.1145/2542355.2542386
      */
-
-    Value cos_theta_i = dr::dot(wi, tangent),
-          cos_theta_o = dr::dot(v, tangent),
-          sin_theta_i = circ(cos_theta_i),
-          sin_theta_o = circ(cos_theta_o);
+    Value sin_theta_i = dr::dot(wi, tangent),
+          sin_theta_o = dr::dot(v, tangent),
+          cos_theta_i = circ(sin_theta_i),
+          cos_theta_o = circ(sin_theta_o);
 
     Value c = cos_theta_i * cos_theta_o * kappa,
           s = sin_theta_i * sin_theta_o * kappa;
 
     if (kappa > 10.f)
-        return dr::exp(-c + detail::log_i0(s) - kappa + 0.6931f + dr::log(.5f * kappa)) * dr::InvTwoPi<Value>;
+        return dr::exp(-s + detail::log_i0(c) - kappa + 0.6931f + dr::log(.5f * kappa)) * dr::InvTwoPi<Value>;
     else
-        return dr::exp(-c) * detail::i0(s) * kappa / (2.f * dr::sinh(kappa)) * dr::InvTwoPi<Value>;
+        return dr::exp(-s) * detail::i0(c) * kappa / (2.f * dr::sinh(kappa)) * dr::InvTwoPi<Value>;
 }
 
 //! @}
