@@ -88,156 +88,105 @@ public:
            Float sample1, const Point2f &sample2, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        Vector3f wi = dr::normalize(si.wi);
-        Vector3f wo;
-        Float gamma_i = gamma(wi);
-        Float h = dr::sin(gamma_i);
-
-        // Compute hair coordinate system terms related to _wo_
-        Float sinThetaI = wi.y();
-        Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phi_i      = azimuthal_angle(wi);
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
-        Point2f u[2] = { {sample1, 0}, sample2 };
+        // TODO (really needed?)
+        Vector3f wi = dr::normalize(si.wi);
 
-        // Determine which term $p$ to sample for hair scattering
-        dr::Array<Float, p_max + 1> apPdf = attenuation_eval_pdf(cosThetaI, si);
+        // Parameterization of incident direction
+        Float gamma_i = gamma(wi);
+        Float h = dr::sin(gamma_i);
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(wi);
+        Float phi_i = azimuthal_angle(wi);
 
-        Int32 p       = Int32(-1);
+        // Sample segment length `p`
+        dr::Array<Float, p_max + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
+
+        Point2f u[2] = { { sample1, 0 }, sample2 };
         // u[0][1] is the rescaled random number after using u[0][0]
-        u[0][1] = u[0][0] / apPdf[0];
-        ScalarInt32 i = 0;
+        u[0][1] = u[0][0] / a_p_pdf[0];
 
-        while (i < p_max) {
-            dr::masked(p, u[0][0] >= apPdf[i]) = i;
-            dr::masked(u[0][1], u[0][0] >= apPdf[i]) = (u[0][0] - apPdf[i])/ apPdf[i+1];
-            u[0][0] -= apPdf[i];
-            i++;
+        UInt32 p(0);
+        for (size_t i = 0; i < p_max; ++i) {
+            Bool sample_p = a_p_pdf[i] < u[0][0];
+            u[0][0] -= a_p_pdf[i];
+
+            dr::masked(p, sample_p) = i + 1;
+            dr::masked(u[0][1], sample_p) = u[0][0] / a_p_pdf[i + 1];
         }
-        p++;
 
-        /******* for different lobe  ********/
-        // p = 0;
-        // apPdf[0] = 1;
-        // apPdf[1] = 0;
-        // apPdf[2] = 0;
-        // apPdf[3] = 0;
-        /******* for different lobe  ********/
-
-
-        // Rotate $\sin \thetao$ and $\cos \thetao$ to account for hair scale
-        // tilt
-        Float sinThetaIp = sinThetaI;
-        Float cosThetaIp = cosThetaI;
-
-        dr::masked(sinThetaIp, dr::eq(p, 0)) = sinThetaI * m_cos_2k_alpha[1] - cosThetaI * m_sin_2k_alpha[1];
-        dr::masked(cosThetaIp, dr::eq(p, 0)) = cosThetaI * m_cos_2k_alpha[1] + sinThetaI * m_sin_2k_alpha[1];
-        dr::masked(sinThetaIp, dr::eq(p, 1)) = sinThetaI * m_cos_2k_alpha[0] + cosThetaI * m_sin_2k_alpha[0];
-        dr::masked(cosThetaIp, dr::eq(p, 1)) = cosThetaI * m_cos_2k_alpha[0] - sinThetaI * m_sin_2k_alpha[0];
-        dr::masked(sinThetaIp, dr::eq(p, 2)) = sinThetaI * m_cos_2k_alpha[2] + cosThetaI * m_sin_2k_alpha[2];
-        dr::masked(cosThetaIp, dr::eq(p, 2)) = cosThetaI * m_cos_2k_alpha[2] - sinThetaI * m_sin_2k_alpha[2];
+        // Account for scales on hair surface
+        Float sin_theta_ip(0.f);
+        Float cos_theta_ip(0.f);
+        for (size_t j = 0; j < p_max; j++) {
+            auto [sin_theta_ij, cos_theta_ij] =
+                reframe_with_scales(sin_theta_i, cos_theta_i, j);
+            dr::masked(sin_theta_ip, dr::eq(p, j)) = sin_theta_ij;
+            dr::masked(cos_theta_ip, dr::eq(p, j)) = cos_theta_ij;
+        }
 
         // Sample $M_p$ to compute $\thetai$
-
-        Float cosTheta =
+        // TODO: Understand
+        Float cos_theta =
             1 + m_v[p_max] * dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[p_max]));
-        for (int i = 0; i < p_max; i++) {
-            dr::masked(cosTheta, dr::eq(p, i)) = 1 + m_v[i] * dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[i]));
+        for (size_t i = 0; i < p_max; i++)
+            dr::masked(cos_theta, dr::eq(p, i)) = 1 + m_v[i] * dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[i]));
+
+        Float sin_theta = dr::safe_sqrt(1 - dr::sqr(cos_theta));
+        Float cos_phi   = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
+        Float sin_theta_o = -cos_theta * sin_theta_ip + sin_theta * cos_phi * cos_theta_ip;
+        Float cos_thata_o = dr::safe_sqrt(1 - dr::sqr(sin_theta_o));
+
+        // Transmission angle in azimuthal plane
+        Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
+        Float sin_gamma_t = h / eta_p;
+        Float gamma_t = dr::safe_asin(sin_gamma_t);
+
+        // Sample azimuthal scattering
+        Float perfect_delta_phi = 2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
+        Float delta_phi_first_terms = perfect_delta_phi + trimmed_logistic_sample(u[0][1], m_s);
+        Float delta_phi_remainder = 2 * dr::Pi<ScalarFloat> * u[0][1];
+        Float delta_phi = dr::select(p < p_max, delta_phi_first_terms, delta_phi_remainder);
+
+        // Outgoing direction
+        Float phi_o = phi_i + delta_phi;
+        Vector3f wo(cos_thata_o * dr::cos(phi_o), sin_theta_o,
+                    cos_thata_o * dr::sin(phi_o));
+
+        // PDF for sampled outgoing direction
+        for (size_t i = 0; i < p_max; ++i) {
+            // Account for scales on hair surface
+            auto [sin_theta_ip, cos_theta_ip] =
+                reframe_with_scales(sin_theta_i, cos_theta_i, i);
+            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
+                          cos_theta_ip * dr::sin(phi_i));
+
+            bs.pdf += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[i]) *
+                      dr::TwoPi<Float> * a_p_pdf[i] *
+                      azimuthal_scattering(delta_phi, i, m_s, gamma_i, gamma_t);
         }
-
-        Float sinTheta = dr::safe_sqrt(1 - dr::sqr(cosTheta));
-        Float cosPhi   = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
-        Float sinThetaO =
-            -cosTheta * sinThetaIp + sinTheta * cosPhi * cosThetaIp;
-        Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
-
-        // Sample $N_p$ to compute $\Delta\phi$
-
-        // Compute $\gammat$ for refracted ray
-        Float etap = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sinThetaI)) / cosThetaI;
-        Float sinGammaT = h / etap;
-        Float gammaT    = dr::safe_asin(sinGammaT);
-        Float dphi;
-        Float Phi = 2 * p * gammaT - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
-
-        /******* for different dimension  ********/
-
-        // dphi = 2 * dr::Pi<ScalarFloat> * u[0][1];
-
-        dphi = dr::select(p < p_max, Phi + SampleTrimmedLogistic(u[0][1], m_s, -dr::Pi<ScalarFloat>, dr::Pi<ScalarFloat>), 2 * dr::Pi<ScalarFloat> * u[0][1]);
-
-        /******* for different dimension  ********/
-
-        // Compute _wi_ from sampled hair scattering angles
-        Float phi_o = phi_i + dphi;
-        wo = Vector3f(cosThetaO * dr::cos(phi_o), sinThetaO,
-                      cosThetaO * dr::sin(phi_o));
-
-        // Compute PDF for sampled hair scattering direction _wi_
-        for (int i = 0; i < p_max; ++i) {
-            // Compute $\sin \thetao$ and $\cos \thetao$ terms accounting for
-            // scales
-            Float sinThetaIp, cosThetaIp;
-            if (i == 0) {
-                sinThetaIp =
-                    sinThetaI * m_cos_2k_alpha[1] - cosThetaI * m_sin_2k_alpha[1];
-                cosThetaIp =
-                    cosThetaI * m_cos_2k_alpha[1] + sinThetaI * m_sin_2k_alpha[1];
-            }
-            // Handle remainder of $p$ values for hair scale tilt
-            else if (i == 1) {
-                sinThetaIp =
-                    sinThetaI * m_cos_2k_alpha[0] + cosThetaI * m_sin_2k_alpha[0];
-                cosThetaIp =
-                    cosThetaI * m_cos_2k_alpha[0] - sinThetaI * m_sin_2k_alpha[0];
-            } else if (i == 2) {
-                sinThetaIp =
-                    sinThetaI * m_cos_2k_alpha[2] + cosThetaI * m_sin_2k_alpha[2];
-                cosThetaIp =
-                    cosThetaI * m_cos_2k_alpha[2] - sinThetaI * m_sin_2k_alpha[2];
-            } else {
-                sinThetaIp = sinThetaI;
-                cosThetaIp = cosThetaI;
-            }
-
-            Vector3f wip = Vector3f(0, sinThetaIp, 0);
-            bs.pdf += longitudinal_scattering(wip, wo, { 0, 1, 0 }, m_v[i]) *
-                      dr::TwoPi<Float> * apPdf[i] *
-                      azimuthal_scattering(dphi, i, m_s, gamma_i, gammaT);
-        }
-
         bs.pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                  apPdf[p_max];
+                  a_p_pdf[p_max];
 
-        bs.wo  = wo;
+        bs.wo = wo;
         bs.pdf = dr::select(dr::isnan(bs.pdf) || dr::isinf(bs.pdf), 0, bs.pdf);
         bs.eta = 1.f;
-        bs.sampled_type      = +BSDFFlags::Glossy;
+        bs.sampled_type = +BSDFFlags::Glossy;
         bs.sampled_component = 0;
-
-        // wo = warp::square_to_uniform_sphere(sample2);
-        // bs.wo                = wo;
-        // bs.pdf               = warp::square_to_uniform_sphere_pdf(bs.wo);
-        // bs.eta               = 1.;
-        // bs.sampled_type      = +BSDFFlags::Glossy;
-        // bs.sampled_component = 0;
 
         UnpolarizedSpectrum value =
             dr::select(dr::neq(bs.pdf, 0), eval(ctx, si, bs.wo, active) / bs.pdf, 0);
 
-        return { bs, value & (active && bs.pdf > 0.f) };
+        return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        // TODO
         if (!ctx.is_enabled(BSDFFlags::GlossyTransmission) &&
-            !ctx.is_enabled(BSDFFlags::GlossyReflection)) {
+            !ctx.is_enabled(BSDFFlags::GlossyReflection))
             return 0.f;
-        }
 
         // TODO (really needed?)
         Vector3f wi = dr::normalize(si.wi);
@@ -274,7 +223,12 @@ public:
         Float delta_phi = phi_o - phi_i;
         UnpolarizedSpectrum value(0.0f);
         for (int p = 0; p < p_max; ++p) {
-            Vector3f wi_p = reframe_with_scales(sin_theta_i, cos_theta_i, phi_i, p);
+            // Account for scales on hair surface
+            auto [sin_theta_ip, cos_theta_ip] =
+                reframe_with_scales(sin_theta_i, cos_theta_i, p);
+            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
+                          cos_theta_ip * dr::sin(phi_i));
+
             value += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]) *
                      dr::TwoPi<Float> * a_p[p] *
                      azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
@@ -295,77 +249,47 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::GlossyTransmission) &&
-            !ctx.is_enabled(BSDFFlags::GlossyReflection)) {
+            !ctx.is_enabled(BSDFFlags::GlossyReflection))
             return 0.f;
-        }
 
+        // TODO (really needed?)
         Vector3f wi = dr::normalize(si.wi);
+
+        // Parameterization of incident and outgoing directions
         Float gamma_i = gamma(wi);
         Float h = dr::sin(gamma_i);
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(wi);
+        Float phi_i = azimuthal_angle(wi);
+        auto [sin_theta_o, cos_theta_o] = sincos_theta(wo);
+        Float phi_o = azimuthal_angle(wo);
 
-        Float sinThetaO = wo.y();
-        Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
-        Float phi_o      = azimuthal_angle(wo);
+        // Transmission angle in azimuthal plane
+        Float eta_p = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        Float sin_gamma_t = h / eta_p;
+        Float gamma_t = dr::safe_asin(sin_gamma_t);
 
-        // Compute hair coordinate system terms related to _wi_
-        Float sinThetaI = wi.y();
-        Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
-        Float phi_i      = azimuthal_angle(wi);
-        // Compute $\gammat$ for refracted ray
-        Float etap = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sinThetaI)) / cosThetaI;
-        Float sinGammaT = h / etap;
-        Float gammaT    = dr::safe_asin(sinGammaT);
+        // Attenuation PDF
+        dr::Array<Float, p_max + 1> apPdf = attenuation_pdf(cos_theta_i, si);
 
-        // Compute PDF for $A_p$ terms
-        dr::Array<Float, p_max + 1> apPdf = attenuation_eval_pdf(cosThetaI, si);
-
-        /******* for different lobe  ********/
-        // apPdf[0] = 1;
-        // apPdf[1] = 0;
-        // apPdf[2] = 0;
-        // apPdf[3] = 0;
-        /******* for different lobe  ********/
-        // Compute PDF sum for hair scattering events
-        Float phi  = phi_o - phi_i;
-        Float _pdf = Float(0);
-
+        // Compute PDF sum for each segment length
+        Float delta_phi  = phi_o - phi_i;
+        Float pdf(0.0f);
         for (int p = 0; p < p_max; ++p) {
-            // Compute $\sin \thetao$ and $\cos \thetao$ terms accounting for
-            // scales
-            Float sinThetaIp, cosThetaIp;
-            if (p == 0) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[1] - cosThetaI * m_sin_2k_alpha[1];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[1] + sinThetaI * m_sin_2k_alpha[1];
-            }
-            else if (p == 1) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[0] + cosThetaI * m_sin_2k_alpha[0];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[0] - sinThetaI * m_sin_2k_alpha[0];
-            } else if (p == 2) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[2] + cosThetaI * m_sin_2k_alpha[2];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[2] - sinThetaI * m_sin_2k_alpha[2];
-            } else {
-                sinThetaIp = sinThetaI;
-                cosThetaIp = cosThetaI;
-            }
+            // Account for scales on hair surface
+            auto [sin_theta_ip, cos_theta_ip] =
+                reframe_with_scales(sin_theta_i, cos_theta_i, p);
+            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
+                          cos_theta_ip * dr::sin(phi_i));
 
-            // Handle out-of-range $\cos \thetao$ from scale adjustment
-            cosThetaIp = dr::abs(cosThetaIp);
-
-            /******* for different dimension  ********/
-
-            // importance sampling
-            Vector3f wi_p = Vector3f(0, sinThetaIp, 0);
-            _pdf += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]) *
+            pdf += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]) *
                     dr::TwoPi<Float> * apPdf[p] *
-                    azimuthal_scattering(phi, p, m_s, gamma_i, gammaT);
-
-            /******* for different dimension  ********/
+                    azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
         }
-        _pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
+        pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
                 apPdf[p_max];
 
-        _pdf = dr::select(dr::isnan(_pdf) || dr::isinf(_pdf), 0, _pdf);
-        return _pdf ;
+        pdf = dr::select(dr::isnan(pdf) || dr::isinf(pdf), 0, pdf);
+        return pdf;
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -383,24 +307,22 @@ public:
         Float gamma_i = gamma(wi);
         Float h = dr::sin(gamma_i);
 
-        Float sinThetaO = wo.y();
-        Float cosThetaO = dr::safe_sqrt(1 - dr::sqr(sinThetaO));
         Float phi_o      = azimuthal_angle(wo);
 
         // Compute hair coordinate system terms related to _wi_
-        Float sinThetaI = wi.y();
-        Float cosThetaI = dr::safe_sqrt(1 - dr::sqr(sinThetaI));
+        Float sin_theta_i = wi.y();
+        Float cos_theta_i = dr::safe_sqrt(1 - dr::sqr(sin_theta_i));
         Float phi_i      = azimuthal_angle(wi);
 
         // Compute $\gammat$ for refracted ray
-        Float etap = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sinThetaI)) / cosThetaI;
-        Float sinGammaT = h / etap;
-        Float cosGammaT = dr::safe_sqrt(1 - dr::sqr(sinGammaT));
-        Float gammaT    = dr::safe_asin(sinGammaT);
+        Float eta_p = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        Float sin_gamma_t = h / eta_p;
+        Float cos_gamma_t = dr::safe_sqrt(1 - dr::sqr(sin_gamma_t));
+        Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Compute $\cos \thetat$ for refracted ray
-        Float sinThetaT = sinThetaI / m_eta;
-        Float cosThetaT = dr::safe_sqrt(1 - dr::sqr(sinThetaT));
+        Float sin_theta_t = sin_theta_i / m_eta;
+        Float cos_theta_t = dr::safe_sqrt(1 - dr::sqr(sin_theta_t));
 
         // Compute the transmittance _T_ of a single path through the cylinder
         Spectrum wavelengths = get_spectrum(si);
@@ -409,61 +331,38 @@ public:
             sigma_a = dr::fmadd(m_pheomelanin, pheomelanin(wavelengths),
                     m_eumelanin * eumelanin(wavelengths));
         }
-        Spectrum T =
-            dr::exp(-sigma_a * (2 * cosGammaT / cosThetaT));
+        Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
+        Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
 
-        // Compute PDF for $A_p$ terms
-        dr::Array<Float, p_max + 1> apPdf = attenuation_eval_pdf(cosThetaI, si);
-
-        dr::Array<Spectrum, p_max + 1> ap = attenuation(cosThetaI, Float(m_eta), h, T);
+        dr::Array<Spectrum, p_max + 1> a_p = attenuation(cos_theta_i, Float(m_eta), h, transmittance);
+        dr::Array<Float, p_max + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
 
         // Compute PDF sum for hair scattering events
-        Float phi = phi_o - phi_i;
-        Float _pdf = Float(0);
-        Spectrum fsum(0.);
+        Float delta_phi = phi_o - phi_i;
+        Float pdf = Float(0.0f);
+        Spectrum value(0.0f);
 
         for (int p = 0; p < p_max; ++p) {
-            // Compute $\sin \thetao$ and $\cos \thetao$ terms accounting for
-            // scales
-            Float sinThetaIp, cosThetaIp;
-            if (p == 0) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[1] - cosThetaI * m_sin_2k_alpha[1];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[1] + sinThetaI * m_sin_2k_alpha[1];
-            }
-            // Handle remainder of $p$ values for hair scale tilt
-            else if (p == 1) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[0] + cosThetaI * m_sin_2k_alpha[0];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[0] - sinThetaI * m_sin_2k_alpha[0];
-            } else if (p == 2) {
-                sinThetaIp = sinThetaI * m_cos_2k_alpha[2] + cosThetaI * m_sin_2k_alpha[2];
-                cosThetaIp = cosThetaI * m_cos_2k_alpha[2] - sinThetaI * m_sin_2k_alpha[2];
-            } else {
-                sinThetaIp = sinThetaI;
-                cosThetaIp = cosThetaI;
-            }
+            auto [sin_theta_ip, cos_theta_ip] =
+                reframe_with_scales(sin_theta_i, cos_theta_i, p);
+            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
+                          cos_theta_ip * dr::sin(phi_i));
 
-            // Handle out-of-range $\cos \thetao$ from scale adjustment
-            cosThetaIp = dr::abs(cosThetaIp);
+            Float longitudinal = longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]);
+            Float azimuthal = azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
 
-            Vector3f wip = Vector3f(0, sinThetaIp, 0);
-            Float M_p = longitudinal_scattering(wip, wo, { 0, 1, 0 }, m_v[p]) *
-                        dr::TwoPi<Float>;
-            Float N_p = azimuthal_scattering(phi, p, m_s, gamma_i, gammaT);
-
-            _pdf += M_p * apPdf[p] * N_p;
-
-            fsum += M_p * ap[p] * N_p;
+            pdf   += longitudinal * dr::TwoPi<Float> * a_p_pdf[p] * azimuthal;
+            value += longitudinal * dr::TwoPi<Float> * a_p[p]     * azimuthal;
         }
 
-        _pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                apPdf[p_max];
+        Float longitudinal = longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]);
+        pdf   += longitudinal * a_p_pdf[p_max];
+        value += longitudinal * a_p[p_max];
 
-        fsum += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                ap[p_max];
+        pdf   = dr::select(dr::isnan(pdf)   || dr::isinf(pdf),   0, pdf);
+        value = dr::select(dr::isnan(value) || dr::isinf(value), 0, value);
 
-        fsum = dr::select(dr::isnan(fsum) || dr::isinf(fsum), 0, fsum);
-        _pdf = dr::select(dr::isnan(_pdf) || dr::isinf(_pdf), 0, _pdf);
-        return { fsum & active, _pdf};
+        return { depolarizer<Spectrum>(value) & active, dr::select(active, pdf, 0.f) };
     }
 
     std::string to_string() const override {
@@ -502,71 +401,14 @@ private:
         return dr::select(w.x() < 0, gamma, -gamma);
     }
 
-    /// Longitudinal scattering distribution
-    Float longitudinal_scattering(const Vector3f &wi, const Vector3f &wo,
-                                  const Vector3f &tangent,
-                                  const ScalarFloat v) const {
-        return warp::square_to_rough_fiber_pdf<Float>(wo, wi, tangent, 1.f / v);
-    }
-
-    MI_INLINE Float logistic(Float x, Float s) const {
-        x = dr::abs(x);
-        return dr::exp(-x / s) / (s * dr::sqr(1 + dr::exp(-x / s)));
-    }
-
-    MI_INLINE Float logistic_cdf(Float x, Float s) const {
-        return 1 / (1 + dr::exp(-x / s));
-    }
-
-    /// Azimuthal scattering distribution (`s` is the logisitic scale factor)
-    Float azimuthal_scattering(Float delta_phi, size_t p, Float s, Float gamma_i,
-                               Float gamma_t) const {
-        // Perfect specular reflection and transmission
-        Float perfect_delta_phi = 2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
-        Float phi = delta_phi - perfect_delta_phi; // offset w.r.t. perfect interactions
-
-        // Map `phi` to [-pi, pi]
-        phi = dr::fmod(phi, 2 * dr::Pi<Float>);
-        dr::masked(phi, phi < dr::Pi<Float>) = phi + 2 * dr::Pi<Float>;
-        dr::masked(phi, phi > dr::Pi<Float>) = phi - 2 * dr::Pi<Float>;
-
-        // Model roughness with trimmed logistic distribution
-        return (
-            logistic(phi, s) /
-            (logistic_cdf(dr::Pi<Float>, s) - logistic_cdf(-dr::Pi<Float>, s))
-        );
-    }
-
-    Float SampleTrimmedLogistic(Float u, Float s, Float a, Float b) const {
-        // a should be smaller than b
-        Float k = logistic_cdf(b, s) - logistic_cdf(a, s);
-        Float x = -s * dr::log(1 / (u * k + logistic_cdf(a, s)) - 1);
-        return dr::clamp(x, a, b);
-    }
-
-    /// Returns the attenuation/absorption coefficients for each segment length
-    AttenuationCoeffs attenuation(Float cos_theta_i, Float eta, Float h,
-                                const Spectrum &transmittance) const {
-        AttenuationCoeffs a_p = dr::zeros<AttenuationCoeffs>();
-
-        Float cos_gamma_i = dr::safe_sqrt(1 - dr::sqr(h));
-        Float cos_theta = cos_theta_i * cos_gamma_i; // hair coordinate system
-
-        Float f = std::get<0>(fresnel(cos_theta, eta));
-        a_p[0] = f;
-        a_p[1] = dr::sqr(1 - f) * transmittance;
-        for (int p = 2; p < p_max; ++p)
-            a_p[p] = a_p[p - 1] * transmittance * f;
-
-        // Sum of remaining possible lenghts (as `p` goes to infinity)
-        a_p[p_max] = a_p[p_max - 1] * f * transmittance / (1.f - transmittance * f);
-
-        return a_p;
+    /// Modified index of refraction, considers projection in the normal plane
+    MI_INLINE Float azimuthal_ior(Float sin_theta_i, Float cos_theta_i) const {
+        return dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
     }
 
     /// Return modified direction to account for angle of scales on hair surface
-    Vector3f reframe_with_scales(Float sin_theta_i, Float cos_theta_i,
-                                 Float phi_i, size_t p) const {
+    std::pair<Float, Float>
+    reframe_with_scales(Float sin_theta_i, Float cos_theta_i, size_t p) const {
         Float sin_theta_ip(0.0f), cos_theta_ip(0.0f);
         switch (p) {
             case 0:
@@ -594,68 +436,115 @@ private:
         }
         cos_theta_ip = dr::abs(cos_theta_ip);
 
-        return Vector3f(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
-                        cos_theta_ip * dr::sin(phi_i));
+        return { sin_theta_ip, cos_theta_ip };
     };
 
+    /// Returns the attenuation/absorption coefficients for each segment length
+    AttenuationCoeffs attenuation(Float cos_theta_i, Float eta, Float h,
+                                const Spectrum &transmittance) const {
+        AttenuationCoeffs a_p = dr::zeros<AttenuationCoeffs>();
+
+        Float cos_gamma_i = dr::safe_sqrt(1 - dr::sqr(h));
+        Float cos_theta = cos_theta_i * cos_gamma_i; // hair coordinate system
+
+        Float f = std::get<0>(fresnel(cos_theta, eta));
+        a_p[0] = f;
+        a_p[1] = dr::sqr(1 - f) * transmittance;
+        for (int p = 2; p < p_max; ++p)
+            a_p[p] = a_p[p - 1] * transmittance * f;
+
+        // Sum of remaining possible lenghts (as `p` goes to infinity)
+        a_p[p_max] = a_p[p_max - 1] * f * transmittance / (1.f - transmittance * f);
+
+        return a_p;
+    }
+
     dr::Array<Float, p_max + 1>
-    attenuation_eval_pdf(Float cosThetaI,
-                         const SurfaceInteraction3f &si) const {
+    attenuation_pdf(Float cos_theta_i, const SurfaceInteraction3f &si) const {
+        using Array_pmax_f = dr::Array<Float, p_max + 1>;
 
         Vector3f wi = dr::normalize(si.wi);
         Float gamma_i = gamma(wi);
         Float h = dr::sin(gamma_i);
 
         // Compute array of A_p values for cosThetaI
-        Float sinThetaI = dr::safe_sqrt(1 - cosThetaI * cosThetaI);
+        Float sin_theta_i = dr::safe_sqrt(1 - cos_theta_i * cos_theta_i);
 
         // Compute $\cos \thetat$ for refracted ray
-        Float sinThetaT = sinThetaI / m_eta;
-        Float cosThetaT = dr::safe_sqrt(1 - dr::sqr(sinThetaT));
+        Float sin_theta_t = sin_theta_i / m_eta;
+        Float cos_theta_t = dr::safe_sqrt(1 - dr::sqr(sin_theta_t));
 
         // Compute $\gammat$ for refracted ray
-        Float eta_p = dr::safe_sqrt(m_eta * m_eta - dr::sqr(sinThetaI)) / cosThetaI;
-        Float sinGammaT = h / eta_p;
-        Float cosGammaT = dr::safe_sqrt(1 - dr::sqr(sinGammaT));
+        Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
+        Float sin_gamma_t = h / eta_p;
+        Float cos_gamma_t = dr::safe_sqrt(1 - dr::sqr(sin_gamma_t));
 
         // Compute the transmittance _T_ of a single path through the cylinder
         Spectrum wavelengths = get_spectrum(si);
         Spectrum sigma_a = m_sigma_a;
-        if (!isColor){
+        if (!isColor)
             sigma_a = dr::fmadd(m_pheomelanin, pheomelanin(wavelengths),
-                    m_eumelanin * eumelanin(wavelengths));
-        }
-        Spectrum T =
-            dr::exp(-sigma_a * (2 * cosGammaT / cosThetaT));
+                                m_eumelanin * eumelanin(wavelengths));
+        Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
+        Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
+        AttenuationCoeffs a_p = attenuation(cos_theta_i, m_eta, h, transmittance);
 
-        // Calculate Ap
-        Spectrum ap[p_max + 1];
-        Float cosGammaI = dr::safe_sqrt(1 - h * h);
-        Float cosTheta  = cosThetaI * cosGammaI;
-
-        Float f = std::get<0>(fresnel(cosTheta, Float(m_eta)));
-        ap[0] = f;
-        // Compute $p=1$ attenuation termap.y()
-        ap[1] = dr::sqr(1 - f) * T;
-        // Compute attenuation terms up to $p=_pMax_$
-        for (int p = 2; p < p_max; ++p)
-            ap[p] = ap[p - 1] * T * f;
-        // Compute attenuation term accounting for remaining orders of
-        // scattering
-        ap[p_max] = ap[p_max - 1] * f * T / (Spectrum(1.f) - T * f);
-
-        // Compute $A_p$ PDF from individual $A_p$ terms
-        dr::Array<Float, p_max + 1> apPdf;
-        Float sumY = Float(0);
-
+        Array_pmax_f a_p_pdf = dr::zeros<Array_pmax_f>();
+        Array_pmax_f a_p_luminance = dr::zeros<Array_pmax_f>();
+        Float sum_luminance(0.0f);
         for (int i = 0; i <= p_max; i++) {
-            sumY = sumY + ap[i].y();
+            if constexpr (!is_spectral_v<Spectrum>)
+                a_p_luminance[i] = luminance(a_p[i]);
+            else
+                a_p_luminance[i] = luminance(a_p[i], si.wavelengths);
+            sum_luminance += a_p_luminance[i];
         }
 
-        for (int i = 0; i <= p_max; ++i) {
-            apPdf[i] = ap[i].y() / sumY;
-        }
-        return apPdf;
+        for (int i = 0; i <= p_max; ++i)
+            a_p_pdf[i] = a_p_luminance[i] / sum_luminance;
+
+        return a_p_pdf;
+    }
+
+    /// Longitudinal scattering distribution
+    Float longitudinal_scattering(const Vector3f &wi, const Vector3f &wo,
+                                  const Vector3f &tangent,
+                                  const ScalarFloat v) const {
+        return warp::square_to_rough_fiber_pdf<Float>(wo, wi, tangent, 1.f / v);
+    }
+
+    MI_INLINE Float logistic(Float x, Float s) const {
+        x = dr::abs(x);
+        return dr::exp(-x / s) / (s * dr::sqr(1 + dr::exp(-x / s)));
+    }
+
+    MI_INLINE Float logistic_cdf(Float x, Float s) const {
+        return 1 / (1 + dr::exp(-x / s));
+    }
+
+    Float trimmed_logistic_sample(Float sample, Float s) const {
+        Float k = logistic_cdf(dr::Pi<Float>, s) - logistic_cdf(-dr::Pi<Float>, s);
+        Float x = -s * dr::log(1 / (sample * k + logistic_cdf(-dr::Pi<Float>, s)) - 1);
+        return dr::clamp(x, -dr::Pi<Float>, dr::Pi<Float>);
+    }
+
+    /// Azimuthal scattering distribution (`s` is the logisitic scale factor)
+    Float azimuthal_scattering(Float delta_phi, size_t p, Float s, Float gamma_i,
+                               Float gamma_t) const {
+        // Perfect specular reflection and transmission
+        Float perfect_delta_phi = 2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
+        Float phi = delta_phi - perfect_delta_phi; // offset w.r.t. perfect interactions
+
+        // Map `phi` to [-pi, pi]
+        phi = dr::fmod(phi, 2 * dr::Pi<Float>);
+        dr::masked(phi, phi < dr::Pi<Float>) = phi + 2 * dr::Pi<Float>;
+        dr::masked(phi, phi > dr::Pi<Float>) = phi - 2 * dr::Pi<Float>;
+
+        // Model roughness with trimmed logistic distribution
+        return (
+            logistic(phi, s) /
+            (logistic_cdf(dr::Pi<Float>, s) - logistic_cdf(-dr::Pi<Float>, s))
+        );
     }
 
     // Get wavelengths of the ray
