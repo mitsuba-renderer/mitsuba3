@@ -104,10 +104,11 @@ class PRBIntegrator(RBIntegrator):
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
+            active_next = mi.Bool(active)
+
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
-
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray,
                                          ray_flags=mi.RayFlags.All,
@@ -118,6 +119,10 @@ class PRBIntegrator(RBIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
+            # Hide the environment emitter if necessary
+            if self.hide_emitters:
+                active_next &= ~(dr.eq(depth, 0) & ~si.is_valid())
+
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
 
@@ -127,12 +132,12 @@ class PRBIntegrator(RBIntegrator):
             )
 
             with dr.resume_grad(when=not primal):
-                Le = β * mis * ds.emitter.eval(si)
+                Le = β * mis * ds.emitter.eval(si, active_next)
 
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
-            active_next = (depth + 1 < self.max_depth) & si.is_valid()
+            active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
             # Is emitter sampling even possible on the current vertex?
             active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)

@@ -327,6 +327,8 @@ class PRBReparamIntegrator(RBIntegrator):
         loop.set_max_iterations(self.max_depth)
 
         while loop(active):
+            active_next = mi.Bool(active)
+
             # The first path vertex requires some special handling (see below)
             first_vertex = dr.eq(depth, 0)
 
@@ -367,15 +369,19 @@ class PRBReparamIntegrator(RBIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
+            # Hide the environment emitter if necessary
+            if self.hide_emitters:
+                active_next &= ~(dr.eq(depth, 0) & ~si_cur.is_valid())
+
             # Evaluate the emitter (with derivative tracking if requested)
             with dr.resume_grad(when=not primal):
                 emitter = si_cur.emitter(scene)
-                Le = β * mis_em * emitter.eval(si_cur)
+                Le = β * mis_em * emitter.eval(si_cur, active_next)
 
             # ----------------------- Emitter sampling -----------------------
 
             # Should we continue tracing to reach one more vertex?
-            active_next = (depth + 1 < self.max_depth) & si_cur.is_valid()
+            active_next &= (depth + 1 < self.max_depth) & si_cur.is_valid()
 
             # Get the BSDF, potentially computes texture-space differentials.
             bsdf_cur = si_cur.bsdf(ray_cur)
