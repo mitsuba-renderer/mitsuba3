@@ -79,7 +79,7 @@ def test03_white_furnace_importance_sample(variants_vec_backends_once_rgb):
             })
 
             _, value = bsdf.sample(ctx, si, sampler.next_1d(), sampler.next_2d())
-            expected = dr.sum_nested(value) / total 
+            expected = dr.sum_nested(value) / total
 
             assert dr.allclose(expected - 3, 0, atol=1e-2)
 
