@@ -339,7 +339,8 @@ public:
             return { emitter_val, ds };
         }
 
-        Ray3f ray = ref_interaction.spawn_ray(ds.d);
+        Ray3f ray = ref_interaction.spawn_ray_to(ds.p);
+        Float max_dist = ray.maxt;
 
         // Potentially escaping the medium if this is the current medium's boundary
         if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
@@ -356,7 +357,7 @@ public:
         sampler->loop_put(loop);
         loop.init();
         while (loop(dr::detach(active))) {
-            Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
+            Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
             if (dr::none_or<false>(active))

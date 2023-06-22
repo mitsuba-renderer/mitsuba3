@@ -331,7 +331,8 @@ class PRBVolpathIntegrator(RBIntegrator):
         medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
         medium[(active_surface & si.is_medium_transition())] = si.target_medium(ds.d)
 
-        ray = ref_interaction.spawn_ray(ds.d)
+        ray = ref_interaction.spawn_ray_to(ds.p)
+        max_dist = mi.Float(ray.maxt)
         total_dist = mi.Float(0.0)
         si = dr.zeros(mi.SurfaceInteraction3f)
         needs_intersection = mi.Bool(True)
@@ -340,7 +341,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                        state=lambda: (sampler, active, medium, ray, total_dist,
                                       needs_intersection, si, transmittance))
         while loop(active):
-            remaining_dist = ds.dist * (1.0 - mi.math.ShadowEpsilon) - total_dist
+            remaining_dist = max_dist - total_dist
             ray.maxt = dr.detach(remaining_dist)
             active &= remaining_dist > 0.0
 
