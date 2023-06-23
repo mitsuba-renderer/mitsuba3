@@ -30,7 +30,10 @@ struct OptixSceneState {
     OptixShaderBindingTable sbt = {};
     OptixAccelData accel;
     OptixTraversableHandle ias_handle = 0ull;
-    void* ias_buffer = nullptr;
+    struct InstanceData {
+        void* buffer = nullptr;             // Device-visible storage for IAS 
+        void* inputs = nullptr;             // Device-visible storage for OptixInstance array
+    } ias_data;
     size_t config_index;
     uint32_t sbt_jit_index;
     bool own_sbt;
@@ -381,7 +384,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             if (config.pipeline_compile_options.traversableGraphFlags == OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS) {
                 if (ias.size() != 1)
                     Throw("OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS used but found multiple IASs.");
-                s.ias_buffer = nullptr;
+                s.ias_data = {};
                 s.ias_handle = ias[0].traversableHandle;
             } else {
                 // Build a "master" IAS that contains all the IAS of the scene (meshes,
@@ -395,10 +398,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
                 jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
+                jit_free(s.ias_data.buffer);
+                jit_free(s.ias_data.inputs);
+                s.ias_data = {};
+                s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
+
                 OptixBuildInput build_input;
                 build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-                build_input.instanceArray.instances =
-                    (CUdeviceptr) jit_malloc_migrate(d_ias, AllocType::Device, 1);
+                build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
                 build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
                 OptixAccelBufferSizes buffer_sizes;
@@ -410,12 +417,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     &buffer_sizes
                 ));
 
-                if (s.ias_buffer)
-                    jit_free(s.ias_buffer);
-
                 void* d_temp_buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-                s.ias_buffer
+                s.ias_data.buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
                 scoped_optix_context guard;
@@ -428,7 +432,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     1, // num build inputs
                     (CUdeviceptr)d_temp_buffer,
                     buffer_sizes.tempSizeInBytes,
-                    (CUdeviceptr)s.ias_buffer,
+                    (CUdeviceptr)s.ias_data.buffer,
                     buffer_sizes.outputSizeInBytes,
                     &s.ias_handle,
                     0, // emitted property list
@@ -455,11 +459,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             [](uint32_t /* index */, int should_free, void *payload) {
                 if (should_free) {
                     Log(Debug, "Free OptiX IAS..");
-                    jit_free(payload);
-                    // TODO should also free build_input.instanceArray.instances
+                    auto* ias_data = (OptixSceneState::InstanceData*)payload;
+                    jit_free(ias_data->buffer);
+                    jit_free(ias_data->inputs);
                 }
             },
-            (void *) s.ias_buffer
+            (void *) &s.ias_data
         );
 
         clear_shapes_dirty();

@@ -1,8 +1,8 @@
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/math.h>
-#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
@@ -35,7 +35,7 @@ SDF Grid (:monosp:`sdfgrid`)
 
  * - filename
    - |string|
-   - Filename of the SDF grid data to be loaded. The expected file format 
+   - Filename of the SDF grid data to be loaded. The expected file format
      aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`
 
  * - watertight
@@ -58,18 +58,18 @@ SDF Grid (:monosp:`sdfgrid`)
    - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/shape_sdf_analytic.jpg
-   :caption: An SDF grid using analytic normals
-.. subfigure:: ../../resources/data/docs/images/render/shape_sdf_smooth.jpg
-   :caption: An SDF grid using smooth normals
+.. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid.jpg
+   :caption: Basic example using the default smooth method for computing normals
+.. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid_analytic.jpg 
+   :caption: An SDF grid using the analytic method for computing normals
 .. subfigend::
    :label: fig-sdfgrid
 
-This shape plugin describes a signed distance function (SDF) grid shape 
+This shape plugin describes a signed distance function (SDF) grid shape
 primitive --- that is, an SDF sampled onto a three-dimensional grid.
-The grid object-space is mapped over the range :math:`[0,0,0]\times[1,1,1]`.
+The grid object-space is mapped over the range :math:`[0,1]^3`.
 
-A smooth method for computing normals :cite:`Hansson-Soderlund2022SDF` is 
+A smooth method for computing normals :cite:`Hansson-Soderlund2022SDF` is
 selected as the default approach to ensure continuity across grid cells.
 
 .. warning::
@@ -104,6 +104,13 @@ public:
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
+    // Grid texture is always store in single precision
+    using InputFloat     = dr::replace_scalar_t<Float, float>;
+    using InputTexture3f = dr::Texture<InputFloat, 3>;
+    using InputPoint3f   = Point<InputFloat, 3>;
+    using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
+    using InputSpectrum  = dr::replace_scalar_t<Spectrum, float>;
+
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
@@ -114,38 +121,36 @@ public:
         else if (normals_mode_str == "smooth")
             m_normal_method = Smooth;
         else
-            Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", " 
+            Throw("Invalid normals mode \"%s\", must be one of: \"analytic\", "
                   "or \"smooth\"!",
                   normals_mode_str);
 
         m_watertight = props.get<bool>("watertight", true);
 
-        m_interpolation = Linear;
-
-
         if (props.has_property("filename")) {
-            FileResolver *fs = Thread::thread()->file_resolver();
+            FileResolver *fs   = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             if (!fs::exists(file_path))
                 Log(Error, "\"%s\": file does not exist!", file_path);
-            VolumeGrid<Float,Spectrum> vol_grid(file_path);
+            VolumeGrid<InputFloat, InputSpectrum> vol_grid(file_path);
             ScalarVector3i res = vol_grid.size();
-            size_t shape[4] = {
-                (size_t) res.z(),
-                (size_t) res.y(),
-                (size_t) res.x(),
-                1
-            };
+            size_t shape[4]    = { (size_t) res.z(), (size_t) res.y(),
+                                   (size_t) res.x(), 1 };
+            if (vol_grid.channel_count() != 1)
+                Throw(
+                    "SDF grid data source \"%s\" has %lu channels, expected 1.",
+                    file_path, vol_grid.channel_count());
 
-            m_grid_texture = Texture3f(TensorXf(vol_grid.data(), 4, shape), 
-                                       true, false,  dr::FilterMode::Linear, 
-                                       dr::WrapMode::Clamp);
+            m_grid_texture = InputTexture3f(
+                InputTensorXf(vol_grid.data(), 4, shape), true, false,
+                dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
-            float default_data[8] = { -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f, -1.f };
-            size_t default_shape[4] = {2, 2, 2, 1};
-            m_grid_texture = Texture3f(TensorXf(default_data, 4, default_shape), 
-                                       true, false,  dr::FilterMode::Linear, 
-                                       dr::WrapMode::Clamp);
+            InputFloat default_data[8] = { -1.f, -1.f, -1.f, -1.f,
+                                           -1.f, -1.f, -1.f, -1.f };
+            size_t default_shape[4]    = { 2, 2, 2, 1 };
+            m_grid_texture             = InputTexture3f(
+                            InputTensorXf(default_data, 4, default_shape), true, false,
+                            dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
         update();
         initialize();
@@ -183,13 +188,15 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
         callback->put_parameter("to_world", *m_to_world.ptr(),
                                 ParamFlags::Differentiable |
                                     ParamFlags::Discontinuous);
         callback->put_parameter("grid", m_grid_texture.tensor(),
                                 ParamFlags::Differentiable |
                                     ParamFlags::Discontinuous);
-        Base::traverse(callback);
+        callback->put_parameter("watertight", m_watertight,
+                                +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -230,9 +237,9 @@ public:
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex index) const override {
-        if (jit_malloc_type(m_bboxes) != AllocType::Host)
+        if (jit_malloc_type(m_bboxes) != AllocType::Host) {
             NotImplementedError("bbox(ScalarIndex index)");
-
+        }
         ScalarBoundingBox3f *bboxes = (ScalarBoundingBox3f *) m_bboxes;
         return bboxes[index];
     }
@@ -352,7 +359,7 @@ public:
                  * the interaction point is not "glued" to the shape. */
 
                 // Capture gradients of `m_grid_texture`
-                Float sdf_value;
+                InputFloat sdf_value;
                 m_grid_texture.eval(rescale_point(local_p), &sdf_value);
                 Point3f local_motion =
                     sdf_value * (-local_n) / dr::dot(local_n, local_grad);
@@ -381,7 +388,7 @@ public:
 
                 /// Differentiable tangent plane point
                 // Capture gradients of `m_grid_texture`
-                Float sdf_value;
+                InputFloat sdf_value;
                 m_grid_texture.eval(rescale_point(local_p), &sdf_value);
                 Float t_diff =
                     sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
@@ -869,11 +876,14 @@ private:
      * the middle of the pixel. For a 3D grid, this means that values are not
      * at the corners, but in the middle of the voxels.
      */
-    MI_INLINE Point3f rescale_point(const Point3f &p) const {
+    MI_INLINE InputPoint3f rescale_point(const Point3f &p) const {
         auto shape = m_grid_texture.tensor().shape();
         // TODO: save inv_shape to memory?
         Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-        return p * (1 - inv_shape) + (inv_shape / 2.f);
+        Point3f rescale = p * (1 - inv_shape) + (inv_shape / 2.f);
+
+        return InputPoint3f(InputFloat(rescale.x()), InputFloat(rescale.y()),
+                            InputFloat(rescale.z()));
     }
 
     /* \brief Only computes AABBs for voxel that contain a surface in it.
@@ -883,7 +893,7 @@ private:
      * Depending on the variant used, the pointer returned is either host or
      * device visible
      */
-    std::tuple<void*, size_t*, size_t> build_bboxes() {
+    std::tuple<void *, size_t *, size_t> build_bboxes() {
         auto shape         = m_grid_texture.tensor().shape();
         size_t shape_v[3]  = { shape[2], shape[1], shape[0] };
         float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1),
@@ -892,7 +902,7 @@ private:
             (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
         ScalarTransform4f to_world = m_to_world.scalar();
 
-        float* grid = nullptr;
+        float *grid = nullptr;
 
         if constexpr (dr::is_cuda_v<Float>) {
             grid = (float *) jit_malloc_migrate(
@@ -912,9 +922,9 @@ private:
 #endif
 
         size_t count           = 0;
-        BoundingBoxType* aabbs = (BoundingBoxType *) jit_malloc(
+        BoundingBoxType *aabbs = (BoundingBoxType *) jit_malloc(
             AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
-        size_t* voxel_indices = (size_t *) jit_malloc(
+        size_t *voxel_indices = (size_t *) jit_malloc(
             AllocType::Host, sizeof(size_t) * max_voxel_count);
         for (size_t z = 0; z < shape[0] - 1; ++z) {
             for (size_t y = 0; y < shape[1] - 1; ++y) {
@@ -988,13 +998,13 @@ private:
             }
         }
 
-        void* aabbs_ptr           = nullptr;
-        size_t* voxel_indices_ptr = nullptr;
+        void *aabbs_ptr           = nullptr;
+        size_t *voxel_indices_ptr = nullptr;
 
         if constexpr (dr::is_cuda_v<Float>) {
             // TODO: async memcpy
-            aabbs_ptr = jit_malloc(AllocType::Device,
-                                   sizeof(BoundingBoxType) * count);
+            aabbs_ptr =
+                jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * count);
             jit_memcpy(JitBackend::CUDA, aabbs_ptr, aabbs,
                        sizeof(BoundingBoxType) * count);
 
@@ -1022,26 +1032,25 @@ private:
         Vector3f resolution =
             Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
 
-        Float f[6];
-        Point3f query;
-
+        InputFloat f[6];
+        InputPoint3f query;
         Point3f voxel_size = 1.f / resolution;
         Point3f p000       = Point3f(voxel_index) * voxel_size;
 
         query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
-        m_grid_texture.eval(query, &f[0]);
+        m_grid_texture.eval(InputPoint3f(query), &f[0]);
         query = rescale_point(Point3f(p000[0], p[1], p[2]));
-        m_grid_texture.eval(query, &f[1]);
+        m_grid_texture.eval(InputPoint3f(query), &f[1]);
 
         query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
-        m_grid_texture.eval(query, &f[2]);
+        m_grid_texture.eval(InputPoint3f(query), &f[2]);
         query = rescale_point(Point3f(p[0], p000[1], p[2]));
-        m_grid_texture.eval(query, &f[3]);
+        m_grid_texture.eval(InputPoint3f(query), &f[3]);
 
         query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
-        m_grid_texture.eval(query, &f[4]);
+        m_grid_texture.eval(InputPoint3f(query), &f[4]);
         query = rescale_point(Point3f(p[0], p[1], p000[2]));
-        m_grid_texture.eval(query, &f[5]);
+        m_grid_texture.eval(InputPoint3f(query), &f[5]);
 
         Float dx = f[0] - f[1]; // f(1, y, z) - f(0, y, z)
         Float dy = f[2] - f[3]; // f(x, 1, z) - f(x, 0, z)
@@ -1070,28 +1079,23 @@ private:
         Smooth,
     };
 
-    enum Interpolation {
-        Linear,
-    };
-
     // TODO: Store inverse shape using `rcp`
-    Texture3f m_grid_texture;
+    InputTexture3f m_grid_texture;
 
     // Weak pointer to underlying grid texture data. Only used for llvm/scalar
     // variants. We store this because during raytracing, we don't want to call
     // Texture3f::tensor().data() which internally calls jit_var_ptr and is
     // guarded by a global state lock
-    float* m_host_grid_data = nullptr;
+    float *m_host_grid_data = nullptr;
 
     // Depending on variant, host or device visible stores of non-empty voxel
     // bboxes and correspondingand indices
-    void* m_bboxes          = nullptr;
-    size_t* m_voxel_indices = nullptr;
+    void *m_bboxes          = nullptr;
+    size_t *m_voxel_indices = nullptr;
 
     bool m_watertight;
     size_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
-    Interpolation m_interpolation;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, SDF)

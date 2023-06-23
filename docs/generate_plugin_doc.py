@@ -16,6 +16,8 @@ SHAPE_ORDERING = [
     'cylinder',
     'disk',
     'rectangle',
+    'cube',
+    'sdfgrid',
     'shapegroup',
     'instance'
 ]
