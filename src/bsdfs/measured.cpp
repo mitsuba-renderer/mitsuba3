@@ -26,7 +26,7 @@ Measured material (:monosp:`measured`)
 
  * - filename
    - |string|
-   - Filename of the material to be loaded
+   - Filename of the material data file to be loaded
 
 This plugin implements the data-driven material model described in the paper `An
 Adaptive Parameterization for Efficient Material Acquisition and Rendering
@@ -56,7 +56,7 @@ describes how to import one of the spectral measurements from the database.
 
 .. tabs::
     .. code-tab:: xml
-        :name: diffuse-srgb
+        :name: lst-measured
 
         <bsdf type="measured">
             <string name="filename" value="cc_nothern_aurora_spec.bsdf"/>
@@ -66,8 +66,8 @@ describes how to import one of the spectral measurements from the database.
 
         'type': 'measured',
         'filename': 'cc_nothern_aurora_spec.bsdf'
-*/
 
+*/
 template <typename Float, typename Spectrum>
 class Measured final : public BSDF<Float, Spectrum> {
 public:
