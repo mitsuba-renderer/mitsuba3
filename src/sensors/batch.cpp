@@ -27,7 +27,62 @@ rendering.
 This plugin can currently only be used in path tracing-style integrators, and
 it is incompatible with the particle tracer. The horizontal resolution of the
 film associated with this sensor must be a multiple of the number of
-sub-sensors.
+sub-sensors. In addition, all of the sub-sensors' films, samplers and shutter
+timings are typically ignored and superseded by the film, sampler and shutter
+timings specified for the `batch` sensor itself.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: batch-sensor
+
+        <sensor type="batch">
+            <!-- Two perpendicular viewing directions -->
+            <sensor name="sensor_1" type="perspective">
+                <float name="fov" value="45"/>
+                <transform name="to_world">
+                    <lookat origin="0, 0, 1" target="0, 0, 0" up="0, 1, 0"/>
+                </transform>
+            </sensor>
+            <sensor name="sensor_2" type="perspective">
+                <float name="fov" value="45"/>
+                <transform name="to_world">
+                    <look_at origin="1, 0, 0" target="1, 2, 1" up="0, 1, 0"/>
+                </transform>
+            </sensor>
+            <!-- film -->
+            <!-- sampler -->
+        </sensor>
+
+    .. code-tab:: python
+
+        'type': 'batch',
+        # Two perpendicular viewing directions
+        'sensor1': {
+            'type': 'perspective',
+            'fov': 45,
+            'to_world': mi.ScalarTransform4f.look_at(
+                origin=[0, 0, 1],
+                target=[0, 0, 0],
+                up=[0, 1, 0]
+            )
+        },
+        'sensor2': {
+            'type': 'perspective',
+            'fov': 45,
+            'to_world': mi.ScalarTransform4f.look_at(
+                origin=[1, 0, 0],
+                target=[0, 0, 0],
+                up=[0, 1, 0]
+            ),
+        }
+        'film_id': {
+            'type': '<film_type>',
+            # ...
+        },
+        'sampler_id': {
+            'type': '<sampler_type>',
+            # ...
+        }
 */
 
 MI_VARIANT class BatchSensor final : public Sensor<Float, Spectrum> {
