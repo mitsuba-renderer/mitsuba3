@@ -26295,7 +26295,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (~typing.Optional[dict]):
+        Parameter ``params`` (dict | None):
             *no description available*
 
         
@@ -26441,7 +26441,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (~typing.Optional[dict]):
+        Parameter ``params`` (dict | None):
             *no description available*
 
         
