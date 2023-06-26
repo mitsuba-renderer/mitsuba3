@@ -38,6 +38,14 @@ public:
         PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, PhaseFunction, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, PhaseFunction, parameters_changed, keys);
+    }
+
     using PhaseFunction::m_flags;
     using PhaseFunction::m_components;
 };

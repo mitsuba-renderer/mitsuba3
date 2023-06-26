@@ -30,6 +30,14 @@ public:
         PYBIND11_OVERRIDE_PURE(std::string, Medium, to_string, );
     }
 
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, Medium, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, Medium, parameters_changed, keys);
+    }
+
     using Medium::m_sample_emitters;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;

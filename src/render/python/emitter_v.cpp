@@ -69,6 +69,14 @@ public:
         PYBIND11_OVERRIDE_PURE(std::string, Emitter, to_string,);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, Emitter, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, Emitter, parameters_changed, keys);
+    }
+
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
     using Emitter::m_needs_sample_3;

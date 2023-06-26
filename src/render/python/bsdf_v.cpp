@@ -69,6 +69,14 @@ public:
         PYBIND11_OVERRIDE_PURE(std::string, BSDF, to_string,);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, BSDF, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, BSDF, parameters_changed, keys);
+    }
+
     using BSDF::m_flags;
     using BSDF::m_components;
 };

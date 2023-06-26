@@ -74,6 +74,14 @@ public:
         PYBIND11_OVERRIDE_PURE(std::string, Sensor, to_string,);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, Sensor, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, Sensor, parameters_changed, keys);
+    }
+
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
     using Sensor::m_film;
