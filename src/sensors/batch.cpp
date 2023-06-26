@@ -87,7 +87,7 @@ timings specified for the `batch` sensor itself.
 
 MI_VARIANT class BatchSensor final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
+    MI_IMPORT_BASE(Sensor, m_film, m_shape, m_needs_sample_3, sample_wavelengths)
     MI_IMPORT_TYPES(Shape, SensorPtr)
 
     BatchSensor(const Properties &props) : Base(props) {
@@ -108,9 +108,11 @@ public:
                   "be divisible by the number of child sensors (%zu)!",
                   size.x(), m_sensors.size());
 
+        m_needs_sample_3 = false;
         for (size_t i = 0; i < m_sensors.size(); ++i) {
             m_sensors[i]->film()->set_size(ScalarPoint2u(sub_size, size.y()));
             m_sensors[i]->parameters_changed();
+            m_needs_sample_3 |= m_sensors[i]->needs_aperture_sample();
         }
 
         m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(m_sensors.data(),
