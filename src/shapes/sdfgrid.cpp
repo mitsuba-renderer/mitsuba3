@@ -109,7 +109,6 @@ public:
     using InputTexture3f = dr::Texture<InputFloat, 3>;
     using InputPoint3f   = Point<InputFloat, 3>;
     using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
-    using InputSpectrum  = dr::replace_scalar_t<Spectrum, float>;
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
@@ -132,7 +131,7 @@ public:
             fs::path file_path = fs->resolve(props.string("filename"));
             if (!fs::exists(file_path))
                 Log(Error, "\"%s\": file does not exist!", file_path);
-            VolumeGrid<InputFloat, InputSpectrum> vol_grid(file_path);
+            VolumeGrid<float, Color<float, 3>> vol_grid(file_path);
             ScalarVector3i res = vol_grid.size();
             size_t shape[4]    = { (size_t) res.z(), (size_t) res.y(),
                                    (size_t) res.x(), 1 };
