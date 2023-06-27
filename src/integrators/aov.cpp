@@ -340,7 +340,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Scene[" << std::endl
+        oss << "AOVIntegrator[" << std::endl
             << "  aovs = " << m_aov_names << "," << std::endl
             << "  integrators = [" << std::endl;
         for (size_t i = 0; i < m_integrators.size(); ++i) {
