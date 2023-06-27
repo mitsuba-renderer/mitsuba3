@@ -1,3 +1,4 @@
+#include <mitsuba/core/stream.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -55,6 +56,11 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))
+       .def("has_attribute",
+            [](Ptr shape, const std::string &name, const Mask &active) {
+                return shape->has_attribute(name, active);
+            },
+            "name"_a, "active"_a = true, D(Shape, has_attribute))
        .def("eval_attribute",
             [](Ptr shape, const std::string &name,
                const SurfaceInteraction3f &si, const Mask &active) {
@@ -173,8 +179,12 @@ MI_PY_EXPORT(Shape) {
         .def_method(Mesh, face_count)
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
-        .def("write_ply", &Mesh::write_ply, "filename"_a,
-             "Export mesh as a binary PLY file")
+        .def("write_ply",
+             py::overload_cast<const std::string &>(&Mesh::write_ply, py::const_),
+             "filename"_a, D(Mesh, write_ply))
+        .def("write_ply",
+             py::overload_cast<Stream *>(&Mesh::write_ply, py::const_),
+             "stream"_a, D(Mesh, write_ply, 2))
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute), py::return_value_policy::reference_internal)
         .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {

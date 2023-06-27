@@ -985,27 +985,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
-struct ScopedSetJITScope {
-    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend) {
-            backup = jit_scope((JitBackend) backend);
-            jit_set_scope((JitBackend) backend, scope);
-        }
-#endif
-    }
-
-    ~ScopedSetJITScope() {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend)
-            jit_set_scope((JitBackend) backend, backup);
-#endif
-    }
-
-    uint32_t backend, backup;
-};
-
-
 static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
                                                     const fs::path &filename_,
                                                     ParameterList param,
@@ -1194,6 +1173,10 @@ static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string 
     ThreadEnvironment env;
     std::unordered_map<std::string, Task*> task_map;
     instantiate_node(ctx, id, env, task_map, true);
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    if (ctx.backend && ctx.parallel)
+        jit_new_scope((JitBackend) ctx.backend);
+#endif
     return ctx.instances.find(id)->second.object;
 }
 

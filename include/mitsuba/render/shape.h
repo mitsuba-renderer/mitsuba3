@@ -7,6 +7,7 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
 #include <drjit/packet.h>
+#include <unordered_map>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -24,7 +25,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public Object {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
+    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture);
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -282,6 +283,14 @@ public:
     virtual Float surface_area() const;
 
     /**
+     * \brief Returns whether this shape contains the specified attribute.
+     *
+     * \param name
+     *     Name of the attribute
+     */
+    virtual Mask has_attribute(const std::string &name, Mask active = true) const;
+
+    /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.
      *
      * Shape attributes are user-provided fields that provide extra
@@ -296,8 +305,6 @@ public:
      *
      * \return
      *     An unpolarized spectral power distribution or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
                                                const SurfaceInteraction3f &si,
@@ -318,8 +325,6 @@ public:
      *
      * \return
      *     An scalar intensity or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual Float eval_attribute_1(const std::string &name,
                                    const SurfaceInteraction3f &si,
@@ -340,8 +345,6 @@ public:
      *
      * \return
      *     An trichromatic intensity or reflectance value
-     *
-     * The default implementation throws an exception.
      */
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
@@ -374,6 +377,12 @@ public:
 
     /// Is this shape a triangle mesh?
     bool is_mesh() const;
+
+    /// Is this shape a b-spline curve ?
+    virtual bool is_bspline_curve() const;
+
+    /// Is this shape a linear curve ?
+    virtual bool is_linear_curve() const;
 
     /// Is this shape a shapegroup?
     bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
@@ -561,6 +570,8 @@ protected:
     ref<Medium> m_exterior_medium;
     std::string m_id;
 
+    std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
+
     field<Transform4f, ScalarTransform4f> m_to_world;
     field<Transform4f, ScalarTransform4f> m_to_object;
 
@@ -638,9 +649,11 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(compute_surface_interaction)
+    DRJIT_VCALL_METHOD(has_attribute)
     DRJIT_VCALL_METHOD(eval_attribute)
     DRJIT_VCALL_METHOD(eval_attribute_1)
     DRJIT_VCALL_METHOD(eval_attribute_3)
+    DRJIT_VCALL_METHOD(eval_parameterization)
     DRJIT_VCALL_METHOD(ray_intersect_preliminary)
     DRJIT_VCALL_METHOD(ray_intersect)
     DRJIT_VCALL_METHOD(ray_test)
@@ -648,7 +661,6 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(pdf_position)
     DRJIT_VCALL_METHOD(sample_direction)
     DRJIT_VCALL_METHOD(pdf_direction)
-    DRJIT_VCALL_METHOD(eval_parameterization)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
     DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)

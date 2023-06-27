@@ -248,6 +248,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
+        const Transform4f& to_world = m_to_world.value();
         auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
         Point3f p(cos_theta, sin_theta, sample.x());
@@ -257,8 +258,8 @@ public:
             n *= -1;
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p     = m_to_world.value().transform_affine(p);
-        ps.n     = dr::normalize(n);
+        ps.p     = to_world.transform_affine(p);
+        ps.n     = dr::normalize(to_world.transform_affine(n));
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;

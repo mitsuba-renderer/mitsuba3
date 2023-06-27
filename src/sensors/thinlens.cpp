@@ -123,7 +123,7 @@ The exact camera position and orientation is most easily expressed using the
 
         'type': 'thinlens',
         'fov': 45,
-        'to_world': mi.ScalarTransform4f.lookat(
+        'to_world': mi.ScalarTransform4f.look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -170,20 +170,19 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("aperture_radius", m_aperture_radius, ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("focus_distance", m_focus_distance,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("x_fov", m_x_fov,                     ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("to_world", *m_to_world.ptr(),        ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("focus_distance",  m_focus_distance,  +ParamFlags::NonDifferentiable);
+        callback->put_parameter("x_fov",           m_x_fov,           +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world",       *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
+        Base::parameters_changed(keys);
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
         }
-        Base::parameters_changed(keys);
+
         update_camera_transforms();
     }
 
@@ -210,7 +209,7 @@ public:
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
 
-        dr::make_opaque(m_to_world, m_camera_to_sample, m_sample_to_camera, m_dx, m_dy,
+        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy,
                         m_x_fov, m_image_rect, m_normalization);
     }
 

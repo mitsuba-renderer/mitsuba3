@@ -128,8 +128,21 @@ public:
     /// @}
     // =========================================================================
 
-    /// Export mesh as a binary PLY file
+    /**
+     * Write the mesh to a binary PLY file
+     *
+     * \param filename
+     *    Target file path on disk
+     */
     void write_ply(const std::string &filename) const;
+
+    /**
+     * Write the mesh encoded in binary PLY format to a stream
+     *
+     * \param stream
+     *    Target stream that will receive the encoded output
+     */
+    void write_ply(Stream *stream) const;
 
     /// Merge two meshes into one
     ref<Mesh> merge(const Mesh *other) const;
@@ -169,6 +182,8 @@ public:
                                                              uint32_t ray_flags,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const override;
+
+    virtual Mask has_attribute(const std::string &name, Mask active = true) const override;
 
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
                                                const SurfaceInteraction3f &si,

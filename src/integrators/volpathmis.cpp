@@ -1,4 +1,5 @@
 #include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -216,7 +217,7 @@ public:
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
 
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mei, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->transmittance_eval_pdf(mei, si, is_spectral);
                     update_weights(p_over_f, free_flight_pdf, tr, channel, is_spectral);
                     update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
                 }
@@ -272,9 +273,10 @@ public:
                         auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
                             sample_emitter(mei, scene, sampler, medium, p_over_f,
                                            channel, active_e);
-                        Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
-                        update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
-                        update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_val), phase_val, channel, active_e);
+                        auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
+
+                        update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(phase_val), channel, active_e);
+                        update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_pdf), unpolarized_spectrum(phase_val), channel, active_e);
                         dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                     }
 
@@ -283,7 +285,7 @@ public:
 
                     // ------------------ Phase function sampling -----------------
                     dr::masked(phase, !act_medium_scatter) = nullptr;
-                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
+                    auto [wo, phase_weight, phase_pdf] = phase->sample(phase_ctx, mei,
                         sampler->next_1d(act_medium_scatter),
                         sampler->next_2d(act_medium_scatter),
                         act_medium_scatter);
@@ -291,8 +293,8 @@ public:
                     dr::masked(ray, act_medium_scatter) = new_ray;
                     needs_intersection |= act_medium_scatter;
 
-                    update_weights(p_over_f, phase_pdf, phase_pdf, channel, act_medium_scatter);
-                    update_weights(p_over_f_nee, 1.f, phase_pdf, channel, act_medium_scatter);
+                    update_weights(p_over_f, phase_pdf, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
+                    update_weights(p_over_f_nee, 1.f, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
                 }
             }
 
@@ -334,8 +336,7 @@ public:
                 if (likely(dr::any_or<true>(active_e))) {
                     auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(si, scene, sampler, medium, p_over_f, channel, active_e);
                     Vector3f wo_local       = si.to_local(ds.d);
-                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
-                    Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
+                    auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo_local, active_e);
                     update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_e);
                     update_weights(p_over_f_end, dr::select(ds.delta, 0.f, bsdf_pdf), unpolarized_spectrum(bsdf_val), channel, active_e);
                     dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
@@ -348,7 +349,7 @@ public:
                 active_surface &= bs.pdf > 0.f;
                 dr::masked(eta, active_surface) *= bs.eta;
 
-                Ray bsdf_ray                = si.spawn_ray(si.to_world(bs.wo));
+                Ray3f bsdf_ray                  = si.spawn_ray(si.to_world(bs.wo));
                 dr::masked(ray, active_surface) = bsdf_ray;
                 needs_intersection |= active_surface;
 
@@ -373,8 +374,9 @@ public:
         return { result, valid_ray };
     }
 
+    template <typename Interaction>
     std::tuple<WeightMatrix, WeightMatrix, Spectrum, DirectionSample3f>
-    sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
+    sample_emitter(const Interaction &ref_interaction, const Scene *scene,
                    Sampler *sampler, MediumPtr medium,
                    const WeightMatrix &p_over_f, UInt32 channel,
                    Mask active) const {
@@ -390,7 +392,13 @@ public:
             return { p_over_f_nee, p_over_f_uni, emitter_val, ds};
         }
 
-        Ray3f ray = ref_interaction.spawn_ray(ds.d);
+        Ray3f ray = ref_interaction.spawn_ray_to(ds.p);
+        Float max_dist = ray.maxt;
+
+        // Potentially escaping the medium if this is the current medium's boundary
+        if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
+            dr::masked(medium, ref_interaction.is_medium_transition()) =
+                ref_interaction.target_medium(ray.d);
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
@@ -402,8 +410,7 @@ public:
         sampler->loop_put(loop);
         loop.init();
         while (loop(dr::detach(active))) {
-
-            Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
+            Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
             if (dr::none_or<false>(active))

@@ -53,6 +53,7 @@ template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Endpoint, m_shape)
+    MI_IMPORT_TYPES()
 
     /// Is this an environment map light emitter?
     bool is_environment() const {
@@ -60,8 +61,21 @@ public:
                !has_flag(m_flags, EmitterFlags::Delta);
     }
 
+    /// The emitter's sampling weight.
+    ScalarFloat sampling_weight() const { return m_sampling_weight; }
+
     /// Flags for all components combined.
     uint32_t flags(dr::mask_t<Float> /*active*/ = true) const { return m_flags; }
+
+    void traverse(TraversalCallback *callback) override;
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override;
+
+    /// Return whether the emitter parameters have changed
+    bool dirty() const { return m_dirty; }
+
+    /// Modify the emitter's "dirty" flag
+    void set_dirty(bool dirty) { m_dirty = dirty; }
 
     DRJIT_VCALL_REGISTER(Float, mitsuba::Emitter)
 
@@ -74,6 +88,12 @@ protected:
 protected:
     /// Combined flags for all properties of this emitter.
     uint32_t m_flags;
+
+    /// Sampling weight
+    ScalarFloat m_sampling_weight;
+
+    /// True if the emitters's parameters have changed
+    bool m_dirty = false;
 };
 
 MI_EXTERN_CLASS(Emitter)
@@ -96,6 +116,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     DRJIT_VCALL_GETTER(shape, const typename Class::Shape *)
     DRJIT_VCALL_GETTER(medium, const typename Class::Medium *)
+    DRJIT_VCALL_GETTER(sampling_weight, float)
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Emitter)
 
 //! @}

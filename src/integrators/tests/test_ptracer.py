@@ -223,3 +223,16 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     g = dr.grad(params[key])
     assert dr.shape(g) == dr.shape(params[key])
     assert dr.allclose(g, 0.33647, atol=1e-5) # TODO improve this test (don't use hardcoded value)
+
+
+def test07_adjoint_integrator_trampoline(variants_all_ad_rgb):
+
+    class MyPtracer(mi.AdjointIntegrator):
+        def __init__(self, props=mi.Properties()):
+            super().__init__(props)
+
+    mi.register_integrator("myptracer", MyPtracer)
+
+    mi.load_dict({
+        'type': 'myptracer'
+    })

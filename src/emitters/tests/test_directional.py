@@ -111,6 +111,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     spec = spectrum.eval(it)
     assert dr.allclose(res, spec)
 
+    assert dr.allclose(emitter.eval_direction(it, ds), spec)
 
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
 def test_sample_ray(variant_scalar_spectral, direction):

@@ -6,13 +6,42 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 strive to document breaking API changes in the release notes below.
 
 
+Mitsuba 3.3.0
+-------------
+
+- Upgrade Dr.Jit to v0.4.2
+- Emitters' members are opaque (fixes long JIT compilation times)
+  `[df940c1] <https://github.com/mitsuba-renderer/mitsuba3/commit/df940c128116ffa9518058573aa93dedaca6cc33>`_
+- Sensors members are opaque (fixes long JIT compilation times)
+  `[c864e08] <https://github.com/mitsuba-renderer/mitsuba3/commit/c864e08f5bfa56388444e8ce0bb2751e35ee33d9>`_
+- Fix ``cylinder``'s normals
+  `[d9ea8e8] <https://github.com/mitsuba-renderer/mitsuba3/commit/d9ea8e847a0ceea88ad3e28e1e41e36ce800d5b6>`_
+- Fix next event estimation (NEE) in volume integrators
+- ``mi.xml.dict_to_xml`` now supports volumes
+  `[15d63df] <https://github.com/mitsuba-renderer/mitsuba3/commit/15d63df4d3eab283de0c7ed511c312bba504ec46>`_
+- Allow extending ``AdjointIntegrator`` in Python
+  `[15d63df] <https://github.com/mitsuba-renderer/mitsuba3/commit/c4a8b31ee764a0e6d56d9075708c3c76062854be>`_
+- ``mi.load_dict()`` is parallel (by default)
+  `[bb672ed] <https://github.com/mitsuba-renderer/mitsuba3/commit/bb672ed7cee006ff37819030b9f269f0da263568>`_
+- Upsampling routines now support ``box`` filters
+  `[64e2ab1] <https://github.com/mitsuba-renderer/mitsuba3/commit/64e2ab1718e6f6959233b1f0ae18337e7a642684>`_
+- The ``Mesh.write_ply()`` function writes ``s, t`` rather than ``u, v`` fields
+  `[fe4e448] <https://github.com/mitsuba-renderer/mitsuba3/commit/fe4e4484becc3a7997413f648b4efeb75667554b>`_
+- All shapes can hold ``Texture`` attributes which can be evaluated
+  `[f6ec944] <https://github.com/mitsuba-renderer/mitsuba3/commit/f6ec944c4beb8b0136dff6136e52bc0851acd931>`_
+- Radiative backpropagation style integrators use less memory
+  `[c1a9b8f] <https://github.com/mitsuba-renderer/mitsuba3/commit/c1a9b8fa52cea4fff4e25a8169ad8be811b1574e>`_
+- New ``bsplinecurve`` and ``linearcurve`` shapes
+  `[e4c847f] <https://github.com/mitsuba-renderer/mitsuba3/commit/e4c847fedf9005f80bda58a9f6bcfd05581b884c>`_ .. `[79eb026] <https://github.com/mitsuba-renderer/mitsuba3/commit/79eb026d6d594076994dba2c44de81c63b7806f4>`_
+
+
 Mitsuba 3.2.1
 -------------
 
 *February 22, 2023*
 
 - Upgrade Dr.Jit to v0.4.1
-- ``Film`` plugins can now have error-compensated accumulation in JIT modes 
+- ``Film`` plugins can now have error-compensated accumulation in JIT modes
   `[afeefed] <https://github.com/mitsuba-renderer/mitsuba3/commit/afeefedc8db0d7381e023f80c00f527ce28725b7>`_
 - Fix and add missing Python bindings for ``Endpoint``/``Emitter``/``Sensor``
   `[8f03c7d] <https://github.com/mitsuba-renderer/mitsuba3/commit/8f03c7db7b697a2bac17fe960a8d4a6863bece4d>`_

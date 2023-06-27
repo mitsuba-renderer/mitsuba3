@@ -54,6 +54,7 @@ public:
 
         if (dr::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
+        props.mark_queried("unbounded");
 
         if constexpr (is_spectral_v<Spectrum>)
             m_value = srgb_model_fetch(color);

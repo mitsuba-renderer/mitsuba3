@@ -58,7 +58,7 @@ using the lookat tag, e.g.:
     .. code-tab:: python
 
         'type': 'spot',
-        'to_world': mi.ScalarTransform4f.lookat(
+        'to_world': mi.ScalarTransform4f.look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -102,29 +102,26 @@ public:
         }
         dr::set_attr(this, "flags", m_flags);
 
-        m_cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
-        m_beam_width   = props.get<ScalarFloat>("beam_width", m_cutoff_angle * 3.0f / 4.0f);
-        m_cutoff_angle = dr::deg_to_rad(m_cutoff_angle);
+        ScalarFloat cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
+        m_beam_width   = props.get<ScalarFloat>("beam_width", cutoff_angle * 3.0f / 4.0f);
+        m_cutoff_angle = dr::deg_to_rad(cutoff_angle);
         m_beam_width   = dr::deg_to_rad(m_beam_width);
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
         m_cos_cutoff_angle = dr::cos(m_cutoff_angle);
         m_cos_beam_width   = dr::cos(m_beam_width);
-        Assert(m_cutoff_angle >= m_beam_width);
+        Assert(dr::all(m_cutoff_angle >= m_beam_width));
         m_uv_factor = dr::tan(m_cutoff_angle);
+
+        dr::make_opaque(m_beam_width, m_cutoff_angle, m_uv_factor,
+                        m_cos_beam_width, m_cos_cutoff_angle,
+                        m_inv_transition_width);
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("intensity",   m_intensity.get(), +ParamFlags::Differentiable);
-        callback->put_object("texture",     m_texture.get(),   +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-        }
-        Base::parameters_changed();
+        Base::traverse(callback);
+        callback->put_object("intensity",    m_intensity.get(), +ParamFlags::Differentiable);
+        callback->put_object("texture",      m_texture.get(),   +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
     }
 
     /**
@@ -279,8 +276,8 @@ public:
 private:
     ref<Texture> m_intensity;
     ref<Texture> m_texture;
-    ScalarFloat m_beam_width, m_cutoff_angle, m_uv_factor;
-    ScalarFloat m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
+    Float m_beam_width, m_cutoff_angle, m_uv_factor;
+    Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
 };
 
 

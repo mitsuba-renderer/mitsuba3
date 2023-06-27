@@ -46,7 +46,7 @@ as follows:
                 'width': 1920,
                 'height': 1080,
                 # Use a Gaussian reconstruction filter
-                'filter': { 'type', 'gaussian' }
+                'filter': { 'type': 'gaussian' }
             }
         }
 

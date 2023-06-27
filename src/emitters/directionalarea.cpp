@@ -75,12 +75,14 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
         callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
     }
 
     void set_shape(Shape *shape) override {
         Base::set_shape(shape);
         m_area = m_shape->surface_area();
+        dr::make_opaque(m_area);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,

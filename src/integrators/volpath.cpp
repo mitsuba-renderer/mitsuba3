@@ -1,4 +1,5 @@
 #include <random>
+#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -175,7 +176,7 @@ public:
 
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
                 if (dr::any_or<true>(is_spectral)) {
-                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mei, si, is_spectral);
+                    auto [tr, free_flight_pdf] = medium->transmittance_eval_pdf(mei, si, is_spectral);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);
                     dr::masked(throughput, is_spectral) *= dr::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
                 }
@@ -226,14 +227,14 @@ public:
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (dr::any_or<true>(active_e)) {
                     auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
-                    Float phase_val = phase->eval(phase_ctx, mei, ds.d, active_e);
+                    auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
                     dr::masked(result, active_e) += throughput * phase_val * emitted *
-                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_val));
+                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf));
                 }
 
                 // ------------------ Phase function sampling -----------------
                 dr::masked(phase, !act_medium_scatter) = nullptr;
-                auto [wo, phase_pdf] = phase->sample(phase_ctx, mei,
+                auto [wo, phase_weight, phase_pdf] = phase->sample(phase_ctx, mei,
                     sampler->next_1d(act_medium_scatter),
                     sampler->next_2d(act_medium_scatter),
                     act_medium_scatter);
@@ -242,6 +243,7 @@ public:
                 dr::masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
                 dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
+                dr::masked(throughput, act_medium_scatter) *= phase_weight;
             }
 
             // --------------------- Surface Interactions ---------------------
@@ -299,7 +301,7 @@ public:
                 dr::masked(throughput, active_surface) *= bsdf_val;
                 dr::masked(eta, active_surface) *= bs.eta;
 
-                Ray bsdf_ray                    = si.spawn_ray(si.to_world(bs.wo));
+                Ray3f bsdf_ray                  = si.spawn_ray(si.to_world(bs.wo));
                 dr::masked(ray, active_surface) = bsdf_ray;
                 needs_intersection |= active_surface;
 
@@ -324,10 +326,11 @@ public:
 
 
     /// Samples an emitter in the scene and evaluates its attenuated contribution
+    template <typename Interaction>
     std::tuple<Spectrum, DirectionSample3f>
-    sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
-                   Sampler *sampler, MediumPtr medium, UInt32 channel,
-                   Mask active) const {
+    sample_emitter(const Interaction &ref_interaction, const Scene *scene,
+                   Sampler *sampler, MediumPtr medium,
+                   UInt32 channel, Mask active) const {
         Spectrum transmittance(1.0f);
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
@@ -338,7 +341,13 @@ public:
             return { emitter_val, ds };
         }
 
-        Ray3f ray = ref_interaction.spawn_ray(ds.d);
+        Ray3f ray = ref_interaction.spawn_ray_to(ds.p);
+        Float max_dist = ray.maxt;
+
+        // Potentially escaping the medium if this is the current medium's boundary
+        if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
+            dr::masked(medium, ref_interaction.is_medium_transition()) =
+                ref_interaction.target_medium(ray.d);
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
@@ -350,7 +359,7 @@ public:
         sampler->loop_put(loop);
         loop.init();
         while (loop(dr::detach(active))) {
-            Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
+            Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
             if (dr::none_or<false>(active))

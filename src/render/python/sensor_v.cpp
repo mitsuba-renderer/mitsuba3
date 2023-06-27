@@ -11,18 +11,16 @@ public:
 
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float sample1, const Point2f &sample2,
-           const Point2f &sample3, Mask active) const override {
+               const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3,
-                               active);
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3, active);
     }
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                             const Point2f &sample3, Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
-                               active);
+        PYBIND11_OVERRIDE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3, active);
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -65,7 +63,7 @@ public:
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
         using Return = std::pair<Wavelength, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_wavelengths, si, sample, active);
+        PYBIND11_OVERRIDE(Return, Sensor, sample_wavelengths, si, sample, active);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -78,6 +76,7 @@ public:
 
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
+    using Sensor::m_film;
 };
 
 MI_PY_EXPORT(Sensor) {
@@ -87,14 +86,16 @@ MI_PY_EXPORT(Sensor) {
     MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(py::init<const Properties&>())
         .def("sample_ray_differential", &Sensor::sample_ray_differential,
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+             D(Sensor, sample_ray_differential))
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler))
         .def_readwrite("m_needs_sample_2", &PySensor::m_needs_sample_2)
-        .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3);
+        .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3)
+        .def_readwrite("m_film", &PySensor::m_film);
 
     MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
@@ -115,11 +116,18 @@ MI_PY_EXPORT(Sensor) {
 
         cls.def("sample_ray",
                 [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
-                const Point2f &sample3, Mask active) {
+                   const Point2f &sample3, Mask active) {
                     return ptr->sample_ray(time, sample1, sample2, sample3, active);
                 },
                 "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
                 D(Endpoint, sample_ray))
+        .def("sample_ray_differential",
+                [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
+                   const Point2f &sample3, Mask active) {
+                    return ptr->sample_ray_differential(time, sample1, sample2, sample3, active);
+                },
+                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+                D(Sensor, sample_ray_differential))
         .def("sample_direction",
                 [](SensorPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
                     return ptr->sample_direction(it, sample, active);

@@ -6,14 +6,14 @@ import argparse
 import glob
 import numpy as np
 
-from os.path import join, realpath, dirname, basename, splitext, exists
+from os.path import join, dirname, basename, splitext, exists
 from drjit.scalar import ArrayXf as Float
-
+from mitsuba.scalar_rgb.test.util import find_resource
 
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
 
 # List all the XML scenes in the tests/scenes folder
-TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
+TEST_SCENE_DIR = find_resource('resources/data/tests/scenes')
 SCENES = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 # List of test scene folders to exclude
@@ -78,8 +78,7 @@ def list_all_render_test_configs():
                 continue
             if is_polarized and any(ex in scene_fname for ex in POLARIZED_EXCLUDE_FOLDERS):
                 continue
-
-            scene_integrator_type = scene_fname.split('.')[0].rsplit('_', 1)[-1]
+            scene_integrator_type = os.path.splitext(scene_fname)[0].rsplit('_', 1)[-1]
 
             if not is_jit:
                 configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))

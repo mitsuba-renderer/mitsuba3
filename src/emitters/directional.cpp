@@ -91,8 +91,9 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("irradiance", m_irradiance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+        Base::traverse(callback);
+        callback->put_object("irradiance",   m_irradiance.get(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_world", *m_to_world.ptr(),   +ParamFlags::NonDifferentiable);
     }
 
     void set_scene(const Scene *scene) override {
@@ -174,6 +175,15 @@ public:
 
         return { ds, depolarizer<Spectrum>(spec) };
     }
+
+    Spectrum eval_direction(const Interaction3f & it,
+                        const DirectionSample3f & /*ds*/,
+                        Mask active) const override {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+        return depolarizer<Spectrum>(m_irradiance->eval(si, active));
+    }
+
 
     Float pdf_direction(const Interaction3f & /*it*/,
                         const DirectionSample3f & /*ds*/,

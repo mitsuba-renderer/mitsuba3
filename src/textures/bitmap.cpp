@@ -105,7 +105,7 @@ at all.
 
     .. code-tab:: python
 
-        'type': 'mesh_attribute',
+        'type': 'bitmap',
         'filename': 'texture.png',
         'wrap_mode': 'mirror'
 

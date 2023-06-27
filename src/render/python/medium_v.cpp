@@ -65,12 +65,12 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->sample_interaction(ray, sample, channel, active); },
             "ray"_a, "sample"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction))
-       .def("eval_tr_and_pdf",
+       .def("transmittance_eval_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
-                return ptr->eval_tr_and_pdf(mi, si, active); },
+                return ptr->transmittance_eval_pdf(mi, si, active); },
             "mi"_a, "si"_a, "active"_a,
-            D(Medium, eval_tr_and_pdf))
+            D(Medium, transmittance_eval_pdf))
        .def("get_scattering_coefficients",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_scattering_coefficients(mi, active); },

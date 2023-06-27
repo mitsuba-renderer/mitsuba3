@@ -81,7 +81,7 @@ class PluginParameters(Table):
         return 4
 
     def build_table_from_list(self, table_data, col_widths, header_rows, extra_rows, stub_columns):
-        table = nodes.table()
+        table = nodes.table(width='100%')
         tgroup = nodes.tgroup(cols=len(col_widths))
         table += tgroup
         for col_width in col_widths:

@@ -158,7 +158,10 @@ public:
                   " found %s instead.", file_format);
         }
 
-        if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
+        if (pixel_format == "luminance_alpha") {
+            m_pixel_format = Bitmap::PixelFormat::YA;
+            m_flags = +FilmFlags::Alpha;
+        } else if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
             m_pixel_format = Bitmap::PixelFormat::Y;
             m_flags = +FilmFlags::Empty;
             if (pixel_format != "luminance")
@@ -166,9 +169,6 @@ public:
                     "Monochrome mode enabled, setting film output pixel format "
                     "to 'luminance' (was %s).",
                     pixel_format);
-        } else if (pixel_format == "luminance_alpha") {
-            m_pixel_format = Bitmap::PixelFormat::YA;
-            m_flags = +FilmFlags::Alpha;
         } else if (pixel_format == "rgb") {
             m_pixel_format = Bitmap::PixelFormat::RGB;
             m_flags = +FilmFlags::Empty;
@@ -281,6 +281,11 @@ public:
         Assert(m_storage != nullptr);
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
+    }
+
+    void clear() override {
+        if (m_storage)
+            m_storage->clear();
     }
 
     TensorXf develop(bool raw = false) const override {

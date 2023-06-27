@@ -16,6 +16,8 @@
 
 #if !defined(_WIN32)
 #  include <signal.h>
+#else
+#  include <windows.h>
 #endif
 
 using namespace mitsuba;

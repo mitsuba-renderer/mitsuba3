@@ -84,9 +84,9 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 MI_VARIANT
 std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
           typename Medium<Float, Spectrum>::UnpolarizedSpectrum>
-Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
-                                         const SurfaceInteraction3f &si,
-                                         Mask active) const {
+Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
+                                                const SurfaceInteraction3f &si,
+                                                Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
     Float t      = dr::minimum(mi.t, si.t) - mi.mint;

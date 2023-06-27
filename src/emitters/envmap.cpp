@@ -75,9 +75,9 @@ The plugin can work with all types of images that are natively supported by Mits
 (i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
-High quality free light probes are available on
-`Paul Debevec's <http://gl.ict.usc.edu/Data/HighResProbes>`_ and
-`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
+High quality free light probes are available on 
+`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or 
+`Polyhaven <https://polyhaven.com/hdris>`_.
 
 .. tabs::
     .. code-tab:: xml
@@ -237,8 +237,9 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale",    m_scale,           +ParamFlags::Differentiable);
-        callback->put_parameter("data",     m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        Base::traverse(callback);
+        callback->put_parameter("scale",     m_scale,          +ParamFlags::Differentiable);
+        callback->put_parameter("data",      m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
@@ -304,6 +305,7 @@ public:
 
             m_warp = Warp(luminance.get(), res);
         }
+        Base::parameters_changed(keys);
     }
 
     void set_scene(const Scene *scene) override {

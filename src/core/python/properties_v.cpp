@@ -115,6 +115,9 @@ MI_PY_EXPORT(Properties) {
             .def("__delitem__", [](Properties& p, const std::string &key) {
                 return p.remove_property(key);
             })
+            .def("as_string",
+                py::overload_cast<const std::string&>(&Properties::as_string, py::const_),
+                D(Properties, as_string))
             // Operators
             .def(py::self == py::self, D(Properties, operator_eq))
             .def(py::self != py::self, D(Properties, operator_ne))

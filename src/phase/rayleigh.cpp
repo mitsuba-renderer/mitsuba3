@@ -51,11 +51,11 @@ public:
         return (3.f / 16.f) * dr::InvPi<Float> * (1.f + dr::sqr(cos_theta));
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f &mi,
-                                      Float /* sample1 */,
-                                      const Point2f &sample,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                                 const MediumInteraction3f &mi,
+                                                 Float /* sample1 */,
+                                                 const Point2f &sample,
+                                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float z   = 2.f * (2.f * sample.x() - 1.f);
@@ -70,14 +70,16 @@ public:
 
         wo = mi.to_world(wo);
         Float pdf = eval_rayleigh(-cos_theta);
-        return { wo, pdf };
+        return { wo, 1.f, pdf };
     }
 
-    Float eval(const PhaseFunctionContext & /* ctx */,
-               const MediumInteraction3f &mi, const Vector3f &wo,
-               Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext & /* ctx */,
+                                        const MediumInteraction3f & mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
-        return eval_rayleigh(dot(wo, mi.wi));
+        Float pdf = eval_rayleigh(dot(wo, mi.wi));
+        return { pdf, pdf };
     }
 
     std::string to_string() const override { return "RayleighPhaseFunction[]"; }

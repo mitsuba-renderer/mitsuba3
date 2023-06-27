@@ -9017,6 +9017,128 @@ $L__BB8_2:
 	ret;
 
 }
+	// .globl	__closesthit__bsplinecurve
+.visible .entry __closesthit__bsplinecurve()
+{
+	.reg .pred 	%p<2>;
+	.reg .f32 	%f<2>;
+	.reg .b32 	%r<18>;
+	.reg .b64 	%rd<2>;
+
+
+	// begin inline asm
+	call (%rd1), _optix_get_sbt_data_ptr_64, ();
+	// end inline asm
+	// begin inline asm
+	call (%r1), _optix_read_primitive_idx, ();
+	// end inline asm
+	// begin inline asm
+	call (%f1), _optix_get_ray_tmax, ();
+	// end inline asm
+	// begin inline asm
+	call (%r2), _optix_get_attribute_0, ();
+	// end inline asm
+	ld.u32 	%r12, [%rd1];
+	mov.b32 	%r4, %f1;
+	mov.u32 	%r8, 0;
+	// begin inline asm
+	call _optix_set_payload, (%r8, %r4);
+	// end inline asm
+	mov.u32 	%r5, 1;
+	// begin inline asm
+	call _optix_set_payload, (%r5, %r2);
+	// end inline asm
+	mov.u32 	%r7, 2;
+	// begin inline asm
+	call _optix_set_payload, (%r7, %r8);
+	// end inline asm
+	mov.u32 	%r9, 3;
+	// begin inline asm
+	call _optix_set_payload, (%r9, %r1);
+	// end inline asm
+	mov.u32 	%r11, 4;
+	// begin inline asm
+	call _optix_set_payload, (%r11, %r12);
+	// end inline asm
+	mov.u32 	%r14, 5;
+	// begin inline asm
+	call (%r13), _optix_get_payload, (%r14);
+	// end inline asm
+	setp.eq.s32 	%p1, %r13, 0;
+	@%p1 bra 	$L__BB9_2;
+
+	// begin inline asm
+	call (%r15), _optix_read_instance_id, ();
+	// end inline asm
+	// begin inline asm
+	call _optix_set_payload, (%r14, %r15);
+	// end inline asm
+
+$L__BB9_2:
+	ret;
+
+}
+	// .globl	__closesthit__linearcurve
+.visible .entry __closesthit__linearcurve()
+{
+	.reg .pred 	%p<2>;
+	.reg .f32 	%f<2>;
+	.reg .b32 	%r<18>;
+	.reg .b64 	%rd<2>;
+
+
+	// begin inline asm
+	call (%rd1), _optix_get_sbt_data_ptr_64, ();
+	// end inline asm
+	// begin inline asm
+	call (%r1), _optix_read_primitive_idx, ();
+	// end inline asm
+	// begin inline asm
+	call (%f1), _optix_get_ray_tmax, ();
+	// end inline asm
+	// begin inline asm
+	call (%r2), _optix_get_attribute_0, ();
+	// end inline asm
+	ld.u32 	%r12, [%rd1];
+	mov.b32 	%r4, %f1;
+	mov.u32 	%r8, 0;
+	// begin inline asm
+	call _optix_set_payload, (%r8, %r4);
+	// end inline asm
+	mov.u32 	%r5, 1;
+	// begin inline asm
+	call _optix_set_payload, (%r5, %r2);
+	// end inline asm
+	mov.u32 	%r7, 2;
+	// begin inline asm
+	call _optix_set_payload, (%r7, %r8);
+	// end inline asm
+	mov.u32 	%r9, 3;
+	// begin inline asm
+	call _optix_set_payload, (%r9, %r1);
+	// end inline asm
+	mov.u32 	%r11, 4;
+	// begin inline asm
+	call _optix_set_payload, (%r11, %r12);
+	// end inline asm
+	mov.u32 	%r14, 5;
+	// begin inline asm
+	call (%r13), _optix_get_payload, (%r14);
+	// end inline asm
+	setp.eq.s32 	%p1, %r13, 0;
+	@%p1 bra 	$L__BB10_2;
+
+	// begin inline asm
+	call (%r15), _optix_read_instance_id, ();
+	// end inline asm
+	// begin inline asm
+	call _optix_set_payload, (%r14, %r15);
+	// end inline asm
+
+$L__BB10_2:
+	ret;
+
+}
 	// .globl	__miss__ms
 .visible .entry __miss__ms()
 {
@@ -9028,17 +9150,17 @@ $L__BB8_2:
 	call (%r1), _optix_get_ray_flags, ();
 	// end inline asm
 	setp.eq.s32 	%p1, %r1, 12;
-	@%p1 bra 	$L__BB9_2;
-	bra.uni 	$L__BB9_1;
+	@%p1 bra 	$L__BB11_2;
+	bra.uni 	$L__BB11_1;
 
-$L__BB9_2:
+$L__BB11_2:
 	mov.u32 	%r7, 0;
 	// begin inline asm
 	call _optix_set_payload, (%r7, %r7);
 	// end inline asm
-	bra.uni 	$L__BB9_3;
+	bra.uni 	$L__BB11_3;
 
-$L__BB9_1:
+$L__BB11_1:
 	mov.u32 	%r5, 0;
 	mov.u32 	%r3, 2139095040;
 	// begin inline asm
@@ -9049,7 +9171,7 @@ $L__BB9_1:
 	call _optix_set_payload, (%r4, %r5);
 	// end inline asm
 
-$L__BB9_3:
+$L__BB11_3:
 	ret;
 
 }

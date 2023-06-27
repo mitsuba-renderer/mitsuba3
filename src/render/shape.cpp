@@ -29,6 +29,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         Sensor *sensor   = dynamic_cast<Sensor *>(obj.get());
         BSDF *bsdf       = dynamic_cast<BSDF *>(obj.get());
         Medium *medium   = dynamic_cast<Medium *>(obj.get());
+        Texture *texture = dynamic_cast<Texture *>(obj.get());
 
         if (emitter) {
             if (m_emitter)
@@ -52,6 +53,8 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
             }
+        } else if (texture) {
+            m_texture_attributes.insert({ name, texture });
         } else {
             continue;
         }
@@ -83,6 +86,14 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
 
 MI_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
     return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
+}
+
+MI_VARIANT bool Shape<Float, Spectrum>::is_bspline_curve() const {
+    return false;
+}
+
+MI_VARIANT bool Shape<Float, Spectrum>::is_linear_curve() const {
+    return false;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
@@ -443,39 +454,57 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::Mask
+Shape<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
+    return m_texture_attributes.find(name) != m_texture_attributes.end();
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
-Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
-                                       const SurfaceInteraction3f & /*si*/,
-                                       Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute");
+Shape<Float, Spectrum>::eval_attribute(const std::string & name,
+                                       const SurfaceInteraction3f & si,
+                                       Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval(si, active);
 }
 
 MI_VARIANT Float
-Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_1");
+Shape<Float, Spectrum>::eval_attribute_1(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_1(si, active);
 }
+
 MI_VARIANT typename Shape<Float, Spectrum>::Color3f
-Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_3");
+Shape<Float, Spectrum>::eval_attribute_3(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_3(si, active);
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
@@ -520,7 +549,7 @@ MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_v<Float>) {
-            if (!is_mesh())
+            if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is used
                 dr::make_opaque(m_to_world, m_to_object);
         }
 
@@ -542,7 +571,7 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        if (!is_mesh())
+        if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is not used
             dr::make_opaque(m_to_world, m_to_object);
     }
 
