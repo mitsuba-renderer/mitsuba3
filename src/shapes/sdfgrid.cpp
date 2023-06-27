@@ -59,7 +59,7 @@ SDF Grid (:monosp:`sdfgrid`)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid.jpg
-   :caption: Basic example using the default smooth method for computing normals
+   :caption: Basic example
 .. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid_analytic.jpg 
    :caption: An SDF grid using the analytic method for computing normals
 .. subfigend::
@@ -77,7 +77,7 @@ selected as the default approach to ensure continuity across grid cells.
    - An SDF grid shape does not emit UV coordinates for texturing.
 
 
-The following XML snippet showcases a simple example of a SDF Grid:
+The following XML snippet showcases a simple example of an SDF Grid:
 
 .. tabs::
     .. code-tab:: xml
