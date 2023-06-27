@@ -721,6 +721,9 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv); //{0.00729447091, 0.929102302}; 
 
+        // std::cout<<"si.p: "<<si.p<<" "<<si.duv_dx<<" "<<si.duv_dy<<std::endl;
+        // std::cin.get();
+
         // Get correctly transformed m_rfilter duv/dxy. TODO: Optimization?
         const ScalarMatrix3f uv_tm = m_transform.matrix;
 
@@ -806,7 +809,7 @@ protected:
             }
         }
 
-        return out;  // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();   
+        return out;  // level / m_pyramid.size(); // (lower + 1.f)/ m_pyramid.size();
     }
 
     /**

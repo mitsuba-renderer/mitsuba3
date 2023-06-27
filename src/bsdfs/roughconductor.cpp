@@ -311,7 +311,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
-        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= cos_theta_i > 0.f;
 
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return 0.f;
