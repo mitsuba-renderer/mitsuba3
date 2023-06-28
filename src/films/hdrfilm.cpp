@@ -229,6 +229,19 @@ public:
         props.mark_queried("banner"); // no banner in Mitsuba 3
     }
 
+    size_t target_base_channels_count() const override {
+        bool to_y = m_pixel_format == Bitmap::PixelFormat::Y 
+        || m_pixel_format == Bitmap::PixelFormat::YA;
+
+        /// Number of desired color components
+        uint32_t color_ch = to_y ? 1 : 3;
+
+        bool alpha = has_flag(m_flags, FilmFlags::Alpha);
+
+        /// Number of channels of the target tensor
+        return color_ch + (uint32_t)alpha;
+    }
+
     size_t prepare(const std::vector<std::string> &aovs) override {
         bool alpha = has_flag(m_flags, FilmFlags::Alpha);
         size_t base_channels = alpha ? 5 : 4;

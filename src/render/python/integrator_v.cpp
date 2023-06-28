@@ -77,6 +77,37 @@ public:
             return SamplingIntegrator::render(scene, sensor, seed, spp, develop, evaluate);
     }
 
+    TensorXf render_forward(Scene* scene,
+                            void* params,
+                            Sensor *sensor,
+                            uint32_t seed = 0,
+                            uint32_t spp = 0) override {
+
+        py::gil_scoped_acquire gil;
+        py::function render_forward_override = py::get_override(this, "render_forward");
+
+        if (render_forward_override)
+            return render_forward_override(scene, params, sensor, seed, spp).template cast<TensorXf>();
+        else
+            return SamplingIntegrator::render_forward(scene, params, sensor, seed, spp);
+    }
+
+    void render_backward(Scene* scene,
+                         void* params,
+                         const TensorXf& grad_in,
+                         Sensor* sensor,
+                         uint32_t seed = 0,
+                         uint32_t spp = 0) override {
+        
+        py::gil_scoped_acquire gil;
+        py::function render_backward_override = py::get_override(this, "render_backward");
+
+        if (render_backward_override)
+            render_backward_override(scene, params, grad_in, sensor, seed, spp);
+        else
+            SamplingIntegrator::render_backward(scene, params, grad_in, sensor, seed, spp);
+    }
+
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
@@ -204,6 +235,38 @@ public:
         }
     }
 
+    TensorXf render_forward(Scene* scene,
+                            void* params,
+                            Sensor *sensor,
+                            uint32_t seed = 0,
+                            uint32_t spp = 0) override {
+
+        py::gil_scoped_acquire gil;
+        py::function render_forward_override = py::get_override(this, "render_forward");
+
+        if (render_forward_override)
+            return render_forward_override(scene, params, sensor, seed, spp).template cast<TensorXf>();
+        else
+            return Base::render_forward(scene, params, sensor, seed, spp);
+    }
+
+    void render_backward(Scene* scene,
+                         void* params,
+                         const TensorXf& grad_in,
+                         Sensor* sensor,
+                         uint32_t seed = 0,
+                         uint32_t spp = 0) override {
+        
+        py::gil_scoped_acquire gil;
+        py::function render_backward_override = py::get_override(this, "render_backward");
+
+        if (render_backward_override)
+            render_backward_override(scene, params, grad_in, sensor, seed, spp);
+        else
+            Base::render_backward(scene, params, grad_in, sensor, seed, spp);
+    }
+
+
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
@@ -298,6 +361,48 @@ MI_PY_EXPORT(Integrator) {
             },
             "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr,
             "active"_a = true, D(SamplingIntegrator, sample))
+        .def(
+            "render_forward",
+            [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
+                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_forward(scene, params, sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "sensor"_a, "seed"_a = 0, "spp"_a = 0)
+        .def(
+            "render_forward",
+            [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
+                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_forward(scene, params, sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "sensor"_a = 0, "seed"_a = 0, "spp"_a = 0)
+        .def(
+            "render_backward",
+            [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
+                const TensorXf& grad_in, Sensor* sensor, uint32_t seed, 
+                uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_backward(scene, params, grad_in,
+                                                   sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0, 
+            "spp"_a = 0)
+        .def(
+            "render_backward",
+            [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
+                const TensorXf& grad_in, uint32_t sensor, uint32_t seed, 
+                uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_backward(scene, params, grad_in,
+                                                   sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0, 
+            "spp"_a = 0)
         .def_readwrite("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
     MI_PY_REGISTER_OBJECT("register_integrator", Integrator)

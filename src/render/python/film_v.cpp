@@ -14,6 +14,10 @@ public:
 
     PyFilm(const Properties &props) : Film(props) { }
 
+    size_t target_base_channels_count() const override {
+        PYBIND11_OVERRIDE_PURE(size_t, Film, target_base_channels_count);
+    }
+
     size_t prepare(const std::vector<std::string> &aovs) override {
         PYBIND11_OVERRIDE_PURE(size_t, Film, prepare, aovs);
     }

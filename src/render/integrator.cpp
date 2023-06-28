@@ -458,6 +458,38 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
     NotImplementedError("sample");
 }
 
+MI_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
+SamplingIntegrator<Float, Spectrum>::render_forward(Scene* scene,
+                                                    void* /*params*/,
+                                                    Sensor *sensor,
+                                                    uint32_t seed,
+                                                    uint32_t spp) {
+
+    // Recorded loops cannot be differentiated, so let's disable them
+    dr::scoped_set_flag(JitFlag::LoopRecord, false);
+
+    auto image = render(scene, sensor, seed, spp, true, false);
+    dr::forward_to(image.array());
+
+    return dr::grad(image);
+}
+
+MI_VARIANT void
+SamplingIntegrator<Float, Spectrum>::render_backward(Scene* scene,
+                                                     void* /*params */,
+                                                     const TensorXf& grad_in,
+                                                     Sensor* sensor,
+                                                     uint32_t seed,
+                                                     uint32_t spp) {
+
+    // Recorded loops cannot be differentiated, so let's disable them
+    dr::scoped_set_flag(JitFlag::LoopRecord, false);
+
+    auto image = render(scene, sensor, seed, spp, true, false);
+    dr::backward_from((image * grad_in).array());
+}
+
+
 // -----------------------------------------------------------------------------
 
 MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
