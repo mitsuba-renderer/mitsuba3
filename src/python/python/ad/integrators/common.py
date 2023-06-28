@@ -472,9 +472,9 @@ class ADIntegrator(mi.CppADIntegrator):
         '''Helper function to splat values to a imageblock'''
         if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
             aovs = film.prepare_sample(value, wavelengths,
-                                        block.channel_count(),
-                                        weight=weight,
-                                        alpha=alpha)
+                                       block.channel_count(),
+                                       weight=weight,
+                                       alpha=alpha)
             block.put(pos, aovs)
             del aovs
         else:
@@ -483,7 +483,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 wavelengths=wavelengths,
                 value=value,
                 weight=weight,
-                alpha=alpha
+                alpha=alpha,
             )
 
     def sample(self,
@@ -969,186 +969,6 @@ class RBIntegrator(ADIntegrator):
 
             # Run kernel representing side effects of the above
             dr.eval()
-
-# ---------------------------------------------------------------------------
-# Default implementation of Integrator.render_forward/backward
-# ---------------------------------------------------------------------------
-
-def render_forward(self: mi.Integrator,
-                   scene: mi.Scene,
-                   params: Any,
-                   sensor: Union[int, mi.Sensor] = 0,
-                   seed: int = 0,
-                   spp: int = 0) -> mi.TensorXf:
-    """
-    Evaluates the forward-mode derivative of the rendering step.
-
-    Forward-mode differentiation propagates gradients from scene parameters
-    through the simulation, producing a *gradient image* (i.e., the derivative
-    of the rendered image with respect to those scene parameters). The gradient
-    image is very helpful for debugging, for example to inspect the gradient
-    variance or visualize the region of influence of a scene parameter. It is
-    not particularly useful for simultaneous optimization of many parameters,
-    since multiple differentiation passes are needed to obtain separate
-    derivatives for each scene parameter. See ``Integrator.render_backward()``
-    for an efficient way of obtaining all parameter derivatives at once, or
-    simply use the ``mi.render()`` abstraction that hides both
-    ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
-    a unified interface.
-
-    Before calling this function, you must first enable gradient tracking and
-    furthermore associate concrete input gradients with one or more scene
-    parameters, or the function will just return a zero-valued gradient image.
-    This is typically done by invoking ``dr.enable_grad()`` and
-    ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-    that can be obtained obtained via a call to ``mi.traverse()``.
-
-    Note the default implementation of this functionality relies on naive
-    automatic differentiation (AD), which records a computation graph of the
-    primal rendering step that is subsequently traversed to propagate
-    derivatives. This tends to be relatively inefficient due to the need to
-    track intermediate program state. In particular, it means that
-    differentiation of nontrivial scenes at high sample counts will often run
-    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-    ``prb`` (Path Replay Backpropagation) that are specifically designed for
-    differentiation can be significantly more efficient.
-
-    Parameter ``scene`` (``mi.Scene``):
-        The scene to be rendered differentially.
-
-    Parameter ``params``:
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render_forward()`` will not do this for you). Furthermore,
-       ``dr.set_grad(...)`` must be used to associate specific gradient values
-       with each parameter.
-
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
-
-    Parameter ``seed` (``int``)
-        This parameter controls the initialization of the random number
-        generator. It is crucial that you specify different seeds (e.g., an
-        increasing sequence) if subsequent calls should produce statistically
-        independent images (e.g. to de-correlate gradient-based optimization
-        steps).
-
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        differential rendering step. The value provided within the original
-        scene specification takes precedence if ``spp=0``.
-    """
-
-    # Recorded loops cannot be differentiated, so let's disable them
-    with dr.scoped_set_flag(dr.JitFlag.LoopRecord, False):
-        image = self.render(
-            scene=scene,
-            sensor=sensor,
-            seed=seed,
-            spp=spp,
-            develop=True,
-            evaluate=False
-        )
-
-        # Perform an AD traversal of all registered AD variables that
-        # influence 'image' in a differentiable manner
-        dr.forward_to(image)
-
-        return dr.grad(image)
-
-def render_backward(self: mi.Integrator,
-                    scene: mi.Scene,
-                    params: Any,
-                    grad_in: mi.TensorXf,
-                    sensor: Union[int, mi.Sensor] = 0,
-                    seed: int = 0,
-                    spp: int = 0) -> None:
-    """
-    Evaluates the reverse-mode derivative of the rendering step.
-
-    Reverse-mode differentiation transforms image-space gradients into scene
-    parameter gradients, enabling simultaneous optimization of scenes with
-    millions of free parameters. The function is invoked with an input
-    *gradient image* (``grad_in``) and transforms and accumulates these into
-    the gradient arrays of scene parameters that previously had gradient
-    tracking enabled.
-
-    Before calling this function, you must first enable gradient tracking for
-    one or more scene parameters, or the function will not do anything. This is
-    typically done by invoking ``dr.enable_grad()`` on elements of the
-    ``SceneParameters`` data structure that can be obtained obtained via a call
-    to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
-    these parameters once ``render_backward()`` returns.
-
-    Note the default implementation of this functionality relies on naive
-    automatic differentiation (AD), which records a computation graph of the
-    primal rendering step that is subsequently traversed to propagate
-    derivatives. This tends to be relatively inefficient due to the need to
-    track intermediate program state. In particular, it means that
-    differentiation of nontrivial scenes at high sample counts will often run
-    out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-    ``prb`` (Path Replay Backpropagation) that are specifically designed for
-    differentiation can be significantly more efficient.
-
-    Parameter ``scene`` (``mi.Scene``):
-        The scene to be rendered differentially.
-
-    Parameter ``params``:
-       An arbitrary container of scene parameters that should receive
-       gradients. Typically this will be an instance of type
-       ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-       also be a Python list/dict/object tree (DrJit will traverse it to find
-       all parameters). Gradient tracking must be explicitly enabled for each of
-       these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render_backward()`` will not do this for you).
-
-    Parameter ``grad_in`` (``mi.TensorXf``):
-        Gradient image that should be back-propagated.
-
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
-
-    Parameter ``seed` (``int``)
-        This parameter controls the initialization of the random number
-        generator. It is crucial that you specify different seeds (e.g., an
-        increasing sequence) if subsequent calls should produce statistically
-        independent images (e.g. to de-correlate gradient-based optimization
-        steps).
-
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        differential rendering step. The value provided within the original
-        scene specification takes precedence if ``spp=0``.
-    """
-
-    # Recorded loops cannot be differentiated, so let's disable them
-    with dr.scoped_set_flag(dr.JitFlag.LoopRecord, False):
-        image = self.render(
-            scene=scene,
-            sensor=sensor,
-            seed=seed,
-            spp=spp,
-            develop=True,
-            evaluate=False
-        )
-
-        # Process the computation graph using reverse-mode AD
-        dr.backward_from(image * grad_in)
-
-# Monkey-patch render_forward/backward into the Integrator base class
-mi.Integrator.render_backward = render_backward
-mi.Integrator.render_forward = render_forward
-
-del render_backward
-del render_forward
 
 # ------------------------------------------------------------------------------
 
