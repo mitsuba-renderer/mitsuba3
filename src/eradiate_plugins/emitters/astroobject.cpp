@@ -30,8 +30,8 @@ Distant astronomical object (:monosp:`astroobject`)
 
  * - direction
    - |vector|
-   - Alternative (and exclusive) to `to_world`. Direction towards which the
-     emitter is radiating in world coordinates.
+   - Alternative (and exclusive) to `to_world`. Direction in which the emitter
+     is visible in world coordinates.
 
  * - angular_diameter
    - |float|
@@ -86,28 +86,24 @@ public:
                 dr::normalize(props.get<ScalarVector3f>("direction"))),
                 up;
             std::tie(up, std::ignore) = coordinate_system(direction);
-            m_direction               = direction;
             m_to_world =
                 ScalarTransform4f::look_at(0.f, ScalarPoint3f(direction), up);
             dr::make_opaque(m_to_world);
         }
 
-        ScalarFloat angular_diameter = SUN_ANGULAR_DIAMETER;
-        if (props.has_property("angular_diameter"))
-            angular_diameter = props.get<ScalarFloat>("angular_diameter");
-
-        ScalarFloat m_angular_radius = dr::deg_to_rad(angular_diameter / 2.f);
-        m_cos_angular_radius   = dr::cos(m_angular_radius);
-        if (dr::any((1.f <= m_cos_angular_radius) |
-                    (m_cos_angular_radius < 0.f))) {
+        ScalarFloat angular_diameter =
+            props.get<ScalarFloat>("angular_diameter", SUN_ANGULAR_DIAMETER);
+        if (dr::any((180.f <= angular_diameter) | (angular_diameter <= 0.f)))
             Throw("Invalid angular diameter specified! (must be in ]0, 180[°)");
-        }
 
+        ScalarFloat angular_radius = dr::deg_to_rad(angular_diameter / 2.f);
+        m_cos_angular_radius       = dr::cos(angular_radius);
         m_omega      = 2.f * dr::Pi<ScalarFloat> * (1.f - m_cos_angular_radius);
         m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
+
         Log(Debug,
             "angular_radius: %s; angular_radius_cos: %s; solid angle omega: %s",
-            m_angular_radius, m_cos_angular_radius, m_omega);
+            angular_radius, m_cos_angular_radius, m_omega);
 
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");
@@ -140,10 +136,16 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Float cos_dirwwi = dr::dot(si.wi, m_direction);
+        // Transform interaction point to local frame
+        Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
+        // Compute cut-off criterion
+        Float cos_theta = dr::dot(v, ScalarVector3f{ 0.f, 0.f, 1.f });
+        Mask selected   = active & (cos_theta > m_cos_angular_radius);
+        // Evaluate spectrum for active lanes
+        UnpolarizedSpectrum spec =
+            depolarizer<Spectrum>(m_irradiance->eval(si, selected));
 
-        return depolarizer<Spectrum>(m_irradiance->eval(si, active) / m_omega) &
-               (cos_dirwwi > m_cos_angular_radius);
+        return dr::select(selected, spec / m_omega, 0.f);
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -255,7 +257,6 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
     Float m_cos_angular_radius;
     Float m_omega;
-    ScalarVector3f m_direction;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AstroObjectEmitter, Emitter)

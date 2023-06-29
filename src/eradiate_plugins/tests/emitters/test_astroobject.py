@@ -5,15 +5,15 @@ import numpy as np
 
 
 spectrum_dicts = {
-    'd65': {
+    "d65": {
         "type": "d65",
     },
-    'regular': {
+    "regular": {
         "type": "regular",
         "wavelength_min": 500,
         "wavelength_max": 600,
-        "values": "1, 2"
-    }
+        "values": "1, 2",
+    },
 }
 
 
@@ -29,8 +29,8 @@ def make_spectrum(spectrum_key="d65"):
 
 def make_emitter(direction=None, spectrum_key="d65", angular_diameter=None):
     emitter_dict = {
-        "type" : "astroobject",
-        "irradiance" : spectrum_dicts[spectrum_key],
+        "type": "astroobject",
+        "irradiance": spectrum_dicts[spectrum_key],
     }
 
     if direction is not None:
@@ -48,20 +48,24 @@ def test_construct(variant_scalar_rgb):
     assert not emitter.bbox().valid()  # Degenerate bounding box
     assert dr.allclose(
         emitter.world_transform().matrix,
-        [[1, 0, 0, 0],
-         [0, 1, 0, 0],
-         [0, 0, 1, 0],
-         [0, 0, 0, 1]]
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ],
     )  # Identity transform matrix by default
 
     # Check transform setup correctness
     emitter = make_emitter(direction=[0, 0, -1])
     assert dr.allclose(
         emitter.world_transform().matrix,
-        [[0, 1, 0, 0],
-         [1, 0, 0, 0],
-         [0, 0, -1, 0],
-         [0, 0, 0, 1]]
+        [
+            [0, 1, 0, 0],
+            [1, 0, 0, 0],
+            [0, 0, -1, 0],
+            [0, 0, 0, 1],
+        ],
     )
 
     # Check angular diameter setup
@@ -76,37 +80,32 @@ def test_construct(variant_scalar_rgb):
 def test_eval(variant_scalar_spectral, spectrum_key):
     # Check correctness of the eval() method
 
-    direction = mi.Vector3f([0, 0, -1])
-    emitter = make_emitter(direction, spectrum_key, angular_diameter=100.0)
+    direction = mi.ScalarVector3f([0, 0, -1])
+    emitter = make_emitter(direction, spectrum_key, angular_diameter=1.0)
 
-    print(emitter)
+    it = dr.zeros(mi.SurfaceInteraction3f)
+    it.wavelengths = [500, 525, 575, 600]
+    it.p = [0, 0, 0]
 
     # Incident direction in the illuminated direction
-    wi = [0, 0, -1]
-    it = mi.SurfaceInteraction3f()
-    it.p = [0, 0, 0]
-    it.wi = wi
-    assert not dr.allclose(emitter.eval(it), 0.)
+    it.wi = [0, 0, 1]
+    assert not dr.allclose(emitter.eval(it), 0.0)
 
     # Incident direction in the illuminated cone
-    wi = [1 / dr.sqrt(2), 0, -1 / dr.sqrt(2)]
-    it = mi.SurfaceInteraction3f()
-    it.p = [0, 0, 0]
-    it.wi = wi
-    assert not dr.allclose(emitter.eval(it), 0.)
+    it.wi = dr.normalize(mi.ScalarVector3f([0.001, 0, 1]))
+    assert not dr.allclose(emitter.eval(it), 0.0)
 
     # Incident direction outside the illuminated cone
-    wi = [1 / dr.sqrt(3), 1 / dr.sqrt(3), 1 / dr.sqrt(3)]
-    it = mi.SurfaceInteraction3f()
-    it.p = [0, 0, 0]
-    it.wi = wi
-    assert dr.allclose(emitter.eval(it), 0.)
+    it.wi = dr.normalize(mi.ScalarVector3f([0.01, 0, 1]))
+    assert dr.allclose(emitter.eval(it), 0.0)
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
 @pytest.mark.parametrize("angular_diameter", np.arange(0.1, 51, 10.0))
-def test_sample_direction(variant_scalar_spectral, spectrum_key, direction, angular_diameter):
+def test_sample_direction(
+    variant_scalar_spectral, spectrum_key, direction, angular_diameter
+):
     # Check correctness of sample_direction() and pdf_direction() methods
 
     direction = mi.Vector3f(direction)
