@@ -26,7 +26,7 @@
 
 #define ERD_MI_VERSION_MAJOR 0
 #define ERD_MI_VERSION_MINOR 0
-#define ERD_MI_VERSION_PATCH 1
+#define ERD_MI_VERSION_PATCH 2
 
 /// Current release of the Eradiate patch for Mitsuba
 #define ERD_MI_VERSION                                                             \
