@@ -166,14 +166,14 @@ public:
             2.f;
 
         DirectionSample3f ds;
-        ds.p       = it.p - d * dist;
-        ds.n       = d;
+        ds.p       = it.p + d * dist;
+        ds.n       = -d;
         ds.uv      = Point2f(0.f);
         ds.time    = it.time;
         ds.pdf     = pdf;
         ds.delta   = false;
         ds.emitter = this;
-        ds.d       = -d;
+        ds.d       = d;
         ds.dist    = dist;
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();

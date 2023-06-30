@@ -101,7 +101,7 @@ def test_eval(variant_scalar_spectral, spectrum_key):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
-@pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
+@pytest.mark.parametrize("direction", [[0, 0, 1], [-1, -1, -1], [0, 0, -1]])
 @pytest.mark.parametrize("angular_diameter", np.arange(0.1, 51, 10.0))
 def test_sample_direction(
     variant_scalar_spectral, spectrum_key, direction, angular_diameter
@@ -125,7 +125,7 @@ def test_sample_direction(
 
     # Direction should point *towards* the illuminated direction
 
-    assert dr.dot(ds.d, d) > dr.cos(dr.deg2rad(angular_diameter / 2))
+    assert dr.dot(ds.d, -d) > dr.cos(dr.deg2rad(angular_diameter / 2))
     assert dr.allclose(emitter.pdf_direction(it, ds), ds.pdf)
     assert dr.allclose(ds.time, it.time)
 
