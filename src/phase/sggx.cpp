@@ -85,7 +85,7 @@ public:
                                                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
         auto s         = eval_ndf_params(mi, active);
-        auto sampled_n = sggx_sample_vndf(mi.sh_frame, sample2, s);
+        auto sampled_n = sggx_sample(mi.sh_frame, sample2, s);
 
         // The diffuse variant of the SGGX is currently not supported and
         // requires some changes to the phase function interface to work in
@@ -98,7 +98,7 @@ public:
            wo = frame.to_world(wo);
            return {wo, pdf};
            } else { */
-        Float pdf = 0.25f * sggx_ndf_pdf(Vector3f(sampled_n), s) /
+        Float pdf = 0.25f * sggx_pdf(Vector3f(sampled_n), s) /
                     sggx_projected_area(mi.wi, s);
         Vector3f wo = dr::normalize(reflect(mi.wi, sampled_n));
         return { wo, 1.f, pdf };
@@ -112,10 +112,10 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         auto s = eval_ndf_params(mi, active);
         /* if (m_diffuse) {
-           auto sampled_n = sggx_sample_vndf(mi.sh_frame,
+           auto sampled_n = sggx_sample(mi.sh_frame,
            ctx.sampler->next_2d(active), s); return dr::InvPi<Float> *
            dr::maximum(dr::dot(wo, sampled_n), 0.f); } else { */
-        Float pdf = 0.25f * sggx_ndf_pdf(dr::normalize(wo + mi.wi), s) /
+        Float pdf = 0.25f * sggx_pdf(dr::normalize(wo + mi.wi), s) /
                     sggx_projected_area(mi.wi, s);
         // }
 
