@@ -288,6 +288,7 @@ public:
                     break;
 
                 case Type::dUVdx:
+                    si.compute_uv_partials(ray);
                     *aovs++ = si.duv_dx.x();
                     *aovs++ = si.duv_dx.y();
                     break;
