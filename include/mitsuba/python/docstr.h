@@ -11033,7 +11033,7 @@ context for the current scope.)doc";
 
 static const char *__doc_mitsuba_scoped_optix_context_scoped_optix_context = R"doc()doc";
 
-static const char *__doc_mitsuba_sggx_ndf_pdf =
+static const char *__doc_mitsuba_sggx_pdf =
 R"doc(Evaluates the probability of sampling a given normal using the SGGX
 microflake distribution
 
@@ -11066,7 +11066,7 @@ Parameter ``s``:
 Returns:
     The projected area of the SGGX microflake distribution)doc";
 
-static const char *__doc_mitsuba_sggx_sample_vndf =
+static const char *__doc_mitsuba_sggx_sample =
 R"doc(Samples the visible normal distribution of the SGGX microflake
 distribution
 
@@ -11093,7 +11093,7 @@ Returns:
     A normal (in world space) sampled from the distribution of visible
     normals)doc";
 
-static const char *__doc_mitsuba_sggx_sample_vndf_2 = R"doc()doc";
+static const char *__doc_mitsuba_sggx_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
