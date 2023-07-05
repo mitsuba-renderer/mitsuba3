@@ -62,7 +62,7 @@ public:
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                       Mask active) const override {
-        PYBIND11_OVERRIDE_PURE(Spectrum, BSDF, eval_diffuse_reflectance, si, active);
+        PYBIND11_OVERRIDE(Spectrum, BSDF, eval_diffuse_reflectance, si, active);
     }
 
     Mask has_attribute(const std::string &name, Mask active) const override {
