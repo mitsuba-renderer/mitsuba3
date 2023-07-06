@@ -143,66 +143,96 @@ public:
         BSDFPtr bsdf = si.bsdf(ray);
         auto flags = bsdf->flags();
         Mask sample_emitter = active && has_flag(flags, BSDFFlags::Smooth);
+        Mask isGlass = active && has_flag(flags, BSDFFlags::Transmission);
+        if (dr::any_or<true>(isGlass))
+        {
+            // Color3f test(255.0f,0.0f,255.0f);
+            // result = test;
+            Vector3f wo = si.to_local(ray.d);
+            auto [bsdf_val, bsdf_pdf, bsdf_sample, bsdf_weight]
+                = bsdf->eval_pdf_sample(ctx, si, wo, 0.5, 0.5);
+            Ray3f next_ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
+            SurfaceInteraction3f si2 = scene->ray_intersect(
+            next_ray, +RayFlags::All, /* coherent = */ true, active);
+            // if (dr::any_or<true>(si2.is_valid()))
+            // {
+            //     Color3f test(si2.n.x()+1,si2.n.y()+1,si2.n.z()+1);
+            //     result = test;
+            // }
+            // else
+            // {
+            //     Color3f test(0.0f,0.0f,0.0f);
+            //     result = test;
+            // }
+            Color3f test(si2.n.x()+1,si2.n.y()+1,si2.n.z()+1);
+            result = test;
 
-        if (dr::any_or<true>(sample_emitter)) {
-            for (size_t i = 0; i < m_emitter_samples; ++i) {
-                Mask active_e = sample_emitter;
-                DirectionSample3f ds;
-                Spectrum emitter_val;
-                std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
-                active_e &= dr::neq(ds.pdf, 0.f);
-                if (dr::none_or<false>(active_e))
-                    continue;
-
-                // Query the BSDF for that emitter-sampled direction
-                Vector3f wo = si.to_local(ds.d);
-
-                /* Determine BSDF value and probability of having sampled
-                   that same direction using BSDF sampling. */
-                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
-                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
-
-                Float mis = dr::select(ds.delta, Float(1.f), mis_weight(
-                    ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
-                result[active_e] += mis * bsdf_val * emitter_val;
-            }
         }
+        else
+        {
+            Color3f test(si.n.x()+1,si.n.y()+1,si.n.z()+1);
+            result = test;
+            // if (dr::any_or<true>(sample_emitter)) {
+            //     for (size_t i = 0; i < m_emitter_samples; ++i) {
+            //         Mask active_e = sample_emitter;
+            //         DirectionSample3f ds;
+            //         Spectrum emitter_val;
+            //         std::tie(ds, emitter_val) = scene->sample_emitter_direction(
+            //             si, sampler->next_2d(active_e), true, active_e);
+            //         active_e &= dr::neq(ds.pdf, 0.f);
+            //         if (dr::none_or<false>(active_e))
+            //             continue;
+
+            //         // Query the BSDF for that emitter-sampled direction
+            //         Vector3f wo = si.to_local(ds.d);
+
+            //         /* Determine BSDF value and probability of having sampled
+            //         that same direction using BSDF sampling. */
+            //         auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
+            //         bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
+
+            //         Float mis = dr::select(ds.delta, Float(1.f), mis_weight(
+            //             ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
+            //         result[active_e] += mis * bsdf_val * emitter_val;
+            //     }
+            // }
 
         // ------------------------ BSDF sampling -------------------------
 
-        for (size_t i = 0; i < m_bsdf_samples; ++i) {
-            auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
-                                               sampler->next_2d(active), active);
-            bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
+        // for (size_t i = 0; i < m_bsdf_samples; ++i) {
+        //     auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
+        //                                        sampler->next_2d(active), active);
+        //     bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
-            Mask active_b = active && dr::any(dr::neq(unpolarized_spectrum(bsdf_val), 0.f));
+        //     Mask active_b = active && dr::any(dr::neq(unpolarized_spectrum(bsdf_val), 0.f));
 
-            // Trace the ray in the sampled direction and intersect against the scene
-            SurfaceInteraction3f si_bsdf =
-                scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
+        //     // Trace the ray in the sampled direction and intersect against the scene
+        //     SurfaceInteraction3f si_bsdf =
+        //         scene->ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b);
 
-            // Retain only rays that hit an emitter
-            EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
-            active_b &= dr::neq(emitter, nullptr);
+        //     // Retain only rays that hit an emitter
+        //     EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
+        //     active_b &= dr::neq(emitter, nullptr);
 
-            if (dr::any_or<true>(active_b)) {
-                Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
-                Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
+        //     if (dr::any_or<true>(active_b)) {
+        //         Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
+        //         Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
-                /* Determine probability of having sampled that same
-                   direction using Emitter sampling. */
-                DirectionSample3f ds(scene, si_bsdf, si);
+        //         /* Determine probability of having sampled that same
+        //            direction using Emitter sampling. */
+        //         DirectionSample3f ds(scene, si_bsdf, si);
 
-                Float emitter_pdf =
-                    dr::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
+        //         Float emitter_pdf =
+        //             dr::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
 
-                result[active_b] +=
-                    bsdf_val * emitter_val *
-                    mis_weight(bs.pdf * m_frac_bsdf, emitter_pdf * m_frac_lum) *
-                    m_weight_bsdf;
-            }
+        //         result[active_b] +=
+        //             bsdf_val * emitter_val *
+        //             mis_weight(bs.pdf * m_frac_bsdf, emitter_pdf * m_frac_lum) *
+        //             m_weight_bsdf;
+        //     }
+        // }
         }
+        
 
         return { result, valid_ray };
     }

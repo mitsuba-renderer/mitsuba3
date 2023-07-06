@@ -1,6 +1,11 @@
+#include <tuple>
+#include <mitsuba/core/ray.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
-
+#include <iostream>
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -30,25 +35,61 @@ template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Sampler, Medium)
+    MI_IMPORT_TYPES(Scene, Sampler, Medium, BSDF, BSDFPtr)
 
     DepthIntegrator(const Properties &props) : Base(props) { }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler * /* sampler */,
-                                     const RayDifferential3f &ray,
+                                     const RayDifferential3f &ray_,
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
-            ray, /* coherent = */ true, active);
+        SurfaceInteraction3f si = scene->ray_intersect(
+            ray_, RayFlags::All | RayFlags::BoundaryTest, true, active);
+        dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
 
-        return {
-            dr::select(pi.is_valid(), pi.t, 0.f),
-            pi.is_valid()
-        };
+        Ray3f ray                     = Ray3f(ray_);
+        BSDFPtr bsdf = si.bsdf(ray);
+        BSDFContext   bsdf_ctx;
+        
+        if (dr::any_or<true>(si.is_valid()))
+        {
+            Mask isGlass = has_flag(bsdf->flags(), BSDFFlags::Transmission);
+            if (dr::any_or<true>(isGlass))
+            {
+                 auto [bsdf_sample, color]
+                 = bsdf->sample(bsdf_ctx, si, 0, 0, true);
+                Float eta = bsdf_sample.eta;
+                std::cout<<eta;
+                // std::cout<<bsdf_sample.eta;    
+                //Ray3f next_ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
+                
+                // SurfaceInteraction3f si2 = scene->ray_intersect(
+                //     next_ray, RayFlags::All | RayFlags::BoundaryTest, true, active);
+                // std::cout<<si2.is_valid();
+                // SurfaceInteraction3f si_g = scene->ray_intersect(
+                // ray_, RayFlags::All | RayFlags::BoundaryTest, true, active);
+            }
+            return {
+            dr::select(si.is_valid(),si.t  , 0.f),
+            si.is_valid()
+            };
+        }
+        else
+        {
+            return {
+                dr::select(si.is_valid(),0.0f, 0.f),
+                si.is_valid()
+            };
+        }
+        //Mask mask = active && has_flag(, BSDFFlags::Transmission);
+        //auto test = bsdf->flags();
+        // std::cout<<bsdf.is_valid();
+
+
     }
 
     MI_DECLARE_CLASS()
