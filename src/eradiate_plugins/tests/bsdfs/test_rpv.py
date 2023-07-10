@@ -3,7 +3,7 @@ import mitsuba as mi
 import numpy as np
 import pytest
 
-from eradiate.test_tools.plugin import sample_eval_pdf_bsdf
+from ..tools import sample_eval_pdf_bsdf
 
 
 def test_create_rpv3(variant_scalar_rgb):
