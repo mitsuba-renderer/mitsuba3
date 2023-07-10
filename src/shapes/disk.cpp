@@ -134,15 +134,17 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarBoundingBox3f bbox;
         ScalarTransform4f to_world = m_to_world.scalar();
 
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
+        ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        ScalarVector3f v = to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        ScalarVector3f e = dr::sqrt(dr::sqr(u) + dr::sqr(v));
 
-        return bbox;
+        return ScalarBoundingBox3f(
+            dr::minimum(c - e, c + e),
+            dr::maximum(c - e, c + e)
+        );
     }
 
     Float surface_area() const override {
