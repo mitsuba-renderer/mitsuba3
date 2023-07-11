@@ -83,6 +83,11 @@ public:
             return m_value;
     }
 
+    Color3f eval_3(const SurfaceInteraction3f &/*si*/, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        return m_value;
+    }
+
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return mean();
