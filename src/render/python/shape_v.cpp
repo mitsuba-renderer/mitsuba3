@@ -82,15 +82,10 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_3))
        .def("ray_intersect_preliminary",
-            [](Ptr shape, const Ray3f &ray, const Mask &active) {
-                return shape->ray_intersect_preliminary(ray, active);
+            [](Ptr shape, const Ray3f &ray, uint32_t prim_index, const Mask &active) {
+                return shape->ray_intersect_preliminary(ray, prim_index, active);
             },
-            "ray"_a, "active"_a = true, D(Shape, ray_intersect_preliminary))
-       .def("ray_intersect_preliminary",
-            [](Ptr shape, const Ray3f &ray, const Mask &active) {
-                return shape->ray_intersect_preliminary(ray, active);
-            },
-            "ray"_a, "active"_a = true, D(Shape, ray_intersect_preliminary))
+            "ray"_a, "prim_index"_a = 0, "active"_a = true, D(Shape, ray_intersect_preliminary))
        .def("ray_intersect",
             [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
                 return shape->ray_intersect(ray, flags, active);
@@ -99,7 +94,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, ray_intersect))
        .def("ray_test",
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
-                return shape->ray_test(ray, active);
+                return shape->ray_test(ray, 0, active);
             },
             "ray"_a, "active"_a = true, D(Shape, ray_test))
        .def("sample_position",

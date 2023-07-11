@@ -1,5 +1,3 @@
-#include <drjit/tensor.h>
-#include <drjit/texture.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/math.h>
@@ -12,6 +10,9 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sdf.h>
 #include <mitsuba/render/volumegrid.h>
+
+#include <drjit/tensor.h>
+#include <drjit/texture.h>
 
 #if defined(MI_ENABLE_EMBREE)
 #include <embree3/rtcore.h>
@@ -36,7 +37,8 @@ SDF Grid (:monosp:`sdfgrid`)
  * - filename
    - |string|
    - Filename of the SDF grid data to be loaded. The expected file format
-     aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`
+     aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`. 
+     If no filename is provided, the shape is initialised as an empty 2x2x2 grid.
 
  * - watertight
    - |bool|
@@ -75,6 +77,7 @@ selected as the default approach to ensure continuity across grid cells.
 .. warning::
 
    - An SDF grid shape does not emit UV coordinates for texturing.
+   - Additionally, this shape can't be used as an area emitter
 
 
 The following XML snippet showcases a simple example of an SDF Grid:
@@ -104,7 +107,7 @@ public:
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
-    // Grid texture is always store in single precision
+    // Grid texture is always stored in single precision
     using InputFloat     = dr::replace_scalar_t<Float, float>;
     using InputTexture3f = dr::Texture<InputFloat, 3>;
     using InputPoint3f   = Point<InputFloat, 3>;
@@ -147,17 +150,19 @@ public:
             InputFloat default_data[8] = { -1.f, -1.f, -1.f, -1.f,
                                            -1.f, -1.f, -1.f, -1.f };
             size_t default_shape[4]    = { 2, 2, 2, 1 };
-            m_grid_texture             = InputTexture3f(
-                            InputTensorXf(default_data, 4, default_shape), true, false,
-                            dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            m_grid_texture = InputTexture3f(
+                InputTensorXf(default_data, 4, default_shape), true, false,
+                dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
         update();
         initialize();
     }
 
     ~SDFGrid() {
-        jit_free(m_bboxes);
-        jit_free(m_voxel_indices);
+        jit_free(m_host_bboxes);
+        jit_free(m_host_voxel_indices);
+        jit_free(m_device_bboxes);
+        jit_free(m_device_voxel_indices);
     }
 
     void update() {
@@ -175,10 +180,15 @@ public:
             m_host_grid_data = m_grid_texture.tensor().data();
         }
 
-        jit_free(m_bboxes);
-        jit_free(m_voxel_indices);
-        std::tie(m_bboxes, m_voxel_indices, m_filled_voxel_count) =
-            build_bboxes();
+        jit_free(m_host_bboxes);
+        jit_free(m_host_voxel_indices);
+        jit_free(m_device_bboxes);
+        jit_free(m_device_voxel_indices);
+        std::tie(m_host_bboxes,
+                 m_host_voxel_indices,
+                 m_device_bboxes,
+                 m_device_voxel_indices,
+                 m_filled_voxel_count) = build_bboxes();
         if (m_filled_voxel_count == 0) {
             Throw("SDFGrid should at least have one non-empty voxel!");
         }
@@ -188,19 +198,14 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(),
-                                ParamFlags::Differentiable |
-                                    ParamFlags::Discontinuous);
-        callback->put_parameter("grid", m_grid_texture.tensor(),
-                                ParamFlags::Differentiable |
-                                    ParamFlags::Discontinuous);
-        callback->put_parameter("watertight", m_watertight,
-                                +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_world",     *m_to_world.ptr(),          ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("grid",         m_grid_texture.tensor(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("watertight",   m_watertight,               +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world") ||
-            string::contains(keys, "grid")) {
+            string::contains(keys, "grid") || string::contains(keys, "watertight")) {
             // Ensure previous ray-tracing operation are fully evaluated before
             // modifying the scalar values of the fields in this class
             if constexpr (dr::is_jit_v<Float>)
@@ -236,15 +241,14 @@ public:
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex index) const override {
-        if (jit_malloc_type(m_bboxes) != AllocType::Host) {
+        if constexpr (dr::is_cuda_v<Float>) {
             NotImplementedError("bbox(ScalarIndex index)");
         }
-        ScalarBoundingBox3f *bboxes = (ScalarBoundingBox3f *) m_bboxes;
-        return bboxes[index];
+
+        return reinterpret_cast<ScalarBoundingBox3f*>(m_host_bboxes)[index];
     }
 
     Float surface_area() const override {
-        // TODO: area emitter
         return 0;
     }
 
@@ -292,23 +296,22 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   dr::mask_t<FloatP> active,
-                                   ScalarIndex prim_index) const {
+                                   ScalarIndex prim_index,
+                                   dr::mask_t<FloatP> active) const {
 
         auto [hit, t, uv, shape_index, p] =
-            ray_intersect_preliminary_common_impl<FloatP>(ray_, active,
-                                                          prim_index);
+            ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index,
+                                                          active);
         return { t, uv, shape_index, p };
     }
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     dr::mask_t<FloatP> active,
-                                     ScalarIndex prim_index) const {
+                                     ScalarIndex prim_index,
+                                     dr::mask_t<FloatP> active) const {
 
         auto [hit, t, uv, shape_index, p] =
-            ray_intersect_preliminary_common_impl<FloatP>(ray_, active,
-                                                          prim_index);
+            ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index, active);
         return hit;
     }
 
@@ -567,7 +570,6 @@ public:
 
     void optix_prepare_geometry() override {
         if constexpr (dr::is_cuda_v<Float>) {
-            // TODO: more efficient memory allocations
             if (!m_optix_data_ptr)
                 m_optix_data_ptr =
                     jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
@@ -576,7 +578,7 @@ public:
                                      m_grid_texture.tensor().shape()[1],
                                      m_grid_texture.tensor().shape()[0] };
 
-            OptixSDFGridData data = { (size_t *) m_voxel_indices,
+            OptixSDFGridData data = { (size_t *) m_device_voxel_indices,
                                       resolution[0],
                                       resolution[1],
                                       resolution[2],
@@ -590,7 +592,7 @@ public:
 
     void optix_build_input(OptixBuildInput &build_input) const override {
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers   = &m_bboxes;
+        build_input.customPrimitiveArray.aabbBuffers   = &m_device_bboxes;
         build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
         build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
         build_input.customPrimitiveArray.flags         = optix_geometry_flags;
@@ -616,8 +618,7 @@ private:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
         MI_INLINE ray_intersect_preliminary_common_impl(
-            const Ray3fP &ray_, dr::mask_t<FloatP> active,
-            ScalarIndex prim_index) const {
+            const Ray3fP &ray_, ScalarIndex prim_index, dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
         // The current implementation doesn't support JIT types so don't try to
@@ -630,10 +631,10 @@ private:
 
         auto shape = m_grid_texture.tensor().shape();
 
-        uint32_t voxel_index     = m_voxel_indices[prim_index];
+        uint32_t voxel_index     = m_host_voxel_indices[prim_index];
         ScalarVector3u voxel_pos = to_voxel_position(voxel_index);
 
-        // Find boxel AABB in object space
+        // Find voxel AABB in object space
         ScalarBoundingBox3f bbox_local;
         {
             ScalarPoint3f bbox_min =
@@ -892,7 +893,7 @@ private:
      * Depending on the variant used, the pointer returned is either host or
      * device visible
      */
-    std::tuple<void *, size_t *, size_t> build_bboxes() {
+    std::tuple<void *, size_t *, void *, size_t *, size_t> build_bboxes() {
         auto shape         = m_grid_texture.tensor().shape();
         size_t shape_v[3]  = { shape[2], shape[1], shape[0] };
         float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1),
@@ -921,9 +922,9 @@ private:
 #endif
 
         size_t count           = 0;
-        BoundingBoxType *aabbs = (BoundingBoxType *) jit_malloc(
+        BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
             AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
-        size_t *voxel_indices = (size_t *) jit_malloc(
+        size_t *host_voxel_indices = (size_t *) jit_malloc(
             AllocType::Host, sizeof(size_t) * max_voxel_count);
         for (size_t z = 0; z < shape[0] - 1; ++z) {
             for (size_t y = 0; y < shape[1] - 1; ++y) {
@@ -989,40 +990,32 @@ private:
                         (x + 0) + (y + 0) * (shape_v[0] - 1) +
                         (z + 0) * (shape_v[0] - 1) * (shape_v[1] - 1);
 
-                    voxel_indices[count] = voxel_index;
-                    aabbs[count]         = BoundingBoxType(bbox);
+                    host_voxel_indices[count] = voxel_index;
+                    host_aabbs[count]         = BoundingBoxType(bbox);
 
                     count++;
                 }
             }
         }
 
-        void *aabbs_ptr           = nullptr;
-        size_t *voxel_indices_ptr = nullptr;
+        void *device_aabbs = nullptr;
+        size_t* device_voxel_indices = nullptr;
 
         if constexpr (dr::is_cuda_v<Float>) {
-            // TODO: async memcpy
-            aabbs_ptr =
+            device_aabbs =
                 jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * count);
-            jit_memcpy(JitBackend::CUDA, aabbs_ptr, aabbs,
+            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs,
                        sizeof(BoundingBoxType) * count);
 
-            voxel_indices_ptr = (size_t *) jit_malloc(AllocType::Device,
+            device_voxel_indices = (size_t *) jit_malloc(AllocType::Device,
                                                       sizeof(size_t) * count);
-            jit_memcpy(JitBackend::CUDA, voxel_indices_ptr, voxel_indices,
+            jit_memcpy_async(JitBackend::CUDA, device_voxel_indices, host_voxel_indices,
                        sizeof(size_t) * count);
 
-            jit_free(aabbs);
-            jit_free(voxel_indices);
             jit_free(grid);
-
-        } else {
-            // Our initial allocations were host-visible, so just reuse these
-            aabbs_ptr         = aabbs;
-            voxel_indices_ptr = voxel_indices;
         }
 
-        return { aabbs_ptr, voxel_indices_ptr, count };
+        return { host_aabbs, host_voxel_indices, device_aabbs, device_voxel_indices, count };
     }
 
     /// Computes the gradient for a specific gradient
@@ -1031,29 +1024,28 @@ private:
         Vector3f resolution =
             Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
 
-        InputFloat f[6];
-        InputPoint3f query;
-        Point3f voxel_size = 1.f / resolution;
-        Point3f p000       = Point3f(voxel_index) * voxel_size;
+        InputFloat f000, f001, f010, f011, f100, f101, f110, f111;
+        dr::Array<InputFloat *, 8> fetch_values;
+        fetch_values[0] = &f000;
+        fetch_values[1] = &f100;
+        fetch_values[2] = &f010;
+        fetch_values[3] = &f110;
+        fetch_values[4] = &f001;
+        fetch_values[5] = &f101;
+        fetch_values[6] = &f011;
+        fetch_values[7] = &f111;
+        m_grid_texture.eval_fetch(rescale_point(p), fetch_values);
 
-        query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[0]);
-        query = rescale_point(Point3f(p000[0], p[1], p[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[1]);
-
-        query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[2]);
-        query = rescale_point(Point3f(p[0], p000[1], p[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[3]);
-
-        query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[4]);
-        query = rescale_point(Point3f(p[0], p[1], p000[2]));
-        m_grid_texture.eval(InputPoint3f(query), &f[5]);
-
-        Float dx = f[0] - f[1]; // f(1, y, z) - f(0, y, z)
-        Float dy = f[2] - f[3]; // f(x, 1, z) - f(x, 0, z)
-        Float dz = f[4] - f[5]; // f(x, y, 1) - f(x, y, 0)
+        Point3f p_local = p * resolution - Point3f(voxel_index);
+        Float y0 = dr::lerp(f100 - f000, f110 - f010, p_local.y());
+        Float y1 = dr::lerp(f101 - f001, f111 - f011, p_local.y());
+        Float dx = dr::lerp(y0, y1, p_local.z());
+        Float x0 = dr::lerp(f010 - f000, f110 - f100, p_local.x());
+        Float x1 = dr::lerp(f011 - f001, f111 - f101, p_local.x());
+        Float dy = dr::lerp(x0, x1, p_local.z());
+              x0 = dr::lerp(f001 - f000, f101 - f100, p_local.x());
+              x1 = dr::lerp(f011 - f010, f111 - f110, p_local.x());
+        Float dz = dr::lerp(x0, x1, p_local.y());
 
         return Vector3f(dx, dy, dz);
     }
@@ -1087,10 +1079,16 @@ private:
     // guarded by a global state lock
     float *m_host_grid_data = nullptr;
 
-    // Depending on variant, host or device visible stores of non-empty voxel
-    // bboxes and correspondingand indices
-    void *m_bboxes          = nullptr;
-    size_t *m_voxel_indices = nullptr;
+    // Host-visible non-empty bounding boxes and corresponding indices
+    // Also used when targeting CUDA variants, as we upload asynchronously
+    // to GPU
+    void *m_host_bboxes = nullptr;
+    size_t *m_host_voxel_indices = nullptr;
+
+    // Device-visible bounding boxes
+    // Only valid for CUDA variants
+    void *m_device_bboxes = nullptr;
+    size_t *m_device_voxel_indices = nullptr;
 
     bool m_watertight;
     size_t m_filled_voxel_count = 0;

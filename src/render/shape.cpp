@@ -200,7 +200,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
-        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, active, primID);
+        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, primID, active);
         active &= dr::neq(t, dr::Infinity<Float>);
         dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
         dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
@@ -209,7 +209,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
         dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(primID), dr::load_aligned<UInt32P>(rtc_hit->primID)));
         dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
-        active &= shape->ray_test_packet(ray, active, primID);
+        active &= shape->ray_test_packet(ray, primID, active);
         dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
     }
 }
@@ -387,7 +387,7 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*i
 
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
 Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, 
-                                                  Mask /*active*/, uint32_t /*prim_index*/) const {
+                                                  uint32_t /*prim_index*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }
 
@@ -406,14 +406,14 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
                            typename Shape<Float, Spectrum>::UInt32P##N,                             \
                            typename Shape<Float, Spectrum>::UInt32P##N>                             \
     Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                                       \
-        const Ray3fP##N & /*ray*/, MaskP##N /*active*/, uint32_t /*prim_index*/) const {            \
+        const Ray3fP##N & /*ray*/, uint32_t /*prim_index*/, MaskP##N /*active*/) const {            \
         NotImplementedError("ray_intersect_preliminary_packet");                                    \
     }                                                                                               \
     MI_VARIANT typename Shape<Float, Spectrum>::MaskP##N                                            \
     Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,                                   \
-                                            MaskP##N active,                                        \
-                                            uint32_t prim_index) const {                            \
-        auto res = ray_intersect_preliminary_packet(ray, active, prim_index);                       \
+                                            uint32_t prim_index,                                    \
+                                            MaskP##N active) const {                                \
+        auto res = ray_intersect_preliminary_packet(ray, prim_index, active);                       \
         return dr::neq(std::get<0>(res), dr::Infinity<Float>);                                      \
     }
 
@@ -422,9 +422,9 @@ MI_DEFAULT_RAY_INTERSECT_PACKET(8)
 MI_DEFAULT_RAY_INTERSECT_PACKET(16)
 
 MI_VARIANT typename Shape<Float, Spectrum>::Mask
-Shape<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active, uint32_t prim_index) const {
+Shape<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t prim_index, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    return ray_intersect_preliminary(ray, active, prim_index).is_valid();
+    return ray_intersect_preliminary(ray, prim_index, active).is_valid();
 }
 
 MI_VARIANT
@@ -444,7 +444,7 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
 MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    auto pi = ray_intersect_preliminary(ray, active);
+    auto pi = ray_intersect_preliminary(ray, 0, active);
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
