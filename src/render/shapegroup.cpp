@@ -101,14 +101,13 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *callbac
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
-    if constexpr (!dr::is_cuda_v<Float>) {
-        for (auto &s : m_shapes) {
-            if (s->dirty()) {
-                m_dirty = true;
-                break;
-            }
+    for (auto &s : m_shapes) {
+        if (s->dirty()) {
+            m_dirty = true;
+            break;
         }
     }
+
     Base::parameters_changed();
 }
 

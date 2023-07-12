@@ -4,8 +4,8 @@ import mitsuba as mi
 
 # TODO: change variants once they're all implemented
 
-def test01_create(variant_cuda_ad_rgb):
-    for normal_method in ["analytic", "smooth", "falcao"]:
+def test01_create(variant_scalar_rgb):
+    for normal_method in ["analytic", "smooth"]:
         s = mi.load_dict({
             "type" : "sdfgrid",
             "normals" : normal_method
@@ -13,7 +13,7 @@ def test01_create(variant_cuda_ad_rgb):
         assert s is not None
 
 
-def test02_bbox(variant_cuda_ad_rgb):
+def test02_bbox(variant_scalar_rgb):
     sy = 2.5
     for sx in [1, 2, 4]:
         for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
@@ -31,7 +31,7 @@ def test02_bbox(variant_cuda_ad_rgb):
             assert dr.allclose(b.max, translate +[sx, sy, 1.0])
 
 
-def test03_parameters_changed(variant_cuda_ad_rgb):
+def test03_parameters_changed(variant_scalar_rgb):
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -54,7 +54,7 @@ def test03_parameters_changed(variant_cuda_ad_rgb):
     assert True
 
 
-def test04_ray_intersect(variant_cuda_ad_rgb):
+def test04_ray_intersect(variants_all_ad_rgb):
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -98,7 +98,71 @@ def test04_ray_intersect(variant_cuda_ad_rgb):
                     assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))
 
 
-def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_cuda_ad_rgb):
+def test05_ray_intersect_instancing(variants_all_ad_rgb):
+    pytest.importorskip("numpy")
+    import numpy as np
+
+
+    mi.set_log_level(mi.LogLevel.Info)
+    # Diagonal plane
+    sdf_grid = np.array([
+        -np.sqrt(2)/2, -np.sqrt(2)/2, # z = 0, y = 0
+        0, 0, # z = 0, y = 1
+        0, 0, # z = 1, y = 0
+        np.sqrt(2)/2, np.sqrt(2)/2 # z = 1, y = 1
+    ]).reshape((2, 2, 2, 1))
+
+    instance_translations = [mi.ScalarVector3f([0.0, 0.0, 0]), mi.ScalarVector3f([8.0, 0.0, 0.0])]
+
+    s = mi.load_dict({
+        "type" : "scene",
+        'shape_group': {
+            'type': 'shapegroup',
+            'sdf': {
+                'type': 'sdfgrid'
+            }
+        },
+        'first_sdf': {
+            'type': 'instance',
+            'to_world': mi.ScalarTransform4f.translate(instance_translations[0]),
+            'shapegroup': {
+                'type': 'ref',
+                'id': 'shape_group'
+            }
+        },
+        'second_sdf': {
+            'type': 'instance',
+            'to_world': mi.ScalarTransform4f.translate(instance_translations[1]),
+            'shapegroup': {
+                'type': 'ref',
+                'id': 'shape_group'
+            }
+        }
+    })
+
+    params = mi.traverse(s)
+    params['shape_group.sdf.grid'] = mi.TensorXf(sdf_grid)
+    params.update()
+
+    n = 10
+    for translate in instance_translations:
+        for x in dr.linspace(mi.Float, -2, 2, n):
+            for y in dr.linspace(mi.Float, -2, 2, n):
+                origin = translate + mi.Vector3f(x, y, 3)
+                direction = mi.Vector3f(0, 0, -1)
+                ray = mi.Ray3f(o=origin, d=direction)
+                si_found = s.ray_test(ray)
+                assert si_found == (x >= 0 and x <= 1 and y >= 0 and y<= 1)
+
+                if si_found[0]:
+                    si = s.ray_intersect(ray, mi.RayFlags.All, True)
+
+                    assert dr.allclose(si.t, 2 + y)
+                    assert dr.allclose(si.n, [0, 1 / np.sqrt(2), 1 / np.sqrt(2)])
+                    assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))
+
+
+def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
     # TODO: remove scenes
 
     dr.set_flag(dr.JitFlag.VCallRecord, False)

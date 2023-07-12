@@ -117,6 +117,7 @@ public:
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
+    using typename Base::ScalarIndex;
 
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
@@ -320,7 +321,7 @@ public:
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
         active &= pi.is_valid();
 
         if (dr::none_or<false>(active))
@@ -344,6 +345,7 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
@@ -413,6 +415,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
+                                     ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -508,7 +511,7 @@ public:
                    the traced ray, we first recompute the intersection distance
                    in a differentiable way (w.r.t. to the sphere parameters) and
                    then compute the corresponding point along the ray. */
-                si.t = dr::replace_grad(pi.t, ray_intersect_preliminary(ray, active).t);
+                si.t = dr::replace_grad(pi.t, ray_intersect_preliminary(ray, 0, active).t);
                 si.p = ray(si.t);
                 si.sh_frame.n = dr::normalize(si.p - center);
                 local = to_object.transform_affine(si.p);
