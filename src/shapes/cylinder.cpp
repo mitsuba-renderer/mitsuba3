@@ -282,7 +282,7 @@ public:
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
         active &= pi.is_valid();
 
         if (dr::none_or<false>(active))
@@ -306,6 +306,7 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
+                                   ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -363,6 +364,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -465,7 +467,7 @@ public:
                    the traced ray, we first recompute the intersection distance
                    in a differentiable way (w.r.t. to the cylindrical parameters) and
                    then compute the corresponding point along the ray. */
-                si.t = dr::replace_grad(si.t, ray_intersect_preliminary(ray, active).t);
+                si.t = dr::replace_grad(si.t, ray_intersect_preliminary(ray, 0, active).t);
                 si.p = ray(si.t);
                 local = to_object.transform_affine(si.p);
             }

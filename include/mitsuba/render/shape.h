@@ -133,10 +133,15 @@ public:
      *
      * \param ray
      *     The ray to be tested for an intersection
+     *
+     * \param prim_index
+     *     Index of the primitive to be intersected. This index is ignored by a
+     *     shape that contains a single primitive. Otherwise, if no index is provided, 
+     *     the ray intersection will be performed on the shape's first primitive at index 0.
      */
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                                ScalarIndex prim_index = 0,
                                                                 Mask active = true) const;
-
     /**
      * \brief Fast ray shadow test
      *
@@ -149,8 +154,11 @@ public:
      *
      * \param ray
      *     The ray to be tested for an intersection
+     * 
+     * \param prim_index
+     *     Index of the primitive to be intersected
      */
-    virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
+    virtual Mask ray_test(const Ray3f &ray, ScalarIndex prim_index = 0, Mask active = true) const;
 
     /**
      * \brief Compute and return detailed information related to a surface interaction
@@ -222,17 +230,19 @@ public:
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
     /// Macro to declare packet versions of the scalar routine above
-    #define MI_DECLARE_RAY_INTERSECT_PACKET(N)                            \
-        using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;            \
-        using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                 \
-        using MaskP##N    = dr::mask_t<FloatP##N>;                         \
-        using Point2fP##N = Point<FloatP##N, 2>;                           \
-        using Point3fP##N = Point<FloatP##N, 3>;                           \
-        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                    \
-        virtual std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N> \
-        ray_intersect_preliminary_packet(const Ray3fP##N &ray,             \
-                                         MaskP##N active = true) const;    \
-        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,             \
+    #define MI_DECLARE_RAY_INTERSECT_PACKET(N)                                  \
+        using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;                 \
+        using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                      \
+        using MaskP##N    = dr::mask_t<FloatP##N>;                              \
+        using Point2fP##N = Point<FloatP##N, 2>;                                \
+        using Point3fP##N = Point<FloatP##N, 3>;                                \
+        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                         \
+        virtual std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>      \
+        ray_intersect_preliminary_packet(const Ray3fP##N &ray,                  \
+                                         ScalarIndex prim_index = 0,            \
+                                         MaskP##N active = true) const;         \
+        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,                  \
+                                         ScalarIndex prim_index = 0,            \
                                          MaskP##N active = true) const;
 
     MI_DECLARE_RAY_INTERSECT_PACKET(4)
@@ -591,56 +601,56 @@ protected:
 MI_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)
 
-#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                   \
-    using typename Base::FloatP##N;                                            \
-    using typename Base::UInt32P##N;                                           \
-    using typename Base::MaskP##N;                                             \
-    using typename Base::Point2fP##N;                                          \
-    using typename Base::Point3fP##N;                                          \
-    using typename Base::Ray3fP##N;                                            \
-    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                 \
-    ray_intersect_preliminary_packet(                                          \
-        const Ray3fP##N &ray, MaskP##N active) const override {                \
-        (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_v<Float>)                                   \
-            return ray_intersect_preliminary_impl<FloatP##N>(ray, active);     \
-        else                                                                   \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
-    }                                                                          \
-    MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
-        const override {                                                       \
-        (void) ray; (void) active;                                             \
-        if constexpr (!dr::is_cuda_v<Float>)                                   \
-            return ray_test_impl<FloatP##N>(ray, active);                      \
-        else                                                                   \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
+#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                                \
+    using typename Base::FloatP##N;                                                         \
+    using typename Base::UInt32P##N;                                                        \
+    using typename Base::MaskP##N;                                                          \
+    using typename Base::Point2fP##N;                                                       \
+    using typename Base::Point3fP##N;                                                       \
+    using typename Base::Ray3fP##N;                                                         \
+    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                              \
+    ray_intersect_preliminary_packet(                                                       \
+        const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
+        (void) ray; (void) active;                                                          \
+        if constexpr (!dr::is_cuda_v<Float>)                                                \
+            return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
+        else                                                                                \
+            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
+    }                                                                                       \
+    MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
+        const override {                                                                    \
+        (void) ray; (void) active;                                                          \
+        if constexpr (!dr::is_cuda_v<Float>)                                                \
+            return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
+        else                                                                                \
+            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
-#define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                \
-    PreliminaryIntersection3f ray_intersect_preliminary(                       \
-        const Ray3f &ray, Mask active) const override {                        \
-        MI_MASK_ARGUMENT(active);                                              \
-        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>(); \
-        std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
-            ray_intersect_preliminary_impl<Float>(ray, active);                \
-        pi.shape = this;                                                       \
-        return pi;                                                             \
-    }                                                                          \
-    Mask ray_test(const Ray3f &ray, Mask active) const override {              \
-        MI_MASK_ARGUMENT(active);                                              \
-        return ray_test_impl<Float>(ray, active);                              \
-    }                                                                          \
-    using typename Base::ScalarRay3f;                                          \
-    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>         \
-    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {  \
-        return ray_intersect_preliminary_impl<ScalarFloat>(ray, true);         \
-    }                                                                          \
-    ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {        \
-        return ray_test_impl<ScalarFloat>(ray, true);                          \
-    }                                                                          \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                       \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                       \
+#define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                             \
+    PreliminaryIntersection3f ray_intersect_preliminary(                                    \
+        const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
+        MI_MASK_ARGUMENT(active);                                                           \
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
+        std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =                         \
+            ray_intersect_preliminary_impl<Float>(ray, prim_index, active);                 \
+        pi.shape = this;                                                                    \
+        return pi;                                                                          \
+    }                                                                                       \
+    Mask ray_test(const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {   \
+        MI_MASK_ARGUMENT(active);                                                           \
+        return ray_test_impl<Float>(ray, prim_index, active);                               \
+    }                                                                                       \
+    using typename Base::ScalarRay3f;                                                       \
+    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>                      \
+    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {               \
+        return ray_intersect_preliminary_impl<ScalarFloat>(ray, 0, true);                   \
+    }                                                                                       \
+    ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {                     \
+        return ray_test_impl<ScalarFloat>(ray, 0, true);                                    \
+    }                                                                                       \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                                    \
+    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                                    \
     MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------

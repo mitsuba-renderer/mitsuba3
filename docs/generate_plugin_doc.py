@@ -19,6 +19,8 @@ SHAPE_ORDERING = [
     'bsplinecurve',
     'linearcurve',
     'rectangle',
+    'cube',
+    'sdfgrid',
     'shapegroup',
     'instance'
 ]
