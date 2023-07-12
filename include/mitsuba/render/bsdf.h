@@ -519,6 +519,23 @@ public:
     virtual Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                               Mask active = true) const;
 
+    /**
+     * \brief Evaluate roughness
+     *
+     * This method approximates the roughness for a given
+     * direction. For some materials, an exact value can be computed
+     * inexpensively.
+     * When this is not possible, the value is approximated by
+     * evaluating the BSDF for a normal outgoing direction and returning this
+     * value multiplied by pi. This is the default behaviour of this method.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position.
+     */
+    virtual Float eval_roughness(const SurfaceInteraction3f &si,
+                                              Mask active = true) const;
+
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
@@ -600,6 +617,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_VCALL_METHOD(eval_pdf)
     DRJIT_VCALL_METHOD(eval_pdf_sample)
     DRJIT_VCALL_METHOD(eval_diffuse_reflectance)
+    DRJIT_VCALL_METHOD(eval_roughness)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);

@@ -40,6 +40,11 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
     return eval(ctx, si, wo, active) * dr::Pi<Float>;
 }
 
+MI_VARIANT Float BSDF<Float, Spectrum>::eval_roughness(
+    const SurfaceInteraction3f & /* si */, Mask /* active */) const {
+    return 1.f;
+}
+
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;

@@ -603,6 +603,11 @@ public:
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };
     }
 
+    Float eval_roughness(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        return m_alpha_u->eval_1(si, active);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl
