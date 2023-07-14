@@ -10,6 +10,17 @@
             "MI_ENABLE_EMBREE": "OFF",
             "MI_DEFAULT_VARIANTS": "scalar_mono;scalar_mono_double;scalar_rgb;scalar_spectral;llvm_rgb"
         }
+    },{
+        "name": "eradiate_debug",
+        "displayName": "Eradiate Debug Config",
+        "description": "Eradiate kernel (mitsuba3) build using Ninja generator with debug symbols and no optimisation flags",
+        "generator": "Ninja",
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug",
+            "CMAKE_CXX_FLAGS": "-O0 -g3",
+            "MI_ENABLE_EMBREE": "OFF",
+            "MI_DEFAULT_VARIANTS": "scalar_mono;scalar_mono_double;scalar_rgb;scalar_spectral;llvm_rgb;llvm_ad_rgb"
+        }
     }],
     "buildPresets": [{
         "name": "eradiate",
