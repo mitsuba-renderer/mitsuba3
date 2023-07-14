@@ -33,12 +33,13 @@ Ross-Thick Li-Sparse reflection model (:monosp:`rtls`)
    - :math:`f_{vol}`. Default: 0.004140
    - |exposed| |differentiable|
 
-The RTLS plugin implement the Ross-Thick, Li-Sparse reflection model proposed by
-(Strahler et al, 1999) [TODO properly cite].
+The RTLS plugin implement the Ross-Thick, Li-Sparse model proposed by
+(Strahler et al, 1999) for the MODIS operational the BRDF model Version 5.0
 
 Default parameters for :math:`f_k` parameters are taken from the RAMI4ATM
 benchmark test cases defined by the JRC, for measures done using the Sentinel-2A
-MSI band 8A spectral region (centered around 865nm). [TODO properly cite]
+MSI band 8A spectral region (centered around 865nm).
+
 */
 
 MI_VARIANT
@@ -242,10 +243,10 @@ public:
             << "  K_geo: " << K_geo << std::endl;
         Log(Trace, oss.str().c_str());
 
-        UnpolarizedSpectrum value =
+        const UnpolarizedSpectrum value =
             (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo);
 
-        return depolarizer<Spectrum>(value);
+        return depolarizer<Spectrum>(dr::select(value > 0.0, value, dr::NaN<ScalarFloat>));
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f &si,
@@ -256,7 +257,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
-        Spectrum value = eval_rtls(si, wo, active);
+        const Spectrum value = eval_rtls(si, wo, active);
 
         return dr::select(
             active, depolarizer<Spectrum>(value) * dr::abs(cos_theta_o), 0.f);
