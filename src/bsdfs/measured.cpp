@@ -250,8 +250,9 @@ public:
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
+        if (dr::none_or<false>(active))
             return { bs, 0.f };
 
         Float sx = -1.f, sy = -1.f;
@@ -352,7 +353,9 @@ public:
         active &= Frame3f::cos_theta(wi) > 0.f &&
                   Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
+
+        if (dr::none_or<false>(active))
             return Spectrum(0.f);
 
         if (m_reduction >= 2) {
@@ -406,7 +409,9 @@ public:
         active &= Frame3f::cos_theta(wi) > 0.f &&
                   Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active))
+        active &= ctx.is_enabled(+BSDFFlags::GlossyReflection);
+
+        if (dr::none_or<false>(active))
             return 0.f;
 
         if (m_reduction >= 2) {

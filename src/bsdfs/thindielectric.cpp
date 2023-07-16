@@ -144,8 +144,15 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
-             has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
+        Mask has_reflection   = ctx.is_enabled(+BSDFFlags::DeltaReflection, 0),
+             has_transmission = ctx.is_enabled(+BSDFFlags::Null, 1);
+
+        active &= has_reflection || has_transmission;
+
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
+
+        if (unlikely(dr::none_or<false>(active)))
+            return { bs, 0.f };
 
         Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta));
 
@@ -155,22 +162,19 @@ public:
         Float t = 1.f - r;
 
         // Select the lobe to be sampled
-        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
-        UnpolarizedSpectrum weight;
-        Mask selected_r;
-        if (likely(has_reflection && has_transmission)) {
-            selected_r = sample1 <= r && active;
-            weight = 1.f;
-            bs.pdf = dr::select(selected_r, r, t);
-        } else {
-            if (has_reflection || has_transmission) {
-                selected_r = Mask(has_reflection) && active;
-                weight = has_reflection ? r : t;
-                bs.pdf = 1.f;
-            } else {
-                return { bs, 0.f };
-            }
-        }
+        Mask selected_r = (sample1 <= r || !has_transmission) && has_reflection && active;
+
+        bs.pdf = dr::select(
+            has_reflection && has_transmission,
+            dr::detach(dr::select(selected_r, r, t)),
+            1.f
+        );
+
+        UnpolarizedSpectrum weight = dr::select(
+            has_reflection && has_transmission,
+            1.f,
+            dr::select(has_reflection, r, t)
+        );
 
         bs.wo = dr::select(selected_r, reflect(si.wi), -si.wi);
         bs.eta = 1.f;

@@ -254,8 +254,10 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
-             has_transmission = ctx.is_enabled(BSDFFlags::DeltaTransmission, 1);
+        Mask has_reflection   = ctx.is_enabled(+BSDFFlags::DeltaReflection, 0),
+             has_transmission = ctx.is_enabled(+BSDFFlags::DeltaTransmission, 1);
+
+        active &= has_reflection || has_transmission;
 
         // Evaluate the Fresnel equations for unpolarized illumination
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
@@ -265,19 +267,18 @@ public:
 
         // Lobe selection
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
-        Mask selected_r;
-        if (likely(has_reflection && has_transmission)) {
-            selected_r = sample1 <= r_i && active;
-            bs.pdf = dr::detach(dr::select(selected_r, r_i, t_i));
-        } else {
-            if (has_reflection || has_transmission) {
-                selected_r = Mask(has_reflection) && active;
-                bs.pdf = 1.f;
-            } else {
-                return { bs, 0.f };
-            }
-        }
+
+        if (unlikely(dr::none_or<false>(active)))
+            return { bs, 0.f };
+
+        Mask selected_r = (sample1 <= r_i || !has_transmission) && has_reflection && active;
         Mask selected_t = !selected_r && active;
+
+        bs.pdf = dr::select(
+            has_reflection && has_transmission,
+            dr::detach(dr::select(selected_r, r_i, t_i)),
+            1.f
+        );
 
         bs.sampled_component = dr::select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type      = dr::select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
@@ -309,12 +310,11 @@ public:
             Spectrum R = mueller::specular_reflection(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta)),
                      T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta));
 
-            if (likely(has_reflection && has_transmission)) {
-                weight = dr::select(selected_r, R, T) / bs.pdf;
-            } else if (has_reflection || has_transmission) {
-                weight = has_reflection ? R : T;
-                bs.pdf = 1.f;
-            }
+            weight = dr::select(
+                has_reflection && has_transmission,
+                dr::select(selected_r, R, T) / bs.pdf,
+                dr::select(has_reflection, R, T)
+            );
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
@@ -335,17 +335,19 @@ public:
                 weight[selected_t] *= mueller::absorber(transmittance);
 
         } else {
-            if (likely(has_reflection && has_transmission)) {
-                weight = 1.f;
-                /* For differentiable variants, lobe choice has to be detached to avoid bias.
-                    Sampling weights should be computed accordingly. */
-                if constexpr (dr::is_diff_v<Float>) {
-                    if (dr::grad_enabled(r_i)) {
-                        weight = dr::select(selected_r, r_i / dr::detach(r_i), t_i / dr::detach(t_i));
-                    }
+            weight = dr::select(
+                has_reflection && has_transmission,
+                1.f,
+                dr::select(has_reflection, r_i, t_i)
+            );
+
+            /* For differentiable variants, lobe choice has to be detached to
+               avoid bias. Sampling weights should be computed accordingly. */
+            if constexpr (dr::is_diff_v<Float>) {
+                if (dr::grad_enabled(r_i)) {
+                    dr::masked(weight, has_reflection && has_transmission)
+                        = dr::select(selected_r, r_i / dr::detach(r_i), t_i / dr::detach(t_i));
                 }
-            } else if (has_reflection || has_transmission) {
-                weight = has_reflection ? r_i : t_i;
             }
 
             if (dr::any_or<true>(selected_r))

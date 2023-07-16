@@ -100,6 +100,8 @@ def test04_sample_specific_component(variant_scalar_rgb):
                 ctx = mi.BSDFContext(mi.TransportMode.Importance if i == 0
                                      else mi.TransportMode.Radiance)
 
+                print(i, sample, sel_type)
+
                 # Sample reflection
                 if sel_type == 0:
                     ctx.type_mask = mi.BSDFFlags.DeltaReflection
@@ -172,7 +174,29 @@ def test06_attached_sampling(variants_all_ad_rgb):
 
     bs, weight = bsdf.sample(mi.BSDFContext(), si, 0, [0, 0])
     assert dr.grad_enabled(weight)
-    
+
     dr.forward(angle)
     assert dr.allclose(dr.grad(weight), 0.008912204764783382)
-    
+
+
+def test07_vectorized_context(variants_vec_rgb):
+    bsdf = mi.load_dict({'type': 'dielectric'})
+
+    angle = mi.Float(10 * dr.pi / 180)
+    si    = mi.SurfaceInteraction3f()
+    si.p  = dr.zeros(mi.Point3f, 4)
+    si.n  = [dr.sin(angle), 0, dr.cos(angle)]
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = si.sh_frame.to_local([0, 0, 1])
+
+    ctx = mi.BSDFContext(mi.TransportMode.Radiance)
+    ctx.type_mask = mi.UInt32([
+        +mi.BSDFFlags.DeltaReflection,
+        +mi.BSDFFlags.DeltaReflection,
+        +mi.BSDFFlags.DeltaTransmission,
+        +mi.BSDFFlags.DeltaTransmission
+    ])
+
+    bs, weight = bsdf.sample(ctx, si, [0, 0, 0, 0], [0, 0])
+
+    assert dr.allclose(bs.sampled_type, ctx.type_mask)

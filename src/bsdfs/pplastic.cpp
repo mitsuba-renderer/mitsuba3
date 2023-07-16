@@ -221,19 +221,20 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
+        active &= (has_specular || has_diffuse);
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        if (unlikely((dr::none_or<false>(active))))
             return { bs, 0.f };
 
         Float prob_specular = m_specular_sampling_weight;
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
+        dr::masked(prob_specular, dr::neq(has_specular, has_diffuse))
+            = dr::select(has_specular, 1.f, 0.f);
 
         Mask sample_specular = active && (sample1 < prob_specular),
              sample_diffuse  = active && !sample_specular;
@@ -266,14 +267,16 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        active &= (has_specular || has_diffuse);
+
+        if (unlikely((dr::none_or<false>(active))))
             return 0.f;
 
         Spectrum result = 0.f;
@@ -286,7 +289,7 @@ public:
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
-            if (has_specular) {
+            if (dr::any_or<true>(has_specular)) {
                 MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
@@ -310,10 +313,10 @@ public:
 
                 UnpolarizedSpectrum spec = m_specular_reflectance ? m_specular_reflectance->eval(si, active)
                                                                   : 1.f;
-                result += spec * F * value;
+                dr::masked(result, has_specular) += spec * F * value;
             }
 
-            if (has_diffuse) {
+            if (dr::any_or<true>(has_diffuse)) {
                 /* Diffuse scattering is modeled a a sequence of events:
                    1) Specular refraction inside
                    2) Subsurface scattering
@@ -347,10 +350,10 @@ public:
                                                       -wo_hat, s_axis_in,  mueller::stokes_basis(-wo_hat),
                                                        wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
 
-                result += diff * dr::InvPi<Float> * cos_theta_o;
+                dr::masked(result, has_diffuse) += diff * dr::InvPi<Float> * cos_theta_o;
             }
         } else {
-            if (has_specular) {
+            if (dr::any_or<true>(has_specular)) {
                 MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
@@ -361,10 +364,10 @@ public:
 
                 UnpolarizedSpectrum spec = m_specular_reflectance ? m_specular_reflectance->eval(si, active)
                                                                   : 1.f;
-                result += spec * F * value;
+                dr::masked(result, has_specular) += spec * F * value;
             }
 
-            if (has_diffuse) {
+            if (dr::any_or<true>(has_diffuse)) {
                 UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
                 /* Diffuse scattering is modeled a a sequence of events:
                    1) Specular refraction inside
@@ -374,7 +377,7 @@ public:
                 UnpolarizedSpectrum r_i = std::get<0>(fresnel(cos_theta_i, m_eta)),
                                     r_o = std::get<0>(fresnel(cos_theta_o, m_eta));
                 diff = (1.f - r_o) * diff * (1.f - r_i);
-                result += diff * dr::InvPi<Float> * cos_theta_o;
+                dr::masked(result, has_diffuse) += diff * dr::InvPi<Float> * cos_theta_o;
             }
         }
 
@@ -385,21 +388,23 @@ public:
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
-             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+        Mask has_specular = ctx.is_enabled(+BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(+BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        active &= (has_specular || has_diffuse);
 
-        if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
+        if (unlikely((dr::none_or<false>(active))))
             return 0.f;
 
         Float prob_specular = m_specular_sampling_weight,
               prob_diffuse  = 1.f - prob_specular;
-        if (unlikely(has_specular != has_diffuse))
-            prob_specular = has_specular ? 1.f : 0.f;
+
+        dr::masked(prob_specular, dr::neq(has_specular, has_diffuse)) =
+            dr::select(has_specular, 1.f, 0.f);
 
         // Specular component
         Vector3f H = dr::normalize(wo + si.wi);
