@@ -213,7 +213,7 @@ public:
             eval_K_vol(cos_theta_i, cos_theta_o, cos_psi, sin_psi, psi);
 
         UnpolarizedSpectrum K_geo;
-        if (unlikely(m_r - m_b > dr::Epsilon<ScalarFloat>)) {
+        if (unlikely(dr::abs(m_r - m_b) > dr::Epsilon<ScalarFloat>)) {
             Log(Debug, "Using different b and r values forcing extra angles "
                        "calculations");
 
