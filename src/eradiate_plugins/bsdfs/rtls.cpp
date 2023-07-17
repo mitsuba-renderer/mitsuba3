@@ -33,12 +33,28 @@ Ross-Thick Li-Sparse reflection model (:monosp:`rtls`)
    - :math:`f_{vol}`. Default: 0.004140
    - |exposed| |differentiable|
 
+ * - h
+   - |float|
+   - :math:`h`. Default: 2.f
+   - |exposed|
+
+ * - r
+   - |float|
+   - :math:`r`. Default: 1.f
+   - |exposed|
+
+ * - b
+   - |float|
+   - :math:`b`. Default: 1.f
+   - |exposed|
+
 The RTLS plugin implement the Ross-Thick, Li-Sparse model proposed by
 (Strahler et al, 1999) for the MODIS operational the BRDF model Version 5.0
 
 Default parameters for :math:`f_k` parameters are taken from the RAMI4ATM
 benchmark test cases defined by the JRC, for measures done using the Sentinel-2A
-MSI band 8A spectral region (centered around 865nm).
+MSI band 8A spectral region (centered around 865nm):
+https://rami-benchmark.jrc.ec.europa.eu
 
 */
 
@@ -58,9 +74,9 @@ public:
          * Algorithm Theoretical Basis Document
          * Version 5.0"
          */
-        m_h     = props.get<ScalarFloat>("h", 2.0f);
-        m_r     = props.get<ScalarFloat>("r", 1.0f);
-        m_b     = props.get<ScalarFloat>("b", 1.0f);
+        m_h     = props.get<ScalarFloat>("h", 2.f);
+        m_r     = props.get<ScalarFloat>("r", 1.f);
+        m_b     = props.get<ScalarFloat>("b", 1.f);
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
@@ -186,19 +202,6 @@ public:
         Float cos_d_phi = cos_phi_i * cos_phi_o + sin_phi_i * sin_phi_o;
         Float sin_d_phi = sin_phi_i * cos_phi_o - cos_phi_i * sin_phi_o;
 
-        std::ostringstream oss;
-        oss << "Geometrical setup" << std::endl
-            << "  phi_i: " << dr::asin(sin_phi_i) << std::endl
-            << "    sin(phi_i): " << sin_phi_i << std::endl
-            << "    cos(phi_i): " << cos_phi_i << std::endl
-            << "  phi_o: " << dr::asin(sin_phi_o) << std::endl
-            << "    sin(phi_o): " << sin_phi_o << std::endl
-            << "    cos(phi_o): " << cos_phi_o << std::endl
-            << "  d_phi: " << dr::asin(sin_d_phi) << std::endl
-            << "    sin(d_phi): " << sin_d_phi << std::endl
-            << "    cos(d_phi): " << cos_d_phi << std::endl;
-        Log(Trace, oss.str().c_str());
-
         const Float cos_psi =
             cos_theta_i * cos_theta_o + sin_theta_i * sin_theta_o * cos_d_phi;
 
@@ -236,7 +239,7 @@ public:
                                tan_theta_o, cos_d_phi, sin_d_phi, cos_psi);
         }
 
-        oss = std::ostringstream();
+        std::ostringstream oss = std::ostringstream();
         oss << "Results" << std::endl
             << "  K_iso: " << K_iso << std::endl
             << "  K_vol:" << K_vol << std::endl
@@ -246,7 +249,7 @@ public:
         const UnpolarizedSpectrum value =
             (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo);
 
-        return depolarizer<Spectrum>(dr::select(value > 0.0, value, dr::NaN<ScalarFloat>));
+        return depolarizer<Spectrum>(value);
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f &si,
@@ -297,9 +300,9 @@ public:
         oss << "RTLSBSDF[" << std::endl
             << "  f_iso = " << string::indent(m_f_iso) << "," << std::endl
             << "  f_vol = " << string::indent(m_f_vol) << "," << std::endl
-            << "  f_geo = " << string::indent(m_f_geo) << std::endl
-            << "  h = " << string::indent(m_h) << std::endl
-            << "  r = " << string::indent(m_r) << std::endl
+            << "  f_geo = " << string::indent(m_f_geo) << "," << std::endl
+            << "  h = " << string::indent(m_h) << "," << std::endl
+            << "  r = " << string::indent(m_r) << "," << std::endl
             << "  b = " << string::indent(m_b) << std::endl
             << "]";
         return oss.str();
