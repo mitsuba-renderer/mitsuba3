@@ -84,6 +84,11 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     m_emitters_dr = dr::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
 
+    m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(
+        m_sensors.data(), m_sensors.size());
+
+    dr::eval(m_emitters_dr, m_shapes_dr, m_sensors_dr);
+
     update_emitter_sampling_distribution();
 
     m_shapes_grad_enabled = false;

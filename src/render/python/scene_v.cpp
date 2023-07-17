@@ -96,7 +96,6 @@ MI_PY_EXPORT(Scene) {
              D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def("emitters_dr", &Scene::emitters_dr, D(Scene, emitters_dr))
-        .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def_method(Scene, environment)
         .def("shapes",
              [](const Scene &scene) {
@@ -111,6 +110,8 @@ MI_PY_EXPORT(Scene) {
                  return result;
              },
              D(Scene, shapes))
+        .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
+        .def("sensors_dr", &Scene::sensors_dr, D(Scene, sensors_dr))
         .def("integrator",
              [](Scene &scene) -> py::object {
                  Integrator *o = scene.integrator();
