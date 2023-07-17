@@ -6751,6 +6751,8 @@ static const char *__doc_mitsuba_Scene_m_integrator = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_sensors_dr = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_m_shapegroups = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
@@ -7099,6 +7101,8 @@ directional sampling density
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
 static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors (const version))doc";
+
+static const char *__doc_mitsuba_Scene_sensors_dr = R"doc(Return the list of sensors as an Dr.Jit array)doc";
 
 static const char *__doc_mitsuba_Scene_shapes = R"doc(Return the list of shapes)doc";
 
