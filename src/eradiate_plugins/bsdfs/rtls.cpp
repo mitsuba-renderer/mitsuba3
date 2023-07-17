@@ -239,12 +239,10 @@ public:
                                tan_theta_o, cos_d_phi, sin_d_phi, cos_psi);
         }
 
-        std::ostringstream oss = std::ostringstream();
-        oss << "Results" << std::endl
-            << "  K_iso: " << K_iso << std::endl
-            << "  K_vol:" << K_vol << std::endl
-            << "  K_geo: " << K_geo << std::endl;
-        Log(Trace, oss.str().c_str());
+        Log(
+            Trace, "Intermediate kernel outputs:\n  K_iso: %s\n  K_vol: %s\n  K_geo: %s",
+            K_iso, K_vol, K_geo
+        );
 
         const UnpolarizedSpectrum value =
             (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo);
