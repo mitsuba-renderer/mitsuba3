@@ -23,7 +23,6 @@ template <typename Float, typename Spectrum> class MicrofacetDistribution;
 template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
-template <typename Float, typename Spectrum> class SDF;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class PhaseFunction;
 template <typename Float, typename Spectrum> class ProjectiveCamera;
@@ -78,7 +77,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ShapeGroup             = mitsuba::ShapeGroup<FloatU, SpectrumU>;
     using ShapeKDTree            = mitsuba::ShapeKDTree<FloatU, SpectrumU>;
     using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
-    using SDF                    = mitsuba::SDF<FloatU, SpectrumU>;
     using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
     using SamplingIntegrator     = mitsuba::SamplingIntegrator<FloatU, SpectrumU>;
     using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<FloatU, SpectrumU>;
@@ -166,7 +164,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Shape                  = typename RenderAliases::Shape;                                  \
     using ShapeKDTree            = typename RenderAliases::ShapeKDTree;                            \
     using Mesh                   = typename RenderAliases::Mesh;                                   \
-    using SDF                    = typename RenderAliases::SDF;                                    \
     using Integrator             = typename RenderAliases::Integrator;                             \
     using SamplingIntegrator     = typename RenderAliases::SamplingIntegrator;                     \
     using MonteCarloIntegrator   = typename RenderAliases::MonteCarloIntegrator;                   \

@@ -181,7 +181,7 @@
         Parameter ``arg0`` (float):
             *no description available*
 
-
+        
 .. py:class:: mitsuba.BSDF
 
     Base class: :py:obj:`mitsuba.Object`
@@ -260,6 +260,68 @@
 
         Returns → :py:obj:`mitsuba.Color3f`:
             *no description available*
+
+    .. py:method:: mitsuba.BSDF.eval_attribute(self, name, si, active=True)
+
+        Evaluate a specific BSDF attribute at the given surface interaction.
+
+        BSDF attributes are user-provided fields that provide extra
+        information at an intersection. An example of this would be a per-
+        vertex or per-face color on a triangle mesh.
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.BSDF.eval_attribute_1(self, name, si, active=True)
+
+        Monochromatic evaluation of a BSDF attribute at the given surface
+        interaction
+
+        This function differs from eval_attribute() in that it provided raw
+        access to scalar intensity/reflectance values without any color
+        processing (e.g. spectral upsampling).
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.BSDF.eval_attribute_3(self, name, si, active=True)
+
+        Trichromatic evaluation of a BSDF attribute at the given surface
+        interaction
+
+        This function differs from eval_attribute() in that it provided raw
+        access to RGB intensity/reflectance values without any additional
+        color processing (e.g. RGB-to-spectral upsampling).
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
 
     .. py:method:: mitsuba.BSDF.eval_diffuse_reflectance(self, si, active=True)
 
@@ -408,6 +470,19 @@
 
             Returns → int:
                 *no description available*
+
+    .. py:method:: mitsuba.BSDF.has_attribute(self, name, active=True)
+
+        Returns whether this BSDF contains the specified attribute.
+
+        Parameter ``name`` (str):
+            Name of the attribute
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
 
     .. py:method:: mitsuba.BSDF.id(self)
 
@@ -746,6 +821,68 @@
         Returns → :py:obj:`mitsuba.Color3f`:
             *no description available*
 
+    .. py:method:: mitsuba.BSDFPtr.eval_attribute(self, name, si, active=True)
+
+        Evaluate a specific BSDF attribute at the given surface interaction.
+
+        BSDF attributes are user-provided fields that provide extra
+        information at an intersection. An example of this would be a per-
+        vertex or per-face color on a triangle mesh.
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.BSDFPtr.eval_attribute_1(self, name, si, active=True)
+
+        Monochromatic evaluation of a BSDF attribute at the given surface
+        interaction
+
+        This function differs from eval_attribute() in that it provided raw
+        access to scalar intensity/reflectance values without any color
+        processing (e.g. spectral upsampling).
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.BSDFPtr.eval_attribute_3(self, name, si, active=True)
+
+        Trichromatic evaluation of a BSDF attribute at the given surface
+        interaction
+
+        This function differs from eval_attribute() in that it provided raw
+        access to RGB intensity/reflectance values without any additional
+        color processing (e.g. RGB-to-spectral upsampling).
+
+        Parameter ``name`` (str):
+            Name of the attribute to evaluate
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            Surface interaction associated with the query
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
+
     .. py:method:: mitsuba.BSDFPtr.eval_diffuse_reflectance(self, si, active=True)
 
         Evaluate the diffuse reflectance
@@ -893,6 +1030,19 @@
             *no description available*
 
         Returns → :py:obj:`mitsuba.BSDFPtr`:
+            *no description available*
+
+    .. py:method:: mitsuba.BSDFPtr.has_attribute(self, name, active=True)
+
+        Returns whether this BSDF contains the specified attribute.
+
+        Parameter ``name`` (str):
+            Name of the attribute
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Bool:
             *no description available*
 
     .. py:method:: mitsuba.BSDFPtr.label_(self)
@@ -3839,7 +3989,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -5205,10 +5355,10 @@
     .. py:method:: __init__(self, p, mode=<EMode., ERead)
 
         Constructs a new FileStream by opening the file pointed by ``p``.
-
+        
         The file is opened in read-only or read/write mode as specified by
         ``mode``.
-
+        
         Throws if trying to open a non-existing file in with write disabled.
         Throws an exception if the file cannot be opened / created.
 
@@ -5221,7 +5371,7 @@
         Parameter ``ERead`` (0>):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.FileStream.EMode
 
         Members:
@@ -7699,15 +7849,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7727,7 +7877,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -7818,15 +7968,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7846,7 +7996,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -7937,15 +8087,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -7965,7 +8115,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -8056,15 +8206,15 @@
 
         Construct a hierarchical sample warping scheme for floating point data
         of resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Hierarchical2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the hierarchy needed for sample warping, which saves
         memory in case this functionality is not needed (e.g. if only the
@@ -8084,7 +8234,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Hierarchical2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10465,7 +10615,7 @@
 
     .. py:data:: Trace
 
-
+        
 
     .. py:data:: Debug
 
@@ -10509,7 +10659,7 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.LogLevel`):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Logger.add_appender(self, arg0)
 
         Add an appender to this logger
@@ -10780,15 +10930,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10806,7 +10956,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -10905,15 +11055,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -10931,7 +11081,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11030,15 +11180,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11056,7 +11206,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11155,15 +11305,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11181,7 +11331,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalContinuous2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11280,15 +11430,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11306,7 +11456,7 @@
         Parameter ``enable_sampling`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11405,15 +11555,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11431,7 +11581,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D1.eval(self, pos, param=[0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11530,15 +11680,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11556,7 +11706,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D2.eval(self, pos, param=[0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11655,15 +11805,15 @@
 
         Construct a marginal sample warping scheme for floating point data of
         resolution ``size``.
-
+        
         ``param_res`` and ``param_values`` are only needed for conditional
         distributions (see the text describing the Marginal2D class).
-
+        
         If ``normalize`` is set to ``False``, the implementation will not re-
         scale the distribution so that it integrates to ``1``. It can still be
         sampled (proportionally), but returned density values will reflect the
         unnormalized values.
-
+        
         If ``enable_sampling`` is set to ``False``, the implementation will
         not construct the cdf needed for sample warping, which saves memory in
         case this functionality is not needed (e.g. if only the interpolation
@@ -11681,7 +11831,7 @@
         Parameter ``build_hierarchy`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MarginalDiscrete2D3.eval(self, pos, param=[0.0, 0.0, 0.0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -11833,28 +11983,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    .. py:method:: mitsuba.Medium.transmittance_eval_pdf(self, mi, active)
-
-        Compute the transmittance and PDF
-
-        This function evaluates the transmittance and PDF of sampling a
-        certain free-flight distance The returned PDF takes into account if a
-        medium interaction occurred (mi.t <= si.t) or the ray left the medium
-        (mi.t > si.t)
-
-        The evaluated PDF is spectrally varying. This allows to account for
-        the fact that the free-flight distance sampling distribution can
-        depend on the wavelength.
-
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
-            *no description available*
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask to specify active lanes.
-
-        Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
-            This method returns a pair of (Transmittance, PDF).
-
     .. py:method:: mitsuba.Medium.get_majorant(self, mi, active=True)
 
         Returns the medium's majorant used for delta tracking
@@ -11946,6 +12074,28 @@
             This method returns a MediumInteraction. The MediumInteraction
             will always be valid, except if the ray missed the Medium's
             bounding box.
+
+    .. py:method:: mitsuba.Medium.transmittance_eval_pdf(self, mi, active)
+
+        Compute the transmittance and PDF
+
+        This function evaluates the transmittance and PDF of sampling a
+        certain free-flight distance The returned PDF takes into account if a
+        medium interaction occurred (mi.t <= si.t) or the ray left the medium
+        (mi.t > si.t)
+
+        The evaluated PDF is spectrally varying. This allows to account for
+        the fact that the free-flight distance sampling distribution can
+        depend on the wavelength.
+
+        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            This method returns a pair of (Transmittance, PDF).
 
     .. py:method:: mitsuba.Medium.use_emitter_sampling(self)
 
@@ -12051,28 +12201,6 @@
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
-
-    .. py:method:: mitsuba.MediumPtr.transmittance_eval_pdf(self, mi, active)
-
-        Compute the transmittance and PDF
-
-        This function evaluates the transmittance and PDF of sampling a
-        certain free-flight distance The returned PDF takes into account if a
-        medium interaction occurred (mi.t <= si.t) or the ray left the medium
-        (mi.t > si.t)
-
-        The evaluated PDF is spectrally varying. This allows to account for
-        the fact that the free-flight distance sampling distribution can
-        depend on the wavelength.
-
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
-            *no description available*
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask to specify active lanes.
-
-        Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
-            This method returns a pair of (Transmittance, PDF).
 
     .. py:method:: mitsuba.MediumPtr.gather_(source, index, mask, permute=False)
 
@@ -12257,6 +12385,28 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.MediumPtr.transmittance_eval_pdf(self, mi, active)
+
+        Compute the transmittance and PDF
+
+        This function evaluates the transmittance and PDF of sampling a
+        certain free-flight distance The returned PDF takes into account if a
+        medium interaction occurred (mi.t <= si.t) or the ray left the medium
+        (mi.t > si.t)
+
+        The evaluated PDF is spectrally varying. This allows to account for
+        the fact that the free-flight distance sampling distribution can
+        depend on the wavelength.
+
+        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            This method returns a pair of (Transmittance, PDF).
+
     .. py:method:: mitsuba.MediumPtr.use_emitter_sampling(self)
 
         Returns whether this specific medium instance uses emitter sampling
@@ -12385,7 +12535,7 @@
         Parameter ``capacity`` (int):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.MemoryStream.capacity(self)
 
         Return the current capacity of the underlying memory buffer
@@ -13116,25 +13266,25 @@
     .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
 
         Constructs an OptiX denoiser
-
+        
         Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
             Resolution of noisy images that will be fed to the denoiser.
-
+        
         Parameter ``albedo`` (bool):
             Whether or not albedo information will also be given to the
             denoiser.
-
+        
         Parameter ``normals`` (bool):
             Whether or not shading normals information will also be given to
             the Denoiser.
-
+        
         Returns:
             A callable object which will apply the OptiX denoiser.
 
         Parameter ``temporal`` (bool):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.OptixDenoiser.__call__(overloaded)
 
 
@@ -13410,12 +13560,12 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunction.eval(self, ctx, mi, wo, active=True)
+    .. py:method:: mitsuba.PhaseFunction.eval_pdf(self, ctx, mi, wo, active=True)
 
-        Evaluates the phase function model
+        Evaluates the phase function model value and PDF
 
-        The function returns the value (which equals the PDF) of the phase
-        function in the query direction.
+        The function returns the value (which often equals the PDF) of the
+        phase function in the query direction.
 
         Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
             A phase function sampling context, contains information about the
@@ -13432,8 +13582,9 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Float:
-            The value of the phase function in direction wo
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+            The value and the sampling PDF of the phase function in direction
+            wo
 
     .. py:method:: mitsuba.PhaseFunction.flags(overloaded)
 
@@ -13520,8 +13671,8 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.ad.Float]:
-            A sampled direction wo
+        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+            A sampled direction wo and its corresponding weight and PDF
 
 .. py:class:: mitsuba.PhaseFunctionContext
 
@@ -13555,19 +13706,19 @@
 
     .. py:data:: Empty
 
-
+        
 
     .. py:data:: Isotropic
 
-
+        
 
     .. py:data:: Anisotropic
 
-
+        
 
     .. py:data:: Microflake
 
-
+        
 
     .. py:method:: __init__(self, value)
 
@@ -13622,12 +13773,12 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.eval(self, ctx, mi, wo, active=True)
+    .. py:method:: mitsuba.PhaseFunctionPtr.eval_pdf(self, ctx, mi, wo, active=True)
 
-        Evaluates the phase function model
+        Evaluates the phase function model value and PDF
 
-        The function returns the value (which equals the PDF) of the phase
-        function in the query direction.
+        The function returns the value (which often equals the PDF) of the
+        phase function in the query direction.
 
         Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
             A phase function sampling context, contains information about the
@@ -13644,8 +13795,9 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Float:
-            The value of the phase function in direction wo
+        Returns → Tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+            The value and the sampling PDF of the phase function in direction
+            wo
 
     .. py:method:: mitsuba.PhaseFunctionPtr.flags(self, active=True)
 
@@ -13760,8 +13912,8 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, drjit.llvm.ad.Float]:
-            A sampled direction wo
+        Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+            A sampled direction wo and its corresponding weight and PDF
 
     .. py:method:: mitsuba.PhaseFunctionPtr.scatter_(self, target, index, mask, permute=False)
 
@@ -14856,22 +15008,22 @@
 
         Create a new Resampler object that transforms between the specified
         resolutions
-
+        
         This constructor precomputes all information needed to efficiently
         perform the desired resampling operation. For that reason, it is most
         efficient if it can be used over and over again (e.g. to resample the
         equal-sized rows of a bitmap)
-
+        
         Parameter ``source_res`` (int):
             Source resolution
-
+        
         Parameter ``target_res`` (int):
             Desired target resolution
 
         Parameter ``rfilter`` (:py:obj:`mitsuba.ReconstructionFilter`):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Resampler.boundary_condition(self)
 
         Return the boundary condition that should be used when looking up
@@ -14956,6 +15108,34 @@
         Return the reconstruction filter's target resolution
 
         Returns → int:
+            *no description available*
+
+.. py:class:: mitsuba.SDF
+
+    Base class: :py:obj:`mitsuba.Shape`
+
+    .. py:method:: mitsuba.SDF.smooth(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Normal3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.SDF.smooth_hessian(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Matrix3f:
+            *no description available*
+
+    .. py:method:: mitsuba.SDF.smooth_sh(self, p)
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Normal3f`:
             *no description available*
 
 .. py:class:: mitsuba.Sampler
@@ -17333,7 +17513,7 @@
         Private constructor (use
         :py:func:`mitsuba.traverse()` instead)
 
-
+        
     .. py:method:: mitsuba.SceneParameters.items()
 
         Returns → a set-like object providing a view on D's items:
@@ -18250,50 +18430,32 @@
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.ray_intersect_preliminary(overloaded)
+    .. py:method:: mitsuba.Shape.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
 
+        Fast ray intersection
 
-        .. py:method:: ray_intersect_preliminary(self, ray, active=True)
+        Efficiently test whether the shape is intersected by the given ray,
+        and return preliminary information about the intersection if that is
+        the case.
 
-            Fast ray intersection
+        If the intersection is deemed relevant (e.g. the closest to the ray
+        origin), detailed intersection information can later be obtained via
+        the create_surface_interaction() method.
 
-            Efficiently test whether the shape is intersected by the given ray,
-            and return preliminary information about the intersection if that is
-            the case.
+        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+            The ray to be tested for an intersection
 
-            If the intersection is deemed relevant (e.g. the closest to the ray
-            origin), detailed intersection information can later be obtained via
-            the create_surface_interaction() method.
+        Parameter ``prim_index`` (int):
+            Index of the primitive to be intersected. This index is ignored by
+            a shape that contains a single primitive. Otherwise, if no index
+            is provided, the ray intersection will be performed on the shape's
+            first primitive at index 0.
 
-            Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
-                The ray to be tested for an intersection
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
 
-            Parameter ``active`` (drjit.llvm.ad.Bool):
-                Mask to specify active lanes.
-
-            Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
-                *no description available*
-
-        .. py:method:: ray_intersect_preliminary(self, ray, active=True)
-
-            Fast ray intersection
-
-            Efficiently test whether the shape is intersected by the given ray,
-            and return preliminary information about the intersection if that is
-            the case.
-
-            If the intersection is deemed relevant (e.g. the closest to the ray
-            origin), detailed intersection information can later be obtained via
-            the create_surface_interaction() method.
-
-            Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
-                The ray to be tested for an intersection
-
-            Parameter ``active`` (drjit.llvm.ad.Bool):
-                Mask to specify active lanes.
-
-            Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
-                *no description available*
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
+            *no description available*
 
     .. py:method:: mitsuba.Shape.ray_test(self, ray, active=True)
 
@@ -18309,6 +18471,9 @@
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
+
+        Parameter ``prim_index``:
+            Index of the primitive to be intersected
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -18682,50 +18847,32 @@
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.ray_intersect_preliminary(overloaded)
+    .. py:method:: mitsuba.ShapePtr.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
 
+        Fast ray intersection
 
-        .. py:method:: ray_intersect_preliminary(self, ray, active=True)
+        Efficiently test whether the shape is intersected by the given ray,
+        and return preliminary information about the intersection if that is
+        the case.
 
-            Fast ray intersection
+        If the intersection is deemed relevant (e.g. the closest to the ray
+        origin), detailed intersection information can later be obtained via
+        the create_surface_interaction() method.
 
-            Efficiently test whether the shape is intersected by the given ray,
-            and return preliminary information about the intersection if that is
-            the case.
+        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+            The ray to be tested for an intersection
 
-            If the intersection is deemed relevant (e.g. the closest to the ray
-            origin), detailed intersection information can later be obtained via
-            the create_surface_interaction() method.
+        Parameter ``prim_index`` (int):
+            Index of the primitive to be intersected. This index is ignored by
+            a shape that contains a single primitive. Otherwise, if no index
+            is provided, the ray intersection will be performed on the shape's
+            first primitive at index 0.
 
-            Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
-                The ray to be tested for an intersection
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
 
-            Parameter ``active`` (drjit.llvm.ad.Bool):
-                Mask to specify active lanes.
-
-            Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
-                *no description available*
-
-        .. py:method:: ray_intersect_preliminary(self, ray, active=True)
-
-            Fast ray intersection
-
-            Efficiently test whether the shape is intersected by the given ray,
-            and return preliminary information about the intersection if that is
-            the case.
-
-            If the intersection is deemed relevant (e.g. the closest to the ray
-            origin), detailed intersection information can later be obtained via
-            the create_surface_interaction() method.
-
-            Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
-                The ray to be tested for an intersection
-
-            Parameter ``active`` (drjit.llvm.ad.Bool):
-                Mask to specify active lanes.
-
-            Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
-                *no description available*
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection`:
+            *no description available*
 
     .. py:method:: mitsuba.ShapePtr.ray_test(self, ray, active=True)
 
@@ -18741,6 +18888,9 @@
 
         Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
             The ray to be tested for an intersection
+
+        Parameter ``prim_index``:
+            Index of the primitive to be intersected
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -18915,7 +19065,7 @@
         Parameter ``passes`` (int):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.Spiral.block_count(self)
 
         Return the total number of blocks
@@ -18972,7 +19122,7 @@
 
         .. py:data:: EBigEndian
 
-
+            
 
         .. py:data:: ELittleEndian
 
@@ -19460,14 +19610,14 @@
     .. py:method:: __init__(self, arg0)
 
         Create a new stream appender
-
+        
         Remark:
             This constructor is not exposed in the Python bindings
 
         Parameter ``arg0`` (str):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.StreamAppender.logs_to_file(self)
 
         Does this appender log to a file
@@ -19508,16 +19658,16 @@
         Parameter ``HostByteOrder`` (2>):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.Struct.ByteOrder
 
         Members:
 
-            LittleEndian :
+            LittleEndian : 
 
-            BigEndian :
+            BigEndian : 
 
-            HostByteOrder :
+            HostByteOrder : 
 
         .. py:method:: __init__(self, value)
 
@@ -19650,29 +19800,29 @@
 
         Members:
 
-            Int8 :
+            Int8 : 
 
-            UInt8 :
+            UInt8 : 
 
-            Int16 :
+            Int16 : 
 
-            UInt16 :
+            UInt16 : 
 
-            Int32 :
+            Int32 : 
 
-            UInt32 :
+            UInt32 : 
 
-            Int64 :
+            Int64 : 
 
-            UInt64 :
+            UInt64 : 
 
-            Float16 :
+            Float16 : 
 
-            Float32 :
+            Float32 : 
 
-            Float64 :
+            Float64 : 
 
-            Invalid :
+            Invalid : 
 
 
         .. py:method:: __init__(self, value)
@@ -23303,31 +23453,31 @@
 
         .. py:data:: EIdlePriority
 
-
+            
 
         .. py:data:: ELowestPriority
 
-
+            
 
         .. py:data:: ELowPriority
 
-
+            
 
         .. py:data:: ENormalPriority
 
-
+            
 
         .. py:data:: EHighPriority
 
-
+            
 
         .. py:data:: EHighestPriority
 
-
+            
 
         .. py:data:: ERealtimePriority
 
-
+            
 
         .. py:method:: __init__(self, value)
 
@@ -26217,14 +26367,14 @@
         Parameter ``level`` (int):
             *no description available*
 
-
+        
     .. py:class:: mitsuba.ZStream.EStreamType
 
         Members:
 
         .. py:data:: EDeflateStream
 
-
+            
 
         .. py:data:: EGZipStream
 
@@ -26275,30 +26425,30 @@
 
         Parameter ``lr``:
             learning rate
-
+        
         Parameter ``beta_1``:
             controls the exponential averaging of first order gradient moments
-
+        
         Parameter ``beta_2``:
             controls the exponential averaging of second order gradient moments
-
+        
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated in a
             given iteration if it received nonzero gradients in that iteration
-
+        
         Parameter ``uniform``:
             if enabled, the optimizer will use the 'UniformAdam' variant of Adam
             [Nicolet et al. 2021], where the update rule uses the *maximum* of
             the second moment estimates at the current step instead of the
             per-element second moments.
-
+        
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (~typing.Optional[dict]):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.ad.Adam.step()
 
         Take a gradient step
@@ -26380,14 +26530,14 @@
 
         Parameter ``lr``:
             learning rate
-
+        
         Parameter ``params`` (:py:class:`dict`):
             Dictionary-like object containing parameters to optimize.
 
         Parameter ``params`` (dict):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.ad.Optimizer.set_learning_rate()
 
         Set the learning rate.
@@ -26428,23 +26578,23 @@
 
         Parameter ``lr``:
             learning rate
-
+        
         Parameter ``momentum``:
             momentum factor
-
+        
         Parameter ``mask_updates``:
             if enabled, parameters and state variables will only be updated
             in a given iteration if it received nonzero gradients in that iteration.
             This only has an effect if momentum is enabled.
             See :py:class:`mitsuba.optimizers.Adam`'s documentation for more details.
-
+        
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (~typing.Optional[dict]):
             *no description available*
 
-
+        
     .. py:method:: mitsuba.ad.SGD.step()
 
         Take a gradient step
@@ -27825,7 +27975,7 @@
 
     .. py:function:: has_flag(arg0, arg1)
 
-        10. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> bool
+        10. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> drjit.llvm.ad.Bool
 
         Parameter ``arg0`` (int):
             *no description available*
@@ -29592,6 +29742,100 @@
 
     Returns → None:
         *no description available*
+
+.. py:function:: mitsuba.sggx_pdf(wm, s)
+
+    Evaluates the probability of sampling a given normal using the SGGX
+    microflake distribution
+
+    Parameter ``wm`` (:py:obj:`mitsuba.Vector3f`):
+        The microflake normal
+
+    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+        The parameters of the SGGX phase function stored as a 6D vector
+        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
+        entries of a symmetric positive definite 3x3 matrix. The user
+        needs to ensure that the parameters indeed represent a positive
+        definite matrix.
+
+    Returns → drjit.llvm.ad.Float:
+        The probability of sampling a certain normal
+
+.. py:function:: mitsuba.sggx_projected_area(wi, s)
+
+    Evaluates the projected area of the SGGX microflake distribution
+
+    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+        A 3D direction
+
+    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+        The parameters of the SGGX phase function stored as a 6D vector
+        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
+        entries of a symmetric positive definite 3x3 matrix. The user
+        needs to ensure that the parameters indeed represent a positive
+        definite matrix.
+
+    Returns → drjit.llvm.ad.Float:
+        The projected area of the SGGX microflake distribution
+
+.. py:function:: mitsuba.sggx_sample(overloaded)
+
+
+    .. py:function:: sggx_sample(sh_frame, sample, s)
+
+        Samples the visible normal distribution of the SGGX microflake
+        distribution
+
+        This function is based on the paper
+
+        "The SGGX microflake distribution", Siggraph 2015 by Eric Heitz,
+        Jonathan Dupuy, Cyril Crassin and Carsten Dachsbacher
+
+        Parameter ``sh_frame`` (:py:obj:`mitsuba.Frame3f`):
+            Shading frame aligned with the incident direction, e.g.
+            constructed as Frame3f(wi)
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed 2D sample
+
+        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+            The parameters of the SGGX phase function stored as a 6D vector
+            [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
+            entries of a symmetric positive definite 3x3 matrix. The user
+            needs to ensure that the parameters indeed represent a positive
+            definite matrix.
+
+        Returns → :py:obj:`mitsuba.Normal3f`:
+            A normal (in world space) sampled from the distribution of visible
+            normals
+
+    .. py:function:: sggx_sample(sh_frame, sample, s)
+
+        Samples the visible normal distribution of the SGGX microflake
+        distribution
+
+        This function is based on the paper
+
+        "The SGGX microflake distribution", Siggraph 2015 by Eric Heitz,
+        Jonathan Dupuy, Cyril Crassin and Carsten Dachsbacher
+
+        Parameter ``sh_frame`` (:py:obj:`mitsuba.Vector3f`):
+            Shading frame aligned with the incident direction, e.g.
+            constructed as Frame3f(wi)
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed 2D sample
+
+        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+            The parameters of the SGGX phase function stored as a 6D vector
+            [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
+            entries of a symmetric positive definite 3x3 matrix. The user
+            needs to ensure that the parameters indeed represent a positive
+            definite matrix.
+
+        Returns → :py:obj:`mitsuba.Normal3f`:
+            A normal (in world space) sampled from the distribution of visible
+            normals
 
 .. py:function:: mitsuba.sobol_2(index, scramble)
 

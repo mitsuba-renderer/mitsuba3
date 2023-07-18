@@ -296,6 +296,8 @@
 
 .. autoclass:: mitsuba.Resampler
 
+.. autoclass:: mitsuba.SDF
+
 .. autoclass:: mitsuba.Sampler
 
 .. autoclass:: mitsuba.SamplingIntegrator
@@ -777,6 +779,12 @@
 .. autofunction:: mitsuba.set_log_level
 
 .. autofunction:: mitsuba.set_variant
+
+.. autofunction:: mitsuba.sggx_pdf
+
+.. autofunction:: mitsuba.sggx_projected_area
+
+.. autofunction:: mitsuba.sggx_sample
 
 .. autofunction:: mitsuba.sobol_2
 
