@@ -466,7 +466,7 @@ SamplingIntegrator<Float, Spectrum>::render_forward(Scene* scene,
                                                     uint32_t spp) {
 
     // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag(JitFlag::LoopRecord, false);
+    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
     auto image = render(scene, sensor, seed, spp, true, false);
     dr::forward_to(image.array());
@@ -483,7 +483,7 @@ SamplingIntegrator<Float, Spectrum>::render_backward(Scene* scene,
                                                      uint32_t spp) {
 
     // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag(JitFlag::LoopRecord, false);
+    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
     auto image = render(scene, sensor, seed, spp, true, false);
     dr::backward_from((image * grad_in).array());
