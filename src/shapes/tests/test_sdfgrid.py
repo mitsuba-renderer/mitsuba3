@@ -2,7 +2,6 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-# TODO: change variants once they're all implemented
 
 def test01_create(variant_scalar_rgb):
     for normal_method in ["analytic", "smooth"]:
@@ -163,10 +162,6 @@ def test05_ray_intersect_instancing(variants_all_ad_rgb):
 
 
 def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
-    # TODO: remove scenes
-
-    dr.set_flag(dr.JitFlag.VCallRecord, False)
-
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -216,6 +211,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     theta = mi.Float(0)
     dr.enable_grad(theta)
     params['sdf.grid'] = params['sdf.grid'] + theta
+    params['sdf.to_world'] = dr.detach(params['sdf.to_world'])
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
     si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
@@ -234,6 +230,8 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
+
+    params['sdf.grid'] = dr.detach(params['sdf.grid'])
     params['sdf.to_world'] = mi.Transform4f.translate([0, theta, 0])
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
@@ -256,6 +254,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     offset = (dr.sqrt(2) * theta) / 2 # Shift by theta in the y direction
     grid = grid - offset
     params['sdf.grid'] = grid
+    params['sdf.to_world'] = dr.detach(params['sdf.to_world'])
     params.update()
 
     ray = mi.Ray3f(mi.Vector3f(0.5, 0.5, 2), mi.Vector3f(0, 0, -1))
@@ -275,6 +274,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     theta = mi.Float(0)
     dr.enable_grad(theta)
 
+    params['sdf.grid'] = dr.detach(params['sdf.grid'])
     params['sdf.to_world'] = mi.Transform4f.translate([0, theta, 0])
     params.update()
 
@@ -294,6 +294,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     theta = mi.Float(0)
     dr.enable_grad(theta)
 
+    params['sdf.to_world'] = dr.detach(params['sdf.to_world'])
     grid = params['sdf.grid']
     offset = (dr.sqrt(2) * theta) / 2 # Shift by theta in the y direction
     grid = grid - offset

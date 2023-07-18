@@ -789,6 +789,56 @@ Parameter ``si``:
 Parameter ``wo``:
     The outgoing direction)doc";
 
+static const char *__doc_mitsuba_BSDF_eval_attribute =
+R"doc(Evaluate a specific BSDF attribute at the given surface interaction.
+
+BSDF attributes are user-provided fields that provide extra
+information at an intersection. An example of this would be a per-
+vertex or per-face color on a triangle mesh.
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An unpolarized spectral power distribution or reflectance value)doc";
+
+static const char *__doc_mitsuba_BSDF_eval_attribute_1 =
+R"doc(Monochromatic evaluation of a BSDF attribute at the given surface
+interaction
+
+This function differs from eval_attribute() in that it provided raw
+access to scalar intensity/reflectance values without any color
+processing (e.g. spectral upsampling).
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An scalar intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_BSDF_eval_attribute_3 =
+R"doc(Trichromatic evaluation of a BSDF attribute at the given surface
+interaction
+
+This function differs from eval_attribute() in that it provided raw
+access to RGB intensity/reflectance values without any additional
+color processing (e.g. RGB-to-spectral upsampling).
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An trichromatic intensity or reflectance value)doc";
+
 static const char *__doc_mitsuba_BSDF_eval_diffuse_reflectance =
 R"doc(Evaluate the diffuse reflectance
 
@@ -801,14 +851,6 @@ value multiplied by pi. This is the default behaviour of this method.
 Parameter ``si``:
     A surface interaction data structure describing the underlying
     surface position.)doc";
-
-static const char *__doc_mitsuba_BSDF_has_attribute = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_eval_attribute = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_eval_attribute_1 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_eval_attribute_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_eval_null_transmission =
 R"doc(Evaluate un-scattered transmission component of the BSDF
@@ -889,6 +931,12 @@ Parameter ``sample2``:
 static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
 static const char *__doc_mitsuba_BSDF_flags_2 = R"doc(Flags for a specific component of this BSDF.)doc";
+
+static const char *__doc_mitsuba_BSDF_has_attribute =
+R"doc(Returns whether this BSDF contains the specified attribute.
+
+Parameter ``name``:
+    Name of the attribute)doc";
 
 static const char *__doc_mitsuba_BSDF_id = R"doc(Return a string identifier)doc";
 
@@ -4096,21 +4144,6 @@ static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_transmittance_eval_pdf =
-R"doc(Compute the transmittance and PDF
-
-This function evaluates the transmittance and PDF of sampling a
-certain free-flight distance The returned PDF takes into account if a
-medium interaction occurred (mi.t <= si.t) or the ray left the medium
-(mi.t > si.t)
-
-The evaluated PDF is spectrally varying. This allows to account for
-the fact that the free-flight distance sampling distribution can
-depend on the wavelength.
-
-Returns:
-    This method returns a pair of (Transmittance, PDF).)doc";
-
 static const char *__doc_mitsuba_Medium_get_majorant = R"doc(Returns the medium's majorant used for delta tracking)doc";
 
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
@@ -4171,6 +4204,21 @@ Returns:
 static const char *__doc_mitsuba_Medium_set_id = R"doc(Set a string identifier)doc";
 
 static const char *__doc_mitsuba_Medium_to_string = R"doc(Return a human-readable representation of the Medium)doc";
+
+static const char *__doc_mitsuba_Medium_transmittance_eval_pdf =
+R"doc(Compute the transmittance and PDF
+
+This function evaluates the transmittance and PDF of sampling a
+certain free-flight distance The returned PDF takes into account if a
+medium interaction occurred (mi.t <= si.t) or the ray left the medium
+(mi.t > si.t)
+
+The evaluated PDF is spectrally varying. This allows to account for
+the fact that the free-flight distance sampling distribution can
+depend on the wavelength.
+
+Returns:
+    This method returns a pair of (Transmittance, PDF).)doc";
 
 static const char *__doc_mitsuba_Medium_traverse = R"doc()doc";
 
@@ -5081,6 +5129,8 @@ static const char *__doc_mitsuba_OptixShapeType_NumOptixShapeTypes = R"doc()doc"
 
 static const char *__doc_mitsuba_OptixShapeType_Rectangle = R"doc()doc";
 
+static const char *__doc_mitsuba_OptixShapeType_SDFGrid = R"doc()doc";
+
 static const char *__doc_mitsuba_OptixShapeType_Sphere = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixShape_ch_name = R"doc(Whether or not this is a built-in OptiX shape type)doc";
@@ -5192,10 +5242,10 @@ static const char *__doc_mitsuba_PhaseFunction_class = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_component_count = R"doc(Number of components this phase function is comprised of.)doc";
 
 static const char *__doc_mitsuba_PhaseFunction_eval_pdf =
-R"doc(Evaluates the phase function model value and pdf
+R"doc(Evaluates the phase function model value and PDF
 
-The function returns the value (which often equals the PDF) of the phase
-function in the query direction.
+The function returns the value (which often equals the PDF) of the
+phase function in the query direction.
 
 Parameter ``ctx``:
     A phase function sampling context, contains information about the
@@ -5210,7 +5260,8 @@ Parameter ``wo``:
     An outgoing direction to evaluate.
 
 Returns:
-    The value and sampling pdf of the phase function in direction wo)doc";
+    The value and the sampling PDF of the phase function in direction
+    wo)doc";
 
 static const char *__doc_mitsuba_PhaseFunction_flags = R"doc(Flags for this phase function.)doc";
 
@@ -5272,7 +5323,7 @@ Parameter ``sample2``:
     generate the sampled direction.
 
 Returns:
-    A sampled direction wo and the corresponding weight and PDF)doc";
+    A sampled direction wo and its corresponding weight and PDF)doc";
 
 static const char *__doc_mitsuba_PhaseFunction_set_id = R"doc(Set a string identifier)doc";
 
@@ -6203,6 +6254,8 @@ static const char *__doc_mitsuba_SDF_2 = R"doc()doc";
 static const char *__doc_mitsuba_SDF_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SDF_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SDF_SDF = R"doc()doc";
 
@@ -7562,7 +7615,13 @@ origin), detailed intersection information can later be obtained via
 the create_surface_interaction() method.
 
 Parameter ``ray``:
-    The ray to be tested for an intersection)doc";
+    The ray to be tested for an intersection
+
+Parameter ``prim_index``:
+    Index of the primitive to be intersected. This index is ignored by
+    a shape that contains a single primitive. Otherwise, if no index
+    is provided, the ray intersection will be performed on the shape's
+    first primitive at index 0.)doc";
 
 static const char *__doc_mitsuba_Shape_ray_intersect_preliminary_packet = R"doc()doc";
 
@@ -7596,7 +7655,10 @@ ray_intersect_preliminary(). When the shape actually contains a nested
 kd-tree, some optimizations are possible.
 
 Parameter ``ray``:
-    The ray to be tested for an intersection)doc";
+    The ray to be tested for an intersection
+
+Parameter ``prim_index``:
+    Index of the primitive to be intersected)doc";
 
 static const char *__doc_mitsuba_Shape_ray_test_packet = R"doc()doc";
 

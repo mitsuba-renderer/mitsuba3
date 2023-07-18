@@ -8,7 +8,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/sdf.h>
+#include <mitsuba/render/shape.h>
 #include <mitsuba/render/volumegrid.h>
 
 #include <drjit/tensor.h>
@@ -46,7 +46,7 @@ SDF Grid (:monosp:`sdfgrid`)
 
  * - normals
    - |string|
-   - Specifies the method for computing normals. The options are
+   - Specifies the method for computing shading normals. The options are
      :monosp:`analytic` or :monosp:`smooth`. (Default: :monosp:`smooth`)
 
  * - grid
@@ -61,9 +61,9 @@ SDF Grid (:monosp:`sdfgrid`)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid.jpg
-   :caption: Basic example
+   :caption: SDF grid with ``smooth`` shading normals
 .. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid_analytic.jpg
-   :caption: An SDF grid using the analytic method for computing normals
+   :caption: SDF grid with :code:`analytic` shading normals
 .. subfigend::
    :label: fig-sdfgrid
 
@@ -75,9 +75,17 @@ A smooth method for computing normals :cite:`Hansson-Soderlund2022SDF` is
 selected as the default approach to ensure continuity across grid cells.
 
 .. warning::
+    Compared with the other available shape plugins, the SDF grid has a few
+    important limitations. Namely:
 
-   - An SDF grid shape does not emit UV coordinates for texturing.
-   - This shape can't be used as an area emitter
+    - It does not emit UV coordinates for texturing.
+    - It cannot be used as an area emitter.
+
+.. note::
+    When differentiating this shape, it does not leverage the work presented in
+    :cite:`Vicini2022sdf`. However, a Mitsuba 3-based implementation of that
+    technique is available on `its project's page
+    <https://github.com/rgl-epfl/differentiable-sdf-rendering>`_.
 
 .. tabs::
     .. code-tab:: xml
@@ -98,9 +106,9 @@ selected as the default approach to ensure continuity across grid cells.
  */
 
 template <typename Float, typename Spectrum>
-class SDFGrid final : public SDF<Float, Spectrum> {
+class SDFGrid final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(SDF, m_to_world, m_to_object, m_is_instance, initialize,
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
                    mark_dirty, get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
@@ -114,6 +122,12 @@ public:
     using typename Base::ScalarSize;
 
     SDFGrid(const Properties &props) : Base(props) {
+#if !defined(MI_ENABLE_EMBREE)
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("The SDF grid is only available with Embree in scalar "
+                  "variants!");
+#endif
+
         std::string normals_mode_str = props.string("normals", "smooth");
         if (normals_mode_str == "analytic")
             m_normal_method = Analytic;
@@ -183,6 +197,7 @@ public:
         dr::make_opaque(m_inv_shape, m_voxel_size);
 
         if constexpr (!dr::is_cuda_v<Float>) {
+            dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
             m_host_grid_data = m_grid_texture.tensor().data();
         }
 
@@ -195,9 +210,8 @@ public:
                  m_device_bboxes,
                  m_device_voxel_indices,
                  m_filled_voxel_count) = build_bboxes();
-        if (m_filled_voxel_count == 0) {
+        if (m_filled_voxel_count == 0)
             Throw("SDFGrid should at least have one non-empty voxel!");
-        }
 
         mark_dirty();
     }
@@ -219,7 +233,6 @@ public:
 
             // Update the scalar value of the matrix
             m_to_world = m_to_world.value();
-
             m_grid_texture.set_tensor(m_grid_texture.tensor());
 
             update();
@@ -247,9 +260,8 @@ public:
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex index) const override {
-        if constexpr (dr::is_cuda_v<Float>) {
+        if constexpr (dr::is_cuda_v<Float>)
             NotImplementedError("bbox(ScalarIndex index)");
-        }
 
         return reinterpret_cast<ScalarBoundingBox3f*>(m_host_bboxes)[index];
     }
@@ -300,7 +312,6 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex prim_index,
                                    dr::mask_t<FloatP> active) const {
-
         auto [hit, t, uv, shape_index, p] =
             ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index,
                                                           active);
@@ -311,7 +322,6 @@ public:
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
                                      ScalarIndex prim_index,
                                      dr::mask_t<FloatP> active) const {
-
         auto [hit, t, uv, shape_index, p] =
             ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index, active);
         return hit;
@@ -393,6 +403,7 @@ public:
                 // Capture gradients of `m_grid_texture`
                 InputFloat sdf_value;
                 m_grid_texture.eval(rescale_point(local_p), &sdf_value);
+
                 Float t_diff =
                     sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
                 t_diff = dr::replace_grad(pi.t, t_diff);
@@ -446,7 +457,7 @@ public:
     }
 
     Normal3f smooth_sh(const Point3f &p, const Float *u_ptr, const Float *v_ptr,
-                       const Float *w_ptr) const override {
+                       const Float *w_ptr) const {
         /**
            Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
            Tracing of Signed Distance Function Grids, Journal of Computer
@@ -521,13 +532,13 @@ public:
 
         Normal3f n = (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) +
                                 v * ((1 - u) * n010 + u * n110)) +
-                     w * ((1 - v) * ((1 - u) * n001 + u * n101) +
-                          v * ((1 - u) * n011 + u * n111));
+                           w * ((1 - v) * ((1 - u) * n001 + u * n101) +
+                                v * ((1 - u) * n011 + u * n111));
 
         return n;
     };
 
-    Normal3f smooth(const Point3f &p) const override {
+    Normal3f smooth(const Point3f &p) const {
         Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
         return dr::normalize(m_to_world.value().transform_affine(Normal3f(n)));
     }
@@ -578,6 +589,7 @@ public:
                                      m_grid_texture.tensor().shape()[1],
                                      m_grid_texture.tensor().shape()[0] };
 
+            dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
             OptixSDFGridData data = { (size_t *) m_device_voxel_indices,
                                       resolution[0],
                                       resolution[1],
@@ -793,8 +805,8 @@ private:
                 t   = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
                 f_t = eval_sdf_t(t);
                 FloatP condition = f_t * f_near;
-                t_far            = dr::select(condition <= 0, t, t_far);
-                f_far            = dr::select(condition <= 0, f_t, f_far);
+                t_far = dr::select(condition <= 0, t, t_far);
+                f_far = dr::select(condition <= 0, f_t, f_far);
 
                 t_near = dr::select(condition > 0, t, t_near);
                 f_near = dr::select(condition > 0, f_t, f_near);
@@ -906,6 +918,7 @@ private:
 
         float *grid = nullptr;
 
+        dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
         if constexpr (dr::is_cuda_v<Float>) {
             grid = (float *) jit_malloc_migrate(
                 m_grid_texture.tensor().array().data(), AllocType::Host, false);
@@ -931,22 +944,18 @@ private:
         for (size_t z = 0; z < shape[0] - 1; ++z) {
             for (size_t y = 0; y < shape[1] - 1; ++y) {
                 for (size_t x = 0; x < shape[2] - 1; ++x) {
-                    size_t v000 = (x + 0) + (y + 0) * shape_v[0] +
-                                  (z + 0) * shape_v[0] * shape_v[1];
-                    size_t v100 = (x + 1) + (y + 0) * shape_v[0] +
-                                  (z + 0) * shape_v[0] * shape_v[1];
-                    size_t v010 = (x + 0) + (y + 1) * shape_v[0] +
-                                  (z + 0) * shape_v[0] * shape_v[1];
-                    size_t v110 = (x + 1) + (y + 1) * shape_v[0] +
-                                  (z + 0) * shape_v[0] * shape_v[1];
-                    size_t v001 = (x + 0) + (y + 0) * shape_v[0] +
-                                  (z + 1) * shape_v[0] * shape_v[1];
-                    size_t v101 = (x + 1) + (y + 0) * shape_v[0] +
-                                  (z + 1) * shape_v[0] * shape_v[1];
-                    size_t v011 = (x + 0) + (y + 1) * shape_v[0] +
-                                  (z + 1) * shape_v[0] * shape_v[1];
-                    size_t v111 = (x + 1) + (y + 1) * shape_v[0] +
-                                  (z + 1) * shape_v[0] * shape_v[1];
+                    auto value_index = [&](size_t x, size_t y, size_t z) {
+                        return x + y * shape_v[0] + z * shape_v[0] * shape_v[1];
+                    };
+
+                    size_t v000 = value_index(0, 0, 0);
+                    size_t v100 = value_index(1, 0, 0);
+                    size_t v010 = value_index(0, 1, 0);
+                    size_t v110 = value_index(1, 1, 0);
+                    size_t v001 = value_index(0, 0, 1);
+                    size_t v101 = value_index(1, 0, 1);
+                    size_t v011 = value_index(0, 1, 1);
+                    size_t v111 = value_index(1, 1, 1);
 
                     float f000 = grid[v000];
                     float f100 = grid[v100];
@@ -962,38 +971,31 @@ private:
                         f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0)
                         continue;
 
-                    ScalarBoundingBox3f bbox;
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * voxel_size[2], (y + 0) * voxel_size[1],
-                        (z + 0) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
-                        (z + 0) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * voxel_size[2], (y + 1) * voxel_size[1],
-                        (z + 0) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * voxel_size[2], (y + 1) * voxel_size[1],
-                        (z + 0) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
-                        (z + 1) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
-                        (z + 1) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * voxel_size[2], (y + 1) * voxel_size[1],
-                        (z + 1) * voxel_size[0])));
-                    bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * voxel_size[2], (y + 1) * voxel_size[1],
-                        (z + 1) * voxel_size[0])));
+
+                    ScalarBoundingBox3f bbox{};
+                    auto expand_bbox = [&](size_t x, size_t y, size_t z) {
+                        bbox.expand(to_world.transform_affine(
+                            ScalarPoint3f(
+                                x * voxel_size[2],
+                                y * voxel_size[1],
+                                z * voxel_size[0])));
+                    };
+
+                    expand_bbox(x + 0, y + 0, z + 0);
+                    expand_bbox(x + 1, y + 0, z + 0);
+                    expand_bbox(x + 0, y + 1, z + 0);
+                    expand_bbox(x + 1, y + 1, z + 0);
+                    expand_bbox(x + 0, y + 0, z + 1);
+                    expand_bbox(x + 1, y + 0, z + 1);
+                    expand_bbox(x + 0, y + 1, z + 1);
+                    expand_bbox(x + 1, y + 1, z + 1);
 
                     size_t voxel_index =
-                        (x + 0) + (y + 0) * (shape_v[0] - 1) +
-                        (z + 0) * (shape_v[0] - 1) * (shape_v[1] - 1);
+                        (x + y) * (shape_v[0] - 1) +
+                              z * (shape_v[0] - 1) * (shape_v[1] - 1);
 
                     host_voxel_indices[count] = voxel_index;
-                    host_aabbs[count]         = BoundingBoxType(bbox);
+                    host_aabbs[count] = BoundingBoxType(bbox);
 
                     count++;
                 }
@@ -1022,7 +1024,7 @@ private:
 
     /// Computes the SDF gradient for a given point and its containing voxel
     Vector3f voxel_grad(const Point3f &p, const Point3i &voxel_index) const {
-        Float f[6];
+        InputFloat f[6];
         Point3f query;
 
         Point3f voxel_size = m_voxel_size.value();
@@ -1074,7 +1076,7 @@ private:
     /// Inverse resolution (1 / tensor_shape)
     Vector3f m_inv_shape;
     /// Local voxel sizes (1 / (tensor_shape - 1))
-    field<Vector3f> m_voxel_size;
+    field<Vector<InputFloat, 3>> m_voxel_size;
 
     // Weak pointer to underlying grid texture data. Only used for llvm/scalar
     // variants. We store this because during raytracing, we don't want to call
@@ -1097,6 +1099,6 @@ private:
     NormalMethod m_normal_method;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, SDF)
+MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
 MI_EXPORT_PLUGIN(SDFGrid, "SDFGrid intersection primitive");
 NAMESPACE_END(mitsuba)
