@@ -472,9 +472,9 @@ class ADIntegrator(mi.CppADIntegrator):
         '''Helper function to splat values to a imageblock'''
         if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
             aovs = film.prepare_sample(value, wavelengths,
-                                       block.channel_count(),
-                                       weight=weight,
-                                       alpha=alpha)
+                                        block.channel_count(),
+                                        weight=weight,
+                                        alpha=alpha)
             block.put(pos, aovs)
             del aovs
         else:
@@ -483,7 +483,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 wavelengths=wavelengths,
                 value=value,
                 weight=weight,
-                alpha=alpha,
+                alpha=alpha
             )
 
     def sample(self,

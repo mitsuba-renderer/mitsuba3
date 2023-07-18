@@ -341,7 +341,7 @@ public:
         // Perform forward mode propogation just for AOV image
         {
             // Recorded loops cannot be differentiated, so let's disable them
-            dr::scoped_set_flag(JitFlag::LoopRecord, false);
+            dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
             TensorXf aovs_image = Base::render(scene, sensor, seed, spp);
 
@@ -379,7 +379,7 @@ public:
         // Perform AD back-propogation just for AOV image
         {
             // Recorded loops cannot be differentiated, so let's disable them
-            dr::scoped_set_flag(JitFlag::LoopRecord, false);
+            dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
             TensorXf aovs_image = Base::render(scene, sensor, seed, spp);
 
