@@ -120,6 +120,8 @@ MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<
     if (keys.empty() || string::contains(keys, "to_world")) {
         // Update the scalar value of the matrix
         m_to_world = m_to_world.value();
+
+        dr::make_opaque(m_to_world);
     }
 }
 
