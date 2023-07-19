@@ -8,6 +8,9 @@ struct OptixSDFGridData {
     size_t res_x;
     size_t res_y;
     size_t res_z;
+    float voxel_size_x;
+    float voxel_size_y;
+    float voxel_size_z;
     float* grid_data;
     optix::Transform4f to_object;
     bool watertight;
@@ -181,9 +184,9 @@ extern "C" __global__ void __intersection__sdfgrid() {
 
     Vector3f bbox_min = index_to_vec(voxel_index, sdf);
     Vector3f bbox_max = bbox_min + Vector3f(1.f, 1.f, 1.f);
-    Vector3f grid_resolution = 1.f / Vector3f(sdf.res_x - 1, sdf.res_y - 1 , sdf.res_z - 1);
-    bbox_min *= grid_resolution;
-    bbox_max *= grid_resolution;
+    Vector3f voxel_size(sdf.voxel_size_x, sdf.voxel_size_y, sdf.voxel_size_z);
+    bbox_min *= voxel_size;
+    bbox_max *= voxel_size;
 
     BoundingBox3f bbox_local;
     bbox_local.min[0] = bbox_min[0];
