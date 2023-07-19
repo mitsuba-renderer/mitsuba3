@@ -37,7 +37,7 @@ SDF Grid (:monosp:`sdfgrid`)
  * - filename
    - |string|
    - Filename of the SDF grid data to be loaded. The expected file format
-     aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`. 
+     aligns with a single-channel :ref:`grid-based volume data source <volume-gridvolume>`.
      If no filename is provided, the shape is initialised as an empty 2x2x2 grid.
 
  * - watertight
@@ -62,7 +62,7 @@ SDF Grid (:monosp:`sdfgrid`)
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid.jpg
    :caption: Basic example
-.. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid_analytic.jpg 
+.. subfigure:: ../../resources/data/docs/images/render/shape_sdfgrid_analytic.jpg
    :caption: An SDF grid using the analytic method for computing normals
 .. subfigend::
    :label: fig-sdfgrid
@@ -77,10 +77,7 @@ selected as the default approach to ensure continuity across grid cells.
 .. warning::
 
    - An SDF grid shape does not emit UV coordinates for texturing.
-   - Additionally, this shape can't be used as an area emitter
-
-
-The following XML snippet showcases a simple example of an SDF Grid:
+   - This shape can't be used as an area emitter
 
 .. tabs::
     .. code-tab:: xml
@@ -144,14 +141,14 @@ public:
                     file_path, vol_grid.channel_count());
 
             m_grid_texture = InputTexture3f(
-                InputTensorXf(vol_grid.data(), 4, shape), true, false,
+                InputTensorXf(vol_grid.data(), 4, shape), true, true,
                 dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
             InputFloat default_data[8] = { -1.f, -1.f, -1.f, -1.f,
                                            -1.f, -1.f, -1.f, -1.f };
             size_t default_shape[4]    = { 2, 2, 2, 1 };
             m_grid_texture = InputTexture3f(
-                InputTensorXf(default_data, 4, default_shape), true, false,
+                InputTensorXf(default_data, 4, default_shape), true, true,
                 dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
         update();
@@ -175,6 +172,15 @@ public:
                       "instead!");
 
         m_to_object = m_to_world.value().inverse();
+
+        auto shape = m_grid_texture.tensor().shape();
+        Vector3f voxel_size(0.f);
+        for (size_t i = 0; i < 3; ++i) {
+            m_inv_shape[i] = 1.f / shape[i];
+            voxel_size[i] = 1.f / (shape[i] - 1);
+        }
+        m_voxel_size = voxel_size;
+        dr::make_opaque(m_inv_shape, m_voxel_size);
 
         if constexpr (!dr::is_cuda_v<Float>) {
             m_host_grid_data = m_grid_texture.tensor().data();
@@ -258,7 +264,6 @@ public:
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
-        // TODO: area emitter
         MI_MASK_ARGUMENT(active);
         (void) time;
         (void) sample;
@@ -268,7 +273,6 @@ public:
 
     Float pdf_position(const PositionSample3f & /*ps*/,
                        Mask active) const override {
-        // TODO: area emitter
         MI_MASK_ARGUMENT(active);
         return 0;
     }
@@ -276,11 +280,9 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        // TODO: area emitter
         MI_MASK_ARGUMENT(active);
         (void) uv;
         (void) ray_flags;
-
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         return si;
     }
@@ -337,9 +339,8 @@ public:
         Transform4f to_world  = m_to_world.value();
         Transform4f to_object = m_to_object.value();
 
-        // TODO: Make sure this is the proper way to detach dr::Texture objects
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
-                                      m_grid_texture.tensor().array());
+                                      m_grid_texture.value());
 
         if constexpr (IsDiff) {
             if (follow_shape) {
@@ -382,7 +383,7 @@ public:
                     dr::detach(to_object.transform_affine(ray(pi.t)));
                 Ray3f local_ray = dr::detach(to_object.transform_affine(ray));
 
-                /// Differntiable tangent plane normal
+                /// Differentiable tangent plane normal
                 // Capture gradients of `m_grid_texture`
                 Normal3f local_n = dr::normalize(sdf_grad(local_p));
                 // Capture gradients of `m_to_world`
@@ -452,8 +453,7 @@ public:
            Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
         */
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution =
-            Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
         Point3f scaled_p = p * resolution;
 
         Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
@@ -582,6 +582,9 @@ public:
                                       resolution[0],
                                       resolution[1],
                                       resolution[2],
+                                      m_voxel_size.scalar()[0],
+                                      m_voxel_size.scalar()[1],
+                                      m_voxel_size.scalar()[2],
                                       m_grid_texture.tensor().array().data(),
                                       m_to_object.scalar(),
                                       m_watertight };
@@ -640,11 +643,8 @@ private:
             ScalarPoint3f bbox_min =
                 ScalarPoint3f(voxel_pos.x(), voxel_pos.y(), voxel_pos.z());
             ScalarPoint3f bbox_max = bbox_min + ScalarPoint3f(1.f, 1.f, 1.f);
-            ScalarPoint3f grid_resolution(1.f / (shape[2] - 1),
-                                          1.f / (shape[1] - 1),
-                                          1.f / (shape[0] - 1));
-            bbox_min *= grid_resolution;
-            bbox_max *= grid_resolution;
+            bbox_min *= m_voxel_size.scalar();
+            bbox_max *= m_voxel_size.scalar();
             bbox_local.expand(bbox_min);
             bbox_local.expand(bbox_max);
         }
@@ -877,13 +877,14 @@ private:
      * at the corners, but in the middle of the voxels.
      */
     MI_INLINE InputPoint3f rescale_point(const Point3f &p) const {
-        auto shape = m_grid_texture.tensor().shape();
-        // TODO: save inv_shape to memory?
-        Vector3f inv_shape(1.f / shape[2], 1.f / shape[1], 1.f / shape[0]);
-        Point3f rescale = p * (1 - inv_shape) + (inv_shape / 2.f);
+        Point3f rescaled(
+            p[0] * (1 - m_inv_shape[0]) +  (m_inv_shape[0] / 2.f),
+            p[1] * (1 - m_inv_shape[1]) +  (m_inv_shape[1] / 2.f),
+            p[2] * (1 - m_inv_shape[2]) +  (m_inv_shape[2] / 2.f)
+        );
 
-        return InputPoint3f(InputFloat(rescale.x()), InputFloat(rescale.y()),
-                            InputFloat(rescale.z()));
+        return InputPoint3f(InputFloat(rescaled.x()), InputFloat(rescaled.y()),
+                            InputFloat(rescaled.z()));
     }
 
     /* \brief Only computes AABBs for voxel that contain a surface in it.
@@ -894,10 +895,11 @@ private:
      * device visible
      */
     std::tuple<void *, size_t *, void *, size_t *, size_t> build_bboxes() {
-        auto shape         = m_grid_texture.tensor().shape();
+        auto shape = m_grid_texture.tensor().shape();
         size_t shape_v[3]  = { shape[2], shape[1], shape[0] };
-        float shape_rcp[3] = { 1.f / (shape[0] - 1), 1.f / (shape[1] - 1),
-                               1.f / (shape[2] - 1) };
+        float voxel_size[3] = { m_voxel_size.scalar()[0],
+                                m_voxel_size.scalar()[1],
+                                m_voxel_size.scalar()[2] };
         size_t max_voxel_count =
             (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
         ScalarTransform4f to_world = m_to_world.scalar();
@@ -921,7 +923,7 @@ private:
         using BoundingBoxType = ScalarBoundingBox3f;
 #endif
 
-        size_t count           = 0;
+        size_t count = 0;
         BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
             AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
         size_t *host_voxel_indices = (size_t *) jit_malloc(
@@ -962,29 +964,29 @@ private:
 
                     ScalarBoundingBox3f bbox;
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * shape_rcp[2], (y + 0) * shape_rcp[1],
-                        (z + 0) * shape_rcp[0])));
+                        (x + 0) * voxel_size[2], (y + 0) * voxel_size[1],
+                        (z + 0) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * shape_rcp[2], (y + 0) * shape_rcp[1],
-                        (z + 0) * shape_rcp[0])));
+                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
+                        (z + 0) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * shape_rcp[2], (y + 1) * shape_rcp[1],
-                        (z + 0) * shape_rcp[0])));
+                        (x + 0) * voxel_size[2], (y + 1) * voxel_size[1],
+                        (z + 0) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * shape_rcp[2], (y + 1) * shape_rcp[1],
-                        (z + 0) * shape_rcp[0])));
+                        (x + 1) * voxel_size[2], (y + 1) * voxel_size[1],
+                        (z + 0) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * shape_rcp[2], (y + 0) * shape_rcp[1],
-                        (z + 1) * shape_rcp[0])));
+                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
+                        (z + 1) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * shape_rcp[2], (y + 0) * shape_rcp[1],
-                        (z + 1) * shape_rcp[0])));
+                        (x + 1) * voxel_size[2], (y + 0) * voxel_size[1],
+                        (z + 1) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 0) * shape_rcp[2], (y + 1) * shape_rcp[1],
-                        (z + 1) * shape_rcp[0])));
+                        (x + 0) * voxel_size[2], (y + 1) * voxel_size[1],
+                        (z + 1) * voxel_size[0])));
                     bbox.expand(to_world.transform_affine(ScalarPoint3f(
-                        (x + 1) * shape_rcp[2], (y + 1) * shape_rcp[1],
-                        (z + 1) * shape_rcp[0])));
+                        (x + 1) * voxel_size[2], (y + 1) * voxel_size[1],
+                        (z + 1) * voxel_size[0])));
 
                     size_t voxel_index =
                         (x + 0) + (y + 0) * (shape_v[0] - 1) +
@@ -1018,42 +1020,39 @@ private:
         return { host_aabbs, host_voxel_indices, device_aabbs, device_voxel_indices, count };
     }
 
-    /// Computes the gradient for a specific gradient
+    /// Computes the SDF gradient for a given point and its containing voxel
     Vector3f voxel_grad(const Point3f &p, const Point3i &voxel_index) const {
-        auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution =
-            Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Float f[6];
+        Point3f query;
 
-        InputFloat f000, f001, f010, f011, f100, f101, f110, f111;
-        dr::Array<InputFloat *, 8> fetch_values;
-        fetch_values[0] = &f000;
-        fetch_values[1] = &f100;
-        fetch_values[2] = &f010;
-        fetch_values[3] = &f110;
-        fetch_values[4] = &f001;
-        fetch_values[5] = &f101;
-        fetch_values[6] = &f011;
-        fetch_values[7] = &f111;
-        m_grid_texture.eval_fetch(rescale_point(p), fetch_values);
+        Point3f voxel_size = m_voxel_size.value();
+        Point3f p000 = Point3f(voxel_index) * voxel_size;
 
-        Point3f p_local = p * resolution - Point3f(voxel_index);
-        Float y0 = dr::lerp(f100 - f000, f110 - f010, p_local.y());
-        Float y1 = dr::lerp(f101 - f001, f111 - f011, p_local.y());
-        Float dx = dr::lerp(y0, y1, p_local.z());
-        Float x0 = dr::lerp(f010 - f000, f110 - f100, p_local.x());
-        Float x1 = dr::lerp(f011 - f001, f111 - f101, p_local.x());
-        Float dy = dr::lerp(x0, x1, p_local.z());
-              x0 = dr::lerp(f001 - f000, f101 - f100, p_local.x());
-              x1 = dr::lerp(f011 - f010, f111 - f110, p_local.x());
-        Float dz = dr::lerp(x0, x1, p_local.y());
+        query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
+        m_grid_texture.eval(query, &f[0]);
+        query = rescale_point(Point3f(p000[0], p[1], p[2]));
+        m_grid_texture.eval(query, &f[1]);
+
+        query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
+        m_grid_texture.eval(query, &f[2]);
+        query = rescale_point(Point3f(p[0], p000[1], p[2]));
+        m_grid_texture.eval(query, &f[3]);
+
+        query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
+        m_grid_texture.eval(query, &f[4]);
+        query = rescale_point(Point3f(p[0], p[1], p000[2] ));
+        m_grid_texture.eval(query, &f[5]);
+
+        Float dx = f[0] - f[1]; // f(1, y, z) - f(0, y, z)
+        Float dy = f[2] - f[3]; // f(x, 1, z) - f(x, 0, z)
+        Float dz = f[4] - f[5]; // f(x, y, 1) - f(x, y, 0)
 
         return Vector3f(dx, dy, dz);
     }
 
     Vector3f sdf_grad(const Point3f &p) const {
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution =
-            Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
         Point3i min_voxel_index(p * resolution);
 
         return voxel_grad(p, min_voxel_index);
@@ -1070,8 +1069,12 @@ private:
         Smooth,
     };
 
-    // TODO: Store inverse shape using `rcp`
+    /// SDF data
     InputTexture3f m_grid_texture;
+    /// Inverse resolution (1 / tensor_shape)
+    Vector3f m_inv_shape;
+    /// Local voxel sizes (1 / (tensor_shape - 1))
+    field<Vector3f> m_voxel_size;
 
     // Weak pointer to underlying grid texture data. Only used for llvm/scalar
     // variants. We store this because during raytracing, we don't want to call
@@ -1086,7 +1089,6 @@ private:
     size_t *m_host_voxel_indices = nullptr;
 
     // Device-visible bounding boxes
-    // Only valid for CUDA variants
     void *m_device_bboxes = nullptr;
     size_t *m_device_voxel_indices = nullptr;
 
