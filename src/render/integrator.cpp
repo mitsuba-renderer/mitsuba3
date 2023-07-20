@@ -41,6 +41,37 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                   seed, spp, develop, evaluate);
 }
 
+MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
+Integrator<Float, Spectrum>::render_forward(Scene* scene,
+                                                    void* /*params*/,
+                                                    Sensor *sensor,
+                                                    uint32_t seed,
+                                                    uint32_t spp) {
+
+    // Recorded loops cannot be differentiated, so let's disable them
+    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+
+    auto image = render(scene, sensor, seed, spp, true, false);
+    dr::forward_to(image.array());
+
+    return TensorXf(dr::grad(image.array()), 3, image.shape().data());
+}
+
+MI_VARIANT void
+Integrator<Float, Spectrum>::render_backward(Scene* scene,
+                                                     void* /*params */,
+                                                     const TensorXf& grad_in,
+                                                     Sensor* sensor,
+                                                     uint32_t seed,
+                                                     uint32_t spp) {
+
+    // Recorded loops cannot be differentiated, so let's disable them
+    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+
+    auto image = render(scene, sensor, seed, spp, true, false);
+    dr::backward_from((image * grad_in).array());
+}
+
 MI_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
     return { };
 }
@@ -457,38 +488,6 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
                                             Mask /* active */) const {
     NotImplementedError("sample");
 }
-
-MI_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
-SamplingIntegrator<Float, Spectrum>::render_forward(Scene* scene,
-                                                    void* /*params*/,
-                                                    Sensor *sensor,
-                                                    uint32_t seed,
-                                                    uint32_t spp) {
-
-    // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
-
-    auto image = render(scene, sensor, seed, spp, true, false);
-    dr::forward_to(image.array());
-
-    return TensorXf(dr::grad(image.array()), 3, image.shape().data());
-}
-
-MI_VARIANT void
-SamplingIntegrator<Float, Spectrum>::render_backward(Scene* scene,
-                                                     void* /*params */,
-                                                     const TensorXf& grad_in,
-                                                     Sensor* sensor,
-                                                     uint32_t seed,
-                                                     uint32_t spp) {
-
-    // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
-
-    auto image = render(scene, sensor, seed, spp, true, false);
-    dr::backward_from((image * grad_in).array());
-}
-
 
 // -----------------------------------------------------------------------------
 
