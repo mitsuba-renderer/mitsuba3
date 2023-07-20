@@ -92,132 +92,6 @@ public:
                     bool develop = true,
                     bool evaluate = true);
 
-    /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
-    virtual void cancel();
-
-    /**
-     * Indicates whether \ref cancel() or a timeout have occurred. Should be
-     * checked regularly in the integrator's main loop so that timeouts are
-     * enforced accurately.
-     *
-     * Note that accurate timeouts rely on \ref m_render_timer, which needs
-     * to be reset at the beginning of the rendering phase.
-     */
-    bool should_stop() const {
-        return m_stop || (m_timeout > 0.f &&
-                          m_render_timer.value() > 1000.f * m_timeout);
-    }
-
-    /**
-     * For integrators that return one or more arbitrary output variables
-     * (AOVs), this function specifies a list of associated channel names. The
-     * default implementation simply returns an empty vector.
-     */
-    virtual std::vector<std::string> aov_names() const;
-
-    MI_DECLARE_CLASS()
-protected:
-    /// Create an integrator
-    Integrator(const Properties & props);
-
-    /// Virtual destructor
-    virtual ~Integrator() { }
-
-protected:
-    /// Integrators should stop all work when this flag is set to true.
-    bool m_stop;
-
-    /**
-     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
-     *
-     * Specified in seconds. A negative values indicates no timeout.
-     */
-    float m_timeout;
-
-    /// Timer used to enforce the timeout.
-    Timer m_render_timer;
-
-    /// Flag for disabling direct visibility of emitters
-    bool m_hide_emitters;
-};
-
-/** \brief Abstract integrator that performs Monte Carlo sampling starting from
- * the sensor
- *
- * Subclasses of this interface must implement the \ref sample() method, which
- * performs Monte Carlo integration to return an unbiased statistical estimate
- * of the radiance value along a given ray.
- *
- * The \ref render() method then repeatedly invokes this estimator to compute
- * all pixels of the image.
- */
-template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
-public:
-    MI_IMPORT_BASE(Integrator, should_stop, aov_names,
-                    m_stop, m_timeout, m_render_timer, m_hide_emitters)
-    MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
-
-    /**
-     * \brief Sample the incident radiance along a ray.
-     *
-     * \param scene
-     *    The underlying scene in which the radiance function should be sampled
-     *
-     * \param sampler
-     *    A source of (pseudo-/quasi-) random numbers
-     *
-     * \param ray
-     *    A ray, optionally with differentials
-     *
-     * \param medium
-     *    If the ray is inside a medium, this parameter holds a pointer to that
-     *    medium
-     *
-     * \param aov
-     *    Integrators may return one or more arbitrary output variables (AOVs)
-     *    via this parameter. If \c nullptr is provided to this argument, no
-     *    AOVs should be returned. Otherwise, the caller guarantees that space
-     *    for at least <tt>aov_names().size()</tt> entries has been allocated.
-     *
-     * \param active
-     *    A mask that indicates which SIMD lanes are active
-     *
-     * \return
-     *    A pair containing a spectrum and a mask specifying whether a surface
-     *    or medium interaction was sampled. False mask entries indicate that
-     *    the ray "escaped" the scene, in which case the the returned spectrum
-     *    contains the contribution of environment maps, if present. The mask
-     *    can be used to estimate a suitable alpha channel of a rendered image.
-     *
-     * \remark
-     *    In the Python bindings, this function returns the \c aov output
-     *    argument as an additional return value. In other words:
-     *    <pre>
-     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
-     *    </pre>
-     */
-    virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
-                                             Sampler *sampler,
-                                             const RayDifferential3f &ray,
-                                             const Medium *medium = nullptr,
-                                             Float *aovs = nullptr,
-                                             Mask active = true) const;
-
-    // =========================================================================
-    //! @{ \name Integrator interface implementation
-    // =========================================================================
-
-    TensorXf render(Scene *scene,
-                    Sensor *sensor,
-                    uint32_t seed = 0,
-                    uint32_t spp = 0,
-                    bool develop = true,
-                    bool evaluate = true) override;
-
-    //! @}
-    // =========================================================================
-
 
     // =========================================================================
     //! @{ \name Default backwards and forwards differentiation
@@ -412,6 +286,132 @@ public:
                                seed, 
                                spp);
     }
+
+    //! @}
+    // =========================================================================
+
+    /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
+    virtual void cancel();
+
+    /**
+     * Indicates whether \ref cancel() or a timeout have occurred. Should be
+     * checked regularly in the integrator's main loop so that timeouts are
+     * enforced accurately.
+     *
+     * Note that accurate timeouts rely on \ref m_render_timer, which needs
+     * to be reset at the beginning of the rendering phase.
+     */
+    bool should_stop() const {
+        return m_stop || (m_timeout > 0.f &&
+                          m_render_timer.value() > 1000.f * m_timeout);
+    }
+
+    /**
+     * For integrators that return one or more arbitrary output variables
+     * (AOVs), this function specifies a list of associated channel names. The
+     * default implementation simply returns an empty vector.
+     */
+    virtual std::vector<std::string> aov_names() const;
+
+    MI_DECLARE_CLASS()
+protected:
+    /// Create an integrator
+    Integrator(const Properties & props);
+
+    /// Virtual destructor
+    virtual ~Integrator() { }
+
+protected:
+    /// Integrators should stop all work when this flag is set to true.
+    bool m_stop;
+
+    /**
+     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
+     *
+     * Specified in seconds. A negative values indicates no timeout.
+     */
+    float m_timeout;
+
+    /// Timer used to enforce the timeout.
+    Timer m_render_timer;
+
+    /// Flag for disabling direct visibility of emitters
+    bool m_hide_emitters;
+};
+
+/** \brief Abstract integrator that performs Monte Carlo sampling starting from
+ * the sensor
+ *
+ * Subclasses of this interface must implement the \ref sample() method, which
+ * performs Monte Carlo integration to return an unbiased statistical estimate
+ * of the radiance value along a given ray.
+ *
+ * The \ref render() method then repeatedly invokes this estimator to compute
+ * all pixels of the image.
+ */
+template <typename Float, typename Spectrum>
+class MI_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
+public:
+    MI_IMPORT_BASE(Integrator, should_stop, aov_names,
+                    m_stop, m_timeout, m_render_timer, m_hide_emitters)
+    MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
+
+    /**
+     * \brief Sample the incident radiance along a ray.
+     *
+     * \param scene
+     *    The underlying scene in which the radiance function should be sampled
+     *
+     * \param sampler
+     *    A source of (pseudo-/quasi-) random numbers
+     *
+     * \param ray
+     *    A ray, optionally with differentials
+     *
+     * \param medium
+     *    If the ray is inside a medium, this parameter holds a pointer to that
+     *    medium
+     *
+     * \param aov
+     *    Integrators may return one or more arbitrary output variables (AOVs)
+     *    via this parameter. If \c nullptr is provided to this argument, no
+     *    AOVs should be returned. Otherwise, the caller guarantees that space
+     *    for at least <tt>aov_names().size()</tt> entries has been allocated.
+     *
+     * \param active
+     *    A mask that indicates which SIMD lanes are active
+     *
+     * \return
+     *    A pair containing a spectrum and a mask specifying whether a surface
+     *    or medium interaction was sampled. False mask entries indicate that
+     *    the ray "escaped" the scene, in which case the the returned spectrum
+     *    contains the contribution of environment maps, if present. The mask
+     *    can be used to estimate a suitable alpha channel of a rendered image.
+     *
+     * \remark
+     *    In the Python bindings, this function returns the \c aov output
+     *    argument as an additional return value. In other words:
+     *    <pre>
+     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
+     *    </pre>
+     */
+    virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                             Sampler *sampler,
+                                             const RayDifferential3f &ray,
+                                             const Medium *medium = nullptr,
+                                             Float *aovs = nullptr,
+                                             Mask active = true) const;
+
+    // =========================================================================
+    //! @{ \name Integrator interface implementation
+    // =========================================================================
+
+    TensorXf render(Scene *scene,
+                    Sensor *sensor,
+                    uint32_t seed = 0,
+                    uint32_t spp = 0,
+                    bool develop = true,
+                    bool evaluate = true) override;
 
     //! @}
     // =========================================================================

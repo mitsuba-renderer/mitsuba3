@@ -415,6 +415,48 @@ MI_PY_EXPORT(Integrator) {
 
     MI_PY_TRAMPOLINE_CLASS(PyAdjointIntegrator, AdjointIntegrator, Integrator)
         .def(py::init<const Properties &>())
+        .def(
+            "render_forward",
+            [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
+                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_forward(scene, params, sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "sensor"_a, "seed"_a = 0, "spp"_a = 0)
+        .def(
+            "render_forward",
+            [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
+                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_forward(scene, params, sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "sensor"_a = 0, "seed"_a = 0, "spp"_a = 0)
+        .def(
+            "render_backward",
+            [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
+                const TensorXf& grad_in, Sensor* sensor, uint32_t seed, 
+                uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_backward(scene, params, grad_in,
+                                                   sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0, 
+            "spp"_a = 0)
+        .def(
+            "render_backward",
+            [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
+                const TensorXf& grad_in, uint32_t sensor, uint32_t seed, 
+                uint32_t spp) {
+                py::gil_scoped_release release;
+                ScopedSignalHandler sh(integrator);
+                return integrator->render_backward(scene, params, grad_in,
+                                                   sensor, seed, spp);
+            },
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0, 
+            "spp"_a = 0)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
                     "sampler"_a, "block"_a, "sample_scale"_a);
 }
