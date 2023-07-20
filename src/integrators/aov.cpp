@@ -354,7 +354,7 @@ public:
             // influence 'aovs_image' in a differentiable manner
             dr::forward_to(aovs_image.array());
 
-            aovs_grad = TensorXf(dr::grad(aovs_image.array()), 3, aovs_image.shape());
+            aovs_grad = TensorXf(dr::grad(aovs_image.array()), 3, aovs_image.shape().data());
         }
 
         // Let inner integrators handle forward differentiation for radiance
