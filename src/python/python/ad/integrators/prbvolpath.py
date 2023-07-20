@@ -256,7 +256,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                     nee_sampler = sampler if is_primal else sampler.clone()
                     emitted, ds = self.sample_emitter(mei, si, active_e_medium, active_e_surface,
-                        scene, nee_sampler, medium, channel, active_e, mode=dr.ADMode.Primal)
+                        scene, sampler, medium, channel, active_e, mode=dr.ADMode.Primal)
 
                     # Query the BSDF for that emitter-sampled direction
                     bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, si.to_local(ds.d), active_e_surface)
