@@ -471,7 +471,7 @@ SamplingIntegrator<Float, Spectrum>::render_forward(Scene* scene,
     auto image = render(scene, sensor, seed, spp, true, false);
     dr::forward_to(image.array());
 
-    return dr::grad(image);
+    return TensorXf(dr::grad(image.array()), 3, image.shape());
 }
 
 MI_VARIANT void
