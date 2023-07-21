@@ -184,6 +184,9 @@ public:
 
         if (m_aov_names.empty())
             Log(Warn, "No AOVs were specified!");
+
+        if (m_integrators.empty())
+            Throw("No child integrator specified!");
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
