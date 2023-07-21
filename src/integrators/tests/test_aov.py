@@ -36,7 +36,14 @@ def test01_construct(variants_all):
             }
         })
 
-def test02_radiance_consistent(variants_all):
+    # Error if missing child integrator
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type': 'aov',
+            'aovs': 'dd.y:depth,nn:sh_normal'
+        })
+
+def test02_radiance_consistent(variants_all_rgb):
     scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
 
     path_integrator = mi.load_dict({
@@ -57,7 +64,7 @@ def test02_radiance_consistent(variants_all):
     # Make sure radiance is consistent
     assert(dr.allclose(path_image, aovs_image[:,:,:3]))
 
-def test03_supports_multiple_inner_integrators(variants_all):
+def test03_supports_multiple_inner_integrators(variants_all_rgb):
     scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
 
     path_integrator = mi.load_dict({
