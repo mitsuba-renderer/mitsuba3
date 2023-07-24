@@ -543,35 +543,6 @@ public:
         return dr::normalize(m_to_world.value().transform_affine(Normal3f(n)));
     }
 
-    Matrix3f smooth_hessian(const Point3f &p) const override {
-        Float one  = 1;
-        Float zero = 0;
-
-        Normal3f n1vw = smooth_sh(p, &one, nullptr, nullptr);
-        Normal3f n0vw = smooth_sh(p, &zero, nullptr, nullptr);
-        Normal3f nu1w = smooth_sh(p, nullptr, &one, nullptr);
-        Normal3f nu0w = smooth_sh(p, nullptr, &zero, nullptr);
-        Normal3f nuv1 = smooth_sh(p, nullptr, nullptr, &one);
-        Normal3f nuv0 = smooth_sh(p, nullptr, nullptr, &zero);
-
-        Normal3f dx = n1vw - n0vw;
-        Normal3f dy = nu1w - nu0w;
-        Normal3f dz = nuv1 - nuv0;
-
-        Matrix3f hessian;
-        hessian(0, 0) = dx[0];
-        hessian(0, 1) = dx[1];
-        hessian(0, 2) = dx[2];
-        hessian(1, 0) = dy[0];
-        hessian(1, 1) = dy[1];
-        hessian(1, 2) = dy[2];
-        hessian(2, 0) = dz[0];
-        hessian(2, 1) = dz[1];
-        hessian(2, 2) = dz[2];
-
-        return hessian; // normalizazion and to_world transform ?
-    }
-
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_to_world);
     }
