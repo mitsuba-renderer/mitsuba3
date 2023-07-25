@@ -4276,11 +4276,11 @@ static const char *__doc_mitsuba_MediumInteraction_sigma_s = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_sigma_t = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
+static const char *__doc_mitsuba_MediumInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates (defined by ``wi``))doc";
 
-static const char *__doc_mitsuba_MediumInteraction_to_world = R"doc(Convert a local shading-space vector into world space)doc";
+static const char *__doc_mitsuba_MediumInteraction_to_world = R"doc(Convert a local shading-space (defined by ``wi``) vector into world space)doc";
 
-static const char *__doc_mitsuba_MediumInteraction_wi = R"doc(Incident direction in the local shading frame)doc";
+static const char *__doc_mitsuba_MediumInteraction_wi = R"doc(Incident direction in world frame)doc";
 
 static const char *__doc_mitsuba_Medium_Medium = R"doc()doc";
 
