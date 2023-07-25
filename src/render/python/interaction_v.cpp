@@ -118,8 +118,8 @@ MI_PY_EXPORT(MediumInteraction) {
         .def_repr(MediumInteraction3f);
 
     MI_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
-                        medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
-                        combined_extinction, mint)
+                       medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                       combined_extinction, mint)
 }
 
 MI_PY_EXPORT(PreliminaryIntersection) {
