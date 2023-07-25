@@ -318,7 +318,6 @@ public:
 
         TensorXf aovs_image;
         {
-            dr::suspend_grad<Float> scope(true);
             aovs_image = Base::render(scene, sensor, seed, spp, develop, evaluate);
 
             // AOVs image above includes film target base channels as well so get slice
