@@ -43,10 +43,10 @@ Integrator<Float, Spectrum>::render(Scene *scene,
 
 MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render_forward(Scene* scene,
-                                                    void* /*params*/,
-                                                    Sensor *sensor,
-                                                    uint32_t seed,
-                                                    uint32_t spp) {
+                                            void* /*params*/,
+                                            Sensor *sensor,
+                                            uint32_t seed,
+                                            uint32_t spp) {
 
     // Recorded loops cannot be differentiated, so let's disable them
     dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
@@ -59,11 +59,11 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
 
 MI_VARIANT void
 Integrator<Float, Spectrum>::render_backward(Scene* scene,
-                                                     void* /*params */,
-                                                     const TensorXf& grad_in,
-                                                     Sensor* sensor,
-                                                     uint32_t seed,
-                                                     uint32_t spp) {
+                                             void* /*params */,
+                                             const TensorXf& grad_in,
+                                             Sensor* sensor,
+                                             uint32_t seed,
+                                             uint32_t spp) {
 
     // Recorded loops cannot be differentiated, so let's disable them
     dr::scoped_set_flag scope(JitFlag::LoopRecord, false);

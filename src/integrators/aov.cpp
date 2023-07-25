@@ -184,9 +184,6 @@ public:
 
         if (m_aov_names.empty())
             Log(Warn, "No AOVs were specified!");
-
-        if (m_integrators.empty())
-            Throw("No child integrator specified!");
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
@@ -343,9 +340,6 @@ public:
 
         // Perform forward mode propagation just for AOV image
         {
-            // Recorded loops cannot be differentiated, so let's disable them
-            dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
-
             TensorXf aovs_image = Base::render(scene, sensor, seed, spp);
 
             // AOVs image above includes film target base channels as well so get slice
@@ -376,16 +370,15 @@ public:
                          uint32_t spp = 0) override {
 
         using Array = typename TensorXf::Array;
-        size_t base_ch_count = sensor->film()->target_base_channels_count();
+        size_t base_ch_count = sensor->film()->base_channels_count();
         auto [image_grads, aovs_grad] = split_channels(base_ch_count, grad_in);
 
         // Perform AD back-propagation just for AOV image
         {
-            // Recorded loops cannot be differentiated, so let's disable them
-            dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
-
             TensorXf aovs_image = Base::render(scene, sensor, seed, spp);
 
+            // AOVs image above includes film target base channels as well so get slice
+            // just with AOVs
             size_t num_aovs = m_aov_names.size();
             aovs_image = get_channels_slice(aovs_image, aovs_image.shape(2) - num_aovs, num_aovs);
 
@@ -442,7 +435,7 @@ protected:
         return TensorXf(dr::gather<Array>(src.array(), values_idx), 3, slice_shape);
     }
 
-    void set_channels_slice(const TensorXf& src, TensorXf& dst, size_t dst_channel_offset) {
+    void set_channels_slice(const TensorXf& src, TensorXf& dst, size_t dst_channel_offset) const {
         auto* src_shape = src.shape().data();
         uint32_t src_flat = src_shape[0] * src_shape[1] * src_shape[2];
 
@@ -452,7 +445,7 @@ protected:
             + dst_channel_offset;
 
         uint32_t num_dst_channels = dst.shape(2);
-        auto dst_values_idx = dr::fmadd(pixel_idx, num_dst_channels, dst_channel_idx);
+        DynamicBuffer<UInt32> dst_values_idx = dr::fmadd(pixel_idx, num_dst_channels, dst_channel_idx);
 
         dr::scatter(
             dst.array(),
@@ -462,7 +455,7 @@ protected:
 
     /// Combine inner integrator images and AOVS image
     TensorXf merge_channels(const std::vector<TensorXf>& inner_images, 
-                          const TensorXf& aovs_image) {
+                            const TensorXf& aovs_image) const {
         using Array = typename TensorXf::Array;
 
         size_t num_aovs = m_aov_names.size();

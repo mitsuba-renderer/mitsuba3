@@ -36,13 +36,6 @@ def test01_construct(variants_all):
             }
         })
 
-    # Error if missing child integrator
-    with pytest.raises(RuntimeError):
-        mi.load_dict({
-            'type': 'aov',
-            'aovs': 'dd.y:depth,nn:sh_normal'
-        })
-
 def test02_radiance_consistent(variants_all_rgb):
     scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
 

@@ -161,7 +161,6 @@ public:
         differential rendering step. The value provided within the original
         scene specification takes precedence if ``spp=0``.
     */
-
     virtual TensorXf render_forward(Scene* scene,
                                     void* params,
                                     Sensor *sensor,
@@ -175,7 +174,6 @@ public:
      * function. It accepts a sensor *index* instead and renders the scene
      * using sensor 0 by default.
      */
-
     TensorXf render_forward(Scene* scene,
                             void* params,
                             uint32_t sensor_index = 0,
@@ -252,7 +250,6 @@ public:
      *   differential rendering step. The value provided within the original
      *   scene specification takes precedence if ``spp=0``.
      */
-
     virtual void render_backward(Scene* scene,
                                  void* params,
                                  const TensorXf& grad_in,
@@ -267,7 +264,6 @@ public:
      * function. It accepts a sensor *index* instead and renders the scene
      * using sensor 0 by default.
      */
-
     void render_backward(Scene* scene,
                          void* params,
                          const TensorXf& grad_in,

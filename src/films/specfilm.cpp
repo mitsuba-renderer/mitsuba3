@@ -239,7 +239,7 @@ public:
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 
-    size_t target_base_channels_count() const override {
+    size_t base_channels_count() const override {
         return m_srfs.size();
     }
 
