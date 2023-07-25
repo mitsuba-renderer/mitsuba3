@@ -537,7 +537,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     /// Shading frame
     Frame3f sh_frame;
 
-    /// Incident direction in the local shading frame
+    /// Incident direction in world frame
     Vector3f wi;
 
     UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, combined_extinction;
@@ -552,13 +552,12 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @{ \name Methods
     // =============================================================
 
-
-    /// Convert a local shading-space vector into world space
+    /// Convert a local shading-space (defined by ``wi``) vector into world space
     Vector3f to_world(const Vector3f &v) const {
         return sh_frame.to_world(v);
     }
 
-    /// Convert a world-space vector into local shading coordinates
+    /// Convert a world-space vector into local shading coordinates (defined by ``wi``)
     Vector3f to_local(const Vector3f &v) const {
         return sh_frame.to_local(v);
     }
