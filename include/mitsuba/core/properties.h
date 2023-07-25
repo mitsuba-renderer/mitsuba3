@@ -38,22 +38,40 @@ class MI_EXPORT_LIB Properties {
 public:
     /// Supported types of properties
     enum class Type {
-        Bool,              /// Boolean value (true/false)
-        Long,              /// 64-bit signed integer
-        Float,             /// Floating point value
-        Array3f,           /// 3D array
-        Transform,         /// 4x4 transform for homogeneous coordinates
-        AnimatedTransform, /// An animated 4x4 transformation
-        Color,             /// Tristimulus color value
-        String,            /// String
-        NamedReference,    /// Named reference to another named object
-        Object,            /// Arbitrary object
-        Pointer            /// const void* pointer (for internal communication between plugins)
+        /// Boolean value (true/false)
+        Bool,
+        /// 64-bit signed integer
+        Long,
+        /// Floating point value
+        Float,
+        /// 3D array
+        Array3f,
+        /// A tensor of arbitrary shape
+        Tensor,
+        /// 3x3 transform for homogeneous coordinates
+        Transform3f,
+        /// 4x4 transform for homogeneous coordinates
+        Transform4f,
+        /// An animated 4x4 transformation
+        AnimatedTransform,
+        /// Tristimulus color value
+        Color,
+        /// String
+        String,
+        /// Named reference to another named object
+        NamedReference,
+        /// Arbitrary object
+        Object,
+        /// const void* pointer (for internal communication between plugins)
+        Pointer
     };
 
     // Scene parsing in double precision
     using Float = double;
     using Array3f = dr::Array<Float, 3>;
+    // Variant-agnostic handle to TensorXf
+    using TensorHandle = std::shared_ptr<void>;
+
     MI_IMPORT_CORE_TYPES()
 
     /// Construct an empty property container
@@ -195,8 +213,14 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Store a color in the Properties instance
     void set_color(const std::string &name, const Color3f &value, bool error_duplicates = true);
 
+    /// Store a 3x3 homogeneous coordinate transformation in the Properties instance
+    void set_transform3f(const std::string &name, const Transform3f &value, bool error_duplicates = true);
+
     /// Store a 4x4 homogeneous coordinate transformation in the Properties instance
     void set_transform(const std::string &name, const Transform4f &value, bool error_duplicates = true);
+
+    /// Store a tensor handle in the Properties instance
+    void set_tensor_handle(const std::string &name, const TensorHandle &value, bool error_duplicates = true);
 
 #if 0
     /// Store an animated transformation in the Properties instance
@@ -361,6 +385,13 @@ public:  // Type-specific getters and setters ----------------------------------
         return volume<Volume>(name);
     }
 
+    /// Retrieve a tensor
+    template <typename Tensor>
+    Tensor* tensor(const std::string &name) const {
+        TensorHandle handle = get<Properties::TensorHandle>(name);
+        return reinterpret_cast<Tensor*>(handle.get());
+    }
+
 private:
     /// Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;
@@ -388,8 +419,11 @@ EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Vector<float, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Vector<double, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Color<float, 3>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Color<double, 3>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<float, 3>>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 3>>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<float, 4>>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 4>>))
+EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Properties::TensorHandle))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(std::string))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ref<Object>))
 #undef T

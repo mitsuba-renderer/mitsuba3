@@ -1,5 +1,7 @@
 #pragma once
 
+#include <drjit/tensor.h>
+
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>

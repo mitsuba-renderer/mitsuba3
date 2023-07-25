@@ -58,7 +58,7 @@ public:
     Checkerboard(const Properties &props) : Texture(props) {
         m_color0 = props.texture<Texture>("color0", .4f);
         m_color1 = props.texture<Texture>("color1", .2f);
-        m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
+        m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
     }
 
     void traverse(TraversalCallback *callback) override {
