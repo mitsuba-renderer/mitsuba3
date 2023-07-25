@@ -1,3 +1,4 @@
+#include <drjit/tensor.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/xml.h>
@@ -294,6 +295,7 @@ void parse_dictionary(DictParseContext &ctx,
         SET_PROPS(py::str, std::string, set_string);
         SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
         SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
+        SET_PROPS(ScalarTransform3f, ScalarTransform3f, set_transform3f);
         SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
 
         if (key.find('.') != std::string::npos) {
@@ -365,6 +367,12 @@ void parse_dictionary(DictParseContext &ctx,
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
             props.set_array3f(key, value.template cast<Properties::Array3f>());
+            continue;
+        } catch (const pybind11::cast_error &) { }
+
+        // Try to cast to TensorXf
+        try {
+            props.set_tensor_handle(key, std::make_shared<TensorXf>(value.template cast<TensorXf>()));
             continue;
         } catch (const pybind11::cast_error &) { }
 

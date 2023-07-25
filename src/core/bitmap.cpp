@@ -968,6 +968,13 @@ void Bitmap::read_exr(Stream *stream) {
                 for (size_t j = 0; j < 4; ++j)
                     M(i, j) = v->value().x[i][j];
             m_metadata.set_transform(name, Transform4f(M));
+        } else if (type_name == "m33f") {
+            auto v = static_cast<const Imf::M33fAttribute *>(attr);
+            Matrix3f M;
+            for (size_t i = 0; i < 3; ++i)
+                for (size_t j = 0; j < 3; ++j)
+                    M(i, j) = v->value().x[i][j];
+            m_metadata.set_transform3f(name, Transform3f(M));
         }
     }
 
@@ -1336,7 +1343,14 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
-            case Type::Transform: {
+            case Type::Transform3f: {
+                   Matrix3f val = metadata.get<ScalarTransform3f>(*it).matrix;
+                    header.insert(it->c_str(), Imf::M33fAttribute(Imath::M33f(
+                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2), 
+                        (float) val(1, 0), (float) val(1, 1), (float) val(1, 2),
+                        (float) val(2, 0), (float) val(2, 1), (float) val(2, 2))));
+                } break;
+            case Type::Transform4f: {
                     Matrix4f val = metadata.get<ScalarTransform4f>(*it).matrix;
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),

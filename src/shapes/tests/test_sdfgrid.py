@@ -309,3 +309,43 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     assert dr.allclose(dr.grad(si.p), [0, 0.5, 0.5]) # Direction of surface normal
     assert dr.allclose(dr.grad(si.n), 0, atol=1e-7)
+
+def test08_load_tensor(variants_all_ad_rgb):
+    pytest.importorskip("numpy")
+    import numpy as np
+
+    # Diagonal plane
+    sdf_grid = np.array([
+        -np.sqrt(2)/2, -np.sqrt(2)/2, # z = 0, y = 0
+        0, 0, # z = 0, y = 1
+        0, 0, # z = 1, y = 0
+        np.sqrt(2)/2, np.sqrt(2)/2 # z = 1, y = 1
+    ]).reshape((2, 2, 2, 1))
+
+    for translate in [mi.ScalarVector3f([0.0, 0.0, 0]),
+                      mi.ScalarVector3f([-0.5, 0.5, 0.2])]:
+        s = mi.load_dict({
+            "type" : "scene",
+            "sdf": {
+                "type" : "sdfgrid",
+                "to_world" : mi.ScalarTransform4f.translate(translate),
+                "grid" : sdf_grid
+            }
+        })
+
+        n = 10
+        for x in dr.linspace(mi.Float, -2, 2, n):
+            for y in dr.linspace(mi.Float, -2, 2, n):
+                origin = translate + mi.Vector3f(x, y, 3)
+                direction = mi.Vector3f(0, 0, -1)
+                ray = mi.Ray3f(o=origin, d=direction)
+
+                si_found = s.ray_test(ray)
+                assert si_found == (x >= 0 and x <= 1 and y >= 0 and y<= 1)
+
+                if si_found[0]:
+                    si = s.ray_intersect(ray, mi.RayFlags.All, True)
+
+                    assert dr.allclose(si.t, 2 + y)
+                    assert dr.allclose(si.n, [0, 1 / np.sqrt(2), 1 / np.sqrt(2)])
+                    assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))

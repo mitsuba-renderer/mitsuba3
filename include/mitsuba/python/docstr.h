@@ -5851,27 +5851,31 @@ static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Type = R"doc(Supported types of properties)doc";
 
-static const char *__doc_mitsuba_Properties_Type_AnimatedTransform = R"doc(4x4 transform for homogeneous coordinates)doc";
+static const char *__doc_mitsuba_Properties_Type_AnimatedTransform = R"doc(An animated 4x4 transformation)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Array3f = R"doc(Floating point value)doc";
+static const char *__doc_mitsuba_Properties_Type_Array3f = R"doc(3D array)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Bool = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Type_Bool = R"doc(Boolean value (true/false))doc";
 
-static const char *__doc_mitsuba_Properties_Type_Color = R"doc(An animated 4x4 transformation)doc";
+static const char *__doc_mitsuba_Properties_Type_Color = R"doc(Tristimulus color value)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Float = R"doc(64-bit signed integer)doc";
+static const char *__doc_mitsuba_Properties_Type_Float = R"doc(Floating point value)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Long = R"doc(Boolean value (true/false))doc";
+static const char *__doc_mitsuba_Properties_Type_Long = R"doc(64-bit signed integer)doc";
 
-static const char *__doc_mitsuba_Properties_Type_NamedReference = R"doc(String)doc";
+static const char *__doc_mitsuba_Properties_Type_NamedReference = R"doc(Named reference to another named object)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Object = R"doc(Named reference to another named object)doc";
+static const char *__doc_mitsuba_Properties_Type_Object = R"doc(Arbitrary object)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(Arbitrary object)doc";
+static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(const void* pointer (for internal communication between plugins))doc";
 
-static const char *__doc_mitsuba_Properties_Type_String = R"doc(Tristimulus color value)doc";
+static const char *__doc_mitsuba_Properties_Type_String = R"doc(String)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Transform = R"doc(3D array)doc";
+static const char *__doc_mitsuba_Properties_Type_Tensor = R"doc(A tensor of arbitrary shape)doc";
+
+static const char *__doc_mitsuba_Properties_Type_Transform3f = R"doc(3x3 transform for homogeneous coordinates)doc";
+
+static const char *__doc_mitsuba_Properties_Type_Transform4f = R"doc(4x4 transform for homogeneous coordinates)doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -5977,8 +5981,14 @@ static const char *__doc_mitsuba_Properties_set_pointer = R"doc(Store an arbitra
 
 static const char *__doc_mitsuba_Properties_set_string = R"doc(Store a string in the Properties instance)doc";
 
+static const char *__doc_mitsuba_Properties_set_tensor_handle = R"doc(Store a tensor handle in the Properties instance)doc";
+
 static const char *__doc_mitsuba_Properties_set_transform =
 R"doc(Store a 4x4 homogeneous coordinate transformation in the Properties
+instance)doc";
+
+static const char *__doc_mitsuba_Properties_set_transform3f =
+R"doc(Store a 3x3 homogeneous coordinate transformation in the Properties
 instance)doc";
 
 static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string value)doc";
