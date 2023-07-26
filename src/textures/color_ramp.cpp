@@ -405,7 +405,7 @@ public:
                         return interpolate_3dim_bitmap<Color1f>(si, active).r();
                 }
                 else if constexpr (is_spectral_v<Spectrum>)
-                    return 1.;
+                    return luminance(interpolate_spectral(si, active), si.wavelengths);
                 else {
                     if (channels == 1)
                         return luminance(interpolate_1dim_bitmap<Color3f>(si, active));
@@ -417,7 +417,7 @@ public:
             if constexpr (is_monochromatic_v<Spectrum>)
                 return interpolate_single_factor<Color1f>(si, active).r();
             else if constexpr (is_spectral_v<Spectrum>)
-                return 1.;
+                return luminance(interpolate_spectral(si, active), si.wavelengths);
             else
                 return luminance(interpolate_single_factor<Color3f>(si, active));
         }
@@ -438,145 +438,129 @@ public:
 
     std::pair<Point2f, Float>
     sample_position(const Point2f &sample, Mask active = true) const override {
-        if (m_bitmap_factor) {
-            if (dr::none_or<false>(active))
-                return { dr::zeros<Point2f>(), dr::zeros<Float>() };
+        if (dr::none_or<false>(active))
+            return { dr::zeros<Point2f>(), dr::zeros<Float>() };
 
-            if (!m_distr2d)
-                init_distr();
+        if (!m_distr2d)
+            init_distr();
 
-            auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
+        auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
 
-            ScalarVector2i res = resolution();
-            ScalarVector2f inv_resolution = dr::rcp(ScalarVector2f(res));
+        ScalarVector2i res = resolution();
+        ScalarVector2f inv_resolution = dr::rcp(ScalarVector2f(res));
 
-            if (m_texture.filter_mode() == dr::FilterMode::Nearest) {
-                sample2 = (Point2f(pos) + sample2) * inv_resolution;
-            } else {
-                sample2 = (Point2f(pos) + 0.5f + warp::square_to_tent(sample2)) *
-                          inv_resolution;
+        if (m_texture.filter_mode() == dr::FilterMode::Nearest) {
+            sample2 = (Point2f(pos) + sample2) * inv_resolution;
+        } else {
+            sample2 = (Point2f(pos) + 0.5f + warp::square_to_tent(sample2)) *
+                      inv_resolution;
 
-                switch (m_texture.wrap_mode()) {
-                    case dr::WrapMode::Repeat:
-                        sample2[sample2 < 0.f] += 1.f;
-                        sample2[sample2 > 1.f] -= 1.f;
-                        break;
+            switch (m_texture.wrap_mode()) {
+                case dr::WrapMode::Repeat:
+                    sample2[sample2 < 0.f] += 1.f;
+                    sample2[sample2 > 1.f] -= 1.f;
+                    break;
 
-                    /* Texel sampling is restricted to [0, 1] and only interpolation
-                       with one row/column of pixels beyond that is considered, so
-                       both clamp/mirror effectively use the same strategy. No such
-                       distinction is needed for the pdf() method. */
-                    case dr::WrapMode::Clamp:
-                    case dr::WrapMode::Mirror:
-                        sample2[sample2 < 0.f] = -sample2;
-                        sample2[sample2 > 1.f] = 2.f - sample2;
-                        break;
-                }
+                /* Texel sampling is restricted to [0, 1] and only interpolation
+                   with one row/column of pixels beyond that is considered, so
+                   both clamp/mirror effectively use the same strategy. No such
+                   distinction is needed for the pdf() method. */
+                case dr::WrapMode::Clamp:
+                case dr::WrapMode::Mirror:
+                    sample2[sample2 < 0.f] = -sample2;
+                    sample2[sample2 > 1.f] = 2.f - sample2;
+                    break;
             }
-
-            return { sample2, pdf * dr::prod(res) };
         }
 
+        return { sample2, pdf * dr::prod(res) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
-        if (m_bitmap_factor) {
-            if (dr::none_or<false>(active))
-                return dr::zeros<Float>();
+        if (dr::none_or<false>(active))
+            return dr::zeros<Float>();
 
-            if (!m_distr2d)
-                init_distr();
+        if (!m_distr2d)
+            init_distr();
 
-            ScalarVector2i res = resolution();
-            if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-                // Scale to bitmap resolution and apply shift
-                Point2f uv = dr::fmadd(pos_, res, -.5f);
+        ScalarVector2i res = resolution();
+        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
+            // Scale to bitmap resolution and apply shift
+            Point2f uv = dr::fmadd(pos_, res, -.5f);
 
-                // Integer pixel positions for bilinear interpolation
-                Vector2i uv_i = dr::floor2int<Vector2i>(uv);
+            // Integer pixel positions for bilinear interpolation
+            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
 
-                // Interpolation weights
-                Point2f w1 = uv - Point2f(uv_i),
-                        w0 = 1.f - w1;
+            // Interpolation weights
+            Point2f w1 = uv - Point2f(uv_i),
+                    w0 = 1.f - w1;
 
-                Float v00 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 0)),
-                                           active),
-                      v10 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 0)),
-                                           active),
-                      v01 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 1)),
-                                           active),
-                      v11 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 1)),
-                                           active);
+            Float v00 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 0)),
+                                       active),
+                  v10 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 0)),
+                                       active),
+                  v01 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 1)),
+                                       active),
+                  v11 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 1)),
+                                       active);
 
-                Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
-                      v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
+            Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
+                  v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
 
-                return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::prod(res);
-            } else {
-                // Scale to bitmap resolution, no shift
-                Point2f uv = pos_ * res;
+            return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::prod(res);
+        } else {
+            // Scale to bitmap resolution, no shift
+            Point2f uv = pos_ * res;
 
-                // Integer pixel positions for nearest-neighbor interpolation
-                Vector2i uv_i = m_texture.wrap(dr::floor2int<Vector2i>(uv));
+            // Integer pixel positions for nearest-neighbor interpolation
+            Vector2i uv_i = m_texture.wrap(dr::floor2int<Vector2i>(uv));
 
-                return m_distr2d->pdf(uv_i, active) * dr::prod(res);
-            }
+            return m_distr2d->pdf(uv_i, active) * dr::prod(res);
         }
-
     }
 
     std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
                     Mask active) const override {
-        if (m_bitmap_factor) {
-            MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
-            if (dr::none_or<false>(active))
-                return { dr::zeros<Wavelength>(), dr::zeros<UnpolarizedSpectrum>() };
+        if (dr::none_or<false>(active))
+            return { dr::zeros<Wavelength>(), dr::zeros<UnpolarizedSpectrum>() };
 
-            if constexpr (is_spectral_v<Spectrum>) {
-                SurfaceInteraction3f si(_si);
-                si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
-                return { si.wavelengths,
-                         eval(si, active) * (MI_CIE_MAX - MI_CIE_MIN) };
-            } else {
-                DRJIT_MARK_USED(sample);
-                UnpolarizedSpectrum value = eval(_si, active);
-                return { dr::empty<Wavelength>(), value };
-            }
+        if constexpr (is_spectral_v<Spectrum>) {
+            SurfaceInteraction3f si(_si);
+            si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+            return { si.wavelengths,
+                     eval(si, active) * (MI_CIE_MAX - MI_CIE_MIN) };
+        } else {
+            DRJIT_MARK_USED(sample);
+            UnpolarizedSpectrum value = eval(_si, active);
+            return { dr::empty<Wavelength>(), value };
         }
-
     }
 
     ScalarVector2i resolution() const override {
-        if (m_bitmap_factor) {
-            const size_t *shape = m_texture.shape();
-            return { (int) shape[1], (int) shape[0] };
-        }
-
+        const size_t *shape = m_texture.shape();
+        return { (int) shape[1], (int) shape[0] };
     }
 
     Float mean() const override {
-        if (m_bitmap_factor)
-            return m_mean;
+        return m_mean;
     }
 
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
-        if (m_bitmap_factor) {
-            std::ostringstream oss;
-            oss << "ColorRamp[" << std::endl
-                << "  name = \"" << m_name << "\"," << std::endl
-                << "  resolution = \"" << resolution() << "\"," << std::endl
-                << "  raw = " << (int) m_raw << "," << std::endl
-                << "  mean = " << m_mean << "," << std::endl
-                << "  transform = " << string::indent(m_transform) << std::endl
-                << "  number of band = " << string::indent(m_num_band) << std::endl
-                << "]";
-            return oss.str();
-        }
-
+        std::ostringstream oss;
+        oss << "ColorRamp[" << std::endl
+            << "  name = \"" << m_name << "\"," << std::endl
+            << "  resolution = \"" << resolution() << "\"," << std::endl
+            << "  raw = " << (int) m_raw << "," << std::endl
+            << "  mean = " << m_mean << "," << std::endl
+            << "  transform = " << string::indent(m_transform) << std::endl
+            << "  number of band = " << string::indent(m_num_band) << std::endl
+            << "]";
+        return oss.str();
     }
 
     MI_DECLARE_CLASS()
@@ -935,7 +919,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
@@ -981,7 +965,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
@@ -1131,7 +1115,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
@@ -1175,7 +1159,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
@@ -1316,7 +1300,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
@@ -1360,7 +1344,7 @@ protected:
             lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
             TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
 
-            UInt32 higher_boundary_right = dr::select(higher_boundary < m_num_band - 1, higher_boundary + 1, higher_boundary);
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
             higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
             TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
 
