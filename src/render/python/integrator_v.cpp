@@ -208,14 +208,7 @@ public:
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
-        py::gil_scoped_acquire gil;
-        py::function render_override = py::get_override(this, "render");
-
-        if (render_override) {
-            return render_override(scene, sensor, seed, spp, develop, evaluate).template cast<TensorXf>();
-        } else {
-            return Base::render(scene, sensor, seed, spp, develop, evaluate);
-        }
+        PYBIND11_OVERRIDE(TensorXf, Base, render, scene, sensor, seed, spp, develop, evaluate);
     }
 
     TensorXf render_forward(Scene* scene,
@@ -223,14 +216,7 @@ public:
                             Sensor *sensor,
                             uint32_t seed = 0,
                             uint32_t spp = 0) override {
-
-        py::gil_scoped_acquire gil;
-        py::function render_forward_override = py::get_override(this, "render_forward");
-
-        if (render_forward_override)
-            return render_forward_override(scene, params, sensor, seed, spp).template cast<TensorXf>();
-        else
-            return Base::render_forward(scene, params, sensor, seed, spp);
+        PYBIND11_OVERRIDE(TensorXf, Base, render_forward, scene, params, sensor, seed, spp);
     }
 
     void render_backward(Scene* scene,
@@ -239,14 +225,7 @@ public:
                          Sensor* sensor,
                          uint32_t seed = 0,
                          uint32_t spp = 0) override {
-        
-        py::gil_scoped_acquire gil;
-        py::function render_backward_override = py::get_override(this, "render_backward");
-
-        if (render_backward_override)
-            render_backward_override(scene, params, grad_in, sensor, seed, spp);
-        else
-            Base::render_backward(scene, params, grad_in, sensor, seed, spp);
+        PYBIND11_OVERRIDE(void, Base, render_backward, scene, params, grad_in, sensor, seed, spp);
     }
 
 
