@@ -141,6 +141,8 @@ public:
 
         m_mode = props.string("mode");
 
+        m_input_fac = props.texture<Texture>("input_fac", 0.5f);
+
         if (props.has_property("factor")) { // Single factor with multiple color (array) interpolation
 
             if (props.has_property("filename"))
@@ -306,33 +308,9 @@ public:
     ~ColorRamp() {}
 
     void traverse(TraversalCallback *callback) override {
-        if (m_bitmap_factor) {
-            callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-            callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
-        }
-
-    }
-
-    void
-    parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (m_bitmap_factor) {
-            if (keys.empty() || string::contains(keys, "data")) {
-                const size_t channels = m_texture.shape()[2];
-                if (channels != 1 && channels != 3)
-                    Throw("parameters_changed(): The bitmap texture %s was changed "
-                          "to have %d channels, only textures with 1 or 3 channels "
-                          "are supported!",
-                          to_string(), channels);
-                else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
-                    Throw("parameters_changed(): The bitmap texture %s was changed,"
-                          " it must be at least 2x2 pixels in size!",
-                          to_string());
-
-                m_texture.set_tensor(m_texture.tensor());
-                rebuild_internals(true, m_distr2d != nullptr);
-            }
-        }
-
+        callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
+        callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
+        callback->put_object("inner_text", m_input_fac, +ParamFlags::NonDifferentiable);
     }
 
     // Interpolate RGB
@@ -421,7 +399,6 @@ public:
             else
                 return luminance(interpolate_single_factor<Color3f>(si, active));
         }
-
     }
 
     // no color ramp support for bumpmap.cpp
@@ -438,85 +415,11 @@ public:
 
     std::pair<Point2f, Float>
     sample_position(const Point2f &sample, Mask active = true) const override {
-        if (dr::none_or<false>(active))
-            return { dr::zeros<Point2f>(), dr::zeros<Float>() };
-
-        if (!m_distr2d)
-            init_distr();
-
-        auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
-
-        ScalarVector2i res = resolution();
-        ScalarVector2f inv_resolution = dr::rcp(ScalarVector2f(res));
-
-        if (m_texture.filter_mode() == dr::FilterMode::Nearest) {
-            sample2 = (Point2f(pos) + sample2) * inv_resolution;
-        } else {
-            sample2 = (Point2f(pos) + 0.5f + warp::square_to_tent(sample2)) *
-                      inv_resolution;
-
-            switch (m_texture.wrap_mode()) {
-                case dr::WrapMode::Repeat:
-                    sample2[sample2 < 0.f] += 1.f;
-                    sample2[sample2 > 1.f] -= 1.f;
-                    break;
-
-                /* Texel sampling is restricted to [0, 1] and only interpolation
-                   with one row/column of pixels beyond that is considered, so
-                   both clamp/mirror effectively use the same strategy. No such
-                   distinction is needed for the pdf() method. */
-                case dr::WrapMode::Clamp:
-                case dr::WrapMode::Mirror:
-                    sample2[sample2 < 0.f] = -sample2;
-                    sample2[sample2 > 1.f] = 2.f - sample2;
-                    break;
-            }
-        }
-
-        return { sample2, pdf * dr::prod(res) };
+        return m_input_fac->sample_position(sample, active);
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
-        if (dr::none_or<false>(active))
-            return dr::zeros<Float>();
-
-        if (!m_distr2d)
-            init_distr();
-
-        ScalarVector2i res = resolution();
-        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            // Scale to bitmap resolution and apply shift
-            Point2f uv = dr::fmadd(pos_, res, -.5f);
-
-            // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
-
-            // Interpolation weights
-            Point2f w1 = uv - Point2f(uv_i),
-                    w0 = 1.f - w1;
-
-            Float v00 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 0)),
-                                       active),
-                  v10 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 0)),
-                                       active),
-                  v01 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(0, 1)),
-                                       active),
-                  v11 = m_distr2d->pdf(m_texture.wrap(uv_i + Point2i(1, 1)),
-                                       active);
-
-            Float v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
-                  v1 = dr::fmadd(w0.x(), v01, w1.x() * v11);
-
-            return dr::fmadd(w0.y(), v0, w1.y() * v1) * dr::prod(res);
-        } else {
-            // Scale to bitmap resolution, no shift
-            Point2f uv = pos_ * res;
-
-            // Integer pixel positions for nearest-neighbor interpolation
-            Vector2i uv_i = m_texture.wrap(dr::floor2int<Vector2i>(uv));
-
-            return m_distr2d->pdf(uv_i, active) * dr::prod(res);
-        }
+        return m_input_fac->pdf_position(pos_, active);
     }
 
     std::pair<Wavelength, UnpolarizedSpectrum>
@@ -540,12 +443,11 @@ public:
     }
 
     ScalarVector2i resolution() const override {
-        const size_t *shape = m_texture.shape();
-        return { (int) shape[1], (int) shape[0] };
+        return m_input_fac->resolution();
     }
 
     Float mean() const override {
-        return m_mean;
+        return m_input_fac->mean();
     }
 
     bool is_spatially_varying() const override { return true; }
@@ -556,10 +458,10 @@ public:
             << "  name = \"" << m_name << "\"," << std::endl
             << "  resolution = \"" << resolution() << "\"," << std::endl
             << "  raw = " << (int) m_raw << "," << std::endl
-            << "  mean = " << m_mean << "," << std::endl
+            << "  mean = " << mean() << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
-            << "  number of band = " << string::indent(m_num_band) << std::endl
             << "]";
+        std::string tmp = m_input_fac->to_string();
         return oss.str();
     }
 
@@ -615,81 +517,6 @@ protected:
                 m_texture.eval_nonaccel(uv, out.data(), active);
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
-        }
-    }
-
-    /**
-     * \brief Recompute mean and 2D sampling distribution (if requested)
-     * following an update
-     */
-    void rebuild_internals(bool init_mean, bool init_distr) {
-        auto&& data = dr::migrate(m_texture.value(), AllocType::Host);
-
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-
-        if (m_transform != ScalarTransform3f())
-            dr::make_opaque(m_transform);
-
-        const ScalarFloat *ptr = data.data();
-
-        double mean = 0.0;
-        size_t pixel_count = (size_t) dr::prod(resolution());
-        bool exceed_unit_range = false;
-
-        const size_t channels = m_texture.shape()[2];
-        if (channels == 3) {
-            std::unique_ptr<ScalarFloat[]> importance_map(
-                init_distr ? new ScalarFloat[pixel_count] : nullptr);
-
-            for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                ScalarFloat tmp;
-                if (is_spectral_v<Spectrum> && !m_raw ) {
-                    tmp = srgb_model_mean(value);
-                } else {
-                    if (!all(value >= 0 && value <= 1))
-                        exceed_unit_range = true;
-                    tmp = luminance(value);
-                }
-                if (init_distr)
-                    importance_map[i] = tmp;
-                mean += (double) tmp;
-                ptr += 3;
-            }
-
-            if (init_distr)
-                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    importance_map.get(), resolution());
-        } else {
-            for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarFloat value = ptr[i];
-                if (!(value >= 0 && value <= 1))
-                    exceed_unit_range = true;
-                mean += (double) value;
-            }
-
-            if (init_distr)
-                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    ptr, resolution());
-        }
-
-        if (init_mean)
-            m_mean = dr::opaque<Float>(ScalarFloat(mean / pixel_count));
-
-        if (exceed_unit_range && !m_raw)
-            Log(Warn,
-                "ColorRampBitmap: texture named \"%s\" contains pixels that "
-                "exceed the [0, 1] range!",
-                m_name);
-    }
-
-    // Construct 2D distribution upon first access, avoid races
-    MI_INLINE void init_distr() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (!m_distr2d) {
-            auto self = const_cast<ColorRamp *>(this);
-            self->rebuild_internals(false, true);
         }
     }
 
@@ -791,216 +618,15 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
-
-        Color3f factor;
-
-        if (m_accel)
-            m_texture.eval(uv, factor.data(), active);
-        else
-            m_texture.eval_nonaccel(uv, factor.data(), active);
-
-        if (m_mode == "linear") {
-            Float fac = luminance(factor);
-
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = dr::select(dr::neq(pos0, pos1), (fac - pos0) / (pos1 - pos0), 0.);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex0->eval(si, active),
-                tex0->eval(si, active) * (1 - relative_pos) + tex1->eval(si, active) * relative_pos
-            );
-        }
-        else if (m_mode == "ease") {
-            Float fac = luminance(factor);
-
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = dr::select(dr::neq(pos1, pos0), (luminance(factor) - pos0) / (pos1 - pos0), 0.0);
-            Float ease_fac = relative_pos * relative_pos * (3.0 - 2.0 * relative_pos);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) < fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) > fac,
-                tex0->eval(si, active),
-                tex0->eval(si, active) * (1 - ease_fac) + tex1->eval(si, active) * ease_fac
-            );
-        }
-        else if (m_mode == "constant") {
-            Float fac = luminance(factor);
-
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-
-            return dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active)->eval(si, active);
-        }
-        else if (m_mode == "cardinal") {
-            Float fac = luminance(factor);
-
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = (luminance(factor) - pos1) / (pos2 - pos1);
-            Float weight[4];
-            key_curve_position_weights(relative_pos, weight, m_mode);
-
-            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
-            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
-
-            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
-            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
-            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex1->eval(si, active),
-                tex0->eval(si, active) * weight[0] +
-                    tex1->eval(si, active) * weight[1] +
-                    tex2->eval(si, active) * weight[2] +
-                    tex3->eval(si, active) * weight[3]
-            );
-        }
-        else if (m_mode == "b_spline") {
-            Float fac = luminance(factor);
-
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = (luminance(factor) - pos1) / (pos2 - pos1);
-            Float weight[4];
-            key_curve_position_weights(relative_pos, weight, m_mode);
-
-            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
-            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
-
-            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
-            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
-            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex1->eval(si, active),
-                tex0->eval(si, active) * weight[0] +
-                    tex1->eval(si, active) * weight[1] +
-                    tex2->eval(si, active) * weight[2] +
-                    tex3->eval(si, active) * weight[3]
-            );
-        }
-        else
-            Throw("Unknown interpolation type. Please specific interpolation mode (linear, ease, constant, cardinal, b_spline) in ColorRamp!");
-    }
-
-    /**
-     * \brief Evaluates the color ramp at the given surface interaction
-     *
-     * Should only be used when the bitmap has exactly 1 channels.
-     */
-    template<typename color>
-    MI_INLINE color interpolate_1dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
-
-        Point2f uv = m_transform.transform_affine(si.uv);
+        color factor = m_input_fac->eval(si, active);
 
         Float fac;
-
-        if (m_accel)
-            m_texture.eval(uv, &fac, active);
+        if constexpr (is_monochromatic_v<Spectrum>)
+            fac = factor.r();
+        else if constexpr (is_spectral_v<Spectrum>)
+            fac = luminance(factor, si.wavelengths);
         else
-            m_texture.eval_nonaccel(uv, &fac, active);
+            fac = luminance(factor);
 
         if (m_mode == "linear") {
             UInt32 higher_boundary = dr::binary_search<UInt32>(
@@ -1056,7 +682,192 @@ protected:
             Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
 
             Float relative_pos = dr::select(dr::neq(pos1, pos0), (fac - pos0) / (pos1 - pos0), 0.0);
-            Float ease_fac = relative_pos * relative_pos * (3.0 - 2.0 * relative_pos);
+            Float ease_fac = relative_pos * relative_pos * (3.0f - 2.0f * relative_pos);
+
+            return dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) < fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) > fac,
+                tex0->eval(si, active),
+                tex0->eval(si, active) * (1 - ease_fac) + tex1->eval(si, active) * ease_fac
+            );
+        }
+        else if (m_mode == "constant") {
+            UInt32 higher_boundary = dr::binary_search<UInt32>(
+                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
+                }
+            );
+            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
+
+            UInt32 lower_boundary = dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                higher_boundary,
+                higher_boundary - 1
+            );
+            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
+
+            return dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active)->eval(si, active);
+        }
+        else if (m_mode == "cardinal") {
+            UInt32 higher_boundary = dr::binary_search<UInt32>(
+                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
+                }
+            );
+
+            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
+            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
+            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
+
+            UInt32 lower_boundary = dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                higher_boundary,
+                higher_boundary - 1
+            );
+
+            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
+            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
+            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
+
+            Float relative_pos = (fac - pos1) / (pos2 - pos1);
+            Float weight[4];
+            key_curve_position_weights(relative_pos, weight, m_mode);
+
+            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
+            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
+            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
+
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
+            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
+            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
+
+            return dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                tex1->eval(si, active),
+                tex0->eval(si, active) * weight[0] +
+                    tex1->eval(si, active) * weight[1] +
+                    tex2->eval(si, active) * weight[2] +
+                    tex3->eval(si, active) * weight[3]
+            );
+        }
+        else if (m_mode == "b_spline") {
+            UInt32 higher_boundary = dr::binary_search<UInt32>(
+                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
+                }
+            );
+
+            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
+            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
+            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
+
+            UInt32 lower_boundary = dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                higher_boundary,
+                higher_boundary - 1
+            );
+
+            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
+            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
+            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
+
+            Float relative_pos = (fac - pos1) / (pos2 - pos1);
+            Float weight[4];
+            key_curve_position_weights(relative_pos, weight, m_mode);
+
+            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
+            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
+            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
+
+            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
+            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
+            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
+
+            return dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                tex1->eval(si, active),
+                tex0->eval(si, active) * weight[0] +
+                    tex1->eval(si, active) * weight[1] +
+                    tex2->eval(si, active) * weight[2] +
+                    tex3->eval(si, active) * weight[3]
+            );
+        }
+        else
+            Throw("Unknown interpolation type. Please specific interpolation mode (linear, ease, constant, cardinal, b_spline) in ColorRamp!");
+    }
+
+    /**
+     * \brief Evaluates the color ramp at the given surface interaction
+     *
+     * Should only be used when the bitmap has exactly 1 channels.
+     */
+    template<typename color>
+    MI_INLINE color interpolate_1dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
+        if constexpr (!dr::is_array_v<Mask>)
+            active = true;
+
+        Float fac = m_input_fac->eval_1(si, active);
+
+        if (m_mode == "linear") {
+            UInt32 higher_boundary = dr::binary_search<UInt32>(
+                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
+                }
+            );
+
+            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
+            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
+            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
+
+            UInt32 lower_boundary = dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                higher_boundary,
+                higher_boundary - 1
+            );
+
+            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
+            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
+            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
+
+            Float relative_pos = dr::select(dr::neq(pos0, pos1), (fac - pos0) / (pos1 - pos0), 0.);
+
+            return dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                tex0->eval(si, active),
+                tex0->eval(si, active) * (1 - relative_pos) + tex1->eval(si, active) * relative_pos
+            );
+        }
+        else if (m_mode == "ease") {
+            UInt32 higher_boundary = dr::binary_search<UInt32>(
+                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
+                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
+                }
+            );
+
+            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
+            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
+            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
+
+            UInt32 lower_boundary = dr::select(
+                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
+                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
+                higher_boundary,
+                higher_boundary - 1
+            );
+
+            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
+            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
+            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
+
+            Float relative_pos = dr::select(dr::neq(pos1, pos0), (fac - pos0) / (pos1 - pos0), 0.0);
+            Float ease_fac = relative_pos * relative_pos * (3.0f - 2.0f * relative_pos);
 
             return dr::select(
                 dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) < fac ||
@@ -1241,7 +1052,7 @@ protected:
             Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
 
             Float relative_pos = dr::select(dr::neq(pos1, pos0), (m_factor - pos0) / (pos1 - pos0), 0.0);
-            Float ease_fac = relative_pos * relative_pos * (3.0 - 2.0 * relative_pos);
+            Float ease_fac = relative_pos * relative_pos * (3.0f - 2.0f * relative_pos);
 
             return dr::select(
                 dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) < m_factor ||
@@ -1369,6 +1180,7 @@ protected:
     bool m_raw;
     Float m_mean;
     ref<Bitmap> m_bitmap;
+    ref<Texture> m_input_fac;
     std::string m_name;
 
     // Single factor
@@ -1384,9 +1196,6 @@ protected:
     DynamicBuffer<TexturePtr> m_color_band_dr;
     DynamicBuffer<Float> m_pos_dr;
 
-    // Optional: distribution for importance sampling
-    mutable std::mutex m_mutex;
-    std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ColorRamp, Texture)
