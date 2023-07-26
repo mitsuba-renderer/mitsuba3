@@ -354,25 +354,30 @@ public:
 
                 if constexpr (is_monochromatic_v<Spectrum>) {
                     if (channels == 1)
-                        return luminance(interpolate_1dim_bitmap(si, active));
+                        return interpolate_1dim_bitmap<Color1f>(si, active);
                     else
-                        return luminance(interpolate_3dim_bitmap(si, active));
+                        return interpolate_3dim_bitmap<Color1f>(si, active);
                 }
-                else{
+                else if constexpr (is_spectral_v<Spectrum>) {
+                    // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
+                    // TODO: Add spectral mode for ColorRamp
+                    return interpolate_spectral(si, active);
+                }
+                else {
                     if (channels == 1)
-                        return interpolate_1dim_bitmap(si, active);
-                    else {
-                        // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
-                        // TODO: Add spectral mode for ColorRamp
-                        if constexpr (is_spectral_v<Spectrum>)
-                            return interpolate_spectral(si, active);
-                        else
-                            return interpolate_3dim_bitmap(si, active);
-                    }
+                        return interpolate_1dim_bitmap<Color3f>(si, active);
+                    else
+                        return interpolate_3dim_bitmap<Color3f>(si, active);
                 }
             }
-        } else {
-            return interpolate_single_factor(si, active);
+        }
+        else {
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return interpolate_single_factor<Color1f>(si, active);
+            else if constexpr (is_spectral_v<Spectrum>)
+                return interpolate_spectral(si, active);
+            else
+                return interpolate_single_factor<Color3f>(si, active);
         }
     }
 
@@ -393,13 +398,28 @@ public:
                 if (dr::none_or<false>(active))
                     return dr::zeros<Float>();
 
-                if (channels == 1)
-                     return luminance(interpolate_1dim_bitmap(si, active));
-                else
-                    return luminance(interpolate_3dim_bitmap(si, active));
+                if constexpr (is_monochromatic_v<Spectrum>) {
+                    if (channels == 1)
+                        return interpolate_1dim_bitmap<Color1f>(si, active).r();
+                    else
+                        return interpolate_3dim_bitmap<Color1f>(si, active).r();
+                }
+                else if constexpr (is_spectral_v<Spectrum>)
+                    return 1.;
+                else {
+                    if (channels == 1)
+                        return luminance(interpolate_1dim_bitmap<Color3f>(si, active));
+                    else
+                        return luminance(interpolate_3dim_bitmap<Color3f>(si, active));
+                }
             }
         } else {
-            return luminance(interpolate_single_factor(si, active));
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return interpolate_single_factor<Color1f>(si, active).r();
+            else if constexpr (is_spectral_v<Spectrum>)
+                return 1.;
+            else
+                return luminance(interpolate_single_factor<Color3f>(si, active));
         }
 
     }
@@ -782,7 +802,8 @@ protected:
      *
      * Should only be used when the bitmap has exactly 3 channels.
      */
-    MI_INLINE Color3f interpolate_3dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
+    template<typename color>
+    MI_INLINE color interpolate_3dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
@@ -983,7 +1004,8 @@ protected:
      *
      * Should only be used when the bitmap has exactly 1 channels.
      */
-    MI_INLINE Color3f interpolate_1dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
+    template<typename color>
+    MI_INLINE color interpolate_1dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
@@ -1176,7 +1198,8 @@ protected:
      *
      * Should only be used when there is only single factor for interpolation
      */
-    MI_INLINE Color3f interpolate_single_factor(const SurfaceInteraction3f &si,Mask active) const {
+    template<typename color>
+    MI_INLINE color interpolate_single_factor(const SurfaceInteraction3f &si,Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
