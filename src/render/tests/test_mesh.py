@@ -1007,4 +1007,47 @@ def test24_texture_attributes(variants_all_rgb):
     assert dr.allclose(mesh.eval_attribute('attribute_1', si), texture.eval(si))
 
 
+@fresolver_append_path
+def test25_flip_tex_coords_obj(variants_all_rgb, tmp_path):
+    mesh = mi.load_dict({
+        'type': 'obj',
+        'filename': 'resources/data/tests/obj/rectangle_uv.obj',
+        'flip_tex_coords': False
+    })
+    params = mi.traverse(mesh)
 
+    mesh_flipped = mi.load_dict({
+        'type': 'obj',
+        'filename': 'resources/data/tests/obj/rectangle_uv.obj',
+        'flip_tex_coords': True
+    })
+    params_flipped = mi.traverse(mesh_flipped)
+
+    uv = params['vertex_texcoords'].numpy()
+    uv_flipped = params_flipped['vertex_texcoords'].numpy()
+
+    assert (uv[::2] == uv_flipped[::2]).all()
+    assert (uv[1::2] == 1 - uv_flipped[1::2]).all()
+
+
+@fresolver_append_path
+def test26_flip_tex_coords_ply(variants_all_rgb, tmp_path):
+    mesh = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_uv.ply',
+        'flip_tex_coords': False
+    })
+    params = mi.traverse(mesh)
+
+    mesh_flipped = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_uv.ply',
+        'flip_tex_coords': True
+    })
+    params_flipped = mi.traverse(mesh_flipped)
+
+    uv = params['vertex_texcoords'].numpy()
+    uv_flipped = params_flipped['vertex_texcoords'].numpy()
+
+    assert (uv[::2] == uv_flipped[::2]).all()
+    assert (uv[1::2] == 1 - uv_flipped[1::2]).all()
