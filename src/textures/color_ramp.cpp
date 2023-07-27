@@ -141,163 +141,25 @@ public:
 
         m_mode = props.string("mode");
 
-        m_input_fac = props.texture<Texture>("input_fac", 0.5f);
-
         if (props.has_property("factor")) { // Single factor with multiple color (array) interpolation
             if (props.has_property("filename"))
-                Throw("Bitmap factor and single factor for ColorRamp can not be used at the same time!");
+                Throw("Texture factor and single factor for ColorRamp can not be used at the same time!");
 
             // Factor type
-            m_bitmap_factor = props.has_property("filename");
+            m_bitmap_factor = props.has_property("input_fac");
 
             // Single factor
             m_factor = props.get<ScalarFloat>("factor");
 
-        } else if (props.has_property("filename")) {
+        }
+        else if (props.has_property("input_fac")) {
             // Factor type
-            m_bitmap_factor = props.has_property("filename");
+            m_bitmap_factor = props.has_property("input_fac");
 
-            m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
-            if (m_transform != ScalarTransform3f())
-                dr::make_opaque(m_transform);
-
-            if (props.has_property("bitmap")) {
-                // Creates a Bitmap texture directly from an existing Bitmap object
-                if (props.has_property("filename"))
-                    Throw("Cannot specify both \"bitmap\" and \"filename\".");
-                Log(Debug, "Loading bitmap texture from memory...");
-                // Note: ref-counted, so we don't have to worry about lifetime
-                ref<Object> other = props.object("bitmap");
-                Bitmap *b = dynamic_cast<Bitmap *>(other.get());
-                if (!b)
-                    Throw("Property \"bitmap\" must be a Bitmap instance.");
-                m_bitmap = b;
-            } else {
-                // Creates a Bitmap texture by loading an image from the filesystem
-                FileResolver* fs = Thread::thread()->file_resolver();
-                fs::path file_path = fs->resolve(props.string("filename"));
-                m_name = file_path.filename().string();
-                Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
-                m_bitmap = new Bitmap(file_path);
-            }
-
-            std::string filter_mode_str = props.string("filter_type", "bilinear");
-            dr::FilterMode filter_mode;
-            if (filter_mode_str == "nearest")
-                filter_mode = dr::FilterMode::Nearest;
-            else if (filter_mode_str == "bilinear")
-                filter_mode = dr::FilterMode::Linear;
-            else
-                Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                      "\"bilinear\"!", filter_mode_str);
-
-            std::string wrap_mode_str = props.string("wrap_mode", "repeat");
-            typename dr::WrapMode wrap_mode;
-            if (wrap_mode_str == "repeat")
-                wrap_mode = dr::WrapMode::Repeat;
-            else if (wrap_mode_str == "mirror")
-                wrap_mode = dr::WrapMode::Mirror;
-            else if (wrap_mode_str == "clamp")
-                wrap_mode = dr::WrapMode::Clamp;
-            else
-                Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
-                      "\"mirror\", or \"clamp\"!", wrap_mode_str);
-
-            /* Convert to linear RGB float bitmap, will be converted
-               into spectral profile coefficients below (in place) */
-            Bitmap::PixelFormat pixel_format = m_bitmap->pixel_format();
-            switch (pixel_format) {
-                case Bitmap::PixelFormat::Y:
-                case Bitmap::PixelFormat::YA:
-                    pixel_format = Bitmap::PixelFormat::Y;
-                    break;
-
-                case Bitmap::PixelFormat::RGB:
-                case Bitmap::PixelFormat::RGBA:
-                case Bitmap::PixelFormat::XYZ:
-                case Bitmap::PixelFormat::XYZA:
-                    pixel_format = Bitmap::PixelFormat::RGB;
-                    break;
-
-                default:
-                    Throw("The texture needs to have a known pixel "
-                          "format (Y[A], RGB[A], XYZ[A] are supported).");
-            }
-
-            /* Should Mitsuba disable transformations to the stored color data?
-               (e.g. sRGB to linear, spectral upsampling, etc.) */
-            m_raw = props.get<bool>("raw", false);
-            if (m_raw) {
-                /* Don't undo gamma correction in the conversion below.
-                   This is needed, e.g., for normal maps. */
-                m_bitmap->set_srgb_gamma(false);
-            }
-
-            m_accel = props.get<bool>("accel", true);
-
-            // Convert the image into the working floating point representation
-            m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
-
-            if (dr::any(m_bitmap->size() < 2)) {
-                Log(Warn,
-                    "Image must be at least 2x2 pixels in size, up-sampling..");
-                using ReconstructionFilter = Bitmap::ReconstructionFilter;
-                ref<ReconstructionFilter> rfilter =
-                    PluginManager::instance()->create_object<ReconstructionFilter>(
-                        Properties("tent"));
-                m_bitmap = m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
-            }
-
-            ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
-            size_t pixel_count = m_bitmap->pixel_count();
-            bool exceed_unit_range = false;
-
-            double mean = 0.0;
-            if (m_bitmap->channel_count() == 3) {
-                if (is_spectral_v<Spectrum> && !m_raw) {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                        if (!all(value >= 0 && value <= 1))
-                            exceed_unit_range = true;
-                        value = srgb_model_fetch(value);
-                        mean += (double) srgb_model_mean(value);
-                        dr::store(ptr, value);
-                        ptr += 3;
-                    }
-                } else {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                        if (!all(value >= 0 && value <= 1))
-                            exceed_unit_range = true;
-                        mean += (double) luminance(value);
-                        ptr += 3;
-                    }
-                }
-            } else if (m_bitmap->channel_count() == 1) {
-                for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarFloat value = ptr[i];
-                    if (!(value >= 0 && value <= 1))
-                        exceed_unit_range = true;
-                    mean += (double) value;
-                }
-            } else {
-                Throw("Unsupported channel count: %d (expected 1 or 3)",
-                      m_bitmap->channel_count());
-            }
-
-            if (exceed_unit_range && !m_raw)
-                Log(Warn,
-                    "BitmapTexture: texture named \"%s\" contains pixels that "
-                    "exceed the [0, 1] range!",
-                    m_name);
-
-            m_mean = Float(mean / pixel_count);
-
-            size_t channels = m_bitmap->channel_count();
-            ScalarVector2i res = ScalarVector2i(m_bitmap->size());
-            size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
-            m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel, m_accel, filter_mode, wrap_mode);
-        } else {
+            // Load texture as ColorRamp input
+            m_input_fac = props.texture<Texture>("input_fac", 0.5f);
+        }
+        else {
             Throw("Color Ramp should at least have a factor or bitmap as the input!");
         }
     }
@@ -305,9 +167,7 @@ public:
     ~ColorRamp() {}
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_uv", m_transform, +ParamFlags::NonDifferentiable);
-        callback->put_object("inner_text", m_input_fac, +ParamFlags::Differentiable);
+        callback->put_object("input_fac", m_input_fac, +ParamFlags::Differentiable);
     }
 
     // Interpolate RGB
@@ -417,16 +277,18 @@ public:
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
-        std::ostringstream oss;
+        std::ostringstream oss, end;
+
         oss << "ColorRamp[" << std::endl
             << "  name = \"" << m_name << "\"," << std::endl
-            << "  resolution = \"" << resolution() << "\"," << std::endl
-            << "  raw = " << (int) m_raw << "," << std::endl
-            << "  mean = " << mean() << "," << std::endl
-            << "  transform = " << string::indent(m_transform) << std::endl
+            << "  input_fac = [";
+
+        end << "]," << std::endl
             << "]";
-        std::string tmp = m_input_fac->to_string();
-        return oss.str();
+
+        std::string str_input_fac = m_input_fac->to_string();
+
+        return oss.str() + str_input_fac + end.str();
     }
 
     MI_DECLARE_CLASS()
@@ -898,12 +760,6 @@ protected:
     }
 
 protected:
-    Texture2f m_texture;
-    ScalarTransform3f m_transform;
-    bool m_accel;
-    bool m_raw;
-    Float m_mean;
-    ref<Bitmap> m_bitmap;
     ref<Texture> m_input_fac;
     std::string m_name;
 
