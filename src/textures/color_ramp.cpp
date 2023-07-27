@@ -327,32 +327,24 @@ public:
                 if (dr::none_or<false>(active))
                     return dr::zeros<UnpolarizedSpectrum>();
 
-                if constexpr (is_monochromatic_v<Spectrum>) {
-                    if (channels == 1)
-                        return texture_interpolation<Color1f>(si, active);
-                    else
-                        return texture_interpolation<Color1f>(si, active);
-                }
+                if constexpr (is_monochromatic_v<Spectrum>)
+                    return texture_interpolation<Color1f>(si, active);
                 else if constexpr (is_spectral_v<Spectrum>) {
                     // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
                     // TODO: Add spectral mode for ColorRamp
-                    return interpolate_spectral(si, active);
+                    return m_input_fac->eval(si, active);
                 }
-                else {
-                    if (channels == 1)
-                        return texture_interpolation<Color3f>(si, active);
-                    else
-                        return texture_interpolation<Color3f>(si, active);
-                }
+                else
+                    return texture_interpolation<Color3f>(si, active);
             }
         }
         else {
             if constexpr (is_monochromatic_v<Spectrum>)
-                return interpolate_single_factor<Color1f>(si, active);
+                return single_factor_interpolation<Color1f>(si, active);
             else if constexpr (is_spectral_v<Spectrum>)
-                return interpolate_spectral(si, active);
+                return m_input_fac->eval(si, active);
             else
-                return interpolate_single_factor<Color3f>(si, active);
+                return single_factor_interpolation<Color3f>(si, active);
         }
     }
 
@@ -373,28 +365,20 @@ public:
                 if (dr::none_or<false>(active))
                     return dr::zeros<Float>();
 
-                if constexpr (is_monochromatic_v<Spectrum>) {
-                    if (channels == 1)
-                        return texture_interpolation<Color1f>(si, active).r();
-                    else
-                        return texture_interpolation<Color1f>(si, active).r();
-                }
+                if constexpr (is_monochromatic_v<Spectrum>)
+                    return texture_interpolation<Color1f>(si, active).r();
                 else if constexpr (is_spectral_v<Spectrum>)
-                    return luminance(interpolate_spectral(si, active), si.wavelengths);
-                else {
-                    if (channels == 1)
-                        return luminance(texture_interpolation<Color3f>(si, active));
-                    else
-                        return luminance(texture_interpolation<Color3f>(si, active));
-                }
+                    return luminance(m_input_fac->eval(si, active), si.wavelengths);
+                else
+                    return luminance(texture_interpolation<Color3f>(si, active));
             }
         } else {
             if constexpr (is_monochromatic_v<Spectrum>)
-                return interpolate_single_factor<Color1f>(si, active).r();
+                return single_factor_interpolation<Color1f>(si, active).r();
             else if constexpr (is_spectral_v<Spectrum>)
-                return luminance(interpolate_spectral(si, active), si.wavelengths);
+                return luminance(m_input_fac->eval(si, active), si.wavelengths);
             else
-                return luminance(interpolate_single_factor<Color3f>(si, active));
+                return luminance(single_factor_interpolation<Color3f>(si, active));
         }
     }
 
@@ -465,58 +449,6 @@ public:
     MI_DECLARE_CLASS()
 
 protected:
-    /**
-     * \brief Evaluates the texture at the given surface interaction using
-     * spectral upsampling
-     */
-    MI_INLINE UnpolarizedSpectrum
-    interpolate_spectral(const SurfaceInteraction3f &si, Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
-
-        Point2f uv = m_transform.transform_affine(si.uv);
-
-        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            Color3f v00, v10, v01, v11;
-            dr::Array<Float *, 4> fetch_values;
-            fetch_values[0] = v00.data();
-            fetch_values[1] = v10.data();
-            fetch_values[2] = v01.data();
-            fetch_values[3] = v11.data();
-
-            if (m_accel)
-                m_texture.eval_fetch(uv, fetch_values, active);
-            else
-                m_texture.eval_fetch_nonaccel(uv, fetch_values, active);
-
-            UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
-            c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
-            c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
-            c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
-            c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
-
-            ScalarVector2i res = resolution();
-            uv = dr::fmadd(uv, res, -.5f);
-            Vector2i uv_i = dr::floor2int<Vector2i>(uv);
-
-            // Interpolation weights
-            Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
-
-            c0 = dr::fmadd(w0.x(), c00, w1.x() * c10);
-            c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
-
-            return dr::fmadd(w0.y(), c0, w1.y() * c1);
-        } else {
-            Color3f out;
-            if (m_accel)
-                m_texture.eval(uv, out.data(), active);
-            else
-                m_texture.eval_nonaccel(uv, out.data(), active);
-
-            return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
-        }
-    }
-
     // Calculate the weight of cardinal and B-spline interpolation
     // Borrow from Blender
     MI_INLINE void key_curve_position_weights(Float t, Float *data, std::string type) const {
@@ -803,7 +735,7 @@ protected:
      * Should only be used when there is only single factor for interpolation
      */
     template<typename color>
-    MI_INLINE color interpolate_single_factor(const SurfaceInteraction3f &si,Mask active) const {
+    MI_INLINE color single_factor_interpolation(const SurfaceInteraction3f &si,Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
@@ -1004,7 +936,6 @@ protected:
     std::vector<ref<Texture>> m_color_band;
     DynamicBuffer<TexturePtr> m_color_band_dr;
     DynamicBuffer<Float> m_pos_dr;
-
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ColorRamp, Texture)
