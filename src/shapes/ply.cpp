@@ -33,6 +33,10 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
      discarded and *face normals* will instead be used during rendering.
      This gives the rendered object a faceted appearance. (Default: |false|)
 
+ * - flip_tex_coords
+   - |bool|
+   - Treat the vertical component of the texture as inverted? (Default: |false|)
+
  * - flip_normals
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
@@ -164,6 +168,9 @@ public:
     PLYMesh(const Properties &props) : Base(props) {
         /// Process vertex/index records in large batches
         constexpr size_t elements_per_packet = 1024;
+
+        /* Causes all texture coordinates to be vertically flipped. */
+        bool flip_tex_coords = props.get<bool>("flip_tex_coords", false);
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -305,6 +312,8 @@ public:
                                 target + (m_face_normals
                                               ? sizeof(InputFloat) * 3
                                               : sizeof(InputFloat) * 6));
+                            if (flip_tex_coords)
+                                uv.y() = 1.f - uv.y();
                             dr::store(texcoord_ptr, uv);
                             texcoord_ptr += 2;
                         }
