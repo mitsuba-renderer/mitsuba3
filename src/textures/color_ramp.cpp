@@ -144,7 +144,6 @@ public:
         m_input_fac = props.texture<Texture>("input_fac", 0.5f);
 
         if (props.has_property("factor")) { // Single factor with multiple color (array) interpolation
-
             if (props.has_property("filename"))
                 Throw("Bitmap factor and single factor for ColorRamp can not be used at the same time!");
 
@@ -237,8 +236,7 @@ public:
             m_accel = props.get<bool>("accel", true);
 
             // Convert the image into the working floating point representation
-            m_bitmap =
-                m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
+            m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
             if (dr::any(m_bitmap->size() < 2)) {
                 Log(Warn,
@@ -247,8 +245,7 @@ public:
                 ref<ReconstructionFilter> rfilter =
                     PluginManager::instance()->create_object<ReconstructionFilter>(
                         Properties("tent"));
-                m_bitmap =
-                    m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
+                m_bitmap = m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
             }
 
             ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
@@ -309,8 +306,8 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data",  m_texture.tensor(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
-        callback->put_object("inner_text", m_input_fac, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("to_uv", m_transform, +ParamFlags::NonDifferentiable);
+        callback->put_object("inner_text", m_input_fac, +ParamFlags::Differentiable);
     }
 
     // Interpolate RGB
@@ -332,9 +329,9 @@ public:
 
                 if constexpr (is_monochromatic_v<Spectrum>) {
                     if (channels == 1)
-                        return interpolate_1dim_bitmap<Color1f>(si, active);
+                        return texture_interpolation<Color1f>(si, active);
                     else
-                        return interpolate_3dim_bitmap<Color1f>(si, active);
+                        return texture_interpolation<Color1f>(si, active);
                 }
                 else if constexpr (is_spectral_v<Spectrum>) {
                     // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
@@ -343,9 +340,9 @@ public:
                 }
                 else {
                     if (channels == 1)
-                        return interpolate_1dim_bitmap<Color3f>(si, active);
+                        return texture_interpolation<Color3f>(si, active);
                     else
-                        return interpolate_3dim_bitmap<Color3f>(si, active);
+                        return texture_interpolation<Color3f>(si, active);
                 }
             }
         }
@@ -378,17 +375,17 @@ public:
 
                 if constexpr (is_monochromatic_v<Spectrum>) {
                     if (channels == 1)
-                        return interpolate_1dim_bitmap<Color1f>(si, active).r();
+                        return texture_interpolation<Color1f>(si, active).r();
                     else
-                        return interpolate_3dim_bitmap<Color1f>(si, active).r();
+                        return texture_interpolation<Color1f>(si, active).r();
                 }
                 else if constexpr (is_spectral_v<Spectrum>)
                     return luminance(interpolate_spectral(si, active), si.wavelengths);
                 else {
                     if (channels == 1)
-                        return luminance(interpolate_1dim_bitmap<Color3f>(si, active));
+                        return luminance(texture_interpolation<Color3f>(si, active));
                     else
-                        return luminance(interpolate_3dim_bitmap<Color3f>(si, active));
+                        return luminance(texture_interpolation<Color3f>(si, active));
                 }
             }
         } else {
@@ -611,10 +608,9 @@ protected:
     /**
      * \brief Evaluates the color ramp at the given surface interaction
      *
-     * Should only be used when the bitmap has exactly 3 channels.
      */
     template<typename color>
-    MI_INLINE color interpolate_3dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
+    MI_INLINE color texture_interpolation(const SurfaceInteraction3f &si, Mask active) const {
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
@@ -705,193 +701,6 @@ protected:
                 higher_boundary,
                 higher_boundary - 1
             );
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-
-            return dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active)->eval(si, active);
-        }
-        else if (m_mode == "cardinal") {
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = (fac - pos1) / (pos2 - pos1);
-            Float weight[4];
-            key_curve_position_weights(relative_pos, weight, m_mode);
-
-            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
-            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
-
-            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
-            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
-            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex1->eval(si, active),
-                tex0->eval(si, active) * weight[0] +
-                    tex1->eval(si, active) * weight[1] +
-                    tex2->eval(si, active) * weight[2] +
-                    tex3->eval(si, active) * weight[3]
-            );
-        }
-        else if (m_mode == "b_spline") {
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex2= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos2 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex1 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = (fac - pos1) / (pos2 - pos1);
-            Float weight[4];
-            key_curve_position_weights(relative_pos, weight, m_mode);
-
-            UInt32 lower_boundary_left = dr::select(lower_boundary > 0, lower_boundary - 1, lower_boundary);
-            lower_boundary_left = dr::clamp(lower_boundary_left, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary_left, active);
-
-            UInt32 higher_boundary_right = dr::select(higher_boundary < UInt32(m_num_band - 1), higher_boundary + 1, higher_boundary);
-            higher_boundary_right = dr::clamp(higher_boundary_right, 0, m_num_band - 1);
-            TexturePtr tex3 = dr::gather<TexturePtr>(m_color_band_dr, higher_boundary_right, active);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex1->eval(si, active),
-                tex0->eval(si, active) * weight[0] +
-                    tex1->eval(si, active) * weight[1] +
-                    tex2->eval(si, active) * weight[2] +
-                    tex3->eval(si, active) * weight[3]
-            );
-        }
-        else
-            Throw("Unknown interpolation type. Please specific interpolation mode (linear, ease, constant, cardinal, b_spline) in ColorRamp!");
-    }
-
-    /**
-     * \brief Evaluates the color ramp at the given surface interaction
-     *
-     * Should only be used when the bitmap has exactly 1 channels.
-     */
-    template<typename color>
-    MI_INLINE color interpolate_1dim_bitmap(const SurfaceInteraction3f &si, Mask active) const {
-        if constexpr (!dr::is_array_v<Mask>)
-            active = true;
-
-        Float fac = m_input_fac->eval_1(si, active);
-
-        if (m_mode == "linear") {
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = dr::select(dr::neq(pos0, pos1), (fac - pos0) / (pos1 - pos0), 0.);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                tex0->eval(si, active),
-                tex0->eval(si, active) * (1 - relative_pos) + tex1->eval(si, active) * relative_pos
-            );
-        }
-        else if (m_mode == "ease") {
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-            TexturePtr tex1= dr::gather<TexturePtr>(m_color_band_dr, higher_boundary, active);
-            Float pos1 = dr::gather<Float>(m_pos_dr, higher_boundary, active);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
-            lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
-            TexturePtr tex0 = dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active);
-            Float pos0 = dr::gather<Float>(m_pos_dr, lower_boundary, active);
-
-            Float relative_pos = dr::select(dr::neq(pos1, pos0), (fac - pos0) / (pos1 - pos0), 0.0);
-            Float ease_fac = relative_pos * relative_pos * (3.0f - 2.0f * relative_pos);
-
-            return dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) < fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) > fac,
-                tex0->eval(si, active),
-                tex0->eval(si, active) * (1 - ease_fac) + tex1->eval(si, active) * ease_fac
-            );
-        }
-        else if (m_mode == "constant") {
-            UInt32 higher_boundary = dr::binary_search<UInt32>(
-                0, m_num_band - 1, [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
-                    return dr::gather<Float>(m_pos_dr, idx, active) <= fac;
-                }
-            );
-
-            higher_boundary = dr::clamp(higher_boundary, 0, m_num_band - 1);
-
-            UInt32 lower_boundary = dr::select(
-                dr::gather<Float>(m_pos_dr, UInt32(m_num_band - 1), active) <= fac ||
-                    dr::gather<Float>(m_pos_dr, UInt32(0), active) >= fac,
-                higher_boundary,
-                higher_boundary - 1
-            );
-
             lower_boundary = dr::clamp(lower_boundary, 0, m_num_band - 1);
 
             return dr::gather<TexturePtr>(m_color_band_dr, lower_boundary, active)->eval(si, active);
