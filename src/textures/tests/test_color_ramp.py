@@ -11,9 +11,12 @@ from mitsuba.scalar_rgb.test.util import fresolver_append_path
 def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
     color_ramp = mi.load_dict({
         "type" : "color_ramp",
-        "filename" : "resources/data/common/textures/carrot.png",
-        "filter_type" : filter_type,
-        "wrap_mode" : wrap_mode,
+        'input_fac': {
+            'type': 'bitmap',
+            'filename': 'resources/data/common/textures/carrot.png',
+            "filter_type": filter_type,
+            "wrap_mode": wrap_mode,
+        },
         "mode" : "linear",
         "num_band" : 2.0,
         "pos0" : 0.0,
@@ -46,7 +49,10 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     # RGB image
     color_ramp = mi.load_dict({
         'type' : 'color_ramp',
-        'filename' : 'resources/data/common/textures/carrot.png',
+        'input_fac': {
+            'type': 'bitmap',
+            'filename': 'resources/data/common/textures/carrot.png',
+        },
         "mode": "linear",
         "num_band": 2.0,
         "pos0": 0.0,
@@ -76,7 +82,10 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     # Grayscale image
     color_ramp = mi.load_dict({
         'type' : 'color_ramp',
-        'filename' : 'resources/data/common/textures/noise_02.png',
+        'input_fac': {
+            'type': 'bitmap',
+            'filename': 'resources/data/common/textures/noise_02.png',
+        },
         "mode": "linear",
         "num_band": 2,
         "pos0": 0.0,
@@ -100,6 +109,8 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     si.uv = [x, y]
 
     mono = color_ramp.eval_1(si)
+    with pytest.raises(RuntimeError):
+        color = color_ramp.eval_3(si)
     spec = color_ramp.eval(si)
 
     expected = 0.5394
@@ -107,13 +118,17 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     assert dr.allclose(expected, mono, atol=1e-04)
 
 @fresolver_append_path
-def test04_eval_rgb(variants_vec_backends_once_spectral):
+def test05_eval_spectral(variants_vec_backends_once_spectral):
     import numpy as np
 
     # RGB image
     color_ramp = mi.load_dict({
         'type' : 'color_ramp',
-        'filename' : 'resources/data/common/textures/carrot.png',
+        'input_fac': {
+            'type': 'bitmap',
+            'filename': 'resources/data/common/textures/carrot.png',
+            'raw': False
+        },
         "mode": "linear",
         "num_band": 2.0,
         "pos0": 0.0,
@@ -134,18 +149,24 @@ def test04_eval_rgb(variants_vec_backends_once_spectral):
     y = (1 / y_res) * 1 + (1 / (2 * y_res))
 
     si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wavelengths = np.linspace(mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
     si.uv = [x, y]
 
-    mono = color_ramp.eval_1(si)
     spec = color_ramp.eval(si)
-    assert dr.allclose(mi.luminance(spec), mono, atol=1e-04)
+
+    expected = [0.0023, 0.1910, 0.0059, 0.0003]
+    assert dr.allclose(expected, spec, atol=1e-04)
 
     # Grayscale image
     color_ramp = mi.load_dict({
         'type' : 'color_ramp',
-        'filename' : 'resources/data/common/textures/noise_02.png',
+        'input_fac': {
+            'type': 'bitmap',
+            'filename': 'resources/data/common/textures/noise_02.png',
+            'raw': False
+        },
         "mode": "linear",
-        "num_band": 2,
+        "num_band": 2.0,
         "pos0": 0.0,
         "pos1": 1.0,
         "color0": {
