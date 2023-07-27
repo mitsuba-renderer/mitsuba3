@@ -316,27 +316,18 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if (m_bitmap_factor) {
-            const size_t channels = m_texture.shape()[2];
-            if (channels == 3 && is_spectral_v<Spectrum> && m_raw) {
-                DRJIT_MARK_USED(si);
-                Throw("The bitmap factor in color ramp %s was queried for a spectrum, but "
-                      "texture conversion into spectra was explicitly disabled! "
-                      "(raw=true)",
-                      to_string());
-            } else {
-                if (dr::none_or<false>(active))
-                    return dr::zeros<UnpolarizedSpectrum>();
+            if (dr::none_or<false>(active))
+                return dr::zeros<UnpolarizedSpectrum>();
 
-                if constexpr (is_monochromatic_v<Spectrum>)
-                    return texture_interpolation<Color1f>(si, active);
-                else if constexpr (is_spectral_v<Spectrum>) {
-                    // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
-                    // TODO: Add spectral mode for ColorRamp
-                    return m_input_fac->eval(si, active);
-                }
-                else
-                    return texture_interpolation<Color3f>(si, active);
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return texture_interpolation<Color1f>(si, active);
+            else if constexpr (is_spectral_v<Spectrum>) {
+                // This function is equivalent to removing ColorRamp node between bitmap texture and bsdf
+                // TODO: Add spectral mode for ColorRamp
+                return m_input_fac->eval(si, active);
             }
+            else
+                return texture_interpolation<Color3f>(si, active);
         }
         else {
             if constexpr (is_monochromatic_v<Spectrum>)
@@ -355,28 +346,20 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if (m_bitmap_factor) {
-            const size_t channels = m_texture.shape()[2];
-            if (channels == 3 && is_spectral_v<Spectrum> && !m_raw) {
-                DRJIT_MARK_USED(si);
-                Throw("eval_1(): The bitmap factor in color ramp %s was queried for a spectrum, but "
-                      "texture conversion into spectra was explicitly disabled! (raw=true)",
-                      to_string());
-            } else {
-                if (dr::none_or<false>(active))
-                    return dr::zeros<Float>();
+            if (dr::none_or<false>(active))
+                return dr::zeros<Float>();
 
-                if constexpr (is_monochromatic_v<Spectrum>)
-                    return texture_interpolation<Color1f>(si, active).r();
-                else if constexpr (is_spectral_v<Spectrum>)
-                    return luminance(m_input_fac->eval(si, active), si.wavelengths);
-                else
-                    return luminance(texture_interpolation<Color3f>(si, active));
-            }
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return texture_interpolation<Color1f>(si, active).r();
+            else if constexpr (is_spectral_v<Spectrum>)
+                return m_input_fac->eval_1(si, active);
+            else
+                return luminance(texture_interpolation<Color3f>(si, active));
         } else {
             if constexpr (is_monochromatic_v<Spectrum>)
                 return single_factor_interpolation<Color1f>(si, active).r();
             else if constexpr (is_spectral_v<Spectrum>)
-                return luminance(m_input_fac->eval(si, active), si.wavelengths);
+                return m_input_fac->eval_1(si, active);
             else
                 return luminance(single_factor_interpolation<Color3f>(si, active));
         }
