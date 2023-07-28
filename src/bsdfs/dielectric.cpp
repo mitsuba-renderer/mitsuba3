@@ -130,10 +130,6 @@ In *polarized* rendering modes, the material automatically switches to a polariz
 implementation of the underlying Fresnel equations that quantify the reflectance and
 transmission.
 
-.. note::
-
-    Dispersion is currently unsupported but will be enabled in a future release.
-
 Instead of specifying numerical values for the indices of refraction, Mitsuba 3
 comes with a list of presets that can be specified with the :paramtype:`material`
 parameter:
