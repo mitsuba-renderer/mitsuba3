@@ -915,8 +915,10 @@ private:
         for (size_t z = 0; z < shape[0] - 1; ++z) {
             for (size_t y = 0; y < shape[1] - 1; ++y) {
                 for (size_t x = 0; x < shape[2] - 1; ++x) {
-                    auto value_index = [&](size_t x, size_t y, size_t z) {
-                        return x + y * shape_v[0] + z * shape_v[0] * shape_v[1];
+                    auto value_index = [&](size_t x_off, size_t y_off, size_t z_off) {
+                        return (x + x_off) +
+                               (y + y_off) * shape_v[0] +
+                               (z + z_off) * shape_v[0] * shape_v[1];
                     };
 
                     size_t v000 = value_index(0, 0, 0);
@@ -961,11 +963,11 @@ private:
                     expand_bbox(x + 0, y + 1, z + 1);
                     expand_bbox(x + 1, y + 1, z + 1);
 
-                    size_t voxel_index =
-                        (x + y) * (shape_v[0] - 1) +
-                              z * (shape_v[0] - 1) * (shape_v[1] - 1);
+                    size_t voxel_idx = x +
+                                       y * (shape_v[0] - 1) +
+                                       z * (shape_v[0] - 1) * (shape_v[1] - 1);
 
-                    host_voxel_indices[count] = voxel_index;
+                    host_voxel_indices[count] = voxel_idx;
                     host_aabbs[count] = BoundingBoxType(bbox);
 
                     count++;
