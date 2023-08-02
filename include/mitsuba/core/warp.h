@@ -621,7 +621,7 @@ template <typename Value>
 Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
                                        const Vector<Value, 3> &wi_,
                                        const Vector<Value, 3> &tangent,
-                                       dr::scalar_t<Value> kappa) {
+                                       Value kappa) {
     using Point2  = Point<Value, 2>;
     using Vector3 = Vector<Value, 3>;
     using Frame3  = Frame<Value>;
@@ -641,7 +641,7 @@ Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
 
     // Sample a roughness perturbation from a vMF distribution
     Vector3 perturbation =
-        square_to_von_mises_fisher(Point2(sample.y(), sample.z()), Value(kappa));
+        square_to_von_mises_fisher(Point2(sample.y(), sample.z()), kappa);
 
     // Express perturbation relative to 'wo'
     wo = Frame3(wo).to_world(perturbation);
@@ -677,7 +677,7 @@ namespace detail {
 /// Probability density of \ref square_to_rough_fiber()
 template <typename Value, typename Vector3 = Vector<Value, 3>>
 Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent,
-                                dr::scalar_t<Value> kappa) {
+                                Value kappa) {
     /**
      * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
      * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
@@ -693,10 +693,11 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
     Value c = cos_theta_i * cos_theta_o * kappa,
           s = sin_theta_i * sin_theta_o * kappa;
 
-    if (kappa > 10.f)
-        return dr::exp(-s + detail::log_i0(c) - kappa + 0.6931f + dr::log(.5f * kappa)) * dr::InvTwoPi<Value>;
-    else
-        return dr::exp(-s) * detail::i0(c) * kappa / (2.f * dr::sinh(kappa)) * dr::InvTwoPi<Value>;
+    return dr::select(
+        kappa > 10.f,
+        dr::exp(-s + detail::log_i0(c) - kappa + 0.6931f + dr::log(.5f * kappa)) * dr::InvTwoPi<Value>,
+        dr::exp(-s) * detail::i0(c) * kappa / (2.f * dr::sinh(kappa)) * dr::InvTwoPi<Value>
+    );
 }
 
 //! @}
