@@ -15,35 +15,46 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Hair(const Properties &props) : Base(props) {
-        // Roughness (longitudinal & azimuthal) and scale tilt
-        m_longitudinal_roughness  = props.get<ScalarFloat>("beta_m", 0.3f);
-        m_azimuthal_roughness  = props.get<ScalarFloat>("beta_n", 0.3f);
-        m_alpha   = props.get<ScalarFloat>("alpha", 2.f);
+        // Roughness (longitudinal & azimuthal)
+        ScalarFloat longitudinal_roughness =
+            props.get<ScalarFloat>("beta_m", 0.3f);
+        m_longitudinal_roughness = longitudinal_roughness;
+        ScalarFloat azimuthal_roughness =
+            props.get<ScalarFloat>("beta_n", 0.3f);
+        m_azimuthal_roughness = azimuthal_roughness;
+
+        // Scale tilt
+        m_alpha = props.get<ScalarFloat>("alpha", 2.f);
 
         // Indices of refraction at the interface
         ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "amber");
         m_eta = int_ior / ext_ior;
 
-        m_eumelanin = props.get<ScalarFloat>("eumelanin", 0.f);
+        // Absorption
+        m_eumelanin = props.get<ScalarFloat>("eumelanin", 1.3f);
         m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.f);
-
         if (props.has_property("sigma_a")){
-            m_sigma_a = props.get<ScalarVector3f>("sigma_a");
-            isColor = true;
+            m_sigma_a = props.texture<Texture>("sigma_a");
+            m_use_pigmentation = false;
         }
 
+        if (longitudinal_roughness < 0 || longitudinal_roughness > 1.f)
+            Throw("The longitudinal roughness \"beta_m\" should be in the "
+                  "range [0, 1]!");
+        if (azimuthal_roughness < 0 || azimuthal_roughness > 1.f)
+            Throw("The azimuthal roughness \"beta_n\" should be in the "
+                  "range [0, 1]!");
         if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of refraction must be "
                   "positive and differ!");
-        if (m_longitudinal_roughness < 0 || m_longitudinal_roughness > 1){
-            Throw("The longitudinal roughness \"beta_m\" should be in the "
-                  "range [0, 1]!");
-        }
-        if (m_azimuthal_roughness < 0 || m_azimuthal_roughness > 1){
-            Throw("The azimuthal roughness \"beta_n\" should be in the "
-                  "range [0, 1]!");
-        }
+        if (props.has_property("sigma_a") &&
+            (props.has_property("eumelanin") ||
+             props.has_property("pheomelanin")))
+            Throw("The interior and exterior indices of refraction must be "
+                  "positive and differ!");
+
+        dr::make_opaque(m_eumelanin, m_pheomelanin, m_sigma_a);
 
         // TODO: verify this
         m_components.push_back(BSDFFlags::Glossy | BSDFFlags::FrontSide |
@@ -51,36 +62,30 @@ public:
         m_flags = m_components[0];
         dr::set_attr(this, "flags", m_flags);
 
-        // longitudinal variance
-        m_v[0] = dr::sqr(0.726f * m_longitudinal_roughness +
-                         0.812f * dr::sqr(m_longitudinal_roughness) +
-                         3.7f * dr::pow(m_longitudinal_roughness, 20));
-        m_v[1] = .25f * m_v[0];
-        m_v[2] = 4 * m_v[0];
-        for (int p = 3; p <= p_max; ++p)
-            m_v[p] = m_v[2];
-
-        // Compute azimuthal logistic scale factor from $\m_azimuthal_roughness$
-        ScalarFloat sqrt_pi_over_8 = dr::sqrt(dr::Pi<ScalarFloat> / 8.f);
-        m_s = sqrt_pi_over_8 * (0.265f * m_azimuthal_roughness + 1.194f * dr::sqr(m_azimuthal_roughness) +
-                                5.372f * dr::pow(m_azimuthal_roughness, 22));
-
-        // Compute $\m_alpha$ terms for hair scales
-        m_sin_2k_alpha[0] = dr::sin(dr::deg_to_rad(m_alpha));
-        m_cos_2k_alpha[0] = dr::safe_sqrt(1 - dr::sqr(m_sin_2k_alpha[0]));
-        for (int i = 1; i < 3; ++i) {
-            m_sin_2k_alpha[i] = 2 * m_cos_2k_alpha[i - 1] * m_sin_2k_alpha[i - 1];
-            m_cos_2k_alpha[i] = dr::sqr(m_cos_2k_alpha[i - 1]) - dr::sqr(m_sin_2k_alpha[i - 1]);
-        }
+        update();
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("m_longitudinal_roughness", m_longitudinal_roughness, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("m_azimuthal_roughness", m_azimuthal_roughness, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("m_alpha", m_alpha, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("m_eta", m_eta, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("m_eumelanin", m_eumelanin, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("m_pheomelanin", m_pheomelanin, +ParamFlags::NonDifferentiable);
+        callback->put_parameter("longitudinal_roughness", m_longitudinal_roughness, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("azimuthal_roughness",    m_azimuthal_roughness,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("alpha",                  m_alpha,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("eta",                    m_eta,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("eumelanin",              m_eumelanin,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("pheomelanin",            m_pheomelanin,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("use_pigmentation",       m_use_pigmentation,      +ParamFlags::NonDifferentiable);
+
+        callback->put_object("sigma_a",                   m_sigma_a,               +ParamFlags::Differentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "longitudinal_roughness") ||
+            string::contains(keys, "azimuthal_roughness") ||
+            string::contains(keys, "alpha")) {
+            dr::make_opaque(m_longitudinal_roughness, m_azimuthal_roughness, m_alpha);
+            update();
+        }
+
+        dr::make_opaque(m_eumelanin, m_pheomelanin, m_sigma_a);
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -90,24 +95,22 @@ public:
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
 
-        // TODO (really needed?)
-        Vector3f wi = dr::normalize(si.wi);
-
         // Parameterization of incident direction
-        Float gamma_i = gamma(wi);
+        Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
-        auto [sin_theta_i, cos_theta_i] = sincos_theta(wi);
-        Float phi_i = azimuthal_angle(wi);
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(si.wi);
+        Float phi_i = azimuthal_angle(si.wi);
+        auto [sin_phi_i, cos_phi_i] = dr::sincos(phi_i);
 
         // Sample segment length `p`
-        dr::Array<Float, p_max + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
+        dr::Array<Float, P_MAX + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
 
         Point2f u[2] = { { sample1, 0 }, sample2 };
         // u[0][1] is the rescaled random number after using u[0][0]
         u[0][1] = u[0][0] / a_p_pdf[0];
 
-        UInt32 p(0);
-        for (size_t i = 0; i < p_max; ++i) {
+        UInt32 p = dr::zeros<UInt32>(dr::width(si));
+        for (size_t i = 0; i < P_MAX; ++i) {
             Bool sample_p = a_p_pdf[i] < u[0][0];
             u[0][0] -= a_p_pdf[i];
 
@@ -118,7 +121,7 @@ public:
         // Account for scales on hair surface
         Float sin_theta_ip(0.f);
         Float cos_theta_ip(0.f);
-        for (size_t j = 0; j < p_max; j++) {
+        for (size_t j = 0; j < P_MAX; j++) {
             auto [sin_theta_ij, cos_theta_ij] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, j);
             dr::masked(sin_theta_ip, dr::eq(p, j)) = sin_theta_ij;
@@ -128,14 +131,18 @@ public:
         // Sample $M_p$ to compute $\thetai$
         // TODO: Understand
         Float cos_theta =
-            1 + m_v[p_max] * dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[p_max]));
-        for (size_t i = 0; i < p_max; i++)
-            dr::masked(cos_theta, dr::eq(p, i)) = 1 + m_v[i] * dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[i]));
+            1 + m_v[P_MAX] *
+                    dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[P_MAX]));
+        for (size_t i = 0; i < P_MAX; i++)
+            dr::masked(cos_theta, dr::eq(p, i)) =
+                1 + m_v[i] *
+                        dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[i]));
 
-        Float sin_theta = dr::safe_sqrt(1 - dr::sqr(cos_theta));
-        Float cos_phi   = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
-        Float sin_theta_o = -cos_theta * sin_theta_ip + sin_theta * cos_phi * cos_theta_ip;
-        Float cos_thata_o = dr::safe_sqrt(1 - dr::sqr(sin_theta_o));
+        Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
+        Float cos_phi = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
+        Float sin_theta_o =
+            -cos_theta * sin_theta_ip + sin_theta * cos_phi * cos_theta_ip;
+        Float cos_theta_o = dr::safe_sqrt(1.f - dr::sqr(sin_theta_o));
 
         // Transmission angle in azimuthal plane
         Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
@@ -143,39 +150,45 @@ public:
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Sample azimuthal scattering
-        Float perfect_delta_phi = 2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
-        Float delta_phi_first_terms = perfect_delta_phi + trimmed_logistic_sample(u[0][1], m_s);
+        Float perfect_delta_phi =
+            2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
+        Float delta_phi_first_terms =
+            perfect_delta_phi + trimmed_logistic_sample(u[0][1], m_s);
         Float delta_phi_remainder = 2 * dr::Pi<ScalarFloat> * u[0][1];
-        Float delta_phi = dr::select(p < p_max, delta_phi_first_terms, delta_phi_remainder);
+        Float delta_phi =
+            dr::select(p < P_MAX, delta_phi_first_terms, delta_phi_remainder);
 
         // Outgoing direction
         Float phi_o = phi_i + delta_phi;
-        Vector3f wo(cos_thata_o * dr::cos(phi_o), sin_theta_o,
-                    cos_thata_o * dr::sin(phi_o));
+        auto [sin_phi_o, cos_phi_o] = dr::sincos(phi_o);
+        Vector3f wo(cos_theta_o * cos_phi_o, sin_theta_o,
+                    cos_theta_o * sin_phi_o);
+
 
         // PDF for sampled outgoing direction
-        for (size_t i = 0; i < p_max; ++i) {
+        for (size_t i = 0; i < P_MAX; ++i) {
             // Account for scales on hair surface
             auto [sin_theta_ip, cos_theta_ip] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, i);
-            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
-                          cos_theta_ip * dr::sin(phi_i));
+            Vector3f wi_p(cos_theta_ip * cos_phi_i, sin_theta_ip,
+                          cos_theta_ip * sin_phi_i);
 
-            bs.pdf += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[i]) *
+            bs.pdf += longitudinal_scattering(wi_p, wo, { 0, 1.f, 0 }, m_v[i]) *
                       dr::TwoPi<Float> * a_p_pdf[i] *
                       azimuthal_scattering(delta_phi, i, m_s, gamma_i, gamma_t);
         }
-        bs.pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                  a_p_pdf[p_max];
+        bs.pdf +=
+            longitudinal_scattering(si.wi, wo, { 0, 1.f, 0 }, m_v[P_MAX]) *
+            a_p_pdf[P_MAX];
 
-        bs.wo = wo;
+        bs.wo = dr::normalize(wo);
         bs.pdf = dr::select(dr::isnan(bs.pdf) || dr::isinf(bs.pdf), 0, bs.pdf);
-        bs.eta = 1.f;
+        bs.eta = 1.f; // We always completely cross the hair fiber
         bs.sampled_type = +BSDFFlags::Glossy;
         bs.sampled_component = 0;
 
-        UnpolarizedSpectrum value =
-            dr::select(dr::neq(bs.pdf, 0), eval(ctx, si, bs.wo, active) / bs.pdf, 0);
+        UnpolarizedSpectrum value = dr::select(
+            dr::neq(bs.pdf, 0), eval(ctx, si, bs.wo, active) / bs.pdf, 0);
 
         return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
@@ -188,57 +201,51 @@ public:
             !ctx.is_enabled(BSDFFlags::GlossyReflection))
             return 0.f;
 
-        // TODO (really needed?)
-        Vector3f wi = dr::normalize(si.wi);
-
         // Parameterization of incident and outgoing directions
-        Float gamma_i = gamma(wi);
+        Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
-        auto [sin_theta_i, cos_theta_i] = sincos_theta(wi);
-        Float phi_i = azimuthal_angle(wi);
-        auto [sin_theta_o, cos_theta_o] = sincos_theta(wo);
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(si.wi);
+        Float phi_i = azimuthal_angle(si.wi);
+        auto [sin_phi_i, cos_phi_i] = dr::sincos(phi_i);
         Float phi_o = azimuthal_angle(wo);
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1 - dr::sqr(sin_theta_t));
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
 
         // Transmission angle in azimuthal plane
-        Float eta_p = dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        Float eta_p =
+            dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1 - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
-        Spectrum wavelengths = get_spectrum(si);
-        Spectrum sigma_a = m_sigma_a;
-        if (!isColor)
-            sigma_a = dr::fmadd(m_pheomelanin, pheomelanin(wavelengths),
-                                m_eumelanin * eumelanin(wavelengths));
+        Spectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
         Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
-        AttenuationCoeffs a_p = attenuation(cos_theta_i, m_eta, h, transmittance);
+        AttenuationCoeffs a_p =
+            attenuation(cos_theta_i, m_eta, h, transmittance);
 
-        // Contribution of first `p_max` terms
+        // Contribution of first `P_MAX` terms
         Float delta_phi = phi_o - phi_i;
         UnpolarizedSpectrum value(0.0f);
-        for (int p = 0; p < p_max; ++p) {
+        for (int p = 0; p < P_MAX; ++p) {
             // Account for scales on hair surface
             auto [sin_theta_ip, cos_theta_ip] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, p);
-            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
-                          cos_theta_ip * dr::sin(phi_i));
+            Vector3f wi_p(cos_theta_ip * cos_phi_i, sin_theta_ip,
+                          cos_theta_ip * sin_phi_i);
 
-            value += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]) *
+            value += longitudinal_scattering(wi_p, wo, { 0, 1.f, 0 }, m_v[p]) *
                      dr::TwoPi<Float> * a_p[p] *
                      azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
         }
 
         // Contribution of remaining terms
-        value += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                a_p[p_max];
+        value += longitudinal_scattering(si.wi, wo, { 0, 1.f, 0 }, m_v[P_MAX]) *
+                a_p[P_MAX];
 
-        // If it is nan, return 0
         value = dr::select(dr::isnan(value) || dr::isinf(value), 0, value);
 
         return depolarizer<Spectrum>(value) & active;
@@ -252,41 +259,40 @@ public:
             !ctx.is_enabled(BSDFFlags::GlossyReflection))
             return 0.f;
 
-        // TODO (really needed?)
-        Vector3f wi = dr::normalize(si.wi);
-
         // Parameterization of incident and outgoing directions
-        Float gamma_i = gamma(wi);
+        Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
-        auto [sin_theta_i, cos_theta_i] = sincos_theta(wi);
-        Float phi_i = azimuthal_angle(wi);
-        auto [sin_theta_o, cos_theta_o] = sincos_theta(wo);
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(si.wi);
+        Float phi_i = azimuthal_angle(si.wi);
+        auto [sin_phi_i, cos_phi_i] = dr::sincos(phi_i);
         Float phi_o = azimuthal_angle(wo);
 
         // Transmission angle in azimuthal plane
-        Float eta_p = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        Float eta_p =
+            dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) /
+            cos_theta_i;
         Float sin_gamma_t = h / eta_p;
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation PDF
-        dr::Array<Float, p_max + 1> apPdf = attenuation_pdf(cos_theta_i, si);
+        dr::Array<Float, P_MAX + 1> apPdf = attenuation_pdf(cos_theta_i, si);
 
         // Compute PDF sum for each segment length
         Float delta_phi  = phi_o - phi_i;
         Float pdf(0.0f);
-        for (int p = 0; p < p_max; ++p) {
+        for (int p = 0; p < P_MAX; ++p) {
             // Account for scales on hair surface
             auto [sin_theta_ip, cos_theta_ip] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, p);
-            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
-                          cos_theta_ip * dr::sin(phi_i));
+            Vector3f wi_p(cos_theta_ip * cos_phi_i, sin_theta_ip,
+                          cos_theta_ip * sin_phi_i);
 
-            pdf += longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]) *
+            pdf += longitudinal_scattering(wi_p, wo, { 0, 1.f, 0 }, m_v[p]) *
                     dr::TwoPi<Float> * apPdf[p] *
                     azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
         }
-        pdf += longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]) *
-                apPdf[p_max];
+        pdf += longitudinal_scattering(si.wi, wo, { 0, 1.f, 0 }, m_v[P_MAX]) *
+                apPdf[P_MAX];
 
         pdf = dr::select(dr::isnan(pdf) || dr::isinf(pdf), 0, pdf);
         return pdf;
@@ -303,66 +309,66 @@ public:
             return { 0.f, 0.f };
         }
 
-        Vector3f wi = dr::normalize(si.wi);
-        Float gamma_i = gamma(wi);
+        Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
 
-        Float phi_o      = azimuthal_angle(wo);
+        Float phi_o = azimuthal_angle(wo);
 
-        // Compute hair coordinate system terms related to _wi_
-        Float sin_theta_i = wi.y();
-        Float cos_theta_i = dr::safe_sqrt(1 - dr::sqr(sin_theta_i));
-        Float phi_i      = azimuthal_angle(wi);
+        // Parameterization of incident directions
+        auto [sin_theta_i, cos_theta_i] = sincos_theta(si.wi);
+        Float phi_i = azimuthal_angle(si.wi);
+        auto [sin_phi_i, cos_phi_i] = dr::sincos(phi_i);
 
-        // Compute $\gammat$ for refracted ray
-        Float eta_p = dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        // Transmission angle in longitudinal plane
+        Float sin_theta_t = sin_theta_i / m_eta;
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
+
+        // Transmission angle in azimuthal plane
+        Float eta_p =
+            dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) /
+            cos_theta_i;
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1 - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
-        // Compute $\cos \thetat$ for refracted ray
-        Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1 - dr::sqr(sin_theta_t));
-
-        // Compute the transmittance _T_ of a single path through the cylinder
-        Spectrum wavelengths = get_spectrum(si);
-        Spectrum sigma_a = m_sigma_a;
-        if (!isColor){
-            sigma_a = dr::fmadd(m_pheomelanin, pheomelanin(wavelengths),
-                    m_eumelanin * eumelanin(wavelengths));
-        }
+        // Attenuation coefficients
+        Spectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
         Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
+        AttenuationCoeffs a_p =
+            attenuation(cos_theta_i, Float(m_eta), h, transmittance);
+        dr::Array<Float, P_MAX + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
 
-        dr::Array<Spectrum, p_max + 1> a_p = attenuation(cos_theta_i, Float(m_eta), h, transmittance);
-        dr::Array<Float, p_max + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
-
-        // Compute PDF sum for hair scattering events
+        // Accumulate PDF and contribution for each segment length
         Float delta_phi = phi_o - phi_i;
         Float pdf = Float(0.0f);
         Spectrum value(0.0f);
-
-        for (int p = 0; p < p_max; ++p) {
+        for (int p = 0; p < P_MAX; ++p) {
             auto [sin_theta_ip, cos_theta_ip] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, p);
-            Vector3f wi_p(cos_theta_ip * dr::cos(phi_i), sin_theta_ip,
-                          cos_theta_ip * dr::sin(phi_i));
+            Vector3f wi_p(cos_theta_ip * cos_phi_i, sin_theta_ip,
+                          cos_theta_ip * sin_phi_i);
 
-            Float longitudinal = longitudinal_scattering(wi_p, wo, { 0, 1, 0 }, m_v[p]);
-            Float azimuthal = azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
+            Float longitudinal =
+                longitudinal_scattering(wi_p, wo, { 0, 1.f, 0 }, m_v[p]);
+            Float azimuthal =
+                azimuthal_scattering(delta_phi, p, m_s, gamma_i, gamma_t);
 
             pdf   += longitudinal * dr::TwoPi<Float> * a_p_pdf[p] * azimuthal;
             value += longitudinal * dr::TwoPi<Float> * a_p[p]     * azimuthal;
         }
 
-        Float longitudinal = longitudinal_scattering(wi, wo, { 0, 1, 0 }, m_v[p_max]);
-        pdf   += longitudinal * a_p_pdf[p_max];
-        value += longitudinal * a_p[p_max];
+        // Contribution and PDF of remaining terms
+        Float longitudinal =
+            longitudinal_scattering(si.wi, wo, { 0, 1.f, 0 }, m_v[P_MAX]);
+        pdf += longitudinal * a_p_pdf[P_MAX];
+        value += longitudinal * a_p[P_MAX];
 
         pdf   = dr::select(dr::isnan(pdf)   || dr::isinf(pdf),   0, pdf);
         value = dr::select(dr::isnan(value) || dr::isinf(value), 0, value);
 
-        return { depolarizer<Spectrum>(value) & active, dr::select(active, pdf, 0.f) };
+        return { depolarizer<Spectrum>(value) & active,
+                 dr::select(active, pdf, 0.f) };
     }
 
     std::string to_string() const override {
@@ -375,10 +381,51 @@ public:
 
 private:
     /// Maximum depth (number of scattering events)
-    constexpr static const int p_max = 3;
-    static_assert(p_max >= 3, "There should be at least 3 segments!");
+    constexpr static const int P_MAX = 3;
+    static_assert(P_MAX >= 3, "There should be at least 3 segments!");
 
-    using AttenuationCoeffs = dr::Array<Spectrum, p_max + 1>;
+    /** Coefficients from "An Energy-Conserving Hair Reflectance Model" by
+     *  d'Eon et al. (2011). Note: these are relative to the hair radius. */
+    static inline const ScalarColor3f EUMELANIN_SIGMA_A   = { 0.419f, 0.697f,
+                                                              1.37f };
+    static inline const ScalarColor3f PHEOMELANIN_SIGMA_A = { 0.187f, 0.4f,
+                                                              1.05f };
+
+    /// Coefficients for spectral upsampling
+    static inline const ScalarVector3f EUMELANIN_SRGB_COEFFS =
+        srgb_model_fetch(EUMELANIN_SIGMA_A);
+    static inline const ScalarVector3f PHEOMELANIN_SRGB_COEFFS =
+        srgb_model_fetch(PHEOMELANIN_SIGMA_A);
+
+    using AttenuationCoeffs = dr::Array<Spectrum, P_MAX + 1>;
+
+    /// Updates pre-computed internal state
+    void update() {
+        // Fill the `m_sin_2k_alpha` and `m_cos_2k_alpha` terms
+        m_sin_2k_alpha[0] = dr::sin(dr::deg_to_rad(m_alpha));
+        m_cos_2k_alpha[0] = dr::safe_sqrt(1.f - dr::sqr(m_sin_2k_alpha[0]));
+        for (int i = 1; i < 3; ++i) {
+            m_sin_2k_alpha[i] =
+                2 * m_cos_2k_alpha[i - 1] * m_sin_2k_alpha[i - 1];
+            m_cos_2k_alpha[i] =
+                dr::sqr(m_cos_2k_alpha[i - 1]) - dr::sqr(m_sin_2k_alpha[i - 1]);
+        }
+
+        // Azimuthal logistic scale factor
+        ScalarFloat sqrt_pi_over_8 = dr::sqrt(dr::Pi<ScalarFloat> / 8.f);
+        m_s = sqrt_pi_over_8 * (0.265f * m_azimuthal_roughness +
+                                1.194f * dr::sqr(m_azimuthal_roughness) +
+                                5.372f * dr::pow(m_azimuthal_roughness, 22));
+
+        // Longitudinal variance
+        m_v[0] = dr::sqr(0.726f * m_longitudinal_roughness +
+                         0.812f * dr::sqr(m_longitudinal_roughness) +
+                         3.7f * dr::pow(m_longitudinal_roughness, 20));
+        m_v[1] = .25f * m_v[0];
+        m_v[2] = 4 * m_v[0];
+        for (int p = 3; p <= P_MAX; ++p)
+            m_v[p] = m_v[2];
+    }
 
     /// Sine / cosine of longitudinal angle for direction `w`
     MI_INLINE std::pair<Float, Float> sincos_theta(const Vector3f &w) const {
@@ -394,16 +441,22 @@ private:
         return dr::atan2(w.z(), w.x());
     }
 
-    /// Angle between surface normal and direction `w`
+    /// Angle between surface normal and direction `w` in hair cross-section
     MI_INLINE Float gamma(const Vector3f &w) const {
-        Float normal_plane_proj = dr::safe_sqrt(dr::sqr(w.x()) + dr::sqr(w.z()));
+        Float normal_plane_proj =
+            dr::safe_sqrt(dr::sqr(w.x()) + dr::sqr(w.z()));
+        Mask singularity = dr::eq(normal_plane_proj, 0);
+
         Float gamma = dr::safe_acos(w.z() / normal_plane_proj);
+        gamma = dr::select(!singularity, gamma, 0);
+
         return dr::select(w.x() < 0, gamma, -gamma);
     }
 
     /// Modified index of refraction, considers projection in the normal plane
     MI_INLINE Float azimuthal_ior(Float sin_theta_i, Float cos_theta_i) const {
-        return dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+        return dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) /
+               cos_theta_i;
     }
 
     /// Return modified direction to account for angle of scales on hair surface
@@ -444,47 +497,43 @@ private:
                                 const Spectrum &transmittance) const {
         AttenuationCoeffs a_p = dr::zeros<AttenuationCoeffs>();
 
-        Float cos_gamma_i = dr::safe_sqrt(1 - dr::sqr(h));
+        Float cos_gamma_i = dr::safe_sqrt(1.f - dr::sqr(h));
         Float cos_theta = cos_theta_i * cos_gamma_i; // hair coordinate system
 
         Float f = std::get<0>(fresnel(cos_theta, eta));
         a_p[0] = f;
-        a_p[1] = dr::sqr(1 - f) * transmittance;
-        for (int p = 2; p < p_max; ++p)
+        a_p[1] = dr::sqr(1.f - f) * transmittance;
+        for (int p = 2; p < P_MAX; ++p)
             a_p[p] = a_p[p - 1] * transmittance * f;
 
         // Sum of remaining possible lenghts (as `p` goes to infinity)
-        a_p[p_max] = a_p[p_max - 1] * f * transmittance / (1.f - transmittance * f);
+        a_p[P_MAX] =
+            a_p[P_MAX - 1] * f * transmittance / (1.f - transmittance * f);
 
         return a_p;
     }
 
-    dr::Array<Float, p_max + 1>
-    attenuation_pdf(Float cos_theta_i, const SurfaceInteraction3f &si) const {
-        using Array_pmax_f = dr::Array<Float, p_max + 1>;
+    dr::Array<Float, P_MAX + 1> attenuation_pdf(Float cos_theta_i,
+                                                const SurfaceInteraction3f &si,
+                                                Mask active = true) const {
+        using Array_pmax_f = dr::Array<Float, P_MAX + 1>;
 
-        Vector3f wi = dr::normalize(si.wi);
-        Float gamma_i = gamma(wi);
+        // Parameterization of incident direction
+        Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
+        Float sin_theta_i = dr::safe_sqrt(1.f - cos_theta_i * cos_theta_i);
 
-        // Compute array of A_p values for cosThetaI
-        Float sin_theta_i = dr::safe_sqrt(1 - cos_theta_i * cos_theta_i);
-
-        // Compute $\cos \thetat$ for refracted ray
+        // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1 - dr::sqr(sin_theta_t));
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
 
-        // Compute $\gammat$ for refracted ray
+        // Transmission angle in azimuthal plane
         Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1 - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
 
-        // Compute the transmittance _T_ of a single path through the cylinder
-        Spectrum wavelengths = get_spectrum(si);
-        Spectrum sigma_a = m_sigma_a;
-        if (!isColor)
-            sigma_a = dr::fmadd(m_pheomelanin, pheomelanin(wavelengths),
-                                m_eumelanin * eumelanin(wavelengths));
+        // Attenuation coefficients
+        Spectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
         Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p = attenuation(cos_theta_i, m_eta, h, transmittance);
@@ -492,7 +541,7 @@ private:
         Array_pmax_f a_p_pdf = dr::zeros<Array_pmax_f>();
         Array_pmax_f a_p_luminance = dr::zeros<Array_pmax_f>();
         Float sum_luminance(0.0f);
-        for (int i = 0; i <= p_max; i++) {
+        for (int i = 0; i <= P_MAX; i++) {
             if constexpr (!is_spectral_v<Spectrum>)
                 a_p_luminance[i] = luminance(a_p[i]);
             else
@@ -500,7 +549,7 @@ private:
             sum_luminance += a_p_luminance[i];
         }
 
-        for (int i = 0; i <= p_max; ++i)
+        for (int i = 0; i <= P_MAX; ++i)
             a_p_pdf[i] = a_p_luminance[i] / sum_luminance;
 
         return a_p_pdf;
@@ -509,31 +558,36 @@ private:
     /// Longitudinal scattering distribution
     Float longitudinal_scattering(const Vector3f &wi, const Vector3f &wo,
                                   const Vector3f &tangent,
-                                  const ScalarFloat v) const {
+                                  const Float v) const {
         return warp::square_to_rough_fiber_pdf<Float>(wo, wi, tangent, 1.f / v);
     }
 
     MI_INLINE Float logistic(Float x, Float s) const {
         x = dr::abs(x);
-        return dr::exp(-x / s) / (s * dr::sqr(1 + dr::exp(-x / s)));
+        return dr::exp(-x / s) / (s * dr::sqr(1.f + dr::exp(-x / s)));
     }
 
     MI_INLINE Float logistic_cdf(Float x, Float s) const {
-        return 1 / (1 + dr::exp(-x / s));
+        return 1.f / (1.f + dr::exp(-x / s));
     }
 
     Float trimmed_logistic_sample(Float sample, Float s) const {
-        Float k = logistic_cdf(dr::Pi<Float>, s) - logistic_cdf(-dr::Pi<Float>, s);
-        Float x = -s * dr::log(1 / (sample * k + logistic_cdf(-dr::Pi<Float>, s)) - 1);
+        Float k =
+            logistic_cdf(dr::Pi<Float>, s) - logistic_cdf(-dr::Pi<Float>, s);
+        Float x =
+            -s *
+            dr::log(1.f / (sample * k + logistic_cdf(-dr::Pi<Float>, s)) - 1.f);
         return dr::clamp(x, -dr::Pi<Float>, dr::Pi<Float>);
     }
 
     /// Azimuthal scattering distribution (`s` is the logisitic scale factor)
-    Float azimuthal_scattering(Float delta_phi, size_t p, Float s, Float gamma_i,
-                               Float gamma_t) const {
+    Float azimuthal_scattering(Float delta_phi, size_t p, Float s,
+                               Float gamma_i, Float gamma_t) const {
         // Perfect specular reflection and transmission
-        Float perfect_delta_phi = 2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
-        Float phi = delta_phi - perfect_delta_phi; // offset w.r.t. perfect interactions
+        Float perfect_delta_phi =
+            2 * p * gamma_t - 2 * gamma_i + p * dr::Pi<ScalarFloat>;
+        Float phi =
+            delta_phi - perfect_delta_phi; // offset w.r.t. perfect interactions
 
         // Map `phi` to [-pi, pi]
         phi = dr::fmod(phi, 2 * dr::Pi<Float>);
@@ -547,47 +601,50 @@ private:
         );
     }
 
-    // Get wavelengths of the ray
-    inline Spectrum get_spectrum(const SurfaceInteraction3f &si) const {
-        Spectrum wavelengths;
-        if constexpr (is_spectral_v<Spectrum>) {
-            wavelengths[0] = si.wavelengths[0]; wavelengths[1] = si.wavelengths[1];
-            wavelengths[2] = si.wavelengths[2]; wavelengths[3] = si.wavelengths[3];
+    /// Get the exctionction/absorption
+    Spectrum absorption(const SurfaceInteraction3f &si, Mask active) const {
+        if (!m_use_pigmentation) {
+            return m_sigma_a->eval(si, active);
         } else {
-            wavelengths[0] = 612.f; wavelengths[1] = 549.f; wavelengths[2] = 465.f;
+            if constexpr (is_rgb_v<Spectrum>) {
+                ScalarColor3f eumelanin_sigma_a(EUMELANIN_SIGMA_A);
+                ScalarColor3f pheomelanin_sigma_a(PHEOMELANIN_SIGMA_A);
+
+                return m_eumelanin * Color3f(eumelanin_sigma_a) +
+                       m_pheomelanin * Color3f(pheomelanin_sigma_a);
+            } else {
+                // TODO: Use a measured spectral response of pigmentation(s)
+                // rather than the RGB upsampling scheme.
+                auto pigmentation_srf = [&](Float concentration,
+                                            const ScalarVector3f &coeffs) {
+                    return concentration * srgb_model_eval<UnpolarizedSpectrum>(
+                                               coeffs, si.wavelengths);
+                };
+
+                return pigmentation_srf(m_eumelanin, EUMELANIN_SRGB_COEFFS) +
+                       pigmentation_srf(m_pheomelanin, PHEOMELANIN_SRGB_COEFFS);
+            }
         }
-
-        return wavelengths;
-    }
-
-    // Pheomelanin absorption coefficient
-    inline Spectrum pheomelanin(const Spectrum &lambda) const {
-        return 2.9e12f * dr::pow(lambda, -4.75f); // adjusted relative to 0.1mm hair width
-    }
-
-    // Eumelanin absorption coefficient
-    inline Spectrum eumelanin(const Spectrum &lambda) const {
-        return 6.6e8f * dr::pow(lambda, -3.33f); // adjusted relative to 0.1mm hair width
     }
 
     MI_DECLARE_CLASS()
 
 private:
     /// Roughness
-    ScalarFloat m_longitudinal_roughness, m_azimuthal_roughness;
+    Float m_longitudinal_roughness, m_azimuthal_roughness;
 
-    ScalarFloat m_alpha; /// Angle of scales
-    ScalarFloat m_eta; /// IOR
+    Float m_alpha; /// Angle of scales
+    Float m_eta; /// IOR
 
     /// Pigmentation
-    ScalarFloat m_eumelanin, m_pheomelanin;
+    bool m_use_pigmentation = true;
+    Float m_eumelanin, m_pheomelanin;
 
-    ScalarFloat m_v[p_max + 1]; /// Longitudinal variance due to roughness
+    ref<Texture> m_sigma_a; /// Absorption if pigmentation is not used;
+
+    Float m_v[P_MAX + 1]; /// Longitudinal variance due to roughness
     Float m_s; /// Azimuthal roughness scaling factor
     Float m_sin_2k_alpha[3], m_cos_2k_alpha[3];
-
-    ScalarVector3f m_sigma_a;
-    bool isColor = false;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Hair, BSDF)
