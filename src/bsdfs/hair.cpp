@@ -5,26 +5,164 @@
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/ior.h>
+#include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-hair:
+
+Hair material (:monosp:`hair`)
+-------------------------------------------
+
+.. pluginparameters::
+ :extra-rows: 6
+
+ * - eumelanin, pheomelanin
+   - |float|
+   - Concentration of pigments (Default: 1.3 eumelanin and 0.2 pheomelanin)
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - sigma_a
+   - |spectrum| or |texture|
+   - Absorption coefficient in inverse scene units. The absorption can either
+     be specified with pigmentation concentrations or this parameter, not both.
+   - |exposed|, |differentiable|
+
+ * - scale
+   - |float|
+   - Optional scale factor that will be applied to the `sigma_a` parameter.
+     (Default :1)
+   - |exposed|
+
+ * - int_ior
+   - |float| or |string|
+   - Interior index of refraction specified numerically or using a known
+     material name. (Default: amber / 1.55f)
+
+ * - ext_ior
+   - |float| or |string|
+   - Exterior index of refraction specified numerically or using a known
+     material name.  (Default: air / 1.000277)
+
+ * - longitudinal_roughness, azimuthal_roughness
+   - |float|
+   - Hair roughness along each dimension (Default: 0.3 for both)
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - scale_tilt
+   - |float|
+   - Angle of the scales on the hair w.r.t. to the hair fiber's surface. The
+     angle is given in degrees. (Default: 2)
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - use_pigmentation
+   - |bool|
+   - Specifies whether to use the pigmentation concentration values or the
+     absorption coefficient `sigma_a`
+   - |exposed|, |differentiable|, |discontinuous|
+
+ * - eta
+   - |float|
+   - Relative index of refraction from the exterior to the interior
+   - |exposed|, |differentiable|, |discontinuous|
+
+This plugin is an implementation of the hair model described in the paper *A
+Practical and Controllable Hair and Fur Model for Production Path Tracing* by
+Chiang et al. :cite:`Chiang2016hair`.
+
+When no parameters are given, the plugin activates the default settings,
+which describe a brown-ish hair color.
+
+This BSDF is meant to be used with the `bsplinecurve` shape. Attaching this
+material to any other shape might produce unexpected results. This is due to
+assumptions about the local geoemtry and frame in the model itself.
+
+Although this model is considered a "near field" model (the viewer can be close
+to the hair fibers and observe accurate scattering across the entire fiber), a
+single scattering event computes the outgoing radiance by assuming no/one/many
+event(s) inside the fiber and then exiting it. In short, a single interaction
+encapsulates the entire walk inside fiber. This has two potentially
+unintuitive consequences. Firstly, the point at which the ray enters the fiber
+and exits it are always exactly the same. Secondly, any attempt to evaluate the
+BSDF from the inside of the geometry's surface will be equivalent to a
+'null' scattering event: the ray continues straight along its path as if it
+hadn't hit anything.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
+   :caption: Homogeneous reflectance
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
+   :caption: Textured reflectance
+.. subfigend::
+   :label: fig-diffuse
+
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-hair-xml
+
+        <bsdf type="hair">
+            <float name="eumelanin" value="0.2"/>
+            <float name="pheomelanin" value="0.4"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'hair',
+        'eumelanin': 0.2,
+        'pheomelanin': 0.4
+
+Alternatively, the absorption coefficient can be specified manually:
+
+.. tabs::
+    .. code-tab:: xml
+        :name: lst-hair-sigma
+
+        <bsdf type="hair">
+            <rgb name="sigma_a" value="0.2, 0.25, 0.7"/>
+            <float name="scale" value="200"/>
+        </bsdf>
+
+    .. code-tab:: python
+
+        'type': 'hair',
+        'sigma_a': {
+            'type': 'rgb',
+            'value': [0.2, 0.25, 0.7]
+        },
+        'scale': 200
+*/
 template <typename Float, typename Spectrum>
 class Hair final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture)
 
+
+    /* Implementation notes:
+
+     Internally the methods use a special frame where `theta` refers to the
+     longitudinal angle and `phi` to the azimuthal angle. This frame is *not*
+     a spherical coordinate system. The longitudinal angle is defined as the
+     angle between a given direction `w` and the "normal plane" (cross section
+     of a fiber, perpendicular to the fiber's length). As for the azimuthal
+     angle, it is defined as the angle between `w` projected into the normal
+     plane and some arbitrary reference direction within that plane (local `y`
+     coordinate axis, equivalent to the normal direction).
+    */
+
     Hair(const Properties &props) : Base(props) {
         // Roughness (longitudinal & azimuthal)
         ScalarFloat longitudinal_roughness =
-            props.get<ScalarFloat>("beta_m", 0.3f);
+            props.get<ScalarFloat>("longitudinal_roughness", 0.3f);
         m_longitudinal_roughness = longitudinal_roughness;
         ScalarFloat azimuthal_roughness =
-            props.get<ScalarFloat>("beta_n", 0.3f);
+            props.get<ScalarFloat>("azimuthal_roughness", 0.3f);
         m_azimuthal_roughness = azimuthal_roughness;
 
         // Scale tilt
-        m_alpha = props.get<ScalarFloat>("alpha", 2.f);
+        m_alpha = props.get<ScalarFloat>("scale_tilt", 2.f);
 
         // Indices of refraction at the interface
         ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
@@ -33,33 +171,33 @@ public:
 
         // Absorption
         m_eumelanin = props.get<ScalarFloat>("eumelanin", 1.3f);
-        m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.f);
+        m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.2f);
         if (props.has_property("sigma_a")){
             m_sigma_a = props.texture<Texture>("sigma_a");
             m_use_pigmentation = false;
         }
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
 
         if (longitudinal_roughness < 0 || longitudinal_roughness > 1.f)
-            Throw("The longitudinal roughness \"beta_m\" should be in the "
-                  "range [0, 1]!");
+            Throw("The longitudinal roughness should be in the range [0, 1]!");
         if (azimuthal_roughness < 0 || azimuthal_roughness > 1.f)
-            Throw("The azimuthal roughness \"beta_n\" should be in the "
-                  "range [0, 1]!");
+            Throw("The azimuthal roughness should be in the range [0, 1]!");
         if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
             Throw("The interior and exterior indices of refraction must be "
                   "positive and differ!");
         if (props.has_property("sigma_a") &&
             (props.has_property("eumelanin") ||
              props.has_property("pheomelanin")))
-            Throw("The interior and exterior indices of refraction must be "
-                  "positive and differ!");
+            Throw("Only one of pigmentation or aborption can be specified, not "
+                  "both!");
 
         dr::make_opaque(m_eumelanin, m_pheomelanin, m_sigma_a);
 
-        // TODO: verify this
-        m_components.push_back(BSDFFlags::Glossy | BSDFFlags::FrontSide |
-                               BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
-        m_flags = m_components[0];
+        m_components.push_back(BSDFFlags::Glossy | BSDFFlags::Anisotropic |
+                               BSDFFlags::NonSymmetric | BSDFFlags::FrontSide);
+        m_components.push_back(BSDFFlags::Null | BSDFFlags::BackSide);
+
+        m_flags = m_components[0] | m_components[1];
         dr::set_attr(this, "flags", m_flags);
 
         update();
@@ -68,19 +206,19 @@ public:
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("longitudinal_roughness", m_longitudinal_roughness, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("azimuthal_roughness",    m_azimuthal_roughness,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("alpha",                  m_alpha,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("scale_tilt",             m_alpha,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("eta",                    m_eta,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("eumelanin",              m_eumelanin,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("pheomelanin",            m_pheomelanin,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("use_pigmentation",       m_use_pigmentation,      +ParamFlags::NonDifferentiable);
-
         callback->put_object("sigma_a",                   m_sigma_a,               +ParamFlags::Differentiable);
+        callback->put_parameter("scale",                  m_scale,                 +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "longitudinal_roughness") ||
             string::contains(keys, "azimuthal_roughness") ||
-            string::contains(keys, "alpha")) {
+            string::contains(keys, "scale_tilt")) {
             dr::make_opaque(m_longitudinal_roughness, m_azimuthal_roughness, m_alpha);
             update();
         }
@@ -93,7 +231,11 @@ public:
            Float sample1, const Point2f &sample2, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = dr::zeros<BSDFSample3f>();
+        BSDFSample3f bs = dr::zeros<BSDFSample3f>(dr::width(si));
+
+        if (unlikely(dr::none_or<false>(active) ||
+                     !ctx.is_enabled(BSDFFlags::Glossy)))
+            return { bs, 0.f };
 
         // Parameterization of incident direction
         Float gamma_i = gamma(si.wi);
@@ -128,16 +270,13 @@ public:
             dr::masked(cos_theta_ip, dr::eq(p, j)) = cos_theta_ij;
         }
 
-        // Sample $M_p$ to compute $\thetai$
-        // TODO: Understand
+        // Sample longitudinal scattering
         Float cos_theta =
             1 + m_v[P_MAX] *
-                    dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[P_MAX]));
+                dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[P_MAX]));
         for (size_t i = 0; i < P_MAX; i++)
             dr::masked(cos_theta, dr::eq(p, i)) =
-                1 + m_v[i] *
-                        dr::log(u[1][0] + (1 - u[1][0]) * dr::exp(-2 / m_v[i]));
-
+                1 + m_v[i] * dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[i]));
         Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
         Float cos_phi = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
         Float sin_theta_o =
@@ -163,7 +302,6 @@ public:
         auto [sin_phi_o, cos_phi_o] = dr::sincos(phi_o);
         Vector3f wo(cos_theta_o * cos_phi_o, sin_theta_o,
                     cos_theta_o * sin_phi_o);
-
 
         // PDF for sampled outgoing direction
         for (size_t i = 0; i < P_MAX; ++i) {
@@ -197,8 +335,8 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyTransmission) &&
-            !ctx.is_enabled(BSDFFlags::GlossyReflection))
+        if (unlikely(dr::none_or<false>(active) ||
+                     !ctx.is_enabled(BSDFFlags::Glossy)))
             return 0.f;
 
         // Parameterization of incident and outgoing directions
@@ -255,8 +393,8 @@ public:
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyTransmission) &&
-            !ctx.is_enabled(BSDFFlags::GlossyReflection))
+        if (unlikely(dr::none_or<false>(active) ||
+                     !ctx.is_enabled(BSDFFlags::Glossy)))
             return 0.f;
 
         // Parameterization of incident and outgoing directions
@@ -304,10 +442,9 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyTransmission) &&
-            !ctx.is_enabled(BSDFFlags::GlossyReflection)) {
+        if (unlikely(dr::none_or<false>(active) ||
+                     !ctx.is_enabled(BSDFFlags::Glossy)))
             return { 0.f, 0.f };
-        }
 
         Float gamma_i = gamma(si.wi);
         Float h = dr::sin(gamma_i);
@@ -604,7 +741,7 @@ private:
     /// Get the exctionction/absorption
     Spectrum absorption(const SurfaceInteraction3f &si, Mask active) const {
         if (!m_use_pigmentation) {
-            return m_sigma_a->eval(si, active);
+            return m_scale * m_sigma_a->eval(si, active);
         } else {
             if constexpr (is_rgb_v<Spectrum>) {
                 ScalarColor3f eumelanin_sigma_a(EUMELANIN_SIGMA_A);
@@ -641,6 +778,7 @@ private:
     Float m_eumelanin, m_pheomelanin;
 
     ref<Texture> m_sigma_a; /// Absorption if pigmentation is not used;
+    ScalarFloat m_scale;
 
     Float m_v[P_MAX + 1]; /// Longitudinal variance due to roughness
     Float m_s; /// Azimuthal roughness scaling factor

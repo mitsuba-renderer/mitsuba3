@@ -32,6 +32,7 @@ BSDF_ORDERING = [
     'roughdielectric',
     'conductor',
     'roughconductor',
+    'hair',
     'measured',
     'measured_polarized',
     'plastic',
