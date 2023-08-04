@@ -76,6 +76,18 @@ static float lookup_ior(const std::string &name) {
     return 0.f;
 }
 
+template <typename Texture>
+inline ref<Texture>
+lookup_ior(const Properties &props, const std::string &param_name,
+           const std::string &default_value, bool dispersion = false) {
+    if (props.has_property(param_name) &&
+        props.type(param_name) == Properties::Type::Float)
+        return props.texture<Texture>(param_name);
+    else
+        return props.texture<Texture>(
+            lookup_ior(props.string(param_name, default_value)));
+}
+
 inline float lookup_ior(const Properties &props, const std::string &param_name,
                         const std::string &default_value) {
     if (props.has_property(param_name) && props.type(param_name) == Properties::Type::Float)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mitsuba/core/logger.h>
+#include <mitsuba/core/traits.h>
 #include <mitsuba/core/vector.h>
 #include <drjit/complex.h>
 #include <drjit/math.h>
@@ -68,6 +70,11 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float cos_theta_t = dr::mulsign_neg(cos_theta_t_abs, cos_theta_i);
 
     return { r, cos_theta_t, eta_it, eta_ti };
+}
+
+template <typename Float, typename Spectrum>
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Spectrum eta) {
+    return fresnel(std::move(cos_theta_i), eta[0]);
 }
 
 /**
