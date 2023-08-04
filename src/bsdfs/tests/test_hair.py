@@ -5,9 +5,13 @@ import mitsuba as mi
 def test01_create(variants_all):
     b = mi.load_dict({'type': 'hair'})
     assert b is not None
-    assert b.component_count() == 1
-    assert b.flags(0) == (mi.BSDFFlags.Glossy | mi.BSDFFlags.FrontSide | mi.BSDFFlags.BackSide | mi.BSDFFlags.NonSymmetric)
-    assert b.flags() == b.flags(0)
+    assert b.component_count() == 2
+    assert b.flags(0) == (
+            mi.BSDFFlags.Glossy | mi.BSDFFlags.FrontSide |
+            mi.BSDFFlags.Anisotropic | mi.BSDFFlags.NonSymmetric
+    )
+    assert b.flags(1) == (mi.BSDFFlags.Null | mi.BSDFFlags.BackSide)
+    assert b.flags() == (b.flags(0) | b.flags(1))
 
 
 def test02_white_furnace(variants_vec_backends_once_rgb):
@@ -23,18 +27,17 @@ def test02_white_furnace(variants_vec_backends_once_rgb):
 
     ctx = mi.BSDFContext()
 
-    all_beta_m = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
-    all_beta_n = all_beta_m
-    for beta_m in all_beta_m:
-        for beta_n in all_beta_n:
-            sigma_a = 0.
+    all_long_roughness = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
+    all_azi_roughness = all_long_roughness
+    for long_roughness in all_long_roughness:
+        for azi_roughness in all_azi_roughness:
             bsdf = mi.load_dict({
                 'type': 'hair',
-                'beta_m': beta_m,
-                'beta_n': beta_n,
+                'longitudinal_roughness': long_roughness,
+                'azimuthal_roughness': azi_roughness,
                 'sigma_a': {
                     'type': 'rgb',
-                    'value': mi.ScalarColor3f(sigma_a)
+                    'value': mi.ScalarColor3f(0.)
                 },
             })
 
@@ -58,18 +61,17 @@ def test03_white_furnace_importance_sample(variants_vec_backends_once_rgb):
 
     ctx = mi.BSDFContext()
 
-    all_beta_m = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
-    all_beta_n = all_beta_m
-    for beta_m in all_beta_m:
-        for beta_n in all_beta_n:
-            sigma_a = 0.
+    all_long_roughness = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
+    all_azi_roughness = all_long_roughness
+    for long_roughness in all_long_roughness:
+        for azi_roughness in all_azi_roughness:
             bsdf = mi.load_dict({
                 'type': 'hair',
-                'beta_m': beta_m,
-                'beta_n': beta_n,
+                'longitudinal_roughness': long_roughness,
+                'azimuthal_roughness': azi_roughness,
                 'sigma_a': {
                     'type': 'rgb',
-                    'value': mi.ScalarColor3f(sigma_a)
+                    'value': mi.ScalarColor3f(0.)
                 },
             })
 
@@ -91,19 +93,18 @@ def test04_sample_numeric(variants_vec_backends_once_rgb):
 
     ctx = mi.BSDFContext()
 
-    all_beta_m = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
-    all_beta_n = all_beta_m
-    for beta_m in all_beta_m:
-        for beta_n in all_beta_n:
+    all_long_roughness = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
+    all_azi_roughness = all_long_roughness
+    for long_roughness in all_long_roughness:
+        for azi_roughness in all_azi_roughness:
             # estimate reflected uniform incident radiance from hair
-            sigma_a = 0.
             bsdf = mi.load_dict({
                 'type': 'hair',
-                'beta_m': beta_m,
-                'beta_n': beta_n,
+                'longitudinal_roughness': long_roughness,
+                'azimuthal_roughness': azi_roughness,
                 'sigma_a': {
                     'type': 'rgb',
-                    'value': mi.ScalarColor3f(sigma_a)
+                    'value': mi.ScalarColor3f(0.)
                 }
             })
             si.wi = dr.normalize(mi.warp.square_to_uniform_sphere(sampler.next_2d()))
@@ -120,7 +121,7 @@ def test04_sample_numeric(variants_vec_backends_once_rgb):
             assert dr.all(dr.allclose(lum - 1, 0, atol=1e-3))
 
 
-def test04_sample_consistency(variants_vec_backends_once_rgb):
+def test05_sample_consistency(variants_vec_backends_once_rgb):
     total = int(1e8)
     sampler = mi.load_dict({'type': 'independent', 'sample_count': total})
     sampler.seed(seed = 4, wavefront_size = total)
@@ -133,17 +134,17 @@ def test04_sample_consistency(variants_vec_backends_once_rgb):
 
     ctx = mi.BSDFContext()
 
-    for beta_m in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
-        for beta_n in list(dr.linspace(mi.Float, 0.4, 1.0, 3)):
-            si.wi = mi.warp.square_to_uniform_sphere(sampler.next_2d())
+    for long_roughness in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
+        for azi_roughness in list(dr.linspace(mi.Float, 0.4, 1.0, 3)):
+            si.wi = mi.warp.square_to_uniform_hemisphere(sampler.next_2d())
             bsdf = mi.load_dict({
                 'type': 'hair',
                 'sigma_a': {
                     'type': 'rgb',
                     'value': mi.ScalarColor3f(0.25)
                 },
-                'beta_m': beta_m,
-                'beta_n': beta_n,
+                'longitudinal_roughness': long_roughness,
+                'azimuthal_roughness': azi_roughness,
             })
 
             def helper_Li(vec):
@@ -158,17 +159,17 @@ def test04_sample_consistency(variants_vec_backends_once_rgb):
             assert dr.allclose(dr.sum(importance.y), dr.sum(uniform.y), rtol=0.05, atol=1e-3)
 
 
-def test05_chi2(variants_vec_backends_once_rgb):
+def test06_chi2(variants_vec_backends_once_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
-    for beta_m in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
-        # Low azimuthal roughness tests are very difficult to pass
-        for beta_n in list(dr.linspace(mi.Float, 0.8, 1.0, 3)):
-            for theta in list(dr.linspace(mi.Float, -dr.pi, dr.pi, 5)):
-                for phi in list(dr.linspace(mi.Float, 0.0, dr.two_pi, 5))[:-1]:
+    for long_roughness in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
+        # Low azimuthal roughness tests are difficult to pass (w/ limited budget)
+        for azi_roughness in list(dr.linspace(mi.Float, 0.8, 1.0, 3)):
+            for theta in list(dr.linspace(mi.Float, 0, 0.99 * (dr.pi / 2), 3)):
+                for phi in list(dr.linspace(mi.Float, 0.0, dr.two_pi / 2, 3)):
                         xml = f"""
                             <rgb name="sigma_a" value="0.8, 0.8, 0.8" />
-                            <float name="beta_m" value="{beta_m}" />
-                            <float name="beta_n" value="{beta_n}" />
+                            <float name="longitudinal_roughness" value="{long_roughness}" />
+                            <float name="azimuthal_roughness" value="{azi_roughness}" />
                         """
 
                         x = dr.sin(theta) * dr.cos(phi)
@@ -182,7 +183,7 @@ def test05_chi2(variants_vec_backends_once_rgb):
                             sample_func=sample_func,
                             pdf_func=pdf_func,
                             sample_dim=3,
-                            ires=32,
+                            res=301,
                         )
 
                         assert chi2.run()
