@@ -21,6 +21,92 @@
             *no description available*
 
 
+    .. py:method:: mitsuba.AdjointIntegrator.render_backward(overloaded)
+
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+    .. py:method:: mitsuba.AdjointIntegrator.render_forward(overloaded)
+
+
+        .. py:method:: render_forward(self, scene, params, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+        .. py:method:: render_forward(self, scene, params, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
     .. py:method:: mitsuba.AdjointIntegrator.sample(self, scene, sensor, block, sample_scale)
 
         Sample the incident importance and splat the product of importance and
@@ -5421,6 +5507,13 @@
             *no description available*
 
 
+    .. py:method:: mitsuba.Film.base_channels_count(self)
+
+        Return the number of channels for the developed image (excluding AOVS)
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Film.bitmap(self, raw=False)
 
         Return a bitmap object storing the developed contents of the film
@@ -10105,164 +10198,6 @@
 
             Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
-
-    .. py:method:: mitsuba.Integrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
-
-        Evaluates the reverse-mode derivative of the rendering step.
-
-        Reverse-mode differentiation transforms image-space gradients into scene
-        parameter gradients, enabling simultaneous optimization of scenes with
-        millions of free parameters. The function is invoked with an input
-        *gradient image* (``grad_in``) and transforms and accumulates these into
-        the gradient arrays of scene parameters that previously had gradient
-        tracking enabled.
-
-        Before calling this function, you must first enable gradient tracking for
-        one or more scene parameters, or the function will not do anything. This is
-        typically done by invoking ``dr.enable_grad()`` on elements of the
-        ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
-        these parameters once ``render_backward()`` returns.
-
-        Note the default implementation of this functionality relies on naive
-        automatic differentiation (AD), which records a computation graph of the
-        primal rendering step that is subsequently traversed to propagate
-        derivatives. This tends to be relatively inefficient due to the need to
-        track intermediate program state. In particular, it means that
-        differentiation of nontrivial scenes at high sample counts will often run
-        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-        ``prb`` (Path Replay Backpropagation) that are specifically designed for
-        differentiation can be significantly more efficient.
-
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
-
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-           also be a Python list/dict/object tree (DrJit will traverse it to find
-           all parameters). Gradient tracking must be explicitly enabled for each of
-           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_backward()`` will not do this for you).
-
-        Parameter ``grad_in`` (``mi.TensorXf``):
-            Gradient image that should be back-propagated.
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``grad_in`` (mi.TensorXf):
-            *no description available*
-
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
-
-        Parameter ``seed`` (int):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Integrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
-
-        Evaluates the forward-mode derivative of the rendering step.
-
-        Forward-mode differentiation propagates gradients from scene parameters
-        through the simulation, producing a *gradient image* (i.e., the derivative
-        of the rendered image with respect to those scene parameters). The gradient
-        image is very helpful for debugging, for example to inspect the gradient
-        variance or visualize the region of influence of a scene parameter. It is
-        not particularly useful for simultaneous optimization of many parameters,
-        since multiple differentiation passes are needed to obtain separate
-        derivatives for each scene parameter. See ``Integrator.render_backward()``
-        for an efficient way of obtaining all parameter derivatives at once, or
-        simply use the ``mi.render()`` abstraction that hides both
-        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
-        a unified interface.
-
-        Before calling this function, you must first enable gradient tracking and
-        furthermore associate concrete input gradients with one or more scene
-        parameters, or the function will just return a zero-valued gradient image.
-        This is typically done by invoking ``dr.enable_grad()`` and
-        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-        that can be obtained obtained via a call to ``mi.traverse()``.
-
-        Note the default implementation of this functionality relies on naive
-        automatic differentiation (AD), which records a computation graph of the
-        primal rendering step that is subsequently traversed to propagate
-        derivatives. This tends to be relatively inefficient due to the need to
-        track intermediate program state. In particular, it means that
-        differentiation of nontrivial scenes at high sample counts will often run
-        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-        ``prb`` (Path Replay Backpropagation) that are specifically designed for
-        differentiation can be significantly more efficient.
-
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
-
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-           also be a Python list/dict/object tree (DrJit will traverse it to find
-           all parameters). Gradient tracking must be explicitly enabled for each of
-           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_forward()`` will not do this for you). Furthermore,
-           ``dr.set_grad(...)`` must be used to associate specific gradient values
-           with each parameter.
-
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
-
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
-
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
-
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
-
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
-
-        Parameter ``seed`` (int):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Returns → mi.TensorXf:
-            *no description available*
 
     .. py:method:: mitsuba.Integrator.should_stop(self)
 
@@ -15110,34 +15045,6 @@
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.SDF
-
-    Base class: :py:obj:`mitsuba.Shape`
-
-    .. py:method:: mitsuba.SDF.smooth(self, p)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Normal3f`:
-            *no description available*
-
-    .. py:method:: mitsuba.SDF.smooth_hessian(self, p)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → drjit.llvm.ad.Matrix3f:
-            *no description available*
-
-    .. py:method:: mitsuba.SDF.smooth_sh(self, p)
-
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
-            *no description available*
-
-        Returns → :py:obj:`mitsuba.Normal3f`:
-            *no description available*
-
 .. py:class:: mitsuba.Sampler
 
     Base class: :py:obj:`mitsuba.Object`
@@ -15341,6 +15248,92 @@
         Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
             *no description available*
 
+
+    .. py:method:: mitsuba.SamplingIntegrator.render_backward(overloaded)
+
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+    .. py:method:: mitsuba.SamplingIntegrator.render_forward(overloaded)
+
+
+        .. py:method:: render_forward(self, scene, params, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+        .. py:method:: render_forward(self, scene, params, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
 
     .. py:method:: mitsuba.SamplingIntegrator.sample(self, scene, sampler, ray, medium=None, active=True)
 
@@ -26705,163 +26698,91 @@
             Returns → drjit.llvm.ad.TensorXf:
                 *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_forward(overloaded)
 
-        Evaluates the forward-mode derivative of the rendering step.
 
-        Forward-mode differentiation propagates gradients from scene parameters
-        through the simulation, producing a *gradient image* (i.e., the derivative
-        of the rendered image with respect to those scene parameters). The gradient
-        image is very helpful for debugging, for example to inspect the gradient
-        variance or visualize the region of influence of a scene parameter. It is
-        not particularly useful for simultaneous optimization of many parameters,
-        since multiple differentiation passes are needed to obtain separate
-        derivatives for each scene parameter. See ``Integrator.render_backward()``
-        for an efficient way of obtaining all parameter derivatives at once, or
-        simply use the ``mi.render()`` abstraction that hides both
-        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
-        a unified interface.
+        .. py:method:: render_forward(self, scene, params, sensor, seed=0, spp=0)
 
-        Before calling this function, you must first enable gradient tracking and
-        furthermore associate concrete input gradients with one or more scene
-        parameters, or the function will just return a zero-valued gradient image.
-        This is typically done by invoking ``dr.enable_grad()`` and
-        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-        that can be obtained obtained via a call to ``mi.traverse()``.
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
 
-        Note the default implementation of this functionality relies on naive
-        automatic differentiation (AD), which records a computation graph of the
-        primal rendering step that is subsequently traversed to propagate
-        derivatives. This tends to be relatively inefficient due to the need to
-        track intermediate program state. In particular, it means that
-        differentiation of nontrivial scenes at high sample counts will often run
-        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-        ``prb`` (Path Replay Backpropagation) that are specifically designed for
-        differentiation can be significantly more efficient.
+            Parameter ``params`` (object):
+                *no description available*
 
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
 
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-           also be a Python list/dict/object tree (DrJit will traverse it to find
-           all parameters). Gradient tracking must be explicitly enabled for each of
-           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_forward()`` will not do this for you). Furthermore,
-           ``dr.set_grad(...)`` must be used to associate specific gradient values
-           with each parameter.
+            Parameter ``seed`` (int):
+                *no description available*
 
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
+            Parameter ``spp`` (int):
+                *no description available*
 
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
 
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
+        .. py:method:: render_forward(self, scene, params, sensor=0, seed=0, spp=0)
 
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
 
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
+            Parameter ``params`` (object):
+                *no description available*
 
-        Parameter ``seed`` (int):
-            *no description available*
+            Parameter ``sensor`` (int):
+                *no description available*
 
-        Parameter ``spp`` (int):
-            *no description available*
+            Parameter ``seed`` (int):
+                *no description available*
 
-        Returns → mi.TensorXf:
-            *no description available*
+            Parameter ``spp`` (int):
+                *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
 
-        Evaluates the reverse-mode derivative of the rendering step.
+    .. py:method:: mitsuba.ad.common.ADIntegrator.render_backward(overloaded)
 
-        Reverse-mode differentiation transforms image-space gradients into scene
-        parameter gradients, enabling simultaneous optimization of scenes with
-        millions of free parameters. The function is invoked with an input
-        *gradient image* (``grad_in``) and transforms and accumulates these into
-        the gradient arrays of scene parameters that previously had gradient
-        tracking enabled.
 
-        Before calling this function, you must first enable gradient tracking for
-        one or more scene parameters, or the function will not do anything. This is
-        typically done by invoking ``dr.enable_grad()`` on elements of the
-        ``SceneParameters`` data structure that can be obtained obtained via a call
-        to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
-        these parameters once ``render_backward()`` returns.
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
 
-        Note the default implementation of this functionality relies on naive
-        automatic differentiation (AD), which records a computation graph of the
-        primal rendering step that is subsequently traversed to propagate
-        derivatives. This tends to be relatively inefficient due to the need to
-        track intermediate program state. In particular, it means that
-        differentiation of nontrivial scenes at high sample counts will often run
-        out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
-        ``prb`` (Path Replay Backpropagation) that are specifically designed for
-        differentiation can be significantly more efficient.
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
 
-        Parameter ``scene`` (``mi.Scene``):
-            The scene to be rendered differentially.
+            Parameter ``params`` (object):
+                *no description available*
 
-        Parameter ``params`` (Any):
-           An arbitrary container of scene parameters that should receive
-           gradients. Typically this will be an instance of type
-           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-           also be a Python list/dict/object tree (DrJit will traverse it to find
-           all parameters). Gradient tracking must be explicitly enabled for each of
-           these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-           ``render_backward()`` will not do this for you).
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
 
-        Parameter ``grad_in`` (``mi.TensorXf``):
-            Gradient image that should be back-propagated.
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
 
-        Parameter ``sensor`` (``int``, ``mi.Sensor``):
-            Specify a sensor or a (sensor index) to render the scene from a
-            different viewpoint. By default, the first sensor within the scene
-            description (index 0) will take precedence.
+            Parameter ``seed`` (int):
+                *no description available*
 
-        Parameter ``seed` (``int``)
-            This parameter controls the initialization of the random number
-            generator. It is crucial that you specify different seeds (e.g., an
-            increasing sequence) if subsequent calls should produce statistically
-            independent images (e.g. to de-correlate gradient-based optimization
-            steps).
+            Parameter ``spp`` (int):
+                *no description available*
 
-        Parameter ``spp`` (``int``):
-            Optional parameter to override the number of samples per pixel for the
-            differential rendering step. The value provided within the original
-            scene specification takes precedence if ``spp=0``.
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor=0, seed=0, spp=0)
 
-        Parameter ``scene`` (mi.Scene):
-            *no description available*
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
 
-        Parameter ``grad_in`` (mi.TensorXf):
-            *no description available*
+            Parameter ``params`` (object):
+                *no description available*
 
-        Parameter ``sensor`` (Union[int, mi.Sensor]):
-            *no description available*
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
 
-        Parameter ``seed`` (int):
-            *no description available*
+            Parameter ``sensor`` (int):
+                *no description available*
 
-        Parameter ``spp`` (int):
-            *no description available*
+            Parameter ``seed`` (int):
+                *no description available*
 
-        Returns → None:
-            *no description available*
+            Parameter ``spp`` (int):
+                *no description available*
 
     .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
 
