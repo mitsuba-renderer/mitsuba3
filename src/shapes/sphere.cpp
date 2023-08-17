@@ -63,8 +63,8 @@ The two declarations below are equivalent.
 
         <shape type="sphere">
             <transform name="to_world">
-                <scale value="2"/>
                 <translate x="1" y="0" z="0"/>
+                <scale value="2"/>
             </transform>
             <bsdf type="diffuse"/>
         </shape>

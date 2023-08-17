@@ -34,8 +34,8 @@ where only a few distinct types of trees have to be kept in memory. An example i
             </shape>
             <shape type="sphere">
                 <transform name="to_world">
-                    <scale value="5"/>
                     <translate y="20"/>
+                    <scale value="5"/>
                 </transform>
                 <bsdf type="diffuse"/>
             </shape>
@@ -50,9 +50,9 @@ where only a few distinct types of trees have to be kept in memory. An example i
         <shape type="instance">
             <ref id="my_shape_group"/>
             <transform name="to_world">
-                <rotate x="1" angle="45"/>
-                <scale value="1.5"/>
                 <translate z="10"/>
+                <scale value="1.5"/>
+                <rotate x="1" angle="45"/>
             </transform>
         </shape>
 
@@ -88,7 +88,7 @@ where only a few distinct types of trees have to be kept in memory. An example i
         # Create instance of the shape group, but rotated, scaled, and translated
         'second_instance': {
             'type': 'instance',
-            'to_world': mi.ScalarTransform4f.rotate([1, 0, 0], 45).translate([0, 10, 0]),
+            'to_world': mi.ScalarTransform4f.rotate([1, 0, 0], 45).scale([1.5, 1.5, 1.5]).translate([0, 10, 0]),
             'shapegroup': {
                 'type': 'ref',
                 'id': 'my_shape_group'

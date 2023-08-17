@@ -95,8 +95,8 @@ points and increasing radii::
 
         <shape type="linearcurve">
             <transform name="to_world">
-                <scale value="2"/>
                 <translate x="1" y="0" z="0"/>
+                <scale value="2"/>
             </transform>
             <string name="filename" type="curves.txt"/>
         </shape>

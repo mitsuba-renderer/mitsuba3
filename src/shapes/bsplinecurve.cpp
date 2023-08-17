@@ -110,7 +110,7 @@ points and increasing radii::
 
         'curves': {
             'type': 'bsplinecurve',
-            'to_world': mi.ScalarTransform4f.scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarTransform4f.translate([1, 0, 0]).scale([2, 2, 2]),
             'filename': 'curves.txt'
         },
 
