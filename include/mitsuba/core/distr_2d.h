@@ -112,8 +112,8 @@ public:
         m_cond_cdf = dr::load<FloatStorage>(cond_cdf.get(), dr::prod(m_size));
         m_marg_cdf = dr::load<FloatStorage>(marg_cdf.get(), m_size.y());
 
-        m_inv_normalization = (ScalarFloat) accum_marg;
-        m_normalization = (ScalarFloat) (1.0 / accum_marg);
+        m_inv_normalization = dr::opaque<Float>(accum_marg);
+        m_normalization = dr::opaque<Float>(1.0 / accum_marg);
     }
 
     /// Evaluate the function value at the given integer position
@@ -199,8 +199,8 @@ protected:
     FloatStorage m_marg_cdf;
     FloatStorage m_cond_cdf;
 
-    ScalarFloat m_inv_normalization;
-    ScalarFloat m_normalization;
+    Float m_inv_normalization;
+    Float m_normalization;
 };
 
 /// Base class of Hierarchical2D and Marginal2D with common functionality
