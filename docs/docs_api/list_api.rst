@@ -296,8 +296,6 @@
 
 .. autoclass:: mitsuba.Resampler
 
-.. autoclass:: mitsuba.SDF
-
 .. autoclass:: mitsuba.Sampler
 
 .. autoclass:: mitsuba.SamplingIntegrator

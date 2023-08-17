@@ -477,13 +477,13 @@ public:
     /// Return the scene's integrator
     const Integrator* integrator() const { return m_integrator; }
 
-    /// Return the list of emitters as an Dr.Jit array
+    /// Return the list of emitters as a Dr.Jit array
     const DynamicBuffer<EmitterPtr> &emitters_dr() const { return m_emitters_dr; }
 
-    /// Return the list of shapes as an Dr.Jit array
+    /// Return the list of shapes as a Dr.Jit array
     const DynamicBuffer<ShapePtr> &shapes_dr() const { return m_shapes_dr; }
 
-    /// Return the list of sensors as an Dr.Jit array
+    /// Return the list of sensors as a Dr.Jit array
     const DynamicBuffer<SensorPtr> &sensors_dr() const { return m_sensors_dr; }
 
     //! @}
