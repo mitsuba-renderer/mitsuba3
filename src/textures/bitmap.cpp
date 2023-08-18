@@ -122,8 +122,7 @@ public:
         if (m_transform != ScalarTransform3f())
             dr::make_opaque(m_transform);
 
-        Bitmap bitmap;
-
+        ref<Bitmap> bitmap;
         if (props.has_property("bitmap")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
             if (props.has_property("filename"))
