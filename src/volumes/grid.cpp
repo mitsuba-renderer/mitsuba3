@@ -175,6 +175,7 @@ public:
                   "\"mirror\", or \"clamp\"!",
                   wrap_mode_st);
 
+        ref<VolumeGrid> volume_grid;
         if (props.has_property("grid")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
             if (props.has_property("filename"))
@@ -182,29 +183,29 @@ public:
             Log(Debug, "Loading volume grid from memory...");
             // Note: ref-counted, so we don't have to worry about lifetime
             ref<Object> other = props.object("grid");
-            VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
-            if (!volume_grid)
+            VolumeGrid *grid = dynamic_cast<VolumeGrid *>(other.get());
+            if (!grid)
                 Throw("Property \"grid\" must be a VolumeGrid instance.");
-            m_volume_grid = volume_grid;
+            volume_grid = grid;
         } else {
             FileResolver *fs = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             if (!fs::exists(file_path))
                 Log(Error, "\"%s\": file does not exist!", file_path);
-            m_volume_grid = new VolumeGrid(file_path);
+            volume_grid = new VolumeGrid(file_path);
         }
 
         m_raw = props.get<bool>("raw", false);
 
         m_accel = props.get<bool>("accel", true);
 
-        ScalarVector3i res = m_volume_grid->size();
+        ScalarVector3i res = volume_grid->size();
         ScalarUInt32 size = dr::prod(res);
 
         // Apply spectral conversion if necessary
-        if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 &&
+        if (is_spectral_v<Spectrum> && volume_grid->channel_count() == 3 &&
             !m_raw) {
-            ScalarFloat *ptr = m_volume_grid->data();
+            ScalarFloat *ptr = volume_grid->data();
 
             auto scaled_data =
                 std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
@@ -239,18 +240,18 @@ public:
                 (size_t) res.z(),
                 (size_t) res.y(),
                 (size_t) res.x(),
-                m_volume_grid->channel_count()
+                volume_grid->channel_count()
             };
-            m_texture = Texture3f(TensorXf(m_volume_grid->data(), 4, shape),
+            m_texture = Texture3f(TensorXf(volume_grid->data(), 4, shape),
                                   m_accel, m_accel, filter_mode, wrap_mode);
-            m_max = m_volume_grid->max();
-            m_max_per_channel.resize(m_volume_grid->channel_count());
-            m_volume_grid->max_per_channel(m_max_per_channel.data());
-            m_channel_count = (uint32_t) m_volume_grid->channel_count();
+            m_max = volume_grid->max();
+            m_max_per_channel.resize(volume_grid->channel_count());
+            volume_grid->max_per_channel(m_max_per_channel.data());
+            m_channel_count = (uint32_t) volume_grid->channel_count();
         }
 
         if (props.get<bool>("use_grid_bbox", false)) {
-            m_to_local = m_volume_grid->bbox_transform() * m_to_local;
+            m_to_local = volume_grid->bbox_transform() * m_to_local;
             update_bbox();
         }
 
@@ -576,7 +577,6 @@ protected:
     Texture3f m_texture;
     bool m_accel;
     bool m_raw;
-    ref<VolumeGrid> m_volume_grid;
     bool m_fixed_max = false;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
