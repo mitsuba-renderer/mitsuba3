@@ -85,7 +85,10 @@ public:
 
     Color3f eval_3(const SurfaceInteraction3f &/*si*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        return m_value;
+        if constexpr (is_monochromatic_v<Spectrum>)
+            return Color3f(m_value[0]);
+        else
+            return m_value;
     }
 
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
