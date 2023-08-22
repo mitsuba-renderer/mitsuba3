@@ -114,11 +114,10 @@ points and increasing radii::
             'filename': 'curves.txt'
         },
 
-.. note:: In CUDA variants, the backfaces of the curves are culled. It is
-          therefore impossible to intersect the curve with a ray which's origin
-          is inside of the curve. In addition, prior to the NVIDIA v531.18
-          drivers for Windows and v530.30.02 drivers for Linux,
-          `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
+.. note:: The backfaces of the curves are culled. It is therefore impossible to
+          intersect the curve with a ray that's origin is inside of the curve.
+          In addition, prior to the NVIDIA v531.18 drivers for Windows and
+          v530.30.02 drivers for Linux, `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
           in the ray intersection code have been identified.
           We recommend updating to newer drivers.
  */
