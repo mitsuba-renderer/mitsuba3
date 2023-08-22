@@ -120,6 +120,7 @@ def test04_ray_intersect(variant_scalar_rgb):
                         assert dr.allclose(dn_dv, si.dn_dv, atol=2e-2)
 
 
+@fresolver_append_path
 def test05_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.scalar_rgb.test.util import check_vectorization
 
@@ -127,8 +128,8 @@ def test05_ray_intersect_vec(variant_scalar_rgb):
         scene = mi.load_dict({
             "type" : "scene",
             "foo" : {
-                "type" : "disk",
-                "to_world" : mi.ScalarTransform4f.scale((2.0, 0.5, 1.0))
+                "type" : "linearcurve",
+                "filename" : "resources/data/common/meshes/curve.txt",
             }
         })
 
@@ -179,3 +180,24 @@ def test08_instancing(variants_all_rgb):
 
     assert dr.all(pi1.is_valid())
     assert dr.all(pi2.is_valid())
+
+
+@fresolver_append_path
+def test09_backface_culling(variants_vec_rgb):
+    scene =  mi.load_dict({
+        "type" : "scene",
+        "foo" : {
+            "type" : "linearcurve",
+            "filename" : "resources/data/common/meshes/curve.txt",
+        }
+    })
+
+    # Ray inside the curve
+    ray = mi.Ray3f(o=[0, 0, 0], d=[0, 0, -1])
+    si = scene.ray_intersect(ray)
+    assert dr.all(~si.is_valid())
+
+    # Ray outside the curve
+    ray = mi.Ray3f(o=[0, 0, 2], d=[0, 0, -1])
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())

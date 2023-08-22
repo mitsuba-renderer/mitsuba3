@@ -26,7 +26,7 @@ def test02_create_multiple_curves(variants_all_rgb):
 
 
 @fresolver_append_path
-def test02_bbox(variants_all_rgb):
+def test03_bbox(variants_all_rgb):
     for sx in [1, 2, 4]:
         for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
                           mi.ScalarVector3f([-10000, 3.0, 31])]:
@@ -44,7 +44,7 @@ def test02_bbox(variants_all_rgb):
 
 
 @fresolver_append_path
-def test03_parameters_changed(variants_vec_rgb):
+def test04_parameters_changed(variants_vec_rgb):
     pytest.importorskip("numpy")
     import numpy as np
 
@@ -70,7 +70,7 @@ def test03_parameters_changed(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test04_ray_intersect(variant_scalar_rgb):
+def test05_ray_intersect(variant_scalar_rgb):
     for translate in [mi.Vector3f([0.0, 0.0, 0.0]),
                       mi.Vector3f([0.0, 0.0, 0.0])]:
         s = mi.load_dict({
@@ -120,8 +120,9 @@ def test04_ray_intersect(variant_scalar_rgb):
                         assert dr.allclose(dn_dv, si.dn_dv, atol=2e-2)
 
 
-def test05_ray_intersect_vec(variant_scalar_rgb):
-    # TODO: Enable once OptiX version is stable
+@fresolver_append_path
+def test06_ray_intersect_vec(variant_scalar_rgb):
+    # TODO: Enable once required OptiX drivers are above v531
     pytest.skip('Curve inteserctions with OptiX are unstable!')
 
     from mitsuba.scalar_rgb.test.util import check_vectorization
@@ -130,8 +131,8 @@ def test05_ray_intersect_vec(variant_scalar_rgb):
         scene = mi.load_dict({
             "type" : "scene",
             "foo" : {
-                "type" : "disk",
-                "to_world" : mi.ScalarTransform4f.scale((2.0, 0.5, 1.0))
+                "type" : "bsplinecurve",
+                "filename" : "resources/data/common/meshes/curve.txt",
             }
         })
 
@@ -144,9 +145,10 @@ def test05_ray_intersect_vec(variant_scalar_rgb):
 
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
-# TODO: Enable CUDA variants aswell (orthographic is broken).
+
+# TODO: Enable OptiX once the required drivers are above v531
 @fresolver_append_path
-def test06_differentiable_surface_interaction_ray_forward_follow_shape(variant_llvm_ad_rgb):
+def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
         "curve" : {
@@ -226,9 +228,9 @@ def test06_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     assert dr.allclose(dr.grad(si.uv), 0, atol=1e-6)
 
 
-# TODO: Enable CUDA variants aswell (orthographic is broken).
+# TODO: Enable OptiX once the required drivers are above v531
 @fresolver_append_path
-def test07_eval_parameterization(variant_llvm_ad_rgb):
+def test08_eval_parameterization(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
         "curve" : {
@@ -255,9 +257,9 @@ def test07_eval_parameterization(variant_llvm_ad_rgb):
     assert dr.allclose(si.sh_frame.n, eval_param_si.sh_frame.n, atol=1e-6)
 
 
-# TODO: Enable CUDA variants aswell (orthographic is broken).
+# TODO: Enable OptiX once the required drivers are above v531
 @fresolver_append_path
-def test08_instancing(variant_llvm_ad_rgb):
+def test09_instancing(variant_llvm_ad_rgb):
     scene = mi.load_dict({
         "type" : "scene",
         "group": {
@@ -293,3 +295,25 @@ def test08_instancing(variant_llvm_ad_rgb):
 
     assert dr.all(pi1.is_valid())
     assert dr.all(pi2.is_valid())
+
+
+# TODO: Enable OptiX once the required drivers are above v531
+@fresolver_append_path
+def test10_backface_culling(variant_llvm_ad_rgb):
+    scene =  mi.load_dict({
+        "type" : "scene",
+        "foo" : {
+            "type" : "bsplinecurve",
+            "filename" : "resources/data/common/meshes/curve.txt",
+        }
+    })
+
+    # Ray inside the curve
+    ray = mi.Ray3f(o=[0, 0, 0], d=[0, 0, -1])
+    si = scene.ray_intersect(ray)
+    assert dr.all(~si.is_valid())
+
+    # Ray outside the curve
+    ray = mi.Ray3f(o=[0, 0, 2], d=[0, 0, -1])
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
