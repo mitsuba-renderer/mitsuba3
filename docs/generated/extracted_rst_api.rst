@@ -4075,7 +4075,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -12080,7 +12080,7 @@
 
     .. py:method:: mitsuba.MediumInteraction3f.to_local(self, v)
 
-        Convert a world-space vector into local shading coordinates
+        Convert a world-space vector into local shading coordinates (defined by ``wi``)
 
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
@@ -12090,7 +12090,7 @@
 
     .. py:method:: mitsuba.MediumInteraction3f.to_world(self, v)
 
-        Convert a local shading-space vector into world space
+        Convert a local shading-space (defined by ``wi``) vector into world space
 
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
@@ -12101,7 +12101,7 @@
     .. py:method:: mitsuba.MediumInteraction3f.wi
         :property:
 
-        Incident direction in the local shading frame
+        Incident direction in world frame
 
 .. py:class:: mitsuba.MediumPtr
 
@@ -13612,6 +13612,11 @@
 .. py:class:: mitsuba.PhaseFunctionContext
 
     //! @}
+
+    .. py:method:: mitsuba.PhaseFunctionContext.mode
+        :property:
+
+        Transported mode (radiance or importance)
 
     .. py:method:: mitsuba.PhaseFunctionContext.reverse(self)
 
@@ -17461,6 +17466,13 @@
         Return the list of sensors
 
         Returns → list:
+            *no description available*
+
+    .. py:method:: mitsuba.Scene.sensors_dr(self)
+
+        Return the list of sensors as an Dr.Jit array
+
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*>>:
             *no description available*
 
     .. py:method:: mitsuba.Scene.shapes(self)
@@ -30683,7 +30695,7 @@
     Parameter ``tangent`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``kappa`` (float):
+    Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Vector3f`:
@@ -30702,7 +30714,7 @@
     Parameter ``tangent`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
-    Parameter ``kappa`` (float):
+    Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
