@@ -79,24 +79,23 @@ This BSDF is meant to be used with the `bsplinecurve` shape. Attaching this
 material to any other shape might produce unexpected results. This is due to
 assumptions about the local geoemtry and frame in the model itself.
 
-Although this model is considered a "near field" model (the viewer can be close
-to the hair fibers and observe accurate scattering across the entire fiber), a
-single scattering event computes the outgoing radiance by assuming no/one/many
-event(s) inside the fiber and then exiting it. In short, a single interaction
-encapsulates the entire walk inside fiber. This has two potentially
-unintuitive consequences. Firstly, the point at which the ray enters the fiber
-and exits it are always exactly the same. Secondly, any attempt to evaluate the
-BSDF from the inside of the geometry's surface will be equivalent to a
-'null' scattering event: the ray continues straight along its path as if it
-hadn't hit anything.
+This model is considered a "near field" model: the viewer can be close to the
+hair fibers and observe accurate scattering across the entire fiber. In its
+implementation, a single scattering event computes the outgoing radiance by
+assuming no/one/many event(s) inside the fiber and then exiting it. In short,
+a single interaction encapsulates the entire walk inside fiber. Unintuitively,
+this also means that the entry and exit point of the walk are exactly the same
+point on the shape's geometry.
 
 .. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
-   :caption: Homogeneous reflectance
-.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
-   :caption: Textured reflectance
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_hair_blonde.jpg
+   :caption: Low pigmentation concentrations
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_hair_brown.jpg
+   :caption: Higher pigmentation concentrations
 .. subfigend::
-   :label: fig-diffuse
+   :label: fig-hair
+
+.. note:: The hair geometry used in the figures above was created by `Benedikt Bitterli <https://benedikt-bitterli.me>`_.
 
 .. tabs::
     .. code-tab:: xml
