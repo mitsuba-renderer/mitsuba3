@@ -226,7 +226,7 @@ class ChiSquareTest:
         pdf_min = dr.min(self.pdf) / self.sample_count
         if not pdf_min[0] >= 0:
             self._log('Failure: Encountered a cell with a '
-                      'negative PDF value: %f' % pdf_min)
+                      'negative PDF value: %f' % pdf_min[0])
             self.fail = True
 
         self.pdf_sum = dr.sum(self.pdf) / self.sample_count
