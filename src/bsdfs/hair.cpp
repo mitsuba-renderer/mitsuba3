@@ -324,7 +324,7 @@ public:
         bs.sampled_type = +BSDFFlags::Glossy;
         bs.sampled_component = 0;
 
-        UnpolarizedSpectrum value = dr::select(
+        Spectrum value = dr::select(
             dr::neq(bs.pdf, 0), eval(ctx, si, bs.wo, active) / bs.pdf, 0);
 
         return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
@@ -358,9 +358,9 @@ public:
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
-        Spectrum sigma_a = absorption(si, active);
+        UnpolarizedSpectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
-        Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
+        UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p =
             attenuation(cos_theta_i, m_eta, h, transmittance);
 
@@ -468,9 +468,9 @@ public:
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
-        Spectrum sigma_a = absorption(si, active);
+        UnpolarizedSpectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
-        Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
+        UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p =
             attenuation(cos_theta_i, Float(m_eta), h, transmittance);
         dr::Array<Float, P_MAX + 1> a_p_pdf = attenuation_pdf(cos_theta_i, si);
@@ -478,7 +478,7 @@ public:
         // Accumulate PDF and contribution for each segment length
         Float delta_phi = phi_o - phi_i;
         Float pdf = Float(0.0f);
-        Spectrum value(0.0f);
+        UnpolarizedSpectrum value(0.0f);
         for (int p = 0; p < P_MAX; ++p) {
             auto [sin_theta_ip, cos_theta_ip] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, p);
@@ -533,7 +533,7 @@ private:
     static inline const ScalarVector3f PHEOMELANIN_SRGB_COEFFS =
         srgb_model_fetch(PHEOMELANIN_SIGMA_A);
 
-    using AttenuationCoeffs = dr::Array<Spectrum, P_MAX + 1>;
+    using AttenuationCoeffs = dr::Array<UnpolarizedSpectrum, P_MAX + 1>;
 
     /// Updates pre-computed internal state
     void update() {
@@ -629,8 +629,9 @@ private:
     };
 
     /// Returns the attenuation/absorption coefficients for each segment length
-    AttenuationCoeffs attenuation(Float cos_theta_i, Float eta, Float h,
-                                const Spectrum &transmittance) const {
+    AttenuationCoeffs
+    attenuation(Float cos_theta_i, Float eta, Float h,
+                const UnpolarizedSpectrum &transmittance) const {
         AttenuationCoeffs a_p = dr::zeros<AttenuationCoeffs>();
 
         Float cos_gamma_i = dr::safe_sqrt(1.f - dr::sqr(h));
@@ -669,19 +670,21 @@ private:
         Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
 
         // Attenuation coefficients
-        Spectrum sigma_a = absorption(si, active);
+        UnpolarizedSpectrum sigma_a = absorption(si, active);
         Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
-        Spectrum transmittance = dr::exp(-sigma_a * transmitted_length);
+        UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p = attenuation(cos_theta_i, m_eta, h, transmittance);
 
         Array_pmax_f a_p_pdf = dr::zeros<Array_pmax_f>();
         Array_pmax_f a_p_luminance = dr::zeros<Array_pmax_f>();
         Float sum_luminance(0.0f);
         for (int i = 0; i <= P_MAX; i++) {
-            if constexpr (!is_spectral_v<Spectrum>)
-                a_p_luminance[i] = luminance(a_p[i]);
-            else
+            if constexpr (is_monochromatic_v<Spectrum>)
+                a_p_luminance[i] = a_p[i][0];
+            else if constexpr (is_spectral_v<Spectrum>)
                 a_p_luminance[i] = luminance(a_p[i], si.wavelengths);
+            else
+                a_p_luminance[i] = luminance(a_p[i]);
             sum_luminance += a_p_luminance[i];
         }
 
@@ -738,7 +741,8 @@ private:
     }
 
     /// Get the exctionction/absorption
-    Spectrum absorption(const SurfaceInteraction3f &si, Mask active) const {
+    UnpolarizedSpectrum absorption(const SurfaceInteraction3f &si,
+                                   Mask active) const {
         if (!m_use_pigmentation) {
             return m_scale * m_sigma_a->eval(si, active);
         } else {
