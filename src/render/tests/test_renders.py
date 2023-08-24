@@ -38,6 +38,24 @@ POLARIZED_EXCLUDE_INTEGRATORS = {
     'direct_reparam', 'prb', 'prb_reparam', 'prbvolpath'
 }
 
+EXPLICIT_SCENE_OVERRIDES = {
+    'test_various_emitters_ptracer.xml': {
+        'ptracer': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+    },
+    'test_projector_constant_direct.xml': {
+        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+    },
+    'test_projector_textured_direct.xml': {
+        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+    },
+    'test_texture_interp_direct.xml':{
+        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+    },
+    'test_mesh_attributes_3_vertex_direct.xml':{
+        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+    }
+}
+
 # Every scene that has an integrator which is in this mapping's keys will also
 # be rendered with the integrator(s) listed in the corresponding mapping's
 # values. The new integrators are only executed in JIT modes with the default
@@ -72,6 +90,16 @@ def list_all_render_test_configs():
         is_polarized = "polarized" in variant
 
         for scene_fname in SCENES:
+            if os.path.basename(scene_fname) in EXPLICIT_SCENE_OVERRIDES:
+                scene_configs = EXPLICIT_SCENE_OVERRIDES[os.path.basename(scene_fname)]
+                for integrator_type in scene_configs.keys():
+                    if not is_jit:
+                        configs.append((variant, scene_fname, integrator_type, 'scalar'))
+                    else:
+                        for jit_flag in scene_configs[integrator_type]:
+                            configs.append((variant, scene_fname, integrator_type, jit_flag))
+                continue
+
             if any(ex in scene_fname for ex in EXCLUDE_FOLDERS):
                 continue
             if is_jit and any(ex in scene_fname for ex in JIT_EXCLUDE_FOLDERS):
