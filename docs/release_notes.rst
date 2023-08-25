@@ -5,6 +5,41 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Incoming changes
+----------------
+
+- Upgrade Dr.Jit to v0.4.3
+- Add ``mi.variant_context()``: a Python context manager for setting variants
+  `[96b219d] <https://github.com/mitsuba-renderer/mitsuba3/commit/96b219d75a69f997623c76611fb6d0b90e2c5c3e>`_
+- Emitters may now define a sampling weight
+  `[9a5f4c0] <https://github.com/mitsuba-renderer/mitsuba3/commit/9a5f4c0d5f52de7553beb64e82ad139fce879649>`_
+- Fix ``bsplinecurve`` and ``linearcurve`` shading frames
+  `[3875f9a] <https://github.com/mitsuba-renderer/mitsuba3/commit/3875f9adda5eddf9b233901d52dac6b9238a5c83>`_
+- Add implementation of ``LargeSteps`` method for mesh optimizations (includes a new tutorial)
+  `[48e6428] <https://github.com/mitsuba-renderer/mitsuba3/commit/48e64283814297bd89306cd4beba718221eacaf3>`_ .. `[130ed55] <https://github.com/mitsuba-renderer/mitsuba3/commit/130ed5522887f5405736f28f2081d04b1c1852c3>`_
+- Support for spectral phase functions
+  `[c7d5c75] <https://github.com/mitsuba-renderer/mitsuba3/commit/c7d5c75707046ee9ade56604f8a0b1c5b724b729>`_
+- Additional resource folders can now be specified in ``mi.load_dict()``
+  `[66ea528] <https://github.com/mitsuba-renderer/mitsuba3/commit/66ea5285b1bc9a251eafa0b8449bb0d641e3fa1c>`_
+- BSDFs can expose their attributes through a generic ``eval_attribute`` method
+  `[cfc425a] <https://github.com/mitsuba-renderer/mitsuba3/commit/cfc425a2b5753127aeb818dab0ebab828dc8f060>`_ .. `[c345d70] <https://github.com/mitsuba-renderer/mitsuba3/commit/c345d700bb273832d4ce2fd753929374fd076d64>`_
+- New ``sdfgrid`` shape: a signed distance field on a regular grid
+  `[272a5bf] <https://github.com/mitsuba-renderer/mitsuba3/commit/272a5bf10e3590d9ae35144d0819396181bdaef2>`_ .. `[618da87] <https://github.com/mitsuba-renderer/mitsuba3/commit/618da871d19cb36a3879230d3799f3341a657c08>`_
+- Support for adjoint differentiation methods through the ``aov`` integrator 
+  `[c9df8de] <https://github.com/mitsuba-renderer/mitsuba3/commit/c9df8de011e2d835402a4fcc8fe6ef832b4ce40a>`_ .. `[bff5cf2] <https://github.com/mitsuba-renderer/mitsuba3/commit/bff5cf240ad1676eea398c99e32f4d49f0f44925>`_
+- Various fixes to ``prbvolpath``
+  `[6d78f2e] <https://github.com/mitsuba-renderer/mitsuba3/commit/6d78f2ed30e746a718567a85a740db365e44407b>`_, `[a946691] <https://github.com/mitsuba-renderer/mitsuba3/commit/a946691a0d5272a80ea45f7b5f22f31d697cf290>`_ , `[91b0b7e] <https://github.com/mitsuba-renderer/mitsuba3/commit/91b0b7e7c2732a131fac9149bf1db81429e946b0>`_
+- Curve shapes (``bsplinecurve`` and ``linearcurve``) always have back-face culling enabled
+  `[188b254] <https://github.com/mitsuba-renderer/mitsuba3/commit/188b25425306fd373e69f07f183f0348d8952496>`_ .. `[01ea7ba] <https://github.com/mitsuba-renderer/mitsuba3/commit/01ea7baedf433dc8c337b29b2741992a3a857ee8>`_
+- ``Properties`` can now accept tensor objects, currenlty used in ``bitmap``, ``sdfgrid`` and ``gridvolume``
+  `[d030a3a] <https://github.com/mitsuba-renderer/mitsuba3/commit/d030a3a13b0d222e3c6647ebc6ceb0919a2f296b>`_
+- New ``hair`` BSDF shading model
+  `[91fc8e6] <https://github.com/mitsuba-renderer/mitsuba3/commit/91fc8e6356c95b665853a1d294da5187ea16bd39>`_ .. `[0b9b04a] <https://github.com/mitsuba-renderer/mitsuba3/commit/0b9b04aa2c6ca7d0e1b5f8503317b46f2bb972f8>`_
+- Improvements to the ``batch`` sensor (performance, documentation, bug fixes)
+  `[527ed22] <https://github.com/mitsuba-renderer/mitsuba3/commit/527ed22c801666efd746aebcfed8c299748777f0>`_ .. `[65e0444] <https://github.com/mitsuba-renderer/mitsuba3/commit/65e0444c59c4d50dd8b8547b05b8a3707353df4a>`_
+- Many missing Python bindings were added
+- Other various minor bug fixes
+
 
 Mitsuba 3.3.0
 -------------
