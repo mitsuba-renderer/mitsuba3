@@ -39,21 +39,30 @@ POLARIZED_EXCLUDE_INTEGRATORS = {
 }
 
 EXPLICIT_SCENE_OVERRIDES = {
-    'test_various_emitters_ptracer.xml': {
-        'ptracer': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
-    },
-    'test_projector_constant_direct.xml': {
-        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
-    },
-    'test_projector_textured_direct.xml': {
-        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
-    },
-    'test_texture_interp_direct.xml':{
-        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
-    },
-    'test_mesh_attributes_3_vertex_direct.xml':{
-        'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
-    }
+        #'test_various_emitters_ptracer.xml': {
+        #    'ptracer': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_projector_constant_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_projector_textured_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_texture_interp_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_mesh_attributes_1_vertex_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_mesh_attributes_3_vertex_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_mesh_attributes_1_face_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #},
+        #'test_mesh_attributes_3_face_direct.xml': {
+        #    'direct': ['jit_flag_option_1', 'jit_flag_option_2', 'jit_flag_option_3'],
+        #}
 }
 
 # Every scene that has an integrator which is in this mapping's keys will also
@@ -213,6 +222,8 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         dr.flush_malloc_cache()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
             dr.set_flag(k, v)
+
+    dr.set_flag(dr.JitFlag.AtomicReduceLocal, False)
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
