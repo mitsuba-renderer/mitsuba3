@@ -49,7 +49,8 @@ placed samples.
     .. code-tab:: python
 
         'type': 'regular',
-        'range': '400, 700',
+        'wavelength_min': 400,
+        'wavelength_max': 700,
         'values': '0.1, 0.2'
  */
 
