@@ -27,13 +27,68 @@ rendering.
 This plugin can currently only be used in path tracing-style integrators, and
 it is incompatible with the particle tracer. The horizontal resolution of the
 film associated with this sensor must be a multiple of the number of
-sub-sensors.
+sub-sensors. In addition, all of the sub-sensors' films, samplers and shutter
+timings are typically ignored and superseded by the film, sampler and shutter
+timings specified for the `batch` sensor itself.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: batch-sensor
+
+        <sensor type="batch">
+            <!-- Two perpendicular viewing directions -->
+            <sensor name="sensor_1" type="perspective">
+                <float name="fov" value="45"/>
+                <transform name="to_world">
+                    <lookat origin="0, 0, 1" target="0, 0, 0" up="0, 1, 0"/>
+                </transform>
+            </sensor>
+            <sensor name="sensor_2" type="perspective">
+                <float name="fov" value="45"/>
+                <transform name="to_world">
+                    <look_at origin="1, 0, 0" target="1, 2, 1" up="0, 1, 0"/>
+                </transform>
+            </sensor>
+            <!-- film -->
+            <!-- sampler -->
+        </sensor>
+
+    .. code-tab:: python
+
+        'type': 'batch',
+        # Two perpendicular viewing directions
+        'sensor1': {
+            'type': 'perspective',
+            'fov': 45,
+            'to_world': mi.ScalarTransform4f.look_at(
+                origin=[0, 0, 1],
+                target=[0, 0, 0],
+                up=[0, 1, 0]
+            )
+        },
+        'sensor2': {
+            'type': 'perspective',
+            'fov': 45,
+            'to_world': mi.ScalarTransform4f.look_at(
+                origin=[1, 0, 0],
+                target=[0, 0, 0],
+                up=[0, 1, 0]
+            ),
+        }
+        'film_id': {
+            'type': '<film_type>',
+            # ...
+        },
+        'sampler_id': {
+            'type': '<sampler_type>',
+            # ...
+        }
 */
 
 MI_VARIANT class BatchSensor final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
-    MI_IMPORT_TYPES(Shape)
+    MI_IMPORT_BASE(Sensor, m_film, m_shape, m_needs_sample_3, sample_wavelengths)
+    MI_IMPORT_TYPES(Shape, SensorPtr)
 
     BatchSensor(const Properties &props) : Base(props) {
         for (auto [unused, o] : props.objects()) {
@@ -53,10 +108,15 @@ public:
                   "be divisible by the number of child sensors (%zu)!",
                   size.x(), m_sensors.size());
 
+        m_needs_sample_3 = false;
         for (size_t i = 0; i < m_sensors.size(); ++i) {
             m_sensors[i]->film()->set_size(ScalarPoint2u(sub_size, size.y()));
             m_sensors[i]->parameters_changed();
+            m_needs_sample_3 |= m_sensors[i]->needs_aperture_sample();
         }
+
+        m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(m_sensors.data(),
+                                                          m_sensors.size());
     }
 
     std::pair<RayDifferential3f, Spectrum>
@@ -67,25 +127,21 @@ public:
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        UInt32 index = (UInt32) (position_sample.x() * (ScalarFloat) m_sensors.size());
-        RayDifferential3f result_1 = dr::zeros<RayDifferential3f>();
-        Spectrum result_2 = dr::zeros<Spectrum>();
+        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        UInt32 idx_u = UInt32(idx_f);
 
-        for (size_t i = 0; i < m_sensors.size(); ++i) {
-            Mask active_i = active && dr::eq(index, i);
-            Point2f position_sample_2(
-                dr::fmadd(position_sample.x(), (ScalarFloat) m_sensors.size(), -(ScalarFloat) i),
-                position_sample.y()
-            );
-            auto [rv_1, rv_2] = m_sensors[i]->sample_ray_differential(
-                time, wavelength_sample, position_sample_2, aperture_sample,
-                active_i);
-            result_1[active_i] = rv_1;
-            result_2[active_i] = rv_2;
-        }
+        UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
+        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+
         m_last_index = index;
 
-        return { result_1, result_2 };
+        Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
+
+        auto [ray, spec] = sensor->sample_ray_differential(
+            time, wavelength_sample, position_sample_2, aperture_sample,
+            active);
+
+        return { ray, spec };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -134,6 +190,7 @@ public:
     MI_DECLARE_CLASS()
 private:
     std::vector<ref<Base>> m_sensors;
+    DynamicBuffer<SensorPtr> m_sensors_dr;
     mutable UInt32 m_last_index;
 };
 
