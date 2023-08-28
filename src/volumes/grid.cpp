@@ -276,7 +276,6 @@ public:
                     (size_t) res.x(),
                     channel_count
                 };
-                dr::eval(tensor->array());
                 m_texture = Texture3f(TensorXf(tensor->array(), 4, shape),
                                       m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));

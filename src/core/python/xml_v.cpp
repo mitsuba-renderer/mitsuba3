@@ -372,7 +372,11 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast to TensorXf
         try {
-            props.set_tensor_handle(key, std::make_shared<TensorXf>(value.template cast<TensorXf>()));
+            TensorXf tensor = value.template cast<TensorXf>();
+            // To support parallel loading we have to ensure tensor has been evaluated
+            // because tracking of side effects won't persist across different ThreadStates
+            dr::eval(tensor);
+            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
             continue;
         } catch (const pybind11::cast_error &) { }
 
