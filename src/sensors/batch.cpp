@@ -93,9 +93,17 @@ public:
     BatchSensor(const Properties &props) : Base(props) {
         for (auto [unused, o] : props.objects()) {
             ref<Base> sensor(dynamic_cast<Base *>(o.get()));
+            ref<Shape> shape(dynamic_cast<Shape *>(o.get()));
 
-            if (sensor)
+            if (sensor) {
                 m_sensors.push_back(sensor);
+            } else if (shape) {
+                if (shape->is_sensor())
+                    m_sensors.push_back(shape->sensor());
+                else
+                    Throw("BatchSensor: shapes can only be specified as "
+                          "children if a sensor is associated with them!");
+            }
         }
 
         if (m_sensors.empty())
