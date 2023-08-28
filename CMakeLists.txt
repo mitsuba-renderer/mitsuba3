@@ -42,6 +42,10 @@ endif()
 option(MI_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
 option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 
+if (NOT APPLE)
+  option(MI_ENABLE_OPTIX_DEBUG_VALIDATION "Enable debug flag for OptiX" OFF)
+endif()
+
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------
@@ -303,6 +307,15 @@ if (MI_ENABLE_EMBREE)
   message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
 else()
   message(STATUS "Mitsuba: using built-in implementation for CPU ray tracing.")
+endif()
+
+if (MI_ENABLE_OPTIX_DEBUG_VALIDATION)
+  add_definitions(-DMI_ENABLE_OPTIX_DEBUG_VALIDATION)
+  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION ON CACHE BOOL "Drjit: OptiX debug and validation flags enabled." FORCE)
+  message(STATUS "Mitsuba: OptiX debug and validation flags enabled.")
+else()
+  message(STATUS "Mitsuba: OptiX debug and validation flags disabled.")
+  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION OFF CACHE BOOL "Drjit: OptiX debug and validation flags disabled." FORCE)
 endif()
 
 if (MI_ENABLE_AUTODIFF)
