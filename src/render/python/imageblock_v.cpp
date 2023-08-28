@@ -21,7 +21,8 @@ MI_PY_EXPORT(ImageBlock) {
              "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>)
-        .def("put_block", &ImageBlock::put_block, D(ImageBlock, put), "block"_a)
+        .def("put_block", &ImageBlock::put_block, D(ImageBlock, put_block),
+             "block"_a)
         .def("put",
              py::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
                                const Spectrum &, Float, Float,
