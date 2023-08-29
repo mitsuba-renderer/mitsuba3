@@ -246,3 +246,21 @@ def test09_test_emitter_sampling_weight_update(variants_all_backends_once):
     assert dr.allclose(scene.pdf_emitter(0), pdf[0])
     assert dr.allclose(scene.pdf_emitter(1), pdf[1])
     assert dr.allclose(scene.pdf_emitter(2), pdf[2])
+
+
+def test10_test_scene_bbox_update(variant_scalar_rgb):
+    scene = mi.load_dict({
+        'type': 'scene',
+        "sphere" : {
+            "type" : "sphere"
+        }
+    })
+
+    bbox = scene.bbox()
+    params = mi.traverse(scene)
+    offset = [-1, -1, -1]
+    params['sphere.to_world'] = mi.Transform4f.translate(offset)
+    params.update()
+
+    expected = mi.BoundingBox3f(bbox.min + offset, bbox.max + offset)
+    assert expected == scene.bbox()

@@ -369,6 +369,10 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
             accel_parameters_changed_gpu();
         else
             accel_parameters_changed_cpu();
+
+        m_bbox = {};
+        for (auto &s : m_shapes)
+            m_bbox.expand(s->bbox());
     }
 
     // Check whether any shape parameters have gradient tracking enabled
