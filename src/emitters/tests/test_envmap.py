@@ -116,3 +116,22 @@ def test03_load_bitmap(variants_all_rgb):
     w2 = emitter_2.eval(si)
 
     assert dr.allclose(w1, w2, rtol=1e-3)
+
+
+def test04_parameters_changed(variants_all):
+    import numpy as np
+
+    n_channels = mi.Spectrum.Size
+    bitmap = mi.Bitmap(np.zeros((191, 23, n_channels), dtype=np.float32))
+    emitter = mi.load_dict({
+        "type" : "envmap",
+        "bitmap" : bitmap
+    })
+
+    params = mi.traverse(emitter)
+    shape = dr.shape(params['data'])
+    params['data'] = dr.ones(mi.TensorXf, shape=shape)
+    params.update()
+
+    params = mi.traverse(emitter)
+    assert dr.allclose(params['data'], 1)

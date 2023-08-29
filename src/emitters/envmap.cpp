@@ -75,8 +75,8 @@ The plugin can work with all types of images that are natively supported by Mits
 (i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
-High quality free light probes are available on 
-`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or 
+High quality free light probes are available on
+`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or
 `Polyhaven <https://polyhaven.com/hdris>`_.
 
 .. tabs::
@@ -270,6 +270,7 @@ public:
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
             size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
+            constexpr bool is_aligned = ScalarPixelData::Size == 4;
 
             ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
             for (size_t y = 0; y < res.y(); ++y) {
@@ -278,17 +279,33 @@ public:
                 if constexpr (!dr::is_jit_v<Float>) {
                     // Enforce horizontal continuity
                     ScalarFloat *ptr2 = ptr + pixel_width * (res.x() - 1);
-                    ScalarPixelData v0  = dr::load_aligned<ScalarPixelData>(ptr),
-                                    v1  = dr::load_aligned<ScalarPixelData>(ptr2),
-                                    v01 = .5f * (v0 + v1);
-                    dr::store_aligned(ptr, v01),
-                    dr::store_aligned(ptr2, v01);
+                    ScalarPixelData v0, v1;
+                    if constexpr (is_aligned) {
+                        v0  = dr::load_aligned<ScalarPixelData>(ptr);
+                        v1  = dr::load_aligned<ScalarPixelData>(ptr2);
+                    } else {
+                        v0  = dr::load<ScalarPixelData>(ptr);
+                        v1  = dr::load<ScalarPixelData>(ptr2);
+                    }
+                    ScalarPixelData v01 = .5f * (v0 + v1);
+
+                    if constexpr (is_aligned) {
+                        dr::store_aligned(ptr, v01),
+                        dr::store_aligned(ptr2, v01);
+                    } else {
+                        dr::store(ptr, v01),
+                        dr::store(ptr2, v01);
+                    }
                 }
 
                 for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarPixelData coeff = dr::load_aligned<ScalarPixelData>(ptr);
-                    ScalarFloat lum;
+                    ScalarPixelData coeff;
+                    if constexpr (is_aligned)
+                        coeff = dr::load_aligned<ScalarPixelData>(ptr);
+                    else
+                        coeff = dr::load<ScalarPixelData>(ptr);
 
+                    ScalarFloat lum;
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
