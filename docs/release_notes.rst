@@ -5,8 +5,8 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Incoming changes
-----------------
+MItsuba 3.4.0
+-------------
 
 - Upgrade Dr.Jit to v0.4.3
 - Add ``mi.variant_context()``: a Python context manager for setting variants
