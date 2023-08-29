@@ -19,7 +19,6 @@ Grid-based volume data source (:monosp:`gridvolume`)
 ----------------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 6
 
  * - filename
    - |string|
@@ -30,6 +29,14 @@ Grid-based volume data source (:monosp:`gridvolume`)
    - When creating a grid volume at runtime, e.g. from Python or C++,
      an existing ``VolumeGrid`` instance can be passed directly rather than
      loading it from the filesystem with :paramtype:`filename`.
+
+ * - data
+   - |tensor|
+   - Tensor array containing the grid data. This parameter can only be specified
+     when building this plugin at runtime from Python or C++ and cannot be
+     specified in the XML scene description. The :paramtype:`raw` parameter must
+     also be set to :monosp:`true` when using a tensor.
+   - |exposed|, |differentiable|
 
  * - filter_type
    - |string|
@@ -68,11 +75,6 @@ Grid-based volume data source (:monosp:`gridvolume`)
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
      loss of precision (not exactly 32-bit arithmetic). (Default: true)
-
- * - data
-   - |tensor|
-   - Tensor array containing the grid data.
-   - |exposed|, |differentiable|
 
 This class implements access to volume data stored on a 3D grid using a
 simple binary exchange format (compatible with Mitsuba 0.6). When appropriate,

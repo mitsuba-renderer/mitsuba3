@@ -21,7 +21,6 @@ Bitmap texture (:monosp:`bitmap`)
 ---------------------------------
 
 .. pluginparameters::
- :extra-rows: 7
 
  * - filename
    - |string|
@@ -32,6 +31,13 @@ Bitmap texture (:monosp:`bitmap`)
    - When creating a Bitmap texture at runtime, e.g. from Python or C++,
      an existing Bitmap image instance can be passed directly rather than
      loading it from the filesystem with :paramtype:`filename`.
+
+ * - data
+   - |tensor|
+   - Tensor array containing the texture data. Similarly to the
+     :paramtype:`bitmap` parameter, this field can only be used at runtime. The
+     :paramtype:`raw` parameter must also be set to :monosp:`true`.
+   - |exposed|, |differentiable|
 
  * - filter_type
    - |string|
@@ -72,11 +78,6 @@ Bitmap texture (:monosp:`bitmap`)
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
      loss of precision (not exactly 32-bit arithmetic). (Default: true)
-
- * - data
-   - |tensor|
-   - Tensor array containing the texture data.
-   - |exposed|, |differentiable|
 
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
@@ -182,9 +183,10 @@ public:
         if (tensor) {
             Log(Debug, "Loading bitmap texture from tensor...");
             if (!m_raw)
-                Throw("Bitmap raw property must be true when initializing using tensor data."
-                      "Otherwise use a bitmap object or file if transformation of color data is"
-                      " required.");
+                Throw("Bitmap \"raw\" parameter must be `true` when "
+                      "initializing using tensor data! Use a `Bitmap` "
+                      "object or a file if transformation of color data is "
+                      "required.");
             m_texture = Texture2f(TensorXf(*tensor), m_accel, m_accel, filter_mode, wrap_mode);
             const size_t pixel_count = tensor->shape(1) * tensor->shape(0);
             const size_t ch_count = tensor->shape(2);

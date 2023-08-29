@@ -12080,7 +12080,8 @@
 
     .. py:method:: mitsuba.MediumInteraction3f.to_local(self, v)
 
-        Convert a world-space vector into local shading coordinates (defined by ``wi``)
+        Convert a world-space vector into local shading coordinates (defined
+        by ``wi``)
 
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
@@ -12090,7 +12091,8 @@
 
     .. py:method:: mitsuba.MediumInteraction3f.to_world(self, v)
 
-        Convert a local shading-space (defined by ``wi``) vector into world space
+        Convert a local shading-space (defined by ``wi``) vector into world
+        space
 
         Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
             *no description available*
@@ -14259,7 +14261,11 @@
 
             Array3f
 
-            Transform
+            Transform3f
+
+            Transform4f
+
+            TensorHandle
 
             Color
 
@@ -17037,7 +17043,7 @@
 
     .. py:method:: mitsuba.Scene.emitters_dr(self)
 
-        Return the list of emitters as an Dr.Jit array
+        Return the list of emitters as a Dr.Jit array
 
         Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>>:
             *no description available*
@@ -17470,7 +17476,7 @@
 
     .. py:method:: mitsuba.Scene.sensors_dr(self)
 
-        Return the list of sensors as an Dr.Jit array
+        Return the list of sensors as a Dr.Jit array
 
         Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*>>:
             *no description available*
@@ -17484,7 +17490,7 @@
 
     .. py:method:: mitsuba.Scene.shapes_dr(self)
 
-        Return the list of shapes as an Dr.Jit array
+        Return the list of shapes as a Dr.Jit array
 
         Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Shape` const*>>:
             *no description available*
