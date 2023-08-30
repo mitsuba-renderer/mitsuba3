@@ -1,3 +1,4 @@
+#include <mitsuba/render/ior.h>
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/python/python.h>
 
@@ -25,5 +26,13 @@ MI_PY_EXPORT(fresnel) {
          py::overload_cast<const Vector3f &, const Normal3f &, Float, Float>(&refract<Float>),
          "wi"_a, "m"_a, "cos_theta_t"_a, "eta_ti"_a, D(refract, 2))
     .def("fresnel_diffuse_reflectance", &fresnel_diffuse_reflectance<Float>,
-         "eta"_a, D(fresnel_diffuse_reflectance));
+         "eta"_a, D(fresnel_diffuse_reflectance))
+    .def("lookup_ior",
+         [](const Properties &props, const std::string& name, py::object def) {
+            if (py::isinstance<py::float_>(def))
+                return lookup_ior(props, name, def.template cast<Properties::Float>());
+            return lookup_ior(props, name, def.template cast<std::string>());
+         },
+         "properties"_a, "name"_a, "default"_a,
+         "Lookup IOR value in table.");
 }
