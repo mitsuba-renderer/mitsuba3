@@ -68,6 +68,10 @@ public:
         if (m_film->rfilter()->radius() > .5f + math::RayEpsilon<Float>)
             Log(Warn, "This sensor should only be used with a reconstruction filter"
                "of radius 0.5 or lower (e.g. default 'box' filter)");
+
+        if (!m_shape) {
+            Throw("The irradiance meter must be defined as a child object to a shape in a scene.");
+        }
     }
 
     std::pair<RayDifferential3f, Spectrum>
