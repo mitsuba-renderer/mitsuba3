@@ -5,6 +5,7 @@ add_plugin(orthographic    orthographic.cpp)
 add_plugin(radiancemeter   radiancemeter.cpp)
 add_plugin(thinlens        thinlens.cpp)
 add_plugin(irradiancemeter irradiancemeter.cpp)
+add_plugin(microphone      microphone.cpp)
 add_plugin(distant         distant.cpp)
 add_plugin(batch           batch.cpp)
 
