@@ -60,7 +60,8 @@ public:
     }
 
     std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample,
+    sample_ray_differential(Float time,
+                            Float wavelength_sample,
                             const Point2f & /*position_sample*/,
                             const Point2f & sample3 /*aperture_sample*/,
                             Mask active) const override {
@@ -70,7 +71,7 @@ public:
 
         // 1. Sample spectrum
         Spectrum wav_weight(1.f);
-        ray.wavelengths = wavelength_sample;
+        ray.wavelengths = Wavelength(wavelength_sample);
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
