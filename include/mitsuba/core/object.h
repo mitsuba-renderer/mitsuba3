@@ -28,7 +28,6 @@ NAMESPACE_BEGIN(mitsuba)
  * and has no overhead for references.
  */
 class MI_EXPORT_LIB Object {
-
 public:
     /// Default constructor
     Object() { }

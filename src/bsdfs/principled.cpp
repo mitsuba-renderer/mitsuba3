@@ -213,7 +213,7 @@ public:
 
         /*Eta and specular has one to one correspondence, both of them can
          * not be specified. */
-        if (props.has_property("eta") && props.has_property("specular")) { // TODO: ask
+        if (props.has_property("eta") && props.has_property("specular")) {
             Throw("Specified an invalid index of refraction property  "
                   "\"%s\", either use \"eta\" or \"specular\" !");
         } else if (props.has_property("eta")) {
