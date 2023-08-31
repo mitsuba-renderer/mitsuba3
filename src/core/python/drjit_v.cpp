@@ -132,13 +132,10 @@ MI_PY_EXPORT(DrJit) {
         m.attr("UnpolarizedSpectrum") = m.attr("Spectrum");
     }
 
-    // Matrix type aliases
-    for (int dim = 2; dim < 5; ++dim) {
-        std::string name = "Matrix" + std::to_string(dim),
-                    dr_name  = name + "f";
+    auto bind_type_aliases = [&](const std::string &name) {
+        std::string dr_name  = name + "f";
         if constexpr (std::is_same_v<double, ScalarFloat>)
             dr_name += "64";
-
         m.attr((name + "f").c_str()) =
             drjit_variant.attr(dr_name.c_str());
         m.attr(("Scalar" + name + "f").c_str()) =
@@ -151,28 +148,17 @@ MI_PY_EXPORT(DrJit) {
             drjit_variant.attr(dr_name.c_str());
         m.attr(("Scalar" + name + "d").c_str()) =
             drjit_scalar.attr(dr_name.c_str());
-    }
+    };
+
+    // Matrix type aliases
+    for (int dim = 2; dim < 5; ++dim)
+        bind_type_aliases("Matrix" + std::to_string(dim));
+
+    // Complex type aliases
+    bind_type_aliases("Complex2");
 
     // Quaternion type aliases
-    {
-        std::string name = "Quaternion4",
-                    dr_name  = name + "f";
-        if constexpr (std::is_same_v<double, ScalarFloat>)
-            dr_name += "64";
-
-        m.attr((name + "f").c_str()) =
-            drjit_variant.attr(dr_name.c_str());
-        m.attr(("Scalar" + name + "f").c_str()) =
-            drjit_scalar.attr(dr_name.c_str());
-
-        if constexpr (!std::is_same_v<double, ScalarFloat>)
-            dr_name += "64";
-
-        m.attr((name + "d").c_str()) =
-            drjit_variant.attr(dr_name.c_str());
-        m.attr(("Scalar" + name + "d").c_str()) =
-            drjit_scalar.attr(dr_name.c_str());
-    }
+    bind_type_aliases("Quaternion4");
 
     // Tensor type aliases
     if constexpr (std::is_same_v<float, ScalarFloat>)
