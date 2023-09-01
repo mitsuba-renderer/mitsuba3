@@ -27,6 +27,8 @@ public:
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
 
+        m_count = props.get<bool>("count", true);
+
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
@@ -61,19 +63,23 @@ public:
     }
 
     size_t base_channels_count() const override {
-        return 2;
+        return m_channels.size();
     }
 
     size_t prepare(const std::vector<std::string> & /* aovs */) override {
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
+
+            if (m_count)
+                m_channels = { "V", "W" };
+            else
+                m_channels = { "V" };
+
             m_storage = new ImageBlock(m_crop_size,
                                        m_crop_offset,
-                                       (uint32_t) 2);
-
-            std::vector<std::string> m_channels = { "V", "W" };
+                                       (uint32_t) m_channels.size());
         }
-        return (size_t) 2;
+        return (size_t) m_channels.size();
     }
 
     ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
@@ -85,7 +91,7 @@ public:
 
         return new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),
-                              2,
+                              m_channels.size(),
                               m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,
@@ -225,6 +231,7 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
+    bool m_count;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Tape, Film)
