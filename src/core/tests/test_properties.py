@@ -220,12 +220,11 @@ def test11_tensor(variant_scalar_rgb):
 
 def test11_tensor_cuda(variant_cuda_ad_rgb):
     # Check tensor flow
-    pytest.importorskip("tensorflow")
+    tf = pytest.importorskip("tensorflow")
     props['boo'] = tf.constant([[1, 2], [3, 4]])
     assert props['boo'].shape == (2, 2)
 
     # Check PyTorch
-    pytest.importorskip("torch")
-    import torch
+    torch = pytest.importorskip("torch")
     props['goo'] = torch.zeros(2, 3, 4)
     assert props['goo'].shape == (2, 3, 4)
