@@ -110,7 +110,7 @@ public:
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
-        m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
+        m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         ref<Bitmap> bitmap;
 
@@ -327,7 +327,9 @@ public:
 
     void set_scene(const Scene *scene) override {
         if (scene->bbox().valid()) {
-            m_bsphere = scene->bbox().bounding_sphere();
+            ScalarBoundingSphere3f scene_sphere =
+                scene->bbox().bounding_sphere();
+            m_bsphere = BoundingSphere3f(scene_sphere.center, scene_sphere.radius);
             m_bsphere.radius =
                 dr::maximum(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
@@ -335,6 +337,8 @@ public:
             m_bsphere.center = 0.f;
             m_bsphere.radius = math::RayEpsilon<Float>;
         }
+
+        dr::make_opaque(m_bsphere.center, m_bsphere.radius);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -391,7 +395,7 @@ public:
         auto [wavelengths, weight] =
             sample_wavelengths(si, wavelength_sample, active);
 
-        ScalarFloat r2 = dr::sqr(m_bsphere.radius);
+        Float r2 = dr::sqr(m_bsphere.radius);
         Ray3f ray(origin, d_global, time, wavelengths);
         weight *= dr::Pi<Float> * r2 / pdf;
 
@@ -575,7 +579,7 @@ protected:
     MI_DECLARE_CLASS()
 protected:
     std::string m_filename;
-    ScalarBoundingSphere3f m_bsphere;
+    BoundingSphere3f m_bsphere;
     TensorXf m_data;
     Warp m_warp;
     ref<Texture> m_d65;
