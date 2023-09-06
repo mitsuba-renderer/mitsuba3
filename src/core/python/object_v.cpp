@@ -4,6 +4,35 @@
 #include <drjit/dynamic.h>
 #include <drjit/tensor.h>
 
+using Caster = py::object(*)(mitsuba::Object *);
+extern Caster cast_object;
+
+// Trampoline for derived types implemented in Python
+class PyTraversalCallback : public TraversalCallback {
+public:
+    void put_parameter_impl(const std::string &name, void *ptr,
+                            uint32_t flags, const std::type_info &type) override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "put_parameter");
+
+        if (overload)
+            overload(name, ptr, flags, (void *) &type);
+        else
+            Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
+    }
+
+    void put_object(const std::string &name, Object *obj,
+                    uint32_t flags) override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "put_object");
+
+        if (overload)
+            overload(name, cast_object(obj), flags);
+        else
+            Throw("TraversalCallback doesn't overload the method \"put_object\"");
+    }
+};
+
 /// Defines a list of types that plugins can expose as tweakable/differentiable parameters
 #define APPLY_FOR_EACH(T) \
     T(Float32); T(Float64); T(Int32); T(UInt32); T(DynamicBuffer<Float32>);    \
@@ -25,17 +54,31 @@
         T(ScalarTransform3d); T(ScalarTransform4d); T(ScalarMask);             \
     }
 
-/// Implementation detail of mitsuba.core.get_property
+/// Implementation detail of mitsuba.get_property
 #define GET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0)                            \
       return py::cast((T *) ptr, py::return_value_policy::reference_internal,  \
                       parent)
 
+/// Implementation detail of mitsuba.set_property
 #define SET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0) {                          \
         *((T *) ptr) = py::cast<T>(value);                                     \
         return;                                                                \
     }
+
+/// Macro to iterate over types that can be passed to put_parameter_impl
+#define PUT_PARAMETER_IMPL_T(T)                                                \
+    if (py::isinstance<T>(value)) {                                            \
+        T v = py::cast<T>(value);                                              \
+        self->put_parameter_impl(name, &v, flags, typeid(T));                  \
+    }
+
+/// Used to make the put_parameter_impl method accessible from the bindings
+class PublicistTraversalCallback : public TraversalCallback {
+public:
+    using TraversalCallback::put_parameter_impl;
+};
 
 MI_PY_EXPORT(Object) {
     MI_PY_IMPORT_TYPES()
@@ -67,5 +110,18 @@ MI_PY_EXPORT(Object) {
                    dr_array = dr.attr("ArrayBase");
         py::class_<ObjectPtr> cls(m, "ObjectPtr", dr_array, py::module_local());
         bind_drjit_ptr_array(cls);
+    }
+
+    MI_PY_CHECK_ALIAS(TraversalCallback, "TraversalCallback") {
+        py::class_<TraversalCallback, PyTraversalCallback>(
+            m, "TraversalCallback", D(TraversalCallback))
+            .def(py::init<>())
+            .def("put_parameter",
+                 [] (TraversalCallback &self_, const std::string &name, py::object &value, uint32_t flags) {
+                    PublicistTraversalCallback *self = (PublicistTraversalCallback *) &self_;
+                    APPLY_FOR_EACH(PUT_PARAMETER_IMPL_T);
+                 },
+                 "name"_a, "value"_a, "flags"_a, D(TraversalCallback, put_parameter))
+            .def_method(TraversalCallback, put_object, "name"_a, "obj"_a, "flags"_a);
     }
 }
