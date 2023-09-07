@@ -334,10 +334,8 @@ public:
                             Sensor *sensor,
                             uint32_t seed = 0,
                             uint32_t spp = 0) override {
-
-        TensorXf aovs_grad;
-
         // Perform forward mode propagation just for AOV image
+        TensorXf aovs_grad;
         {
             TensorXf aovs_image = Base::render(scene, sensor, seed, spp);
 
@@ -346,7 +344,7 @@ public:
             size_t num_aovs = m_aov_names.size();
             aovs_image = get_channels_slice(aovs_image, aovs_image.shape(2) - num_aovs, num_aovs);
 
-            // Perform an AD traversal of all registered AD variables that 
+            // Perform an AD traversal of all registered AD variables that
             // influence 'aovs_image' in a differentiable manner
             dr::forward_to(aovs_image.array());
 
@@ -367,8 +365,6 @@ public:
                          Sensor* sensor,
                          uint32_t seed = 0,
                          uint32_t spp = 0) override {
-
-        using Array = typename TensorXf::Array;
         size_t base_ch_count = sensor->film()->base_channels_count();
         auto [image_grads, aovs_grad] = split_channels(base_ch_count, grad_in);
 
@@ -427,7 +423,7 @@ protected:
 
         DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(slice_flat);
         DynamicBuffer<UInt32> pixel_idx = idx / num_channels;
-        DynamicBuffer<UInt32> channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)num_channels), idx) 
+        DynamicBuffer<UInt32> channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)num_channels), idx)
             + channel_offset;
 
         auto values_idx = dr::fmadd(pixel_idx, src.shape(2), channel_idx);
@@ -440,7 +436,7 @@ protected:
 
         DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(src_flat);
         DynamicBuffer<UInt32> pixel_idx = idx / src_shape[2];
-        DynamicBuffer<UInt32> dst_channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)src_shape[2]), idx) 
+        DynamicBuffer<UInt32> dst_channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)src_shape[2]), idx)
             + dst_channel_offset;
 
         uint32_t num_dst_channels = dst.shape(2);
@@ -453,7 +449,7 @@ protected:
     }
 
     /// Combine inner integrator images and AOVS image
-    TensorXf merge_channels(const std::vector<TensorXf>& inner_images, 
+    TensorXf merge_channels(const std::vector<TensorXf>& inner_images,
                             const TensorXf& aovs_image) const {
         using Array = typename TensorXf::Array;
 

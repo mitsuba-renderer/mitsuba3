@@ -47,7 +47,6 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             Sensor *sensor,
                                             uint32_t seed,
                                             uint32_t spp) {
-
     // Recorded loops cannot be differentiated, so let's disable them
     dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
