@@ -74,8 +74,6 @@ class EmissionReparamIntegrator(ADIntegrator):
         # Enable antithetic sampling in the reparameterization?
         self.reparam_antithetic = props.get('reparam_antithetic', False)
 
-        self.params = None
-
     def reparam(self,
                 scene: mi.Scene,
                 rng: mi.PCG32,
