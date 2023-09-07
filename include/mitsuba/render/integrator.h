@@ -181,13 +181,13 @@ public:
                             uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
-            Throw("SamplingIntegrator::render_forward(): sensor index %i" 
+            Throw("SamplingIntegrator::render_forward(): sensor index %i"
                   "is out of bounds!", sensor_index);
 
         return render_forward(scene,
                               params,
                               scene->sensors()[sensor_index].get(),
-                              seed, 
+                              seed,
                               spp);
     }
 
@@ -272,14 +272,14 @@ public:
                          uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
-            Throw("SamplingIntegrator::render_backward(): sensor index %i" 
+            Throw("SamplingIntegrator::render_backward(): sensor index %i"
                   "is out of bounds!", sensor_index);
 
         return render_backward(scene,
                                params,
                                grad_in,
                                scene->sensors()[sensor_index].get(),
-                               seed, 
+                               seed,
                                spp);
     }
 
