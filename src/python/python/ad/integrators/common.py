@@ -42,9 +42,6 @@ class ADIntegrator(mi.CppADIntegrator):
         # Warn about potential bias due to shapes entering/leaving the frame
         self.sample_border_warning = True
 
-    def aovs(self):
-        return []
-
     def to_string(self):
         return f'{type(self).__name__}[max_depth = {self.max_depth},' \
                f' rr_depth = { self.rr_depth }]'
@@ -73,14 +70,14 @@ class ADIntegrator(mi.CppADIntegrator):
                 sensor=sensor,
                 seed=seed,
                 spp=spp,
-                aovs=self.aovs()
+                aovs=self.aov_names()
             )
 
             # Generate a set of rays starting at the sensor
             ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
-            L, valid, state = self.sample(
+            L, valid, _ = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
@@ -113,9 +110,8 @@ class ADIntegrator(mi.CppADIntegrator):
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
-            self.primal_image = film.develop()
 
-            return self.primal_image
+            return film.develop()
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
@@ -128,12 +124,11 @@ class ADIntegrator(mi.CppADIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        aovs = self.aovs()
 
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
             # When the underlying integrator supports reparameterizations,
             # perform necessary initialization steps and wrap the result using
@@ -181,10 +176,11 @@ class ADIntegrator(mi.CppADIntegrator):
                     wavelengths=ray.wavelengths
                 )
 
-                # Perform the weight division and return an image tensor
+                # Perform the weight division
                 film.put_block(block)
                 result_img = film.develop()
 
+                # Propagate the gradients to the image tensor
                 dr.forward_to(result_img)
 
         return dr.grad(result_img)
@@ -201,12 +197,11 @@ class ADIntegrator(mi.CppADIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        aovs = self.aovs()
 
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
             # When the underlying integrator supports reparameterizations,
             # perform necessary initialization steps and wrap the result using
@@ -472,9 +467,9 @@ class ADIntegrator(mi.CppADIntegrator):
         '''Helper function to splat values to a imageblock'''
         if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
             aovs = film.prepare_sample(value, wavelengths,
-                                        block.channel_count(),
-                                        weight=weight,
-                                        alpha=alpha)
+                                       block.channel_count(),
+                                       weight=weight,
+                                       alpha=alpha)
             block.put(pos, aovs)
             del aovs
         else:
@@ -650,12 +645,11 @@ class RBIntegrator(ADIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        aovs = self.aovs()
 
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
             # When the underlying integrator supports reparameterizations,
             # perform necessary initialization steps and wrap the result using
@@ -842,12 +836,11 @@ class RBIntegrator(ADIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        aovs = self.aovs()
 
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
             # When the underlying integrator supports reparameterizations,
             # perform necessary initialization steps and wrap the result using
