@@ -279,8 +279,9 @@ public:
                                         transf * m_to_world.scalar());
     }
 
-    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &,
-                                             const OptixProgramGroup *) override {
+    virtual void optix_fill_hitgroup_records(
+        std::vector<HitGroupSbtRecord> &, const OptixProgramGroup *,
+        const std::unordered_map<size_t, size_t> &) override {
         /* no op */
     }
 

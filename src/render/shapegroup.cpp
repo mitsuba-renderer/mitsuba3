@@ -160,10 +160,14 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
     prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, instances);
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                                                         const OptixProgramGroup *program_groups) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(
+    std::vector<HitGroupSbtRecord> &hitgroup_records,
+    const OptixProgramGroup *program_groups,
+    const std::unordered_map<size_t, size_t> &program_index_mapping) {
+
     m_sbt_offset = (uint32_t) hitgroup_records.size();
-    fill_hitgroup_records(m_shapes, hitgroup_records, program_groups);
+    fill_hitgroup_records(m_shapes, hitgroup_records, program_groups,
+                          program_index_mapping);
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_geometry() { }

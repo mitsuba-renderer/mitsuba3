@@ -530,14 +530,20 @@ public:
      *     The array of available program groups (used to pack the OptiX header
      *     at the beginning of the record).
      *
+     * \param program_index_mapping
+     *     A mapping that allows the shape to figure out it's own index in the
+     *     array of program groups.
+     *
      * The default implementation creates a new HitGroupSbtRecord and fills its
      * \ref data field with \ref m_optix_data_ptr. It then calls \ref
      * optixSbtRecordPackHeader with one of the OptixProgramGroup of the \ref
      * program_groups array (the actual program group index is inferred by the
      * type of the Shape, see \ref get_shape_descr_idx()).
      */
-    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                             const OptixProgramGroup *program_groups);
+    virtual void optix_fill_hitgroup_records(
+        std::vector<HitGroupSbtRecord> &hitgroup_records,
+        const OptixProgramGroup *program_groups,
+        const std::unordered_map<size_t, size_t> &program_index_mapping);
 #endif
 
     void traverse(TraversalCallback *callback) override;

@@ -173,7 +173,7 @@ void embree_intersect_scalar(int* valid,
 
 template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
 static void embree_intersect_packet(int *valid, void *geometryUserPtr,
-                                    unsigned int geomID, 
+                                    unsigned int geomID,
                                     unsigned int instID,
                                     unsigned int primID,
                                     RTCRay_ *rtc_ray,
@@ -330,8 +330,11 @@ MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
 }
 
 MI_VARIANT
-void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                                         const OptixProgramGroup *program_groups) {
+void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
+    std::vector<HitGroupSbtRecord> &hitgroup_records,
+    const OptixProgramGroup *program_groups,
+    const std::unordered_map<size_t, size_t>& program_index_mapping) {
+
     optix_prepare_geometry();
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
@@ -339,7 +342,9 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
         jit_registry_get_id(JitBackend::CUDA, this), m_optix_data_ptr
     };
 
-    size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t shape_index = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t program_group_idx = program_index_mapping.at(shape_index);
+
     // Setup the hitgroup record and copy it to the hitgroup records array
     jit_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
                                              &hitgroup_records.back()));
@@ -397,7 +402,7 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*i
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
-Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, 
+Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
                                                   uint32_t /*prim_index*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }
