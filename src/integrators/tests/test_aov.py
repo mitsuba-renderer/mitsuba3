@@ -147,3 +147,32 @@ def test04_check_aov_correct(variants_all_rgb):
 
     # Check z-pos
     assert(dr.allclose(image[:,:, -1:].array, [plane_offset] * image_dim))
+
+
+def test05_check_aov_film(variants_all_rgb):
+    import numpy as np
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'dd.y:depth,nn:sh_normal',
+        'my_image': path_integrator
+    })
+
+    spp = 16
+
+    film = scene.sensors()[0].film()
+
+    path_integrator.render(scene, seed=0, spp=spp)
+    bitmap_path = film.bitmap(raw=False)
+
+    aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
+    bitmap_aov = film.bitmap(raw=False)
+
+    # Make sure radiance is consistent
+    assert(np.allclose(bitmap_aov.split()[0][1],bitmap_path.split()[0][1]))
