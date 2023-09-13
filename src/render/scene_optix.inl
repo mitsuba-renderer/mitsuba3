@@ -159,7 +159,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         // =====================================================
 
         OptixTask task;
-        check_log(optixModuleCreateFromPTXWithTasks(
+        check_log(optixModuleCreateWithTasks(
             config.context,
             &module_compile_options,
             &config.pipeline_compile_options,
@@ -475,12 +475,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 s.ias_data = {};
                 s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
 
-                OptixBuildInput build_input;
+                OptixBuildInput build_input{};
                 build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
                 build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
                 build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
-                OptixAccelBufferSizes buffer_sizes;
+                OptixAccelBufferSizes buffer_sizes{};
                 jit_optix_check(optixAccelComputeMemoryUsage(
                     config.context,
                     &accel_options,

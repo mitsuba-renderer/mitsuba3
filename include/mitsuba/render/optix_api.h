@@ -150,6 +150,7 @@ struct OptixBuildInputCustomPrimitiveArray {
 struct OptixBuildInputInstanceArray {
     CUdeviceptr instances;
     unsigned int numInstances;
+    unsigned int instanceStride;
 };
 
 struct OptixBuildInputCurveArray {
@@ -345,7 +346,7 @@ D(optixAccelBuild, OptixDeviceContext, CUstream, const OptixAccelBuildOptions *,
 D(optixBuiltinISModuleGet, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const OptixBuiltinISOptions *, OptixModule *);
-D(optixModuleCreateFromPTXWithTasks, OptixDeviceContext,
+D(optixModuleCreateWithTasks, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const char *, size_t, char *, size_t *, OptixModule *, OptixTask *);
 D(optixModuleGetCompilationState, OptixModule, int *);
