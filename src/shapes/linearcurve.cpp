@@ -425,7 +425,7 @@ public:
 
         build_input.curveArray.normalBuffers        = 0;
         build_input.curveArray.normalStrideInBytes  = 0;
-        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_NONE;
+        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
         build_input.curveArray.primitiveIndexOffset = 0;
         build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
     }

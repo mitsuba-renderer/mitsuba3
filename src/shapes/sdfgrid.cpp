@@ -1049,7 +1049,7 @@ private:
 
 #if defined(MI_ENABLE_CUDA)
     static constexpr uint32_t optix_geometry_flags[1] = {
-        OPTIX_GEOMETRY_FLAG_NONE
+        OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT
     };
 #endif
 
