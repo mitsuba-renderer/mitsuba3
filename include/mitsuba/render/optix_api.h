@@ -38,7 +38,6 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_BUILD_INPUT_TYPE_CURVES            0x2145
 #define OPTIX_BUILD_OPERATION_BUILD              0x2161
 
-#define OPTIX_GEOMETRY_FLAG_NONE           0
 #define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT 1
 
 #define OPTIX_INDICES_FORMAT_UNSIGNED_INT3 0x2103
@@ -86,7 +85,7 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_INSTANCE_FLAG_NONE              0
 #define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM (1u << 6)
 
-#define OPTIX_RAY_FLAG_NONE                   0
+#define OPTIX_RAY_FLAG_DISABLE_ANYHIT         (1u << 0)
 #define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
 #define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
 

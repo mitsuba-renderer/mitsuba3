@@ -11176,36 +11176,18 @@ $L__BB12_2:
 	// .globl	__miss__ms
 .visible .entry __miss__ms()
 {
-	.reg .pred 	%p<2>;
-	.reg .b32 	%r<8>;
+	.reg .b32 	%r<5>;
 
 
+	mov.u32 	%r4, 0;
+	mov.u32 	%r2, 2139095040;
 	// begin inline asm
-	call (%r1), _optix_get_ray_flags, ();
+	call _optix_set_payload, (%r4, %r2);
 	// end inline asm
-	setp.eq.s32 	%p1, %r1, 12;
-	@%p1 bra 	$L__BB13_2;
-	bra.uni 	$L__BB13_1;
-
-$L__BB13_2:
-	mov.u32 	%r7, 0;
+	mov.u32 	%r3, 4;
 	// begin inline asm
-	call _optix_set_payload, (%r7, %r7);
+	call _optix_set_payload, (%r3, %r4);
 	// end inline asm
-	bra.uni 	$L__BB13_3;
-
-$L__BB13_1:
-	mov.u32 	%r5, 0;
-	mov.u32 	%r3, 2139095040;
-	// begin inline asm
-	call _optix_set_payload, (%r5, %r3);
-	// end inline asm
-	mov.u32 	%r4, 4;
-	// begin inline asm
-	call _optix_set_payload, (%r4, %r5);
-	// end inline asm
-
-$L__BB13_3:
 	ret;
 
 }

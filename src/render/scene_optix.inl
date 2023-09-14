@@ -164,7 +164,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             config.context,
             &module_compile_options,
             &config.pipeline_compile_options,
-            (const char *)optix_rt_ptx,
+            (const char *) optix_rt_ptx,
             optix_rt_ptx_size,
             optix_log,
             &optix_log_size,
@@ -628,7 +628,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
+        UInt32 ray_mask(255),
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         UInt32 payload_t(0),
@@ -665,7 +666,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index(),
+                            trace_args, false, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
         PreliminaryIntersection3f pi;
@@ -716,7 +717,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         const OptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
@@ -741,10 +743,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index(),
+                            trace_args, true, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
-        return active && dr::eq(UInt32::steal(trace_args[15]), 1);
+        return active && dr::neq(UInt32::steal(trace_args[15]), 0);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
