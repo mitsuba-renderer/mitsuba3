@@ -98,6 +98,58 @@
     # need to be edited (unless you wish to create new variants).
     # -------------------------------------------------------------
 
+    # Acoustic variant definitions
+
+    "scalar_acoustic": {
+        "float": "float",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "scalar_acoustic_double": {
+        "float": "double",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "llvm_acoustic": {
+        "float": "dr::LLVMArray<float>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "llvm_acoustic_double": {
+        "float": "dr::LLVMArray<double>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "llvm_ad_acoustic": {
+        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "llvm_ad_acoustic_double": {
+        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "cuda_acoustic": {
+        "float": "dr::CUDAArray<float>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "cuda_acoustic_double": {
+        "float": "dr::CUDAArray<double>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "cuda_ad_acoustic": {
+        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
+    "cuda_ad_acoustic_double": {
+        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "spectrum": "Spectrum<Float, 1>"
+    },
+
     # Scalar variant definitions
 
     "scalar_mono": {
