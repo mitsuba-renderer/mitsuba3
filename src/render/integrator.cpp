@@ -423,7 +423,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     Vector2f sample_pos   = pos + sampler->next_2d(active),
              adjusted_pos = dr::fmadd(sample_pos, scale, offset);
-
+    dr::make_opaque(sample_pos, adjusted_pos);
+    
     Point2f aperture_sample(.5f);
     if (sensor->needs_aperture_sample())
         aperture_sample = sampler->next_2d(active);
