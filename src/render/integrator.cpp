@@ -48,7 +48,8 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             uint32_t seed,
                                             uint32_t spp) {
     // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
     auto image = render(scene, sensor, seed, spp, true, false);
     dr::forward_to(image.array());
@@ -63,9 +64,9 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              Sensor* sensor,
                                              uint32_t seed,
                                              uint32_t spp) {
-
     // Recorded loops cannot be differentiated, so let's disable them
-    dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
 
     auto image = render(scene, sensor, seed, spp, true, false);
     dr::backward_from((image * grad_in).array());
