@@ -22,8 +22,8 @@ public:
         if (props.has_property("width") || props.has_property("height"))
             Throw("Tape Plugin should use (time_steps, wav_bins) instead of (width, height).");
         m_size = ScalarVector2u(
-            props.get<uint32_t>("time_bins",  1),
-            props.get<uint32_t>("wav_bins", 1)
+            props.get<uint32_t>("wav_bins", 1),
+            props.get<uint32_t>("time_bins", 1)
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
 
