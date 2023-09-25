@@ -290,8 +290,11 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         // Compute the position on the image plane
         Vector2u pos;
-        pos.y() = idx / film_size[0];
-        pos.x() = dr::fnmadd(film_size[0], pos.y(), idx);
+        Vector2u film_size2 = film_size;
+        dr::make_opaque(film_size2);
+
+        pos.y() = idx / film_size2[0];
+        pos.x() = dr::fnmadd(film_size2[0], pos.y(), idx);
 
         if (film->sample_border())
             pos -= film->rfilter()->border_size();

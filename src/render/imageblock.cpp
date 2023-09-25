@@ -154,6 +154,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
             else
                 m_tensor.array() += block->tensor().array();
         } else {
+            std::cout << "UNEXPECTED!" << std::endl;
+
             accumulate_2d<Float &, const Float &>(
                 block->tensor().array(), source_size,
                 m_tensor.array(), target_size,
@@ -207,30 +209,35 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     //  Fast special case for the box filter
     // ===================================================================
 
-    if (!m_rfilter) {
-        Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset);
+    Vector2u offset = m_offset;
+    ScalarVector2u tmp = m_size + 2 * m_border_size;
+    Vector2u size = tmp;
+    dr::make_opaque(offset, size);
 
-        // Switch over to unsigned integers, compute pixel index
-        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
-
-        // The sample could be out of bounds
-        active &= dr::all(p < m_size);
-
-        // Accumulate!
-        if constexpr (!JIT) {
-            if (unlikely(!active))
-                return;
-
-            ScalarFloat *ptr = m_tensor.array().data() + index;
-            for (uint32_t k = 0; k < m_channel_count; ++k)
-                *ptr++ += values[k];
-        } else {
-            for (uint32_t k = 0; k < m_channel_count; ++k)
-                accum(values[k], index++, active);
-        }
-
-        return;
-    }
+//    if (!m_rfilter) {
+//        Point2u p = Point2u(dr::floor2int<Point2i>(pos) - offset);
+//
+//        // Switch over to unsigned integers, compute pixel index
+//        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+//
+//        // The sample could be out of bounds
+//        active &= dr::all(p < m_size);
+//
+//        // Accumulate!
+//        if constexpr (!JIT) {
+//            if (unlikely(!active))
+//                return;
+//
+//            ScalarFloat *ptr = m_tensor.array().data() + index;
+//            for (uint32_t k = 0; k < m_channel_count; ++k)
+//                *ptr++ += values[k];
+//        } else {
+//            for (uint32_t k = 0; k < m_channel_count; ++k)
+//                accum(values[k], index++, active);
+//        }
+//
+//        return;
+//    }
 
     // ===================================================================
     // Prelude for the general case
@@ -239,7 +246,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     ScalarFloat radius = m_rfilter->radius();
 
     // Size of the underlying image buffer
-    ScalarVector2u size = m_size + 2 * m_border_size;
+    //ScalarVector2u size = m_size + 2 * m_border_size;
 
     // Check if the operation can be performed using a recorded loop
     bool record_loop = false;
@@ -261,155 +268,155 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // 1. Non-coalesced accumulation method (see ImageBlock constructor)
     // ===================================================================
 
-    if (!JIT || !m_coalesce) {
-        Point2f pos_f   = pos + ((int) m_border_size - m_offset - .5f),
-                pos_0_f = pos_f - radius,
-                pos_1_f = pos_f + radius;
+    //if (!JIT || !m_coalesce) {
+    //    Point2f pos_f   = pos + ((int) m_border_size - offset - .5f),
+    //            pos_0_f = pos_f - radius,
+    //            pos_1_f = pos_f + radius;
 
-        // Interval specifying the pixels covered by the filter
-        Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-                pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
-                count_u = pos_1_u - pos_0_u + 1u;
+    //    // Interval specifying the pixels covered by the filter
+    //    Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
+    //            pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+    //            count_u = pos_1_u - pos_0_u + 1u;
 
-        // Base index of the top left corner
-        UInt32 index =
-            dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
+    //    // Base index of the top left corner
+    //    UInt32 index =
+    //        dr::fmadd(pos_0_u.y(), size.x(), pos_0_u.x()) * m_channel_count;
 
-        // Compute the number of filter evaluations needed along each axis
-        ScalarVector2u count;
-        uint32_t count_max = dr::ceil2int<uint32_t>(2.f * radius);
-        if constexpr (!JIT) {
-            if (dr::any(pos_0_u > pos_1_u))
-                return;
-            count = count_u;
-        } else {
-            // Conservative bounds must be used in the vectorized case
-            count = count_max;
-            active &= dr::all(pos_0_u <= pos_1_u);
-        }
+    //    // Compute the number of filter evaluations needed along each axis
+    //    ScalarVector2u count;
+    //    uint32_t count_max = dr::ceil2int<uint32_t>(2.f * radius);
+    //    if constexpr (!JIT) {
+    //        if (dr::any(pos_0_u > pos_1_u))
+    //            return;
+    //        count = count_u;
+    //    } else {
+    //        // Conservative bounds must be used in the vectorized case
+    //        count = count_max;
+    //        active &= dr::all(pos_0_u <= pos_1_u);
+    //    }
 
-        Point2f rel_f = Point2f(pos_0_u) - pos_f;
+    //    Point2f rel_f = Point2f(pos_0_u) - pos_f;
 
-        if (!record_loop) {
-            // ===========================================================
-            // 1.1. Scalar mode / unroll the complete loop
-            // ===========================================================
+    //    if (!record_loop) {
+    //        // ===========================================================
+    //        // 1.1. Scalar mode / unroll the complete loop
+    //        // ===========================================================
 
-            // Allocate memory for reconstruction filter weights on the stack
-            Float *weights_x = (Float *) alloca(sizeof(Float) * count.x()),
-                  *weights_y = (Float *) alloca(sizeof(Float) * count.y());
+    //        // Allocate memory for reconstruction filter weights on the stack
+    //        Float *weights_x = (Float *) alloca(sizeof(Float) * count.x()),
+    //              *weights_y = (Float *) alloca(sizeof(Float) * count.y());
 
-            // Evaluate filters weights along the X and Y axes
-            for (uint32_t x = 0; x < count.x(); ++x) {
-                new (weights_x + x)
-                    Float(JIT ? m_rfilter->eval(rel_f.x())
-                              : m_rfilter->eval_discretized(rel_f.x()));
-                rel_f.x() += 1.f;
-            }
+    //        // Evaluate filters weights along the X and Y axes
+    //        for (uint32_t x = 0; x < count.x(); ++x) {
+    //            new (weights_x + x)
+    //                Float(JIT ? m_rfilter->eval(rel_f.x())
+    //                          : m_rfilter->eval_discretized(rel_f.x()));
+    //            rel_f.x() += 1.f;
+    //        }
 
-            for (uint32_t y = 0; y < count.y(); ++y) {
-                new (weights_y + y)
-                    Float(JIT ? m_rfilter->eval(rel_f.y())
-                              : m_rfilter->eval_discretized(rel_f.y()));
-                rel_f.y() += 1.f;
-            }
+    //        for (uint32_t y = 0; y < count.y(); ++y) {
+    //            new (weights_y + y)
+    //                Float(JIT ? m_rfilter->eval(rel_f.y())
+    //                          : m_rfilter->eval_discretized(rel_f.y()));
+    //            rel_f.y() += 1.f;
+    //        }
 
-            // Normalize sample contribution if desired
-            if (unlikely(m_normalize)) {
-                Float wx = 0.f, wy = 0.f;
+    //        // Normalize sample contribution if desired
+    //        if (unlikely(m_normalize)) {
+    //            Float wx = 0.f, wy = 0.f;
 
-                Point2f rel_f2 = dr::ceil(pos_0_f) - pos_f;
-                for (uint32_t i = 0; i < count_max; ++i) {
-                    wx += JIT ? m_rfilter->eval(rel_f2.x())
-                              : m_rfilter->eval_discretized(rel_f2.x());
-                    wy += JIT ? m_rfilter->eval(rel_f2.y())
-                              : m_rfilter->eval_discretized(rel_f2.y());
-                    rel_f2 += 1.f;
-                }
+    //            Point2f rel_f2 = dr::ceil(pos_0_f) - pos_f;
+    //            for (uint32_t i = 0; i < count_max; ++i) {
+    //                wx += JIT ? m_rfilter->eval(rel_f2.x())
+    //                          : m_rfilter->eval_discretized(rel_f2.x());
+    //                wy += JIT ? m_rfilter->eval(rel_f2.y())
+    //                          : m_rfilter->eval_discretized(rel_f2.y());
+    //                rel_f2 += 1.f;
+    //            }
 
-                Float factor = dr::detach(wx * wy);
+    //            Float factor = dr::detach(wx * wy);
 
-                if constexpr (JIT) {
-                    factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
-                } else {
-                    if (unlikely(factor == 0))
-                        return;
-                    factor = dr::rcp(factor);
-                }
+    //            if constexpr (JIT) {
+    //                factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
+    //            } else {
+    //                if (unlikely(factor == 0))
+    //                    return;
+    //                factor = dr::rcp(factor);
+    //            }
 
-                for (uint32_t i = 0; i < count.x(); ++i)
-                    weights_x[i] *= factor;
-            }
+    //            for (uint32_t i = 0; i < count.x(); ++i)
+    //                weights_x[i] *= factor;
+    //        }
 
-            ScalarFloat *ptr = nullptr;
-            if constexpr (!JIT)
-                ptr = m_tensor.array().data();
-            else
-                (void) ptr;
+    //        ScalarFloat *ptr = nullptr;
+    //        if constexpr (!JIT)
+    //            ptr = m_tensor.array().data();
+    //        else
+    //            (void) ptr;
 
-            // Accumulate!
-            for (uint32_t y = 0; y < count.y(); ++y) {
-                Mask active_1 = active && y < count_u.y();
+    //        // Accumulate!
+    //        for (uint32_t y = 0; y < count.y(); ++y) {
+    //            Mask active_1 = active && y < count_u.y();
 
-                for (uint32_t x = 0; x < count.x(); ++x) {
-                    Mask active_2 = active_1 && x < count_u.x();
+    //            for (uint32_t x = 0; x < count.x(); ++x) {
+    //                Mask active_2 = active_1 && x < count_u.x();
 
-                    for (uint32_t k = 0; k < m_channel_count; ++k) {
-                        Float weight = weights_x[x] * weights_y[y];
+    //                for (uint32_t k = 0; k < m_channel_count; ++k) {
+    //                    Float weight = weights_x[x] * weights_y[y];
 
-                        if constexpr (!JIT) {
-                            DRJIT_MARK_USED(active_2);
-                            ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
-                        } else {
-                            accum(values[k] * weight, index, active_2);
-                        }
+    //                    if constexpr (!JIT) {
+    //                        DRJIT_MARK_USED(active_2);
+    //                        ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
+    //                    } else {
+    //                        accum(values[k] * weight, index, active_2);
+    //                    }
 
-                        index++;
-                    }
-                }
+    //                    index++;
+    //                }
+    //            }
 
-                index += (size.x() - count.x()) * m_channel_count;
-            }
+    //            index += (size.x() - count.x()) * m_channel_count;
+    //        }
 
-            // Destruct weight variables
-            for (uint32_t i = 0; i < count.x(); ++i)
-                weights_x[i].~Float();
+    //        // Destruct weight variables
+    //        for (uint32_t i = 0; i < count.x(); ++i)
+    //            weights_x[i].~Float();
 
-            for (uint32_t i = 0; i < count.y(); ++i)
-                weights_y[i].~Float();
-        } else {
-            // ===========================================================
-            // 1.2. Recorded loop mode
-            // ===========================================================
+    //        for (uint32_t i = 0; i < count.y(); ++i)
+    //            weights_y[i].~Float();
+    //    } else {
+    //        // ===========================================================
+    //        // 1.2. Recorded loop mode
+    //        // ===========================================================
 
-            UInt32 ys = 0;
-            dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
+    //        UInt32 ys = 0;
+    //        dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
 
-            while (loop_1(ys < count.y())) {
-                Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
-                Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
+    //        while (loop_1(ys < count.y())) {
+    //            Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
+    //            Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
-                UInt32 xs = 0;
-                dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
+    //            UInt32 xs = 0;
+    //            dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
 
-                while (loop_2(xs < count.x())) {
-                    Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
-                          weight = weight_x * weight_y;
+    //            while (loop_2(xs < count.x())) {
+    //                Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
+    //                      weight = weight_x * weight_y;
 
-                    Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
-                    for (uint32_t k = 0; k < m_channel_count; ++k)
-                        accum(values[k] * weight, index++, active_2);
+    //                Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
+    //                for (uint32_t k = 0; k < m_channel_count; ++k)
+    //                    accum(values[k] * weight, index++, active_2);
 
-                    xs++;
-                }
+    //                xs++;
+    //            }
 
-                ys++;
-                index += (size.x() - count.x()) * m_channel_count;
-            }
-        }
+    //            ys++;
+    //            index += (size.x() - count.x()) * m_channel_count;
+    //        }
+    //    }
 
-        return;
-    }
+    //    return;
+    //}
 
     // ===================================================================
     // 2. Coalesced accumulation method (see ImageBlock constructor)
@@ -429,7 +436,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         Point2i pos_i = dr::floor2int<Point2i>(pos) - int(n);
 
         // Account for pixel offset of the image block instance
-        Point2i pos_i_local = pos_i + ((int) m_border_size - m_offset);
+        Point2i pos_i_local = pos_i + ((int) m_border_size - offset);
 
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),

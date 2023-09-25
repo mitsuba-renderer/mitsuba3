@@ -259,7 +259,8 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
+            m_storage = new ImageBlock(m_crop_size.scalar(),
+                                       m_crop_offset.scalar(),
                                        (uint32_t) channels.size());
             m_channels = channels;
         }
@@ -279,8 +280,8 @@ public:
 
         bool default_config = size == ScalarVector2u(0);
 
-        return new ImageBlock(default_config ? m_crop_size : size,
-                              default_config ? m_crop_offset : ScalarPoint2u(0),
+        return new ImageBlock(default_config ? m_crop_size.scalar() : size,
+                              default_config ? m_crop_offset.scalar() : ScalarPoint2u(0),
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
                               normalize /* normalize */,

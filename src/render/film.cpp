@@ -15,14 +15,16 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
     // Crop window specified in pixels - by default, this matches the full sensor area.
     ScalarVector2u crop_size = ScalarVector2u(
-        props.get<uint32_t>("crop_width", m_size.x()),
-        props.get<uint32_t>("crop_height", m_size.y())
+        props.get<uint32_t>("crop_width", m_size.scalar().x()),
+        props.get<uint32_t>("crop_height", m_size.scalar().y())
     );
 
     ScalarPoint2u crop_offset = ScalarPoint2u(
         props.get<uint32_t>("crop_offset_x", 0),
         props.get<uint32_t>("crop_offset_y", 0)
     );
+
+    dr::make_opaque(m_size, m_crop_size, m_crop_offset);
 
     set_crop_window(crop_offset, crop_size);
 
@@ -53,19 +55,25 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 MI_VARIANT Film<Float, Spectrum>::~Film() { }
 
 MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
-    callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
-    callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
+    callback->put_parameter("size", (Vector2u &) m_size.value(), +ParamFlags::NonDifferentiable);
+    callback->put_parameter("crop_size", (Vector2u &) m_crop_size, +ParamFlags::NonDifferentiable);
+    callback->put_parameter("crop_offset", (Point2u &) m_crop_offset, +ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    ScalarVector2u crop_size = m_crop_size;
-    ScalarPoint2u crop_offset = m_crop_offset;
+    m_crop_size = m_crop_size.value();
+    m_crop_offset = m_crop_offset.value();
+
+    ScalarVector2u crop_size = m_crop_size.scalar();
+    ScalarPoint2u crop_offset = m_crop_offset.scalar();
 
     // Reset the crop window to match the full sensor area if necessary
     if (string::contains(keys, "size")) {
+        m_size = m_size.value(); // update scalar part as well
+        dr::make_opaque(m_size);
+
         if (!string::contains(keys, "crop_size"))
-            crop_size = ScalarPoint2u(m_size);
+            crop_size = ScalarPoint2u(m_size.scalar());
         if (!string::contains(keys, "crop_offset"))
             crop_offset = 0;
     }
@@ -90,19 +98,21 @@ Film<Float, Spectrum>::sensor_response_function() {
 
 MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
                                                         const ScalarVector2u &crop_size) {
-    if (dr::any(crop_offset + crop_size > m_size))
+    if (dr::any(crop_offset + crop_size > m_size.scalar()))
         Throw("Invalid crop window specification: crop_offset(%u, %u) + "
-              "crop_size(%u, %u) > size(%u, %u)", crop_offset.x(), crop_offset.y(),
-              crop_size.x(), crop_size.y(), m_size.x(), m_size.y());
+              "crop_size(%u, %u) > size(%u, %u)",
+              crop_offset.x(), crop_offset.y(),
+              crop_size.x(), crop_size.y(),
+              m_size.scalar().x(), m_size.scalar().y());
 
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;
 }
 
 MI_VARIANT void Film<Float, Spectrum>::set_size(const ScalarPoint2u &size) {
-    m_size = size;
+    m_size = (ScalarVector2u) size;
     // Reset the crop window to match the full sensor area
-    set_crop_window(ScalarVector2u(0, 0), m_size);
+    set_crop_window(ScalarVector2u(0, 0), m_size.scalar());
 }
 
 MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {

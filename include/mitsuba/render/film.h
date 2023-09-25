@@ -149,13 +149,13 @@ public:
     bool sample_border() const { return m_sample_border; }
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
-    const ScalarVector2u &size() const { return m_size; }
+    const ScalarVector2u &size() const { return m_size.scalar(); }
 
     /// Return the size of the crop window
-    const ScalarVector2u &crop_size() const { return m_crop_size; }
+    const ScalarVector2u &crop_size() const { return m_crop_size.scalar(); }
 
     /// Return the offset of the crop window
-    const ScalarPoint2u &crop_offset() const { return m_crop_offset; }
+    const ScalarPoint2u &crop_offset() const { return m_crop_offset.scalar(); }
 
     /**
      * \brief Set the size and offset of the film's crop window.
@@ -218,9 +218,9 @@ protected:
     uint32_t m_flags;
 
 protected:
-    ScalarVector2u m_size;
-    ScalarVector2u m_crop_size;
-    ScalarPoint2u m_crop_offset;
+    field<Vector2u> m_size;
+    field<Vector2u> m_crop_size;
+    field<Point2u> m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
