@@ -89,6 +89,7 @@ Bitmap::Bitmap(const Bitmap &bitmap)
       m_size(bitmap.m_size),
       m_struct(new Struct(*bitmap.m_struct)),
       m_srgb_gamma(bitmap.m_srgb_gamma),
+      m_premultiplied_alpha(bitmap.m_premultiplied_alpha),
       m_owns_data(true) {
     size_t size = buffer_size();
     m_data = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
@@ -103,6 +104,7 @@ Bitmap::Bitmap(Bitmap &&bitmap)
       m_size(bitmap.m_size),
       m_struct(std::move(bitmap.m_struct)),
       m_srgb_gamma(bitmap.m_srgb_gamma),
+      m_premultiplied_alpha(bitmap.m_premultiplied_alpha),
       m_owns_data(bitmap.m_owns_data) {
 }
 
