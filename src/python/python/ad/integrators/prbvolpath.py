@@ -278,10 +278,20 @@ class PRBVolpathIntegrator(RBIntegrator):
                                                                sampler.next_2d(act_medium_scatter),
                                                                act_medium_scatter)
                 act_medium_scatter &= phase_pdf > 0.0
+
+                # Re evaluate the phase function value in an attached manner
+                phase_eval, _ = phase.eval_pdf(phase_ctx, mei, wo, act_medium_scatter)
+                if not is_primal and dr.grad_enabled(phase_eval):
+                    Lo = phase_eval * dr.detach(dr.select(active, L / dr.maximum(1e-8, phase_eval), 0.0))
+                    if mode == dr.ADMode.Backward:
+                        dr.backward_from(δL * Lo)
+                    else:
+                        δL += dr.forward_to(Lo)
+
+                throughput[act_medium_scatter] *= phase_weight
                 ray[act_medium_scatter] = mei.spawn_ray(wo)
                 needs_intersection |= act_medium_scatter
                 last_scatter_direction_pdf[act_medium_scatter] = phase_pdf
-                throughput[act_medium_scatter] *= phase_weight
 
                 # ------------------------ BSDF sampling -----------------------
 
