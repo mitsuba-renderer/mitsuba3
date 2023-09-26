@@ -210,7 +210,7 @@ public:
         ray.wavelengths = wavelengths;
 
         Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
+	    dr::opaque<Vector2f>(m_film->size()) * m_principal_point_offset / dr::opaque<Vector2f>(m_film->crop_size());
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
@@ -247,7 +247,7 @@ public:
         ray.wavelengths = wavelengths;
 
         Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
+	    dr::opaque<Vector2f>(m_film->size()) * m_principal_point_offset / dr::opaque<Vector2f>(m_film->crop_size());
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
@@ -291,7 +291,7 @@ public:
             return { ds, dr::zeros<Spectrum>() };
 
         Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
+	    dr::opaque<Vector2f>(m_film->size()) * m_principal_point_offset / dr::opaque<Vector2f>(m_film->crop_size());
 
         Point3f screen_sample = m_camera_to_sample * ref_p;
         ds.uv = Point2f(screen_sample.x() - scaled_principal_point_offset.x(),

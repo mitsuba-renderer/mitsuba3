@@ -290,13 +290,13 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         // Compute the position on the image plane
         Vector2u pos;
-        pos.y() = idx / film_size[0];
-        pos.x() = dr::fnmadd(film_size[0], pos.y(), idx);
+        pos.y() = idx / dr::opaque<UInt32>(film_size[0]);
+        pos.x() = dr::fnmadd(dr::opaque<UInt32>(film_size[0]), pos.y(), idx);
 
         if (film->sample_border())
-            pos -= film->rfilter()->border_size();
+	    pos -= dr::opaque<Vector2u>(film->rfilter()->border_size());
 
-        pos += film->crop_offset();
+        pos += dr::opaque<Vector2u>(film->crop_offset());
 
         // Scale factor that will be applied to ray differentials
         ScalarFloat diff_scale_factor = dr::rsqrt((ScalarFloat) spp);
@@ -422,7 +422,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                    offset = -ScalarVector2f(film->crop_offset()) * scale;
 
     Vector2f sample_pos   = pos + sampler->next_2d(active),
-             adjusted_pos = dr::fmadd(sample_pos, scale, offset);
+      adjusted_pos = dr::fmadd(sample_pos, dr::opaque<Vector2f>(scale), dr::opaque<Vector2f>(offset));
 
     Point2f aperture_sample(.5f);
     if (sensor->needs_aperture_sample())
