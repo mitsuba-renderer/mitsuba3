@@ -23,8 +23,8 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
-        python: [cp38, cp39, cp310, cp311]
+        os: [ubuntu-20.04]
+        python: [cp38]
         cibw-arch: [x86_64, arm64]
         exclude:
           - os: ubuntu-20.04
