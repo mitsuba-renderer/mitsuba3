@@ -216,7 +216,15 @@ public:
                             Sensor *sensor,
                             uint32_t seed = 0,
                             uint32_t spp = 0) override {
-        PYBIND11_OVERRIDE(TensorXf, Base, render_forward, scene, params, sensor, seed, spp);
+        py::gil_scoped_acquire gil;
+
+        py::function func = py::get_override(this, "render_forward");
+        if (func) {
+            auto o = func(scene, *((py::object *) params), sensor, seed, spp);
+            return o.template cast<TensorXf>();
+        }
+
+        return Base::render_forward(scene, params, sensor, seed, spp);
     }
 
     void render_backward(Scene* scene,
@@ -225,9 +233,15 @@ public:
                          Sensor* sensor,
                          uint32_t seed = 0,
                          uint32_t spp = 0) override {
-        PYBIND11_OVERRIDE(void, Base, render_backward, scene, params, grad_in, sensor, seed, spp);
-    }
+        py::gil_scoped_acquire gil;
 
+        py::function func = py::get_override(this, "render_backward");
+        if (func) {
+            func(scene, *((py::object *) params), grad_in, sensor, seed, spp);
+        }
+
+        Base::render_backward(scene, params, grad_in, sensor, seed, spp);
+    }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
@@ -344,26 +358,26 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed, 
+                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
                 uint32_t spp) {
                 py::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_backward(scene, params, grad_in,
                                                    sensor, seed, spp);
             },
-            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0, 
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0,
             "spp"_a = 0)
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, py::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed, 
+                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
                 uint32_t spp) {
                 py::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_backward(scene, params, grad_in,
                                                    sensor, seed, spp);
             },
-            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0, 
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0,
             "spp"_a = 0)
         .def_readwrite("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
@@ -398,26 +412,26 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed, 
+                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
                 uint32_t spp) {
                 py::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_backward(scene, params, grad_in,
                                                    sensor, seed, spp);
             },
-            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0, 
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a, "seed"_a = 0,
             "spp"_a = 0)
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, py::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed, 
+                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
                 uint32_t spp) {
                 py::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_backward(scene, params, grad_in,
                                                    sensor, seed, spp);
             },
-            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0, 
+            "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0,
             "spp"_a = 0)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
                     "sampler"_a, "block"_a, "sample_scale"_a);

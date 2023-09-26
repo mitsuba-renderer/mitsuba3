@@ -5,32 +5,6 @@
 
 extern py::object cast_object(Object *o);
 
-// Trampoline for derived types implemented in Python
-class PyTraversalCallback : public TraversalCallback {
-public:
-    void put_parameter_impl(const std::string &name, void *ptr,
-                            uint32_t flags, const std::type_info &type) override {
-        py::gil_scoped_acquire gil;
-        py::function overload = py::get_overload(this, "put_parameter");
-
-        if (overload)
-            overload(name, ptr, flags, (void *) &type);
-        else
-            Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
-    }
-
-    void put_object(const std::string &name, Object *obj,
-                    uint32_t flags) override {
-        py::gil_scoped_acquire gil;
-        py::function overload = py::get_overload(this, "put_object");
-
-        if (overload)
-            overload(name, cast_object(obj), flags);
-        else
-            Throw("TraversalCallback doesn't overload the method \"put_object\"");
-    }
-};
-
 MI_PY_EXPORT(Object) {
     auto e = py::enum_<ParamFlags>(m, "ParamFlags", D(ParamFlags))
         .def_value(ParamFlags, Differentiable)
@@ -65,16 +39,6 @@ MI_PY_EXPORT(Object) {
             const Class *class_ = pmgr.get_plugin_class(props.plugin_name(), variant);
             return cast_object(pmgr.create_object(props, class_));
         }, D(PluginManager, create_object));
-
-    py::class_<TraversalCallback, PyTraversalCallback>(
-        m, "TraversalCallback", D(TraversalCallback))
-        .def(py::init<>())
-        .def("put_parameter",
-             [] (const TraversalCallback *, const std::string &, py::object &, ParamFlags) {
-                Throw("The `put_parameter` methods must be overriden!");
-             },
-             "name"_a, "value"_a, "flags"_a, D(TraversalCallback, put_parameter))
-        .def_method(TraversalCallback, put_object, "name"_a, "obj"_a, "flags"_a);
 
     py::class_<Object, ref<Object>>(m, "Object", D(Object))
         .def(py::init<>(), D(Object, Object))

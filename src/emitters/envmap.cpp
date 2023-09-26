@@ -75,8 +75,8 @@ The plugin can work with all types of images that are natively supported by Mits
 (i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
-High quality free light probes are available on 
-`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or 
+High quality free light probes are available on
+`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or
 `Polyhaven <https://polyhaven.com/hdris>`_.
 
 .. tabs::
@@ -110,7 +110,7 @@ public:
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
-        m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
+        m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         ref<Bitmap> bitmap;
 
@@ -270,6 +270,7 @@ public:
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
             size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
+            constexpr bool is_aligned = ScalarPixelData::Size == 4;
 
             ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
             for (size_t y = 0; y < res.y(); ++y) {
@@ -278,17 +279,33 @@ public:
                 if constexpr (!dr::is_jit_v<Float>) {
                     // Enforce horizontal continuity
                     ScalarFloat *ptr2 = ptr + pixel_width * (res.x() - 1);
-                    ScalarPixelData v0  = dr::load_aligned<ScalarPixelData>(ptr),
-                                    v1  = dr::load_aligned<ScalarPixelData>(ptr2),
-                                    v01 = .5f * (v0 + v1);
-                    dr::store_aligned(ptr, v01),
-                    dr::store_aligned(ptr2, v01);
+                    ScalarPixelData v0, v1;
+                    if constexpr (is_aligned) {
+                        v0  = dr::load_aligned<ScalarPixelData>(ptr);
+                        v1  = dr::load_aligned<ScalarPixelData>(ptr2);
+                    } else {
+                        v0  = dr::load<ScalarPixelData>(ptr);
+                        v1  = dr::load<ScalarPixelData>(ptr2);
+                    }
+                    ScalarPixelData v01 = .5f * (v0 + v1);
+
+                    if constexpr (is_aligned) {
+                        dr::store_aligned(ptr, v01),
+                        dr::store_aligned(ptr2, v01);
+                    } else {
+                        dr::store(ptr, v01),
+                        dr::store(ptr2, v01);
+                    }
                 }
 
                 for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarPixelData coeff = dr::load_aligned<ScalarPixelData>(ptr);
-                    ScalarFloat lum;
+                    ScalarPixelData coeff;
+                    if constexpr (is_aligned)
+                        coeff = dr::load_aligned<ScalarPixelData>(ptr);
+                    else
+                        coeff = dr::load<ScalarPixelData>(ptr);
 
+                    ScalarFloat lum;
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
@@ -310,7 +327,9 @@ public:
 
     void set_scene(const Scene *scene) override {
         if (scene->bbox().valid()) {
-            m_bsphere = scene->bbox().bounding_sphere();
+            ScalarBoundingSphere3f scene_sphere =
+                scene->bbox().bounding_sphere();
+            m_bsphere = BoundingSphere3f(scene_sphere.center, scene_sphere.radius);
             m_bsphere.radius =
                 dr::maximum(math::RayEpsilon<Float>,
                         m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
@@ -318,6 +337,8 @@ public:
             m_bsphere.center = 0.f;
             m_bsphere.radius = math::RayEpsilon<Float>;
         }
+
+        dr::make_opaque(m_bsphere.center, m_bsphere.radius);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -374,7 +395,7 @@ public:
         auto [wavelengths, weight] =
             sample_wavelengths(si, wavelength_sample, active);
 
-        ScalarFloat r2 = dr::sqr(m_bsphere.radius);
+        Float r2 = dr::sqr(m_bsphere.radius);
         Ray3f ray(origin, d_global, time, wavelengths);
         weight *= dr::Pi<Float> * r2 / pdf;
 
@@ -558,7 +579,7 @@ protected:
     MI_DECLARE_CLASS()
 protected:
     std::string m_filename;
-    ScalarBoundingSphere3f m_bsphere;
+    BoundingSphere3f m_bsphere;
     TensorXf m_data;
     Warp m_warp;
     ref<Texture> m_d65;
