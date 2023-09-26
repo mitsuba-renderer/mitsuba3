@@ -69,7 +69,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("S", m_ndf_params, +ParamFlags::Differentiable);
+        callback->put_object("S", m_ndf_params.get(), +ParamFlags::Differentiable);
     }
 
     MI_INLINE
