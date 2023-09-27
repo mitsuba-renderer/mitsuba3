@@ -147,7 +147,15 @@ public:
         bs.sampled_component = null_index;
         bs.sampled_type      = +BSDFFlags::Null;
         bs.pdf               = 1.f - opacity;
-        result               = (1.f - opacity) / dr::detach(1.f - opacity);
+
+        result = 1.f;
+        if constexpr (dr::is_diff_v<Float>) {
+            if (dr::grad_enabled(opacity)) {
+                result = dr::replace_grad(
+                    result,
+                    Spectrum((1.f - opacity) / dr::detach(1.f - opacity)));
+            }
+        }
 
         Mask nested_mask = active && sample1 < opacity;
         if (dr::any_or<true>(nested_mask)) {

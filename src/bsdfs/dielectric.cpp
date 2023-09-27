@@ -337,7 +337,9 @@ public:
                     Sampling weights should be computed accordingly. */
                 if constexpr (dr::is_diff_v<Float>) {
                     if (dr::grad_enabled(r_i)) {
-                        weight = dr::select(selected_r, r_i / dr::detach(r_i), t_i / dr::detach(t_i));
+                        Float r_diff = dr::replace_grad(Float(1.f), r_i / dr::detach(r_i));
+                        Float t_diff = dr::replace_grad(Float(1.f), t_i / dr::detach(t_i));
+                        weight = dr::select(selected_r, r_diff, t_diff);
                     }
                 }
             } else if (has_reflection || has_transmission) {
