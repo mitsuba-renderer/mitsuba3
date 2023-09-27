@@ -122,20 +122,8 @@ public:
         }
 
         if constexpr (dr::is_jit_v<Float>) {
-            // std::lock_guard<std::mutex> lock(m_mutex);
-            // return m_storage->tensor();
-
-            // TODO why does this work?
-            ref<Bitmap> source = bitmap();
-            ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::prod(size);
-            auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
-
-            size_t shape[3] = { (size_t) source->height(),
-                                (size_t) source->width(),
-                                source->channel_count() };
-
-            return TensorXf(data, 3, shape);
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_storage->tensor();
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
