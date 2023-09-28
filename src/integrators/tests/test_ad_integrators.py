@@ -732,9 +732,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    # dr.set_flag(dr.JitFlag.VCallRecord, False)
-    # dr.set_flag(dr.JitFlag.LoopRecord, False)
-
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
@@ -747,10 +744,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.mean(error)[0]
     error_max = dr.max(error)[0]
-
-    # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
-    # print(f'-> write current image: {filename}')
-    # mi.util.write_bitmap(filename, image)
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -767,17 +760,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-    # dr.set_flag(dr.JitFlag.PrintIR, True)
-
-    # dr.set_flag(dr.JitFlag.LoopRecord, False)
-    # dr.set_flag(dr.JitFlag.VCallRecord, False)
-
-    # dr.set_flag(dr.JitFlag.LoopOptimize, False)
-    # dr.set_flag(dr.JitFlag.VCallOptimize, False)
-    # dr.set_flag(dr.JitFlag.VCallInline, True)
-    # dr.set_flag(dr.JitFlag.ValueNumbering, False)
-    # dr.set_flag(dr.JitFlag.ConstProp, False)
-
     config = config()
     config.initialize()
 
@@ -807,10 +789,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     error_mean = dr.mean(error)[0]
     error_max = dr.max(error)[0]
 
-    # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-    # print(f'-> write current image: {filename}')
-    # mi.util.write_bitmap(filename, image_fwd)
-
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
@@ -822,9 +800,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         print(f'-> write error image: {filename}')
         mi.util.write_bitmap(filename, error)
-
-        # print(f"dr.mean(image_fwd_ref): {dr.mean(image_fwd_ref)}")
-        # print(f"dr.mean(image_fwd):     {dr.mean(image_fwd)}")
         assert False
 
 
@@ -832,9 +807,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
-    # dr.set_flag(dr.JitFlag.LoopRecord, False)
-    # dr.set_flag(dr.JitFlag.VCallRecord, False)
-
     config = config()
     config.initialize()
 
@@ -851,9 +823,6 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
-
-    # dr.set_flag(dr.JitFlag.KernelHistory, True)
-    # dr.set_log_level(3)
 
     integrator.render_backward(
         config.scene, grad_in=image_adj, seed=0, spp=config.spp, params=theta)
@@ -975,17 +944,6 @@ if __name__ == "__main__":
         print(f"name: {config.name}")
 
         config.initialize()
-
-        if False:
-            boundary_test_integrator = mi.load_dict({
-                'type': 'aov',
-                'aovs': 'X:boundary_test',
-            })
-            image_boundary_test = boundary_test_integrator.render(config.scene, seed=0, spp=args.spp)
-            print(f"image_boundary_test: {image_boundary_test}")
-
-            filename = join(output_dir, f"test_{config.name}_image_boundary_test.exr")
-            mi.Bitmap(image_boundary_test[:, :, 3]).write(filename)
 
         integrator_path = mi.load_dict({
             'type': 'path',
