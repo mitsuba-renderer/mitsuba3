@@ -271,6 +271,24 @@ public:
         return 0.f;
     }
 
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        Point3f it_local = m_to_world.value().inverse().transform_affine(it.p);
+
+        SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
+        it_query.wavelengths = it.wavelengths;
+        it_query.uv = ds.uv;
+
+        UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
+        spec *= dr::Pi<Float> * m_intensity_scale /
+                (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
+
+        return depolarizer<Spectrum>(spec) & active;
+    }
+
     Spectrum eval(const SurfaceInteraction3f & /*si*/,
                   Mask /*active*/) const override {
         return 0.f;
