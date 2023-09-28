@@ -2,6 +2,9 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
+
+@fresolver_append_path
 def test01_sampling_weights(variants_vec_backends_once_rgb):
     rng = mi.PCG32(size=102400)
     sample = mi.Point2f(
