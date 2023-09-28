@@ -300,7 +300,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             idx /= dr::opaque<UInt32>(spp_per_pass);
 
         // Compute the position on the image plane
-        Vector2u pos;
+        Vector2i pos;
         pos.y() = idx / film_size[0];
         pos.x() = dr::fnmadd(film_size[0], pos.y(), idx);
 
