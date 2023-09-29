@@ -172,7 +172,7 @@ public:                                             \
  * \sa MI_IMPLEMENT_CLASS
  */
 
-#define MI_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
+#define MI_IMPLEMENT_CLASS(Name, Parent, ...)                                                      \
     Class *Name::m_class = new Class(                                                              \
         #Name, #Parent, "",                                                                        \
         ::mitsuba::detail::get_construct_functor<Name>(),                                          \
@@ -192,8 +192,8 @@ public:                                             \
  *
  * \sa MI_IMPLEMENT_CLASS_VARIANT
  */
-#define MI_IMPLEMENT_CLASS_VARIANT(Name, Parent, ...)                                             \
-    MI_VARIANT Class *Name<Float, Spectrum>::m_class = new Class(                                 \
+#define MI_IMPLEMENT_CLASS_VARIANT(Name, Parent, ...)                                              \
+    MI_VARIANT Class *Name<Float, Spectrum>::m_class = new Class(                                  \
         #Name, #Parent,                                                                            \
         ::mitsuba::detail::get_variant<Float, Spectrum>(),                                         \
         ::mitsuba::detail::get_construct_functor<Name<Float, Spectrum>>(),                         \
@@ -203,10 +203,10 @@ public:                                             \
 
 
 /// Instantiate and export a Mitsuba plugin
-#define MI_EXPORT_PLUGIN(Name, Descr)                                                             \
+#define MI_EXPORT_PLUGIN(Name, Descr)                                                              \
     extern "C" {                                                                                   \
-        MI_EXPORT const char *plugin_name() { return #Name; }                                     \
-        MI_EXPORT const char *plugin_descr() { return Descr; }                                    \
+        MI_EXPORT const char *plugin_name() { return #Name; }                                      \
+        MI_EXPORT const char *plugin_descr() { return Descr; }                                     \
     }                                                                                              \
     MI_INSTANTIATE_CLASS(Name)
 
