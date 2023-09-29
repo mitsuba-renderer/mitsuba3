@@ -346,9 +346,15 @@ enum OptixDenoiserModelKind {
     OPTIX_DENOISER_MODEL_KIND_TEMPORAL = 0x2325
 };
 
+enum OptixDenoiserAlphaMode {
+    OPTIX_DENOISER_ALPHA_MODE_COPY = 0,
+    OPTIX_DENOISER_ALPHA_MODE_DENOISE = 1
+};
+
 struct OptixDenoiserOptions {
     unsigned int guideAlbedo;
     unsigned int guideNormal;
+    unsigned int denoiseAlpha;
 };
 
 struct OptixDenoiserSizes {
@@ -356,25 +362,32 @@ struct OptixDenoiserSizes {
     size_t withOverlapScratchSizeInBytes;
     size_t withoutOverlapScratchSizeInBytes;
     unsigned int overlapWindowSizeInPixels;
+    size_t computeAverageColorSizeInBytes;
+    size_t computeIntensitySizeInBytes;
+    size_t internalGuideLayerPixelSizeInBytes;
 };
 
 struct OptixDenoiserParams {
-    unsigned int denoiseAlpha;
     CUdeviceptr hdrIntensity;
     float blendFactor;
     CUdeviceptr hdrAverageColor;
+    unsigned int temporalModeUsePreviousLayers;
 };
 
 struct OptixDenoiserGuideLayer {
     OptixImage2D albedo;
     OptixImage2D normal;
     OptixImage2D flow;
+    OptixImage2D previousOutputInternalGuideLayer;
+    OptixImage2D outputInternalGuideLayer;
+    OptixImage2D flowTrustworthiness;
 };
 
 struct OptixDenoiserLayer {
     OptixImage2D input;
     OptixImage2D previousOutput;
     OptixImage2D output;
+    OptixDenoiserAOVType type;
 };
 
 // =====================================================

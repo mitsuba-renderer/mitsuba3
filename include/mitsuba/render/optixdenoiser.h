@@ -35,15 +35,27 @@ public:
      * \param albedo
      *      Whether or not albedo information will also be given to the
      *      denoiser.
+     *      This parameter is optional, by default it is false.
      *
      * \param normals
      *      Whether or not shading normals information will also be given to the
-     *      Denoiser.
+     *      denoiser.
+     *      This parameter is optional, by default it is false.
+     *
+     * \param temporal
+     *      Whether or not temporal information will also be given to the
+     *      denoiser.
+     *      This parameter is optional, by default it is false.
+     *
+     * \param denoise_alpha
+     *      Whether or not the alpha channel (if specified in the noisy input)
+     *      should be denoised too.
+     *      This parameter is optional, by default it is false.
      *
      * \return A callable object which will apply the OptiX denoiser.
      */
     OptixDenoiser(const ScalarVector2u &input_size, bool albedo, bool normals,
-                  bool temporal);
+                  bool temporal = false, bool denoise_alpha = false);
 
     OptixDenoiser(const OptixDenoiser &other) = delete;
 
@@ -56,11 +68,6 @@ public:
      *
      * \param noisy
      *      The noisy input. (tensor shape: (width, height, 3 | 4))
-     *
-     * \param denoise_alpha
-     *      Whether or not the alpha channel (if specified in the noisy input)
-     *      should be denoised too.
-     *      This parameter is optional, by default it is true.
      *
      * \param albedo
      *      Albedo information of the noisy rendering.
@@ -102,7 +109,6 @@ public:
      * \return The denoised input.
      */
     TensorXf operator()(const TensorXf &noisy,
-                        bool denoise_alpha = true,
                         const TensorXf &albedo = TensorXf(),
                         const TensorXf &normals = TensorXf(),
                         const Transform4f &to_sensor = Transform4f(),
@@ -116,11 +122,6 @@ public:
      *      The noisy input. When passing additional information like albedo or
      *      normals to the denoiser, this \ref Bitmap object must be a \ref
      *      MultiChannel bitmap.
-     *
-     * \param denoise_alpha
-     *      Whether or not the alpha channel (if specified in the noisy input)
-     *      should be denoised too.
-     *      This parameter is optional, by default it is true.
      *
      * \param albedo_ch
      *      The name of the channel in the \c noisy parameter which contains
@@ -169,7 +170,6 @@ public:
      * \return The denoised input.
      */
     ref<Bitmap> operator()(const ref<Bitmap> &noisy,
-                           bool denoise_alpha = true,
                            const std::string &albedo_ch = "",
                            const std::string &normals_ch = "",
                            const Transform4f &to_sensor = Transform4f(),
