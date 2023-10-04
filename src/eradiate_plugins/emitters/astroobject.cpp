@@ -142,8 +142,7 @@ public:
         Float cos_theta = dr::dot(v, ScalarVector3f{ 0.f, 0.f, 1.f });
         Mask selected   = active & (cos_theta > m_cos_angular_radius);
         // Evaluate spectrum for active lanes
-        UnpolarizedSpectrum spec =
-            depolarizer<Spectrum>(m_irradiance->eval(si, selected));
+        UnpolarizedSpectrum spec(m_irradiance->eval(si, selected));
 
         return dr::select(selected, spec / m_omega, 0.f);
     }
@@ -178,10 +177,7 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths          = it.wavelengths;
-
-        UnpolarizedSpectrum weight =
-            depolarizer<Spectrum>(m_irradiance->eval(si, active)) / m_omega /
-            pdf;
+        UnpolarizedSpectrum weight(m_irradiance->eval(si, active) / m_omega / pdf);
 
         return { ds, weight & active };
     }

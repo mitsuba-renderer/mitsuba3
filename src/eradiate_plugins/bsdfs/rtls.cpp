@@ -247,7 +247,7 @@ public:
         const UnpolarizedSpectrum value =
             (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo);
 
-        return depolarizer<Spectrum>(value);
+        return value;
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f &si,

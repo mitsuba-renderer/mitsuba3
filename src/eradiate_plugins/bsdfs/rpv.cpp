@@ -131,10 +131,10 @@ public:
        Eradiate Scientific Handbook. */
     UnpolarizedSpectrum eval_rpv(const SurfaceInteraction3f &si,
                                  const Vector3f &wo, Mask active) const {
-        Spectrum rho_0 = m_rho_0->eval(si, active);
-        Spectrum rho_c = m_rho_c->eval(si, active);
-        Spectrum g = m_g->eval(si, active);
-        Spectrum k = m_k->eval(si, active);
+        UnpolarizedSpectrum rho_0 = m_rho_0->eval(si, active);
+        UnpolarizedSpectrum rho_c = m_rho_c->eval(si, active);
+        UnpolarizedSpectrum g = m_g->eval(si, active);
+        UnpolarizedSpectrum k = m_k->eval(si, active);
 
         auto [sin_phi_i, cos_phi_i] = Frame3f::sincos_phi(si.wi);
         auto [sin_phi_o, cos_phi_o] = Frame3f::sincos_phi(wo);
@@ -151,23 +151,23 @@ public:
         Float cos_Theta = cos_theta_i * cos_theta_o +
                           sin_theta_i * sin_theta_o * cos_phi_i_minus_phi_o;
         // The following uses cos(pi-x) = -cos(x)
-        Spectrum F = (1.f - dr::sqr(g)) /
+        UnpolarizedSpectrum F = (1.f - dr::sqr(g)) /
                      dr::pow((1.f + dr::sqr(g) + 2.f * g * cos_Theta), 1.5f);
 
         // Hot spot component
         Float G = dr::safe_sqrt(dr::sqr(tan_theta_i) + dr::sqr(tan_theta_o) -
                                 2.f * tan_theta_i * tan_theta_o *
                                     cos_phi_i_minus_phi_o);
-        Spectrum H = 1.f + (1.f - rho_c) / (1.f + G);
+        UnpolarizedSpectrum H = 1.f + (1.f - rho_c) / (1.f + G);
 
         // Minnaert component
-        Spectrum M = dr::pow(
+        UnpolarizedSpectrum M = dr::pow(
             cos_theta_i * cos_theta_o * (cos_theta_i + cos_theta_o), k - 1.f);
 
         // Total value
-        Spectrum value = rho_0 * M * F * H * dr::InvPi<Float>;
+        UnpolarizedSpectrum value = rho_0 * M * F * H * dr::InvPi<Float>;
 
-        return depolarizer<Spectrum>(value);
+        return value;
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f &si,
