@@ -546,16 +546,16 @@ protected:
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
         const Ray3f &ray, Mask coherent, Mask active) const;
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
-        const Ray3f &ray, Mask active) const;
+        const Ray3f &ray, Mask coherent, Mask active) const;
 
     /// Trace a ray
     MI_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
-    MI_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags, Mask active) const;
+    MI_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
     MI_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray
     MI_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
-    MI_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
+    MI_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask coherent, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 

@@ -146,7 +146,8 @@ public:
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
                                      /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ dr::eq(depth, 0u));
+                                     /* coherent = */ dr::eq(depth, 0u),
+                                     active);
 
             // ---------------------- Direct emission ----------------------
 

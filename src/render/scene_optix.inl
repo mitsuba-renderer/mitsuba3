@@ -623,6 +623,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
+                                                      Mask coherent,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
@@ -650,6 +651,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
             ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
+            coherent.index(),
             m_accel_handle.index(),
             ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
             ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
@@ -670,12 +672,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                             config.pipeline_jit_index, s.sbt_jit_index);
 
         PreliminaryIntersection3f pi;
-        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
-        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
-        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
-        pi.prim_index = UInt32::steal(trace_args[18]);
-        pi.shape      = ShapePtr::steal(trace_args[19]);
-        pi.instance   = ShapePtr::steal(trace_args[20]);
+        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
+        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
+        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[18]));
+        pi.prim_index = UInt32::steal(trace_args[19]);
+        pi.shape      = ShapePtr::steal(trace_args[20]);
+        pi.instance   = ShapePtr::steal(trace_args[21]);
 
         // This field is only used by embree, but we still need to initialize it for vcalls
         pi.shape_index = dr::zeros<UInt32>();
@@ -698,9 +700,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
-                                          Mask active) const {
+                                          Mask coherent, Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+        PreliminaryIntersection3f pi =
+            ray_intersect_preliminary_gpu(ray, coherent, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         DRJIT_MARK_USED(ray);
@@ -711,7 +714,8 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask coherent,
+                                     Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
@@ -733,6 +737,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
             ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
         uint32_t trace_args[] {
+            coherent.index(),
             m_accel_handle.index(),
             ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
             ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
@@ -746,7 +751,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
                             trace_args, true, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
-        return active && dr::neq(UInt32::steal(trace_args[15]), 0);
+        return active && dr::neq(UInt32::steal(trace_args[16]), 0);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
