@@ -4,15 +4,6 @@ import mitsuba as mi
 import numpy as np
 import pytest
 
-from eradiate.kernel import write_binary_grid3d
-
-
-def gridvol_constant(basepath: Path, data: np.typing.ArrayLike):
-    filename = basepath / "gridvol_const.vol"
-    data = np.array(data)
-    write_binary_grid3d(filename, data)
-    return filename
-
 
 def test_construct(variant_scalar_rgb, tmp_path):
     # Construct without parameters
@@ -24,7 +15,6 @@ def test_construct(variant_scalar_rgb, tmp_path):
         mi.load_dict({"type": "sphericalcoordsvolume", "rmin": 0.8, "rmax": 0.2})
 
     # Construct with all parameters set to typical values
-    gridvol_filename = gridvol_constant(tmp_path, data=[[[1.0]]])
     volume = mi.load_dict(
         {
             "type": "sphericalcoordsvolume",
@@ -32,7 +22,7 @@ def test_construct(variant_scalar_rgb, tmp_path):
             "rmax": 1.0,
             "fillmin": 0.0,
             "fillmax": 0.0,
-            "volume": {"type": "gridvolume", "filename": str(gridvol_filename)},
+            "volume": {"type": "gridvolume", "grid": mi.VolumeGrid([[[1.0]]])},
         }
     )
     assert volume is not None
@@ -47,7 +37,6 @@ def test_construct(variant_scalar_rgb, tmp_path):
     ],
 )
 def test_eval_basic(variant_scalar_rgb, tmp_path, point, result):
-    gridvol_filename = gridvol_constant(tmp_path, data=[[[2.0]]])
     volume = mi.load_dict(
         {
             "type": "sphericalcoordsvolume",
@@ -55,7 +44,7 @@ def test_eval_basic(variant_scalar_rgb, tmp_path, point, result):
             "rmax": 0.8,
             "fillmin": 3.0,
             "fillmax": 1.0,
-            "volume": {"type": "gridvolume", "filename": str(gridvol_filename)},
+            "volume": {"type": "gridvolume", "grid": mi.VolumeGrid([[[2.0]]])},
         }
     )
 
@@ -69,7 +58,6 @@ def test_eval_advanced(variant_scalar_rgb, tmp_path):
     data = np.broadcast_to(
         np.arange(1, 7, 1, dtype=float).reshape((-1, 1, 1, 1)), (6, 2, 2, 3)
     )
-    gridvol_filename = gridvol_constant(tmp_path, data=data)
     volume = mi.load_dict(
         {
             "type": "sphericalcoordsvolume",
@@ -79,7 +67,7 @@ def test_eval_advanced(variant_scalar_rgb, tmp_path):
             "fillmax": 1.0,
             "volume": {
                 "type": "gridvolume",
-                "filename": str(gridvol_filename),
+                "grid": mi.VolumeGrid(data),
                 "filter_type": "nearest",
             },
         }
