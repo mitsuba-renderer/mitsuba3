@@ -18,14 +18,14 @@ Tabulated phase function (irregular angular grid) (:monosp:`tabphase_irregular`)
    - |string|
    - A comma-separated list of phase function values parameterized by the
      cosine of the scattering angle. Must have the same length as `nodes`.
-   - |exposed|, |differentiable|, |discontinuous|
+   - |exposed|
 
  * - nodes
    - |string|
    - A comma-separated list of :math:`\cos \theta` specifying the grid on which
      `values` are defined. Bounds must be [-1, 1] and values must be strictly
      increasing. Must have the same length as `values`.
-   - |exposed|, |differentiable|, |discontinuous|
+   - |exposed|
 
 This plugin implements a generic phase function model for isotropic media
 parametrized by a lookup table giving values of the phase function as a
@@ -100,11 +100,9 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("values", m_distr.pdf(),
-                                ParamFlags::Differentiable |
-                                    ParamFlags::Discontinuous);
+                                +ParamFlags::NonDifferentiable);
         callback->put_parameter("nodes", m_distr.nodes(),
-                                ParamFlags::Differentiable |
-                                    ParamFlags::Discontinuous);
+                                +ParamFlags::NonDifferentiable);
     }
 
     void
@@ -112,11 +110,10 @@ public:
         m_distr.update();
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f &mi,
-                                      Float /* sample1 */,
-                                      const Point2f &sample2,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float>
+    sample(const PhaseFunctionContext & /* ctx */,
+           const MediumInteraction3f &mi, Float /* sample1 */,
+           const Point2f &sample2, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         // Sample a direction in physics convention.
@@ -137,12 +134,13 @@ public:
         Float pdf = m_distr.eval_pdf_normalized(cos_theta_prime, active) *
                     dr::InvTwoPi<ScalarFloat>;
 
-        return { wo, pdf };
+        return { wo, 1.f, pdf };
     }
 
-    Float eval(const PhaseFunctionContext & /* ctx */,
-               const MediumInteraction3f &mi, const Vector3f &wo,
-               Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext & /* ctx */,
+                                        const MediumInteraction3f &mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
 
         // The data is laid out in physics convention
@@ -150,8 +148,8 @@ public:
         // This parameterization differs from the convention used internally by
         // Mitsuba and is the reason for the minus sign below.
         Float cos_theta = -dot(wo, mi.wi);
-        return m_distr.eval_pdf_normalized(cos_theta, active) *
-               dr::InvTwoPi<ScalarFloat>;
+        Float pdf = m_distr.eval_pdf_normalized(cos_theta, active) * dr::InvTwoPi<ScalarFloat>;
+        return { pdf, pdf };
     }
 
     std::string to_string() const override {

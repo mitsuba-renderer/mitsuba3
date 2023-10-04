@@ -15,7 +15,7 @@ def test_create(variant_scalar_rgb):
     assert p is not None
 
 
-def test_eval(variant_scalar_rgb):
+def test_eval_pdf(variant_scalar_rgb):
     """
     Compare eval() output with a reference implementation written in Python.
     We make sure that the values we use to initialize the plugin are such that
@@ -67,12 +67,13 @@ def test_eval(variant_scalar_rgb):
     ctx = mi.PhaseFunctionContext(None)
     mei = mi.MediumInteraction3f()
     mei.wi = wi
-    tab_eval = np.zeros_like(ref_eval)
+    tab_eval_pdf = np.zeros_like(ref_eval)
     for i, wo in enumerate(wos):
-        tab_eval[i] = tab.eval(ctx, mei, wo)
+        # Not perfect: we check only the first color channel
+        tab_eval_pdf[i] = tab.eval_pdf(ctx, mei, wo)[1]
 
     # Compare reference and plugin outputs
-    assert np.allclose(tab_eval, ref_eval)
+    assert np.allclose(tab_eval_pdf, ref_eval)
 
 
 def test_sample(variant_scalar_rgb):
@@ -92,7 +93,7 @@ def test_sample(variant_scalar_rgb):
     mei.wi = [0, 0, 1]
 
     # The passed sample corresponds to forward scattering
-    wo, pdf = tab.sample(ctx, mei, 0, (1, 0))
+    wo, w, pdf = tab.sample(ctx, mei, 0, (1, 0))
 
     # The sampled direction indicates forward scattering in the "graphics"
     # convention
@@ -152,4 +153,6 @@ def test_traverse(variant_scalar_rgb):
     mei = mi.MediumInteraction3f()
     mei.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
-    assert dr.allclose(phase.eval(ctx, mei, wo), dr.inv_two_pi * 1.5 / ref_integral)
+    assert dr.allclose(
+        phase.eval_pdf(ctx, mei, wo)[0], dr.inv_two_pi * 1.5 / ref_integral
+    )
