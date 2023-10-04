@@ -9,20 +9,30 @@ dr.set_log_level(dr.LogLevel.Info)
 #dr.set_flag(dr.JitFlag.LoopRecord, False)
 #dr.set_flag(dr.JitFlag.VCallRecord, False)
 dr.set_flag(dr.JitFlag.KernelHistory, True)
+dr.set_flag(dr.JitFlag.LaunchBlocking, True)
+
+#dr.set_flag(dr.JitFlag.OnlyReorderIfNonCoherent, True)
+#dr.set_flag(dr.JitFlag.DoNotReorderShadowRays, True)
+#dr.set_flag(dr.JitFlag.ShaderExecutionReordering, True)
+
 #dr.set_flag(dr.JitFlag.ForceOptiX, True)
 dr.set_flag(dr.JitFlag.PrintIR, True)
 
 if bool(int(sys.argv[1])):
-    dr.set_flag(dr.JitFlag.ShaderExecutionReordering, True)
+    dr.set_flag(dr.JitFlag.ReorderBeforeVCalls, True)
+    dr.set_flag(dr.JitFlag.ReorderVCallOnlyIfMultipleTargets, True)
+    dr.set_flag(dr.JitFlag.UseInstanceIdInVCallReorder, True)
 
 print("Loading scene...")
-#scene = mi.load_file('/home/nroussel/rgl/scenes/staircase/scene.xml')
-scene = mi.load_file('/home/nroussel/rgl/scenes/bathroom/scene.xml')
+scene = mi.load_file('/home/nroussel/rgl/mitsuba-benchmarks/scenes/staircase/scene-benchmark.xml')
+#scene = mi.load_file('/home/nroussel/rgl/git_scenes/bathroom/scene.xml')
 #scene = mi.load_dict(mi.cornell_box())
 print("Done.")
 
 integrator =  mi.load_dict({
     'type': 'path',
+    'max_depth': 20,
+    'rr_depth': 150,
 })
 img = mi.render(scene, integrator=integrator, spp=int(sys.argv[2]))
 mi.Bitmap(img).write(f'tmp{sys.argv[1]}.exr')
