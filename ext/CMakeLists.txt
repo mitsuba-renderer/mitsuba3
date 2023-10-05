@@ -200,6 +200,10 @@ set_property(TARGET
   IexMath IlmThread Half Iex Imath IlmImf IexMath
   PROPERTY PUBLIC_HEADER "")
 
+foreach(X IN LISTS IexMath IlmThread Half Iex Imath IlmImf IexMath IlmImfUtil)
+    set_property(TARGET ${X} PROPERTY OUTPUT_NAME "${X}-mitsuba")
+endforeach()
+
 set(OPENEXR_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
   ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
