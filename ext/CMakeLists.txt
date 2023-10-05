@@ -201,7 +201,7 @@ set_property(TARGET
   PROPERTY PUBLIC_HEADER "")
 
 foreach(X IexMath IlmThread Half Iex Imath IlmImf IexMath IlmImfUtil)
-    set_property(TARGET ${X} PROPERTY OUTPUT_NAME "${X}-mitsuba")
+  set_property(TARGET ${X} PROPERTY OUTPUT_NAME "${X}-mitsuba")
 endforeach()
 
 set(OPENEXR_INCLUDE_DIRS
