@@ -200,7 +200,7 @@ set_property(TARGET
   IexMath IlmThread Half Iex Imath IlmImf IexMath
   PROPERTY PUBLIC_HEADER "")
 
-foreach(X IN LISTS IexMath IlmThread Half Iex Imath IlmImf IexMath IlmImfUtil)
+foreach(X IexMath IlmThread Half Iex Imath IlmImf IexMath IlmImfUtil)
     set_property(TARGET ${X} PROPERTY OUTPUT_NAME "${X}-mitsuba")
 endforeach()
 
