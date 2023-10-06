@@ -282,7 +282,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 # Re evaluate the phase function value in an attached manner
                 phase_eval, _ = phase.eval_pdf(phase_ctx, mei, wo, act_medium_scatter)
                 if not is_primal and dr.grad_enabled(phase_eval):
-                    Lo = phase_eval * dr.detach(dr.select(active, L / dr.maximum(1e-8, phase_eval), 0.0))
+                    Lo = phase_eval * dr.detach(dr.select(act_medium_scatter, L / dr.maximum(1e-8, phase_eval), 0.0))
                     if mode == dr.ADMode.Backward:
                         dr.backward_from(δL * Lo)
                     else:
@@ -305,7 +305,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 bsdf_eval = bsdf.eval(ctx, si, bs.wo, active_surface)
 
                 if not is_primal and dr.grad_enabled(bsdf_eval):
-                    Lo = bsdf_eval * dr.detach(dr.select(active, L / dr.maximum(1e-8, bsdf_eval), 0.0))
+                    Lo = bsdf_eval * dr.detach(dr.select(active_surface, L / dr.maximum(1e-8, bsdf_eval), 0.0))
                     if mode == dr.ADMode.Backward:
                         dr.backward_from(δL * Lo)
                     else:
