@@ -52,7 +52,7 @@ public:
         ray.wavelengths = wavelength_sample;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
+        ray.o = m_to_world.value().translation();
         ray.d = warp::square_to_uniform_sphere(sample3);
         // ray.o += ray.d * math::RayEpsilon<Float>; // TODO apply?
 
@@ -82,6 +82,23 @@ public:
         ray.has_differentials = false;
 
         return { ray, wav_weight };
+    }
+
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f &sample, Mask /* active */) const override {
+        DirectionSample3f ds = dr::zeros<PositionSample3f>();
+        ds.p = m_to_world.value().translation(),
+        ds.d = ds.p - it.p;
+
+        Float dist_squared = dr::squared_norm(ds.d);
+        ds.dist = dr::sqrt(dist_squared);
+        ds.d /= ds.dist;
+
+        ds.n = warp::square_to_uniform_sphere(sample);
+        ds.delta = Mask(true);
+        ds.uv = sample;
+
+        return { ds, dr::Pi<ScalarFloat> };
     }
 
     ScalarBoundingBox3f bbox() const override {
