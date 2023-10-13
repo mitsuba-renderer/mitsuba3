@@ -190,7 +190,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "LinearPolarizer[" << std::endl
+        oss << "LinearRetarder[" << std::endl
             << "  theta = " << string::indent(m_theta) << std::endl
             << "  delta = " << string::indent(m_delta) << std::endl
             << "  transmittance = " << string::indent(m_transmittance) << std::endl
