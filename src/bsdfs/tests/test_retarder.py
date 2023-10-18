@@ -497,3 +497,53 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
     # Make sure observations match expectations
     for k in range(len(expected)):
         assert dr.allclose(observed[k], expected[k], atol=1e-3)
+
+
+def test08_rotated_quarter_wave(variant_scalar_mono_polarized):
+
+    def spectrum_from_stokes(v):
+        res = mi.Spectrum(0.0)
+        for i in range(4):
+            res[i,0] = v[i]
+        return res
+
+    linear_horizontal = spectrum_from_stokes([1, +1, 0, 0])
+    linear_vertical   = spectrum_from_stokes([1, -1, 0, 0])
+    circular_right    = spectrum_from_stokes([1, 0, 0, +1])
+    circular_left     = spectrum_from_stokes([1, 0, 0, -1])
+
+    bsdf = mi.load_dict({
+        'type': 'retarder',
+        'theta': 45.0,
+        'delta': 90.0,
+    })
+
+    ctx = mi.BSDFContext()
+    ctx.mode = mi.TransportMode.Importance
+    si = mi.SurfaceInteraction3f()
+    si.p = [0, 0, 0]
+    si.wi = [0, 0, 1]
+    n = [0, 0, 1]
+    si.n = n
+    si.sh_frame = mi.Frame3f(si.n)
+
+    _, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
+    M_null = bsdf.eval_null_transmission(si)
+    assert dr.allclose(M, M_null, atol=1e-3)
+
+    assert dr.allclose(M @ linear_horizontal, circular_right, atol=1e-3)
+    assert dr.allclose(M @ linear_vertical, circular_left, atol=1e-3)
+    assert dr.allclose(M @ circular_right, linear_vertical, atol=1e-3)
+    assert dr.allclose(M @ circular_left, linear_horizontal, atol=1e-3)
+
+    # Reverse incident direction.
+    si.wi = [0, 0, -1]
+
+    _, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
+    M_null = bsdf.eval_null_transmission(si)
+    assert dr.allclose(M, M_null, atol=1e-3)
+
+    assert dr.allclose(M @ linear_horizontal, circular_left, atol=1e-3)
+    assert dr.allclose(M @ linear_vertical, circular_right, atol=1e-3)
+    assert dr.allclose(M @ circular_right, linear_horizontal, atol=1e-3)
+    assert dr.allclose(M @ circular_left, linear_vertical, atol=1e-3)
