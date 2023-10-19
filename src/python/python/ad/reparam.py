@@ -86,6 +86,7 @@ def _sample_warp_field(scene: mi.Scene,
         o = ray.o,
         d = ray_frame.to_world(omega_local),
         time = ray.time)
+    aux_ray.wavelengths = ray.wavelengths
 
     # Compute an intersection that follows the intersected shape. For example,
     # a perturbation of the translation parameter will propagate to 'si.p'.
