@@ -76,7 +76,7 @@ public:
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
         ray.d = warp::square_to_uniform_sphere(sample3);
-        // ray.o += ray.d * math::RayEpsilon<Float>; // TODO apply?
+        ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't have differentials
         ray.o_x = ray.o_y = ray.o; // nevertheless leave nothing uninitialized
