@@ -45,7 +45,7 @@ class PRBAcousticIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
+            ray, weight, _, _ = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -65,7 +65,7 @@ class PRBAcousticIntegrator(RBIntegrator):
             )
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos #, L, valid
+            del sampler, ray, weight#, pos, L, valid
             gc.collect()
 
             # Perform the weight division and return an image tensor
@@ -104,26 +104,11 @@ class PRBAcousticIntegrator(RBIntegrator):
             idx //= dr.opaque(mi.UInt32, spp)
 
         # Compute the position on the image plane
-        pos = mi.Vector2i(0, 0)
-        # pos = mi.Vector2i(dr.meshgrid(
-        #     dr.arange(mi.Int32, film_size.x),
-        #     dr.arange(mi.Int32, film_size.y),
-        # ))
-        # pos.y = idx // film_size[0]
-        # pos.x = dr.fma(-film_size[0], pos.y, idx)
-
-        # if film.sample_border():
-        #     pos -= border_size
-
-        # pos += mi.Vector2i(film.crop_offset())
-
-        # Cast to floating point and add random offset
-        pos_f = mi.Vector2f(pos) # + sampler.next_2d()
+        pos = mi.Vector2i(idx, 0 * idx)
 
         # Re-scale the position to [0, 1]^2
-        # scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
-        # offset = -mi.ScalarVector2f(film.crop_offset()) * scale
-        pos_adjusted = pos # dr.fma(pos_f, scale, offset)
+        scale = dr.rcp(mi.ScalarVector2f(film_size))
+        pos_adjusted = mi.Vector2f(pos) * scale
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
@@ -141,7 +126,7 @@ class PRBAcousticIntegrator(RBIntegrator):
             ray, weight = sensor.sample_ray_differential(
                 time=time,
                 sample1=wavelength_sample,
-                sample2=pos_adjusted,
+                sample2=pos_adjusted_adjusted,
                 sample3=aperture_sample
             )
 
@@ -411,5 +396,190 @@ class PRBAcousticIntegrator(RBIntegrator):
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
             L                    # State for the differential phase
         )
+
+    def render_forward(self: mi.SamplingIntegrator,
+                       scene: mi.Scene,
+                       params: Any,
+                       sensor: Union[int, mi.Sensor] = 0,
+                       seed: int = 0,
+                       spp: int = 0) -> mi.TensorXf:
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+        aovs = self.aovs()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
+
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, _, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            L, valid, state_out = self.sample(
+                mode=dr.ADMode.Primal,
+                scene=scene,
+                sampler=sampler.clone(),
+                ray=ray,
+                block=film.create_block(),
+                δL=None,
+                state_in=None,
+                reparam=None,
+                active=mi.Bool(True)
+            )
+
+            # Launch the Monte Carlo sampling process in forward mode (2)
+            δL, valid_2, state_out_2 = self.sample(
+                mode=dr.ADMode.Forward,
+                scene=scene,
+                sampler=sampler,
+                ray=ray,
+                block=film.create_block(),
+                δL=film.create_block(),
+                state_in=state_out,
+                reparam=reparam,
+                active=mi.Bool(True)
+            )
+
+            sample_pos_deriv = None # disable by default
+
+            with dr.resume_grad():
+                if True and reparam is not None:
+                    L[~valid] = 0.0
+                    sample_pos_deriv = dr.sum(L.x * weight.x * det) * dr.rcp(dr.sum(det))
+
+                    # Compute the derivative of the reparameterized image ..
+                    dr.forward_to(sample_pos_deriv, flags=dr.ADFlag.ClearInterior | dr.ADFlag.ClearEdges)
+
+                    dr.schedule(sample_pos_deriv, dr.grad(sample_pos_deriv))
+
+            # Perform the weight division and return an image tensor
+            film.put_block(δL)
+
+            # Explicitly delete any remaining unused variables
+            del sampler, ray, weight, L, valid, δL, valid_2, params, \
+                state_out, state_out_2 #, pos
+
+            # Probably a little overkill, but why not.. If there are any
+            # DrJit arrays to be collected by Python's cyclic GC, then
+            # freeing them may enable loop simplifications in dr.eval().
+            gc.collect()
+
+            result_grad = film.develop()
+
+            # Potentially add the derivative of the reparameterized samples
+            if sample_pos_deriv is not None:
+                with dr.resume_grad():
+                    result_grad += dr.grad(sample_pos_deriv)
+
+        return result_grad
+
+    def render_backward(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
+                        params: Any,
+                        grad_in: mi.TensorXf,
+                        sensor: Union[int, mi.Sensor] = 0,
+                        seed: int = 0,
+                        spp: int = 0) -> None:
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+        aovs = self.aovs()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(sensor, seed, spp, aovs)
+
+            # When the underlying integrator supports reparameterizations,
+            # perform necessary initialization steps and wrap the result using
+            # the _ReparamWrapper abstraction defined above
+            if hasattr(self, 'reparam'):
+                reparam = _ReparamWrapper(
+                    scene=scene,
+                    params=params,
+                    reparam=self.reparam,
+                    wavefront_size=sampler.wavefront_size(),
+                    seed=seed
+                )
+            else:
+                reparam = None
+
+            # Generate a set of rays starting at the sensor, keep track of
+            # derivatives wrt. sample positions ('pos') if there are any
+            ray, weight, _, det = self.sample_rays(scene, sensor,
+                                                     sampler, reparam)
+
+            δL = mi.ImageBlock(grad_in)
+
+            # # Clear the dummy data splatted on the film above
+            # film.clear()
+            block = film.create_block()
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            L, valid, state_out = self.sample(
+                mode=dr.ADMode.Primal,
+                scene=scene,
+                sampler=sampler.clone(),
+                ray=ray,
+                block=block,
+                δL=δL,
+                state_in=None,
+                reparam=None,
+                active=mi.Bool(True)
+            )
+
+            # Launch Monte Carlo sampling in backward AD mode (2)
+            L_2, valid_2, state_out_2 = self.sample(
+                mode=dr.ADMode.Backward,
+                scene=scene,
+                sampler=sampler,
+                ray=ray,
+                block=block,
+                δL=δL,
+                state_in=state_out,
+                reparam=reparam,
+                active=mi.Bool(True)
+            )
+
+            # Propagate gradient image to sample positions if necessary
+            if reparam is not None:
+                with dr.resume_grad():
+                    # Accumulate into the image block.
+                    # After reparameterizing the camera ray, we need to evaluate
+                    #   Σ (fi Li det)
+                    #  ---------------
+                    #   Σ (fi det)
+                    L[~valid] = 0.0
+                    dr.backward(L * weight * det * dr.rcp(dr.sum(det)))
+
+            # We don't need any of the outputs here
+            del L, L_2, valid, valid_2, state_out, state_out_2, δL, \
+                ray, weight, det, sampler #, pos
+
+            gc.collect()
+
+            # Run kernel representing side effects of the above
+            dr.eval()
 
 mi.register_integrator("prb_acoustic", lambda props: PRBAcousticIntegrator(props))

@@ -79,6 +79,8 @@ public:
         // ray.o += ray.d * math::RayEpsilon<Float>; // TODO apply?
 
         // 3. Set differentials; since the film size is always 1x1, we don't have differentials
+        ray.o_x = ray.o_y = ray.o; // nevertheless leave nothing uninitialized
+        ray.d_x = ray.d_y = ray.d;
         ray.has_differentials = false;
 
         return { ray, wav_weight };
