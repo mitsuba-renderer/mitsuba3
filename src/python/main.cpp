@@ -74,6 +74,20 @@ PYBIND11_MODULE(mitsuba_ext, m) {
 #endif
 
     m.def("set_log_level", [](mitsuba::LogLevel level) {
+
+        if (!Thread::thread()->logger()) {
+            Throw("No Logger instance is set on the current thread! This is likely due to " 
+                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
+                  "thread's ThreadEnvironment (which includes the logger) using "
+                  "ScopedSetThreadEnvironment e.g.\n"
+                  "# Main thread\n"
+                  "env = mi.ThreadEnvironment()\n"
+                  "# Secondary thread\n"
+                  "with mi.ScopedSetThreadEnvironment(env):\n"
+                  "   mi.set_log_level(mi.LogLevel.Info)\n"
+                  "   mi.Log(mi.LogLevel.Info, 'Message')\n");
+        }
+
         Thread::thread()->logger()->set_log_level(level);
     }, "Sets the log level.");
     m.def("log_level", []() {
