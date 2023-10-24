@@ -35,49 +35,13 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
+using Version = util::Version;
+
 // Set of supported XML tags
 enum class Tag {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
     NamedReference, Include, Alias, Default, Resource, Invalid
-};
-
-struct Version {
-    unsigned int major, minor, patch;
-
-    Version() = default;
-
-    Version(int major, int minor, int patch)
-        : major(major), minor(minor), patch(patch) { }
-
-    Version(const char *value) {
-        auto list = string::tokenize(value, " .");
-        if (list.size() != 3)
-            Throw("Version number must consist of three period-separated parts!");
-        major = std::stoul(list[0]);
-        minor = std::stoul(list[1]);
-        patch = std::stoul(list[2]);
-    }
-
-    bool operator==(const Version &v) const {
-        return std::tie(major, minor, patch) ==
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    bool operator!=(const Version &v) const {
-        return std::tie(major, minor, patch) !=
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    bool operator<(const Version &v) const {
-        return std::tie(major, minor, patch) <
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    friend std::ostream &operator<<(std::ostream &os, const Version &v) {
-        os << v.major << "." << v.minor << "." << v.patch;
-        return os;
-    }
 };
 
 // Check if the name corresponds to an unbounded spectrum property which require
