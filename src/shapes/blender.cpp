@@ -1,3 +1,4 @@
+#include <mitsuba/core/util.h>
 #include <mitsuba/render/mesh.h>
 #include <drjit/color.h>
 #include <array>
@@ -87,6 +88,7 @@ public:
     using typename Base::InputVector3f;
     using typename Base::InputNormal3f;
     using typename Base::FloatStorage;
+    using Version = util::Version;
 
     using ScalarIndex3 = std::array<ScalarIndex, 3>;
 
@@ -109,16 +111,10 @@ public:
                 fail("missing property \"%s\"!", s);
         }
 
-        // get Blender version, this is used to determine the right data layout
-        std::array<int, 3> version;
-        std::istringstream iss(props.string("version"));
-        for (int i = 0; i < 3; ++i) {
-            std::string tmp;
-            std::getline(iss, tmp, '.');
-            version[i] = std::stoi(tmp);
-        }
+        // Get Blender version, this is used to determine the right data layout
+        Version version(props.string("version").c_str());
 
-        m_name     = props.string("name");
+        m_name = props.string("name");
         short mat_nr = (short) props.get<int>("mat_nr");
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
@@ -169,11 +165,11 @@ public:
         // Blender meshes can be partially smooth AND flat (e.g. with edge split modifier)
         // In this case, flat face vertices will be duplicated.
         m_face_normals = true;
-        if (version[0] >= 3 && version[1] >= 6 && sharp_faces == nullptr)
+        if (version >= Version(3, 6, 0) && sharp_faces == nullptr)
             // In this case, the mesh is globally smooth shaded, no need to go through all vertices
             m_face_normals = false;
         else {
-            if (version[0] >= 3 && version[1] >= 6) {
+            if (version >= Version(3, 6, 0)) {
                 for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
                     if (!sharp_faces[polys[tri_loop_id]]) {
                         // At least one smooth face, we can't use global face normals
@@ -249,16 +245,16 @@ public:
         size_t duplicates_ctr = 0;
         for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
             int face_id;
-            if (version[0] >= 3 && version[1] >= 6)
+            if (version >= Version(3, 6, 0))
                 face_id = polys[tri_loop_id];
              else
                 face_id = tri_loops_old[tri_loop_id].poly;
 
             // We only export the part of the mesh corresponding to the given
             // material id
-            if (version[0] >= 3 && version[1] >= 4 && mat_indices != nullptr && mat_indices[face_id] != mat_nr)
+            if (version >= Version(3, 4, 0) && mat_indices != nullptr && mat_indices[face_id] != mat_nr)
                 continue;
-            else if (version[0] <= 3 && version[1] < 4) {
+            else if (version < Version(3, 4, 0)) {
                 if (polys_old[face_id].mat_nr != mat_nr)
                     continue;
             }
@@ -266,7 +262,7 @@ public:
             ScalarIndex3 triangle;
 
             int v0, v1, v2;
-            if (version[0] >= 3 && version[1] >= 6) {
+            if (version >= Version(3, 6, 0)) {
                 const unsigned int *tri_loop = tri_loops[tri_loop_id];
                 v0 = loops[tri_loop[0]];
                 v1 = loops[tri_loop[1]];
@@ -279,12 +275,12 @@ public:
             }
 
             const float *co_0, *co_1, *co_2;
-            if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
+            if (version <= Version(3, 0, 0)) {
                 // Blender 2.xx - 3.0
                 co_0 = verts_old_2[v0].co;
                 co_1 = verts_old_2[v1].co;
                 co_2 = verts_old_2[v2].co;
-            } else if (version[1] < 5) {
+            } else if (version >= Version(3, 1, 0) && version <= Version(3, 4, 0)) {
                 // Blender 3.1 - 3.4
                 co_0 = verts_old_3[v0].co;
                 co_1 = verts_old_3[v1].co;
@@ -303,7 +299,7 @@ public:
 
             InputNormal3f normal(0.f);
             bool smooth_face;
-            if (version[0] >= 3 && version[1] >= 6) {
+            if (version >= Version(3, 6, 0)) {
                 // Blender 3.6+ layout
                 smooth_face = sharp_faces == nullptr || !sharp_faces[face_id];
             } else {
@@ -324,7 +320,7 @@ public:
 
             for (int i = 0; i < 3; i++) {
                 size_t loop_index, vert_index;
-                if (version[0] >= 3 && version[1] >= 6) {
+                if (version >= Version(3, 6, 0)) {
                     const int *tri_loop = (const int *) tri_loops[tri_loop_id];
                     loop_index = tri_loop[i];
                     vert_index = loops[loop_index];
@@ -338,7 +334,7 @@ public:
 
                 Key vert_key;
                 if (smooth_face || m_face_normals) {
-                    if (version[0] < 3 || (version[0] == 3 && version[1] == 0)) {
+                    if (version <= Version(3, 0, 0)) {
                         // Blender 2.xx - 3.0
                         const short *no = verts_old_2[vert_index].no;
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
@@ -363,7 +359,7 @@ public:
                 vert_key.normal = normal;
 
                 if (has_uvs) {
-                    if (version[0] < 3 || (version[0] == 3 && version[1] < 5)) {
+                    if (version <= Version(3, 4, 0)) {
                         // Blender 2.xx - 3.4
                         const blender::MLoopUV *uvs = (const blender::MLoopUV *) uv_ptr;
                         const blender::MLoopUV &loop_uv = uvs[loop_index];

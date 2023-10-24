@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/core/string.h>
+#include <mitsuba/core/logger.h>
 #include <tinyformat.h>
 #include <sstream>
 #include <string>
@@ -47,6 +49,53 @@ extern MI_EXPORT_LIB std::string info_copyright();
 
 /// Return human-readable information about the enabled processor features
 extern MI_EXPORT_LIB std::string info_features();
+
+struct Version {
+    unsigned int major, minor, patch;
+
+    Version() = default;
+
+    Version(int major, int minor, int patch)
+        : major(major), minor(minor), patch(patch) { }
+
+    Version(const char *value) {
+        auto list = string::tokenize(value, " .");
+        if (list.size() != 3)
+            Throw("Version number must consist of three period-separated parts!");
+        major = std::stoul(list[0]);
+        minor = std::stoul(list[1]);
+        patch = std::stoul(list[2]);
+    }
+
+    bool operator==(const Version &v) const {
+        return std::tie(major, minor, patch) == std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator!=(const Version &v) const {
+        return std::tie(major, minor, patch) != std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator<(const Version &v) const {
+        return std::tie(major, minor, patch) < std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator<=(const Version &v) const {
+        return std::tie(major, minor, patch) <= std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator>(const Version &v) const {
+        return std::tie(major, minor, patch) > std::tie(v.major, v.minor, v.patch);
+    }
+
+    bool operator>=(const Version &v) const {
+        return std::tie(major, minor, patch) >= std::tie(v.major, v.minor, v.patch);
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Version &v) {
+        os << v.major << "." << v.minor << "." << v.patch;
+        return os;
+    }
+};
 
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)
