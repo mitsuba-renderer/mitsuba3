@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/core/properties.h>
@@ -60,7 +62,7 @@ struct AttributeCallback : public TraversalCallback {
 
     void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &type) override {
         if (this->name == name) {
-            if (&type == &typeid(Type))
+            if (strcmp(type.name(), typeid(Type).name()) == 0)
                 result = *((Type *) val);
             found = true;
         }
