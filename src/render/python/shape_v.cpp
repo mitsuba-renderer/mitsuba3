@@ -10,6 +10,24 @@
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
 
+MI_PY_EXPORT(SilhouetteSample) {
+    MI_PY_IMPORT_TYPES()
+    auto ss = py::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
+        .def(py::init<>(), "Construct an uninitialized silhouette sample")
+        .def(py::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
+        .def_readwrite("d",                &SilhouetteSample3f::d,                D(SilhouetteSample, d))
+        .def_readwrite("silhouette_d",     &SilhouetteSample3f::silhouette_d,     D(SilhouetteSample, silhouette_d))
+        .def_readwrite("prim_index",       &SilhouetteSample3f::prim_index,       D(SilhouetteSample, prim_index))
+        .def_readwrite("projection_index", &SilhouetteSample3f::projection_index, D(SilhouetteSample, projection_index))
+        .def_readwrite("shape",            &SilhouetteSample3f::shape,            D(SilhouetteSample, shape))
+        .def_readwrite("foreshortening",   &SilhouetteSample3f::foreshortening,   D(SilhouetteSample, foreshortening))
+        .def_readwrite("offset",           &SilhouetteSample3f::offset,           D(SilhouetteSample, offset))
+        .def_repr(SilhouetteSample3f);
+
+    MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, n, uv, time, pdf, delta, d,
+                       silhouette_d, prim_index, projection_index, shape,
+                       foreshortening, offset)
+}
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {

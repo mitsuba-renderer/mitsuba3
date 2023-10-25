@@ -15,6 +15,79 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Forward declaration for `SilhouetteSample`
+template <typename Float, typename Spectrum> class Shape;
+
+/**
+ * \brief Data structure holding the result of visibility silhouette sampling
+ * operations on geometry.
+ */
+template <typename Float_, typename Spectrum_>
+struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
+    using Float    = Float_;
+    using Spectrum = Spectrum_;
+    using ShapePtr = dr::replace_scalar_t<Float, const Shape<Float, Spectrum>*>;
+
+    MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
+    MI_IMPORT_CORE_TYPES()
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
+
+    /// Direction of the boundary segment sample
+    Vector3f d;
+
+    /// Direction of the silhouette curve at the boundary point
+    Vector3f silhouette_d;
+
+    /// Primitive index, e.g. the triangle ID (if applicable)
+    UInt32 prim_index;
+
+    /**
+     * \brief Projection index indicator
+     *
+     * For primitives like triangle meshes, projection needs to determine not
+     * only the triangle index but also the edge index of the selected
+     * triangle. A value larger than 3 indicates a failed projection. For other
+     * primitives, zero indicates a failed projection.
+     *
+     * For triangle meshes, index 0 stands for the edge p0->p1 (not the
+     * opposite edge p1->p2), index 1 stands for the edge p1->p2, and index 2
+     * for p2->p0.
+     */
+    UInt32 projection_index;
+
+    /// Pointer to the associated shape
+    ShapePtr shape = nullptr;
+
+    /**
+     * \brief Local-form boundary foreshortening term.
+     *
+     * It stores `sin_phi_B` for perimeter silhouettes or the normal curvature
+     * for interior silhouettes.
+     */
+    Float foreshortening;
+
+    /**
+     * \brief Offset along the boundary segment direction (`d`) to avoid
+     * self-intersections.
+     */
+    Float offset;
+
+    //! @}
+    // =============================================================
+
+    DRJIT_STRUCT(SilhouetteSample, p, n, d, silhouette_d, uv, time, pdf, delta,
+                 prim_index, projection_index, shape, foreshortening, offset)
+};
+
 /**
  * \brief Base class of all geometric shapes in Mitsuba
  *
@@ -136,7 +209,7 @@ public:
      *
      * \param prim_index
      *     Index of the primitive to be intersected. This index is ignored by a
-     *     shape that contains a single primitive. Otherwise, if no index is provided, 
+     *     shape that contains a single primitive. Otherwise, if no index is provided,
      *     the ray intersection will be performed on the shape's first primitive at index 0.
      */
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
@@ -154,7 +227,7 @@ public:
      *
      * \param ray
      *     The ray to be tested for an intersection
-     * 
+     *
      * \param prim_index
      *     Index of the primitive to be intersected
      */
@@ -597,6 +670,33 @@ protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
 };
+
+// -----------------------------------------------------------------------
+//! @{ \name Misc implementations
+// -----------------------------------------------------------------------
+
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os,
+                         const SilhouetteSample<Float, Spectrum> &ss) {
+    os << "SilhouetteSample[" << std::endl
+       << "  p = " << string::indent(ss.p, 6) << "," << std::endl
+       << "  d = " << string::indent(ss.d, 6) << "," << std::endl
+       << "  sil_dir = " << string::indent(ss.silhouette_d, 12) << "," << std::endl
+       << "  n = " << string::indent(ss.n, 6) << "," << std::endl
+       << "  prim_index = " << ss.prim_index << "," << std::endl
+       << "  project_index = " << ss.projection_index << "," << std::endl
+       << "  uv = " << string::indent(ss.uv, 7) << "," << std::endl
+       << "  pdf = " << ss.pdf << "," << std::endl
+       << "  delta = " << ss.delta << "," << std::endl
+       << "  shape = " << string::indent(ss.shape) << "," << std::endl
+       << "  foreshortening = " << ss.foreshortening << "," << std::endl
+       << "  offset = " << ss.offset << "," << std::endl
+       << "]";
+    return os;
+}
+
+//! @}
+// -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)

@@ -4,7 +4,7 @@
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(PositionSample) {
-    MI_PY_IMPORT_TYPES(ObjectPtr)
+    MI_PY_IMPORT_TYPES()
     auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample))
         .def(py::init<>(), "Construct an uninitialized position sample")
         .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)
@@ -22,7 +22,7 @@ MI_PY_EXPORT(PositionSample) {
 }
 
 MI_PY_EXPORT(DirectionSample) {
-    MI_PY_IMPORT_TYPES(ObjectPtr)
+    MI_PY_IMPORT_TYPES()
     auto pos = py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample))
         .def(py::init<>(), "Construct an uninitialized direct sample")
         .def(py::init<const PositionSample3f &>(), "Construct from a position sample", "other"_a)
