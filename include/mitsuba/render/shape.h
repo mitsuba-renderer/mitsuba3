@@ -41,6 +41,9 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     //! @{ \name Fields
     // =============================================================
 
+    /// Type of discontinuity (\ref DiscontinuityFlags)
+    UInt32 discontinuity_type;
+
     /// Direction of the boundary segment sample
     Vector3f d;
 
@@ -84,9 +87,38 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(SilhouetteSample, p, n, d, silhouette_d, uv, time, pdf, delta,
-                 prim_index, projection_index, shape, foreshortening, offset)
+    DRJIT_STRUCT(SilhouetteSample, p, discontinuity_type, n, d, silhouette_d,
+                 uv, time, pdf, delta, prim_index, projection_index, shape,
+                 foreshortening, offset)
 };
+
+/**
+ * \brief This list of flags is used to control the behavior of discontinuity
+ * related routines.
+ */
+enum class DiscontinuityFlags : uint32_t {
+    // =============================================================
+    //!                   Discontinuity types
+    // =============================================================
+
+    /// No flags set (default value)
+    Empty = 0x0,
+
+    /// Open boundary or jumping normal type of discontinuity
+    PerimeterType = 0x1,
+
+    /// Smooth normal type of discontinuity
+    InteriorType = 0x2,
+
+    // =============================================================
+    //!                 Compound types
+    // =============================================================
+
+    /// All types of discontinuities
+    All = PerimeterType | InteriorType
+};
+
+MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
 
 /**
  * \brief Base class of all geometric shapes in Mitsuba
@@ -185,6 +217,47 @@ public:
      */
     virtual Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                                 Mask active = true) const;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Silhouette sampling routines
+    // =============================================================
+
+    /**
+     * \brief Map a point sample in boundary sample space to a silhouette
+     * segment
+     *
+     * \param sample
+     *      The boundary space sample (a point in the unit cube).
+     *
+     * \param flags
+     *      Flags to select the type of silhouettes to sample
+     *      from (see \ref DiscontinuityFlags).
+     *      Only one type of discontinuity can be sampled per method call.
+     *
+     * \return
+     *     Silhouette sample record.
+     */
+    virtual SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                                 uint32_t flags,
+                                                 Mask active = true) const;
+
+    /**
+     * \brief Map a silhouette segment to a point in boundary sample space
+     *
+     * This method is the inverse of \ref sample_silhouette(). The mapping
+     * from boundary sample space to boundary segments is bijective.
+     *
+     * \param ss
+     *      The sampled boundary segment
+     *
+     * \return
+     *     The correspoinding boundary sample space point
+     */
+    virtual Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                             Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -680,6 +753,7 @@ std::ostream &operator<<(std::ostream &os,
                          const SilhouetteSample<Float, Spectrum> &ss) {
     os << "SilhouetteSample[" << std::endl
        << "  p = " << string::indent(ss.p, 6) << "," << std::endl
+       << "  discontinuity_type = " << string::indent(ss.discontinuity_type, 23) << "," << std::endl
        << "  d = " << string::indent(ss.d, 6) << "," << std::endl
        << "  sil_dir = " << string::indent(ss.silhouette_d, 12) << "," << std::endl
        << "  n = " << string::indent(ss.n, 6) << "," << std::endl
@@ -771,6 +845,8 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(pdf_position)
     DRJIT_VCALL_METHOD(sample_direction)
     DRJIT_VCALL_METHOD(pdf_direction)
+    DRJIT_VCALL_METHOD(sample_silhouette)
+    DRJIT_VCALL_METHOD(invert_silhouette_sample)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
     DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)

@@ -173,7 +173,7 @@ void embree_intersect_scalar(int* valid,
 
 template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
 static void embree_intersect_packet(int *valid, void *geometryUserPtr,
-                                    unsigned int geomID, 
+                                    unsigned int geomID,
                                     unsigned int instID,
                                     unsigned int primID,
                                     RTCRay_ *rtc_ray,
@@ -396,8 +396,21 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*i
     return pdf;
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::sample_silhouette(const Point3f & /*sample*/,
+                                          uint32_t /*type*/,
+                                          Mask /*active*/) const {
+    NotImplementedError("sample_silhouette");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Point3f
+Shape<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f & /*ss*/,
+                                                 Mask /*active*/) const {
+    NotImplementedError("invert_silhouette_sample");
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
-Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, 
+Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
                                                   uint32_t /*prim_index*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }

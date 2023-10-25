@@ -9,6 +9,7 @@ def test01_ss_repr(variants_vec_backends_once_rgb):
   p = [[0, 0, 0],
        [0, 0, 0],
        [0, 0, 0]],
+  discontinuity_type = [0, 0, 0],
   d = [[0, 0, 0],
        [0, 0, 0],
        [0, 0, 0]],
