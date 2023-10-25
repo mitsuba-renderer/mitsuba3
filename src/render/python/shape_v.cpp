@@ -24,9 +24,9 @@ MI_PY_EXPORT(SilhouetteSample) {
         .def_readwrite("offset",           &SilhouetteSample3f::offset,           D(SilhouetteSample, offset))
         .def_repr(SilhouetteSample3f);
 
-    MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, n, uv, time, pdf, delta, d,
-                       silhouette_d, prim_index, projection_index, shape,
-                       foreshortening, offset)
+    MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
+                       time, pdf, delta, d, silhouette_d, prim_index,
+                       projection_index, shape, foreshortening, offset)
 }
 
 /// Trampoline for derived types implemented in Python
@@ -135,6 +135,18 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->pdf_direction(it, ds, active);
             },
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
+       .def("sample_silhouette",
+            [](Ptr shape, const Point3f &sample, uint32_t flags, Mask active) {
+                return shape->sample_silhouette(sample, flags, active);
+            },
+            "sample"_a, "flags"_a, "active"_a = true,
+            D(Shape, sample_silhouette))
+       .def("invert_silhouette_sample",
+            [](Ptr shape, const SilhouetteSample3f &ss, Mask active) {
+                return shape->invert_silhouette_sample(ss, active);
+            },
+            "ss"_a, "active"_a = true,
+            D(Shape, invert_silhouette_sample))
        .def("eval_parameterization",
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);

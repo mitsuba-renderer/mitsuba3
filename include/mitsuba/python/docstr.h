@@ -2089,6 +2089,18 @@ static const char *__doc_mitsuba_DirectionSample_operator_assign_3 = R"doc()doc"
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_DiscontinuityFlags =
+R"doc(This list of flags is used to control the behavior of discontinuity
+related routines.)doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_All = R"doc(All types of discontinuities)doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_Empty = R"doc(No flags set (default value))doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_InteriorType = R"doc(Smooth normal type of discontinuity)doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_PerimeterType = R"doc(Open boundary or jumping normal type of discontinuity)doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution =
 R"doc(Discrete 1D probability distribution
 
@@ -7280,19 +7292,9 @@ static const char *__doc_mitsuba_Sensor_shutter_open_time = R"doc(Return the len
 
 static const char *__doc_mitsuba_Sensor_traverse = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Shape =
-R"doc(Base class of all geometric shapes in Mitsuba
+static const char *__doc_mitsuba_Shape = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
-This class provides core functionality for sampling positions on
-surfaces, computing ray intersections, and bounding shapes within ray
-intersection acceleration data structures.)doc";
-
-static const char *__doc_mitsuba_Shape_2 =
-R"doc(Base class of all geometric shapes in Mitsuba
-
-This class provides core functionality for sampling positions on
-surfaces, computing ray intersections, and bounding shapes within ray
-intersection acceleration data structures.)doc";
+static const char *__doc_mitsuba_Shape_2 = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
@@ -7581,6 +7583,18 @@ static const char *__doc_mitsuba_Shape_initialize = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_interior_medium = R"doc(Return the medium that lies on the interior of this shape)doc";
 
+static const char *__doc_mitsuba_Shape_invert_silhouette_sample =
+R"doc(Map a silhouette segment to a point in boundary sample space
+
+This method is the inverse of sample_silhouette(). The mapping from
+boundary sample space to boundary segments is bijective.
+
+Parameter ``ss``:
+    The sampled boundary segment
+
+Returns:
+    The correspoinding boundary sample space point)doc";
+
 static const char *__doc_mitsuba_Shape_is_bspline_curve = R"doc(Is this shape a b-spline curve ?)doc";
 
 static const char *__doc_mitsuba_Shape_is_emitter = R"doc(Is this shape also an area emitter?)doc";
@@ -7861,6 +7875,20 @@ Parameter ``sample``:
 Returns:
     A PositionSample instance describing the generated sample)doc";
 
+static const char *__doc_mitsuba_Shape_sample_silhouette =
+R"doc(Map a point sample in boundary sample space to a silhouette segment
+
+Parameter ``sample``:
+    The boundary space sample (a point in the unit cube).
+
+Parameter ``flags``:
+    Flags to select the type of silhouettes to sample from (see
+    DiscontinuityFlags). Only one type of discontinuity can be sampled
+    per method call.
+
+Returns:
+    Silhouette sample record.)doc";
+
 static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
@@ -7900,6 +7928,8 @@ static const char *__doc_mitsuba_SilhouetteSample_apply_3 = R"doc()doc";
 static const char *__doc_mitsuba_SilhouetteSample_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_d = R"doc(Direction of the boundary segment sample)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_discontinuity_type = R"doc(Type of discontinuity (DiscontinuityFlags))doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_foreshortening =
 R"doc(Local-form boundary foreshortening term.
@@ -10478,6 +10508,8 @@ static const char *__doc_mitsuba_has_flag_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_has_flag_8 = R"doc()doc";
+
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
 static const char *__doc_mitsuba_hash_2 = R"doc()doc";
@@ -10858,6 +10890,8 @@ static const char *__doc_mitsuba_operator_add_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_8 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_9 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -10886,6 +10920,10 @@ static const char *__doc_mitsuba_operator_band_13 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_14 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_15 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_16 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
@@ -10899,6 +10937,8 @@ static const char *__doc_mitsuba_operator_bnot_5 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bnot_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -10927,6 +10967,10 @@ static const char *__doc_mitsuba_operator_bor_12 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bor_13 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_14 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_15 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
