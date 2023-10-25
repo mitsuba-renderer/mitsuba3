@@ -7287,13 +7287,20 @@ This class provides core functionality for sampling positions on
 surfaces, computing ray intersections, and bounding shapes within ray
 intersection acceleration data structures.)doc";
 
-static const char *__doc_mitsuba_Shape_2 = R"doc()doc";
+static const char *__doc_mitsuba_Shape_2 =
+R"doc(Base class of all geometric shapes in Mitsuba
+
+This class provides core functionality for sampling positions on
+surfaces, computing ray intersections, and bounding shapes within ray
+intersection acceleration data structures.)doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
@@ -7869,6 +7876,68 @@ time-dependent scaling.
 The default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_Shape_traverse = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample =
+R"doc(Data structure holding the result of visibility silhouette sampling
+operations on geometry.)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_2 = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_3 = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_apply_label = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_d = R"doc(Direction of the boundary segment sample)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_foreshortening =
+R"doc(Local-form boundary foreshortening term.
+
+It stores `sin_phi_B` for perimeter silhouettes or the normal
+curvature for interior silhouettes.)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_offset =
+R"doc(Offset along the boundary segment direction (`d`) to avoid self-
+intersections.)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_operator_array = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign_2 = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_projection_index =
+R"doc(Projection index indicator
+
+For primitives like triangle meshes, projection needs to determine not
+only the triangle index but also the edge index of the selected
+triangle. A value larger than 3 indicates a failed projection. For
+other primitives, zero indicates a failed projection.
+
+For triangle meshes, index 0 stands for the edge p0->p1 (not the
+opposite edge p1->p2), index 1 stands for the edge p1->p2, and index 2
+for p2->p0.)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_shape = R"doc(Pointer to the associated shape)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_silhouette_d = R"doc(Direction of the silhouette curve at the boundary point)doc";
 
 static const char *__doc_mitsuba_Spectrum =
 R"doc(//! @{ \name Data types for spectral quantities with sampled
@@ -10916,6 +10985,8 @@ static const char *__doc_mitsuba_operator_lshift_27 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_28 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_29 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_30 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
