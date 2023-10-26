@@ -371,12 +371,12 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        Point3f pt;
-        pt.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
-        pt.y() = ss.uv.x();
-        pt.z() = ss.uv.y();
+        Point3f sample;
+        sample.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
+        sample.y() = ss.uv.x();
+        sample.z() = ss.uv.y();
 
-        return pt;
+        return sample;
     }
 
     //! @}

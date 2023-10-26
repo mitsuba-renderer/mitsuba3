@@ -704,7 +704,7 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Warping techniques to surface normals
+//! @{ \name Warping techniques for surface tangents
 // =======================================================================
 
 /// Warp a uniformly distributed sample on [0, 1] to a direction in the tangent plane
@@ -722,11 +722,11 @@ interval_to_tangent_direction(const Normal<Value, 3> &n, Value sample) {
 /// Inverse of \ref uniform_to_tangent_direction
 template <typename Value>
 MI_INLINE Value tangent_direction_to_interval(const Normal<Value, 3> &n,
-                                             const Vector<Value, 3> &dir) {
+                                              const Vector<Value, 3> &d) {
     using Frame3 = Frame<Value>;
 
     Frame3 frame(n);
-    Value t = dr::atan2(dr::dot(dir, frame.t), dr::dot(dir, frame.s));
+    Value t = dr::atan2(dr::dot(d, frame.t), dr::dot(d, frame.s));
     dr::masked(t, t < 0.f) += dr::TwoPi<Value>;
     t *= dr::InvTwoPi<Value>;
     return t;
