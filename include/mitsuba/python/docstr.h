@@ -12127,6 +12127,10 @@ static const char *__doc_mitsuba_warp_interval_to_nonuniform_tent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
 
+static const char *__doc_mitsuba_warp_interval_to_tangent_direction =
+R"doc(Warp a uniformly distributed sample on [0, 1] to a direction in the
+tangent plane)doc";
+
 static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
 
 static const char *__doc_mitsuba_warp_linear_to_interval = R"doc(Inverse of interval_to_linear)doc";
@@ -12225,6 +12229,8 @@ R"doc(Warp a uniformly distributed square sample to a von Mises Fisher
 distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_von_mises_fisher_pdf = R"doc(Probability density of square_to_von_mises_fisher())doc";
+
+static const char *__doc_mitsuba_warp_tangent_direction_to_interval = R"doc(Inverse of uniform_to_tangent_direction)doc";
 
 static const char *__doc_mitsuba_warp_tent_to_interval = R"doc(Warp a tent distribution to a uniformly distributed sample on [0, 1])doc";
 
