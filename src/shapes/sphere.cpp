@@ -338,6 +338,49 @@ public:
     // =============================================================
 
     // =============================================================
+    //! @{ \name Silhouette sampling routines
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::InteriorType)) {
+            return dr::zeros<SilhouetteSample3f>();
+        }
+
+        /// Sample a point on the shape surface
+        SilhouetteSample3f ss(
+            sample_position(0.f, dr::tail<2>(sample), active));
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+        ss.shape = this;
+        ss.foreshortening = dr::rcp(m_radius.value());
+        ss.offset = 0.f;
+
+        /// Sample a tangential direction at the point
+        ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
+        ss.pdf *= dr::InvTwoPi<Float>;
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f pt;
+        pt.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
+        pt.y() = ss.uv.x();
+        pt.z() = ss.uv.y();
+
+        return pt;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
 

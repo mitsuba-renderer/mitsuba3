@@ -281,7 +281,7 @@ public:
      * version is sampled.
      *
      * When sampling a continuous/non-delta component, this method also
-     * multiplies by the cosine foreshorening factor with respect to the
+     * multiplies by the cosine foreshortening factor with respect to the
      * sampled direction.
      *
      * \param ctx
