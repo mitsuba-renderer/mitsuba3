@@ -284,3 +284,47 @@ def test09_eval_parameterization(variants_all_ad_rgb):
 
     si_after = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
     assert dr.allclose(si_before.uv, si_after.uv)
+
+
+def test10_sample_silhouette_wrong_type(variants_all_rgb):
+    sphere = mi.load_dict({ 'type': 'rectangle' })
+    ss = sphere.sample_silhouette([0.1, 0.2, 0.3],
+                                  mi.DiscontinuityFlags.InteriorType)
+
+    assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
+
+
+def test11_sample_silhouette(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+    rectangle_ptr = mi.ShapePtr(rectangle)
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.all(
+        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
+        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+    )
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, (1 / (2 * 4)) * dr.inv_four_pi)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+
+
+def test12_sample_silhouette_bijective(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    out = rectangle.invert_silhouette_sample(ss)
+
+    assert dr.allclose(samples, out, atol=1e-4)
