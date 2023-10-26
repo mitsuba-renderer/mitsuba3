@@ -15,13 +15,14 @@ MI_PY_EXPORT(SilhouetteSample) {
     auto ss = py::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
         .def(py::init<>(), "Construct an uninitialized silhouette sample")
         .def(py::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
-        .def_readwrite("d",                &SilhouetteSample3f::d,                D(SilhouetteSample, d))
-        .def_readwrite("silhouette_d",     &SilhouetteSample3f::silhouette_d,     D(SilhouetteSample, silhouette_d))
-        .def_readwrite("prim_index",       &SilhouetteSample3f::prim_index,       D(SilhouetteSample, prim_index))
-        .def_readwrite("projection_index", &SilhouetteSample3f::projection_index, D(SilhouetteSample, projection_index))
-        .def_readwrite("shape",            &SilhouetteSample3f::shape,            D(SilhouetteSample, shape))
-        .def_readwrite("foreshortening",   &SilhouetteSample3f::foreshortening,   D(SilhouetteSample, foreshortening))
-        .def_readwrite("offset",           &SilhouetteSample3f::offset,           D(SilhouetteSample, offset))
+        .def_readwrite("discontinuity_type", &SilhouetteSample3f::discontinuity_type, D(SilhouetteSample, discontinuity_type))
+        .def_readwrite("d",                  &SilhouetteSample3f::d,                  D(SilhouetteSample, d))
+        .def_readwrite("silhouette_d",       &SilhouetteSample3f::silhouette_d,       D(SilhouetteSample, silhouette_d))
+        .def_readwrite("prim_index",         &SilhouetteSample3f::prim_index,         D(SilhouetteSample, prim_index))
+        .def_readwrite("projection_index",   &SilhouetteSample3f::projection_index,   D(SilhouetteSample, projection_index))
+        .def_readwrite("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
+        .def_readwrite("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
+        .def_readwrite("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
         .def_repr(SilhouetteSample3f);
 
     MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
