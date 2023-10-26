@@ -4,6 +4,7 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
@@ -190,6 +191,113 @@ public:
         si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
         return si;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Silhouette sampling routines
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+            return dr::zeros<SilhouetteSample3f>();
+        }
+
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+
+        /// Sample a point on the shape surface
+        Mask range = false;
+        Vector2f edge_dir = dr::zeros<Vector2f>();
+
+        // Use sample.x() to determine a point on the rectangle edges:
+        // clockwise rotation starting at bottom left corner
+        range = (sample.x() < 0.25f);
+        dr::masked(edge_dir, range) = Vector2f(0.f, 1.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.00f, Point2f(0.f, 0.f));
+
+        range = (0.25f <= sample.x() && sample.x() < 0.50f);
+        dr::masked(edge_dir, range) = Vector2f(1.f, 0.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.25f, Point2f(0.f, 1.f));
+
+        range = (0.50f <= sample.x() && sample.x() < 0.75f);
+        dr::masked(edge_dir, range) = Vector2f(0.f, -1.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.50f, Point2f(1.f, 1.f));
+
+        range = (0.75f <= sample.x());
+        dr::masked(edge_dir, range) = Vector2f(-1.f, 0.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.75f, Point2f(1.f, 0.f));
+
+        // Object space spans [-1,1]x[-1,1], UV coordinates span [0,1]x[0,1]
+        Vector3f local(ss.uv.x() * 2.f - 1.f, ss.uv.y() * 2.f - 1.f, 0.f);
+        ss.p = m_to_world.value() * Point3f(local);
+
+        /// Sample a tangential direction at the point
+        ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
+
+        /// Fill other fields
+        Vector3f world_edge_dir = dr::normalize(
+            m_to_world.value() * Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, world_edge_dir));
+
+        // Normal direction `ss.n` must point outwards
+        Vector3f inward_dir = -local;
+        inward_dir = m_to_world.value().transform_affine(inward_dir);
+        frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
+        ss.n = frame_n;
+
+        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4.f +
+                         m_to_world.value().matrix(1, 1) * 4.f);
+        ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+        ss.foreshortening = dr::norm(dr::cross(ss.d, world_edge_dir));
+        ss.shape = this;
+        ss.offset = 1e-3f;
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Mask range = false;
+        Float sample_x = dr::zeros<Float>();
+        Bool done = false;
+
+        // Clockwise rotation starting at bottom left corner
+        range = dr::eq(ss.uv.x(), 0.f);
+        dr::masked(sample_x, range && !done) = ss.uv.y() * 0.25f + 0.00f;
+        done |= range;
+
+        range = dr::eq(ss.uv.y(), 1.f);
+        dr::masked(sample_x, range && !done) = ss.uv.x() * 0.25f + 0.25f;
+        done |= range;
+
+        range = dr::eq(ss.uv.x(), 1.f);
+        dr::masked(sample_x, range && !done) = (1.f - ss.uv.y()) * 0.25f + 0.50f;
+        done |= range;
+
+        range = dr::eq(ss.uv.y(), 0.f);
+        dr::masked(sample_x, range && !done) = (1.f - ss.uv.x()) * 0.25f + 0.75f;
+
+        Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);
+
+        Point3f sample = dr::zeros<Point3f>();
+        sample.x() = sample_x;
+        sample.y() = sample_yz.x();
+        sample.z() = sample_yz.y();
+
+        return sample;
     }
 
     //! @}

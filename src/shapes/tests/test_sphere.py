@@ -366,7 +366,7 @@ def test12_sample_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.foreshortening, 1)
 
 
-def test13_sample_ilhouette_bijective(variants_vec_rgb):
+def test13_sample_silhouette_bijective(variants_vec_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
 
     x = dr.linspace(Float, 1e-6, 1-1e-6, 10)

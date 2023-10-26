@@ -353,14 +353,16 @@ public:
         /// Sample a point on the shape surface
         SilhouetteSample3f ss(
             sample_position(0.f, dr::tail<2>(sample), active));
-        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
-        ss.shape = this;
-        ss.foreshortening = dr::rcp(m_radius.value());
-        ss.offset = 0.f;
 
         /// Sample a tangential direction at the point
         ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
+
+        /// Fill other fields
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
         ss.pdf *= dr::InvTwoPi<Float>;
+        ss.shape = this;
+        ss.foreshortening = dr::rcp(m_radius.value());
+        ss.offset = 0.f;
 
         return ss;
     }
