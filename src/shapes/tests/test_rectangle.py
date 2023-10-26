@@ -327,4 +327,4 @@ def test12_sample_silhouette_bijective(variants_vec_rgb):
     ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
     out = rectangle.invert_silhouette_sample(ss)
 
-    assert dr.allclose(samples, out, atol=1e-4)
+    assert dr.allclose(samples, out, atol=1e-7)

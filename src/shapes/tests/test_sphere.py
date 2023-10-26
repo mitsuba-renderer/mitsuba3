@@ -377,4 +377,4 @@ def test13_sample_silhouette_bijective(variants_vec_rgb):
     ss = sphere.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
     out = sphere.invert_silhouette_sample(ss)
 
-    assert dr.allclose(samples, out, atol=1e-6)
+    assert dr.allclose(samples, out, atol=1e-7)

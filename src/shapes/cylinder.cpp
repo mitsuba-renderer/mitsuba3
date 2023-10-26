@@ -299,6 +299,105 @@ public:
     // =============================================================
 
     // =============================================================
+    //! @{ \name Silhouette sampling routines
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        const Transform4f& to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+            /// Sample a point on the shape surface
+            ss.uv = dr::select(
+                sample.x() < 0.5f,
+                Point2f(sample.x() * 2.f, 0.f),
+                Point2f(sample.x() * 2.f - 1.f, 1.f)
+            );
+            Float sin_theta(0), cos_theta(0);
+            std::tie(sin_theta, cos_theta) = dr::sincos(ss.uv.x() * dr::TwoPi<Float>);
+            Point3f local_p(cos_theta, sin_theta, ss.uv.y());
+            ss.p = to_world.transform_affine(local_p);
+
+            /// Sample a tangential direction at the point
+            ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
+
+            /// Fill other fields
+            ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+            ss.silhouette_d  = dr::normalize(to_world.transform_affine(
+                Vector3f(sin_theta, -cos_theta, 0.f)));
+            Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+            // Normal direction `ss.n` must point outwards
+            Vector3f inward_dir = Vector3f(0.f, 0.f, 1.f) - 2 * Vector3f(0.f, 0.f, ss.uv.y());
+            inward_dir = to_world.transform_affine(inward_dir);
+            dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+            ss.n = frame_n;
+
+            ss.pdf = dr::rcp(dr::FourPi<Float> * m_radius.value());
+            ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+            ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
+            ss.shape = this;
+            ss.offset = 1e-3f;
+        } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
+            /// Sample a point on the shape surface
+            ss = SilhouetteSample3f(
+                sample_position(0.f, dr::tail<2>(sample), active));
+
+            /// Sample a tangential direction at the point
+            ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
+
+            /// Fill other fields
+            ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+
+            ss.pdf *= dr::InvTwoPi<Float>;
+            ss.silhouette_d = dr::normalize(
+                to_world.transform_affine(Vector3f(0.f, 0.f, 1.f)));
+            ss.foreshortening =
+                dr::rcp(m_radius.value()) *
+                dr::squared_norm(dr::cross(ss.d, ss.silhouette_d));
+            ss.shape = this;
+            ss.offset = 1e-3f;
+        }
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f sample_perimeter = dr::zeros<Point3f>();
+        sample_perimeter.x() = dr::select(ss.uv.y() < 0.5f,
+                                          ss.uv.x() * 0.5f,
+                                          ss.uv.x() * 0.5f + 0.5f);
+        Point2f sample_perimeter_yz = warp::uniform_sphere_to_square(ss.d);
+        sample_perimeter.y() = sample_perimeter_yz.x();
+        sample_perimeter.z() = sample_perimeter_yz.y();
+
+        Point3f sample_interior = dr::zeros<Point3f>();
+        sample_interior.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
+        sample_interior.y() = ss.uv.y();
+        sample_interior.z() = ss.uv.x();
+
+        Point3f sample = dr::zeros<Point3f>();
+        Mask perimeter_samples =
+            has_flag(ss.discontinuity_type, DiscontinuityFlags::PerimeterType);
+        Mask interior_samples =
+            has_flag(ss.discontinuity_type, DiscontinuityFlags::InteriorType);
+        dr::masked(sample, perimeter_samples) = sample_perimeter;
+        dr::masked(sample, interior_samples) = sample_interior;
+
+        return sample;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
 
