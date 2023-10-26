@@ -15,6 +15,34 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * \brief This list of flags is used to control the behavior of discontinuity
+ * related routines.
+ */
+enum class DiscontinuityFlags : uint32_t {
+    // =============================================================
+    //!                   Discontinuity types
+    // =============================================================
+
+    /// No flags set (default value)
+    Empty = 0x0,
+
+    /// Open boundary or jumping normal type of discontinuity
+    PerimeterType = 0x1,
+
+    /// Smooth normal type of discontinuity
+    InteriorType = 0x2,
+
+    // =============================================================
+    //!                 Compound types
+    // =============================================================
+
+    /// All types of discontinuities
+    All = PerimeterType | InteriorType
+};
+
+MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
+
 /// Forward declaration for `SilhouetteSample`
 template <typename Float, typename Spectrum> class Shape;
 
@@ -91,34 +119,6 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
                  uv, time, pdf, delta, prim_index, projection_index, shape,
                  foreshortening, offset)
 };
-
-/**
- * \brief This list of flags is used to control the behavior of discontinuity
- * related routines.
- */
-enum class DiscontinuityFlags : uint32_t {
-    // =============================================================
-    //!                   Discontinuity types
-    // =============================================================
-
-    /// No flags set (default value)
-    Empty = 0x0,
-
-    /// Open boundary or jumping normal type of discontinuity
-    PerimeterType = 0x1,
-
-    /// Smooth normal type of discontinuity
-    InteriorType = 0x2,
-
-    // =============================================================
-    //!                 Compound types
-    // =============================================================
-
-    /// All types of discontinuities
-    All = PerimeterType | InteriorType
-};
-
-MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
 
 /**
  * \brief Base class of all geometric shapes in Mitsuba

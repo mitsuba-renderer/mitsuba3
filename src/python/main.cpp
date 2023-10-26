@@ -40,6 +40,7 @@ MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
 MI_PY_DECLARE(FilmFlags);
+MI_PY_DECLARE(DiscontinuityFlags);
 
 PYBIND11_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
@@ -126,6 +127,7 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
+    MI_PY_IMPORT(DiscontinuityFlags);
 
     // Register a cleanup callback function to wait for pending tasks
     auto atexit = py::module_::import("atexit");
