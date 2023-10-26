@@ -182,3 +182,25 @@ def test_square_to_bilinear(variant_scalar_rgb):
     assert dr.allclose(pdf2, pdf)
     pdf3 = mi.warp.square_to_bilinear_pdf(*values, p),
     assert dr.allclose(pdf3, pdf)
+
+
+def test_interval_to_tangent_direction(variant_scalar_rgb):
+    from mitsuba.test.util import check_vectorization
+
+    for x in dr.linspace(Float, 1e-6, 1-1e-6, 5):
+        for y in dr.linspace(Float, 1e-6, 1-1e-6, 5):
+            n = mi.warp.square_to_uniform_sphere([x, y])
+
+            for sample in dr.linspace(Float, 1e-6, 1-1e-6, 10):
+                d = mi.warp.interval_to_tangent_direction(n, sample)
+                assert dr.allclose(dr.dot(d, n), 0, atol=1e-6)
+                assert dr.allclose(mi.warp.tangent_direction_to_interval(n, d), sample, atol=1e-6)
+
+            def kernel(n, sample):
+                n = dr.normalize(n)
+                d = mi.warp.interval_to_tangent_direction(n, sample)
+                out_sample = mi.warp.tangent_direction_to_interval(n, d)
+                return d, out_sample
+
+            check_vectorization(kernel, arg_dims=[3, 1], atol=1e-6)
+            mi.set_variant('scalar_rgb')

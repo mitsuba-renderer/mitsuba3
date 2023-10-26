@@ -703,5 +703,37 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
 //! @}
 // =======================================================================
 
+// =======================================================================
+//! @{ \name Warping techniques to surface normals
+// =======================================================================
+
+/// Warp a uniformly distributed sample on [0, 1] to a direction in the tangent plane
+template <typename Value>
+MI_INLINE Vector<Value, 3>
+interval_to_tangent_direction(const Normal<Value, 3> &n, Value sample) {
+    using Frame3 = Frame<Value>;
+
+    Frame3 frame(n);
+    Value sin(0), cos(0);
+    std::tie(sin, cos) = dr::sincos(sample * dr::TwoPi<Value>);
+    return frame.s * cos + frame.t * sin;
+}
+
+/// Inverse of \ref uniform_to_tangent_direction
+template <typename Value>
+MI_INLINE Value tangent_direction_to_interval(const Normal<Value, 3> &n,
+                                             const Vector<Value, 3> &dir) {
+    using Frame3 = Frame<Value>;
+
+    Frame3 frame(n);
+    Value t = dr::atan2(dr::dot(dir, frame.t), dr::dot(dir, frame.s));
+    dr::masked(t, t < 0.f) += dr::TwoPi<Value>;
+    t *= dr::InvTwoPi<Value>;
+    return t;
+}
+
+//! @}
+// =======================================================================
+
 NAMESPACE_END(warp)
 NAMESPACE_END(mitsuba)

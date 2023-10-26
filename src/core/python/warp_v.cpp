@@ -174,4 +174,14 @@ MI_PY_EXPORT(warp) {
     m.def("bilinear_to_square", warp::bilinear_to_square<Float>,
           "v00"_a, "v10"_a, "v01"_a, "v11"_a, "sample"_a,
           D(warp, bilinear_to_square));
+
+    m.def("interval_to_tangent_direction",
+          warp::interval_to_tangent_direction<Float>,
+          "n"_a, "sample"_a,
+          D(warp, interval_to_tangent_direction));
+
+    m.def("tangent_direction_to_interval",
+          warp::tangent_direction_to_interval<Float>,
+          "n"_a, "dir"_a,
+          D(warp, tangent_direction_to_interval));
 }
