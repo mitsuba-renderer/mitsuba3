@@ -115,6 +115,20 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
+    // =============================================================
+    //! @{ \name Methods
+    // =============================================================
+
+    /// Partially initialize a boundary segment from a position sample
+    SilhouetteSample(const PositionSample<Float, Spectrum> &ps)
+        : Base(ps), discontinuity_type((uint32_t) DiscontinuityFlags::Empty),
+          d(0), silhouette_d(0), prim_index(0), projection_index(0),
+          shape(nullptr), foreshortening(0), offset(0) {}
+
+    //! @}
+    // =============================================================
+
+
     DRJIT_STRUCT(SilhouetteSample, p, discontinuity_type, n, d, silhouette_d,
                  uv, time, pdf, delta, prim_index, projection_index, shape,
                  foreshortening, offset)

@@ -997,7 +997,7 @@ Depending on the provided transport type, either the BSDF or its
 adjoint version is sampled.
 
 When sampling a continuous/non-delta component, this method also
-multiplies by the cosine foreshorening factor with respect to the
+multiplies by the cosine foreshortening factor with respect to the
 sampled direction.
 
 Parameter ``ctx``:
@@ -7909,15 +7909,17 @@ static const char *__doc_mitsuba_SilhouetteSample =
 R"doc(Data structure holding the result of visibility silhouette sampling
 operations on geometry.)doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample = R"doc(Partially initialize a boundary segment from a position sample)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_4 = R"doc()doc";
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_4 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_apply_1 = R"doc()doc";
 

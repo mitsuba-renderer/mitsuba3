@@ -335,3 +335,46 @@ def test10_si_singularity_centered(variants_all_rgb):
     assert dr.allclose(si.sh_frame.s, [1, 0, 0])
     assert dr.allclose(si.sh_frame.t, [0, 1, 0])
     assert dr.allclose(si.sh_frame.n, [0, 0, 1])
+
+
+def test11_sample_silhouette_wrong_type(variants_all_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+    ss = sphere.sample_silhouette([0.1, 0.2, 0.3],
+                                  mi.DiscontinuityFlags.PerimeterType)
+
+    assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
+
+
+def test12_sample_silhouette(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+    sphere_ptr = mi.ShapePtr(sphere)
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = sphere.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.allclose(dr.norm(ss.p), 1)
+    assert dr.allclose(ss.p, ss.n)
+    assert dr.allclose(ss.p, ss.n)
+    assert dr.allclose(ss.pdf, dr.inv_four_pi * dr.inv_two_pi)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, sphere_ptr))
+    assert dr.allclose(ss.foreshortening, 1)
+
+
+def test13_sample_ilhouette_bijective(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = sphere.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    out = sphere.invert_silhouette_sample(ss)
+
+    assert dr.allclose(samples, out, atol=1e-6)
