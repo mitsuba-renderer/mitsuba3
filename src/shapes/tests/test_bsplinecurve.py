@@ -317,3 +317,73 @@ def test10_backface_culling(variant_llvm_ad_rgb):
     ray = mi.Ray3f(o=[0, 0, 2], d=[0, 0, -1])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
+
+
+@fresolver_append_path
+def test12_sample_silhouette_perimeter(variants_vec_rgb):
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve.txt",
+    })
+    curve_ptr = mi.ShapePtr(curve)
+    length = -2 * (-1 - 4 * 0.3 + 0.3) * (1 / 6)
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = curve.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.allclose(dr.abs(ss.p.x), length/2)
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, dr.inv_four_pi * dr.inv_two_pi, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+
+
+@fresolver_append_path
+def test13_sample_silhouette_interior(variants_vec_rgb):
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve.txt",
+    })
+    curve_ptr = mi.ShapePtr(curve)
+    length = -2 * (-1 - 4 * 0.3 + 0.3) * (1 / 6)
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = curve.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.all((-length/2 <= ss.p.x) & (ss.p.x <= length/2))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.n, mi.Point3f(0, ss.p.y, ss.p.z), atol=1e-6)
+    assert dr.allclose(ss.pdf, dr.inv_two_pi * (1 / length) * dr.inv_two_pi, atol=1e-2)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+
+
+@fresolver_append_path
+def test14_sample_silhouette_bijective(variants_vec_rgb):
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve_doc.txt",
+    })
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss_perimeter = curve.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    out_perimeter  = curve.invert_silhouette_sample(ss_perimeter)
+    assert dr.allclose(samples, out_perimeter, atol=1e-6)
+
+    ss_interior = curve.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    out_interior = curve.invert_silhouette_sample(ss_interior)
+    assert dr.allclose(samples, out_interior, atol=1e-7)
