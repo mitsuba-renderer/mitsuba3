@@ -370,6 +370,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
+        /// Invert perimeter type samples
         Point3f sample_perimeter = dr::zeros<Point3f>();
         sample_perimeter.x() = dr::select(ss.uv.y() < 0.5f,
                                           ss.uv.x() * 0.5f,
@@ -378,11 +379,13 @@ public:
         sample_perimeter.y() = sample_perimeter_yz.x();
         sample_perimeter.z() = sample_perimeter_yz.y();
 
+        /// Invert interior type samples
         Point3f sample_interior = dr::zeros<Point3f>();
         sample_interior.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
         sample_interior.y() = ss.uv.y();
         sample_interior.z() = ss.uv.x();
 
+        /// Merge outputs
         Point3f sample = dr::zeros<Point3f>();
         Mask perimeter_samples =
             has_flag(ss.discontinuity_type, DiscontinuityFlags::PerimeterType);
