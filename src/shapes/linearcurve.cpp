@@ -368,7 +368,7 @@ public:
         Base::traverse(callback);
         callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
         callback->put_parameter("segment_indices",     m_indices,             +ParamFlags::NonDifferentiable);
-        callback->put_parameter("control_points",      m_control_points,       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("control_points",      m_control_points,      +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
