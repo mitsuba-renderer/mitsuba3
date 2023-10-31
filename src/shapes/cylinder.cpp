@@ -371,7 +371,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         /// Invert perimeter type samples
-        Point3f sample_perimeter = dr::zeros<Point3f>();
+        Point3f sample_perimeter = dr::zeros<Point3f>(dr::width(ss));
         sample_perimeter.x() = dr::select(ss.uv.y() < 0.5f,
                                           ss.uv.x() * 0.5f,
                                           ss.uv.x() * 0.5f + 0.5f);
@@ -380,7 +380,7 @@ public:
         sample_perimeter.z() = sample_perimeter_yz.y();
 
         /// Invert interior type samples
-        Point3f sample_interior = dr::zeros<Point3f>();
+        Point3f sample_interior = dr::zeros<Point3f>(dr::width(ss));
         sample_interior.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
         sample_interior.y() = ss.uv.y();
         sample_interior.z() = ss.uv.x();
