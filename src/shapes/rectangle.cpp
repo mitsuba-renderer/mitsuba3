@@ -292,7 +292,7 @@ public:
 
         Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);
 
-        Point3f sample = dr::zeros<Point3f>();
+        Point3f sample = dr::zeros<Point3f>(dr::width(ss));
         sample.x() = sample_x;
         sample.y() = sample_yz.x();
         sample.z() = sample_yz.y();

@@ -515,7 +515,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         /// Invert perimeter type samples
-        Point3f sample_perimeter = dr::zeros<Point3f>();
+        Point3f sample_perimeter = dr::zeros<Point3f>(dr::width(ss));
 
         size_t curve_count = dr::width(m_curves_prim_idx) - 1;
         UInt32 curve_idx = dr::binary_search<UInt32>(
@@ -557,7 +557,7 @@ public:
         sample_perimeter.z() = warp::uniform_hemisphere_to_square(local_d).y();
 
         /// Invert interior type samples
-        Point3f sample_interior = dr::zeros<Point3f>();
+        Point3f sample_interior = dr::zeros<Point3f>(dr::width(ss));
         sample_interior.z() = warp::tangent_direction_to_interval(ss.n, ss.d);
         sample_interior.y() = ss.uv.x();
         sample_interior.x() = ss.uv.y();

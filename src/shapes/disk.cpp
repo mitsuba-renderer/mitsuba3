@@ -212,6 +212,73 @@ public:
     // =============================================================
 
     // =============================================================
+    //! @{ \name Silhouette sampling routines
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+            return dr::zeros<SilhouetteSample3f>();
+        }
+
+        const Transform4f& to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        /// Sample a point on the shape surface
+        ss.uv = Point2f(1.f, sample.x());
+        Float theta = sample.x() * dr::TwoPi<Float>;
+        Float sin_theta, cos_theta;
+        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
+        ss.p = to_world.transform_affine(Point3f(local_p.x(), local_p.y(), 0.f));
+
+        /// Sample a tangential direction at the point
+        ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
+
+        /// Fill other fields
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
+            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        // Normal direction `ss.n` must point outwards
+        Vector3f inward_dir = -local_p;
+        inward_dir = to_world.transform_affine(inward_dir);
+        dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+        ss.n = frame_n;
+
+        // Arc-length ratio
+        ss.pdf = dr::InvTwoPi<Float> *
+                 dr::rcp(dr::norm(to_world.transform_affine(
+                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+        ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+        ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
+        ss.shape = this;
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f sample = dr::zeros<Point3f>(dr::width(ss));
+
+        sample.x() = ss.uv.y();
+        Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);
+        sample.y() = sample_yz.x();
+        sample.z() = sample_yz.y();
+
+        return sample;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
 
