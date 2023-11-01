@@ -87,11 +87,76 @@ public:
     using Sensor::m_film;
 };
 
+template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
+    MI_PY_IMPORT_TYPES()
+
+    cls.def("sample_ray",
+            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
+               const Point2f &sample3, Mask active) {
+                return ptr->sample_ray(time, sample1, sample2, sample3, active);
+            },
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+            D(Endpoint, sample_ray))
+    .def("sample_ray_differential",
+            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
+               const Point2f &sample3, Mask active) {
+                std::cout << "Hellooo !! " << std::endl;
+                return ptr->sample_ray_differential(time, sample1, sample2, sample3, active);
+            },
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+            D(Sensor, sample_ray_differential))
+    .def("sample_direction",
+            [](Ptr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+                return ptr->sample_direction(it, sample, active);
+            },
+            "it"_a, "sample"_a, "active"_a = true,
+            D(Endpoint, sample_direction))
+    .def("pdf_direction",
+            [](Ptr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+                return ptr->pdf_direction(it, ds, active);
+            },
+            "it"_a, "ds"_a, "active"_a = true,
+            D(Endpoint, pdf_direction))
+    .def("eval_direction",
+            [](Ptr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+                return ptr->eval_direction(it, ds, active);
+            },
+            "it"_a, "ds"_a, "active"_a = true,
+            D(Endpoint, eval_direction))
+    .def("sample_position",
+            [](Ptr ptr, Float time, const Point2f &sample, Mask active) {
+                return ptr->sample_position(time, sample, active);
+            },
+            "time"_a, "sample"_a, "active"_a = true,
+            D(Endpoint, sample_position))
+    .def("pdf_position",
+            [](Ptr ptr, const PositionSample3f &ps, Mask active) {
+                return ptr->pdf_position(ps, active);
+            },
+            "ps"_a, "active"_a = true,
+            D(Endpoint, pdf_position))
+    .def("eval",
+            [](Ptr ptr, const SurfaceInteraction3f &si, Mask active) {
+                return ptr->eval(si, active);
+            },
+            "si"_a, "active"_a = true, D(Endpoint, eval))
+    .def("sample_wavelengths",
+            [](Ptr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
+                return ptr->sample_wavelengths(si, sample, active);
+            },
+            "si"_a, "sample"_a, "active"_a = true,
+            D(Endpoint, sample_wavelengths))
+    .def("shape", [](Ptr ptr) { return ptr->shape(); }, D(Endpoint, shape));
+
+    if constexpr (dr::is_array_v<Ptr>)
+        bind_drjit_ptr_array(cls);
+}
+
 MI_PY_EXPORT(Sensor) {
     MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
 
-    MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
+    auto sensor = MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(py::init<const Properties&>())
         .def("sample_ray_differential", &Sensor::sample_ray_differential,
              "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
@@ -105,6 +170,16 @@ MI_PY_EXPORT(Sensor) {
         .def_readwrite("m_needs_sample_3", &PySensor::m_needs_sample_3)
         .def_readwrite("m_film", &PySensor::m_film);
 
+    bind_sensor_generic<Sensor *>(sensor);
+
+    if constexpr (dr::is_array_v<SensorPtr>) {
+        py::object dr       = py::module_::import("drjit"),
+                   dr_array = dr.attr("ArrayBase");
+
+        py::class_<SensorPtr> cls(m, "SensorPtr", dr_array);
+        bind_sensor_generic<SensorPtr>(cls);
+    }
+
     MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
     MI_PY_CLASS(ProjectiveCamera, Sensor)
@@ -115,72 +190,4 @@ MI_PY_EXPORT(Sensor) {
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
-
-    if constexpr (dr::is_array_v<SensorPtr>) {
-        py::object dr       = py::module_::import("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
-        py::class_<SensorPtr> cls(m, "SensorPtr", dr_array);
-
-        cls.def("sample_ray",
-                [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
-                   const Point2f &sample3, Mask active) {
-                    return ptr->sample_ray(time, sample1, sample2, sample3, active);
-                },
-                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-                D(Endpoint, sample_ray))
-        .def("sample_ray_differential",
-                [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
-                   const Point2f &sample3, Mask active) {
-                    return ptr->sample_ray_differential(time, sample1, sample2, sample3, active);
-                },
-                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-                D(Sensor, sample_ray_differential))
-        .def("sample_direction",
-                [](SensorPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
-                    return ptr->sample_direction(it, sample, active);
-                },
-                "it"_a, "sample"_a, "active"_a = true,
-                D(Endpoint, sample_direction))
-        .def("pdf_direction",
-                [](SensorPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
-                    return ptr->pdf_direction(it, ds, active);
-                },
-                "it"_a, "ds"_a, "active"_a = true,
-                D(Endpoint, pdf_direction))
-        .def("eval_direction",
-                [](SensorPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
-                    return ptr->eval_direction(it, ds, active);
-                },
-                "it"_a, "ds"_a, "active"_a = true,
-                D(Endpoint, eval_direction))
-        .def("sample_position",
-                [](SensorPtr ptr, Float time, const Point2f &sample, Mask active) {
-                    return ptr->sample_position(time, sample, active);
-                },
-                "time"_a, "sample"_a, "active"_a = true,
-                D(Endpoint, sample_position))
-        .def("pdf_position",
-                [](SensorPtr ptr, const PositionSample3f &ps, Mask active) {
-                    return ptr->pdf_position(ps, active);
-                },
-                "ps"_a, "active"_a = true,
-                D(Endpoint, pdf_position))
-        .def("eval",
-                [](SensorPtr ptr, const SurfaceInteraction3f &si, Mask active) {
-                    return ptr->eval(si, active);
-                },
-                "si"_a, "active"_a = true, D(Endpoint, eval))
-        .def("sample_wavelengths",
-                [](SensorPtr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
-                    return ptr->sample_wavelengths(si, sample, active);
-                },
-                "si"_a, "sample"_a, "active"_a = true,
-                D(Endpoint, sample_wavelengths))
-        .def("shape", [](SensorPtr ptr) { return ptr->shape(); }, D(Endpoint, shape));
-
-        bind_drjit_ptr_array(cls);
-    }
-
-    MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 }
