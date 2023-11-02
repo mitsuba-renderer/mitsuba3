@@ -75,7 +75,7 @@ def rtls_reference(
         big_o - sec_ths_p - sec_thv_p + 0.5 * (1 + cos_psi_p) * sec_thv_p * sec_ths_p
     )
 
-    brdf = f_iso + f_geo * k_sparse + f_vol * k_tick
+    brdf = (f_iso + f_geo * k_sparse + f_vol * k_tick) / np.pi
 
     return brdf, k_tick, k_sparse
 
@@ -250,7 +250,7 @@ def test_eval_diffuse(variant_scalar_mono, R):
     wi = angles_to_directions(theta_i, phi_i)
     wo = angles_to_directions(theta_o, phi_o)
     values = eval_bsdf(rtls, wi, wo)
-    reference = eval_bsdf(diffuse, wi, wo)
+    reference = eval_bsdf(diffuse, wi, wo) / np.pi
 
     assert np.allclose(values, reference, rtol=1e-3, atol=1e-3, equal_nan=True)
 

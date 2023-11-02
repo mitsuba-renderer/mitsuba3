@@ -245,7 +245,7 @@ public:
         );
 
         const UnpolarizedSpectrum value =
-            (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo);
+            (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo)  * dr::InvPi<Float>;
 
         return value;
     }
