@@ -54,7 +54,7 @@ public:
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
         ray.d = warp::square_to_uniform_sphere(sample3);
-        // ray.o += ray.d * math::RayEpsilon<Float>; // TODO apply?
+        ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
     }
