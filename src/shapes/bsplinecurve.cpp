@@ -125,8 +125,9 @@ points and increasing radii::
 template <typename Float, typename Spectrum>
 class BSplineCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_discontinuity_types,
+                   initialize, mark_dirty, get_children_string,
+                   parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -319,6 +320,9 @@ public:
             util::time_string((float) timer.value())
         );
 
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+
         initialize();
     }
 
@@ -390,7 +394,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,

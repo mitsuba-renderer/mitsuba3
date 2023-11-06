@@ -335,3 +335,11 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     out = disk.invert_silhouette_sample(ss)
 
     assert dr.allclose(samples, out, atol=1e-6)
+
+
+def test12_discontuinity_types(variants_vec_rgb):
+    disk = mi.load_dict({ 'type': 'disk' })
+
+    types = disk.silhouette_discontinuity_types()
+    assert not mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)

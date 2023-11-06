@@ -328,3 +328,11 @@ def test12_sample_silhouette_bijective(variants_vec_rgb):
     out = rectangle.invert_silhouette_sample(ss)
 
     assert dr.allclose(samples, out, atol=1e-7)
+
+
+def test13_discontuinity_types(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+
+    types = rectangle.silhouette_discontinuity_types()
+    assert not mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)

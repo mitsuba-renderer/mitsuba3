@@ -2093,7 +2093,7 @@ static const char *__doc_mitsuba_DiscontinuityFlags =
 R"doc(This list of flags is used to control the behavior of discontinuity
 related routines.)doc";
 
-static const char *__doc_mitsuba_DiscontinuityFlags_All = R"doc(All types of discontinuities)doc";
+static const char *__doc_mitsuba_DiscontinuityFlags_AllTypes = R"doc(All types of discontinuities)doc";
 
 static const char *__doc_mitsuba_DiscontinuityFlags_Empty = R"doc(No flags set (default value))doc";
 
@@ -7615,6 +7615,8 @@ static const char *__doc_mitsuba_Shape_m_bsdf = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_dirty = R"doc(True if the shape's geometry has changed)doc";
 
+static const char *__doc_mitsuba_Shape_m_discontinuity_types = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape_m_emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_exterior_medium = R"doc()doc";
@@ -7884,7 +7886,7 @@ Parameter ``sample``:
 Parameter ``flags``:
     Flags to select the type of silhouettes to sample from (see
     DiscontinuityFlags). Only one type of discontinuity can be sampled
-    per method call.
+    per call.
 
 Returns:
     Silhouette sample record.)doc";
@@ -7894,6 +7896,8 @@ static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor ass
 static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_set_id = R"doc(Set a string identifier)doc";
+
+static const char *__doc_mitsuba_Shape_silhouette_discontinuity_types = R"doc(//! @{ \name Silhouette sampling routines and other utilities)doc";
 
 static const char *__doc_mitsuba_Shape_surface_area =
 R"doc(Return the shape's surface area.

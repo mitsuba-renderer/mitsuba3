@@ -38,7 +38,7 @@ enum class DiscontinuityFlags : uint32_t {
     // =============================================================
 
     /// All types of discontinuities
-    All = PerimeterType | InteriorType
+    AllTypes = PerimeterType | InteriorType
 };
 
 MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
@@ -236,8 +236,13 @@ public:
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
+
+    // Return the silhouette discontinuity type(s) of this shape
+    uint32_t silhouette_discontinuity_types() const {
+        return m_discontinuity_types;
+    }
 
     /**
      * \brief Map a point sample in boundary sample space to a silhouette
@@ -249,7 +254,7 @@ public:
      * \param flags
      *      Flags to select the type of silhouettes to sample
      *      from (see \ref DiscontinuityFlags).
-     *      Only one type of discontinuity can be sampled per method call.
+     *      Only one type of discontinuity can be sampled per call.
      *
      * \return
      *     Silhouette sample record.
@@ -740,6 +745,8 @@ protected:
     ref<Medium> m_exterior_medium;
     std::string m_id;
 
+    uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
+
     std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
 
     field<Transform4f, ScalarTransform4f> m_to_world;
@@ -867,6 +874,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_GETTER(bsdf, const typename Class::BSDF *)
     DRJIT_VCALL_GETTER(interior_medium, const typename Class::Medium *)
     DRJIT_VCALL_GETTER(exterior_medium, const typename Class::Medium *)
+    DRJIT_VCALL_GETTER(silhouette_discontinuity_types, uint32_t)
     auto is_emitter() const { return neq(emitter(), nullptr); }
     auto is_sensor() const { return neq(sensor(), nullptr); }
     auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||

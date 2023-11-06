@@ -83,8 +83,9 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, initialize, mark_dirty,
+                   get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -95,6 +96,9 @@ public:
             m_to_world =
                 m_to_world.scalar() *
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         update();
         initialize();
@@ -197,7 +201,7 @@ public:
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -205,12 +209,10 @@ public:
                                          Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        if (!has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
-        }
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
 
         /// Sample a point on the shape surface
         Mask range = false;
@@ -246,6 +248,7 @@ public:
         ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
 
         /// Fill other fields
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         Vector3f world_edge_dir = dr::normalize(
             m_to_world.value() * Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, world_edge_dir));

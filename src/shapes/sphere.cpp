@@ -112,8 +112,9 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, initialize, mark_dirty,
+                   get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -128,6 +129,9 @@ public:
             m_to_world.scalar() *
             ScalarTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
             ScalarTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
+
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         update();
         initialize();
@@ -338,7 +342,7 @@ public:
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -346,9 +350,8 @@ public:
                                          Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        if (!has_flag(flags, DiscontinuityFlags::InteriorType)) {
+        if (!has_flag(flags, DiscontinuityFlags::InteriorType))
             return dr::zeros<SilhouetteSample3f>();
-        }
 
         /// Sample a point on the shape surface
         SilhouetteSample3f ss(
