@@ -378,3 +378,11 @@ def test13_sample_silhouette_bijective(variants_vec_rgb):
     out = sphere.invert_silhouette_sample(ss)
 
     assert dr.allclose(samples, out, atol=1e-7)
+
+
+def test14_discontuinity_types(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+
+    types = sphere.silhouette_discontinuity_types()
+    assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert not mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)

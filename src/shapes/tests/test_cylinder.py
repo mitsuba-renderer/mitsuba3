@@ -315,7 +315,7 @@ def test09_sample_silhouette_interior(variants_vec_rgb):
             dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
 
 
-def test09_sample_silhouette_bijective(variants_vec_rgb):
+def test10_sample_silhouette_bijective(variants_vec_rgb):
     cylinder = mi.load_dict({ 'type': 'cylinder' })
 
     x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
@@ -330,3 +330,11 @@ def test09_sample_silhouette_bijective(variants_vec_rgb):
     ss_interior = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
     out_interior = cylinder.invert_silhouette_sample(ss_interior)
     assert dr.allclose(samples, out_interior, atol=1e-7)
+
+
+def test11_discontuinity_types(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+
+    types = cylinder.silhouette_discontinuity_types()
+    assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)

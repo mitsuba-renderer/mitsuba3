@@ -90,8 +90,9 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, initialize, mark_dirty,
+                   get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -113,6 +114,9 @@ public:
             m_to_world.scalar() * ScalarTransform4f::translate(p0) *
             ScalarTransform4f::to_frame(ScalarFrame3f(d / length)) *
             ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
+
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         update();
         initialize();
@@ -299,7 +303,7 @@ public:
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,

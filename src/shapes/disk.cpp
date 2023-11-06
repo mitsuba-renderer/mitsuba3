@@ -81,8 +81,9 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, initialize, mark_dirty,
+                   get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -93,6 +94,9 @@ public:
             m_to_world =
                 m_to_world.scalar() *
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         update();
         initialize();
@@ -212,7 +216,7 @@ public:
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines
+    //! @{ \name Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -220,9 +224,8 @@ public:
                                          Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        if (!has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
-        }
 
         const Transform4f& to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();

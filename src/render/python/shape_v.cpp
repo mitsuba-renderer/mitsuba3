@@ -12,6 +12,10 @@
 
 MI_PY_EXPORT(SilhouetteSample) {
     MI_PY_IMPORT_TYPES()
+
+    m.def("has_flag", [](uint32_t flags, DiscontinuityFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](UInt32   flags, DiscontinuityFlags f) {return has_flag(flags, f);});
+
     auto ss = py::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
         .def(py::init<>(), "Construct an uninitialized silhouette sample")
         .def(py::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
@@ -136,6 +140,11 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->pdf_direction(it, ds, active);
             },
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
+       .def("silhouette_discontinuity_types",
+            [](Ptr shape) {
+                return shape->silhouette_discontinuity_types();
+            },
+            D(Shape, silhouette_discontinuity_types))
        .def("sample_silhouette",
             [](Ptr shape, const Point3f &sample, uint32_t flags, Mask active) {
                 return shape->sample_silhouette(sample, flags, active);
@@ -178,7 +187,8 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
-        .def_method(Shape, effective_primitive_count);
+        .def_method(Shape, effective_primitive_count)
+        .def_method(Shape, silhouette_discontinuity_types);
 
     bind_shape_generic<Shape *>(shape);
 

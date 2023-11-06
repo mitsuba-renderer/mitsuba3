@@ -387,3 +387,15 @@ def test14_sample_silhouette_bijective(variants_vec_rgb):
     ss_interior = curve.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
     out_interior = curve.invert_silhouette_sample(ss_interior)
     assert dr.allclose(samples, out_interior, atol=1e-7)
+
+
+@fresolver_append_path
+def test15_discontuinity_types(variants_vec_rgb):
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve_doc.txt",
+    })
+
+    types = curve.silhouette_discontinuity_types()
+    assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
