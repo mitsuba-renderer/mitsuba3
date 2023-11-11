@@ -277,6 +277,98 @@ MI_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
 
 // =======================================================================
 
+/**
+* \brief Uniformly sample a direction in the two spherical lunes defined by the
+* valid boundary directions of two touching faces defined by their normals
+* \c n1 and \c n2.
+*/
+template <typename Value>
+MI_INLINE Vector<Value, 3>
+square_to_uniform_spherical_lune(const Point<Value, 2> &sample,
+                                 const Normal<Value, 3> &n1,
+                                 const Normal<Value, 3> &n2) {
+    using Mask = dr::mask_t<Value>;
+    Value pi = dr::Pi<Value>;
+
+    Value cos_2theta = dr::dot(n1, n2);
+    Value theta = 0.5f * dr::acos(cos_2theta);
+
+    Vector<Value, 3> vec_z = dr::normalize(dr::cross(n1, n2)),
+                     vec_y = dr::normalize(n1 + n2),
+                     vec_x = dr::cross(vec_z, vec_y);
+
+    Value z = dr::fnmadd(2.f, sample.y(), 1.f);
+    Value r = circ(z);
+
+    // Angle in (-theta, theta) & (pi - theta, pi + theta)
+    Value angle = dr::select(
+        sample.x() < 0.5f,
+        sample.x() * 4.f * theta - theta,
+        sample.x() * 4.f * theta + pi - 3.f * theta
+    );
+    auto [s, c] = dr::sincos(angle);
+
+    Vector<Value, 3> d = r * c * vec_x + r * s * vec_y + z * vec_z;
+
+    return d;
+}
+
+/// Inverse of the mapping \ref square_to_uniform_spherical_lune
+template <typename Value>
+MI_INLINE Point<Value, 2>
+uniform_spherical_lune_to_square(const Vector<Value, 3> &d,
+                                 const Normal<Value, 3> &n1,
+                                 const Normal<Value, 3> &n2) {
+    using Mask = dr::mask_t<Value>;
+    Value pi = dr::Pi<Value>;
+
+    Value cos_2theta = dr::dot(n1, n2);
+    Value theta = 0.5f * dr::acos(cos_2theta);
+
+    Vector<Value, 3> vec_z = dr::normalize(dr::cross(n1, n2)),
+                     vec_y = dr::normalize(n1 + n2),
+                     vec_x = dr::cross(vec_z, vec_y);
+
+    Value x = dr::dot(d, vec_x),
+          y = dr::dot(d, vec_y),
+          z = dr::dot(d, vec_z);
+
+    Value angle = dr::atan2(y, x);
+    dr::masked(angle, angle < -dr::Pi<Value> * 0.5f) += dr::TwoPi<Value>;
+
+    drjit::mask_t<Value> positive_x = (x >= 0.f);
+    dr::masked(angle, positive_x) = dr::clamp(angle, -theta, theta);
+    dr::masked(angle, !positive_x) = dr::clamp(angle, pi - theta, pi + theta);
+
+    // Inverse mapping from (-theta, theta) & (pi - theta, pi + theta)
+    Value sample_x = dr::select(
+        positive_x,
+        (angle + theta) * 0.25f * dr::rcp(theta),
+        (angle + 3.f * theta - pi) * 0.25f * dr::rcp(theta)
+    );
+
+    Point<Value, 2> sample = Point<Value, 2>(sample_x, 0.5f * (1.f - z));
+
+    return sample;
+}
+
+/// Density of \ref square_to_uniform_spherical_lune() w.r.t. solid angles
+template <typename Value>
+MI_INLINE Value
+square_to_uniform_spherical_lune_pdf(const Vector<Value, 3> &d,
+                                     const Normal<Value, 3> &n1,
+                                     const Normal<Value, 3> &n2) {
+    DRJIT_MARK_USED(d);
+    Value cos_2theta = dr::dot(n1, n2);
+    Value theta = 0.5f * dr::acos(cos_2theta);
+
+    Value pdf = dr::rcp(8.f * theta);
+
+    return pdf;
+}
+
+// =======================================================================
+
 /// Uniformly sample a vector on the unit hemisphere with respect to solid angles
 template <typename Value>
 MI_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &sample) {

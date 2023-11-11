@@ -418,7 +418,7 @@ Scene<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
         dr::masked(sample.x(), interior && both)  = sample.x() * 2.f;
         dr::masked(sample.x(), perimeter && both) = sample.x() * 2.f - 1.f;
 
-        uint32_t other_flags = flags & !(uint32_t) DiscontinuityFlags::AllTypes;
+        uint32_t other_flags = flags & ~DiscontinuityFlags::AllTypes;
         SilhouetteSample3f ss_interior = shape->sample_silhouette(
             sample, (uint32_t) DiscontinuityFlags::InteriorType | other_flags,
             interior);

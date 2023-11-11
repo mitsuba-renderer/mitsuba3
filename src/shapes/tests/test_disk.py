@@ -337,7 +337,7 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(samples, out, atol=1e-6)
 
 
-def test12_discontuinity_types(variants_vec_rgb):
+def test12_discontinuity_types(variants_vec_rgb):
     disk = mi.load_dict({ 'type': 'disk' })
 
     types = disk.silhouette_discontinuity_types()

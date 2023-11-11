@@ -24,13 +24,13 @@ def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), ato
     check_vectorization(kernel, atol=atol)
 
 
-def check_inverse(func, inverse):
+def check_inverse(func, inverse, atol=1e-5):
     for x in dr.linspace(Float, 1e-6, 1-1e-6, 10):
         for y in dr.linspace(Float, 1e-6, 1-1e-6, 10):
             p1 = dr.scalar.Array2f(x, y)
             p2 = func(p1)
             p3 = inverse(p2)
-            assert(dr.allclose(p1, p3, atol=1e-5))
+            assert(dr.allclose(p1, p3, atol=atol))
 
 
 def test_square_to_uniform_disk(variant_scalar_rgb):
@@ -204,3 +204,12 @@ def test_interval_to_tangent_direction(variant_scalar_rgb):
 
             check_vectorization(kernel, arg_dims=[3, 1], atol=1e-6)
             mi.set_variant('scalar_rgb')
+
+
+def test_square_to_uniform_lune(variants_vec_rgb):
+    n1 = dr.normalize(mi.Vector3f(-0.1, 0.8, 0.2))
+    n2 = dr.normalize(mi.Vector3f(0.2, 0.7, 0.2))
+    fwd = lambda v: mi.warp.square_to_uniform_spherical_lune(v, n1, n2)
+    inv = lambda v: mi.warp.uniform_spherical_lune_to_square(v, n1, n2)
+
+    check_inverse(fwd, inv, atol=1e-4)

@@ -214,7 +214,7 @@ public:
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
-        /// Sample a point on the shape surface
+        /// Sample a point on one of the edges
         Mask range = false;
         Vector2f edge_dir = dr::zeros<Vector2f>();
 
@@ -250,6 +250,7 @@ public:
         /// Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
+
         Vector3f world_edge_dir = dr::normalize(
             m_to_world.value() * Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, world_edge_dir));
