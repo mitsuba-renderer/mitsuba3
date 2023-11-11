@@ -36,6 +36,8 @@ public:
             }
         }
 
+        m_cos_cutoff = props.get<ScalarFloat>("cos_cutoff", -1.f),
+
         m_needs_sample_2 = false;
     }
 
@@ -53,7 +55,7 @@ public:
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
-        ray.d = warp::square_to_uniform_sphere(sample3);
+        ray.d = m_to_world.value() * warp::square_to_uniform_cone(sample3, m_cos_cutoff);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -74,8 +76,8 @@ public:
         ray.wavelengths = Wavelength(wavelength_sample);
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
-        ray.d = warp::square_to_uniform_sphere(sample3);
+        ray.o = m_to_world.value().translation();
+        ray.d = m_to_world.value() * warp::square_to_uniform_cone(sample3, m_cos_cutoff);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't have differentials
@@ -96,7 +98,7 @@ public:
         ds.dist = dr::sqrt(dist_squared);
         ds.d /= ds.dist;
 
-        ds.n = warp::square_to_uniform_sphere(sample);
+        ds.n = m_to_world.value() * warp::square_to_uniform_cone(sample, m_cos_cutoff);
         ds.delta = Mask(true);
         ds.uv = sample;
 
@@ -120,6 +122,8 @@ public:
     // TODO: traverse() needed?
 
     MI_DECLARE_CLASS()
+protected:
+    Float m_cos_cutoff;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Microphone, Sensor)
