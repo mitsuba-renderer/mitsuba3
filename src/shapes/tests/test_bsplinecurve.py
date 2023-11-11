@@ -390,7 +390,7 @@ def test14_sample_silhouette_bijective(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test15_discontuinity_types(variants_vec_rgb):
+def test15_discontinuity_types(variants_vec_rgb):
     curve = mi.load_dict({
         "type" : "bsplinecurve",
         "filename" : "resources/data/common/meshes/curve_doc.txt",

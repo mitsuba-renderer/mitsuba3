@@ -720,11 +720,11 @@ Parameter ``wo``:
     normalized direction vector that points *away* from the scattering
     event.)doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_5 = R"doc()doc";
 
@@ -742,9 +742,9 @@ static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refra
 
 static const char *__doc_mitsuba_BSDFSample3_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_operator_assign_3 = R"doc()doc";
 
@@ -2049,11 +2049,11 @@ static const char *__doc_mitsuba_DirectionSample_DirectionSample_2 = R"doc(Eleme
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_3 = R"doc(Construct from a position sample)doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_5 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_6 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_7 = R"doc()doc";
 
@@ -2081,9 +2081,9 @@ to this object.)doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_3 = R"doc()doc";
 
@@ -2094,6 +2094,10 @@ R"doc(This list of flags is used to control the behavior of discontinuity
 related routines.)doc";
 
 static const char *__doc_mitsuba_DiscontinuityFlags_AllTypes = R"doc(All types of discontinuities)doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_DirectionLune = R"doc(//! Encoding and projection flags)doc";
+
+static const char *__doc_mitsuba_DiscontinuityFlags_DirectionSphere = R"doc(//! Encoding and projection flags)doc";
 
 static const char *__doc_mitsuba_DiscontinuityFlags_Empty = R"doc(No flags set (default value))doc";
 
@@ -3834,11 +3838,11 @@ static const char *__doc_mitsuba_Interaction = R"doc(Generic surface interaction
 
 static const char *__doc_mitsuba_Interaction_Interaction = R"doc(Constructor)doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_Interaction_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_Interaction_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_Interaction_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_Interaction_5 = R"doc()doc";
 
@@ -3864,9 +3868,9 @@ intersection.)doc";
 
 static const char *__doc_mitsuba_Interaction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign_3 = R"doc()doc";
 
@@ -4252,11 +4256,11 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_4 = R"doc()doc";
 
@@ -4278,9 +4282,9 @@ static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when s
 
 static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_assign_3 = R"doc()doc";
 
@@ -4573,6 +4577,21 @@ static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_build_directed_edges =
+R"doc(/brief Build directed edge data structure to efficiently access
+adjacent edges.
+
+This is an implementation of the technique described in:
+``https://www.graphics.rwth-aachen.de/media/papers/directed.pdf``.)doc";
+
+static const char *__doc_mitsuba_Mesh_build_indirect_silhouette_distribution =
+R"doc(/brief
+
+Precompute the set of edges that could contribute to the indirect
+discontinuous integral.
+
+This method filters out any concave edges.)doc";
+
 static const char *__doc_mitsuba_Mesh_build_parameterization =
 R"doc(Initialize the ``m_parameterization`` field for mapping UV coordinates
 to positions
@@ -4606,7 +4625,9 @@ static const char *__doc_mitsuba_Mesh_face_count = R"doc(Return the total number
 
 static const char *__doc_mitsuba_Mesh_face_data_bytes = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_face_indices = R"doc(Returns the face indices associated with triangle ``index``)doc";
+static const char *__doc_mitsuba_Mesh_face_indices = R"doc(Returns the vertex indices associated with triangle ``index``)doc";
+
+static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal direction of the face with index ``index``)doc";
 
 static const char *__doc_mitsuba_Mesh_faces_buffer = R"doc(Return face indices buffer)doc";
 
@@ -4625,6 +4646,10 @@ static const char *__doc_mitsuba_Mesh_has_vertex_texcoords = R"doc(Does this mes
 static const char *__doc_mitsuba_Mesh_initialize = R"doc(Must be called at the end of the constructor of Mesh plugins)doc";
 
 static const char *__doc_mitsuba_Mesh_interpolate_attribute = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_invert_silhouette_sample = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_E2E = R"doc(Directed edges data structures to support neighbor queries)doc";
 
 static const char *__doc_mitsuba_Mesh_m_area_pmf = R"doc()doc";
 
@@ -4649,6 +4674,10 @@ static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_parameterization = R"doc(Optional: used in eval_parameterization())doc";
 
 static const char *__doc_mitsuba_Mesh_m_scene = R"doc(Pointer to the scene that owns this mesh)doc";
+
+static const char *__doc_mitsuba_Mesh_m_sil_dedge_pmf =
+R"doc(Sampling density of silhouette
+(build_indirect_silhouette_distribution))doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_buffer_ptr = R"doc()doc";
 
@@ -4686,6 +4715,10 @@ Returns:
     distance from the ray origin to the intersection point, and ``u``
     and ``v`` contains the first two components of the intersection in
     barycentric coordinates)doc";
+
+static const char *__doc_mitsuba_Mesh_opposite_dedge =
+R"doc(Returns the opposite edge index associated with directed edge
+``index``)doc";
 
 static const char *__doc_mitsuba_Mesh_optix_build_input = R"doc()doc";
 
@@ -4733,6 +4766,8 @@ static const char *__doc_mitsuba_Mesh_recompute_bbox = R"doc(Recompute the bound
 static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute smooth vertex normals and replace the current normal values)doc";
 
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_sample_silhouette = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_set_scene = R"doc()doc";
 
@@ -5569,11 +5604,11 @@ instance in path tracing with multiple importance sampling.)doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc(Basic field constructor)doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_6 = R"doc()doc";
 
@@ -5595,9 +5630,9 @@ static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal
 
 static const char *__doc_mitsuba_PositionSample_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_operator_assign_3 = R"doc()doc";
 
@@ -5641,11 +5676,11 @@ If the intersection is deemed relevant, detailed intersection
 information can later be obtained via the create_surface_interaction()
 method.)doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_4 = R"doc()doc";
 
@@ -5678,9 +5713,9 @@ static const char *__doc_mitsuba_PreliminaryIntersection_is_valid = R"doc(Is the
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_3 = R"doc()doc";
 
@@ -7632,6 +7667,9 @@ R"doc(Map a silhouette segment to a point in boundary sample space
 This method is the inverse of sample_silhouette(). The mapping from
 boundary sample space to boundary segments is bijective.
 
+This method's behavior is undefined when used in non-JIT variants or
+when the shape is not being differentiated.
+
 Parameter ``ss``:
     The sampled boundary segment
 
@@ -7925,6 +7963,9 @@ Returns:
 static const char *__doc_mitsuba_Shape_sample_silhouette =
 R"doc(Map a point sample in boundary sample space to a silhouette segment
 
+This method's behavior is undefined when used in non-JIT variants or
+when the shape is not being differentiated.
+
 Parameter ``sample``:
     The boundary space sample (a point in the unit cube).
 
@@ -7962,11 +8003,11 @@ operations on geometry.)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample = R"doc(Partially initialize a boundary segment from a position sample)doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_SilhouetteSample_5 = R"doc()doc";
 
@@ -8000,9 +8041,9 @@ intersections.)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_operator_assign_3 = R"doc()doc";
 
@@ -8013,14 +8054,14 @@ static const char *__doc_mitsuba_SilhouetteSample_prim_index = R"doc(Primitive i
 static const char *__doc_mitsuba_SilhouetteSample_projection_index =
 R"doc(Projection index indicator
 
-For primitives like triangle meshes, projection needs to determine not
-only the triangle index but also the edge index of the selected
+For primitives like triangle meshes, a boundary segment is defined not
+only by the triangle index but also the edge index of the selected
 triangle. A value larger than 3 indicates a failed projection. For
 other primitives, zero indicates a failed projection.
 
-For triangle meshes, index 0 stands for the edge p0->p1 (not the
-opposite edge p1->p2), index 1 stands for the edge p1->p2, and index 2
-for p2->p0.)doc";
+For triangle meshes, index 0 stands for the directed edge p0->p1 (not
+the opposite edge p1->p2), index 1 stands for the edge p1->p2, and
+index 2 for p2->p0.)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_scene_index = R"doc(Index of the shape in the scene (if applicable))doc";
 
@@ -8596,11 +8637,11 @@ the partial derivatives are left uninitialized. The `shape` pointer is
 left uninitialized because we can't guarantee that the given
 PositionSample::object points to a Shape instance.)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_5 = R"doc()doc";
 
@@ -8678,9 +8719,9 @@ static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the int
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_3 = R"doc()doc";
 
@@ -9566,11 +9607,11 @@ inverse transpose))doc";
 
 static const char *__doc_mitsuba_Transform_Transform_2 = R"doc(Initialize the transformation from the given matrix and its inverse)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_Transform_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_Transform_5 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_Transform_6 = R"doc()doc";
 
@@ -9617,9 +9658,9 @@ static const char *__doc_mitsuba_Transform_matrix = R"doc(//! @{ \name Fields)do
 
 static const char *__doc_mitsuba_Transform_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign_3 = R"doc()doc";
 
@@ -12273,6 +12314,13 @@ angles)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere_pdf = R"doc(Density of square_to_uniform_sphere() with respect to solid angles)doc";
 
+static const char *__doc_mitsuba_warp_square_to_uniform_spherical_lune =
+R"doc(Uniformly sample a direction in the two spherical lunes defined by the
+valid boundary directions of two touching faces defined by their
+normals ``n1`` and ``n2``.)doc";
+
+static const char *__doc_mitsuba_warp_square_to_uniform_spherical_lune_pdf = R"doc(Density of square_to_uniform_spherical_lune() w.r.t. solid angles)doc";
+
 static const char *__doc_mitsuba_warp_square_to_uniform_square_concentric =
 R"doc(Low-distortion concentric square to square mapping (meant to be used
 in conjunction with another warping method that maps to the sphere))doc";
@@ -12304,6 +12352,8 @@ static const char *__doc_mitsuba_warp_uniform_disk_to_square_concentric = R"doc(
 static const char *__doc_mitsuba_warp_uniform_hemisphere_to_square = R"doc(Inverse of the mapping square_to_uniform_hemisphere)doc";
 
 static const char *__doc_mitsuba_warp_uniform_sphere_to_square = R"doc(Inverse of the mapping square_to_uniform_sphere)doc";
+
+static const char *__doc_mitsuba_warp_uniform_spherical_lune_to_square = R"doc(Inverse of the mapping square_to_uniform_spherical_lune)doc";
 
 static const char *__doc_mitsuba_warp_uniform_triangle_to_square = R"doc(Inverse of the mapping square_to_uniform_triangle)doc";
 

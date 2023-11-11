@@ -380,7 +380,7 @@ def test13_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(samples, out, atol=1e-7)
 
 
-def test14_discontuinity_types(variants_vec_rgb):
+def test14_discontinuity_types(variants_vec_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
 
     types = sphere.silhouette_discontinuity_types()

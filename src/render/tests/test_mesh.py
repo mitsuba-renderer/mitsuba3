@@ -1051,3 +1051,126 @@ def test26_flip_tex_coords_ply(variants_all_rgb, tmp_path):
 
     assert (uv[::2] == uv_flipped[::2]).all()
     assert (uv[1::2] == 1 - uv_flipped[1::2]).all()
+
+
+@fresolver_append_path
+def test27_sample_silhouette_wrong_type(variants_all_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+    ss = mesh.sample_silhouette([0.1, 0.2, 0.3],
+                                mi.DiscontinuityFlags.InteriorType)
+
+    assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
+
+
+@fresolver_append_path
+def test28_sample_silhouette(variants_vec_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+    mesh_ptr = mi.ShapePtr(mesh)
+
+    params = mi.traverse(mesh)
+    dr.enable_grad(params['vertex_positions'])
+    params.update()
+
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    # Sphere
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
+    ss = mesh.sample_silhouette(samples, flags)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.x, 0))
+    assert dr.all(
+        (ss.p.y <= 1) & (ss.p.y >= 0) &
+        (ss.p.z <= 1) & (ss.p.z >= 0)
+    )
+    assert dr.all(dr.eq(ss.flags, flags))
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    perimeter = 2 + dr.sqrt(2)
+    assert dr.allclose(ss.pdf, dr.rcp(perimeter) * dr.inv_four_pi)
+
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+    # Lune
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
+    ss = mesh.sample_silhouette(samples, flags)
+
+    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.x, 0))
+    assert dr.all(
+        (ss.p.y <= 1) & (ss.p.y >= 0) &
+        (ss.p.z <= 1) & (ss.p.z >= 0)
+    )
+    assert dr.all(dr.eq(ss.flags, flags))
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    perimeter = 2 + dr.sqrt(2)
+    assert dr.allclose(ss.pdf, dr.rcp(perimeter) * dr.inv_four_pi)
+
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+
+@fresolver_append_path
+def test29_sample_silhouette_bijective(variants_vec_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+    })
+
+    params = mi.traverse(mesh)
+    dr.enable_grad(params['vertex_positions'])
+    params.update()
+
+    x = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    y = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    z = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    # Sphere
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
+    ss = mesh.sample_silhouette(samples, flags)
+    out = mesh.invert_silhouette_sample(ss)
+    valid = dr.compress(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
+    samples_valid = dr.gather(mi.Point3f, samples, valid)
+    out_valid = dr.gather(mi.Point3f, out, valid)
+
+    assert dr.allclose(samples_valid, out_valid, atol=1e-7)
+
+    # Lune
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
+    ss = mesh.sample_silhouette(samples, flags)
+    out = mesh.invert_silhouette_sample(ss)
+    valid = dr.compress(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
+    samples_valid = dr.gather(mi.Point3f, samples, valid)
+    out_valid = dr.gather(mi.Point3f, out, valid)
+
+    assert dr.allclose(samples_valid.x, out_valid.x, atol=1e-7)
+    assert dr.allclose(samples_valid.y, out_valid.y, atol=1e-4) # Lune sampling is not numerically robust
+    assert dr.allclose(samples_valid.z, out_valid.z, atol=1e-7)
+
+
+@fresolver_append_path
+def test30_discontinuity_types(variants_vec_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+
+    types = mesh.silhouette_discontinuity_types()
+    assert not mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)

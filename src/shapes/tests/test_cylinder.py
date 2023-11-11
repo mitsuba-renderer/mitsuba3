@@ -332,7 +332,7 @@ def test10_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(samples, out_interior, atol=1e-7)
 
 
-def test11_discontuinity_types(variants_vec_rgb):
+def test11_discontinuity_types(variants_vec_rgb):
     cylinder = mi.load_dict({ 'type': 'cylinder' })
 
     types = cylinder.silhouette_discontinuity_types()

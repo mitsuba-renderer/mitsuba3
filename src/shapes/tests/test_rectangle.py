@@ -287,8 +287,8 @@ def test09_eval_parameterization(variants_all_ad_rgb):
 
 
 def test10_sample_silhouette_wrong_type(variants_all_rgb):
-    sphere = mi.load_dict({ 'type': 'rectangle' })
-    ss = sphere.sample_silhouette([0.1, 0.2, 0.3],
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+    ss = rectangle.sample_silhouette([0.1, 0.2, 0.3],
                                   mi.DiscontinuityFlags.InteriorType)
 
     assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
@@ -330,7 +330,7 @@ def test12_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(samples, out, atol=1e-7)
 
 
-def test13_discontuinity_types(variants_vec_rgb):
+def test13_discontinuity_types(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
 
     types = rectangle.silhouette_discontinuity_types()

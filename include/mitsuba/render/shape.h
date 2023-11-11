@@ -34,6 +34,22 @@ enum class DiscontinuityFlags : uint32_t {
     InteriorType = 0x2,
 
     // =============================================================
+    //!              Encoding and projection flags
+    // =============================================================
+
+    /* \brief Use spherical lune to encode segment direction
+     *
+     * This flag is only relevant for certain shape types.
+     */
+    DirectionLune = 0x4,
+
+    /* \brief Use spherical coordinates to encode segment direction
+     *
+     * This flag is only relevant for certain shape types.
+     */
+    DirectionSphere = 0x8,
+
+    // =============================================================
     //!                 Compound types
     // =============================================================
 
@@ -90,12 +106,12 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /**
      * \brief Projection index indicator
      *
-     * For primitives like triangle meshes, projection needs to determine not
-     * only the triangle index but also the edge index of the selected
+     * For primitives like triangle meshes, a boundary segment is defined not
+     * only by the triangle index but also the edge index of the selected
      * triangle. A value larger than 3 indicates a failed projection. For other
      * primitives, zero indicates a failed projection.
      *
-     * For triangle meshes, index 0 stands for the edge p0->p1 (not the
+     * For triangle meshes, index 0 stands for the directed edge p0->p1 (not the
      * opposite edge p1->p2), index 1 stands for the edge p1->p2, and index 2
      * for p2->p0.
      */
@@ -259,6 +275,9 @@ public:
      * \brief Map a point sample in boundary sample space to a silhouette
      * segment
      *
+     * This method's behavior is undefined when used in non-JIT variants or
+     * when the shape is not being differentiated.
+     *
      * \param sample
      *      The boundary space sample (a point in the unit cube).
      *
@@ -279,6 +298,9 @@ public:
      *
      * This method is the inverse of \ref sample_silhouette(). The mapping
      * from boundary sample space to boundary segments is bijective.
+     *
+     * This method's behavior is undefined when used in non-JIT variants or
+     * when the shape is not being differentiated.
      *
      * \param ss
      *      The sampled boundary segment

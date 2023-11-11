@@ -18,7 +18,8 @@ class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES()
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
-                   m_interior_medium, m_exterior_medium, m_is_instance)
+                   m_interior_medium, m_exterior_medium, m_is_instance,
+                   m_discontinuity_types)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -81,7 +82,7 @@ public:
     void add_attribute(const std::string &name, size_t dim,
                        const std::vector<InputFloat> &buf);
 
-    /// Returns the face indices associated with triangle \c index
+    /// Returns the vertex indices associated with triangle \c index
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
                                 dr::mask_t<Index> active = true) const {
@@ -111,6 +112,26 @@ public:
                                    dr::mask_t<Index> active = true) const {
         using Result = Point<dr::replace_scalar_t<Index, InputFloat>, 2>;
         return dr::gather<Result>(m_vertex_texcoords, index, active);
+    }
+
+    /// Returns the normal direction of the face with index \c index
+    template <typename Index>
+    MI_INLINE auto face_normal(Index index,
+                               dr::mask_t<Index> active = true) const {
+        Vector3u vertex_indices = face_indices(index, active);
+        Vector3f v[3] = { vertex_position(vertex_indices[0], active),
+                          vertex_position(vertex_indices[1], active),
+                          vertex_position(vertex_indices[2], active) };
+
+        return dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
+    }
+
+    /// Returns the opposite edge index associated with directed edge \c index
+    template <typename Index>
+    MI_INLINE auto opposite_dedge(Index index,
+                                 dr::mask_t<Index> active = true) const {
+        using Result = dr::uint32_array_t<Index>;
+        return dr::gather<Result>(m_E2E, index, active);
     }
 
     /// Does this mesh have per-vertex normals?
@@ -200,6 +221,17 @@ public:
                                                        Mask active = true) const override;
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override;
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override;
+
+    //! @}
+    // =============================================================
+
 
     /** \brief Ray-triangle intersection test
      *
@@ -317,6 +349,27 @@ protected:
      * Thread-safe, since it uses a mutex.
      */
     void build_pmf();
+
+    /**
+     * /brief Build directed edge data structure to efficiently access adjacent
+     * edges.
+     *
+     * This is an implementation of the technique described in:
+     * <tt>https://www.graphics.rwth-aachen.de/media/papers/directed.pdf</tt>.
+     */
+    void build_directed_edges();
+
+    /**
+     * /brief Precompute the set of edges that could contribute to the indirect
+     * discontinuous integral.
+     *
+     * This method filters out any concave edges or flat surfaces.
+     *
+     * Internally, this method relies on the directed edge data structure. A
+     * call to \ref build_directed_edges before a call to this method is
+     * therefore necessary.
+     */
+    void build_indirect_silhouette_distribution();
 
     /**
      * \brief Initialize the \c m_parameterization field for mapping UV
@@ -452,6 +505,16 @@ protected:
     mutable FloatStorage m_vertex_texcoords;
 
     mutable DynamicBuffer<UInt32> m_faces;
+
+    /// Directed edges data structures to support neighbor queries
+    mutable DynamicBuffer<UInt32> m_E2E;
+    bool m_E2E_outdated = true;
+
+
+    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
+
+    /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
+    DiscreteDistribution<Float> m_sil_dedge_pmf;
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     /* Data pointer to ensure triangle intersection routine doesn't rely on
