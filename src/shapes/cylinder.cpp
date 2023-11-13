@@ -393,12 +393,12 @@ public:
 
         /// Merge outputs
         Point3f sample = dr::zeros<Point3f>();
-        Mask perimeter_samples =
+        Mask is_perimeter =
             has_flag(ss.discontinuity_type, DiscontinuityFlags::PerimeterType);
-        Mask interior_samples =
+        Mask is_interior =
             has_flag(ss.discontinuity_type, DiscontinuityFlags::InteriorType);
-        dr::masked(sample, perimeter_samples) = sample_perimeter;
-        dr::masked(sample, interior_samples) = sample_interior;
+        dr::masked(sample, is_perimeter) = sample_perimeter;
+        dr::masked(sample, is_interior) = sample_interior;
 
         return sample;
     }
@@ -417,6 +417,76 @@ public:
             return dr::replace_grad(si.p, p_diff);
         else
             return si.p;
+    }
+
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float /*sample*/,
+                                                       Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        const Transform4f& to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
+            auto [sin_theta, cos_theta] = dr::sincos(si.uv.x() * dr::TwoPi<Float>);
+            Point3f local_p(cos_theta, sin_theta, 0.f);
+            dr::masked(local_p.z(), si.uv.y() > 0.5f) = 1.f;
+
+            ss.uv = Point2f(si.uv.x(), local_p.z());
+            ss.p = to_world.transform_affine(local_p);
+            ss.d = dr::normalize(ss.p - viewpoint);
+
+            ss.silhouette_d = dr::normalize(
+                to_world.transform_affine(Vector3f(sin_theta, -cos_theta, 0.f)));
+
+            Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+            Vector3f inward_dir = Vector3f(0.f, 0.f, 1.f) - 2 * Vector3f(0.f, 0.f, ss.uv.y());
+            inward_dir = to_world.transform_affine(inward_dir);
+            dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+
+            ss.n = frame_n;
+            ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
+            Point3f local = m_to_object.value().transform_affine(viewpoint);
+            local.z() = 0.f;
+
+            Float norm_local_v = dr::norm(local);
+            Float OV_theta = dr::atan2(local.y(), local.x());
+            auto [sin_Y_pos, cos_Y_pos] = dr::sincos(OV_theta + 0.5f * dr::Pi<Float>);
+            auto [sin_si, cos_si] = dr::sincos(si.uv.x() * dr::TwoPi<Float>);
+            Float sign = dr::sign(cos_Y_pos * cos_si + sin_Y_pos * sin_si);
+
+            Float phi = dr::safe_asin(dr::rcp(norm_local_v));
+
+            Float ss_u_theta = OV_theta + (0.5f * dr::Pi<Float> - phi) * sign;
+            dr::masked(ss_u_theta, ss_u_theta < 0.f) += dr::TwoPi<Float>;
+            dr::masked(ss_u_theta, ss_u_theta >= dr::TwoPi<Float>) -= dr::TwoPi<Float>;
+
+            ss.uv = Point2f(ss_u_theta * dr::InvTwoPi<Float>, si.uv.y());
+            auto [sin_ss_u_theta, cos_ss_u_theta] = dr::sincos(ss_u_theta);
+            Point3f local_p(cos_ss_u_theta, sin_ss_u_theta, si.uv.y());
+            ss.p = to_world.transform_affine(local_p);
+            ss.d = dr::normalize(ss.p - viewpoint);
+
+            ss.silhouette_d = dr::normalize(to_world.transform_affine(Vector3f(0.f, 0.f, 1.f)));
+
+            Normal3f local_n(cos_ss_u_theta, sin_ss_u_theta, 0.f);
+            ss.n = dr::normalize(to_world.transform_affine(local_n));
+
+            // No interior boundary if the viewpoint is inside the cylinder
+            Mask succeeded = dr::select(norm_local_v > 1.f, 1u, 0u);
+            ss.discontinuity_type =
+                dr::select(succeeded,
+                           (uint32_t) DiscontinuityFlags::InteriorType,
+                           (uint32_t) DiscontinuityFlags::Empty);
+        }
+
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
     }
 
     //! @}

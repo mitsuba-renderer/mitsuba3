@@ -952,8 +952,6 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     Float pmf = m_sil_dedge_pmf.eval_pmf(dedge_curr, active),
           cdf = m_sil_dedge_pmf.eval_cdf(dedge_curr, active);
 
-    // TODO: in projection only allow non-zero pmf edges to be valid projections
-
     // Do not use `ss.prim_index`, because we might have swapped
     UInt32 face_idx, edge_idx;
     std::tie(face_idx, edge_idx) = dr::idivmod(dedge_curr, 3u);
@@ -991,6 +989,150 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     dr::masked(sample.z(), is_sphere) = sample_yz_sphere.y();
 
     return sample;
+}
+
+MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
+Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float sample,
+                                                       Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+        return dr::zeros<SilhouetteSample3f>();
+
+    /* To obtain the silhouette sample on an edge, we do not project `si.p` to
+    the nearest edge, instead we randomly sample a point on any silhouette edge.
+    This ensures that the triangle corners do not receive minimal samples. */
+
+    if (dr::width(m_E2E) == 0) // Shape is not being differentiated
+        return dr::zeros<SilhouetteSample3f>();
+
+    Vector3u fi = face_indices(si.prim_index, active);
+    Vector3f p0 = vertex_position(fi[0], active),
+             p1 = vertex_position(fi[1], active),
+             p2 = vertex_position(fi[2], active);
+    // Face geometry normals of the current and three neighboring triangles
+    UInt32 dedge_oppo_0 = opposite_dedge(si.prim_index * 3u     , active),
+           dedge_oppo_1 = opposite_dedge(si.prim_index * 3u + 1u, active),
+           dedge_oppo_2 = opposite_dedge(si.prim_index * 3u + 2u, active);
+    Mask boundary_0 = active && dr::eq(dedge_oppo_0, m_invalid_dedge),
+         boundary_1 = active && dr::eq(dedge_oppo_1, m_invalid_dedge),
+         boundary_2 = active && dr::eq(dedge_oppo_2, m_invalid_dedge);
+    UInt32 prim_idx_0 = dr::select(boundary_0, si.prim_index, dr::idiv(dedge_oppo_0, 3u)),
+           prim_idx_1 = dr::select(boundary_1, si.prim_index, dr::idiv(dedge_oppo_1, 3u)),
+           prim_idx_2 = dr::select(boundary_2, si.prim_index, dr::idiv(dedge_oppo_2, 3u));
+    Normal3f normal_0 = face_normal(prim_idx_0, active && !boundary_0),
+             normal_1 = face_normal(prim_idx_1, active && !boundary_1),
+             normal_2 = face_normal(prim_idx_2, active && !boundary_2);
+
+    Normal3f normal = face_normal(si.prim_index, active);
+
+    // Compute the "viewing" angle of three neighboring triangles
+    Vector3f ray_d_0 = dr::normalize(p0 - viewpoint),
+             ray_d_1 = dr::normalize(p1 - viewpoint),
+             ray_d_2 = dr::normalize(p2 - viewpoint);
+
+    Vector3f cos_theta_oppo;
+    cos_theta_oppo.x() = dr::dot(ray_d_1, normal_0) * dr::sign(dr::dot(ray_d_1, normal));
+    cos_theta_oppo.y() = dr::dot(ray_d_2, normal_1) * dr::sign(dr::dot(ray_d_2, normal));
+    cos_theta_oppo.z() = dr::dot(ray_d_0, normal_2) * dr::sign(dr::dot(ray_d_0, normal));
+
+    // Boundary edges are always silhouettes
+    dr::masked(cos_theta_oppo.x(), boundary_0) = -1.f;
+    dr::masked(cos_theta_oppo.y(), boundary_1) = -1.f;
+    dr::masked(cos_theta_oppo.z(), boundary_2) = -1.f;
+
+    Vector3f weight;
+    Mask failed_proj;
+    SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+    if (has_flag(flags, DiscontinuityFlags::HeuristicWalk)) {
+        /// Project to any edge with heuristic probability. Note that this flag
+        /// modifies `ss.prim_index` directly to the selected new triangle.
+        weight = dr::safe_acos(cos_theta_oppo);
+
+        // All silhouette edges are equally good regardless of the angle
+        // Note that we still consider non-silhouette edges even if there is at
+        // least one neighboring silhouette edge. This can alleviate issues
+        // with small "bumpy" features on the mesh.
+        const float max_weight = dr::Pi<ScalarFloat> / 2.f;
+        weight[0] = dr::select(cos_theta_oppo[0] <= 0.f, max_weight, weight[0]);
+        weight[1] = dr::select(cos_theta_oppo[1] <= 0.f, max_weight, weight[1]);
+        weight[2] = dr::select(cos_theta_oppo[2] <= 0.f, max_weight, weight[2]);
+
+        // In case the weights are too small
+        Float min_weight = dr::deg_to_rad(1);
+        weight[0] = dr::maximum(weight[0], min_weight);
+        weight[1] = dr::maximum(weight[1], min_weight);
+        weight[2] = dr::maximum(weight[2], min_weight);
+
+        Float sum = weight[0] + weight[1] + weight[2];
+        weight /= sum;
+
+        ss.projection_index = dr::select(sample >= weight[0], 1u, 0u);
+        ss.projection_index = dr::select(sample >= weight[0] + weight[1], 2u, ss.projection_index);
+
+        ss.prim_index = dr::select(sample >= weight[0], prim_idx_1, prim_idx_0);
+        ss.prim_index = dr::select(sample >= weight[0] + weight[1], prim_idx_2, ss.prim_index);
+
+        failed_proj = (dr::eq(ss.projection_index, 0u) && cos_theta_oppo[0] > 0.f) ||
+                      (dr::eq(ss.projection_index, 1u) && cos_theta_oppo[1] > 0.f) ||
+                      (dr::eq(ss.projection_index, 2u) && cos_theta_oppo[2] > 0.f);
+    } else {
+        /// Project to any silhouette edge with equal probability.
+        weight.x() = dr::select(cos_theta_oppo.x() < 0.f, 1.f, 0.f);
+        weight.y() = dr::select(cos_theta_oppo.y() < 0.f, 1.f, 0.f);
+        weight.z() = dr::select(cos_theta_oppo.z() < 0.f, 1.f, 0.f);
+
+        Float sum = weight[0] + weight[1] + weight[2];
+
+        // If none of the edges are on the silhouette, pick one uniformly
+        failed_proj = dr::eq(sum, 0.f);
+        dr::masked(weight, failed_proj) = Vector3f(1.f, 1.f, 1.f);
+        dr::masked(sum, failed_proj) = 3.f;
+        weight /= sum;
+
+        ss.prim_index = si.prim_index;
+
+        ss.projection_index = dr::select(sample >= weight[0], 1u, 0u);
+        ss.projection_index = dr::select(sample >= weight[0] + weight[1], 2u, ss.projection_index);
+    }
+
+    // Reuse sample
+    sample = dr::select(
+        dr::eq(ss.projection_index, 0u),
+        sample / weight[0],
+        sample);
+    sample = dr::select(
+        dr::eq(ss.projection_index, 1u),
+        (sample - weight[0]) / weight[1],
+        sample);
+    sample = dr::select(
+        dr::eq(ss.projection_index, 2u),
+        (sample - weight[1] - weight[0]) / weight[2],
+        sample);
+
+    // Sample a point on the selected edge
+    ss.p = dr::select(
+        dr::eq(ss.projection_index, 1u),
+        dr::lerp(p1, p2, sample), dr::lerp(p0, p1, sample)
+    );
+    ss.p = dr::select(
+        dr::eq(ss.projection_index, 2u),
+        dr::lerp(p2, p0, sample), ss.p
+    );
+
+    ss.d = dr::normalize(ss.p - viewpoint);
+    ss.shape = this;
+
+    ss.discontinuity_type = dr::select(
+        active & !failed_proj,
+        (uint32_t) DiscontinuityFlags::PerimeterType,
+        (uint32_t) DiscontinuityFlags::Empty);
+
+    return ss;
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Point3f

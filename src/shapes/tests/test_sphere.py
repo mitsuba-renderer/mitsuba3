@@ -358,7 +358,6 @@ def test12_sample_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
     assert dr.allclose(dr.norm(ss.p), 1)
     assert dr.allclose(ss.p, ss.n)
-    assert dr.allclose(ss.p, ss.n)
     assert dr.allclose(ss.pdf, dr.inv_four_pi * dr.inv_two_pi)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
@@ -412,3 +411,25 @@ def test15_differential_motion(variants_vec_rgb):
 
     assert dr.allclose(p_diff, si.p)
     assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+def test16_primitive_silhouette_projection(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+    sphere_ptr = mi.ShapePtr(sphere)
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = sphere.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(0, 0, 5)
+
+    ss = sphere.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.InteriorType, 0.)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.allclose(dr.norm(ss.p), 1)
+    assert dr.allclose(ss.p, ss.n)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, sphere_ptr))

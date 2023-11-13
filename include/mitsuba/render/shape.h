@@ -49,6 +49,17 @@ enum class DiscontinuityFlags : uint32_t {
      */
     DirectionSphere = 0x8,
 
+    /* \brief Project to an edge using a heuristic probability
+     *
+     * This flag only applies to triangle meshes.
+     *
+     * By default a projection operation on a mesh triangle would uniformly pick
+     * one of its three edges. This flag modifies that operation such that each
+     * edge is weighted according to the angle it forms between the two adjadent
+     * faces.
+     */
+    HeuristicWalk = 0x10,
+
     // =============================================================
     //!                 Compound types
     // =============================================================
@@ -150,10 +161,9 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-
-    DRJIT_STRUCT(SilhouetteSample, p, discontinuity_type, n, d, silhouette_d,
-                 uv, time, pdf, delta, prim_index, scene_index, flags,
-                 projection_index, shape, foreshortening, offset)
+    DRJIT_STRUCT(SilhouetteSample, p, n, uv, time, pdf, delta,
+                 discontinuity_type, d, silhouette_d, prim_index, scene_index,
+                 flags, projection_index, shape, foreshortening, offset)
 };
 
 /**
@@ -297,7 +307,7 @@ public:
      * \brief Map a silhouette segment to a point in boundary sample space
      *
      * This method is the inverse of \ref sample_silhouette(). The mapping
-     * from boundary sample space to boundary segments is bijective.
+     * from/to boundary sample space to/from boundary segments is bijective.
      *
      * This method's behavior is undefined when used in non-JIT variants or
      * when the shape is not being differentiated.
@@ -324,8 +334,9 @@ public:
      * If the shape cannot be differentiated, this method will return the
      * detached input point.
      *
-     * The returned point is equivalent to passing the `FollowShape` flag in
-     * `compute_surface_interaction`.
+     * note:: The returned attached point is exactly the same as a point which
+     * is computed by calling \ref compute_surface_interaction with the
+     * \ref RayFlags::FollowShape flag.
      *
      * \param si
      *      The surface point for which the function will be evaluated.
@@ -340,6 +351,48 @@ public:
      */
     virtual Point3f differential_motion(const SurfaceInteraction3f &si,
                                         Mask active = true) const;
+
+    /**
+     * \brief Projects a point on the surface of the shape to its silhouette
+     * as seen from a specified viewpoint.
+     *
+     * This method only projects the `si.p` point within its primitive.
+     *
+     * Not all of the fields of the \ref SilhouetteSample3f might be filled by
+     * this method. Each shape will at the very least fill its return value with
+     * enough information for it to be used by \ref invert_silhouette_sample.
+     *
+     * The projection operation might not find the closest silhouette point to
+     * the given surface point. For example, it can be guided by a random number
+     * \c sample. Not all shapes types need this random number, each shape
+     * implementation is free to define its own algorithm and guarantees about
+     * the projection operation.
+     *
+     * This method's behavior is undefined when used in non-JIT variants or
+     * when the shape is not being differentiated.
+     *
+     * \param viewpoint
+     *      The viewpoint which defines the silhouette to project the point to.
+     *
+     * \param si
+     *      The surface point which will be projected.
+     *
+     * \param flags
+     *      Flags to select the type of \ref SilhouetteSample3f to generate from
+     *      the projection. Only one type of discontinuity can be used per call.
+     *
+     * \param sample
+     *      A random number that can be used to define the projection operation.
+     *
+     * \return
+     *      A boundary segment on the silhouette of the shape as seen from
+     *      \c viewpoint.
+     */
+    virtual SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                               const SurfaceInteraction3f &si,
+                                                               uint32_t flags,
+                                                               Float sample,
+                                                               Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -934,6 +987,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(pdf_direction)
     DRJIT_VCALL_METHOD(sample_silhouette)
     DRJIT_VCALL_METHOD(invert_silhouette_sample)
+    DRJIT_VCALL_METHOD(primitive_silhouette_projection)
     DRJIT_VCALL_METHOD(differential_motion)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)

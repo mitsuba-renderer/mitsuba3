@@ -362,3 +362,29 @@ def test14_differential_motion(variants_vec_rgb):
 
     assert dr.allclose(p_diff, si.p)
     assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+def test15_primitive_silhouette_projection(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+    rectangle_ptr = mi.ShapePtr(rectangle)
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = rectangle.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(0, 0, 5)
+
+    sample = dr.linspace(mi.Float, 1e-6, 1-1e-6, dr.width(uv))
+    ss = rectangle.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.all(
+        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
+        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+    )
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))

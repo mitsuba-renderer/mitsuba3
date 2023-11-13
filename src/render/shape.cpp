@@ -412,6 +412,15 @@ Shape<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f & /*ss
     NotImplementedError("invert_silhouette_sample");
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::primitive_silhouette_projection(const Point3f &,
+                                                        const SurfaceInteraction3f &,
+                                                        uint32_t,
+                                                        Float,
+                                                        Mask) const {
+    return dr::zeros<SilhouetteSample3f>();
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::Point3f
 Shape<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
                                             Mask /*active*/) const {

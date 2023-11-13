@@ -213,6 +213,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+        const Transform4f &to_world = m_to_world.value();
 
         /// Sample a point on one of the edges
         Mask range = false;
@@ -241,8 +242,10 @@ public:
             dr::fmadd(edge_dir * 4.f, sample.x() - 0.75f, Point2f(1.f, 0.f));
 
         // Object space spans [-1,1]x[-1,1], UV coordinates span [0,1]x[0,1]
-        Vector3f local(ss.uv.x() * 2.f - 1.f, ss.uv.y() * 2.f - 1.f, 0.f);
-        ss.p = m_to_world.value() * Point3f(local);
+        Vector3f local(dr::fmsub(ss.uv.x(), 2.f, 1.f),
+                       dr::fmsub(ss.uv.y(), 2.f, 1.f),
+                       0.f);
+        ss.p = to_world.transform_affine(Point3f(local));
 
         /// Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
@@ -251,22 +254,22 @@ public:
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
 
-        Vector3f world_edge_dir = dr::normalize(
-            m_to_world.value() * Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
-        Normal3f frame_n = dr::normalize(dr::cross(ss.d, world_edge_dir));
+        Vector3f world_edge_dir = to_world.transform_affine(
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
+        ss.silhouette_d = dr::normalize(world_edge_dir);
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
         Vector3f inward_dir = -local;
-        inward_dir = m_to_world.value().transform_affine(inward_dir);
+        inward_dir = to_world.transform_affine(inward_dir);
         frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
         ss.n = frame_n;
 
-        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4.f +
-                         m_to_world.value().matrix(1, 1) * 4.f);
+        ss.pdf = dr::rcp(dr::norm(world_edge_dir) * 2.f) * 0.25f;
         ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
-        ss.foreshortening = dr::norm(dr::cross(ss.d, world_edge_dir));
+        ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         ss.shape = this;
-        ss.offset = 1e-3f;
+        ss.offset = 0.f;
 
         return ss;
     }
@@ -320,6 +323,65 @@ public:
             return dr::replace_grad(si.p, p_diff);
         else
             return si.p;
+    }
+
+    SilhouetteSample3f primitive_silhouette_projection(
+        const Point3f &viewpoint, const SurfaceInteraction3f &si,
+        uint32_t flags, Float sample, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+        const Transform4f &to_world = m_to_world.value();
+
+        // Project to nearest edge
+        Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
+        Mask bottom_left_triangle = !top_right_triangle;
+        Mask top_left_triangle = si.uv.y() > si.uv.x();
+        Mask bottom_right_triangle = !top_left_triangle;
+
+        Mask bottom_edge = bottom_left_triangle && bottom_right_triangle;
+        Mask left_edge = bottom_left_triangle && top_left_triangle;
+        Mask top_edge = top_right_triangle && top_left_triangle;
+        Mask right_edge = active && !top_edge && !bottom_edge && !left_edge;
+
+        // Uniformly pick a point on the edge
+        Point3f local = dr::zeros<Point3f>();
+        dr::masked(local, bottom_edge) = Point3f(dr::fmsub(sample, 2.f, 1), -1.f, 0.f);
+        dr::masked(local, top_edge) =    Point3f(dr::fmsub(sample, 2.f, 1),  1.f, 0.f);
+        dr::masked(local, left_edge) =   Point3f(-1.f, dr::fmsub(sample, 2.f, 1), 0.f);
+        dr::masked(local, right_edge) =  Point3f( 1.f, dr::fmsub(sample, 2.f, 1), 0.f);
+
+        // Explicitly write UVs with 0s and 1s to match `invert_silhouette_sample`
+        dr::masked(ss.uv, bottom_edge) = Point2f(sample, 0.f);
+        dr::masked(ss.uv, top_edge) =    Point2f(sample, 1.f);
+        dr::masked(ss.uv, left_edge) =   Point2f(0.f, sample);
+        dr::masked(ss.uv, right_edge) =  Point2f(1.f, sample);
+
+        Point2f edge_dir = dr::zeros<Point2f>();
+        dr::masked(edge_dir, bottom_edge) = Point2f(1.f, 0.f);
+        dr::masked(edge_dir, top_edge) =    Point2f(1.f, 0.f);
+        dr::masked(edge_dir, left_edge) =   Point2f(0.f, 1.f);
+        dr::masked(edge_dir, right_edge) =  Point2f(0.f, 1.f);
+
+        ss.p = to_world.transform_affine(Point3f(local));
+        ss.d            = dr::normalize(ss.p - viewpoint);
+        ss.silhouette_d = dr::normalize(to_world.transform_affine(
+            Point3f(edge_dir.x(), edge_dir.y(), 0.f)));
+
+        Vector3f frame_t = dr::normalize(viewpoint - ss.p);
+        Normal3f frame_n = dr::normalize(dr::cross(frame_t, ss.silhouette_d));
+        Vector3f inward_dir = to_world.transform_affine(Vector3f(-local));
+        frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
+        ss.n = frame_n;
+
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
     }
 
     //! @}

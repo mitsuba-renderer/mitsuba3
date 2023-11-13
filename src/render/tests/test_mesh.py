@@ -1182,7 +1182,8 @@ def test30_discontinuity_types(variants_vec_rgb):
     assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
 
 
-def test12_differential_motion(variants_vec_rgb):
+@fresolver_append_path
+def test31_differential_motion(variants_vec_rgb):
     if not dr.is_diff_v(mi.Float):
         pytest.skip("Only relevant in AD-enabled variants!")
 
@@ -1212,3 +1213,41 @@ def test12_differential_motion(variants_vec_rgb):
 
     assert dr.allclose(p_diff, si.p)
     assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+@fresolver_append_path
+def test32_primitive_silhouette_projection(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+    })
+    mesh_ptr = mi.ShapePtr(mesh)
+    params = mi.traverse(mesh)
+
+    key = 'vertex_positions'
+    dr.enable_grad(params[key])
+    params.update()
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = mesh.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(0, 0, 5)
+
+    sample = dr.linspace(mi.Float, 1e-6, 1-1e-6, dr.width(uv))
+    ss = mesh.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample, si.is_valid())
+
+    dr.eval(ss)
+    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
+    print(failed)
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))

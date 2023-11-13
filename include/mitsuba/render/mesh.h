@@ -204,9 +204,6 @@ public:
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const override;
 
-    virtual Point3f differential_motion(const SurfaceInteraction3f &si,
-                                        Mask active = true) const override;
-
     virtual Mask has_attribute(const std::string &name, Mask active = true) const override;
 
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
@@ -231,6 +228,15 @@ public:
 
     Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
                                      Mask active) const override;
+
+    virtual Point3f differential_motion(const SurfaceInteraction3f &si,
+                                        Mask active = true) const override;
+
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float sample,
+                                                       Mask active = true) const override;
 
     //! @}
     // =============================================================

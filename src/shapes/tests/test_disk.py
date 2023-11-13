@@ -369,3 +369,24 @@ def test13_differential_motion(variants_vec_rgb):
 
     assert dr.allclose(p_diff, si.p)
     assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+def test14_primitive_silhouette_projection(variants_vec_rgb):
+    disk = mi.load_dict({ 'type': 'disk' })
+    disk_ptr = mi.ShapePtr(disk)
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = disk.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(0, 0, 5)
+
+    ss = disk.primitive_silhouette_projection(viewpoint, si, mi.DiscontinuityFlags.PerimeterType, 0.)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, disk_ptr))
