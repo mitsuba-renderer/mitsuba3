@@ -580,6 +580,35 @@ public:
         return sample;
     }
 
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point2f uv = dr::detach(si.uv);
+
+        size_t segment_count = dr::width(m_indices);
+        UInt32 segment_id = dr::floor2int<UInt32>(uv.y() * segment_count);
+        Float v_local = uv.y() * segment_count - segment_id;
+
+        Point3f C;
+        Vector3f Cv, Cvv, Cvvv;
+        Float radius, rv, rvv;
+        std::tie(C, Cv, Cvv, Cvvv, radius, rv, rvv) =
+            cubic_interpolation(v_local, segment_id, active);
+        Vector3f Cv_normalized = dr::normalize(Cv);
+        auto [dir_rot, dir_rad] = local_frame(Cv_normalized);
+
+        // Differentiable point (w.r.t curve parameters)
+        auto [sin_u, cos_u] = dr::sincos(uv.x() * dr::TwoPi<Float>);
+        Point3f p_diff =
+            C + cos_u * dir_rad * radius + sin_u * dir_rot * radius;
+
+        if constexpr (dr::is_diff_v<Float>)
+            return dr::replace_grad(si.p, p_diff);
+        else
+            return si.p;
+    }
+
     //! @}
     // =============================================================
 

@@ -1068,6 +1068,9 @@ def test27_sample_silhouette_wrong_type(variants_all_rgb):
 
 @fresolver_append_path
 def test28_sample_silhouette(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/triangle.ply",
@@ -1126,6 +1129,9 @@ def test28_sample_silhouette(variants_vec_rgb):
 
 @fresolver_append_path
 def test29_sample_silhouette_bijective(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/common/meshes/bunny_lowres.ply",
@@ -1174,3 +1180,35 @@ def test30_discontinuity_types(variants_vec_rgb):
     types = mesh.silhouette_discontinuity_types()
     assert not mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
     assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
+
+
+def test12_differential_motion(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+    })
+    params = mi.traverse(mesh)
+
+    theta = mi.Point3f(0.0)
+    dr.enable_grad(theta)
+    key = 'vertex_positions'
+    positions = dr.unravel(mi.Point3f, params[key])
+    translation = mi.Transform4f.translate([theta.x, 2 * theta.y, 3 * theta.z])
+    positions = translation @ positions
+    params[key] = dr.ravel(positions)
+    params.update()
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.prim_index = 0
+    si.p = mi.Point3f(1, 0, 0) # doesn't matter
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    p_diff = mesh.differential_motion(si)
+    dr.forward(theta)
+    v = dr.grad(p_diff)
+
+    assert dr.allclose(p_diff, si.p)
+    assert dr.allclose(v, [1.0, 2.0, 3.0])

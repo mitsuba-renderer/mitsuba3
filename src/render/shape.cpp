@@ -412,6 +412,12 @@ Shape<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f & /*ss
     NotImplementedError("invert_silhouette_sample");
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::Point3f
+Shape<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
+                                            Mask /*active*/) const {
+    return dr::detach(si.p);
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
 Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
                                                   uint32_t /*prim_index*/, Mask /*active*/) const {

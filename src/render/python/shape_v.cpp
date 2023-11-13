@@ -165,6 +165,12 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "ss"_a, "active"_a = true,
             D(Shape, invert_silhouette_sample))
+       .def("differential_motion",
+            [](Ptr shape, const SurfaceInteraction3f &si, Mask active) {
+                return shape->differential_motion(si, active);
+            },
+            "si"_a, "active"_a = true,
+            D(Shape, differential_motion))
        .def("eval_parameterization",
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);

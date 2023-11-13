@@ -305,6 +305,23 @@ public:
         return sample;
     }
 
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point2f uv = dr::detach(si.uv);
+
+        Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
+                      dr::fmadd(uv.y(), 2.f, -1.f),
+                      0.f);
+        Point3f p_diff = m_to_world.value().transform_affine(local);
+
+        if constexpr (dr::is_diff_v<Float>)
+            return dr::replace_grad(si.p, p_diff);
+        else
+            return si.p;
+    }
+
     //! @}
     // =============================================================
 

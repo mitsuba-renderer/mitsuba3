@@ -399,3 +399,42 @@ def test15_discontinuity_types(variants_vec_rgb):
     types = curve.silhouette_discontinuity_types()
     assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
     assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
+
+
+def test16_differential_motion(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve_doc.txt",
+    })
+    params = mi.traverse(curve)
+
+    theta = mi.Point3f(0.0)
+    dr.enable_grad(theta)
+    key = 'control_points'
+    control_points = dr.unravel(mi.Point4f, params[key])
+    positions = mi.Point3f(control_points.x, control_points.y, control_points.z)
+    translation = mi.Transform4f.translate([theta.x, 2 * theta.y, 3 * theta.z])
+    positions = translation @ positions
+    control_points = mi.Point4f(
+        positions.x,
+        positions.y,
+        positions.z,
+        control_points[3]
+    )
+    params[key] = dr.ravel(control_points)
+    params.update()
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.prim_index = 0
+    si.p = mi.Point3f(1, 0, 0) # doesn't matter
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    p_diff = curve.differential_motion(si)
+    dr.forward(theta)
+    v = dr.grad(p_diff)
+
+    assert dr.allclose(p_diff, si.p)
+    assert dr.allclose(v, [1.0, 2.0, 3.0])

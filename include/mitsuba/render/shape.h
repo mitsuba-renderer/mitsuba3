@@ -311,6 +311,36 @@ public:
     virtual Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
                                              Mask active = true) const;
 
+    /**
+     * \brief Return the attached (AD) point on the shape's surface
+     *
+     * This method is only useful when using automatic differentiation. The
+     * immediate/primal return value of this method is exactly equal to
+     * \`si.p\`.
+     *
+     * The input `si` does not need to be explicitly detached, it is done by the
+     * method itself.
+     *
+     * If the shape cannot be differentiated, this method will return the
+     * detached input point.
+     *
+     * The returned point is equivalent to passing the `FollowShape` flag in
+     * `compute_surface_interaction`.
+     *
+     * \param si
+     *      The surface point for which the function will be evaluated.
+     *
+     *      Not all fields of the object need to be filled. Only the
+     *      `prim_index`, `p` and `uv` fields are required. Certain shapes will
+     *      only use a subset of these.
+     *
+     * \return
+     *      The same surface point as the input but attached (AD) to the shape's
+     *      parameters.
+     */
+    virtual Point3f differential_motion(const SurfaceInteraction3f &si,
+                                        Mask active = true) const;
+
     //! @}
     // =============================================================
 
@@ -904,6 +934,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(pdf_direction)
     DRJIT_VCALL_METHOD(sample_silhouette)
     DRJIT_VCALL_METHOD(invert_silhouette_sample)
+    DRJIT_VCALL_METHOD(differential_motion)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
     DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)
