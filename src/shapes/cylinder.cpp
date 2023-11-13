@@ -403,6 +403,22 @@ public:
         return sample;
     }
 
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point2f uv = dr::detach(si.uv);
+
+        auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * uv.x());
+        Point3f local(cos_theta, sin_theta, uv.y());
+        Point3f p_diff = m_to_world.value().transform_affine(local);
+
+        if constexpr (dr::is_diff_v<Float>)
+            return dr::replace_grad(si.p, p_diff);
+        else
+            return si.p;
+    }
+
     //! @}
     // =============================================================
 

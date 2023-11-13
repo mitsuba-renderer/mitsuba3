@@ -826,7 +826,7 @@ MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, M
 // =============================================================
 
 // =============================================================
-//! @{ \name Silhouette sampling routines
+//! @{ \name Silhouette sampling routines and other utilities
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
@@ -991,6 +991,31 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     dr::masked(sample.z(), is_sphere) = sample_yz_sphere.y();
 
     return sample;
+}
+
+MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
+Mesh<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
+                                           Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    Point2f uv = dr::detach(si.uv);
+
+    Vector3u fi = face_indices(si.prim_index, active);
+    Point3f p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
+
+    // Barycentric coordinates
+    Float b = uv.x(),
+          c = uv.y(),
+          a = 1.f - b - c;
+
+    Point3f p_diff = dr::fmadd(p0, a, dr::fmadd(p1, b, p2 * c));
+
+    if constexpr (dr::is_diff_v<Float>)
+        return dr::replace_grad(si.p, p_diff);
+    else
+        return si.p;
 }
 
 //! @}

@@ -338,3 +338,29 @@ def test11_discontinuity_types(variants_vec_rgb):
     types = cylinder.silhouette_discontinuity_types()
     assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
     assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
+
+
+def test12_differential_motion(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    params = mi.traverse(cylinder)
+
+    theta = mi.Point3f(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.translate(
+        [theta.x, 2 * theta.y, 3 * theta.z])
+    params.update()
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.prim_index = 0
+    si.p = mi.Point3f(1, 0, 0) # doesn't matter
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    p_diff = cylinder.differential_motion(si)
+    dr.forward(theta)
+    v = dr.grad(p_diff)
+
+    assert dr.allclose(p_diff, si.p)
+    assert dr.allclose(v, [1.0, 2.0, 3.0])
