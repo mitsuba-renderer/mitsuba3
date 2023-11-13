@@ -297,6 +297,46 @@ public:
             return si.p;
     }
 
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float /*sample*/,
+                                                       Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        const Transform4f &to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        ss.uv = Point2f(1.f, si.uv.y());
+
+        Float theta = ss.uv.y() * dr::TwoPi<Float>;
+        Float sin_theta, cos_theta;
+        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+
+        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
+
+        ss.p = to_world.transform_affine(local_p);
+        ss.d = dr::normalize(ss.p - viewpoint);
+
+        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
+            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        Vector3f inward_dir = -local_p;
+        inward_dir = to_world.transform_affine(inward_dir);
+        dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+        ss.n = frame_n;
+
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
+    }
+
     //! @}
     // =============================================================
 

@@ -396,6 +396,47 @@ public:
             return si.p;
     }
 
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float /*sample*/,
+                                                       Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::InteriorType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        const Point3f& center = m_center.value();
+        const Float& radius = m_radius.value();
+
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        // O := center, V := viewpoint, Y := si.p, X := projected point
+        Float dist_OV = dr::norm(viewpoint - center);
+        Vector3f OVd = (viewpoint - center) / dist_OV,
+                 OYd = dr::normalize(si.n - dr::dot(OVd, si.n) * OVd);
+
+        Float sin_phi = radius * dr::rcp(dist_OV);
+
+        Vector3f OXd  = dr::normalize(
+            sin_phi * OVd +
+            dr::safe_sqrt(-dr::fmsub(sin_phi, sin_phi, 1.f)) * OYd);
+
+        ss.p = dr::fmadd(OXd, radius, center);
+        ss.d = dr::normalize(ss.p - viewpoint);
+        ss.n = dr::normalize(ss.p - center);
+        ss.uv = warp::uniform_sphere_to_square(Vector3f(ss.n));
+
+        Vector3f frame_t = dr::normalize(viewpoint - ss.p);
+        ss.silhouette_d = dr::cross(ss.n, frame_t);
+
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
+    }
+
     //! @}
     // =============================================================
 

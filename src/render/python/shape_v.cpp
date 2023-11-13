@@ -171,6 +171,14 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "si"_a, "active"_a = true,
             D(Shape, differential_motion))
+       .def("primitive_silhouette_projection",
+            [](Ptr shape, const Point3f &viewpoint,
+               const SurfaceInteraction3f &si, uint32_t flags, Float sample,
+               Mask active) {
+                return shape->primitive_silhouette_projection(viewpoint, si, flags, sample, active);
+            },
+            "viewpoint"_a, "si"_a, "flags"_a, "sample"_a, "active"_a = true,
+            D(Shape, primitive_silhouette_projection))
        .def("eval_parameterization",
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);
