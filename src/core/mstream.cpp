@@ -23,20 +23,16 @@ void MemoryStream::read(void *p, size_t size) {
         Throw("Attempted to read from a closed stream: %s", to_string());
 
     if (m_pos + size > m_size) {
-        const auto old_pos = m_pos;
         // Use signed difference since `m_pos` might be beyond `m_size`
         int64_t size_read = m_size - static_cast<int64_t>(m_pos);
         if (size_read > 0) {
             memcpy(p, m_data + m_pos, static_cast<size_t>(size_read));
             m_pos += static_cast<size_t>(size_read);
         }
-        Log(Error, "Reading over the end of a memory stream!"
-                   " (amount requested = %llu, amount actually read = %llu,"
-                   " total size of the stream = %llu, previous position = %llu)",
-            size, size_read, m_size, old_pos);
+    } else {
+        memcpy(p, m_data + m_pos, size);
+        m_pos += size;
     }
-    memcpy(p, m_data + m_pos, size);
-    m_pos += size;
 }
 
 void MemoryStream::write(const void *p, size_t size) {
