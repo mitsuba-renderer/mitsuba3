@@ -221,6 +221,34 @@ def test_read_tga(variant_scalar_rgb):
     assert b1 == b2
 
 
+@pytest.mark.parametrize('file_format',
+                         [mi.scalar_rgb.Bitmap.FileFormat.JPEG,
+                          mi.scalar_rgb.Bitmap.FileFormat.PPM,
+                          mi.scalar_rgb.Bitmap.FileFormat.PNG])
+def test_read_write_memorystream_uint8(variant_scalar_rgb, np_rng, file_format):
+    ref = np.uint8(np_rng.random((10, 10, 3)) * 255)
+    b = mi.Bitmap(ref)
+    stream = mi.MemoryStream()
+    b.write(stream, file_format)
+    stream.seek(0)
+    b2 = mi.Bitmap(stream)
+    assert np.sum(np.abs(np.float32(np.array(b2))-ref)) / (3*10*10*255) < 0.2
+
+
+@pytest.mark.parametrize('file_format',
+                         [mi.scalar_rgb.Bitmap.FileFormat.OpenEXR,
+                          mi.scalar_rgb.Bitmap.FileFormat.RGBE,
+                          mi.scalar_rgb.Bitmap.FileFormat.PFM])
+def test_read_write_memorystream_float32(variant_scalar_rgb, np_rng, file_format):
+    ref = np.float32(np_rng.random((10, 10, 3)))
+    b = mi.Bitmap(ref)
+    stream = mi.MemoryStream()
+    b.write(stream, file_format)
+    stream.seek(0)
+    b2 = mi.Bitmap(stream)
+    assert np.abs(np.mean(np.array(b2)-ref)) < 1e-2
+
+
 def test_accumulate(variant_scalar_rgb):
     # ----- Accumulate the whole bitmap
     b1 = mi.Bitmap(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, [10, 10])
