@@ -835,7 +835,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
                                          Mask active) const {
     MI_MASK_ARGUMENT(active);
 
-    if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+    if (!has_flag(flags, DiscontinuityFlags::PerimeterType) || m_E2E_outdated)
         return dr::zeros<SilhouetteSample3f>();
 
     SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
@@ -847,6 +847,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     std::tie(dedge, sample_x, pmf_edge) =
         m_sil_dedge_pmf.sample_reuse_pmf(sample_.x(), active);
     Point3f sample(sample_x, sample_.y(), sample_.z());
+    active &= dr::neq(pmf_edge, 0.f);
 
     auto [face_idx, edge_idx] = dr::idivmod(dedge, 3u);
     Vector3u v_idx = face_indices(face_idx, active);
@@ -910,13 +911,10 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
 
     dr::masked(ss.pdf, !active) = 0.f;
     // Check that direction is actually a boundary segment
-    Mask valid = (dr::dot(ss.d, n_curr) * dr::dot(ss.d, n_oppo) < 0.f) && active;
-    ss.pdf = dr::select(valid | !has_opposite, ss.pdf, 0.f);
-    ss.pdf *= dr::rcp(dr::norm(p0 - p1)) * pmf_edge;
-
-    // Mark failed samples
-    Mask failed = dr::eq(ss.pdf, 0.f);
-    dr::masked(ss.discontinuity_type, failed) = (uint32_t) DiscontinuityFlags::Empty;
+    Mask valid = ((dr::dot(ss.d, n_curr) * dr::dot(ss.d, n_oppo) < 0.f) ||
+                  !has_opposite) && active;
+    ss.pdf = dr::select(valid, ss.pdf, 0.f);
+    dr::masked(ss.pdf, valid) *= dr::rcp(dr::norm(p0 - p1)) * pmf_edge;
 
     ss.foreshortening = dr::norm(dr::cross(ss.silhouette_d, ss.d));
     ss.projection_index = edge_idx;
@@ -924,12 +922,20 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.shape = this;
     ss.offset = 0.f;
 
+    // Mark failed samples
+    Mask failed = dr::eq(ss.pdf, 0.f) || !active;
+    dr::masked(ss, failed) = dr::zeros<SilhouetteSample3f>();
+
     return ss;
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
 Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
                                                 Mask active_) const {
+    // Do not trace this function if it's not differentiated
+    if (m_E2E_outdated)
+        return dr::zeros<Point3f>();
+
     // Safley ignore invalid boundary segments
     Mask active =
         active_ && (dr::eq(ss.discontinuity_type,
@@ -989,6 +995,31 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     dr::masked(sample.z(), is_sphere) = sample_yz_sphere.y();
 
     return sample;
+}
+
+MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
+Mesh<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
+                                           Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    Point2f uv = dr::detach(si.uv);
+
+    Vector3u fi = face_indices(si.prim_index, active);
+    Point3f p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
+
+    // Barycentric coordinates
+    Float b = uv.x(),
+          c = uv.y(),
+          a = 1.f - b - c;
+
+    Point3f p_diff = dr::fmadd(p0, a, dr::fmadd(p1, b, p2 * c));
+
+    if constexpr (dr::is_diff_v<Float>)
+        return dr::replace_grad(si.p, p_diff);
+    else
+        return si.p;
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
@@ -1135,29 +1166,125 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     return ss;
 }
 
-MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
-Mesh<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
-                                           Mask active) const {
-    MI_MASK_ARGUMENT(active);
+MI_VARIANT std::tuple<std::vector<typename Mesh<Float, Spectrum>::ScalarIndex>,
+                      std::vector<typename Mesh<Float, Spectrum>::ScalarFloat> >
+Mesh<Float, Spectrum>::precompute_silhouette(const ScalarPoint3f &viewpoint) const {
 
-    Point2f uv = dr::detach(si.uv);
+    using Vec3f = ScalarVector3f;
+    using Pt3f = ScalarPoint3f;
 
-    Vector3u fi = face_indices(si.prim_index, active);
-    Point3f p0 = vertex_position(fi[0], active),
-            p1 = vertex_position(fi[1], active),
-            p2 = vertex_position(fi[2], active);
+    // TODO: drjit this function
 
-    // Barycentric coordinates
-    Float b = uv.x(),
-          c = uv.y(),
-          a = 1.f - b - c;
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& faces            = dr::migrate(m_faces, AllocType::Host);
+    auto&& E2E              = dr::migrate(m_E2E, AllocType::Host);
 
-    Point3f p_diff = dr::fmadd(p0, a, dr::fmadd(p1, b, p2 * c));
+    if constexpr (dr::is_array_v<Float>)
+        dr::sync_thread();
 
-    if constexpr (dr::is_diff_v<Float>)
-        return dr::replace_grad(si.p, p_diff);
-    else
-        return si.p;
+    const InputFloat *V                = vertex_positions.data();
+    const ScalarIndex *E2E_data        = E2E.data();
+    const ScalarIndex *face_data       = faces.data();
+
+    ScalarIndex prim_count = 0u;
+    std::vector<ScalarIndex> indices(m_face_count * 3u);
+    std::vector<ScalarFloat> weight(m_face_count * 3u);
+    ScalarFloat weight_sum = 0.f;
+
+    for (ScalarIndex f = 0; f < m_face_count; f++) {
+        ScalarPoint3u idx = dr::load<ScalarPoint3u>(face_data + 3 * f);
+        Pt3f v0 = dr::load<Pt3f>(V + 3 * idx.x());
+        Pt3f v1 = dr::load<Pt3f>(V + 3 * idx.y());
+        Pt3f v2 = dr::load<Pt3f>(V + 3 * idx.z());
+        Vec3f n = dr::normalize(dr::cross(v1 - v0, v2 - v0));
+
+        Vec3f to_v0 = dr::normalize(v0 - viewpoint);
+        Vec3f to_v1 = dr::normalize(v1 - viewpoint);
+        Vec3f to_v2 = dr::normalize(v2 - viewpoint);
+
+        auto check_edge = [&](const ScalarIndex dedge_curr, const Vec3f &dir1,
+                              const Vec3f &dir2) -> void {
+            ScalarIndex dedge_oppo =
+                dr::load<ScalarIndex>(E2E_data + dedge_curr);
+            bool valid = false;
+
+            if (dedge_oppo == m_invalid_dedge) {
+                valid = true;
+            } else if (dedge_oppo > dedge_curr) {
+                ScalarIndex face_index_oppo = dr::idiv(dedge_oppo, 3u);
+                ScalarPoint3u v_idx_oppo =
+                    dr::load<ScalarPoint3u>(face_data + 3 * face_index_oppo);
+
+                Pt3f v0_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.x());
+                Pt3f v1_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.y());
+                Pt3f v2_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.z());
+                Vec3f n_oppo = dr::normalize(
+                    dr::cross(v1_oppo - v0_oppo, v2_oppo - v0_oppo));
+
+                if (dr::dot(dir1, n) * dr::dot(dir1, n_oppo) <= 0.f &&
+                    dr::abs(dr::dot(n, n_oppo)) < 1.f) {
+                    valid = true;
+                }
+            }
+
+            if (valid) {
+                indices[prim_count] = dedge_curr;
+
+                // The arclength weight is not perfect for perspective cameras.
+                // But it is a close approximation.
+                weight[prim_count] = unit_angle(dir1, dir2);
+                weight_sum += weight[prim_count];
+                prim_count++;
+            }
+        };
+
+        check_edge(f * 3u,      to_v0, to_v1);
+        check_edge(f * 3u + 1u, to_v1, to_v2);
+        check_edge(f * 3u + 2u, to_v2, to_v0);
+    }
+
+    // Normalize weight
+    std::transform(weight.begin(), weight.end(), weight.begin(),
+                   [&weight_sum](auto &c) { return c / weight_sum; });
+
+    return std::make_tuple(indices, weight);
+}
+
+MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
+Mesh<Float, Spectrum>::sample_precomputed_silhouette(const Point3f &viewpoint,
+                                                     Index sample1 /*=dedge*/,
+                                                     Float sample2,
+                                                     Mask active) const {
+
+    auto [face_idx, e] = dr::idivmod(sample1, 3u);
+    Vector3u fi = face_indices(face_idx, active);
+    Point3f p0 = vertex_position(pick_vertex(fi, e     ), active),
+            p1 = vertex_position(pick_vertex(fi, e + 1u), active),
+            p2 = vertex_position(pick_vertex(fi, e + 2u), active);
+
+    SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+    ss.p = dr::lerp(p0, p1, sample2);
+    ss.d = dr::normalize(ss.p - viewpoint);
+    ss.silhouette_d = dr::normalize(p1 - p0);
+    ss.pdf = dr::rsqrt(dr::squared_norm(p0 - p1));
+    ss.offset = 0.f;
+    ss.prim_index = face_idx;
+    ss.shape = this;
+    ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+
+    Vector3f inward_dir = p2 - ss.p;
+    ss.n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+    dr::masked(ss.n, dr::dot(ss.n, inward_dir) > 0.f) *= -1.f;
+
+    // Face local barycentric UV coordinates used by `differential_motion`
+    ss.uv = dr::select(dr::eq(e, 0u),
+                       Point2f(sample2, 0.f),
+                       Point2f(1 - sample2, sample2));
+    ss.uv = dr::select(dr::eq(e, 2u),
+                       Point2f(0.f, 1 - sample2),
+                       ss.uv);
+
+    return ss;
 }
 
 //! @}

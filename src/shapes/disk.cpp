@@ -337,6 +337,40 @@ public:
         return ss;
     }
 
+    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat> >
+    precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
+        ScalarFloat weight = 1.f;
+        std::vector<uint32_t> dummy_index(1, +DiscontinuityFlags::PerimeterType);
+        std::vector<ScalarFloat> weight_arr(1, weight);
+
+        return { dummy_index, weight_arr };
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint,
+                                  UInt32 /*sample1*/,
+                                  Float sample,
+                                  Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        // Call `primitive_silhouette_projection` which uses `si.uv` to compute
+        // the silhouette point.
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.uv = Point2f(0.5f, sample);
+
+        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+        SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
+
+        Point3f local_p = m_to_object.value().transform_affine(ss.p);
+        // Arc-length ratio
+        ss.pdf = dr::InvTwoPi<Float> *
+                 dr::rcp(dr::norm(m_to_world.value().transform_affine(
+                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+
+        return ss;
+    }
+
     //! @}
     // =============================================================
 

@@ -366,7 +366,6 @@ public:
         ss.pdf *= dr::InvTwoPi<Float>;
         ss.shape = this;
         ss.foreshortening = dr::rcp(m_radius.value());
-        ss.offset = 0.f;
 
         return ss;
     }
@@ -433,6 +432,44 @@ public:
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
         ss.flags = flags;
         ss.shape = this;
+
+        return ss;
+    }
+
+    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat>>
+    precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
+        ScalarFloat weight = 1.f;
+        std::vector<uint32_t> dummy_index(1, +DiscontinuityFlags::InteriorType);
+        std::vector<ScalarFloat> weight_arr(1, weight);
+
+        return { dummy_index, weight_arr };
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint, UInt32 /*sample1*/,
+                                  Float sample2, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        const Point3f &center = m_center.value();
+        const Float &radius = m_radius.value();
+
+        // O := center, V := viewpoint
+        Float OV_dist = dr::norm(viewpoint - center);
+        Vector3f OV_normalized = (viewpoint - center) / OV_dist;
+        auto [dx, dy] = coordinate_system(OV_normalized);
+        auto [sin_theta, cos_theta] = dr::sincos(sample2 * dr::TwoPi<Float>);
+
+        // Call `primitive_silhouette_projection` which uses `si.n`
+        // to compute the silhouette point as `ss.p`.
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.n = dr::normalize(OV_normalized + dx * cos_theta + dy * sin_theta);
+
+        uint32_t flags = (uint32_t) DiscontinuityFlags::InteriorType;
+        SilhouetteSample3f ss =
+            primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
+
+        Float radius_ring = radius / OV_dist * dr::norm(ss.p - viewpoint);
+        ss.pdf = dr::rcp(dr::TwoPi<ScalarFloat> * radius_ring);
 
         return ss;
     }

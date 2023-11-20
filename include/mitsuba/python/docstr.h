@@ -2105,6 +2105,8 @@ static const char *__doc_mitsuba_DiscontinuityFlags_DirectionSphere = R"doc(//! 
 
 static const char *__doc_mitsuba_DiscontinuityFlags_Empty = R"doc(No flags set (default value))doc";
 
+static const char *__doc_mitsuba_DiscontinuityFlags_HeuristicWalk = R"doc(//! Encoding and projection flags)doc";
+
 static const char *__doc_mitsuba_DiscontinuityFlags_InteriorType = R"doc(Smooth normal type of discontinuity)doc";
 
 static const char *__doc_mitsuba_DiscontinuityFlags_PerimeterType = R"doc(Open boundary or jumping normal type of discontinuity)doc";
@@ -4750,7 +4752,11 @@ static const char *__doc_mitsuba_Mesh_parameters_grad_enabled = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_precompute_silhouette = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_primitive_count = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_primitive_silhouette_projection = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_ray_intersect_triangle = R"doc()doc";
 
@@ -4786,6 +4792,8 @@ static const char *__doc_mitsuba_Mesh_recompute_bbox = R"doc(Recompute the bound
 static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute smooth vertex normals and replace the current normal values)doc";
 
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_sample_precomputed_silhouette = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_silhouette = R"doc()doc";
 
@@ -7632,8 +7640,9 @@ the method itself.
 If the shape cannot be differentiated, this method will return the
 detached input point.
 
-The returned point is equivalent to passing the `FollowShape` flag in
-`compute_surface_interaction`.
+note:: The returned attached point is exactly the same as a point
+which is computed by calling compute_surface_interaction with the
+RayFlags::FollowShape flag.
 
 Parameter ``si``:
     The surface point for which the function will be evaluated.
@@ -7737,8 +7746,8 @@ static const char *__doc_mitsuba_Shape_interior_medium = R"doc(Return the medium
 static const char *__doc_mitsuba_Shape_invert_silhouette_sample =
 R"doc(Map a silhouette segment to a point in boundary sample space
 
-This method is the inverse of sample_silhouette(). The mapping from
-boundary sample space to boundary segments is bijective.
+This method is the inverse of sample_silhouette(). The mapping from/to
+boundary sample space to/from boundary segments is bijective.
 
 This method's behavior is undefined when used in non-JIT variants or
 when the shape is not being differentiated.
@@ -7906,11 +7915,74 @@ Parameter ``ps``:
 Returns:
     The probability density per unit area)doc";
 
+static const char *__doc_mitsuba_Shape_precompute_silhouette =
+R"doc(Precompute the visible silhouette of this shape for a given viewpoint.
+
+This method is meant to be used for silhouettes that are shared
+between all threads, as is the case for primarily visible derivatives.
+
+The return values are respectively a list of indices and their
+corresponding weights. The semantic meaning of these indices is
+different for each shape. For example, a triangle mesh will return the
+indices of all of its edges that constitute its silhouette. These
+indices are meant to be re-used as an argument when calling
+sample_precomputed_silhouette.
+
+This method's behavior is undefined when used in non-JIT variants or
+when the shape is not being differentiated.
+
+Parameter ``viewpoint``:
+    The viewpoint which defines the silhouette of the shape
+
+Returns:
+    A list of indices used by the shape internally to represent
+    silhouettes, and a list of the same length containing the weights
+    associated to each index.)doc";
+
 static const char *__doc_mitsuba_Shape_primitive_count =
 R"doc(Returns the number of sub-primitives that make up this shape
 
 Remark:
     The default implementation simply returns ``1``)doc";
+
+static const char *__doc_mitsuba_Shape_primitive_silhouette_projection =
+R"doc(Projects a point on the surface of the shape to its silhouette as seen
+from a specified viewpoint.
+
+This method only projects the `si.p` point within its primitive.
+
+Not all of the fields of the SilhouetteSample3f might be filled by
+this method. Each shape will at the very least fill its return value
+with enough information for it to be used by invert_silhouette_sample.
+
+The projection operation might not find the closest silhouette point
+to the given surface point. For example, it can be guided by a random
+number ``sample``. Not all shapes types need this random number, each
+shape implementation is free to define its own algorithm and
+guarantees about the projection operation.
+
+This method's behavior is undefined when used in non-JIT variants or
+when the shape is not being differentiated.
+
+Parameter ``viewpoint``:
+    The viewpoint which defines the silhouette to project the point
+    to.
+
+Parameter ``si``:
+    The surface point which will be projected.
+
+Parameter ``flags``:
+    Flags to select the type of SilhouetteSample3f to generate from
+    the projection. Only one type of discontinuity can be used per
+    call.
+
+Parameter ``sample``:
+    A random number that can be used to define the projection
+    operation.
+
+Returns:
+    A boundary segment on the silhouette of the shape as seen from
+    ``viewpoint``.)doc";
 
 static const char *__doc_mitsuba_Shape_ray_intersect =
 R"doc(Test for an intersection and return detailed information
@@ -8032,6 +8104,30 @@ Parameter ``sample``:
 
 Returns:
     A PositionSample instance describing the generated sample)doc";
+
+static const char *__doc_mitsuba_Shape_sample_precomputed_silhouette =
+R"doc(Samples a boundary segement on the shape's silhouette using
+precomputed information computed in precompute_silhouette.
+
+This method is meant to be used for silhouettes that are shared
+between all threads, as is the case for primarily visible derivatives.
+
+This method's behavior is undefined when used in non-JIT variants or
+when the shape is not being differentiated.
+
+Parameter ``viewpoint``:
+    The viewpoint that was used for the precomputed silhouette
+    information
+
+Parameter ``sample1``:
+    A sampled index from the return values of precompute_silhouette
+
+Parameter ``sample2``:
+    A uniformly distributed sample in ``[0,1]``
+
+Returns:
+    A boundary segment on the silhouette of the shape as seen from
+    ``viewpoint``.)doc";
 
 static const char *__doc_mitsuba_Shape_sample_silhouette =
 R"doc(Map a point sample in boundary sample space to a silhouette segment

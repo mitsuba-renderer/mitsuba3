@@ -403,13 +403,25 @@ MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
 Shape<Float, Spectrum>::sample_silhouette(const Point3f & /*sample*/,
                                           uint32_t /*type*/,
                                           Mask /*active*/) const {
-    NotImplementedError("sample_silhouette");
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<SilhouetteSample3f>();
+    else
+        NotImplementedError("sample_silhouette");
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::Point3f
 Shape<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f & /*ss*/,
                                                  Mask /*active*/) const {
-    NotImplementedError("invert_silhouette_sample");
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<Point3f>();
+    else
+        NotImplementedError("invert_silhouette_sample");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Point3f
+Shape<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
+                                            Mask /*active*/) const {
+    return dr::detach(si.p);
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
@@ -421,10 +433,21 @@ Shape<Float, Spectrum>::primitive_silhouette_projection(const Point3f &,
     return dr::zeros<SilhouetteSample3f>();
 }
 
-MI_VARIANT typename Shape<Float, Spectrum>::Point3f
-Shape<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
-                                            Mask /*active*/) const {
-    return dr::detach(si.p);
+MI_VARIANT std::tuple<std::vector<typename Shape<Float, Spectrum>::ScalarIndex>,
+                      std::vector<typename Shape<Float, Spectrum>::ScalarFloat>>
+Shape<Float, Spectrum>::precompute_silhouette(
+    const ScalarPoint3f & /*viewpoint*/) const {
+    NotImplementedError("precompute_silhouette");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::sample_precomputed_silhouette(
+    const Point3f & /*viewpoint*/, Index /*sample1*/, Float /*sample2*/,
+    Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<SilhouetteSample3f>();
+    else
+        NotImplementedError("sample_precomputed_silhouette");
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
