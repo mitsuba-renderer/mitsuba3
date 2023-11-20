@@ -433,3 +433,32 @@ def test16_primitive_silhouette_projection(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, sphere_ptr))
+
+
+def test17_precompute_silhouette(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+
+    indices, weights = sphere.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
+
+    assert len(weights) == 1
+    assert indices[0] == mi.DiscontinuityFlags.InteriorType.value
+    assert weights[0] == 1
+
+
+def test18_sample_precomputed_silhouette(variants_vec_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+    sphere_ptr = mi.ShapePtr(sphere)
+
+    samples = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    viewpoint = mi.ScalarPoint3f(0, 0, 5)
+
+    ss = sphere.sample_precomputed_silhouette(viewpoint, 0, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.allclose(dr.norm(ss.p), 1)
+    assert dr.allclose(ss.p, ss.n)
+    ring_radius = 1 / 5 * dr.norm(ss.p - viewpoint)
+    assert dr.allclose(ss.pdf, 1 / (dr.two_pi * ring_radius))
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, sphere_ptr))

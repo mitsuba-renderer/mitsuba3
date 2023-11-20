@@ -32,6 +32,7 @@ public:
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
+    using typename Base::Index;
 
     /// Create a new mesh with the given vertex and face data structures
     Mesh(const std::string &name, ScalarSize vertex_count,
@@ -209,9 +210,11 @@ public:
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
                                                const SurfaceInteraction3f &si,
                                                Mask active = true) const override;
+
     virtual Float eval_attribute_1(const std::string& name,
                                    const SurfaceInteraction3f &si,
                                    Mask active = true) const override;
+
     virtual Color3f eval_attribute_3(const std::string& name,
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const override;
@@ -237,6 +240,14 @@ public:
                                                        uint32_t flags,
                                                        Float sample,
                                                        Mask active = true) const override;
+
+    virtual std::tuple<std::vector<ScalarIndex>, std::vector<ScalarFloat>>
+    precompute_silhouette(const ScalarPoint3f &viewpoint) const override;
+
+    virtual SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
+                                                             Index sample1,
+                                                             Float sample2,
+                                                             Mask active = true) const override;
 
     //! @}
     // =============================================================

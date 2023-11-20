@@ -1242,9 +1242,7 @@ def test32_primitive_silhouette_projection(variants_vec_rgb):
     ss = mesh.primitive_silhouette_projection(
         viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample, si.is_valid())
 
-    dr.eval(ss)
     failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    print(failed)
     ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)

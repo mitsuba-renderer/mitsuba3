@@ -84,10 +84,11 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    using ShapePtr = dr::replace_scalar_t<Float, const Shape<Float, Spectrum>*>;
 
     MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
-    MI_IMPORT_CORE_TYPES()
+
+    MI_IMPORT_RENDER_BASIC_TYPES()
+    MI_IMPORT_OBJECT_TYPES()
 
     //! @}
     // =============================================================
@@ -176,11 +177,12 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public Object {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture);
+    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
     using ScalarSize  = uint32_t;
+    using Index = UInt32;
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
 
     // =============================================================
@@ -393,6 +395,63 @@ public:
                                                                uint32_t flags,
                                                                Float sample,
                                                                Mask active = true) const;
+
+    /**
+     * \brief Precompute the visible silhouette of this shape for a given
+     * viewpoint.
+     *
+     * This method is meant to be used for silhouettes that are shared between
+     * all threads, as is the case for primarily visible derivatives.
+     *
+     * The return values are respectively a list of indices and their
+     * corresponding weights. The semantic meaning of these indices is different
+     * for each shape. For example, a triangle mesh will return the indices
+     * of all of its edges that constitute its silhouette. These indices are
+     * meant to be re-used as an argument when calling
+     * \ref sample_precomputed_silhouette.
+     *
+     * This method's behavior is undefined when used in non-JIT variants or
+     * when the shape is not being differentiated.
+     *
+     * \param viewpoint
+     *      The viewpoint which defines the silhouette of the shape
+     *
+     * \return
+     *      A list of indices used by the shape internally to represent
+     *      silhouettes, and a list of the same length containing the weights
+     *      associated to each index.
+     */
+    virtual std::tuple<std::vector<ScalarIndex>, std::vector<ScalarFloat>>
+    precompute_silhouette(const ScalarPoint3f &viewpoint) const;
+
+    /**
+     * \brief Samples a boundary segement on the shape's silhouette using
+     * precomputed information computed in \ref precompute_silhouette.
+     *
+     * This method is meant to be used for silhouettes that are shared between
+     * all threads, as is the case for primarily visible derivatives.
+     *
+     * This method's behavior is undefined when used in non-JIT variants or
+     * when the shape is not being differentiated.
+     *
+     * \param viewpoint
+     *      The viewpoint that was used for the precomputed silhouette
+     *      information
+     *
+     * \param sample1
+     *      A sampled index from the return values of \ref precompute_silhouette
+     *
+     * \param sample2
+            A uniformly distributed sample in <tt>[0,1]</tt>
+     *
+     * \return
+     *      A boundary segment on the silhouette of the shape as seen from
+     *      \c viewpoint.
+     */
+    virtual SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
+                                                             Index sample1,
+                                                             Float sample2,
+                                                             Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -989,6 +1048,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(invert_silhouette_sample)
     DRJIT_VCALL_METHOD(primitive_silhouette_projection)
     DRJIT_VCALL_METHOD(differential_motion)
+    DRJIT_VCALL_METHOD(sample_precomputed_silhouette)
     DRJIT_VCALL_METHOD(surface_area)
     DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter *)
     DRJIT_VCALL_GETTER(sensor, const typename Class::Sensor *)

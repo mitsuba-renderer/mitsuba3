@@ -388,3 +388,34 @@ def test15_primitive_silhouette_projection(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+
+
+def test16_precompute_silhouette(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+
+    indices, weights = rectangle.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
+
+    assert len(weights) == 1
+    assert indices[0] == mi.DiscontinuityFlags.PerimeterType.value
+    assert weights[0] == 1
+
+
+def test17_sample_precomputed_silhouette(variants_vec_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+    rectangle_ptr = mi.ShapePtr(rectangle)
+
+    samples = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    viewpoint = mi.ScalarPoint3f(0, 0, 5)
+
+    ss = rectangle.sample_precomputed_silhouette(viewpoint, 0, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.all(
+        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
+        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+    )
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, (1 / (2 * 4)))
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))

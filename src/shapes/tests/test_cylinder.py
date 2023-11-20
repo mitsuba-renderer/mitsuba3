@@ -410,3 +410,46 @@ def test14_primitive_silhouette_projection_interior(variants_vec_rgb):
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
 
+
+def test15_precompute_silhouette(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+
+    indices, weights = cylinder.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
+
+    assert len(indices) == 2
+    assert len(weights) == 2
+    assert indices[0] == mi.DiscontinuityFlags.PerimeterType.value
+    assert indices[1] == mi.DiscontinuityFlags.InteriorType.value
+    assert weights[0] == 0.5
+    assert weights[1] == 0.5
+
+
+def test16_sample_precomputed_silhouette(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    samples = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    viewpoint = mi.Point3f(5, 0, 0.5)
+
+    ss = cylinder.sample_precomputed_silhouette(
+        viewpoint, mi.DiscontinuityFlags.PerimeterType.value, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, dr.inv_four_pi)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+    ss = cylinder.sample_precomputed_silhouette(
+        viewpoint, mi.DiscontinuityFlags.InteriorType.value, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.all((0 <= ss.p.z) & (ss.p.z <= 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.n, mi.Point3f(ss.p.x, ss.p.y, 0))
+    assert dr.allclose(ss.pdf, 0.5)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))

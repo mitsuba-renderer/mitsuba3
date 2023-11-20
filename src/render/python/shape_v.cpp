@@ -179,6 +179,13 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "viewpoint"_a, "si"_a, "flags"_a, "sample"_a, "active"_a = true,
             D(Shape, primitive_silhouette_projection))
+       .def("sample_precomputed_silhouette",
+            [](Ptr shape, const Point3f &viewpoint, Shape::Index sample1,
+               Float sample2, Mask active) {
+                return shape->sample_precomputed_silhouette(viewpoint, sample1, sample2, active);
+            },
+            "viewpoint"_a, "sample1"_a, "sample2"_a, "active"_a = true,
+            D(Shape, sample_precomputed_silhouette))
        .def("eval_parameterization",
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);
@@ -210,7 +217,7 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count)
-        .def_method(Shape, silhouette_discontinuity_types);
+        .def_method(Shape, precompute_silhouette, "viewpoint"_a);
 
     bind_shape_generic<Shape *>(shape);
 

@@ -345,8 +345,6 @@ public:
             ss.pdf = dr::rcp(dr::FourPi<Float> * m_radius.value());
             ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
-            ss.shape = this;
-            ss.offset = 1e-3f;
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             /// Sample a point on the shape surface
             ss = SilhouetteSample3f(
@@ -365,9 +363,10 @@ public:
             ss.foreshortening =
                 dr::rcp(m_radius.value()) *
                 dr::squared_norm(dr::cross(ss.d, ss.silhouette_d));
-            ss.shape = this;
-            ss.offset = 1e-3f;
         }
+
+        ss.shape = this;
+        ss.offset = silhouette_offset;
 
         return ss;
     }
@@ -485,6 +484,52 @@ public:
 
         ss.flags = flags;
         ss.shape = this;
+        ss.offset = silhouette_offset;
+
+        return ss;
+    }
+
+    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat>>
+    precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
+        // Sample the perimeter silhouette (top and bottom circles) and the
+        // smooth silhouette (cylinder) with equal probability.
+        ScalarFloat weight = 0.5f;
+        std::vector<uint32_t> type = { +DiscontinuityFlags::PerimeterType,
+                                       +DiscontinuityFlags::InteriorType };
+        std::vector<ScalarFloat> weight_arr(2, weight);
+
+        return { type, weight_arr };
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint,
+                                  UInt32 sample1 /*type_sample*/, Float sample2,
+                                  Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        // Call `primitive_silhouette_projection` which uses `si.uv` to compute
+        // the silhouette point.
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        // Perimeter silhouette
+        si.uv = Point2f(sample2 * 2.f, 0.f);
+        dr::masked(si.uv, sample2 > 0.5f) = Point2f(sample2 * 2.f - 1.f, 1.f);
+        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+        Mask perimeter = active & dr::eq(sample1, +DiscontinuityFlags::PerimeterType);
+        dr::masked(ss, perimeter) =
+            primitive_silhouette_projection(viewpoint, si, flags, 0.f, perimeter);
+        dr::masked(ss.pdf, perimeter) = dr::rcp(dr::FourPi<Float> * m_radius.value());
+
+        // Interior silhouette
+        si.uv = Point2f(0.1f, sample2 * 2.f);
+        dr::masked(si.uv, sample2 > 0.5f) = Point2f(0.6f, sample2 * 2.f - 1.f);
+        flags = (uint32_t) DiscontinuityFlags::InteriorType;
+        Mask interior = active & dr::eq(sample1, +DiscontinuityFlags::InteriorType);
+        dr::masked(ss, interior) =
+            primitive_silhouette_projection(viewpoint, si, flags, 0.f, interior);
+        dr::masked(ss.pdf, interior) = dr::rcp(2 * m_length.value());
 
         return ss;
     }
@@ -750,6 +795,7 @@ private:
     field<Float> m_radius, m_length;
     Float m_inv_surface_area;
     bool m_flip_normals;
+    static constexpr float silhouette_offset = 1e-3f;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)

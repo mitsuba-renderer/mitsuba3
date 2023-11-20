@@ -269,7 +269,6 @@ public:
         ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
         ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         ss.shape = this;
-        ss.offset = 0.f;
 
         return ss;
     }
@@ -380,6 +379,52 @@ public:
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
         ss.shape = this;
+
+        return ss;
+    }
+
+    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat>>
+    precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
+        ScalarFloat weight = 1.f;
+        std::vector<uint32_t> dummy_index(1, +DiscontinuityFlags::PerimeterType);
+        std::vector<ScalarFloat> weight_arr(1, weight);
+
+        return {dummy_index, weight_arr};
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint,
+                                  UInt32 /*sample1*/,
+                                  Float sample, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        Mask range = false;
+        Float sample_reuse(0.f);
+
+        range = (sample < 0.25f);
+        si.uv[range] = Point2f(0.f, 0.f);
+        dr::masked(sample_reuse, range) = sample * 4.f;
+
+        range = (0.25f <= sample && sample < 0.50f);
+        si.uv[range] = Point2f(0.f, 1.f);
+        dr::masked(sample_reuse, range) = (sample - 0.25f) * 4.f;
+
+        range = (0.50f <= sample && sample < 0.75f);
+        si.uv[range] = Point2f(1.f, 1.f);
+        dr::masked(sample_reuse, range) = (sample - 0.50f) * 4.f;
+
+        range = (0.75f <= sample);
+        si.uv[range] = Point2f(1.f, 0.f);
+        dr::masked(sample_reuse, range) = (sample - 0.75f) * 4.f;
+
+        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss = primitive_silhouette_projection(viewpoint, si, flags, sample_reuse,
+                                             active);
+        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4 +
+                         m_to_world.value().matrix(1, 1) * 4);
 
         return ss;
     }
