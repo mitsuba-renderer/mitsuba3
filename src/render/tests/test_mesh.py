@@ -1109,8 +1109,8 @@ def test28_sample_silhouette(variants_vec_rgb):
     flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
     ss = mesh.sample_silhouette(samples, flags)
 
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.all(dr.eq(ss.p.x, 0))
@@ -1150,9 +1150,9 @@ def test29_sample_silhouette_bijective(variants_vec_rgb):
     flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
     ss = mesh.sample_silhouette(samples, flags)
     out = mesh.invert_silhouette_sample(ss)
-    valid = dr.compress(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
-    samples_valid = dr.gather(mi.Point3f, samples, valid)
-    out_valid = dr.gather(mi.Point3f, out, valid)
+    valid = ss.is_valid()
+    samples_valid = dr.gather(mi.Point3f, samples, dr.compress(valid))
+    out_valid = dr.gather(mi.Point3f, out, dr.compress(valid))
 
     assert dr.allclose(samples_valid, out_valid, atol=1e-7)
 
@@ -1160,9 +1160,9 @@ def test29_sample_silhouette_bijective(variants_vec_rgb):
     flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
     ss = mesh.sample_silhouette(samples, flags)
     out = mesh.invert_silhouette_sample(ss)
-    valid = dr.compress(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
-    samples_valid = dr.gather(mi.Point3f, samples, valid)
-    out_valid = dr.gather(mi.Point3f, out, valid)
+    valid = ss.is_valid()
+    samples_valid = dr.gather(mi.Point3f, samples, dr.compress(valid))
+    out_valid = dr.gather(mi.Point3f, out, dr.compress(valid))
 
     assert dr.allclose(samples_valid.x, out_valid.x, atol=1e-7)
     assert dr.allclose(samples_valid.y, out_valid.y, atol=1e-4) # Lune sampling is not numerically robust
@@ -1242,10 +1242,19 @@ def test32_primitive_silhouette_projection(variants_vec_rgb):
     ss = mesh.primitive_silhouette_projection(
         viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample, si.is_valid())
 
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+
+@fresolver_append_path
+def test33_shape_type(variant_scalar_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+    })
+    assert mesh.shape_type() == mi.ShapeType.Mesh.value;

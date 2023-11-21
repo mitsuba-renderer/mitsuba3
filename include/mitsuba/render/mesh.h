@@ -19,7 +19,7 @@ public:
     MI_IMPORT_TYPES()
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
-                   m_discontinuity_types)
+                   m_discontinuity_types, m_shape_type)
 
     // Mesh is always stored in single precision
     using InputFloat = float;

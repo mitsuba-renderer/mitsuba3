@@ -53,7 +53,8 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object, mark_dirty)
+    MI_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object, m_shape_type,
+                   mark_dirty)
     MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
@@ -75,11 +76,14 @@ public:
         if (!m_shapegroup)
             Throw("A reference to a 'shapegroup' must be specified!");
 
+        m_shape_type = ShapeType::Instance;
+        dr::set_attr(this, "shape_type", m_shape_type);
+
         dr::make_opaque(m_to_world, m_to_object);
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {

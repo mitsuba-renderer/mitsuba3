@@ -453,3 +453,8 @@ def test16_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.pdf, 0.5)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test17_shape_type(variant_scalar_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    assert cylinder.shape_type() == mi.ShapeType.Cylinder.value;

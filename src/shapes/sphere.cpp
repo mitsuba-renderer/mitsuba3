@@ -113,7 +113,7 @@ template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
-                   m_discontinuity_types, initialize, mark_dirty,
+                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
                    get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
@@ -132,6 +132,9 @@ public:
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
         dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+
+        m_shape_type = ShapeType::Sphere;
+        dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();

@@ -1,4 +1,3 @@
-
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/emitter.h>
@@ -78,6 +77,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
     dr::set_attr(this, "interior_medium", m_interior_medium.get());
     dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
     dr::set_attr(this, "silhouette_sampling_weight", m_silhouette_sampling_weight);
+    dr::set_attr(this, "shape_type", m_shape_type);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -85,18 +85,6 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
     if constexpr (dr::is_cuda_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
-}
-
-MI_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
-    return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
-}
-
-MI_VARIANT bool Shape<Float, Spectrum>::is_bspline_curve() const {
-    return false;
-}
-
-MI_VARIANT bool Shape<Float, Spectrum>::is_linear_curve() const {
-    return false;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
@@ -610,7 +598,9 @@ MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_v<Float>) {
-            if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is used
+            bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
+            bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is used
                 dr::make_opaque(m_to_world, m_to_object);
         }
 
@@ -632,7 +622,9 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        if (!is_mesh() && !is_bspline_curve() && !is_linear_curve()) // to_world/to_object is not used
+        bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
+        bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is not used
             dr::make_opaque(m_to_world, m_to_object);
     }
 

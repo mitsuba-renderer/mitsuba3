@@ -32,6 +32,9 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
 
     m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
     dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+
+    m_shape_type = ShapeType::Mesh;
+    dr::set_attr(this, "shape_type", m_shape_type);
 }
 
 MI_VARIANT

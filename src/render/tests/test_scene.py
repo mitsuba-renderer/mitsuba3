@@ -297,17 +297,17 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     # Only interior
     ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
     out = scene.invert_silhouette_sample(ss)
-    cant_sample = dr.eq(ss.flags, mi.DiscontinuityFlags.Empty.value)
-    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
-    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    valid = ss.is_valid()
+    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), valid)
+    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), valid)
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
     ## Only perimeter
     ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
     out = scene.invert_silhouette_sample(ss)
-    cant_sample = dr.eq(ss.flags, mi.DiscontinuityFlags.Empty.value)
-    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
-    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    valid = ss.is_valid()
+    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), valid)
+    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), valid)
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
     # Both types

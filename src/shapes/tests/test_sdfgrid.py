@@ -349,3 +349,8 @@ def test08_load_tensor(variants_all_ad_rgb):
                     assert dr.allclose(si.t, 2 + y)
                     assert dr.allclose(si.n, [0, 1 / np.sqrt(2), 1 / np.sqrt(2)])
                     assert dr.allclose(si.p, ray.o - mi.Vector3f(0, 0, 2 + y))
+
+
+def test09_shape_type(variant_scalar_rgb):
+    sdf = mi.load_dict({ "type" : "sdfgrid" })
+    assert sdf.shape_type() == mi.ShapeType.SDFGrid.value;

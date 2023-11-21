@@ -110,8 +110,9 @@ selected as the default approach to ensure continuity across grid cells.
 template <typename Float, typename Spectrum>
 class SDFGrid final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, m_shape_type,
+                   initialize, mark_dirty, get_children_string,
+                   parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     // Grid texture is always stored in single precision
@@ -179,6 +180,10 @@ public:
                 InputTensorXf(default_data, 4, default_shape), true, true,
                 dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
+
+        m_shape_type = ShapeType::SDFGrid;
+        dr::set_attr(this, "shape_type", m_shape_type);
+
         update();
         initialize();
     }

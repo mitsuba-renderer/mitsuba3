@@ -462,3 +462,8 @@ def test18_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, sphere_ptr))
+
+
+def test19_shape_type(variant_scalar_rgb):
+    sphere = mi.load_dict({ 'type': 'sphere' })
+    assert sphere.shape_type() == mi.ShapeType.Sphere.value;

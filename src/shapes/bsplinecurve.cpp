@@ -126,7 +126,7 @@ template <typename Float, typename Spectrum>
 class BSplineCurve final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_discontinuity_types,
-                   initialize, mark_dirty, get_children_string,
+                   m_shape_type, initialize, mark_dirty, get_children_string,
                    parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
@@ -322,6 +322,9 @@ public:
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
         dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+
+        m_shape_type = ShapeType::BSplineCurve;
+        dr::set_attr(this, "shape_type", m_shape_type);
 
         initialize();
     }
@@ -1048,10 +1051,6 @@ public:
         build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
     }
 #endif
-
-    bool is_bspline_curve() const override {
-        return true;
-    }
 
     ScalarBoundingBox3f bbox() const override {
         return m_bbox;

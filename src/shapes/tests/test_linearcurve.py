@@ -201,3 +201,12 @@ def test09_backface_culling(variants_vec_rgb):
     ray = mi.Ray3f(o=[0, 0, 2], d=[0, 0, -1])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
+
+
+@fresolver_append_path
+def test10_shape_type(variant_scalar_rgb):
+    curve = mi.load_dict({
+        "type" : "linearcurve",
+        "filename" : "resources/data/common/meshes/curve_6.txt",
+    })
+    assert curve.shape_type() == mi.ShapeType.LinearCurve.value;
