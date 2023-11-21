@@ -419,3 +419,8 @@ def test17_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.pdf, (1 / (2 * 4)))
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+
+
+def test18_shape_type(variant_scalar_rgb):
+    rectangle = mi.load_dict({ 'type': 'rectangle' })
+    assert rectangle.shape_type() == mi.ShapeType.Rectangle.value;

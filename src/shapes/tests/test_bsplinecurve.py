@@ -460,8 +460,8 @@ def test17_primitive_silhouette_projection_interior(variants_vec_rgb):
     ss = curve.primitive_silhouette_projection(
         viewpoint, si, mi.DiscontinuityFlags.InteriorType, 0.)
 
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
     assert dr.all((-length/2 <= ss.p.x) & (ss.p.x <= length/2))
@@ -491,8 +491,8 @@ def test18_primitive_silhouette_projection_perimeter(variants_vec_rgb):
     ss = curve.primitive_silhouette_projection(
         viewpoint, si, mi.DiscontinuityFlags.PerimeterType, 0.)
 
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.allclose(dr.abs(ss.p.x), length/2)
@@ -531,8 +531,8 @@ def test20_sample_precomputed_silhouette(variants_vec_rgb):
 
     ss = curve.sample_precomputed_silhouette(
         viewpoint, mi.DiscontinuityFlags.InteriorType.value, samples)
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
     assert dr.all((-length/2 <= ss.p.x) & (ss.p.x <= length/2))
@@ -545,8 +545,8 @@ def test20_sample_precomputed_silhouette(variants_vec_rgb):
 
     ss = curve.sample_precomputed_silhouette(
         viewpoint, mi.DiscontinuityFlags.PerimeterType.value, samples)
-    failed = dr.eq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value)
-    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(~failed))
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.allclose(dr.abs(ss.p.x), length/2)
@@ -555,3 +555,12 @@ def test20_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.pdf, dr.inv_four_pi, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+
+
+@fresolver_append_path
+def test21_shape_type(variant_scalar_rgb):
+    curve = mi.load_dict({
+        "type" : "bsplinecurve",
+        "filename" : "resources/data/common/meshes/curve.txt",
+    })
+    assert curve.shape_type() == mi.ShapeType.BSplineCurve.value;

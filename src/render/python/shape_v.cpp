@@ -19,6 +19,7 @@ MI_PY_EXPORT(SilhouetteSample) {
     auto ss = py::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
         .def(py::init<>(), "Construct an uninitialized silhouette sample")
         .def(py::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
+        // Members
         .def_readwrite("discontinuity_type", &SilhouetteSample3f::discontinuity_type, D(SilhouetteSample, discontinuity_type))
         .def_readwrite("d",                  &SilhouetteSample3f::d,                  D(SilhouetteSample, d))
         .def_readwrite("silhouette_d",       &SilhouetteSample3f::silhouette_d,       D(SilhouetteSample, silhouette_d))
@@ -29,6 +30,9 @@ MI_PY_EXPORT(SilhouetteSample) {
         .def_readwrite("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
         .def_readwrite("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
         .def_readwrite("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
+        // Methods
+        .def("is_valid",  &SilhouetteSample3f::is_valid,  D(SilhouetteSample, is_valid))
+        .def("spawn_ray", &SilhouetteSample3f::spawn_ray, D(SilhouetteSample, spawn_ray))
         .def_repr(SilhouetteSample3f);
 
     MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
@@ -62,6 +66,9 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
        .def("is_medium_transition",
             [](Ptr shape) { return shape->is_medium_transition(); },
             D(Shape, is_medium_transition))
+       .def("shape_type",
+            [](Ptr shape) { return shape->shape_type(); },
+            D(Shape, shape_type))
        .def("interior_medium",
             [](Ptr shape) { return shape->interior_medium(); },
             D(Shape, interior_medium))

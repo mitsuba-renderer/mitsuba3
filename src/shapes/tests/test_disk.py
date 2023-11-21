@@ -418,3 +418,8 @@ def test16_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(ss.pdf, dr.inv_two_pi, atol=1e-6)
     assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
             dr.reinterpret_array_v(mi.UInt32, disk_ptr))
+
+
+def test17_shape_type(variant_scalar_rgb):
+    disk = mi.load_dict({ 'type': 'disk' })
+    assert disk.shape_type() == mi.ShapeType.Disk.value;

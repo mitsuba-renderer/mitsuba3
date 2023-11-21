@@ -20,6 +20,7 @@ template <typename T> constexpr auto RayEpsilon = dr::Epsilon<dr::float32_array_
 template <typename T> constexpr auto RayEpsilon = dr::Epsilon<T> * 1500;
 #endif
 template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
+template <typename T> constexpr auto ShapeEpsilon = RayEpsilon<T> / 80;
 
 //! @}
 // -----------------------------------------------------------------------

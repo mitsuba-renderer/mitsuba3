@@ -372,11 +372,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             bool has_linear_curves = false;
 
             for (auto& shape : m_shapes) {
-                has_meshes           |= shape->is_mesh();
+                uint32_t type = shape->shape_type();
+
+                has_meshes           |= (type == +ShapeType::Mesh);
+                has_instances        |= (type == +ShapeType::Instance);
+                has_bspline_curves   |= (type == +ShapeType::BSplineCurve);
+                has_linear_curves    |= (type == +ShapeType::LinearCurve);
                 has_others           |= !shape->is_mesh() && !shape->is_instance();
-                has_instances        |= shape->is_instance();
-                has_bspline_curves   |= shape->is_bspline_curve();
-                has_linear_curves    |= shape->is_linear_curve();
             }
 
             for (auto& shape : m_shapegroups) {

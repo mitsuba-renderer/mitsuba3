@@ -15,6 +15,31 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Enumeration of all shape types in Mitsuba
+enum class ShapeType : uint32_t {
+    /// Meshes (`ply`, `obj`, `serialized`)
+    Mesh = 0u,
+    /// B-Spline curves (`bsplinecurve`)
+    BSplineCurve = 1u,
+    /// Cylinders (`cylinder`)
+    Cylinder = 2u,
+    /// Disks (`disk`)
+    Disk = 3u,
+    /// Linear curves (`linearcurve`)
+    LinearCurve = 4u,
+    /// Rectangles (`rectangle`)
+    Rectangle = 5u,
+    /// SDF Grids (`sdfgrid`)
+    SDFGrid = 6u,
+    /// Spheres (`sphere`)
+    Sphere = 7u,
+    /// Instance (`instance`)
+    Instance = 8u,
+    /// Other shapes
+    Other = 9u
+};
+MI_DECLARE_ENUM_OPERATORS(ShapeType)
+
 /**
  * \brief This list of flags is used to control the behavior of discontinuity
  * related routines.
@@ -67,7 +92,6 @@ enum class DiscontinuityFlags : uint32_t {
     /// All types of discontinuities
     AllTypes = PerimeterType | InteriorType
 };
-
 MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
 
 /// Forward declaration for `SilhouetteSample`
@@ -158,6 +182,26 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
         : Base(ps), discontinuity_type((uint32_t) DiscontinuityFlags::Empty),
           d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
           projection_index(0), shape(nullptr), foreshortening(0), offset(0) {}
+
+    /// Is the current boundary segment valid=
+    Mask is_valid() const {
+        return dr::neq(discontinuity_type, (uint32_t) DiscontinuityFlags::Empty);
+    }
+
+    /**
+     * \brief Spawn a ray on the silhouette point in the direction of \ref d
+     *
+     * The ray origin is offset in the direction of the segment (\ref d) aswell
+     * as in the in the direction of the silhouette normal (\ref n). Without this
+     * offsetting, during a ray intersection, the ray could potentially find
+     * an intersection point at its origin due to numerical instabilities in
+     * the intersection routines.
+     */
+    Ray3f spawn_ray() const {
+        Vector3f o_offset = (1 + dr::max(dr::abs(p))) *
+                            (d * offset + n * math::ShapeEpsilon<Float>);
+        return Ray3f(p + o_offset, d);
+    }
 
     //! @}
     // =============================================================
@@ -726,19 +770,16 @@ public:
     void set_id(const std::string& id) override { m_id = id; };
 
     /// Is this shape a triangle mesh?
-    bool is_mesh() const;
+    bool is_mesh() const { return (shape_type() == +ShapeType::Mesh); };
 
-    /// Is this shape a b-spline curve ?
-    virtual bool is_bspline_curve() const;
-
-    /// Is this shape a linear curve ?
-    virtual bool is_linear_curve() const;
+    /// Returns the shape type \ref ShapeType of this shape
+    uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
     /// Is this shape a shapegroup?
     bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
 
     /// Is this shape an instance?
-    bool is_instance() const { return class_()->name() == "Instance"; };
+    bool is_instance() const { return (shape_type() == +ShapeType::Instance); };
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
@@ -919,6 +960,7 @@ protected:
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
     std::string m_id;
+    ShapeType m_shape_type = ShapeType::Other;
 
     uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
     /// Sampling weight (proportional to scene)
@@ -1057,6 +1099,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_GETTER(exterior_medium, const typename Class::Medium *)
     DRJIT_VCALL_GETTER(silhouette_discontinuity_types, uint32_t)
     DRJIT_VCALL_GETTER(silhouette_sampling_weight, float)
+    DRJIT_VCALL_GETTER(shape_type, uint32_t)
     auto is_emitter() const { return neq(emitter(), nullptr); }
     auto is_sensor() const { return neq(sensor(), nullptr); }
     auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
