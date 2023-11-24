@@ -1,7 +1,7 @@
 import os
 import sys
 from shutil import copy2
-import mitsuba.scalar_rgb as mi
+import mitsuba as mi
 import drjit as dr
 try:
     import numpy as np
