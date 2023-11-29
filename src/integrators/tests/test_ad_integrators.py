@@ -680,10 +680,12 @@ BASIC_CONFIGS_LIST = [
     DiffuseAlbedoGIConfig,
     AreaLightRadianceConfig,
     DirectlyVisibleAreaLightRadianceConfig,
-    PointLightIntensityConfig,
-    ConstantEmitterRadianceConfig,
     TranslateTexturedPlaneConfig,
     CropWindowConfig,
+
+    # The next two configs have issues with Nvidia driver v545
+    # PointLightIntensityConfig,
+    # ConstantEmitterRadianceConfig,
 ]
 
 REPARAM_CONFIGS_LIST = [
