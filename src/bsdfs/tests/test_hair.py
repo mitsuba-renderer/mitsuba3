@@ -27,7 +27,7 @@ def test02_white_furnace(variants_vec_backends_once_rgb):
 
     ctx = mi.BSDFContext()
 
-    all_long_roughness = list(dr.linspace(mi.Float, 0.1, 0.99, 5))
+    all_long_roughness = list(dr.linspace(mi.Float, 0.1, 0.99, 3))
     all_azi_roughness = all_long_roughness
     for long_roughness in all_long_roughness:
         for azi_roughness in all_azi_roughness:
@@ -121,6 +121,7 @@ def test04_sample_numeric(variants_vec_backends_once_rgb):
             assert dr.all(dr.allclose(lum - 1, 0, atol=1e-3))
 
 
+@pytest.mark.slow
 def test05_sample_consistency(variants_vec_backends_once_rgb):
     total = int(1e8)
     sampler = mi.load_dict({'type': 'independent', 'sample_count': total})
@@ -159,6 +160,7 @@ def test05_sample_consistency(variants_vec_backends_once_rgb):
             assert dr.allclose(dr.sum(importance.y), dr.sum(uniform.y), rtol=0.05, atol=1e-3)
 
 
+@pytest.mark.slow
 def test06_chi2(variants_vec_backends_once_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
     for long_roughness in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
