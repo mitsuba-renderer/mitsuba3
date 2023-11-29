@@ -229,6 +229,7 @@ private:
         dr::make_opaque(m_valid);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
+        dr::make_opaque(m_sum, m_normalization);
     }
 
     void compute_cdf_scalar(const ScalarFloat *pmf, size_t size) {
@@ -262,6 +263,7 @@ private:
         dr::make_opaque(m_valid);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
+        dr::make_opaque(m_sum, m_normalization);
     }
 
 private:
@@ -537,6 +539,7 @@ private:
         m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
         m_normalization = dr::rcp(m_integral);
         m_inv_interval_size = dr::rcp(m_interval_size);
+        dr::make_opaque(m_integral, m_normalization, m_inv_interval_size);
         m_max = dr::slice(dr::max(m_pdf));
     }
 
@@ -584,10 +587,11 @@ private:
         dr::make_opaque(m_valid);
         m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
         m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
-        m_normalization = dr::opaque<Float>(1. / integral);
+        m_normalization = dr::rcp(m_integral);
         m_interval_size = dr::opaque<Float>(interval_size);
+        m_inv_interval_size = dr::rcp(m_interval_size);
         m_interval_size_scalar = (ScalarFloat) interval_size;
-        m_inv_interval_size = dr::opaque<Float>(1. / interval_size);
+        dr::make_opaque(m_integral, m_normalization, m_inv_interval_size);
     }
 
 private:
@@ -903,6 +907,7 @@ private:
         dr::make_opaque(m_valid);
         m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
         m_normalization = dr::rcp(m_integral);
+        dr::make_opaque(m_integral, m_normalization);
         m_interval_size = dr::slice(dr::min(nodes_next - nodes_curr));
         m_max = dr::slice(dr::max(m_pdf));
     }
@@ -960,7 +965,8 @@ private:
         dr::make_opaque(m_valid);
         m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
         m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
-        m_normalization = dr::opaque<Float>(1. / integral);
+        m_normalization = dr::rcp(m_integral);
+        dr::make_opaque(m_integral, m_normalization);
     }
 
 private:
