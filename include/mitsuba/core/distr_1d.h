@@ -53,11 +53,10 @@ public:
 
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
-        if constexpr (dr::is_jit_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>)
             compute_cdf();
-        } else {
+        else
             compute_cdf_scalar(m_pmf.data(), m_pmf.size());
-        }
     }
 
     /// Return the unnormalized probability mass function
@@ -226,10 +225,9 @@ private:
 
         m_cdf = dr::prefix_sum(m_pmf, false);
         m_valid = Vector2u(0, m_pmf.size() - 1);
-        dr::make_opaque(m_valid);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
-        dr::make_opaque(m_sum, m_normalization);
+        dr::make_opaque(m_valid, m_sum, m_normalization);
     }
 
     void compute_cdf_scalar(const ScalarFloat *pmf, size_t size) {
@@ -260,10 +258,9 @@ private:
 
         m_cdf = dr::load<FloatStorage>(cdf.data(), size);
         m_valid = valid;
-        dr::make_opaque(m_valid);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
-        dr::make_opaque(m_sum, m_normalization);
+        dr::make_opaque(m_valid, m_sum, m_normalization);
     }
 
 private:
@@ -327,11 +324,10 @@ public:
 
     /// Update the internal state. Must be invoked when changing the pdf.
     void update() {
-        if constexpr (dr::is_jit_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>)
             compute_cdf();
-        } else {
+        else
             compute_cdf_scalar(m_pdf.data(), m_pdf.size());
-        }
     }
 
     /// Return the range of the distribution
@@ -534,13 +530,13 @@ private:
              0.5 * dr::gather<Float>(m_pdf, UInt32(0)) -
              0.5 * dr::gather<Float>(m_pdf, index_1_to_n));
 
-        m_valid = Vector2u(0, size);
-        dr::make_opaque(m_valid);
-        m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
+        m_valid = Vector2u(0, size - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_integral);
         m_inv_interval_size = dr::rcp(m_interval_size);
-        dr::make_opaque(m_integral, m_normalization, m_inv_interval_size);
         m_max = dr::slice(dr::max(m_pdf));
+        dr::make_opaque(m_valid, m_cdf, m_integral, m_normalization,
+                        m_inv_interval_size);
     }
 
     void compute_cdf_scalar(const ScalarFloat *pdf, size_t size) {
@@ -586,7 +582,7 @@ private:
         m_valid = valid;
         dr::make_opaque(m_valid);
         m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
-        m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_integral);
         m_interval_size = dr::opaque<Float>(interval_size);
         m_inv_interval_size = dr::rcp(m_interval_size);
@@ -663,11 +659,10 @@ public:
         if (m_pdf.size() != m_nodes.size())
             Throw("IrregularContinuousDistribution: 'pdf' and 'nodes' size mismatch!");
 
-        if constexpr (dr::is_jit_v<Float>) {
+        if constexpr (dr::is_jit_v<Float>)
             compute_cdf();
-        } else {
+        else
             compute_cdf_scalar(m_nodes.data(), m_pdf.data(), m_nodes.size());
-        }
     }
 
     /// Return the nodes of the underlying discretization
@@ -903,11 +898,10 @@ private:
         m_cdf = dr::prefix_sum(interval_integral, false);
 
         m_range = ScalarVector2f(dr::slice(m_nodes, 0), dr::slice(m_nodes, size));
-        m_valid = Vector2u(0, size);
-        dr::make_opaque(m_valid);
-        m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
+        m_valid = Vector2u(0, size - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_integral);
-        dr::make_opaque(m_integral, m_normalization);
+        dr::make_opaque(m_valid, m_integral, m_normalization);
         m_interval_size = dr::slice(dr::min(nodes_next - nodes_curr));
         m_max = dr::slice(dr::max(m_pdf));
     }
@@ -963,8 +957,8 @@ private:
 
         m_valid = valid;
         dr::make_opaque(m_valid);
-        m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
-        m_integral = dr::gather<Float>(m_cdf, m_valid.y() - 1);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_integral);
         dr::make_opaque(m_integral, m_normalization);
     }
