@@ -118,8 +118,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         if (has_vertex_normals())
             recompute_vertex_normals();
 
-        if (!m_area_pmf.empty())
-            m_area_pmf = DiscreteDistribution<Float>();
+        if (!m_area_pmf.empty() && (m_emitter || m_sensor))
+            ensure_pmf_built();
 
         if (m_parameterization)
             m_parameterization = nullptr;
