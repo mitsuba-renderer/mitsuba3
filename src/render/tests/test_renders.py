@@ -52,7 +52,9 @@ if hasattr(dr, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
         'jit_flag_option_0' : {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        'jit_flag_option_1' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 1},
+        'jit_flag_option_1' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
+        'jit_flag_option_2' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
+        'jit_flag_option_3' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 1},
     }
 
 def list_all_render_test_configs():
@@ -97,7 +99,7 @@ def list_all_render_test_configs():
                 for integrator_type in INTEGRATOR_MAPPING.get(scene_integrator_type, []):
                     if is_polarized and integrator_type in POLARIZED_EXCLUDE_INTEGRATORS:
                         continue
-                    configs.append((variant, scene_fname, integrator_type, 'jit_flag_option_1'))
+                    configs.append((variant, scene_fname, integrator_type, 'jit_flag_option_3'))
 
     return configs
 
