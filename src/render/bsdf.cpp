@@ -138,98 +138,134 @@ BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;
-    oss << "{ ";
 
-#define is_set(flag) has_flag(type_mask, flag)
-    if (is_set(BSDFFlags::All)) {
+    bool value_before = false;
+    auto add_separator = [&]() {
+        if (value_before)
+            oss << "| ";
+        value_before = true;
+    };
+
+    auto is_subset = [](BSDFFlags flag, Index flags) {
+        return (((uint32_t) flag & flags) == (uint32_t) flag);
+    };
+
+    oss << "{ ";
+    if (is_subset(BSDFFlags::All, type_mask)) {
+        add_separator();
         oss << "all ";
         type_mask = type_mask & ~BSDFFlags::All;
     }
-    if (is_set(BSDFFlags::Reflection)) {
+    if (is_subset(BSDFFlags::Reflection, type_mask)) {
+        add_separator();
         oss << "reflection ";
         type_mask = type_mask & ~BSDFFlags::Reflection;
     }
-    if (is_set(BSDFFlags::Transmission)) {
+    if (is_subset(BSDFFlags::Transmission, type_mask)) {
+        add_separator();
         oss << "transmission ";
         type_mask = type_mask & ~BSDFFlags::Transmission;
     }
-    if (is_set(BSDFFlags::Smooth)) {
+    if (is_subset(BSDFFlags::Smooth, type_mask)) {
+        add_separator();
         oss << "smooth ";
         type_mask = type_mask & ~BSDFFlags::Smooth;
     }
-    if (is_set(BSDFFlags::Diffuse)) {
+    if (is_subset(BSDFFlags::Diffuse, type_mask)) {
+        add_separator();
         oss << "diffuse ";
         type_mask = type_mask & ~BSDFFlags::Diffuse;
     }
-    if (is_set(BSDFFlags::Glossy)) {
+    if (is_subset(BSDFFlags::Glossy, type_mask)) {
+        add_separator();
         oss << "glossy ";
         type_mask = type_mask & ~BSDFFlags::Glossy;
     }
-    if (is_set(BSDFFlags::Delta)) {
+    if (is_subset(BSDFFlags::Delta, type_mask)) {
+        add_separator();
         oss << "delta";
         type_mask = type_mask & ~BSDFFlags::Delta;
     }
-    if (is_set(BSDFFlags::Delta1D)) {
+    if (is_subset(BSDFFlags::Delta1D, type_mask)) {
+        add_separator();
         oss << "delta_1d ";
         type_mask = type_mask & ~BSDFFlags::Delta1D;
     }
-    if (is_set(BSDFFlags::DiffuseReflection)) {
+    if (has_flag(type_mask, BSDFFlags::DiffuseReflection)) {
+        add_separator();
         oss << "diffuse_reflection ";
         type_mask = type_mask & ~BSDFFlags::DiffuseReflection;
     }
-    if (is_set(BSDFFlags::DiffuseTransmission)) {
+    if (has_flag(type_mask, BSDFFlags::DiffuseTransmission)) {
+        add_separator();
         oss << "diffuse_transmission ";
         type_mask = type_mask & ~BSDFFlags::DiffuseTransmission;
     }
-    if (is_set(BSDFFlags::GlossyReflection)) {
+    if (has_flag(type_mask, BSDFFlags::GlossyReflection)) {
+        add_separator();
         oss << "glossy_reflection ";
         type_mask = type_mask & ~BSDFFlags::GlossyReflection;
     }
-    if (is_set(BSDFFlags::GlossyTransmission)) {
+    if (has_flag(type_mask, BSDFFlags::GlossyTransmission)) {
+        add_separator();
         oss << "glossy_transmission ";
         type_mask = type_mask & ~BSDFFlags::GlossyTransmission;
     }
-    if (is_set(BSDFFlags::DeltaReflection)) {
+    if (has_flag(type_mask, BSDFFlags::DeltaReflection)) {
+        add_separator();
         oss << "delta_reflection ";
         type_mask = type_mask & ~BSDFFlags::DeltaReflection;
     }
-    if (is_set(BSDFFlags::DeltaTransmission)) {
+    if (has_flag(type_mask, BSDFFlags::DeltaTransmission)) {
+        add_separator();
         oss << "delta_transmission ";
         type_mask = type_mask & ~BSDFFlags::DeltaTransmission;
     }
-    if (is_set(BSDFFlags::Delta1DReflection)) {
+    if (has_flag(type_mask, BSDFFlags::Delta1DReflection)) {
+        add_separator();
         oss << "delta_1d_reflection ";
         type_mask = type_mask & ~BSDFFlags::Delta1DReflection;
     }
-    if (is_set(BSDFFlags::Delta1DTransmission)) {
+    if (has_flag(type_mask, BSDFFlags::Delta1DTransmission)) {
+        add_separator();
         oss << "delta_1d_transmission ";
         type_mask = type_mask & ~BSDFFlags::Delta1DTransmission;
     }
-    if (is_set(BSDFFlags::Null)) {
+    if (has_flag(type_mask, BSDFFlags::Null)) {
+        add_separator();
         oss << "null ";
         type_mask = type_mask & ~BSDFFlags::Null;
     }
-    if (is_set(BSDFFlags::Anisotropic)) {
+    if (has_flag(type_mask, BSDFFlags::Anisotropic)) {
+        add_separator();
         oss << "anisotropic ";
         type_mask = type_mask & ~BSDFFlags::Anisotropic;
     }
-    if (is_set(BSDFFlags::FrontSide)) {
+    if (has_flag(type_mask, BSDFFlags::FrontSide)) {
+        add_separator();
         oss << "front_side ";
         type_mask = type_mask & ~BSDFFlags::FrontSide;
     }
-    if (is_set(BSDFFlags::BackSide)) {
+    if (has_flag(type_mask, BSDFFlags::BackSide)) {
+        add_separator();
         oss << "back_side ";
         type_mask = type_mask & ~BSDFFlags::BackSide;
     }
-    if (is_set(BSDFFlags::SpatiallyVarying)) {
+    if (has_flag(type_mask, BSDFFlags::SpatiallyVarying)) {
+        add_separator();
         oss << "spatially_varying ";
         type_mask = type_mask & ~BSDFFlags::SpatiallyVarying;
     }
-    if (is_set(BSDFFlags::NonSymmetric)) {
+    if (has_flag(type_mask, BSDFFlags::NonSymmetric)) {
+        add_separator();
         oss << "non_symmetric ";
         type_mask = type_mask & ~BSDFFlags::NonSymmetric;
     }
-#undef is_set
+    if (has_flag(type_mask, BSDFFlags::NeedsDifferentials)) {
+        add_separator();
+        oss << "needs_differentials ";
+        type_mask = type_mask & ~BSDFFlags::NeedsDifferentials;
+    }
 
     Assert(type_mask == 0);
     oss << "}";
