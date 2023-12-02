@@ -611,7 +611,7 @@ NAMESPACE_END(mitsuba)
     std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                              \
     ray_intersect_preliminary_packet(                                                       \
         const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
-        (void) ray; (void) active;                                                          \
+        (void) ray; (void) prim_index; (void) active;                                       \
         if constexpr (!dr::is_cuda_v<Float>)                                                \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
         else                                                                                \
@@ -619,7 +619,7 @@ NAMESPACE_END(mitsuba)
     }                                                                                       \
     MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
         const override {                                                                    \
-        (void) ray; (void) active;                                                          \
+        (void) ray; (void) prim_index; (void) active;                                       \
         if constexpr (!dr::is_cuda_v<Float>)                                                \
             return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
         else                                                                                \
