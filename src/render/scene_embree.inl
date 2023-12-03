@@ -1,5 +1,6 @@
 #include <embree3/rtcore.h>
 #include <nanothread/nanothread.h>
+#include <thread>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -83,7 +84,13 @@ void rtcIntersect32(const int *valid, RTCScene scene,
 MI_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     if (!embree_device) {
-        embree_threads = std::max((uint32_t) 1, pool_size());
+        // Tricky: Embree allows at most 2*hardware_concurrency() builder
+        // threads due to allocation of a thread-local data structure in
+        // taskschedulerinternal.h:233
+        uint32_t hw_concurrency = (uint32_t) std::thread::hardware_concurrency(),
+                 pool_size = (uint32_t) ::pool_size();
+        embree_threads = std::max((uint32_t) 1, std::min(pool_size, hw_concurrency*2));
+
         std::string config_str = tfm::format(
             "threads=%i,user_threads=%i", embree_threads, embree_threads);
         embree_device = rtcNewDevice(config_str.c_str());
