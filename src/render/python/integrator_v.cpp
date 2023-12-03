@@ -260,7 +260,7 @@ public:
                 "scene"_a=scene,
                 "sampler"_a=sampler,
                 "ray"_a=ray,
-                "depth"_a=ray,
+                "depth"_a=0,
                 "δL"_a=py::none(),
                 "state_in"_a=py::none(),
                 "reparam"_a=py::none(),
