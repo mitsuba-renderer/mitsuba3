@@ -134,7 +134,8 @@ public:
                bool coalesce = dr::is_jit_v<Float>,
                bool compensate = false,
                bool warn_negative = std::is_scalar_v<Float>,
-               bool warn_invalid = std::is_scalar_v<Float>);
+               bool warn_invalid = std::is_scalar_v<Float>,
+               bool y_only = false);
 
     /**
      * \brief Construct an image block from an existing image tensor
@@ -156,7 +157,8 @@ public:
                bool coalesce = dr::is_jit_v<Float>,
                bool compensate = false,
                bool warn_negative = std::is_scalar_v<Float>,
-               bool warn_invalid = std::is_scalar_v<Float>);
+               bool warn_invalid = std::is_scalar_v<Float>,
+               bool y_only = false);
 
     /// Accumulate another image block into this one
     void put_block(const ImageBlock *block);
@@ -304,6 +306,10 @@ public:
     /// Use Kahan-style error-compensated floating point accumulation?
     bool compensate() const { return m_compensate; }
 
+    void set_y_only(bool value) { m_y_only = value; }
+
+    bool y_only() const { return m_y_only; }
+
     /// Return the number of channels stored by the image block
     uint32_t channel_count() const { return m_channel_count; }
 
@@ -346,6 +352,7 @@ protected:
     bool m_compensate;
     bool m_warn_negative;
     bool m_warn_invalid;
+    bool m_y_only;
 };
 
 MI_EXTERN_CLASS(ImageBlock)

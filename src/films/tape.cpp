@@ -98,7 +98,8 @@ public:
                               false /* coalesce */,
                               false /* compensate */,
                               warn /* warn_negative */,
-                              warn /* warn_invalid */);
+                              warn /* warn_invalid */,
+                              true /* y_only */);
     }
 
     void put_block(const ImageBlock *block) override {

@@ -530,7 +530,10 @@ class PRBAcousticIntegrator(RBIntegrator):
             ray, weight, _, det = self.sample_rays(scene, sensor,
                                                      sampler, reparam)
 
-            δL = mi.ImageBlock(grad_in)
+            δL = mi.ImageBlock(grad_in,
+                               rfilter=film.rfilter(),
+                               border=film.sample_border(),
+                               y_only=hasattr(self, 'reparam'))
 
             # # Clear the dummy data splatted on the film above
             # film.clear()

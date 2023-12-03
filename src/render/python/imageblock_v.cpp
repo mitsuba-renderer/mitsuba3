@@ -8,20 +8,22 @@ MI_PY_EXPORT(ImageBlock) {
     MI_PY_CLASS(ImageBlock, Object)
         .def(nb::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool,
-                      bool, bool, bool>(),
+                      bool, bool, bool, bool>(),
              "size"_a, "offset"_a, "channel_count"_a, "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
              "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
              "warn_negative"_a = std::is_scalar_v<Float>,
-             "warn_invalid"_a  = std::is_scalar_v<Float>)
+             "warn_invalid"_a  = std::is_scalar_v<Float>,
+             "y_only"_a = false)
         .def(nb::init<const TensorXf &, const ScalarPoint2i &,
                       const ReconstructionFilter *, bool, bool, bool,
-                      bool, bool, bool>(),
+                      bool, bool, bool, bool>(),
              "tensor"_a, "offset"_a = ScalarPoint2i(0), "rfilter"_a = nullptr,
              "border"_a = std::is_scalar_v<Float>, "normalize"_a = false,
              "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
              "warn_negative"_a = std::is_scalar_v<Float>,
-             "warn_invalid"_a  = std::is_scalar_v<Float>)
+             "warn_invalid"_a  = std::is_scalar_v<Float>,
+             "y_only"_a = false)
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put_block),
              "block"_a)
         .def("put",
