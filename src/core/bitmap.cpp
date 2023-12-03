@@ -8,6 +8,7 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
+#include <thread>
 
 #include <nanothread/nanothread.h>
 #include <drjit/half.h>
@@ -1161,7 +1162,32 @@ void Bitmap::read_exr(Stream *stream) {
         m_pixel_format, m_component_format);
 
     file.setFrameBuffer(framebuffer);
-    file.readPixels(data_window.min.y, data_window.max.y);
+
+    if (pool_thread_id()) {
+        // We are being is called from a nanothread worker ,e.g., because of
+        // parallel scene loading. The function ``file.readPixels()`` below
+        // sleeps, which can cause a serious starvation issue where the entire
+        // worker pool waits for a large number of parallel reads to finish.
+        //
+        // The following works around the issue by performing the readPixels() call
+        // from a temporary thread. It then resumes working on nanothread tasks until
+        // the image is fully loaded.
+
+        std::atomic<bool> done(false);
+        std::thread t(
+            [&] { file.readPixels(data_window.min.y, data_window.max.y); done = true; });
+
+        pool_work_until(
+            nullptr,
+            [](void *p) -> bool {
+                return ((std::atomic<bool> *) p)->load(std::memory_order_relaxed);
+            },
+            &done);
+
+        t.join();
+    } else {
+        file.readPixels(data_window.min.y, data_window.max.y);
+    }
 
     for (auto &buf: resample_buffers) {
         Log(Debug, "Upsampling layer \"%s\" from %ix%i to %ix%i pixels",
@@ -1348,7 +1374,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
             case Type::Transform3f: {
                    Matrix3f val = metadata.get<ScalarTransform3f>(*it).matrix;
                     header.insert(it->c_str(), Imf::M33fAttribute(Imath::M33f(
-                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2), 
+                        (float) val(0, 0), (float) val(0, 1), (float) val(0, 2),
                         (float) val(1, 0), (float) val(1, 1), (float) val(1, 2),
                         (float) val(2, 0), (float) val(2, 1), (float) val(2, 2))));
                 } break;
