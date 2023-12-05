@@ -331,6 +331,7 @@ public:
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+            ss.flags = flags;
             ss.silhouette_d  = dr::normalize(to_world.transform_affine(
                 Vector3f(sin_theta, -cos_theta, 0.f)));
             Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
@@ -356,6 +357,7 @@ public:
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+            ss.flags = flags;
 
             ss.pdf *= dr::InvTwoPi<Float>;
             ss.silhouette_d = dr::normalize(
@@ -641,7 +643,8 @@ public:
 #endif
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length);
+        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length) ||
+               dr::grad_enabled(m_to_world.value());
     }
 
     std::string to_string() const override {

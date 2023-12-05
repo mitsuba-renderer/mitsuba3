@@ -23,6 +23,8 @@ MI_PY_EXPORT(SilhouetteSample) {
         .def_readwrite("d",                  &SilhouetteSample3f::d,                  D(SilhouetteSample, d))
         .def_readwrite("silhouette_d",       &SilhouetteSample3f::silhouette_d,       D(SilhouetteSample, silhouette_d))
         .def_readwrite("prim_index",         &SilhouetteSample3f::prim_index,         D(SilhouetteSample, prim_index))
+        .def_readwrite("scene_index",        &SilhouetteSample3f::scene_index,        D(SilhouetteSample, scene_index))
+        .def_readwrite("flags",              &SilhouetteSample3f::flags,              D(SilhouetteSample, flags))
         .def_readwrite("projection_index",   &SilhouetteSample3f::projection_index,   D(SilhouetteSample, projection_index))
         .def_readwrite("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
         .def_readwrite("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
@@ -31,7 +33,8 @@ MI_PY_EXPORT(SilhouetteSample) {
 
     MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
                        time, pdf, delta, d, silhouette_d, prim_index,
-                       projection_index, shape, foreshortening, offset)
+                       scene_index, flags, projection_index, shape,
+                       foreshortening, offset)
 }
 
 /// Trampoline for derived types implemented in Python
@@ -145,6 +148,11 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->silhouette_discontinuity_types();
             },
             D(Shape, silhouette_discontinuity_types))
+       .def("silhouette_sampling_weight",
+            [](Ptr shape) {
+                return shape->silhouette_sampling_weight();
+            },
+            D(Shape, silhouette_sampling_weight))
        .def("sample_silhouette",
             [](Ptr shape, const Point3f &sample, uint32_t flags, Mask active) {
                 return shape->sample_silhouette(sample, flags, active);

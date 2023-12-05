@@ -6735,6 +6735,18 @@ static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's int
 
 static const char *__doc_mitsuba_Scene_integrator_2 = R"doc(Return the scene's integrator)doc";
 
+static const char *__doc_mitsuba_Scene_invert_silhouette_sample =
+R"doc(Map a silhouette segment to a point in boundary sample space
+
+This method is the inverse of sample_silhouette(). The mapping from
+boundary sample space to boundary segments is bijective.
+
+Parameter ``ss``:
+    The sampled boundary segment
+
+Returns:
+    The corresponding boundary sample space point)doc";
+
 static const char *__doc_mitsuba_Scene_m_accel = R"doc(Acceleration data structure (IAS) (type depends on implementation))doc";
 
 static const char *__doc_mitsuba_Scene_m_accel_handle = R"doc(Handle to the IAS used to ensure its lifetime in jit variants)doc";
@@ -6766,6 +6778,12 @@ static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_shapes_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes_grad_enabled = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_silhouette_distr = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_silhouette_shapes = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_silhouette_shapes_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
@@ -7104,6 +7122,27 @@ directional sampling density
 
 * ``emitter`` is a pointer specifying the sampled emitter)doc";
 
+static const char *__doc_mitsuba_Scene_sample_silhouette =
+R"doc(Map a point sample in boundary sample space to a silhouette segment
+
+This method will sample a SilhouetteSample3f object from all the
+shapes in the scene that are being differentiated and have non-zero
+sampling weight (see Shape::silhouette_sampling_weight).
+
+Parameter ``sample``:
+    The boundary space sample (a point in the unit cube).
+
+Parameter ``flags``:
+    Flags to select the type of silhouettes to sample from (see
+    DiscontinuityFlags). Multiple types of discontinuities can be
+    sampled in a single call. If a single type of silhouette is
+    specified, shapes that do not have that types might still be
+    sampled. In which case, the SilhouetteSample3f field
+    ``discontinuity_type`` will be DiscontinuityFlags::Empty.
+
+Returns:
+    Silhouette sample record.)doc";
+
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
 static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors (const version))doc";
@@ -7127,6 +7166,8 @@ information. Furthermore, differentiable geometry introduces bias
 through visibility-induced discontinuities, and reparameterizations
 (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.)doc";
 
+static const char *__doc_mitsuba_Scene_silhouette_shapes = R"doc(Return the list of shapes that can have their silhouette sampled)doc";
+
 static const char *__doc_mitsuba_Scene_static_accel_initialization = R"doc(Static initialization of ray-intersection acceleration data structure)doc";
 
 static const char *__doc_mitsuba_Scene_static_accel_initialization_cpu = R"doc()doc";
@@ -7144,6 +7185,8 @@ static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable
 static const char *__doc_mitsuba_Scene_traverse = R"doc(Traverse the scene graph and invoke the given callback for each object)doc";
 
 static const char *__doc_mitsuba_Scene_update_emitter_sampling_distribution = R"doc(Updates the discrete distribution used to select an emitter)doc";
+
+static const char *__doc_mitsuba_Scene_update_silhouette_sampling_distribution = R"doc(Updates the discrete distribution used to select a shape's silhouette)doc";
 
 static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
@@ -7593,7 +7636,7 @@ Parameter ``ss``:
     The sampled boundary segment
 
 Returns:
-    The correspoinding boundary sample space point)doc";
+    The corresponding boundary sample space point)doc";
 
 static const char *__doc_mitsuba_Shape_is_bspline_curve = R"doc(Is this shape a b-spline curve ?)doc";
 
@@ -7630,6 +7673,8 @@ static const char *__doc_mitsuba_Shape_m_is_instance = R"doc(True if the shape i
 static const char *__doc_mitsuba_Shape_m_optix_data_ptr = R"doc(OptiX hitgroup data buffer)doc";
 
 static const char *__doc_mitsuba_Shape_m_sensor = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_m_silhouette_sampling_weight = R"doc(Sampling weight (proportional to scene))doc";
 
 static const char *__doc_mitsuba_Shape_m_texture_attributes = R"doc()doc";
 
@@ -7899,6 +7944,8 @@ static const char *__doc_mitsuba_Shape_set_id = R"doc(Set a string identifier)do
 
 static const char *__doc_mitsuba_Shape_silhouette_discontinuity_types = R"doc(//! @{ \name Silhouette sampling routines and other utilities)doc";
 
+static const char *__doc_mitsuba_Shape_silhouette_sampling_weight = R"doc(Return this shape's sampling weight w.r.t. all shapes in the scene)doc";
+
 static const char *__doc_mitsuba_Shape_surface_area =
 R"doc(Return the shape's surface area.
 
@@ -7937,6 +7984,10 @@ static const char *__doc_mitsuba_SilhouetteSample_d = R"doc(Direction of the bou
 
 static const char *__doc_mitsuba_SilhouetteSample_discontinuity_type = R"doc(Type of discontinuity (DiscontinuityFlags))doc";
 
+static const char *__doc_mitsuba_SilhouetteSample_flags =
+R"doc(The set of ``DiscontinuityFlags`` that were used to generate this
+sample)doc";
+
 static const char *__doc_mitsuba_SilhouetteSample_foreshortening =
 R"doc(Local-form boundary foreshortening term.
 
@@ -7970,6 +8021,8 @@ other primitives, zero indicates a failed projection.
 For triangle meshes, index 0 stands for the edge p0->p1 (not the
 opposite edge p1->p2), index 1 stands for the edge p1->p2, and index 2
 for p2->p0.)doc";
+
+static const char *__doc_mitsuba_SilhouetteSample_scene_index = R"doc(Index of the shape in the scene (if applicable))doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_shape = R"doc(Pointer to the associated shape)doc";
 

@@ -362,6 +362,7 @@ public:
 
         /// Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+        ss.flags = flags;
         ss.pdf *= dr::InvTwoPi<Float>;
         ss.shape = this;
         ss.foreshortening = dr::rcp(m_radius.value());
@@ -624,7 +625,8 @@ public:
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center);
+        return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center) ||
+               dr::grad_enabled(m_to_world.value());
     }
 
     //! @}

@@ -249,6 +249,7 @@ public:
 
         /// Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
         Vector3f world_edge_dir = dr::normalize(
             m_to_world.value() * Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, world_edge_dir));
@@ -434,6 +435,11 @@ public:
             si.boundary_test = dr::min(0.5f - dr::abs(si.uv - 0.5f));
 
         return si;
+    }
+
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_frame) ||
+               dr::grad_enabled(m_to_world.value());
     }
 
 #if defined(MI_ENABLE_CUDA)

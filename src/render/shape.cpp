@@ -70,11 +70,14 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
+    m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
+
     dr::set_attr(this, "emitter", m_emitter.get());
     dr::set_attr(this, "sensor", m_sensor.get());
     dr::set_attr(this, "bsdf", m_bsdf.get());
     dr::set_attr(this, "interior_medium", m_interior_medium.get());
     dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
+    dr::set_attr(this, "silhouette_sampling_weight", m_silhouette_sampling_weight);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -561,6 +564,8 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("interior_medium", m_interior_medium.get(), +ParamFlags::Differentiable);
     if (m_exterior_medium)
         callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
+
+    callback->put_parameter("silhouette_sampling_weight", m_silhouette_sampling_weight, +ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT

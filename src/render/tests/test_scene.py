@@ -90,14 +90,12 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'box.bsdf.reflectance.value'
     dr.enable_grad(params[bsdf_param_key])
-    params.set_dirty(bsdf_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == False
 
     # When setting one of the shape's param to require gradient, method should return True
     shape_param_key = 'box.vertex_positions'
     dr.enable_grad(params[shape_param_key])
-    params.set_dirty(shape_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == True
 
@@ -264,3 +262,56 @@ def test10_test_scene_bbox_update(variant_scalar_rgb):
 
     expected = mi.BoundingBox3f(bbox.min + offset, bbox.max + offset)
     assert expected == scene.bbox()
+
+
+def test11_sample_silhouette_bijective(variants_vec_rgb):
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sphere' : {
+            'type' : 'sphere'
+        },
+        'rectangle' : {
+            'type' : 'rectangle'
+        },
+        'cylinder' : {
+            'type' : 'cylinder'
+        }
+    })
+
+    params = mi.traverse(scene)
+    key_sphere = 'sphere.to_world'
+    key_rectangle = 'rectangle.to_world'
+    key_cylinder = 'cylinder.to_world'
+
+    # Make sure every shape is being differentiated
+    dr.enable_grad(params[key_sphere])
+    dr.enable_grad(params[key_rectangle])
+    dr.enable_grad(params[key_cylinder])
+    params.update()
+
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 3)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 2)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 2)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    # Only interior
+    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    out = scene.invert_silhouette_sample(ss)
+    cant_sample = dr.eq(ss.flags, mi.DiscontinuityFlags.Empty.value)
+    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    assert dr.allclose(valid_samples, valid_out, atol=1e-6)
+
+    ## Only perimeter
+    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    out = scene.invert_silhouette_sample(ss)
+    cant_sample = dr.eq(ss.flags, mi.DiscontinuityFlags.Empty.value)
+    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), ~cant_sample)
+    assert dr.allclose(valid_samples, valid_out, atol=1e-6)
+
+    # Both types
+    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.AllTypes)
+    out = scene.invert_silhouette_sample(ss)
+    assert dr.all(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
+    assert dr.allclose(valid_samples, valid_out, atol=1e-6)
