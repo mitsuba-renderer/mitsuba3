@@ -465,7 +465,7 @@ public:
      *      silhouettes, and a list of the same length containing the
      *      (unnormalized) weights associated to each index.
      */
-    virtual std::tuple<DynamicBuffer<Index>, DynamicBuffer<Float>>
+    virtual std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &viewpoint) const;
 
     /**

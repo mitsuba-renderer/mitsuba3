@@ -179,49 +179,49 @@ public:
     //! @{ \name Shape interface implementation
     // =============================================================
 
-    virtual ScalarBoundingBox3f bbox() const override;
+    ScalarBoundingBox3f bbox() const override;
 
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index) const override;
+    ScalarBoundingBox3f bbox(ScalarIndex index) const override;
 
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index,
-                                     const ScalarBoundingBox3f &clip) const override;
+    ScalarBoundingBox3f bbox(ScalarIndex index,
+                             const ScalarBoundingBox3f &clip) const override;
 
-    virtual ScalarSize primitive_count() const override;
+    ScalarSize primitive_count() const override;
 
-    virtual Float surface_area() const override;
+    Float surface_area() const override;
 
-    virtual PositionSample3f sample_position(Float time, const Point2f &sample,
-                                             Mask active = true) const override;
-
-    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
-
-    virtual Point3f
-    barycentric_coordinates(const SurfaceInteraction3f &si,
-                            Mask active = true) const;
-
-    virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                             const PreliminaryIntersection3f &pi,
-                                                             uint32_t ray_flags,
-                                                             uint32_t recursion_depth = 0,
-                                                             Mask active = true) const override;
-
-    virtual Mask has_attribute(const std::string &name, Mask active = true) const override;
-
-    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
-                                               const SurfaceInteraction3f &si,
-                                               Mask active = true) const override;
-
-    virtual Float eval_attribute_1(const std::string& name,
-                                   const SurfaceInteraction3f &si,
-                                   Mask active = true) const override;
-
-    virtual Color3f eval_attribute_3(const std::string& name,
-                                     const SurfaceInteraction3f &si,
+    PositionSample3f sample_position(Float time,
+                                     const Point2f &sample,
                                      Mask active = true) const override;
 
-    virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t ray_flags = +RayFlags::All,
-                                                       Mask active = true) const override;
+    Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
+
+    Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
+                                    Mask active = true) const;
+
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     const PreliminaryIntersection3f &pi,
+                                                     uint32_t ray_flags,
+                                                     uint32_t recursion_depth = 0,
+                                                     Mask active = true) const override;
+
+    Mask has_attribute(const std::string &name, Mask active = true) const override;
+
+    UnpolarizedSpectrum eval_attribute(const std::string &name,
+                                       const SurfaceInteraction3f &si,
+                                       Mask active = true) const override;
+
+    Float eval_attribute_1(const std::string &name,
+                           const SurfaceInteraction3f &si,
+                           Mask active = true) const override;
+
+    Color3f eval_attribute_3(const std::string &name,
+                             const SurfaceInteraction3f &si,
+                             Mask active = true) const override;
+
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags = +RayFlags::All,
+                                               Mask active = true) const override;
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
 
@@ -232,8 +232,8 @@ public:
     Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
                                      Mask active) const override;
 
-    virtual Point3f differential_motion(const SurfaceInteraction3f &si,
-                                        Mask active = true) const override;
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active = true) const override;
 
     SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
                                                        const SurfaceInteraction3f &si,
@@ -241,13 +241,13 @@ public:
                                                        Float sample,
                                                        Mask active = true) const override;
 
-    virtual std::tuple<DynamicBuffer<Index>, DynamicBuffer<Float>>
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &viewpoint) const override;
 
-    virtual SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
-                                                             Index sample1,
-                                                             Float sample2,
-                                                             Mask active = true) const override;
+    SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
+                                                     Index sample1,
+                                                     Float sample2,
+                                                     Mask active = true) const override;
 
     //! @}
     // =============================================================
