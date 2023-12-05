@@ -330,7 +330,8 @@ public:
                 // Refract outside
                 Normal3f n(0.f, 0.f, 1.f);
                 Float inv_eta = dr::rcp(m_eta);
-                Float cos_theta_t_i = std::get<1>(fresnel(cos_theta_i, m_eta));
+                Float cos_theta_i_hat = ctx.mode == TransportMode::Radiance ? cos_theta_i : cos_theta_o;
+                Float cos_theta_t_i = std::get<1>(fresnel(cos_theta_i_hat, m_eta));
                 Vector3f wi_hat_p = -refract(wi_hat, cos_theta_t_i, inv_eta);
                 Spectrum Ti = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wi_hat_p)), inv_eta);
 
