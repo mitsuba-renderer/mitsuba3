@@ -421,8 +421,9 @@ Shape<Float, Spectrum>::primitive_silhouette_projection(const Point3f &,
     return dr::zeros<SilhouetteSample3f>();
 }
 
-MI_VARIANT std::tuple<DynamicBuffer<typename Shape<Float, Spectrum>::Index>,
-                      DynamicBuffer<Float>>
+MI_VARIANT
+std::tuple<DynamicBuffer<typename CoreAliases<Float>::UInt32>,
+           DynamicBuffer<Float>>
 Shape<Float, Spectrum>::precompute_silhouette(
     const ScalarPoint3f & /*viewpoint*/) const {
     NotImplementedError("precompute_silhouette");

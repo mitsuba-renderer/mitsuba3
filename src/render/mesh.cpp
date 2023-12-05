@@ -1005,24 +1005,23 @@ Mesh<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
                                            Mask active) const {
     MI_MASK_ARGUMENT(active);
 
-    Point2f uv = dr::detach(si.uv);
-
-    Vector3u fi = face_indices(si.prim_index, active);
-    Point3f p0 = vertex_position(fi[0], active),
-            p1 = vertex_position(fi[1], active),
-            p2 = vertex_position(fi[2], active);
-
-    // Barycentric coordinates
-    Float b = uv.x(),
-          c = uv.y(),
-          a = 1.f - b - c;
-
-    Point3f p_diff = dr::fmadd(p0, a, dr::fmadd(p1, b, p2 * c));
-
-    if constexpr (dr::is_diff_v<Float>)
-        return dr::replace_grad(si.p, p_diff);
-    else
+    if constexpr (!dr::is_diff_v<Float>) {
         return si.p;
+    } else {
+        Point2f uv = dr::detach(si.uv);
+
+        Vector3u fi = face_indices(si.prim_index, active);
+        Point3f p0  = vertex_position(fi[0], active),
+                p1  = vertex_position(fi[1], active),
+                p2  = vertex_position(fi[2], active);
+
+        // Barycentric coordinates
+        Float b = uv.x(), c = uv.y(), a = 1.f - b - c;
+
+        Point3f p_diff = dr::fmadd(p0, a, dr::fmadd(p1, b, p2 * c));
+
+        return dr::replace_grad(si.p, p_diff);
+    }
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
@@ -1169,8 +1168,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     return ss;
 }
 
-MI_VARIANT std::tuple<DynamicBuffer<typename Mesh<Float, Spectrum>::Index>,
-                      DynamicBuffer<Float>>
+MI_VARIANT
+std::tuple<DynamicBuffer<typename CoreAliases<Float>::UInt32>,
+           DynamicBuffer<Float>>
 Mesh<Float, Spectrum>::precompute_silhouette(
     const ScalarPoint3f &viewpoint) const {
     if constexpr (!dr::is_jit_v<Float>) {

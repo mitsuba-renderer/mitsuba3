@@ -389,13 +389,14 @@ public:
                          Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        Point3f local = warp::square_to_uniform_sphere(dr::detach(si.uv));
-        Point3f p_diff = m_to_world.value().transform_affine(local);
-
-        if constexpr (dr::is_diff_v<Float>)
-            return dr::replace_grad(si.p, p_diff);
-        else
+        if constexpr (!dr::is_diff_v<Float>) {
             return si.p;
+        } else {
+            Point3f local  = warp::square_to_uniform_sphere(dr::detach(si.uv));
+            Point3f p_diff = m_to_world.value().transform_affine(local);
+
+            return dr::replace_grad(si.p, p_diff);
+        }
     }
 
     SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
