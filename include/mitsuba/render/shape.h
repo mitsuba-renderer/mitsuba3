@@ -462,10 +462,10 @@ public:
      *
      * \return
      *      A list of indices used by the shape internally to represent
-     *      silhouettes, and a list of the same length containing the weights
-     *      associated to each index.
+     *      silhouettes, and a list of the same length containing the
+     *      (unnormalized) weights associated to each index.
      */
-    virtual std::tuple<std::vector<ScalarIndex>, std::vector<ScalarFloat>>
+    virtual std::tuple<DynamicBuffer<Index>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &viewpoint) const;
 
     /**

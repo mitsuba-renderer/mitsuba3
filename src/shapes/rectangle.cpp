@@ -386,13 +386,12 @@ public:
         return ss;
     }
 
-    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat>>
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
-        ScalarFloat weight = 1.f;
-        std::vector<uint32_t> dummy_index(1, +DiscontinuityFlags::PerimeterType);
-        std::vector<ScalarFloat> weight_arr(1, weight);
+        DynamicBuffer<UInt32> indices(DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<Float> weights(1.f);
 
-        return {dummy_index, weight_arr};
+        return {indices, weights};
     }
 
     SilhouetteSample3f

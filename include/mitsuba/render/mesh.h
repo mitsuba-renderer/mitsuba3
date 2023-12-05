@@ -241,7 +241,7 @@ public:
                                                        Float sample,
                                                        Mask active = true) const override;
 
-    virtual std::tuple<std::vector<ScalarIndex>, std::vector<ScalarFloat>>
+    virtual std::tuple<DynamicBuffer<Index>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &viewpoint) const override;
 
     virtual SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
