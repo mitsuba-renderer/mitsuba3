@@ -299,9 +299,9 @@ def test09_sample_silhouette_interior(variants_vec_rgb):
     cylinder = mi.load_dict({ 'type': 'cylinder' })
     cylinder_ptr = mi.ShapePtr(cylinder)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
@@ -318,9 +318,9 @@ def test09_sample_silhouette_interior(variants_vec_rgb):
 def test10_sample_silhouette_bijective(variants_vec_rgb):
     cylinder = mi.load_dict({ 'type': 'cylinder' })
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss_perimeter = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)

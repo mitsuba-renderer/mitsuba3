@@ -81,6 +81,12 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /// Primitive index, e.g. the triangle ID (if applicable)
     UInt32 prim_index;
 
+    /// Index of the shape in the scene (if applicable)
+    UInt32 scene_index;
+
+    /// The set of \c DiscontinuityFlags that were used to generate this sample
+    UInt32 flags;
+
     /**
      * \brief Projection index indicator
      *
@@ -122,16 +128,16 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /// Partially initialize a boundary segment from a position sample
     SilhouetteSample(const PositionSample<Float, Spectrum> &ps)
         : Base(ps), discontinuity_type((uint32_t) DiscontinuityFlags::Empty),
-          d(0), silhouette_d(0), prim_index(0), projection_index(0),
-          shape(nullptr), foreshortening(0), offset(0) {}
+          d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
+          projection_index(0), shape(nullptr), foreshortening(0), offset(0) {}
 
     //! @}
     // =============================================================
 
 
     DRJIT_STRUCT(SilhouetteSample, p, discontinuity_type, n, d, silhouette_d,
-                 uv, time, pdf, delta, prim_index, projection_index, shape,
-                 foreshortening, offset)
+                 uv, time, pdf, delta, prim_index, scene_index, flags,
+                 projection_index, shape, foreshortening, offset)
 };
 
 /**
@@ -244,6 +250,11 @@ public:
         return m_discontinuity_types;
     }
 
+    /// Return this shape's sampling weight w.r.t. all shapes in the scene
+    ScalarFloat silhouette_sampling_weight() const {
+        return m_silhouette_sampling_weight;
+    }
+
     /**
      * \brief Map a point sample in boundary sample space to a silhouette
      * segment
@@ -273,7 +284,7 @@ public:
      *      The sampled boundary segment
      *
      * \return
-     *     The correspoinding boundary sample space point
+     *     The corresponding boundary sample space point
      */
     virtual Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
                                              Mask active = true) const;
@@ -746,6 +757,8 @@ protected:
     std::string m_id;
 
     uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
+    /// Sampling weight (proportional to scene)
+    float m_silhouette_sampling_weight;
 
     std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
 
@@ -776,13 +789,14 @@ std::ostream &operator<<(std::ostream &os,
        << "  p = " << string::indent(ss.p, 6) << "," << std::endl
        << "  discontinuity_type = " << string::indent(ss.discontinuity_type, 23) << "," << std::endl
        << "  d = " << string::indent(ss.d, 6) << "," << std::endl
-       << "  sil_dir = " << string::indent(ss.silhouette_d, 12) << "," << std::endl
+       << "  silhouette_d = " << string::indent(ss.silhouette_d, 17) << "," << std::endl
        << "  n = " << string::indent(ss.n, 6) << "," << std::endl
        << "  prim_index = " << ss.prim_index << "," << std::endl
-       << "  project_index = " << ss.projection_index << "," << std::endl
+       << "  scene_index = " << ss.scene_index << "," << std::endl
+       << "  flags = " << ss.flags << "," << std::endl
+       << "  projection_index = " << ss.projection_index << "," << std::endl
        << "  uv = " << string::indent(ss.uv, 7) << "," << std::endl
        << "  pdf = " << ss.pdf << "," << std::endl
-       << "  delta = " << ss.delta << "," << std::endl
        << "  shape = " << string::indent(ss.shape) << "," << std::endl
        << "  foreshortening = " << ss.foreshortening << "," << std::endl
        << "  offset = " << ss.offset << "," << std::endl
@@ -875,6 +889,7 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_GETTER(interior_medium, const typename Class::Medium *)
     DRJIT_VCALL_GETTER(exterior_medium, const typename Class::Medium *)
     DRJIT_VCALL_GETTER(silhouette_discontinuity_types, uint32_t)
+    DRJIT_VCALL_GETTER(silhouette_sampling_weight, float)
     auto is_emitter() const { return neq(emitter(), nullptr); }
     auto is_sensor() const { return neq(sensor(), nullptr); }
     auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||

@@ -328,9 +328,9 @@ def test12_sample_silhouette_perimeter(variants_vec_rgb):
     curve_ptr = mi.ShapePtr(curve)
     length = -2 * (-1 - 4 * 0.3 + 0.3) * (1 / 6)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = curve.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
@@ -352,9 +352,9 @@ def test13_sample_silhouette_interior(variants_vec_rgb):
     curve_ptr = mi.ShapePtr(curve)
     length = -2 * (-1 - 4 * 0.3 + 0.3) * (1 / 6)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = curve.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
@@ -375,9 +375,9 @@ def test14_sample_silhouette_bijective(variants_vec_rgb):
         "filename" : "resources/data/common/meshes/curve_doc.txt",
     })
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss_perimeter = curve.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)

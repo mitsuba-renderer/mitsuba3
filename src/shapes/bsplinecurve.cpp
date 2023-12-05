@@ -464,6 +464,7 @@ public:
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+            ss.flags = flags;
             ss.silhouette_d =
                 dr::cross(dr::normalize(cos_u * u_rad + sin_u * u_rot),
                           dr::normalize(dc_dv));
@@ -493,6 +494,7 @@ public:
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
+            ss.flags = flags;
             ss.n = si.n;
 
             Float E = dr::squared_norm(dp_du),

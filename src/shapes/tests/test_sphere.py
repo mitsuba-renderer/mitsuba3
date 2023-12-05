@@ -349,9 +349,9 @@ def test12_sample_silhouette(variants_vec_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
     sphere_ptr = mi.ShapePtr(sphere)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = sphere.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
@@ -369,9 +369,9 @@ def test12_sample_silhouette(variants_vec_rgb):
 def test13_sample_silhouette_bijective(variants_vec_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = sphere.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)

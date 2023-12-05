@@ -90,6 +90,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     dr::eval(m_emitters_dr, m_shapes_dr, m_sensors_dr);
 
     update_emitter_sampling_distribution();
+    update_silhouette_sampling_distribution();
 
     m_shapes_grad_enabled = false;
 }
@@ -114,10 +115,44 @@ void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
     } else {
         // By default use uniform sampling with constant PMF
         m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / n_emitters);
+        m_emitter_distr = nullptr;
     }
     // Clear emitter's dirty flag
     for (auto &e : m_emitters)
         e->set_dirty(false);
+}
+
+MI_VARIANT
+void Scene<Float, Spectrum>::update_silhouette_sampling_distribution() {
+    size_t n_shapes = m_shapes.size();
+    std::vector<ScalarFloat> shape_weights{};
+    m_silhouette_shapes.clear();
+
+    for (size_t i = 0; i < n_shapes; ++i) {
+        ScalarFloat weight = m_shapes[i]->silhouette_sampling_weight();
+        // Only consider shapes that are being differentiated
+        bool grad_enabled = m_shapes[i]->parameters_grad_enabled();
+
+        if (grad_enabled && (weight > 0.f)) {
+            uint32_t types = m_shapes[i]->silhouette_discontinuity_types();
+
+            bool has_interior = has_flag(types, DiscontinuityFlags::InteriorType);
+            bool has_perimeter = has_flag(types, DiscontinuityFlags::PerimeterType);
+            bool has_discontinuity = has_interior || has_perimeter;
+
+            if (has_discontinuity) {
+                m_silhouette_shapes.emplace_back(m_shapes[i]);
+                shape_weights.emplace_back(weight);
+            }
+        }
+    }
+
+    size_t silhouette_shape_count = m_silhouette_shapes.size();
+    m_silhouette_shapes_dr = dr::load<DynamicBuffer<ShapePtr>>(
+        m_silhouette_shapes.data(), silhouette_shape_count);
+    if (silhouette_shape_count > 0u)
+        m_silhouette_distr = std::make_unique<DiscreteDistribution<Float>>(
+            shape_weights.data(), silhouette_shape_count);
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
@@ -336,6 +371,104 @@ MI_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
     return ds.emitter->eval_direction(ref, ds, active);
 }
 
+MI_VARIANT typename Scene<Float, Spectrum>::SilhouetteSample3f
+Scene<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
+                                          uint32_t flags, Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    if (unlikely(!m_silhouette_distr|| m_silhouette_shapes.size() == 0))
+        return dr::zeros<SilhouetteSample3f>();
+
+    // Sample a shape
+    UInt32 shape_idx;
+    Float reused_sample_x,
+          shape_weight;
+    std::tie(shape_idx, reused_sample_x, shape_weight) =
+        m_silhouette_distr->sample_reuse_pmf(sample_.x(), active);
+    ShapePtr shape =
+        dr::gather<ShapePtr>(m_silhouette_shapes_dr, shape_idx, active);
+
+    bool has_interior = has_flag(flags, DiscontinuityFlags::InteriorType);
+    bool has_perimeter = has_flag(flags, DiscontinuityFlags::PerimeterType);
+    Point3f sample(sample_);
+    sample.x() = reused_sample_x;
+
+    // Map a boundary sample space to a boundary segment in the scene space
+    SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+    if (has_interior != has_perimeter) { // Only one discontinuity type
+        ss = shape->sample_silhouette(sample, flags, active);
+    } else {
+        UInt32 shape_sil_types = shape->silhouette_discontinuity_types();
+        Mask only_interior =
+            active &&
+            has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            !has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+        Mask only_perimeter =
+            active &&
+            !has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+        Mask both =
+            active &&
+            has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+
+        // If shapes have both types, weight them equally
+        Mask interior  = only_interior  || (both && (sample.x() <  0.5f));
+        Mask perimeter = only_perimeter || (both && (sample.x() >= 0.5f));
+        dr::masked(sample.x(), interior && both)  = sample.x() * 2.f;
+        dr::masked(sample.x(), perimeter && both) = sample.x() * 2.f - 1.f;
+
+        uint32_t other_flags = flags & !(uint32_t) DiscontinuityFlags::AllTypes;
+        SilhouetteSample3f ss_interior = shape->sample_silhouette(
+            sample, (uint32_t) DiscontinuityFlags::InteriorType | other_flags,
+            interior);
+        SilhouetteSample3f ss_perimeter = shape->sample_silhouette(
+            sample, (uint32_t) DiscontinuityFlags::PerimeterType | other_flags,
+            perimeter);
+
+        ss = dr::select(interior, ss_interior, ss_perimeter);
+        dr::masked(ss.pdf, both) *= 0.5f;
+    }
+
+    ss.pdf *= shape_weight;
+    ss.scene_index = shape_idx;
+
+    return ss;
+}
+
+MI_VARIANT typename Scene<Float, Spectrum>::Point3f
+Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                                 Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    Point3f sample = ss.shape->invert_silhouette_sample(ss, active);
+
+    // Inverse mapping of samples on shapes that have both types
+    Mask both_types_sampled =
+        dr::eq(ss.flags, (uint32_t) DiscontinuityFlags::AllTypes);
+    Mask shape_has_both_types =
+        dr::eq(ss.shape->silhouette_discontinuity_types(),
+               (uint32_t) DiscontinuityFlags::AllTypes);
+    Mask is_interior =
+        has_flag(ss.discontinuity_type, DiscontinuityFlags::InteriorType);
+    dr::masked(sample.x(), both_types_sampled && shape_has_both_types) =
+        dr::select(is_interior,
+                   sample.x() * 0.5f,
+                   sample.x() * 0.5f + 0.5f);
+
+    if (m_silhouette_shapes.size() == 1)
+        return sample;
+
+    // Inverse mapping of samples w.r.t. scene
+    Float cdf = m_silhouette_distr->eval_cdf_normalized(ss.scene_index, active);
+    Float normalization = m_silhouette_distr->normalization();
+    Float weight = ss.shape->silhouette_sampling_weight();
+    Float offset = cdf - weight * normalization;
+    sample.x() = sample.x() * weight * normalization + offset;
+
+    return sample;
+}
+
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     for (auto& child : m_children) {
         std::string id = child->id();
@@ -379,8 +512,10 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     m_shapes_grad_enabled = false;
     for (auto &s : m_shapes) {
         m_shapes_grad_enabled |= s->parameters_grad_enabled();
-        if (m_shapes_grad_enabled)
+        if (m_shapes_grad_enabled) {
+            update_silhouette_sampling_distribution();
             break;
+        }
     }
 
     // Check if emitters were modified and we potentially need to update

@@ -308,9 +308,9 @@ def test10_sample_silhouette_perimeter(variants_vec_rgb):
     disk = mi.load_dict({ 'type': 'disk' })
     disk_ptr = mi.ShapePtr(disk)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = disk.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
@@ -326,9 +326,9 @@ def test10_sample_silhouette_perimeter(variants_vec_rgb):
 def test11_sample_silhouette_bijective(variants_vec_rgb):
     disk = mi.load_dict({ 'type': 'disk' })
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = disk.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
