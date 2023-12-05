@@ -1169,88 +1169,127 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     return ss;
 }
 
-MI_VARIANT std::tuple<std::vector<typename Mesh<Float, Spectrum>::ScalarIndex>,
-                      std::vector<typename Mesh<Float, Spectrum>::ScalarFloat> >
-Mesh<Float, Spectrum>::precompute_silhouette(const ScalarPoint3f &viewpoint) const {
+MI_VARIANT std::tuple<DynamicBuffer<typename Mesh<Float, Spectrum>::Index>,
+                      DynamicBuffer<Float>>
+Mesh<Float, Spectrum>::precompute_silhouette(
+    const ScalarPoint3f &viewpoint) const {
+    if constexpr (!dr::is_jit_v<Float>) {
+        using Vec3f = ScalarVector3f;
+        using Pt3f  = ScalarPoint3f;
 
-    using Vec3f = ScalarVector3f;
-    using Pt3f = ScalarPoint3f;
+        auto &&vertex_positions =
+            dr::migrate(m_vertex_positions, AllocType::Host);
+        auto &&faces = dr::migrate(m_faces, AllocType::Host);
+        auto &&E2E   = dr::migrate(m_E2E, AllocType::Host);
 
-    // TODO: drjit this function
+        if constexpr (dr::is_array_v<Float>)
+            dr::sync_thread();
 
-    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
-    auto&& faces            = dr::migrate(m_faces, AllocType::Host);
-    auto&& E2E              = dr::migrate(m_E2E, AllocType::Host);
+        const InputFloat *V          = vertex_positions.data();
+        const ScalarIndex *E2E_data  = E2E.data();
+        const ScalarIndex *face_data = faces.data();
 
-    if constexpr (dr::is_array_v<Float>)
-        dr::sync_thread();
+        ScalarIndex prim_count = 0u;
+        std::vector<ScalarIndex> indices(m_face_count * 3u);
+        std::vector<ScalarFloat> weight(m_face_count * 3u);
+        ScalarFloat weight_sum = 0.f;
 
-    const InputFloat *V                = vertex_positions.data();
-    const ScalarIndex *E2E_data        = E2E.data();
-    const ScalarIndex *face_data       = faces.data();
+        for (ScalarIndex f = 0; f < m_face_count; f++) {
+            ScalarPoint3u idx = dr::load<ScalarPoint3u>(face_data + 3 * f);
+            Pt3f v0           = dr::load<Pt3f>(V + 3 * idx.x());
+            Pt3f v1           = dr::load<Pt3f>(V + 3 * idx.y());
+            Pt3f v2           = dr::load<Pt3f>(V + 3 * idx.z());
+            Vec3f n           = dr::normalize(dr::cross(v1 - v0, v2 - v0));
 
-    ScalarIndex prim_count = 0u;
-    std::vector<ScalarIndex> indices(m_face_count * 3u);
-    std::vector<ScalarFloat> weight(m_face_count * 3u);
-    ScalarFloat weight_sum = 0.f;
+            Vec3f to_v0 = dr::normalize(v0 - viewpoint);
+            Vec3f to_v1 = dr::normalize(v1 - viewpoint);
+            Vec3f to_v2 = dr::normalize(v2 - viewpoint);
 
-    for (ScalarIndex f = 0; f < m_face_count; f++) {
-        ScalarPoint3u idx = dr::load<ScalarPoint3u>(face_data + 3 * f);
-        Pt3f v0 = dr::load<Pt3f>(V + 3 * idx.x());
-        Pt3f v1 = dr::load<Pt3f>(V + 3 * idx.y());
-        Pt3f v2 = dr::load<Pt3f>(V + 3 * idx.z());
-        Vec3f n = dr::normalize(dr::cross(v1 - v0, v2 - v0));
+            auto check_edge = [&](const ScalarIndex dedge_curr,
+                                  const Vec3f &dir1,
+                                  const Vec3f &dir2) -> void {
+                ScalarIndex dedge_oppo =
+                    dr::load<ScalarIndex>(E2E_data + dedge_curr);
+                bool valid = false;
 
-        Vec3f to_v0 = dr::normalize(v0 - viewpoint);
-        Vec3f to_v1 = dr::normalize(v1 - viewpoint);
-        Vec3f to_v2 = dr::normalize(v2 - viewpoint);
-
-        auto check_edge = [&](const ScalarIndex dedge_curr, const Vec3f &dir1,
-                              const Vec3f &dir2) -> void {
-            ScalarIndex dedge_oppo =
-                dr::load<ScalarIndex>(E2E_data + dedge_curr);
-            bool valid = false;
-
-            if (dedge_oppo == m_invalid_dedge) {
-                valid = true;
-            } else if (dedge_oppo > dedge_curr) {
-                ScalarIndex face_index_oppo = dr::idiv(dedge_oppo, 3u);
-                ScalarPoint3u v_idx_oppo =
-                    dr::load<ScalarPoint3u>(face_data + 3 * face_index_oppo);
-
-                Pt3f v0_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.x());
-                Pt3f v1_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.y());
-                Pt3f v2_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.z());
-                Vec3f n_oppo = dr::normalize(
-                    dr::cross(v1_oppo - v0_oppo, v2_oppo - v0_oppo));
-
-                if (dr::dot(dir1, n) * dr::dot(dir1, n_oppo) <= 0.f &&
-                    dr::abs(dr::dot(n, n_oppo)) < 1.f) {
+                if (dedge_oppo == m_invalid_dedge) {
                     valid = true;
+                } else if (dedge_oppo > dedge_curr) {
+                    ScalarIndex face_index_oppo = dr::idiv(dedge_oppo, 3u);
+                    ScalarPoint3u v_idx_oppo    = dr::load<ScalarPoint3u>(
+                        face_data + 3 * face_index_oppo);
+
+                    Pt3f v0_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.x());
+                    Pt3f v1_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.y());
+                    Pt3f v2_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.z());
+                    Vec3f n_oppo = dr::normalize(
+                        dr::cross(v1_oppo - v0_oppo, v2_oppo - v0_oppo));
+
+                    if (dr::dot(dir1, n) * dr::dot(dir1, n_oppo) <= 0.f &&
+                        dr::abs(dr::dot(n, n_oppo)) < 1.f) {
+                        valid = true;
+                    }
                 }
-            }
 
-            if (valid) {
-                indices[prim_count] = dedge_curr;
+                if (valid) {
+                    indices[prim_count] = dedge_curr;
 
-                // The arclength weight is not perfect for perspective cameras.
-                // But it is a close approximation.
-                weight[prim_count] = unit_angle(dir1, dir2);
-                weight_sum += weight[prim_count];
-                prim_count++;
-            }
-        };
+                    // The arclength weight is not perfect for perspective
+                    // cameras. But it is a close approximation.
+                    weight[prim_count] = unit_angle(dir1, dir2);
+                    weight_sum += weight[prim_count];
+                    prim_count++;
+                }
+            };
 
-        check_edge(f * 3u,      to_v0, to_v1);
-        check_edge(f * 3u + 1u, to_v1, to_v2);
-        check_edge(f * 3u + 2u, to_v2, to_v0);
+            check_edge(f * 3u, to_v0, to_v1);
+            check_edge(f * 3u + 1u, to_v1, to_v2);
+            check_edge(f * 3u + 2u, to_v2, to_v0);
+        }
+
+        indices.resize(prim_count);
+        weight.resize(prim_count);
+
+        DynamicBuffer<UInt32> out_indices = dr::load<UInt32>(indices.data(), indices.size());
+        DynamicBuffer<Float> out_weights= dr::load<Float>(weight.data(), weight.size());
+
+        return std::make_tuple(out_indices, out_weights);
+    } else {
+        UInt32 dedge_curr = dr::arange<UInt32>(m_face_count * 3);
+        auto [face_idx, e] = dr::idivmod(dedge_curr, 3u);
+        Vector3u fi = face_indices(face_idx);
+        Point3f p0 = vertex_position(pick_vertex(fi, e + 0u)),
+                p1 = vertex_position(pick_vertex(fi, e + 1u));
+
+        Normal3f n = face_normal(face_idx);
+        Vector3f to_p0 = dr::normalize(p0 - viewpoint);
+        Vector3f to_p1 = dr::normalize(p1 - viewpoint);
+
+        // The arclength weight is not perfect for perspective
+        // cameras. But it is a close approximation.
+        Float weight = unit_angle(to_p0, to_p1);
+
+        UInt32 dedge_oppo = opposite_dedge(dedge_curr);
+        Mask has_opposite = dr::neq(dedge_oppo, m_invalid_dedge);
+
+        auto face_idx_oppo = dr::idiv(dedge_oppo, 3u);
+        Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
+
+        Mask greater_dedge_idx = dedge_oppo > dedge_curr;
+        Mask not_flat = dr::abs(dr::dot(n, n_oppo)) < 1.f;
+        Mask only_one_visible_face =
+            dr::dot(to_p0, n) * dr::dot(to_p0, n_oppo) <= 0.f;
+
+        Mask valid = !has_opposite || (greater_dedge_idx &&
+                                       only_one_visible_face &&
+                                       not_flat);
+
+        UInt32 valid_indices = dr::compress(valid);
+        dr::masked(weight, !valid) = 0.f;
+        Float valid_weight = dr::gather<Float>(weight, valid_indices);
+
+        return std::make_tuple(valid_indices, valid_weight);
     }
-
-    // Normalize weight
-    std::transform(weight.begin(), weight.end(), weight.begin(),
-                   [&weight_sum](auto &c) { return c / weight_sum; });
-
-    return std::make_tuple(indices, weight);
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f

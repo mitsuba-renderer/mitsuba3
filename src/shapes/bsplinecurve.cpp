@@ -769,13 +769,16 @@ public:
         return ss;
     }
 
-    std::tuple<std::vector<uint32_t>, std::vector<ScalarFloat> >
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
         // Sample the perimeter (endcaps) and the smooth silhouette uniformly
         std::vector<uint32_t> type = {+DiscontinuityFlags::PerimeterType, +DiscontinuityFlags::InteriorType};
-        std::vector<ScalarFloat> weight_arr = {0.50f, 0.50f};
+        std::vector<ScalarFloat> weight_arr = { 0.50f, 0.50f };
 
-        return {type, weight_arr};
+        DynamicBuffer<UInt32> indices = dr::load<UInt32>(type.data(), type.size());
+        DynamicBuffer<Float> weights = dr::load<Float>(weight_arr.data(), weight_arr.size());
+
+        return {indices, weights};
     }
 
     SilhouetteSample3f
