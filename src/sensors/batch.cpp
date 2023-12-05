@@ -191,14 +191,53 @@ public:
         DirectionSample3f result_1 = dr::zeros<DirectionSample3f>();
         Spectrum result_2 = dr::zeros<Spectrum>();
 
-        for (size_t i = 0; i < m_sensors.size(); ++i) {
-            Mask active_i = active && dr::eq(m_last_index, i);
-            auto [rv_1, rv_2] =
-                m_sensors[i]->sample_direction(it, sample, active_i);
-            rv_1.uv.x() += i * m_sensors[i]->film()->size().x();
-            result_1[active_i] = rv_1;
-            result_2[active_i] = rv_2;
+        // The behavior of random sampling a sensor instead of
+        // querying `m_last_index` is useful for ptracer rendering. But it
+        // is not desired if we call `sensor.sample_direction()` to
+        // re-attach gradients. We detect the latter case by checking if
+        // `it` has gradient tracking enabled.
+
+        if (dr::grad_enabled(it)) {
+            for (size_t i = 0; i < m_sensors.size(); ++i) {
+                Mask active_i = active && dr::eq(m_last_index, i);
+                auto [rv_1, rv_2] =
+                    m_sensors[i]->sample_direction(it, sample, active_i);
+                rv_1.uv.x() += i * m_sensors[i]->film()->size().x();
+                result_1[active_i] = rv_1;
+                result_2[active_i] = rv_2;
+            }
+        } else {
+            // Randomly sample a valid connection to a sensor
+            Point2f sample_(sample);
+            UInt32 valid_count(0u);
+
+            for (size_t i = 0; i < m_sensors.size(); ++i) {
+                auto [rv_1, rv_2] =
+                    m_sensors[i]->sample_direction(it, sample_, active);
+                rv_1.uv.x() += i * m_sensors[i]->film()->size().x();
+
+                Mask active_i = active && dr::neq(rv_1.pdf, 0.f);
+                valid_count += dr::select(active_i, 1u, 0u);
+
+                // Should we put this sample into the reservoir?
+                Float  idx_f = sample_.x() * valid_count;
+                UInt32 idx_u = UInt32(idx_f);
+                Mask   accept = active_i && dr::eq(idx_u, valid_count - 1u);
+
+                // Reuse sample_.x
+                sample_.x() = dr::select(active_i, idx_f - idx_u, sample_.x());
+
+                // Update the result
+                result_1[accept] = rv_1;
+                result_2[accept] = rv_2;
+            }
+
+            // Account for reservoir sampling probability
+            Float reservoir_pdf = dr::select(valid_count > 0u, valid_count, 1u) / (ScalarFloat) m_sensors.size();
+            result_1.pdf /= reservoir_pdf;
+            result_2 *= reservoir_pdf;
         }
+
 
         return { result_1, result_2 };
     }
