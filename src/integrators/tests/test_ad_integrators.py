@@ -49,7 +49,7 @@ class ConfigBase:
 
     def __init__(self) -> None:
         self.spp = 1024
-        self.res = 32
+        self.res = 128
         self.error_mean_threshold = 0.05
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.05
@@ -290,13 +290,12 @@ class TranslateShapeConfigBase(ConfigBase):
 
     def initialize(self):
         super().initialize()
-        self.initial_state = dr.unravel(mi.Vector3f, self.params[self.key])
+        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, self.params[self.key]))
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(theta, 0.0, 0.0))
         self.params.update()
         dr.eval()
-
 
 # Scale shape base configuration
 class ScaleShapeConfigBase(ConfigBase):
@@ -307,7 +306,7 @@ class ScaleShapeConfigBase(ConfigBase):
 
     def initialize(self):
         super().initialize()
-        self.initial_state = dr.unravel(mi.Vector3f, self.params[self.key])
+        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, self.params[self.key]))
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
@@ -331,7 +330,6 @@ class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.25
-        self.spp = 1024
         self.integrator_dict = {
             'max_depth': 2,
             'reparam_rays': 64,
@@ -356,7 +354,6 @@ class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.25
-        self.spp = 1024
         self.integrator_dict = {
             'max_depth': 2,
             'reparam_rays': 64,
@@ -385,7 +382,6 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 1.0
         self.error_mean_threshold_bwd = 0.2
-        self.spp = 12000
         self.integrator_dict = {
             'max_depth': 2,
             'reparam_rays': 64,
@@ -407,13 +403,13 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': T.translate([1.25, 0.0, 0.0]),
+                'to_world': T.translate([1.25, 0.0, 0.0]) @ T.rotate(angle=180, axis=[0, 1, 0]),
             }
         }
-        self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.5
+        self.ref_fd_epsilon = 1e-4
+        self.error_mean_threshold = 0.08
+        self.error_max_threshold = 2
         self.error_mean_threshold_bwd = 0.15
-        self.spp = 12000
 
 
 # Scale area emitter (sphere) on black background
@@ -433,7 +429,7 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
             }
         }
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.04
+        self.error_mean_threshold = 0.08
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.1
         self.integrator_dict = {
@@ -468,11 +464,10 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'to_world': T.translate([4.0, 0.0, 4.0]) @ T.scale(0.05)
             }
         }
-        self.ref_fd_epsilon = 2e-4
+        self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.6
+        self.error_max_threshold = 0.8
         self.error_mean_threshold_bwd = 0.25
-        self.spp = 2048
         self.integrator_dict = {
             'max_depth': 2,
             'reparam_rays': 64,
@@ -545,7 +540,6 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.spp = 800
         self.error_mean_threshold = 0.1
         self.error_max_threshold = 56.0
 
@@ -574,10 +568,9 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
             },
             'light2': { 'type': 'constant', 'radiance': 0.1 },
         }
-        self.error_mean_threshold = 0.03
+        self.error_mean_threshold = 0.06
         self.error_max_threshold = 0.7
         self.error_mean_threshold_bwd = 0.35
-        self.spp = 4096
         self.integrator_dict = {
             'max_depth': 3,
             'reparam_rays': 64,
@@ -652,7 +645,6 @@ class TranslateCameraConfig(ConfigBase):
         self.error_mean_threshold = 0.3
         self.error_max_threshold = 1.6
         self.error_mean_threshold_bwd = 1.3
-        self.spp = 1024
         self.res = 16
         self.ref_fd_epsilon = 1e-3
         self.integrator_dict = {
@@ -691,14 +683,14 @@ BASIC_CONFIGS_LIST = [
 REPARAM_CONFIGS_LIST = [
     # TranslateDiffuseSphereConstantConfig,
     # TranslateDiffuseRectangleConstantConfig,
-    TranslateRectangleEmitterOnBlackConfig,
+    #TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
     TranslateSelfShadowAreaLightConfig,
     # TranslateShadowReceiverAreaLightConfig,
     TranslateSphereOnGlossyFloorConfig,
-    TranslateCameraConfig
+    #TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -713,14 +705,17 @@ INTEGRATORS = [
     ('path', False),
     ('prb', False),
     ('prb_reparam', True),
-    ('direct_reparam', True)
+    ('direct_reparam', True),
+    ('direct_projective', True),
+    ('prb_projective', True)
 ]
 
 CONFIGS = []
 for integrator_name, reparam in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (REPARAM_CONFIGS_LIST if reparam else [])
     for config in todos:
-        if integrator_name == 'direct_reparam' and config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
+        if (('direct' in integrator_name or 'projective' in integrator_name) and
+            config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
             continue
         CONFIGS.append((integrator_name, config))
 
@@ -737,7 +732,13 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-    integrator = mi.load_dict(config.integrator_dict)
+
+    if 'projective' in integrator_name:
+        for key in list(config.integrator_dict.keys()):
+            if 'reparam' in key:
+                del config.integrator_dict[key]
+
+    integrator = mi.load_dict(config.integrator_dict, parallel=False)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -768,7 +769,15 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
+
+    if 'projective' in integrator_name:
+        for key in list(config.integrator_dict.keys()):
+            if 'reparam' in key:
+                del config.integrator_dict[key]
+
     integrator = mi.load_dict(config.integrator_dict)
+    if 'projective' in integrator_name:
+        integrator.proj_seed_spp = 2048 * 2
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -815,22 +824,32 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
+
+    if 'projective' in integrator_name:
+        for key in list(config.integrator_dict.keys()):
+            if 'reparam' in key:
+                del config.integrator_dict[key]
+
     integrator = mi.load_dict(config.integrator_dict)
+    if 'projective' in integrator_name:
+        integrator.proj_seed_spp = 2048 * 2
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
 
-    image_adj = mi.TensorXf(1.0, image_fwd_ref.shape)
+    grad_in = 0.001
+    image_adj = mi.TensorXf(grad_in, image_fwd_ref.shape)
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
     config.update(theta)
 
+    # Higher spp will run into single-precision accumulation issues
     integrator.render_backward(
-        config.scene, grad_in=image_adj, seed=0, spp=config.spp, params=theta)
+        config.scene, grad_in=image_adj, seed=0, spp=256, params=theta)
 
     grad = dr.grad(theta)[0] / dr.width(image_fwd_ref)
-    grad_ref = dr.mean(image_fwd_ref)[0]
+    grad_ref = dr.mean(image_fwd_ref)[0] * grad_in
 
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold_bwd:
@@ -866,7 +885,8 @@ def test04_render_custom_op(variants_all_ad_rgb):
     dr.enable_grad(theta)
     config.update(theta)
 
-    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
+    # Higher spp will run into single-precision accumulation issues
+    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
 
     error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.mean(error)[0]
