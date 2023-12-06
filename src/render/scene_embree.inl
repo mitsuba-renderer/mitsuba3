@@ -180,6 +180,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
                 if (free) {
+                    // Ensure all ray tracing kernels are terminated before 
+                    // releasing the scene
+                    // This is needed in the scenario where we record a
+                    // ray-tracing operation, the scene is destroyed, and we
+                    // only trigger an evaluation afterwards
+                    if constexpr (dr::is_llvm_v<Float>)
+                        dr::sync_thread();
+
                     Log(Debug, "Free Embree scene state..");
                     EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
                     rtcReleaseScene(s->accel);
