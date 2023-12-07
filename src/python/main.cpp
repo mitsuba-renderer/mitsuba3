@@ -75,7 +75,10 @@ PYBIND11_MODULE(mitsuba_ext, m) {
 
     m.def("set_log_level", [](mitsuba::LogLevel level) {
         Thread::thread()->logger()->set_log_level(level);
-    });
+    }, "Sets the log level.");
+    m.def("log_level", []() {
+        return Thread::thread()->logger()->log_level();
+    }, "Returns the current log level.");
 
     Jit::static_initialization();
     Class::static_initialization();
