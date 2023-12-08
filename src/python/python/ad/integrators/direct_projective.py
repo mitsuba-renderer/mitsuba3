@@ -7,9 +7,83 @@ from .common import PSIntegrator, mis_weight
 
 class DirectProjectiveIntegrator(PSIntegrator):
     r"""
-    .. _integrator-direct_proj:
-    - No radiative backpropagation
-    - Detached sampling to compute continuous deriv
+    .. _integrator-direct_projective:
+
+    Direct illumination projective sampling (:monosp:`direct_projective`)
+    ---------------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - sppc
+       - |int|
+       - Number of samples per pixel used to estimate the continuous
+         derivatives. This is overriden by whatever runtime `spp` value is
+         passed to the `render()` method. If this value was not set and no
+         runtime value `spp` is used, the `sample_count` of the film's sampler
+         will be used.
+
+     * - sppp
+       - |int|
+       - Number of samples per pixel used to to estimate the gradients resulting
+         from primary visibility changes (on the first segment of the light
+         path: from the sensor to the first bounce) derivatives. This is
+         overriden by whatever runtime `spp` value is passed to the `render()`
+         method. If this value was not set and no runtime value `spp` is used,
+         the `sample_count` of the film's sampler will be used.
+
+     * - sppi
+       - |int|
+       - Number of samples per pixel used to to estimate the gradients resulting
+         from indirect visibility changes  derivatives. This is overriden by
+         whatever runtime `spp` value is passed to the `render()` method. If
+         this value was not set and no runtime value `spp` is used, the
+         `sample_count` of the film's sampler will be used.
+
+     * - guiding
+       - |string|
+       - Guiding type, must be one of: "none", "grid", or "octree". This
+         specifies the guiding method used for indirectly observed
+         discontinuities. (Default: "octree")
+
+     * - guiding_proj
+       - |bool|
+       - Whether or not to use projective sampling to generate the set of
+         samples that are used to build the guiding structure. (Default: True)
+
+     * - guiding_rounds
+       - |int|
+       - Number of sampling iterations used to build the guiding data structure.
+         A higher number of rounds will use more samples and hence should result
+         in a more accurate guiding structure. (Default: 1)
+
+    This plugin implements a projective sampling direct illumination integrator
+    with the following features:
+
+    - Emitter sampling (a.k.a. next event estimation).
+
+    - Projective sampling. This means that it can handle discontinuous
+      visibility changes, such as a moving shape's gradients.
+
+    - Detached sampling. This means that the properties of ideal specular
+      objects (e.g., the IOR of a glass vase) cannot be optimized.
+
+    See the paper :cite:`Zhang2023Projective` for details on projective
+    sampling, and guiding structures for indirect visibility discontinuities.
+
+    It is functionally equivalent with `prb_projective` when `max_depth` is set
+    to be 2.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'direct_projective',
+            'sppc': 32,
+            'sppp': 32,
+            'sppi': 128,
+            'guiding': 'octree',
+            'guiding_proj': True,
+            'guiding_rounds': 1
     """
 
     def __init__(self, props):
@@ -272,7 +346,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
         # Trace a ray to the camera ray intersection
         ss_importance = mi.SilhouetteSample3f(ss)
-        ss_importance.d = -ss_importance.d 
+        ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray()
         if preprocess:
             si_boundary = scene.ray_intersect(ray_boundary, active=active)

@@ -914,7 +914,7 @@ class PSIntegrator(ADIntegrator):
 
         # This isn't serious, so let's just warn once
         if has_silhouettes and not film.sample_border() and self.sample_border_warning:
-            self.sample_border_warning = True
+            self.sample_border_warning = False
             mi.Log(mi.LogLevel.Warn,
                 "PSIntegrator detected the potential for image-space "
                 "motion due to differentiable shape parameters. To correctly "
@@ -1140,7 +1140,7 @@ class PSIntegrator(ADIntegrator):
         """
         Sample the incident importance at the silhouette point `ss.p` with
         direction `-ss.d`. If multiple connections to the sensor are valid, this
-        method uses resovoir sampling to pick one.
+        method uses reservoir sampling to pick one.
 
         Parameters ``max_depth`` (``mi.UInt32``):
             The maximum number of ray segments to reach the sensor.

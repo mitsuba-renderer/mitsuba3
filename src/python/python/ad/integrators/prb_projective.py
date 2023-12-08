@@ -7,9 +7,105 @@ from .common import PSIntegrator, mis_weight
 
 class PathProjectiveIntegrator(PSIntegrator):
     r"""
-    :
-    - Radiative backpropagation, but does not handle delta BSDFs
-    - Detached sampling to compute continuous deriv
+    .. _integrator-prb_projective:
+
+    Projective sampling Path Replay Backpropagation (PRB) (:monosp:`prb_projective`)
+    --------------------------------------------------------------------------------
+
+    .. pluginparameters::
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth in the generated output image (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         visible light sources. 2 will lead to single-bounce (direct-only)
+         illumination, and so on. (Default: -1)
+
+     * - rr_depth
+       - |int|
+       - Specifies the path depth, at which the implementation will begin to use
+         the *russian roulette* path termination criterion. For example, if set to
+         1, then path generation many randomly cease after encountering directly
+         visible surfaces. (Default: 5)
+
+     * - sppc
+       - |int|
+       - Number of samples per pixel used to estimate the continuous
+         derivatives. This is overriden by whatever runtime `spp` value is
+         passed to the `render()` method. If this value was not set and no
+         runtime value `spp` is used, the `sample_count` of the film's sampler
+         will be used.
+
+     * - sppp
+       - |int|
+       - Number of samples per pixel used to to estimate the gradients resulting
+         from primary visibility changes (on the first segment of the light
+         path: from the sensor to the first bounce) derivatives. This is
+         overriden by whatever runtime `spp` value is passed to the `render()`
+         method. If this value was not set and no runtime value `spp` is used,
+         the `sample_count` of the film's sampler will be used.
+
+     * - sppi
+       - |int|
+       - Number of samples per pixel used to to estimate the gradients resulting
+         from indirect visibility changes  derivatives. This is overriden by
+         whatever runtime `spp` value is passed to the `render()` method. If
+         this value was not set and no runtime value `spp` is used, the
+         `sample_count` of the film's sampler will be used.
+
+     * - guiding
+       - |string|
+       - Guiding type, must be one of: "none", "grid", or "octree". This
+         specifies the guiding method used for indirectly observed
+         discontinuities. (Default: "octree")
+
+     * - guiding_proj
+       - |bool|
+       - Whether or not to use projective sampling to generate the set of
+         samples that are used to build the guiding structure. (Default: True)
+
+     * - guiding_rounds
+       - |int|
+       - Number of sampling iterations used to build the guiding data structure.
+         A higher number of rounds will use more samples and hence should result
+         in a more accurate guiding structure. (Default: 1)
+
+    This plugin implements a projective sampling Path Replay Backpropagation
+    (PRB) integrator with the following features:
+
+    - Emitter sampling (a.k.a. next event estimation).
+
+    - Russian Roulette stopping criterion.
+
+    - Projective sampling. This means that it can handle discontinuous
+      visibility changes, such as a moving shape's gradients.
+
+    - Detached sampling. This means that the properties of ideal specular
+      objects (e.g., the IOR of a glass vase) cannot be optimized.
+
+    In order to estimate the indirect visibility discontinuous derivatives, this
+    integrator starts by sampling a boundary segment and then attempts to
+    connect it to the sensor and an emitter. It is effectively building lights
+    paths from the middle outwards. In order to stay within the specified
+    `max_depth`, the integrator starts by sampling a path to the sensor by using
+    reservoir sampling to decide whether or not to use a longer path. Once a
+    path to the sensor is found, the other half of the full light path is
+    sampled.
+
+    See the paper :cite:`Zhang2023Projective` for details on projective
+    sampling, and guiding structures for indirect visibility discontinuities.
+
+    .. tabs::
+
+        .. code-tab:: python
+
+            'type': 'prb_projective',
+            'sppc': 32,
+            'sppp': 32,
+            'sppi': 128,
+            'guiding': 'octree',
+            'guiding_proj': True,
+            'guiding_rounds': 1
     """
 
     def __init__(self, props):
@@ -292,21 +388,21 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # ----------- Estimate the radiance of the background -----------
 
-        ray_back = mi.Ray3f(
+        ray_bg = mi.Ray3f(
             ss.p + (1 + dr.max(dr.abs(ss.p))) * (ss.d * ss.offset + ss.n * mi.math.ShapeEpsilon),
             ss.d
         )
-        radiance_back, _, _ = self.sample(
-            dr.ADMode.Primal, scene, sampler, ray_back, curr_depth, None, None, active, False, None)
+        radiance_bg, _, _ = self.sample(
+            dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
         # ----------- Estimate the radiance of the foreground -----------
 
         # Create a preliminary intersection point
-        pi_fore = dr.zeros(mi.PreliminaryIntersection3f)
-        pi_fore.t = 1
-        pi_fore.prim_index = ss.prim_index
-        pi_fore.prim_uv = ss.uv
-        pi_fore.shape = ss.shape
+        pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+        pi_fg.t = 1
+        pi_fg.prim_index = ss.prim_index
+        pi_fg.prim_uv = ss.uv
+        pi_fg.shape = ss.shape
 
         # Create a dummy ray that we never perform ray-intersection with to
         # compute other fields in ``si``
@@ -314,31 +410,31 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
-        si_fore = pi_fore.compute_surface_interaction(
+        si_fg = pi_fg.compute_surface_interaction(
             dummy_ray, mi.RayFlags.All, active)
 
         # If smooth normals are used, it is possible that the computed
         # shading normal near visibility silhouette points to the wrong side
         # of the surface. We fix this by clamping the shading frame normal
         # to the visible side.
-        alpha = dr.dot(si_fore.sh_frame.n, ss.d)
+        alpha = dr.dot(si_fg.sh_frame.n, ss.d)
         eps = dr.epsilon(alpha) * 100
         wrong_side = active & (alpha > -eps)
         # Remove the component of the shading frame normal that points to
         # the wrong side
         new_sh_normal = dr.normalize(
-            si_fore.sh_frame.n - (alpha + eps) * ss.d)
-        # ``si_fore`` surgery
-        si_fore.sh_frame[wrong_side] = mi.Frame3f(new_sh_normal)
-        si_fore.wi[wrong_side] = si_fore.to_local(-ss.d)
+            si_fg.sh_frame.n - (alpha + eps) * ss.d)
+        # ``si_fg`` surgery
+        si_fg.sh_frame[wrong_side] = mi.Frame3f(new_sh_normal)
+        si_fg.wi[wrong_side] = si_fg.to_local(-ss.d)
 
         # Call `sample()` to estimate the radiance starting from the surface
         # interaction
-        radiance_fore, _, _ = self.sample(
-            dr.ADMode.Primal, scene, sampler, ray_back, curr_depth, None, None, active, False, si_fore)
+        radiance_fg, _, _ = self.sample(
+            dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, si_fg)
 
         # Compute the radiance difference
-        radiance_diff = radiance_fore - radiance_back
+        radiance_diff = radiance_fg - radiance_bg
         active_diff = active & (dr.max(dr.abs(radiance_diff)) > 0)
 
         return radiance_diff, active_diff
