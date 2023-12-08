@@ -144,8 +144,7 @@ extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 excluded_api = [
     r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager',
     r'mitsuba.ad.(.*).annotations', r'mitsuba.ad.prb(.*)', r'mitsuba.ad.integrators.prb(.*)',
-    r'mitsuba.ad.direct_reparam(.*)', r'mitsuba.ad.integrators.direct_reparam(.*)',
-    r'mitsuba.ad.emission_reparam(.*)', r'mitsuba.ad.integrators.emission_reparam(.*)',
+    r'mitsuba.ad.direct_projective(.*)', r'mitsuba.ad.integrators.direct_projective(.*)',
     'mitsuba.float_dtype', 'mitsuba.casters', 'mitsuba.cast_object',
     'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper',
     'mitsuba.xml.WriteXML', 'mitsuba.xml.Files',
