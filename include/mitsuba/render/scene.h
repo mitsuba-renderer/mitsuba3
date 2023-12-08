@@ -549,14 +549,7 @@ public:
 
     /**
      * \brief Specifies whether any of the scene's shape parameters have
-     * tracking enabled
-     *
-     * Knowing this is important in the context of differentiable rendering:
-     * intersections (e.g. provided by OptiX or Embree) must then be
-     * re-computed differentiably within Dr.Jit to correctly track gradient
-     * information. Furthermore, differentiable geometry introduces bias
-     * through visibility-induced discontinuities, and reparameterizations
-     * (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.
+     * gradient tracking enabled
      */
     bool shapes_grad_enabled() const { return m_shapes_grad_enabled; };
 

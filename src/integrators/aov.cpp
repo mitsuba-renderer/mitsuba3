@@ -73,7 +73,6 @@ Currently, the following AOVs types are available:
     - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
     - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
     - :monosp:`shape_index`: Shape index.
-    - :monosp:`boundary_test`: Boundary test.
 
 Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
 are meaningless whenever there is only partial pixel coverage or when using a
@@ -97,7 +96,6 @@ public:
         UV,
         GeometricNormal,
         ShadingNormal,
-        BoundaryTest,
         dPdU,
         dPdV,
         dUVdx,
@@ -165,9 +163,6 @@ public:
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
-            } else if (item[1] == "boundary_test") {
-                m_aov_types.push_back(Type::BoundaryTest);
-                m_aov_names.push_back(item[0]);
             } else if (item[1] == "dp_du") {
                 m_aov_types.push_back(Type::dPdU);
                 m_aov_names.push_back(item[0] + ".X");
@@ -211,8 +206,8 @@ public:
 
         std::pair<Spectrum, Mask> result { 0.f, false };
 
-        SurfaceInteraction3f si = scene->ray_intersect(
-            ray, RayFlags::All | RayFlags::BoundaryTest, true, active);
+        SurfaceInteraction3f si =
+            scene->ray_intersect(ray, (uint32_t) RayFlags::All, true, active);
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
@@ -282,10 +277,6 @@ public:
                     *aovs++ = si.sh_frame.n.x();
                     *aovs++ = si.sh_frame.n.y();
                     *aovs++ = si.sh_frame.n.z();
-                    break;
-
-                case Type::BoundaryTest:
-                    *aovs++ = dr::select(si.is_valid(), si.boundary_test, 1.f);
                     break;
 
                 case Type::dPdU:

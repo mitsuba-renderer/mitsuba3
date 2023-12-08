@@ -871,7 +871,6 @@ public:
         bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
-        bool need_boundary_test = has_flag(ray_flags, RayFlags::BoundaryTest);
 
         /* If necessary, temporally suspend gradient tracking for all shape
            parameters to construct a surface interaction completely detach from
@@ -1000,9 +999,6 @@ public:
 
         si.shape = this;
         si.instance = nullptr;
-
-        if (need_boundary_test)
-            si.boundary_test = dr::dot(si.sh_frame.n, -ray.d);
 
         return si;
     }

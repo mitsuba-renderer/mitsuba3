@@ -39,9 +39,6 @@ class ADIntegrator(mi.CppADIntegrator):
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
 
-        # Warn about potential bias due to shapes entering/leaving the frame
-        self.sample_border_warning = True
-
     def to_string(self):
         return f'{type(self).__name__}[max_depth = {self.max_depth},' \
                f' rr_depth = { self.rr_depth }]'
@@ -74,7 +71,7 @@ class ADIntegrator(mi.CppADIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
             L, valid, _ = self.sample(
@@ -85,7 +82,6 @@ class ADIntegrator(mi.CppADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
-                reparam=None,
                 active=mi.Bool(True)
             )
 
@@ -130,24 +126,9 @@ class ADIntegrator(mi.CppADIntegrator):
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
-            # When the underlying integrator supports reparameterizations,
-            # perform necessary initialization steps and wrap the result using
-            # the _ReparamWrapper abstraction defined above
-            if hasattr(self, 'reparam'):
-                reparam = _ReparamWrapper(
-                    scene=scene,
-                    params=params,
-                    reparam=self.reparam,
-                    wavefront_size=sampler.wavefront_size(),
-                    seed=seed
-                )
-            else:
-                reparam = None
-
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos, det = self.sample_rays(scene, sensor,
-                                                     sampler, reparam)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             with dr.resume_grad():
                 L, valid, _ = self.sample(
@@ -155,7 +136,6 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
-                    reparam=reparam,
                     active=mi.Bool(True)
                 )
 
@@ -163,15 +143,10 @@ class ADIntegrator(mi.CppADIntegrator):
                 # Only use the coalescing feature when rendering enough samples
                 block.set_coalesce(block.coalesce() and spp >= 4)
 
-                # Deposit samples with gradient tracking for 'pos'.
-                # After reparameterizing the camera ray, we need to evaluate
-                #   Σ (fi Li det)
-                #  ---------------
-                #   Σ (fi det)
                 ADIntegrator._splat_to_block(
                     block, film, pos,
-                    value=L * weight * det,
-                    weight=det,
+                    value=L * weight,
+                    weight=1,
                     alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
                     wavelengths=ray.wavelengths
                 )
@@ -203,24 +178,9 @@ class ADIntegrator(mi.CppADIntegrator):
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
-            # When the underlying integrator supports reparameterizations,
-            # perform necessary initialization steps and wrap the result using
-            # the _ReparamWrapper abstraction defined above
-            if hasattr(self, 'reparam'):
-                reparam = _ReparamWrapper(
-                    scene=scene,
-                    params=params,
-                    reparam=self.reparam,
-                    wavefront_size=sampler.wavefront_size(),
-                    seed=seed
-                )
-            else:
-                reparam = None
-
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos, det = self.sample_rays(scene, sensor,
-                                                     sampler, reparam)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             with dr.resume_grad():
                 L, valid, _ = self.sample(
@@ -228,7 +188,6 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
-                    reparam=reparam,
                     active=mi.Bool(True)
                 )
 
@@ -241,8 +200,8 @@ class ADIntegrator(mi.CppADIntegrator):
                 # Accumulate into the image block
                 ADIntegrator._splat_to_block(
                     block, film, pos,
-                    value=L * weight * det,
-                    weight=det,
+                    value=L * weight,
+                    weight=1,
                     alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
                     wavelengths=ray.wavelengths
                 )
@@ -274,8 +233,6 @@ class ADIntegrator(mi.CppADIntegrator):
         scene: mi.Scene,
         sensor: mi.Sensor,
         sampler: mi.Sampler,
-        reparam: Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
-                          Tuple[mi.Vector3f, mi.Float]] = None
     ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
         """
         Sample a 2D grid of primary rays for a given sensor
@@ -286,11 +243,6 @@ class ADIntegrator(mi.CppADIntegrator):
         - a ray weight (usually 1 if the sensor's response function is sampled
           perfectly)
         - the continuous 2D image-space positions associated with each ray
-
-        When a reparameterization function is provided via the 'reparam'
-        argument, it will be applied to the returned image-space position (i.e.
-        the sample positions will be moving). The other two return values
-        remain detached.
         """
 
         film = sensor.film()
@@ -351,53 +303,10 @@ class ADIntegrator(mi.CppADIntegrator):
                 sample3=aperture_sample
             )
 
-        reparam_det = 1.0
-
-        if reparam is not None:
-            if rfilter.is_box_filter():
-                raise Exception(
-                    "ADIntegrator detected the potential for image-space "
-                    "motion due to differentiable shape or camera pose "
-                    "parameters. This is, however, incompatible with the box "
-                    "reconstruction filter that is currently used. Please "
-                    "specify a smooth reconstruction filter in your scene "
-                    "description (e.g. 'gaussian', which is actually the "
-                    "default)")
-
-            # This is less serious, so let's just warn once
-            if not film.sample_border() and self.sample_border_warning:
-                self.sample_border_warning = True
-
-                mi.Log(mi.LogLevel.Warn,
-                    "ADIntegrator detected the potential for image-space "
-                    "motion due to differentiable shape or camera pose "
-                    "parameters. To correctly account for shapes entering "
-                    "or leaving the viewport, it is recommended that you set "
-                    "the film's 'sample_border' parameter to True.")
-
-            with dr.resume_grad():
-                # Reparameterize the camera ray
-                reparam_d, reparam_det = reparam(ray=dr.detach(ray),
-                                                 depth=mi.UInt32(0))
-
-                # TODO better understand why this is necessary
-                # Reparameterize the camera ray to handle camera translations
-                if dr.grad_enabled(ray.o):
-                    reparam_d, _ = reparam(ray=ray, depth=mi.UInt32(0))
-
-                # Create a fake interaction along the sampled ray and use it to
-                # recompute the position with derivative tracking
-                it = dr.zeros(mi.Interaction3f)
-                it.p = ray.o + reparam_d
-                ds, _ = sensor.sample_direction(it, aperture_sample)
-
-                # Return a reparameterized image position
-                pos_f = ds.uv + film.crop_offset()
-
         # With box filter, ignore random offset to prevent numerical instabilities
         splatting_pos = mi.Vector2f(pos) if rfilter.is_box_filter() else pos_f
 
-        return ray, weight, splatting_pos, reparam_det
+        return ray, weight, splatting_pos
 
     def prepare(self,
                 sensor: mi.Sensor,
@@ -489,9 +398,6 @@ class ADIntegrator(mi.CppADIntegrator):
                depth: mi.UInt32,
                δL: Optional[mi.Spectrum],
                state_in: Any,
-               reparam: Optional[
-                   Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
-                            Tuple[mi.Vector3f, mi.Float]]],
                active: mi.Bool) -> Tuple[mi.Spectrum, mi.Bool]:
         """
         This function does the main work of differentiable rendering and
@@ -545,13 +451,6 @@ class ADIntegrator(mi.CppADIntegrator):
             its return value. The forward/backward differential phases expect
             that this state vector is provided to them via this argument. When
             invoked in primal mode, it should be set to ``None``.
-
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
 
         Parameter ``active`` (``mi.Bool``):
             This mask array can optionally be used to indicate that some of
@@ -651,24 +550,9 @@ class RBIntegrator(ADIntegrator):
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
-            # When the underlying integrator supports reparameterizations,
-            # perform necessary initialization steps and wrap the result using
-            # the _ReparamWrapper abstraction defined above
-            if hasattr(self, 'reparam'):
-                reparam = _ReparamWrapper(
-                    scene=scene,
-                    params=params,
-                    reparam=self.reparam,
-                    wavefront_size=sampler.wavefront_size(),
-                    seed=seed
-                )
-            else:
-                reparam = None
-
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos, det = self.sample_rays(scene, sensor,
-                                                     sampler, reparam)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
             L, valid, state_out = self.sample(
@@ -679,7 +563,6 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
-                reparam=None,
                 active=mi.Bool(True)
             )
 
@@ -692,48 +575,8 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=state_out,
-                reparam=reparam,
                 active=mi.Bool(True)
             )
-
-            # Differentiable camera pose parameters or a reparameterization
-            # have an effect on the measurement integral performed at the
-            # sensor. We account for this here by differentiating the
-            # 'ImageBlock.put()' operation using differentiable sample
-            # positions. One important aspect of how this operation works in
-            # Mitsuba is that it computes a separate 'weight' channel
-            # containing the (potentially quite non-uniform) accumulated filter
-            # weights of all samples. This non-uniformity is then divided out
-            # at the end. It's crucial that we also account for this when
-            # computing derivatives, or they will be unusably noisy.
-
-            sample_pos_deriv = None # disable by default
-
-            with dr.resume_grad():
-                if dr.grad_enabled(pos):
-                    sample_pos_deriv = film.create_block()
-
-                    # Only use the coalescing feature when rendering enough samples
-                    sample_pos_deriv.set_coalesce(sample_pos_deriv.coalesce() and spp >= 4)
-
-                    # Deposit samples with gradient tracking for 'pos'.
-                    ADIntegrator._splat_to_block(
-                        sample_pos_deriv, film, pos,
-                        value=L * weight * det,
-                        weight=det,
-                        alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
-                        wavelengths=ray.wavelengths
-                    )
-
-                    # Compute the derivative of the reparameterized image ..
-                    tensor = sample_pos_deriv.tensor()
-                    dr.forward_to(tensor, flags=dr.ADFlag.ClearInterior | dr.ADFlag.ClearEdges)
-
-                    dr.schedule(tensor, dr.grad(tensor))
-
-                    # Done with this part, let's detach the image-space position
-                    dr.disable_grad(pos)
-                    del tensor
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -763,15 +606,6 @@ class RBIntegrator(ADIntegrator):
             gc.collect()
 
             result_grad = film.develop()
-
-            # Potentially add the derivative of the reparameterized samples
-            if sample_pos_deriv is not None:
-                with dr.resume_grad():
-                    film.clear()
-                    film.put_block(sample_pos_deriv)
-                    reparam_result = film.develop()
-                    dr.forward_to(reparam_result)
-                    result_grad += dr.grad(reparam_result)
 
         return result_grad
 
@@ -842,24 +676,9 @@ class RBIntegrator(ADIntegrator):
             # Prepare the film and sample generator for rendering
             sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
 
-            # When the underlying integrator supports reparameterizations,
-            # perform necessary initialization steps and wrap the result using
-            # the _ReparamWrapper abstraction defined above
-            if hasattr(self, 'reparam'):
-                reparam = _ReparamWrapper(
-                    scene=scene,
-                    params=params,
-                    reparam=self.reparam,
-                    wavefront_size=sampler.wavefront_size(),
-                    seed=seed
-                )
-            else:
-                reparam = None
-
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight, pos, det = self.sample_rays(scene, sensor,
-                                                     sampler, reparam)
+            ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             def splatting_and_backward_gradient_image(value: mi.Spectrum,
                                                       weight: mi.Float,
@@ -899,7 +718,7 @@ class RBIntegrator(ADIntegrator):
             # Differentiate sample splatting and weight division steps to
             # retrieve the adjoint radiance (e.g. 'δL')
             with dr.resume_grad():
-                with dr.suspend_grad(pos, det, ray, weight):
+                with dr.suspend_grad(pos, ray, weight):
                     L = dr.full(mi.Spectrum, 1.0, dr.width(ray))
                     dr.enable_grad(L)
 
@@ -923,7 +742,6 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
-                reparam=None,
                 active=mi.Bool(True)
             )
 
@@ -936,23 +754,8 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=δL,
                 state_in=state_out,
-                reparam=reparam,
                 active=mi.Bool(True)
             )
-
-            # Propagate gradient image to sample positions if necessary
-            if reparam is not None:
-                with dr.resume_grad():
-                    # Accumulate into the image block.
-                    # After reparameterizing the camera ray, we need to evaluate
-                    #   Σ (fi Li det)
-                    #  ---------------
-                    #   Σ (fi det)
-                    splatting_and_backward_gradient_image(
-                        value=L * weight * det,
-                        weight=det,
-                        alpha=dr.select(valid, mi.Float(1), mi.Float(0))
-                    )
 
             # We don't need any of the outputs here
             del L_2, valid_2, state_out, state_out_2, δL, \
@@ -1057,6 +860,11 @@ class PSIntegrator(ADIntegrator):
         # initialization.
         self.octree_scatter_inc = True
 
+        ##### OTHER #####
+        # Warn about potential bias due to shapes entering/leaving the frame
+        self.sample_border_warning = True
+
+
     def override_spp(self, integrator_spp: int, spp: int):
         """
         Utility method to override the intergrator's spp value with the one
@@ -1104,6 +912,16 @@ class PSIntegrator(ADIntegrator):
         silhouette_shapes = scene.silhouette_shapes()
         has_silhouettes = len(silhouette_shapes) > 0
 
+        # This isn't serious, so let's just warn once
+        if has_silhouettes and not film.sample_border() and self.sample_border_warning:
+            self.sample_border_warning = True
+            mi.Log(mi.LogLevel.Warn,
+                "PSIntegrator detected the potential for image-space "
+                "motion due to differentiable shape parameters. To correctly "
+                "account for shapes entering or leaving the viewport, it is "
+                "recommended that you set the film's 'sample_border' parameter "
+                "to True.")
+
         # Primarily visible discontinuous derivative
         if sppp > 0 and has_silhouettes:
             with dr.suspend_grad():
@@ -1124,7 +942,7 @@ class PSIntegrator(ADIntegrator):
         if sppc > 0 and (not self.radiative_backprop):
             with dr.suspend_grad():
                 sampler, spp = self.prepare(sensor, seed, sppc, aovs)
-                ray, weight, pos, _ = self.sample_rays(scene, sensor, sampler)
+                ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
                 # Launch the Monte Carlo sampling process in differentiable mode
                 L, valid, _ = self.sample(
@@ -1444,74 +1262,6 @@ class PSIntegrator(ADIntegrator):
         raise Exception('PSIntegrator does not provide the sample() method. '
                         'It should be implemented by subclasses that '
                         'specialize the abstract PSIntegrator interface.')
-
-# ------------------------------------------------------------------------------
-
-class _ReparamWrapper:
-    """
-    This class is an implementation detail of ``ADIntegrator``, which performs
-    necessary initialization steps and subsequently wraps a reparameterization
-    technique. It serves the following important purposes:
-
-    1. Ensuring the availability of uncorrelated random variates.
-    2. Connecting reparameterization calls to relevant shape-related
-       variables in the AD graph.
-    3. Exposing the underlying RNG state to recorded loops.
-    """
-
-    # ReparamWrapper instances can be provided as dr.Loop state
-    # variables. For this to work we must declare relevant fields
-    DRJIT_STRUCT = { 'rng' : mi.PCG32 }
-
-    def __init__(self,
-                 scene : mi.Scene,
-                 params: Any,
-                 reparam: Callable[
-                     [mi.Scene, mi.PCG32, Any,
-                      mi.Ray3f, mi.UInt32, mi.Bool],
-                     Tuple[mi.Vector3f, mi.Float]],
-                 wavefront_size : int,
-                 seed : int):
-
-        self.scene = scene
-        self.params = params
-        self.reparam = reparam
-
-        # Only link the reparameterization CustomOp to differentiable scene
-        # parameters with the AD computation graph if they control shape
-        # information (vertex positions, etc.)
-        if isinstance(params, mi.SceneParameters):
-            params = params.copy()
-            params.keep(
-                [
-                    k for k in params.keys() \
-                        if (params.flags(k) & mi.ParamFlags.Discontinuous) != 0
-                ]
-            )
-
-        # Create a uniform random number generator that won't show any
-        # correlation with the main sampler. PCG32Sampler.seed() uses
-        # the same logic except for the XOR with -1
-
-        idx = dr.arange(mi.UInt32, wavefront_size)
-        tmp = dr.opaque(mi.UInt32, 0xffffffff ^ seed)
-        v0, v1 = mi.sample_tea_32(tmp, idx)
-        self.rng = mi.PCG32(initstate=v0, initseq=v1)
-
-    def __call__(self,
-                 ray: mi.Ray3f,
-                 depth: mi.UInt32,
-                 active: Union[mi.Bool, bool] = True
-    ) -> Tuple[mi.Vector3f, mi.Float]:
-        """
-        This function takes a ray, a path depth value (to potentially disable
-        reparameterizations after a certain number of bounces) and a boolean
-        active mask as input and returns the reparameterized ray direction and
-        the Jacobian determinant of the change of variables.
-        """
-        return self.reparam(self.scene, self.rng, self.params, ray,
-                            depth, active)
-
 
 # ---------------------------------------------------------------------------
 #  Helper functions used by various differentiable integrators

@@ -49,7 +49,6 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, wi,            D(SurfaceInteraction, wi))
         .def_field(SurfaceInteraction3f, prim_index,    D(SurfaceInteraction, prim_index))
         .def_field(SurfaceInteraction3f, instance,      D(SurfaceInteraction, instance))
-        .def_field(SurfaceInteraction3f, boundary_test, D(SurfaceInteraction, boundary_test))
 
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
@@ -92,7 +91,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
                        shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                       duv_dy, wi, prim_index, instance, boundary_test)
+                       duv_dy, wi, prim_index, instance)
 }
 
 MI_PY_EXPORT(MediumInteraction) {

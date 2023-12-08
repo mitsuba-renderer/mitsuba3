@@ -487,8 +487,7 @@ public:
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV) ||
-                   has_flag(ray_flags, RayFlags::BoundaryTest))) {
+                   has_flag(ray_flags, RayFlags::dPdUV))) {
             Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
                   inv_r = dr::rcp(r);
 
@@ -511,9 +510,6 @@ public:
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         si.shape    = this;
         si.instance = nullptr;
-
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
-            si.boundary_test = dr::abs(1.f - si.uv.x());
 
         return si;
     }
