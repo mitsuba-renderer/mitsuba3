@@ -96,9 +96,8 @@ INTEGRATOR_ORDERING = [
     'volpathmis',
     '../src/python/python/ad/integrators/prb.py',
     '../src/python/python/ad/integrators/prb_basic.py',
-    '../src/python/python/ad/integrators/direct_reparam.py',
-    '../src/python/python/ad/integrators/emission_reparam.py',
-    '../src/python/python/ad/integrators/prb_reparam.py',
+    '../src/python/python/ad/integrators/direct_projective.py',
+    '../src/python/python/ad/integrators/prb_projective.py',
     '../src/python/python/ad/integrators/prbvolpath.py',
 ]
 
