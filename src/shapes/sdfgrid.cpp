@@ -237,8 +237,8 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("to_world",     *m_to_world.ptr(),          ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("grid",         m_grid_texture.tensor(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("to_world",     *m_to_world.ptr(),          +ParamFlags::NonDifferentiable);
+        callback->put_parameter("grid",         m_grid_texture.tensor(),    +ParamFlags::NonDifferentiable);
         callback->put_parameter("watertight",   m_watertight,               +ParamFlags::NonDifferentiable);
     }
 

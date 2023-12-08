@@ -33,6 +33,11 @@ Rectangle (:monosp:`rectangle`)
    - Specifies a linear object-to-world transformation. (Default: none (i.e. object space = world space))
    - |exposed|, |differentiable|, |discontinuous|
 
+ * - silhouette_sampling_weight
+   - |float|
+   - Weight associated with this shape when sampling silhoeuttes in the scene. (Default: 1)
+   - |exposed|
+
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_rectangle.jpg
    :caption: Basic example

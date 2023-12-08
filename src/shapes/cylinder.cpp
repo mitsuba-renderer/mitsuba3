@@ -50,6 +50,11 @@ Cylinder (:monosp:`cylinder`)
      not permitted! (Default: none, i.e. object space = world space)
    - |exposed|, |differentiable|, |discontinuous|
 
+ * - silhouette_sampling_weight
+   - |float|
+   - Weight associated with this shape when sampling silhoeuttes in the scene. (Default: 1)
+   - |exposed|
+
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_onesided.jpg
    :caption: Cylinder with the default one-sided shading
