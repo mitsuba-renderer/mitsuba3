@@ -28,7 +28,7 @@ B-spline curve (:monosp:`bsplinecurve`)
 -------------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 2
+ :extra-rows: 3
 
  * - filename
    - |string|
@@ -38,6 +38,11 @@ B-spline curve (:monosp:`bsplinecurve`)
    - |transform|
    - Specifies a linear object-to-world transformation. Note that the control
      points' raddii are invariant to this transformation!
+
+ * - silhouette_sampling_weight
+   - |float|
+   - Weight associated with this shape when sampling silhoeuttes in the scene. (Default: 1)
+   - |exposed|
 
  * - control_point_count
    - |int|
