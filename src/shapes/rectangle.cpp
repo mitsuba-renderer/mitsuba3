@@ -558,9 +558,6 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
-            si.boundary_test = dr::min(0.5f - dr::abs(si.uv - 0.5f));
-
         return si;
     }
 

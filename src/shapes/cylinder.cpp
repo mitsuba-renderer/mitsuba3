@@ -749,17 +749,6 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest))) {
-            // Distance to cylinder edges
-            Float dist_edge = dr::dot(si.sh_frame.n, -ray.d);
-
-            // Distance to cap edges
-            Float dist_caps = 0.5f - dr::abs(si.uv.y() - 0.5f);
-
-            // Take the minimum of both distances to ensure 0.0 at silhouette.
-            si.boundary_test = dr::minimum(dist_caps, dist_edge);
-        }
-
         return si;
     }
 

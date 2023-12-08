@@ -263,7 +263,6 @@ public:
                 "depth"_a=0,
                 "δL"_a=py::none(),
                 "state_in"_a=py::none(),
-                "reparam"_a=py::none(),
                 "active"_a=active
             );
             // Third output is the ADIntegrator's state, which we ignore here

@@ -188,7 +188,7 @@ class ProjectiveDetail():
         )
 
         # Call sample() to get the seed rays
-        ray, _, _, _ = parent.sample_rays(scene, sensor, sampler, reparam=None)
+        ray, _, _ = parent.sample_rays(scene, sensor, sampler)
         _, _, (ray_seed, active) = parent.sample(
             mode     = dr.ADMode.Primal,
             scene    = scene,

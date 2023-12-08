@@ -899,67 +899,7 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
-    scene = mi.load_dict({
-        'type': 'scene',
-        'mesh': {
-            'type' : 'obj',
-            'filename' : 'resources/data/common/meshes/sphere.obj'
-        }
-    })
-
-    # Check boundary test value at silhouette
-    ray = mi.Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-
-    assert dr.all(B < 1e-6)
-
-    # Check that boundary test value increase as we move away from boundary
-    N = 10
-    prev = 0.0
-    for x in range(N):
-        ray = mi.Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
-        B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-        assert dr.all(prev < B)
-        prev = B
-
-
-@fresolver_append_path
-def test22_boundary_test_face_normal(variants_all_ad_rgb):
-    scene = mi.load_dict({
-        'type': 'scene',
-        'mesh': {
-            'type' : 'obj',
-            'filename' : 'resources/data/common/meshes/rectangle.obj',
-            'face_normals': True
-        }
-    })
-
-    # Check boundary test value when no intersection
-    ray = mi.Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
-    si = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True)
-    assert dr.all(~si.is_valid())
-    B = si.boundary_test
-    assert dr.all(B > 1e6)
-
-    # Check boundary test value close to silhouette
-    ray = mi.Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B < 1e-3)
-
-    # Check boundary test value close to silhouette
-    ray = mi.Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B < 1e-4)
-
-    # Check boundary test value close far from silhouette
-    ray = mi.Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B > 1e-1)
-
-
-@fresolver_append_path
-def test23_write_stream(variants_all_rgb, tmp_path):
+def test22_write_stream(variants_all_rgb, tmp_path):
     filepath = str(tmp_path / 'test_mesh-test23_write_stream.ply')
     mesh = mi.load_dict({
         'type': 'ply',
@@ -984,7 +924,7 @@ def test23_write_stream(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test24_texture_attributes(variants_all_rgb):
+def test23_texture_attributes(variants_all_rgb):
 
     texture = mi.load_dict({
         "type": "bitmap",
@@ -1008,7 +948,7 @@ def test24_texture_attributes(variants_all_rgb):
 
 
 @fresolver_append_path
-def test25_flip_tex_coords_obj(variants_all_rgb, tmp_path):
+def test24_flip_tex_coords_obj(variants_all_rgb, tmp_path):
     mesh = mi.load_dict({
         'type': 'obj',
         'filename': 'resources/data/tests/obj/rectangle_uv.obj',
@@ -1031,7 +971,7 @@ def test25_flip_tex_coords_obj(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test26_flip_tex_coords_ply(variants_all_rgb, tmp_path):
+def test25_flip_tex_coords_ply(variants_all_rgb, tmp_path):
     mesh = mi.load_dict({
         'type': 'ply',
         'filename': 'resources/data/tests/ply/rectangle_uv.ply',
@@ -1054,7 +994,7 @@ def test26_flip_tex_coords_ply(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test27_sample_silhouette_wrong_type(variants_all_rgb):
+def test26_sample_silhouette_wrong_type(variants_all_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/triangle.ply",
@@ -1067,7 +1007,7 @@ def test27_sample_silhouette_wrong_type(variants_all_rgb):
 
 
 @fresolver_append_path
-def test28_sample_silhouette(variants_vec_rgb):
+def test27_sample_silhouette(variants_vec_rgb):
     if not dr.is_diff_v(mi.Float):
         pytest.skip("Only relevant in AD-enabled variants!")
 
@@ -1128,7 +1068,7 @@ def test28_sample_silhouette(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test29_sample_silhouette_bijective(variants_vec_rgb):
+def test28_sample_silhouette_bijective(variants_vec_rgb):
     if not dr.is_diff_v(mi.Float):
         pytest.skip("Only relevant in AD-enabled variants!")
 
@@ -1170,7 +1110,7 @@ def test29_sample_silhouette_bijective(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test30_discontinuity_types(variants_vec_rgb):
+def test29_discontinuity_types(variants_vec_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/triangle.ply",
@@ -1183,7 +1123,7 @@ def test30_discontinuity_types(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test31_differential_motion(variants_vec_rgb):
+def test30_differential_motion(variants_vec_rgb):
     if not dr.is_diff_v(mi.Float):
         pytest.skip("Only relevant in AD-enabled variants!")
 
@@ -1216,7 +1156,7 @@ def test31_differential_motion(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test32_primitive_silhouette_projection(variants_vec_rgb):
+def test31_primitive_silhouette_projection(variants_vec_rgb):
     if not dr.is_diff_v(mi.Float):
         pytest.skip("Only relevant in AD-enabled variants!")
 
@@ -1252,7 +1192,7 @@ def test32_primitive_silhouette_projection(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test33_shape_type(variant_scalar_rgb):
+def test32_shape_type(variant_scalar_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/rectangle_uv.ply",

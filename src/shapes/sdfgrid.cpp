@@ -466,12 +466,6 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest))) {
-            Float dp = dr::dot(si.sh_frame.n, -ray.d);
-            // Add non-linearity by squaring the returned value
-            si.boundary_test = dr::sqr(dp);
-        }
-
         return si;
     }
 

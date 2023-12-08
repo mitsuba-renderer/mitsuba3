@@ -45,7 +45,7 @@ class ConfigBase:
     """
     Base class to configure test scene and define the parameter to update
     """
-    require_reparameterization = False
+    requires_discontinuities = False
 
     def __init__(self) -> None:
         self.spp = 1024
@@ -278,12 +278,12 @@ class CropWindowConfig(ConfigBase):
         }
 
 # -------------------------------------------------------------------
-#            Test configs for reparameterized integrators
+#            Test configs with discontinuities
 # -------------------------------------------------------------------
 
 # Translate shape base configuration
 class TranslateShapeConfigBase(ConfigBase):
-    require_reparameterization = True
+    requires_discontinuities = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -299,7 +299,7 @@ class TranslateShapeConfigBase(ConfigBase):
 
 # Scale shape base configuration
 class ScaleShapeConfigBase(ConfigBase):
-    require_reparameterization = True
+    requires_discontinuities = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -323,17 +323,16 @@ class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
             'sphere': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
+                'to_world': T.rotate(angle=-90, axis=[0, 1, 0]),
             },
             'light': { 'type': 'constant' }
         }
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.5
+        self.error_mean_threshold = 0.04
+        self.error_max_threshold = 0.6
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e5,
         }
 
 # Translate diffuse rectangle under constant illumination
@@ -356,8 +355,6 @@ class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e5,
         }
 
 # Translate area emitter (rectangle) on black background
@@ -384,8 +381,6 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.2
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e5,
         }
 
 
@@ -434,7 +429,6 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
         self.error_mean_threshold_bwd = 0.1
         self.integrator_dict = {
             'max_depth': 3,
-            'reparam_rays': 64,
         }
 
 
@@ -470,8 +464,6 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 5e5,
         }
 
 # Translate shadow receiver
@@ -510,8 +502,6 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
         self.spp = 4096
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e5,
         }
 
 
@@ -573,8 +563,6 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
         self.error_mean_threshold_bwd = 0.35
         self.integrator_dict = {
             'max_depth': 3,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e5,
         }
 
     def initialize(self):
@@ -624,8 +612,6 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
         self.spp = 2048
         self.integrator_dict = {
             'max_depth': 3,
-            'reparam_rays': 64,
-            'reparam_kappa': 2e5,
         }
 
 
@@ -649,8 +635,6 @@ class TranslateCameraConfig(ConfigBase):
         self.ref_fd_epsilon = 1e-3
         self.integrator_dict = {
             'max_depth': 2,
-            'reparam_rays': 64,
-            'reparam_kappa': 1e4,
         }
 
     def initialize(self):
@@ -680,10 +664,10 @@ BASIC_CONFIGS_LIST = [
     # ConstantEmitterRadianceConfig,
 ]
 
-REPARAM_CONFIGS_LIST = [
+DISCONTINUOUS_CONFIGS_LIST = [
     # TranslateDiffuseSphereConstantConfig,
     # TranslateDiffuseRectangleConstantConfig,
-    #TranslateRectangleEmitterOnBlackConfig,
+    # TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
@@ -704,15 +688,13 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 INTEGRATORS = [
     ('path', False),
     ('prb', False),
-    ('prb_reparam', True),
-    ('direct_reparam', True),
     ('direct_projective', True),
     ('prb_projective', True)
 ]
 
 CONFIGS = []
-for integrator_name, reparam in INTEGRATORS:
-    todos = BASIC_CONFIGS_LIST + (REPARAM_CONFIGS_LIST if reparam else [])
+for integrator_name, handles_discontinuities in INTEGRATORS:
+    todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
         if (('direct' in integrator_name or 'projective' in integrator_name) and
             config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
@@ -732,11 +714,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-
-    if 'projective' in integrator_name:
-        for key in list(config.integrator_dict.keys()):
-            if 'reparam' in key:
-                del config.integrator_dict[key]
 
     integrator = mi.load_dict(config.integrator_dict, parallel=False)
 
@@ -769,11 +746,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-
-    if 'projective' in integrator_name:
-        for key in list(config.integrator_dict.keys()):
-            if 'reparam' in key:
-                del config.integrator_dict[key]
 
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
@@ -824,11 +796,6 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     import mitsuba
     importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
-
-    if 'projective' in integrator_name:
-        for key in list(config.integrator_dict.keys()):
-            if 'reparam' in key:
-                del config.integrator_dict[key]
 
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
@@ -961,7 +928,7 @@ if __name__ == "__main__":
     if not exists(output_dir):
         os.makedirs(output_dir)
 
-    for config in BASIC_CONFIGS_LIST + REPARAM_CONFIGS_LIST:
+    for config in BASIC_CONFIGS_LIST + DISCONTINUOUS_CONFIGS_LIST:
         config = config()
         print(f"name: {config.name}")
 
