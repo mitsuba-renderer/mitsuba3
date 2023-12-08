@@ -858,23 +858,28 @@ class PSIntegrator(ADIntegrator):
         # If set to be "True", launch one kernel for all rounds of
         # projections. Otherwise a recorded loop simulates the multi-round
         # initialization.
-        self.octree_scatter_inc = True
+        self.octree_scatter_inc = False
 
         ##### OTHER #####
         # Warn about potential bias due to shapes entering/leaving the frame
         self.sample_border_warning = True
 
 
-    def override_spp(self, integrator_spp: int, spp: int):
+    def override_spp(self, integrator_spp: int, runtime_spp: int, sampler_spp: int):
         """
         Utility method to override the intergrator's spp value with the one
         received at runtime in `render`/`render_backward`/`render_forward`.
+
         The runtime value is overriden only if it is 0 and if the integrator
-        has defined a spp value.
+        has defined a spp value. If the integrator hasn't defined a value, the
+        sampler's spp is used.
         """
-        out = spp
-        if spp == 0 and integrator_spp is not None:
-            out = integrator_spp
+        out = runtime_spp
+        if runtime_spp == 0:
+            if integrator_spp is not None:
+                out = integrator_spp
+            else:
+                out = sampler_spp
 
         return out
 
@@ -905,9 +910,10 @@ class PSIntegrator(ADIntegrator):
                  film.base_channels_count() + len(aovs))
         result_img = dr.zeros(mi.TensorXf, shape=shape)
 
-        sppc = self.override_spp(self.sppc, spp)
-        sppp = self.override_spp(self.sppp, spp)
-        sppi = self.override_spp(self.sppi, spp)
+        sampler_spp = sensor.sampler().sample_count()
+        sppc = self.override_spp(self.sppc, spp, sampler_spp)
+        sppp = self.override_spp(self.sppp, spp, sampler_spp)
+        sppi = self.override_spp(self.sppi, spp, sampler_spp)
 
         silhouette_shapes = scene.silhouette_shapes()
         has_silhouettes = len(silhouette_shapes) > 0
@@ -989,9 +995,10 @@ class PSIntegrator(ADIntegrator):
                  film.base_channels_count() + len(self.aov_names()))
         result_grad = dr.zeros(mi.TensorXf, shape=shape)
 
-        sppc = self.override_spp(self.sppc, spp)
-        sppp = self.override_spp(self.sppp, spp)
-        sppi = self.override_spp(self.sppi, spp)
+        sampler_spp = sensor.sampler().sample_count()
+        sppc = self.override_spp(self.sppc, spp, sampler_spp)
+        sppp = self.override_spp(self.sppp, spp, sampler_spp)
+        sppi = self.override_spp(self.sppi, spp, sampler_spp)
 
         # Continuous derivative (if RB is used)
         if self.radiative_backprop and sppc > 0:
@@ -1022,9 +1029,13 @@ class PSIntegrator(ADIntegrator):
                         sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
-        sppc = self.override_spp(self.sppc, spp)
-        sppp = self.override_spp(self.sppp, spp)
-        sppi = self.override_spp(self.sppi, spp)
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        sampler_spp = sensor.sampler().sample_count()
+        sppc = self.override_spp(self.sppc, spp, sampler_spp)
+        sppp = self.override_spp(self.sppp, spp, sampler_spp)
+        sppi = self.override_spp(self.sppi, spp, sampler_spp)
 
         # Continuous derivative (if RB is used)
         if self.radiative_backprop and sppc > 0:
