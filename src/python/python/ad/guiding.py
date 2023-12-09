@@ -381,9 +381,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             if leaves_count_scalar + active_node_count * 8 > self.max_leaf_count:
                 raise RuntimeError(
                     "OcSpaceDistr: Number of leaf nodes exceeds "
-                    "'max_leaf_count'. Please increase 'max_leaf_count', "
-                    "increase 'octree_contruction_thres', or increase "
-                    "'octree_construction_mean_mult'."
+                    "'max_leaf_count'. Please increase 'max_leaf_count' or "
+                    "increase 'mass_contruction_thres'."
                 )
 
         if self.debug_logs:
@@ -477,6 +476,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
             dr.eval(filtered_points, counter)
             counter = dr.slice(counter)
+
             filtered_points = dr.gather(
                 mi.Point3f,
                 filtered_points,
@@ -484,6 +484,14 @@ class OcSpaceDistr(BaseGuidingDistr):
             )
 
             del points, mass, valid_mask, compact_idx
+
+        if dr.width(filtered_points) == 0:
+            raise RuntimeError(
+                "No non-zero mass points remain after applying the threshold! "
+                "The octree construction is interrupted. Please increase "
+                "`mass_contruction_thres` or provide more input points to "
+                "solve this problem."
+            )
 
         #######################
         # Octree construction #
