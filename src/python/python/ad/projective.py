@@ -498,7 +498,17 @@ class ProjectiveDetail():
 
         self.guiding_distr.mass_contruction_thres = parent.octree_contruction_thres
 
-        self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
+        try:
+            self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
+        except Exception as e:
+            mi.Log(mi.LogLevel.Warn,
+                   "Failed to build the Octree guiding distribution! No "
+                   "guiding distibution for indirect visibility "
+                   "discontinuities will be used.\n"
+                   "The original error message from the octree construction:\n"
+                   f"{e}")
+            self.guiding_distr = None
+            return
 
         del sample_3, sampler, active_guide, value
 
