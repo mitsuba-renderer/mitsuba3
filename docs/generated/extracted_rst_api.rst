@@ -633,7 +633,7 @@
         adjoint version is sampled.
 
         When sampling a continuous/non-delta component, this method also
-        multiplies by the cosine foreshorening factor with respect to the
+        multiplies by the cosine foreshortening factor with respect to the
         sampled direction.
 
         Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
@@ -1221,7 +1221,7 @@
         adjoint version is sampled.
 
         When sampling a continuous/non-delta component, this method also
-        multiplies by the cosine foreshorening factor with respect to the
+        multiplies by the cosine foreshortening factor with respect to the
         sampled direction.
 
         Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
@@ -4059,8 +4059,11 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.ad.Float):
+        Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -4072,8 +4075,11 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.ad.Float):
+        Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -4302,6 +4308,50 @@
         position lies. In that case, the ``object`` attribute stores a pointer
         to this object.
 
+.. py:class:: mitsuba.DiscontinuityFlags
+
+    This list of flags is used to control the behavior of discontinuity
+    related routines.
+
+    Members:
+
+    .. py:data:: Empty
+
+        No flags set (default value)
+
+    .. py:data:: PerimeterType
+
+        Open boundary or jumping normal type of discontinuity
+
+    .. py:data:: InteriorType
+
+        Smooth normal type of discontinuity
+
+    .. py:data:: DirectionLune
+
+        //! Encoding and projection flags
+
+    .. py:data:: DirectionSphere
+
+        //! Encoding and projection flags
+
+    .. py:data:: HeuristicWalk
+
+        //! Encoding and projection flags
+
+    .. py:data:: AllTypes
+
+        All types of discontinuities
+
+    .. py:method:: __init__(self, value)
+
+        Parameter ``value`` (int):
+            *no description available*
+
+
+    .. py:method:: mitsuba.DiscontinuityFlags.name
+        :property:
+
 .. py:class:: mitsuba.DiscreteDistribution
 
     Discrete 1D probability distribution
@@ -4427,8 +4477,11 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.ad.Float):
+        Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -10271,6 +10324,8 @@
 
     .. py:method:: __init__(self, t, time, wavelengths, p, n=0)
 
+        //! @}
+
         Parameter ``t`` (drjit.llvm.ad.Float):
             *no description available*
 
@@ -10533,8 +10588,11 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.ad.Float):
+        Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -10546,8 +10604,11 @@
 
         %Transform a uniformly distributed sample to the stored distribution
 
-        Parameter ``value`` (drjit.llvm.ad.Float):
+        Parameter ``sample``:
             A uniformly distributed sample on the interval [0, 1].
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
@@ -10843,7 +10904,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.4.0
+    :value: 3.4.1
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10855,7 +10916,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 0
+    :value: 1
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -12090,6 +12151,8 @@
 
     .. py:method:: __init__(self)
 
+        //! @}
+
     .. py:method:: __init__(self, arg0)
 
         Copy constructor
@@ -12571,7 +12634,7 @@
 
     .. py:method:: mitsuba.Mesh.face_indices(self, index, active=True)
 
-        Returns the face indices associated with triangle ``index``
+        Returns the vertex indices associated with triangle ``index``
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -14135,6 +14198,8 @@
 
     .. py:method:: __init__(self)
 
+        //! @}
+
     .. py:method:: __init__(self, arg0)
 
         Copy constructor
@@ -14904,8 +14969,6 @@
         FollowShape : Derivatives of the SurfaceInteraction fields follow shape's motion
 
         DetachShape : Derivatives of the SurfaceInteraction fields ignore shape's motion
-
-        BoundaryTest : Compute the boundary-test used in reparameterized integrators
 
         All : //! Compound compute flags
 
@@ -17143,6 +17206,22 @@
         Returns → object:
             *no description available*
 
+    .. py:method:: mitsuba.Scene.invert_silhouette_sample(self, ss, active=True)
+
+        Map a silhouette segment to a point in boundary sample space
+
+        This method is the inverse of sample_silhouette(). The mapping from
+        boundary sample space to boundary segments is bijective.
+
+        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample`):
+            The sampled boundary segment
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            The corresponding boundary sample space point
+
     .. py:method:: mitsuba.Scene.pdf_emitter(self, index, active=True)
 
         Evaluate the discrete probability of the sample_emitter() technique
@@ -17509,6 +17588,31 @@
 
         * ``emitter`` is a pointer specifying the sampled emitter
 
+    .. py:method:: mitsuba.Scene.sample_silhouette(self, sample, flags, active=True)
+
+        Map a point sample in boundary sample space to a silhouette segment
+
+        This method will sample a SilhouetteSample3f object from all the
+        shapes in the scene that are being differentiated and have non-zero
+        sampling weight (see Shape::silhouette_sampling_weight).
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+            The boundary space sample (a point in the unit cube).
+
+        Parameter ``flags`` (int):
+            Flags to select the type of silhouettes to sample from (see
+            DiscontinuityFlags). Multiple types of discontinuities can be
+            sampled in a single call. If a single type of silhouette is
+            specified, shapes that do not have that types might still be
+            sampled. In which case, the SilhouetteSample3f field
+            ``discontinuity_type`` will be DiscontinuityFlags::Empty.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            Silhouette sample record.
+
     .. py:method:: mitsuba.Scene.sensors(self)
 
         Return the list of sensors
@@ -17539,17 +17643,17 @@
 
     .. py:method:: mitsuba.Scene.shapes_grad_enabled(self)
 
-        Specifies whether any of the scene's shape parameters have tracking
-        enabled
-
-        Knowing this is important in the context of differentiable rendering:
-        intersections (e.g. provided by OptiX or Embree) must then be re-
-        computed differentiably within Dr.Jit to correctly track gradient
-        information. Furthermore, differentiable geometry introduces bias
-        through visibility-induced discontinuities, and reparameterizations
-        (Loubet et al., SIGGRAPH 2019) are needed to avoid this bias.
+        Specifies whether any of the scene's shape parameters have gradient
+        tracking enabled
 
         Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Scene.silhouette_shapes(self)
+
+        Return the list of shapes that can have their silhouette sampled
+
+        Returns → list:
             *no description available*
 
 .. py:class:: mitsuba.SceneParameters
@@ -18447,11 +18551,7 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Base class of all geometric shapes in Mitsuba
-
-    This class provides core functionality for sampling positions on
-    surfaces, computing ray intersections, and bounding shapes within ray
-    intersection acceleration data structures.
+    Forward declaration for `SilhouetteSample`
 
     .. py:method:: mitsuba.Shape.bbox(overloaded)
 
@@ -18537,6 +18637,38 @@
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
             A data structure containing the detailed information
+
+    .. py:method:: mitsuba.Shape.differential_motion(self, si, active=True)
+
+        Return the attached (AD) point on the shape's surface
+
+        This method is only useful when using automatic differentiation. The
+        immediate/primal return value of this method is exactly equal to
+        \`si.p\`.
+
+        The input `si` does not need to be explicitly detached, it is done by
+        the method itself.
+
+        If the shape cannot be differentiated, this method will return the
+        detached input point.
+
+        note:: The returned attached point is exactly the same as a point
+        which is computed by calling compute_surface_interaction with the
+        RayFlags::FollowShape flag.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
+            The surface point for which the function will be evaluated.
+
+        Not all fields of the object need to be filled. Only the `prim_index`,
+        `p` and `uv` fields are required. Certain shapes will only use a
+        subset of these.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            The same surface point as the input but attached (AD) to the
+            shape's parameters.
 
     .. py:method:: mitsuba.Shape.effective_primitive_count(self)
 
@@ -18672,6 +18804,25 @@
         Returns → :py:obj:`mitsuba.Medium`:
             *no description available*
 
+    .. py:method:: mitsuba.Shape.invert_silhouette_sample(self, ss, active=True)
+
+        Map a silhouette segment to a point in boundary sample space
+
+        This method is the inverse of sample_silhouette(). The mapping from/to
+        boundary sample space to/from boundary segments is bijective.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample`):
+            The sampled boundary segment
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            The corresponding boundary sample space point
+
     .. py:method:: mitsuba.Shape.is_emitter(self)
 
         Is this shape also an area emitter?
@@ -18738,6 +18889,31 @@
         Returns → drjit.llvm.ad.Float:
             The probability density per unit area
 
+    .. py:method:: mitsuba.Shape.precompute_silhouette(self, viewpoint)
+
+        Precompute the visible silhouette of this shape for a given viewpoint.
+
+        This method is meant to be used for silhouettes that are shared
+        between all threads, as is the case for primarily visible derivatives.
+
+        The return values are respectively a list of indices and their
+        corresponding weights. The semantic meaning of these indices is
+        different for each shape. For example, a triangle mesh will return the
+        indices of all of its edges that constitute its silhouette. These
+        indices are meant to be re-used as an argument when calling
+        sample_precomputed_silhouette.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``viewpoint`` (:py:obj:`mitsuba.ScalarPoint3f`):
+            The viewpoint which defines the silhouette of the shape
+
+        Returns → Tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float]:
+            A list of indices used by the shape internally to represent
+            silhouettes, and a list of the same length containing the
+            (unnormalized) weights associated to each index.
+
     .. py:method:: mitsuba.Shape.primitive_count(self)
 
         Returns the number of sub-primitives that make up this shape
@@ -18747,6 +18923,49 @@
 
         Returns → int:
             *no description available*
+
+    .. py:method:: mitsuba.Shape.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
+
+        Projects a point on the surface of the shape to its silhouette as seen
+        from a specified viewpoint.
+
+        This method only projects the `si.p` point within its primitive.
+
+        Not all of the fields of the SilhouetteSample3f might be filled by
+        this method. Each shape will at the very least fill its return value
+        with enough information for it to be used by invert_silhouette_sample.
+
+        The projection operation might not find the closest silhouette point
+        to the given surface point. For example, it can be guided by a random
+        number ``sample``. Not all shapes types need this random number, each
+        shape implementation is free to define its own algorithm and
+        guarantees about the projection operation.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+            The viewpoint which defines the silhouette to project the point
+            to.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
+            The surface point which will be projected.
+
+        Parameter ``flags`` (int):
+            Flags to select the type of SilhouetteSample3f to generate from
+            the projection. Only one type of discontinuity can be used per
+            call.
+
+        Parameter ``sample`` (drjit.llvm.ad.Float):
+            A random number that can be used to define the projection
+            operation.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            A boundary segment on the silhouette of the shape as seen from
+            ``viewpoint``.
 
     .. py:method:: mitsuba.Shape.ray_intersect(self, ray, ray_flags=14, active=True)
 
@@ -18873,11 +19092,81 @@
         Returns → :py:obj:`mitsuba.PositionSample`:
             A PositionSample instance describing the generated sample
 
+    .. py:method:: mitsuba.Shape.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
+
+        Samples a boundary segement on the shape's silhouette using
+        precomputed information computed in precompute_silhouette.
+
+        This method is meant to be used for silhouettes that are shared
+        between all threads, as is the case for primarily visible derivatives.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+            The viewpoint that was used for the precomputed silhouette
+            information
+
+        Parameter ``sample1`` (drjit.llvm.ad.UInt):
+            A sampled index from the return values of precompute_silhouette
+
+        Parameter ``sample2`` (drjit.llvm.ad.Float):
+            A uniformly distributed sample in ``[0,1]``
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            A boundary segment on the silhouette of the shape as seen from
+            ``viewpoint``.
+
+    .. py:method:: mitsuba.Shape.sample_silhouette(self, sample, flags, active=True)
+
+        Map a point sample in boundary sample space to a silhouette segment
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+            The boundary space sample (a point in the unit cube).
+
+        Parameter ``flags`` (int):
+            Flags to select the type of silhouettes to sample from (see
+            DiscontinuityFlags). Only one type of discontinuity can be sampled
+            per call.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            Silhouette sample record.
+
     .. py:method:: mitsuba.Shape.sensor(self)
 
         Return the area sensor associated with this shape (if any)
 
         Returns → :py:obj:`mitsuba.Sensor`:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.shape_type(self)
+
+        Returns the shape type ShapeType of this shape
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.silhouette_discontinuity_types(self)
+
+        //! @{ \name Silhouette sampling routines and other utilities
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.silhouette_sampling_weight(self)
+
+        Return this shape's sampling weight w.r.t. all shapes in the scene
+
+        Returns → float:
             *no description available*
 
     .. py:method:: mitsuba.Shape.surface_area(self)
@@ -18951,6 +19240,38 @@
 
         Returns → :py:obj:`mitsuba.SurfaceInteraction`:
             A data structure containing the detailed information
+
+    .. py:method:: mitsuba.ShapePtr.differential_motion(self, si, active=True)
+
+        Return the attached (AD) point on the shape's surface
+
+        This method is only useful when using automatic differentiation. The
+        immediate/primal return value of this method is exactly equal to
+        \`si.p\`.
+
+        The input `si` does not need to be explicitly detached, it is done by
+        the method itself.
+
+        If the shape cannot be differentiated, this method will return the
+        detached input point.
+
+        note:: The returned attached point is exactly the same as a point
+        which is computed by calling compute_surface_interaction with the
+        RayFlags::FollowShape flag.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
+            The surface point for which the function will be evaluated.
+
+        Not all fields of the object need to be filled. Only the `prim_index`,
+        `p` and `uv` fields are required. Certain shapes will only use a
+        subset of these.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            The same surface point as the input but attached (AD) to the
+            shape's parameters.
 
     .. py:method:: mitsuba.ShapePtr.emitter(self)
 
@@ -19101,6 +19422,25 @@
         Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*>>:
             *no description available*
 
+    .. py:method:: mitsuba.ShapePtr.invert_silhouette_sample(self, ss, active=True)
+
+        Map a silhouette segment to a point in boundary sample space
+
+        This method is the inverse of sample_silhouette(). The mapping from/to
+        boundary sample space to/from boundary segments is bijective.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample`):
+            The sampled boundary segment
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Point3f`:
+            The corresponding boundary sample space point
+
     .. py:method:: mitsuba.ShapePtr.is_emitter(self)
 
         Is this shape also an area emitter?
@@ -19164,6 +19504,49 @@
 
         Returns → drjit.llvm.ad.Float:
             The probability density per unit area
+
+    .. py:method:: mitsuba.ShapePtr.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
+
+        Projects a point on the surface of the shape to its silhouette as seen
+        from a specified viewpoint.
+
+        This method only projects the `si.p` point within its primitive.
+
+        Not all of the fields of the SilhouetteSample3f might be filled by
+        this method. Each shape will at the very least fill its return value
+        with enough information for it to be used by invert_silhouette_sample.
+
+        The projection operation might not find the closest silhouette point
+        to the given surface point. For example, it can be guided by a random
+        number ``sample``. Not all shapes types need this random number, each
+        shape implementation is free to define its own algorithm and
+        guarantees about the projection operation.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+            The viewpoint which defines the silhouette to project the point
+            to.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction`):
+            The surface point which will be projected.
+
+        Parameter ``flags`` (int):
+            Flags to select the type of SilhouetteSample3f to generate from
+            the projection. Only one type of discontinuity can be used per
+            call.
+
+        Parameter ``sample`` (drjit.llvm.ad.Float):
+            A random number that can be used to define the projection
+            operation.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            A boundary segment on the silhouette of the shape as seen from
+            ``viewpoint``.
 
     .. py:method:: mitsuba.ShapePtr.ray_intersect(self, ray, ray_flags=14, active=True)
 
@@ -19311,6 +19694,55 @@
         Returns → :py:obj:`mitsuba.PositionSample`:
             A PositionSample instance describing the generated sample
 
+    .. py:method:: mitsuba.ShapePtr.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
+
+        Samples a boundary segement on the shape's silhouette using
+        precomputed information computed in precompute_silhouette.
+
+        This method is meant to be used for silhouettes that are shared
+        between all threads, as is the case for primarily visible derivatives.
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+            The viewpoint that was used for the precomputed silhouette
+            information
+
+        Parameter ``sample1`` (drjit.llvm.ad.UInt):
+            A sampled index from the return values of precompute_silhouette
+
+        Parameter ``sample2`` (drjit.llvm.ad.Float):
+            A uniformly distributed sample in ``[0,1]``
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            A boundary segment on the silhouette of the shape as seen from
+            ``viewpoint``.
+
+    .. py:method:: mitsuba.ShapePtr.sample_silhouette(self, sample, flags, active=True)
+
+        Map a point sample in boundary sample space to a silhouette segment
+
+        This method's behavior is undefined when used in non-JIT variants or
+        when the shape is not being differentiated.
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+            The boundary space sample (a point in the unit cube).
+
+        Parameter ``flags`` (int):
+            Flags to select the type of silhouettes to sample from (see
+            DiscontinuityFlags). Only one type of discontinuity can be sampled
+            per call.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.SilhouetteSample`:
+            Silhouette sample record.
+
     .. py:method:: mitsuba.ShapePtr.scatter_(self, target, index, mask, permute=False)
 
         Parameter ``target`` (:py:obj:`mitsuba.ShapePtr`):
@@ -19365,6 +19797,27 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.ShapePtr.shape_type(self)
+
+        Returns the shape type ShapeType of this shape
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.ShapePtr.silhouette_discontinuity_types(self)
+
+        //! @{ \name Silhouette sampling routines and other utilities
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.ShapePtr.silhouette_sampling_weight(self)
+
+        Return this shape's sampling weight w.r.t. all shapes in the scene
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
     .. py:method:: mitsuba.ShapePtr.surface_area(self)
 
         Return the shape's surface area.
@@ -19380,6 +19833,168 @@
     .. py:method:: mitsuba.ShapePtr.zero_
 
         (arg0: int) -> :py:obj:`mitsuba.llvm_ad_rgb.ShapePtr`
+
+.. py:class:: mitsuba.ShapeType
+
+    Enumeration of all shape types in Mitsuba
+
+    Members:
+
+    .. py:data:: Mesh
+
+        Meshes (`ply`, `obj`, `serialized`)
+
+    .. py:data:: BSplineCurve
+
+        B-Spline curves (`bsplinecurve`)
+
+    .. py:data:: Cylinder
+
+        Cylinders (`cylinder`)
+
+    .. py:data:: Disk
+
+        Disks (`disk`)
+
+    .. py:data:: LinearCurve
+
+        Linear curves (`linearcurve`)
+
+    .. py:data:: Rectangle
+
+        Rectangles (`rectangle`)
+
+    .. py:data:: SDFGrid
+
+        SDF Grids (`sdfgrid`)
+
+    .. py:data:: Sphere
+
+        Spheres (`sphere`)
+
+    .. py:data:: Other
+
+        Other shapes
+
+    .. py:method:: __init__(self, value)
+
+        Parameter ``value`` (int):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ShapeType.name
+        :property:
+
+.. py:class:: mitsuba.SilhouetteSample3f
+
+    Base class: :py:obj:`mitsuba.PositionSample3f`
+
+    Data structure holding the result of visibility silhouette sampling
+    operations on geometry.
+
+
+    .. py:method:: __init__(self)
+
+        Construct an uninitialized silhouette sample
+
+    .. py:method:: __init__(self, other)
+
+        Copy constructor
+
+        Parameter ``other`` (:py:obj:`mitsuba.SilhouetteSample3f`):
+            *no description available*
+
+    .. py:method:: mitsuba.SilhouetteSample3f.assign(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.SilhouetteSample3f`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.SilhouetteSample3f.d
+        :property:
+
+        Direction of the boundary segment sample
+
+    .. py:method:: mitsuba.SilhouetteSample3f.discontinuity_type
+        :property:
+
+        Type of discontinuity (DiscontinuityFlags)
+
+    .. py:method:: mitsuba.SilhouetteSample3f.flags
+        :property:
+
+        The set of ``DiscontinuityFlags`` that were used to generate this
+        sample
+
+    .. py:method:: mitsuba.SilhouetteSample3f.foreshortening
+        :property:
+
+        Local-form boundary foreshortening term.
+
+        It stores `sin_phi_B` for perimeter silhouettes or the normal
+        curvature for interior silhouettes.
+
+    .. py:method:: mitsuba.SilhouetteSample3f.is_valid(self)
+
+        Is the current boundary segment valid=
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.SilhouetteSample3f.offset
+        :property:
+
+        Offset along the boundary segment direction (`d`) to avoid self-
+        intersections.
+
+    .. py:method:: mitsuba.SilhouetteSample3f.prim_index
+        :property:
+
+        Primitive index, e.g. the triangle ID (if applicable)
+
+    .. py:method:: mitsuba.SilhouetteSample3f.projection_index
+        :property:
+
+        Projection index indicator
+
+        For primitives like triangle meshes, a boundary segment is defined not
+        only by the triangle index but also the edge index of the selected
+        triangle. A value larger than 3 indicates a failed projection. For
+        other primitives, zero indicates a failed projection.
+
+        For triangle meshes, index 0 stands for the directed edge p0->p1 (not
+        the opposite edge p1->p2), index 1 stands for the edge p1->p2, and
+        index 2 for p2->p0.
+
+    .. py:method:: mitsuba.SilhouetteSample3f.scene_index
+        :property:
+
+        Index of the shape in the scene (if applicable)
+
+    .. py:method:: mitsuba.SilhouetteSample3f.shape
+        :property:
+
+        Pointer to the associated shape
+
+    .. py:method:: mitsuba.SilhouetteSample3f.silhouette_d
+        :property:
+
+        Direction of the silhouette curve at the boundary point
+
+    .. py:method:: mitsuba.SilhouetteSample3f.spawn_ray(self)
+
+        Spawn a ray on the silhouette point in the direction of d
+
+        The ray origin is offset in the direction of the segment (d) aswell as
+        in the in the direction of the silhouette normal (n). Without this
+        offsetting, during a ray intersection, the ray could potentially find
+        an intersection point at its origin due to numerical instabilities in
+        the intersection routines.
+
+        Returns → :py:obj:`mitsuba.Ray3f`:
+            *no description available*
 
 .. py:class:: mitsuba.Spiral
 
@@ -20444,15 +21059,6 @@
 
         Returns → None:
             *no description available*
-
-    .. py:method:: mitsuba.SurfaceInteraction3f.boundary_test
-        :property:
-
-        Boundary-test value used in reparameterized integrators, a soft
-        indicator function which returns a zero value at the silhouette of the
-        shape from the perspective of a given ray. Everywhere else this
-        function will return non-negative values reflecting the distance of
-        the surface interaction to this closest point on the silhouette.
 
     .. py:method:: mitsuba.SurfaceInteraction3f.bsdf(overloaded)
 
@@ -26827,6 +27433,52 @@
 
         Zero-initializes the internal state associated with a parameter
 
+.. py:class:: mitsuba.ad.BaseGuidingDistr
+
+    .. py:method:: mitsuba.ad.BaseGuidingDistr.sample()
+
+        Return a sample in U^3 from the stored guiding distribution and its
+        reciprocal density.
+
+.. py:class:: mitsuba.ad.GridDistr
+
+    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+
+    Regular grid guiding distribution.
+
+    .. py:method:: __init__()
+
+        Parameter ``resolution``:
+            Grid resolution
+        
+        Parameter ``clamp_mass_thres``:
+            Threshold value below which points' mass will be clamped to 0
+        
+        Parameter ``sqrt_scale_mass``:
+            Scale sample's contribution by taking their square root
+        
+        Parameter ``debug_logs``:
+            Whether or not to print debug logs. If this is enabled, extra
+            kernels will be launched and the messages will be printed with a
+            `Debug` log level.
+
+        
+    .. py:method:: mitsuba.ad.GridDistr.get_cell_array()
+
+        Returns the 3D cell index corresponding to the 1D input index.
+
+        With `index_array`=dr.arange(mi.UInt32, self.num_cells), the output
+        array of this function is [[0, 0, 0], [0, 0, 1], ..., [Nx-1, Ny-1, Nz-1]].
+
+    .. py:method:: mitsuba.ad.GridDistr.set_mass()
+
+        Sets the grid's density with the flat-1D input mass
+
+    .. py:method:: mitsuba.ad.GridDistr.sample()
+
+        Return a sample in U^3 from the stored guiding distribution and its
+        reciprocal density.
+
 .. py:class:: mitsuba.ad.LargeSteps
 
     Implementation of the algorithm described in the paper "Large Steps in
@@ -26892,6 +27544,67 @@
         Returns ``mitsuba.Float`:
             Vertex coordinates of the mesh.
 
+.. py:class:: mitsuba.ad.OcSpaceDistr
+
+    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+
+    Octree space partitioned distribution.
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.aabbs(buffer, node_idx)
+
+        Returns the front bottom left corner and back top right corner points
+        of the AABB with index `node_idx`.
+
+        Parameter ``buffer`` (~drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``node_idx`` (~drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.split_offset()
+
+        Computes the node offset for a split.
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.split(buffer, aabb_min, aabb_max, aabb_middle, node_idx)
+
+        Splits an AABB into 8 sub-nodes. The results are written to `buffer`.
+
+        Parameter ``buffer`` (~drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``aabb_min`` (~:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``aabb_max`` (~:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``aabb_middle`` (~:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``node_idx`` (~drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.construct_octree()
+
+        Octree construction/partitioning for the given `input` points.
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.estimate_mass_in_leaves(log=False)
+
+        Evaluates `extra_spc` random samples in each leaf to compute an average
+        mass per leaf.
+
+        Parameter ``log`` (bool):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.set_points()
+
+        Builds an octree from a set of points and their corresponding mass
+
+    .. py:method:: mitsuba.ad.OcSpaceDistr.sample()
+
+        Return a sample in U^3 from the stored guiding distribution and its
+        reciprocal density.
+
 .. py:class:: mitsuba.ad.Optimizer
 
     Base class of all gradient-based optimizers.
@@ -26922,6 +27635,149 @@
     .. py:method:: mitsuba.ad.Optimizer.reset()
 
         Resets the internal state associated with a parameter, if any (e.g. momentum).
+
+.. py:class:: mitsuba.ad.ProjectiveDetail
+
+    Class holding implementation details of various operations needed by
+    projective-sampling/path-space style integrators.
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.init_primarily_visible_silhouette(scene, sensor)
+
+        Precompute the silhouette of the scene as seen from the sensor and store
+        the result in this python class.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.sample_primarily_visible_silhouette(scene, viewpoint, sample2, active)
+
+        Sample a primarily visible silhouette point as seen from the sensor.
+        Returns a silhouette sample struct.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``viewpoint`` (~:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``sample2`` (~:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``active`` (~drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → ~:py:obj:`mitsuba.SilhouetteSample3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.perspective_sensor_jacobian(sensor, ss)
+
+        The silhouette sample `ss` stores (1) the sampling density in the scene
+        space, and (2) the motion of the silhouette point in the scene space.
+        This Jacobian corrects both quantities to the camera sample space.
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``ss`` (~:py:obj:`mitsuba.SilhouetteSample3f`):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.eval_primary_silhouette_radiance_difference()
+
+        Compute the difference in radiance between two rays that hit and miss a
+        silhouette point ``ss.p`` viewed from ``viewpoint``.
+
+        Returns → ~drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.get_projected_points(scene, sensor, sampler)
+
+        Helper function to project seed rays to obtain silhouette segments and
+        map them to boundary sample space.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette(scene, sensor, seed)
+
+        Initialize the guiding structure for indirect discontinuous derivatives
+        based on the guiding mode. The result is stored in this python class.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_grid_unif()
+
+        Guiding structure initialization for uniform grid sampling.
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_grid_proj()
+
+        Guiding structure initialization for projective grid sampling.
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_octree()
+
+        Guiding structure initialization for octree-based guiding.
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.eval_indirect_integrand(scene, sensor, sample, sampler, preprocess, active=True)
+
+        Evaluate the indirect discontinuous derivatives integral for a given
+        sample point in boundary sample space.
+
+        Parameters ``sample`` (``mi.Point3f``):
+            The sample point in boundary sample space.
+
+        This function returns a tuple ``(result, sensor_uv)`` where
+
+        Output ``result`` (``mi.Spectrum``):
+            The integrand of the indirect discontinuous derivatives.
+
+        Output ``sensor_uv`` (``mi.Point2f``):
+            The UV coordinates on the sensor film to splat the result to. If
+            ``preprocess`` is false, this coordinate is not used.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``sample`` (~:py:obj:`mitsuba.Vector3f`):
+            *no description available*
+
+        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+            *no description available*
+
+        Parameter ``preprocess`` (bool):
+            *no description available*
+
+        Parameter ``active`` (~drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+    .. py:class:: mitsuba.ad.ProjectiveDetail.ProjectOperation
+
+                Projection operation takes a seed ray as input and outputs a
+                
+        ef SilhouetteSample3f object.
+                
+
+    .. py:method:: mitsuba.ad.ProjectiveDetail.ProjectOperation.eval()
+
+        Dispatches the seed surface interaction object to the appropriate
+        shape's projection algorithm.
 
 .. py:class:: mitsuba.ad.SGD
 
@@ -26972,6 +27828,15 @@
     .. py:method:: mitsuba.ad.SGD.reset()
 
         Zero-initializes the internal state associated with a parameter
+
+.. py:class:: mitsuba.ad.UniformDistr
+
+    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+
+    .. py:method:: mitsuba.ad.UniformDistr.sample()
+
+        Return a sample in U^3 from the stored guiding distribution and its
+        reciprocal density.
 
 .. py:class:: mitsuba.ad.common.ADIntegrator
 
@@ -27161,7 +28026,7 @@
             Parameter ``spp`` (int):
                 *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler, reparam=None)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample_rays(scene, sensor, sampler)
 
         Sample a 2D grid of primary rays for a given sensor
 
@@ -27172,11 +28037,6 @@
           perfectly)
         - the continuous 2D image-space positions associated with each ray
 
-        When a reparameterization function is provided via the 'reparam'
-        argument, it will be applied to the returned image-space position (i.e.
-        the sample positions will be moving). The other two return values
-        remain detached.
-
         Parameter ``scene`` (mi.Scene):
             *no description available*
 
@@ -27184,9 +28044,6 @@
             *no description available*
 
         Parameter ``sampler`` (mi.Sampler):
-            *no description available*
-
-        Parameter ``reparam`` (Callable[[mi.Ray3f, mi.UInt32, mi.Bool], Tuple[mi.Vector3f, mi.Float]]):
             *no description available*
 
         Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
@@ -27229,7 +28086,7 @@
         Parameter ``aovs`` (list):
             *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, reparam, active)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active)
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -27283,13 +28140,6 @@
             that this state vector is provided to them via this argument. When
             invoked in primal mode, it should be set to ``None``.
 
-        Parameter ``reparam`` (see above):
-            If provided, this callable takes a ray and a mask of active SIMD
-            lanes and returns a reparameterized ray and Jacobian determinant.
-            The implementation of the ``sample`` function should then use it to
-            correctly account for visibility-induced discontinuities during
-            differentiation.
-
         Parameter ``active`` (``mi.Bool``):
             This mask array can optionally be used to indicate that some of
             the rays are disabled.
@@ -27325,13 +28175,298 @@
         Parameter ``state_in`` (Any):
             *no description available*
 
-        Parameter ``reparam`` (Optional[Callable[[mi.Ray3f, mi.UInt32, mi.Bool], Tuple[mi.Vector3f, mi.Float]]]):
+        Parameter ``active`` (mi.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[mi.Spectrum, mi.Bool]:
+            *no description available*
+
+.. py:class:: mitsuba.ad.common.PSIntegrator
+
+    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+
+    Abstract base class of projective-sampling/path-space style differentiable
+    integrators.
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Properties`):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.override_spp(integrator_spp, runtime_spp, sampler_spp)
+
+        Utility method to override the intergrator's spp value with the one
+        received at runtime in `render`/`render_backward`/`render_forward`.
+
+        The runtime value is overriden only if it is 0 and if the integrator
+        has defined a spp value. If the integrator hasn't defined a value, the
+        sampler's spp is used.
+
+        Parameter ``integrator_spp`` (int):
+            *no description available*
+
+        Parameter ``runtime_spp`` (int):
+            *no description available*
+
+        Parameter ``sampler_spp`` (int):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.render_ad(scene, sensor, seed, spp, mode)
+
+        Renders and accumulates the outputs of the primarily visible
+        discontinuities, indirect discontinuities and continuous derivatives.
+        It outputs an attached tensor which should subsequently be traversed by
+        a call to `dr.forward`/`dr.backward`/`dr.enqueue`/`dr.traverse`.
+
+        Note: The continuous derivatives are only attached if
+        `radiative_backprop` is `False`. When using RB for the continuous
+        derivatives it should be manually added to the gradient obtained by
+        traversing the result of this method.
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (Union[int, mi.Sensor]):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Returns → mi.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.render_forward(overloaded)
+
+
+        .. py:method:: render_forward(self, scene, params, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+        .. py:method:: render_forward(self, scene, params, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+            Returns → drjit.llvm.ad.TensorXf:
+                *no description available*
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.render_backward(overloaded)
+
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+        .. py:method:: render_backward(self, scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+            Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+                *no description available*
+
+            Parameter ``params`` (object):
+                *no description available*
+
+            Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+                *no description available*
+
+            Parameter ``sensor`` (int):
+                *no description available*
+
+            Parameter ``seed`` (int):
+                *no description available*
+
+            Parameter ``spp`` (int):
+                *no description available*
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.render_primarily_visible_silhouette(scene, sensor, sampler, spp)
+
+        Renders the primarily visible discontinuities.
+
+        This method returns the AD-attached image. The result must still be
+        traversed using one of the Dr.Jit functions to propagate gradients.
+
+        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → ~drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.sample_radiance_difference()
+
+        Sample the radiance difference of two rays that hit and miss the
+        silhouette point `ss.p` with direction `ss.d`.
+
+        Parameters ``curr_depth`` (``mi.UInt32``):
+            The current depth of the boundary segment, including the boundary
+            segment itself.
+
+        This function returns a tuple ``(ΔL, active)`` where
+
+        Output ``ΔL`` (``mi.Spectrum``):
+            The estimated radiance difference of the foreground and background.
+
+        Output ``active`` (``mi.Bool``):
+            Indicates if the radiance difference is valid.
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.sample_importance()
+
+        Sample the incident importance at the silhouette point `ss.p` with
+        direction `-ss.d`. If multiple connections to the sensor are valid, this
+        method uses reservoir sampling to pick one.
+
+        Parameters ``max_depth`` (``mi.UInt32``):
+            The maximum number of ray segments to reach the sensor.
+
+        The function returns a tuple ``(importance, uv, depth, boundary_p,
+        valid)`` where
+
+        Output ``importance`` (``mi.Spectrum``):
+            The sampled importance along the constructed path.
+
+        Output ``uv`` (``mi.Point2f``):
+            The sensor splatting coordinates.
+
+        Output ``depth`` (``mi.UInt32``):
+            The number of segments of the sampled path from the boundary
+            segment to the sensor, including the boundary segment itself.
+
+        Output ``boundary_p`` (``mi.Point3f``):
+            The attached sensor-side intersection point of the boundary segment.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates if a valid path is found.
+
+    .. py:method:: mitsuba.ad.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active, project=False, si_shade=None)
+
+        See ADIntegrator.sample() for a description of this function's purpose.
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``project`` (``bool``):
+            If set to ``True``, the integrator also returns the sampled
+            ``seedrays`` along the Monte Carlo path. This is useful for
+            projective integrators to handle discontinuous derivatives.
+
+        Parameter ``si_shade`` (``mi.SurfaceInteraction3f``):
+            If set to a valid surface interaction, the integrator will use this
+            as the first ray interaction point to skip one ray tracing with the
+            given ``ray``. This is useful to estimate the incident radiance at a
+            given surface point that is already known to the integrator.
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in primal
+            and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``seedray`` / ``state_out`` (``any``):
+            If ``project`` is true, the integrator returns the seed rays to be
+            projected as the third output. The seed rays is a python list of
+            rays and their validity mask. It is possible that no segment can be
+            projected along a light path.
+
+            If ``project`` is false, the integrator returns the state vector
+            returned by the primal phase of ``sample()`` as the third output.
+            This is only used by the radiative-backpropagation style
+            integrators.
+
+        Parameter ``mode`` (dr.ADMode):
+            *no description available*
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Parameter ``ray`` (mi.Ray3f):
+            *no description available*
+
+        Parameter ``depth`` (mi.UInt32, δ):
+            *no description available*
+
+        Parameter ``L`` (Optional[mi.Spectrum]):
+            *no description available*
+
+        Parameter ``state_in`` (Any):
             *no description available*
 
         Parameter ``active`` (mi.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[mi.Spectrum, mi.Bool]:
+        Parameter ``project`` (bool):
+            *no description available*
+
+        Parameter ``si_shade`` (Optional[mi.SurfaceInteraction3f]):
+            *no description available*
+
+        Returns → Tuple[mi.Spectrum, mi.Bool, Any]:
             *no description available*
 
 .. py:class:: mitsuba.ad.common.RBIntegrator
@@ -27537,80 +28672,6 @@
 
     Compute the index and data arrays of the (combinatorial) Laplacian matrix of
     a given mesh.
-
-.. py:function:: mitsuba.ad.reparameterize_ray(scene, rng, params, ray, num_rays=4, kappa=100000.0, exponent=3.0, antithetic=False, unroll=False, active=True)
-
-    Reparameterize given ray by "attaching" the derivatives of its direction to
-    moving geometry in the scene.
-
-    Parameter ``scene`` (``mitsuba.Scene``):
-        Scene containing all shapes.
-
-    Parameter ``rng`` (``mitsuba.PCG32``):
-        Random number generator used to sample auxiliary ray directions.
-
-    Parameter ``params`` (``mitsuba.SceneParameters``):
-        Scene parameters
-
-    Parameter ``ray`` (``mitsuba.RayDifferential3f``):
-        Ray to be reparameterized
-
-    Parameter ``num_rays`` (``int``):
-        Number of auxiliary rays to trace when performing the convolution.
-
-    Parameter ``kappa`` (``float``):
-        Kappa parameter of the von Mises Fisher distribution used to sample the
-        auxiliary rays.
-
-    Parameter ``exponent`` (``float``):
-        Exponent used in the computation of the harmonic weights
-
-    Parameter ``antithetic`` (``bool``):
-        Should antithetic sampling be enabled to improve convergence?
-        (Default: False)
-
-    Parameter ``unroll`` (``bool``):
-        Should the loop tracing auxiliary rays be unrolled? (Default: False)
-
-    Parameter ``active`` (``mitsuba.Bool``):
-        Boolean array specifying the active lanes
-
-    Returns → (:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`):
-        Returns the reparameterized ray direction and the Jacobian
-        determinant of the change of variables.
-
-    Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-        *no description available*
-
-    Parameter ``rng`` (:py:obj:`mitsuba.PCG32`):
-        *no description available*
-
-    Parameter ``params`` (:py:obj:`mitsuba.SceneParameters`):
-        *no description available*
-
-    Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
-        *no description available*
-
-    Parameter ``num_rays`` (int):
-        *no description available*
-
-    Parameter ``kappa`` (float):
-        *no description available*
-
-    Parameter ``exponent`` (float):
-        *no description available*
-
-    Parameter ``antithetic`` (bool):
-        *no description available*
-
-    Parameter ``unroll`` (bool):
-        *no description available*
-
-    Parameter ``active`` (:py:obj:`mitsuba.Bool`):
-        Mask to specify active lanes.
-
-    Returns → Tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Float`]:
-        *no description available*
 
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
@@ -28235,6 +29296,28 @@
         Parameter ``arg0`` (int):
             *no description available*
 
+        Parameter ``arg1`` (:py:obj:`mitsuba.DiscontinuityFlags`):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.DiscontinuityFlags`):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
         Parameter ``arg1`` (:py:obj:`mitsuba.BSDFFlags`):
             *no description available*
 
@@ -28254,34 +29337,16 @@
 
     .. py:function:: has_flag(arg0, arg1)
 
-        Parameter ``arg0`` (int):
-            *no description available*
+        10. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.FilmFlags`) -> drjit.llvm.ad.Bool
 
-        Parameter ``arg1`` (:py:obj:`mitsuba.FilmFlags`):
-            *no description available*
+        11. has_flag(arg0: int, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> bool
 
-        Returns → bool:
-            *no description available*
-
-    .. py:function:: has_flag(arg0, arg1)
-
-        Parameter ``arg0`` (drjit.llvm.ad.UInt):
-            *no description available*
-
-        Parameter ``arg1`` (:py:obj:`mitsuba.FilmFlags`):
-            *no description available*
-
-        Returns → drjit.llvm.ad.Bool:
-            *no description available*
-
-    .. py:function:: has_flag(arg0, arg1)
-
-        10. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> drjit.llvm.ad.Bool
+        12. has_flag(arg0: drjit.llvm.ad.UInt, arg1: :py:obj:`mitsuba.PhaseFunctionFlags`) -> drjit.llvm.ad.Bool
 
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (:py:obj:`mitsuba.PhaseFunctionFlags`):
+        Parameter ``arg1`` (:py:obj:`mitsuba.FilmFlags`):
             *no description available*
 
         Returns → bool:
@@ -28366,6 +29431,13 @@
     Returns → object:
         *no description available*
 
+.. py:function:: mitsuba.log_level()
+
+    Returns the current log level.
+
+    Returns → mitsuba::LogLevel:
+        *no description available*
+
 .. py:function:: mitsuba.lookup_ior(properties, name, default)
 
     Lookup IOR value in table.
@@ -28414,6 +29486,10 @@
 .. py:data:: mitsuba.math.ShadowEpsilon
     :type: float
     :value: 0.0008940696716308594
+
+.. py:data:: mitsuba.math.ShapeEpsilon
+    :type: float
+    :value: 1.1175870895385742e-06
 
 .. py:function:: mitsuba.math.chi2(arg0, arg1, arg2)
 
@@ -30037,6 +31113,8 @@
 
 .. py:function:: mitsuba.set_log_level(arg0)
 
+    Sets the log level.
+
     Parameter ``arg0`` (mitsuba::LogLevel):
         *no description available*
 
@@ -30930,6 +32008,20 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
+.. py:function:: mitsuba.warp.interval_to_tangent_direction(n, sample)
+
+    Warp a uniformly distributed sample on [0, 1] to a direction in the
+    tangent plane
+
+    Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``sample`` (drjit.llvm.ad.Float):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.Vector3f`:
+        *no description available*
+
 .. py:function:: mitsuba.warp.interval_to_tent(sample)
 
     Warp a uniformly distributed sample on [0, 1] to a tent distribution
@@ -31247,6 +32339,40 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
+.. py:function:: mitsuba.warp.square_to_uniform_spherical_lune(sample, n1, n2)
+
+    Uniformly sample a direction in the two spherical lunes defined by the
+    valid boundary directions of two touching faces defined by their
+    normals ``n1`` and ``n2``.
+
+    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        *no description available*
+
+    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.Vector3f`:
+        *no description available*
+
+.. py:function:: mitsuba.warp.square_to_uniform_spherical_lune_pdf(d, n1, n2)
+
+    Density of square_to_uniform_spherical_lune() w.r.t. solid angles
+
+    Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+        *no description available*
+
+    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Returns → drjit.llvm.ad.Float:
+        *no description available*
+
 .. py:function:: mitsuba.warp.square_to_uniform_square_concentric(sample)
 
     Low-distortion concentric square to square mapping (meant to be used
@@ -31301,6 +32427,19 @@
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
+        *no description available*
+
+    Returns → drjit.llvm.ad.Float:
+        *no description available*
+
+.. py:function:: mitsuba.warp.tangent_direction_to_interval(n, dir)
+
+    Inverse of uniform_to_tangent_direction
+
+    Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``dir`` (:py:obj:`mitsuba.Vector3f`):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
@@ -31374,6 +32513,22 @@
     Inverse of the mapping square_to_uniform_sphere
 
     Parameter ``sample`` (:py:obj:`mitsuba.Vector3f`):
+        *no description available*
+
+    Returns → :py:obj:`mitsuba.Point2f`:
+        *no description available*
+
+.. py:function:: mitsuba.warp.uniform_spherical_lune_to_square(d, n1, n2)
+
+    Inverse of the mapping square_to_uniform_spherical_lune
+
+    Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+        *no description available*
+
+    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+        *no description available*
+
+    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
         *no description available*
 
     Returns → :py:obj:`mitsuba.Point2f`:

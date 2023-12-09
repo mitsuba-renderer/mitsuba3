@@ -4587,12 +4587,14 @@ This is an implementation of the technique described in:
 ``https://www.graphics.rwth-aachen.de/media/papers/directed.pdf``.)doc";
 
 static const char *__doc_mitsuba_Mesh_build_indirect_silhouette_distribution =
-R"doc(/brief
+R"doc(/brief Precompute the set of edges that could contribute to the
+indirect discontinuous integral.
 
-Precompute the set of edges that could contribute to the indirect
-discontinuous integral.
+This method filters out any concave edges or flat surfaces.
 
-This method filters out any concave edges.)doc";
+Internally, this method relies on the directed edge data structure. A
+call to build_directed_edges before a call to this method is therefore
+necessary.)doc";
 
 static const char *__doc_mitsuba_Mesh_build_parameterization =
 R"doc(Initialize the ``m_parameterization`` field for mapping UV coordinates
@@ -12294,6 +12296,32 @@ This is useful for places in the renderer where we do not care about
 the additional information tracked by the Mueller matrix. For instance
 when performing Russian Roulette based on the path throughput or when
 writing a final RGB pixel value to the image block.)doc";
+
+static const char *__doc_mitsuba_util_Version = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_Version = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_Version_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_Version_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_major = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_minor = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_ge = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_gt = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_le = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_lt = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_patch = R"doc()doc";
 
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
