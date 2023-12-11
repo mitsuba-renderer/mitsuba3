@@ -95,7 +95,7 @@ def test_eval_pdf_vector(variant_llvm_ad_rgb, r, t, wi):
         [0.0, 0.0],
     ],
 )
-def test_chi2(variant_llvm_ad_rgb, r, t):
+def test_chi2(variants_vec_backends_once_rgb, r, t):
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     xml = f"""

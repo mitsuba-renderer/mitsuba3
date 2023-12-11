@@ -25,8 +25,8 @@
 #define MI_YEAR "2023"
 
 #define ERD_MI_VERSION_MAJOR 0
-#define ERD_MI_VERSION_MINOR 1
-#define ERD_MI_VERSION_PATCH 1
+#define ERD_MI_VERSION_MINOR 2
+#define ERD_MI_VERSION_PATCH 0
 
 /// Current release of the Eradiate patch for Mitsuba
 #define ERD_MI_VERSION                                                             \

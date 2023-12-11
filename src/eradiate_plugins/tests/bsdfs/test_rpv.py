@@ -111,7 +111,7 @@ def test_eval_diffuse(variant_llvm_ad_rgb, rho_0):
     assert np.allclose(values, reference)
 
 
-def test_chi2_rpv3(variant_llvm_ad_rgb):
+def test_chi2_rpv3(variants_vec_backends_once_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("rpv", "")
@@ -126,7 +126,7 @@ def test_chi2_rpv3(variant_llvm_ad_rgb):
     assert chi2.run()
 
 
-def test_chi2_rpv4(variant_llvm_ad_rgb):
+def test_chi2_rpv4(variants_vec_backends_once_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter(

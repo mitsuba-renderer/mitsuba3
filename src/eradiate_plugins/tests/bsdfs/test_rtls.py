@@ -153,7 +153,7 @@ def test_k_vol_angles(variant_scalar_mono, theta_i, theta_o, phi_i, phi_o):
 
 
 @pytest.mark.parametrize("theta_i,theta_o,phi_i,phi_o", regression_test_geometries)
-def test_k_geo_angles(variant_scalar_mono, theta_i, theta_o, phi_i, phi_o):
+def test_k_geo_angles(variant_scalar_rgb, theta_i, theta_o, phi_i, phi_o):
     rtls = mi.load_dict({"type": "rtls", "f_iso": 0.0, "f_vol": 0.0, "f_geo": 1.0})
 
     wi = angles_to_directions(theta_i, phi_i)
@@ -176,7 +176,7 @@ def test_k_geo_angles(variant_scalar_mono, theta_i, theta_o, phi_i, phi_o):
 @pytest.mark.parametrize("f_iso", [0.0, 1.0])
 @pytest.mark.parametrize("f_vol", [0.0, 1.0])
 @pytest.mark.parametrize("f_geo", [0.0, 1.0])
-def test_rtls_scalar_combinations(variant_scalar_mono, f_iso, f_vol, f_geo):
+def test_rtls_scalar_combinations(variant_scalar_rgb, f_iso, f_vol, f_geo):
     rtls = mi.load_dict(
         {"type": "rtls", "f_iso": f_iso, "f_vol": f_vol, "f_geo": f_geo}
     )
@@ -228,7 +228,7 @@ def test_rtls_vect(variant_llvm_ad_rgb, f_iso, f_vol, f_geo):
 
 
 @pytest.mark.parametrize("R", [0.0, 0.5, 1.0])
-def test_eval_diffuse(variant_scalar_mono, R):
+def test_eval_diffuse(variant_scalar_rgb, R):
     """
     Compare a degenerate RTLS case with a diffuse BRDF.
     """
@@ -255,7 +255,7 @@ def test_eval_diffuse(variant_scalar_mono, R):
     assert np.allclose(values, reference, rtol=1e-3, atol=1e-3, equal_nan=True)
 
 
-def test_chi2_rtls(variant_llvm_rgb):
+def test_chi2_rtls(variants_vec_backends_once_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("rtls",
@@ -279,7 +279,7 @@ def test_chi2_rtls(variant_llvm_rgb):
 
 
 @pytest.mark.parametrize("wi", [[0, 0, 1], [0, 1, 1], [1, 1, 1]])
-def test_sampling_weights_rpv(variant_scalar_mono, wi):
+def test_sampling_weights_rpv(variant_scalar_rgb, wi):
     """
     Sampling weights are correctly computed, i.e. equal to eval() / pdf().
     """
@@ -392,7 +392,7 @@ def test_rami4atm_sanity_check(variant_llvm_ad_rgb, f_iso, f_geo, f_vol, np_rng)
     ],
 )
 @pytest.mark.parametrize("f_iso,f_vol,f_geo", rami4atm_RLI_parameters)
-def test_hrb_parameters(variant_scalar_mono, f_iso, f_geo, f_vol, h, r, b):
+def test_hrb_parameters(variant_scalar_rgb, f_iso, f_geo, f_vol, h, r, b):
     rtls = mi.load_dict(
         {
             "type": "rtls",

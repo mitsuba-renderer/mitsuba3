@@ -239,13 +239,13 @@ public:
                                tan_theta_o, cos_d_phi, sin_d_phi, cos_psi);
         }
 
-        Log(
-            Trace, "Intermediate kernel outputs:\n  K_iso: %s\n  K_vol: %s\n  K_geo: %s",
-            K_iso, K_vol, K_geo
-        );
+        Log(Trace,
+            "Intermediate kernel outputs:\n  K_iso: %s\n  K_vol: %s\n  K_geo: "
+            "%s",
+            K_iso, K_vol, K_geo);
 
         const UnpolarizedSpectrum value =
-            (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo)  * dr::InvPi<Float>;
+            (f_iso * K_iso + f_vol * K_vol + f_geo * K_geo) * dr::InvPi<Float>;
 
         return value;
     }
