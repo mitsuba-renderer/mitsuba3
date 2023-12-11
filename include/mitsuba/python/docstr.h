@@ -720,11 +720,11 @@ Parameter ``wo``:
     normalized direction vector that points *away* from the scattering
     event.)doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_2 = R"doc()doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_2 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_3 = R"doc()doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_4 = R"doc()doc";
+static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_4 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_5 = R"doc()doc";
 
@@ -742,9 +742,9 @@ static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refra
 
 static const char *__doc_mitsuba_BSDFSample3_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_BSDFSample3_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_BSDFSample3_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_BSDFSample3_operator_assign_3 = R"doc()doc";
 
@@ -1885,6 +1885,8 @@ intervals (const version))doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_compute_cdf = R"doc()doc";
 
+static const char *__doc_mitsuba_ContinuousDistribution_compute_cdf_scalar = R"doc()doc";
+
 static const char *__doc_mitsuba_ContinuousDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_eval_cdf =
@@ -1944,7 +1946,7 @@ static const char *__doc_mitsuba_ContinuousDistribution_range_2 = R"doc(Return t
 static const char *__doc_mitsuba_ContinuousDistribution_sample =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``value``:
+Parameter ``sample``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
@@ -1953,7 +1955,7 @@ Returns:
 static const char *__doc_mitsuba_ContinuousDistribution_sample_pdf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``value``:
+Parameter ``sample``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
@@ -2047,11 +2049,11 @@ static const char *__doc_mitsuba_DirectionSample_DirectionSample_2 = R"doc(Eleme
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_3 = R"doc(Construct from a position sample)doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_4 = R"doc()doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_4 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_5 = R"doc()doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_5 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_DirectionSample_DirectionSample_6 = R"doc()doc";
+static const char *__doc_mitsuba_DirectionSample_DirectionSample_6 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_7 = R"doc()doc";
 
@@ -2079,9 +2081,9 @@ to this object.)doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_3 = R"doc()doc";
 
@@ -2206,6 +2208,8 @@ version))doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_compute_cdf = R"doc()doc";
 
+static const char *__doc_mitsuba_DiscreteDistribution_compute_cdf_scalar = R"doc()doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_eval_cdf =
@@ -2243,7 +2247,7 @@ static const char *__doc_mitsuba_DiscreteDistribution_pmf_2 = R"doc(Return the u
 static const char *__doc_mitsuba_DiscreteDistribution_sample =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``value``:
+Parameter ``sample``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
@@ -3818,11 +3822,11 @@ static const char *__doc_mitsuba_Interaction = R"doc(Generic surface interaction
 
 static const char *__doc_mitsuba_Interaction_Interaction = R"doc(Constructor)doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_2 = R"doc()doc";
+static const char *__doc_mitsuba_Interaction_Interaction_2 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_3 = R"doc()doc";
+static const char *__doc_mitsuba_Interaction_Interaction_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Interaction_Interaction_4 = R"doc()doc";
+static const char *__doc_mitsuba_Interaction_Interaction_4 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Interaction_Interaction_5 = R"doc()doc";
 
@@ -3848,9 +3852,9 @@ intersection.)doc";
 
 static const char *__doc_mitsuba_Interaction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_Interaction_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign_3 = R"doc()doc";
 
@@ -3906,6 +3910,8 @@ R"doc(Return the unnormalized discrete cumulative distribution function over
 intervals (const version))doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_compute_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_compute_cdf_scalar = R"doc()doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
 
@@ -3968,7 +3974,7 @@ static const char *__doc_mitsuba_IrregularContinuousDistribution_range_2 = R"doc
 static const char *__doc_mitsuba_IrregularContinuousDistribution_sample =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``value``:
+Parameter ``sample``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
@@ -3977,7 +3983,7 @@ Returns:
 static const char *__doc_mitsuba_IrregularContinuousDistribution_sample_pdf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``value``:
+Parameter ``sample``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
@@ -4234,11 +4240,11 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_2 = R"doc()doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_2 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc()doc";
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_4 = R"doc()doc";
 
@@ -4260,9 +4266,9 @@ static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when s
 
 static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_MediumInteraction_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_MediumInteraction_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_assign_3 = R"doc()doc";
 
@@ -5551,11 +5557,11 @@ instance in path tracing with multiple importance sampling.)doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc(Basic field constructor)doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_4 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_4 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_6 = R"doc()doc";
 
@@ -5577,9 +5583,9 @@ static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal
 
 static const char *__doc_mitsuba_PositionSample_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_PositionSample_operator_assign_3 = R"doc()doc";
 
@@ -5623,11 +5629,11 @@ If the intersection is deemed relevant, detailed intersection
 information can later be obtained via the create_surface_interaction()
 method.)doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc()doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_2 = R"doc()doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_2 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_3 = R"doc()doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_3 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_4 = R"doc()doc";
 
@@ -5660,9 +5666,9 @@ static const char *__doc_mitsuba_PreliminaryIntersection_is_valid = R"doc(Is the
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign_3 = R"doc()doc";
 
@@ -8432,11 +8438,11 @@ the partial derivatives are left uninitialized. The `shape` pointer is
 left uninitialized because we can't guarantee that the given
 PositionSample::object points to a Shape instance.)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_2 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_5 = R"doc()doc";
 
@@ -8514,9 +8520,9 @@ static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the int
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign_3 = R"doc()doc";
 
@@ -9402,11 +9408,11 @@ inverse transpose))doc";
 
 static const char *__doc_mitsuba_Transform_Transform_2 = R"doc(Initialize the transformation from the given matrix and its inverse)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_5 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Transform_Transform_6 = R"doc()doc";
 
@@ -9453,9 +9459,9 @@ static const char *__doc_mitsuba_Transform_matrix = R"doc(//! @{ \name Fields)do
 
 static const char *__doc_mitsuba_Transform_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
+static const char *__doc_mitsuba_Transform_operator_assign = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign_3 = R"doc()doc";
 
