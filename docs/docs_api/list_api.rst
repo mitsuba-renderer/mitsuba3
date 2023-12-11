@@ -58,6 +58,10 @@
 
 .. autoclass:: mitsuba.Color3f
 
+.. autoclass:: mitsuba.Complex2d
+
+.. autoclass:: mitsuba.Complex2f
+
 .. autoclass:: mitsuba.ContinuousDistribution
 
 .. autoclass:: mitsuba.CppADIntegrator
@@ -639,6 +643,8 @@
 .. autofunction:: mitsuba.load_file
 
 .. autofunction:: mitsuba.load_string
+
+.. autofunction:: mitsuba.lookup_ior
 
 .. autofunction:: mitsuba.luminance
 

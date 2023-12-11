@@ -3869,6 +3869,35 @@
 
 .. py:class:: mitsuba.Color3f
 
+.. py:class:: mitsuba.Complex2f
+
+    .. py:method:: mitsuba.Complex2f.entry_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Complex2f.entry_ref_(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Complex2f.set_entry_(self, arg0, arg1)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
 .. py:class:: mitsuba.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
@@ -6449,6 +6478,14 @@
             Returns → drjit.llvm.ad.Float:
                 *no description available*
 
+    .. py:method:: mitsuba.Float.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
     .. py:method:: mitsuba.Float.prod_(self)
 
         Returns → drjit.llvm.ad.Float:
@@ -7393,6 +7430,14 @@
 
             Returns → drjit.llvm.ad.Float64:
                 *no description available*
+
+    .. py:method:: mitsuba.Float64.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
 
     .. py:method:: mitsuba.Float64.prod_(self)
 
@@ -8572,26 +8617,7 @@
 
     .. py:method:: mitsuba.ImageBlock.put_block(self, block)
 
-        Accumulate a single sample or a wavefront of samples into the image
-        block.
-
-        Remark:
-            This variant of the put() function assumes that the ImageBlock has
-            a standard layout, namely: ``RGB``, potentially ``alpha``, and a
-            ``weight`` channel. Use the other variant if the channel
-            configuration deviations from this default.
-
-        Parameter ``pos``:
-            Denotes the sample position in fractional pixel coordinates
-
-        Parameter ``wavelengths``:
-            Sample wavelengths in nanometers
-
-        Parameter ``value``:
-            Sample value associated with the specified wavelengths
-
-        Parameter ``alpha``:
-            Alpha value associated with the sample
+        Accumulate another image block into this one
 
         Parameter ``block`` (:py:obj:`mitsuba.ImageBlock`):
             *no description available*
@@ -9233,6 +9259,14 @@
                 *no description available*
 
     .. py:method:: mitsuba.Int.popcnt_(self)
+
+        Returns → drjit.llvm.ad.Int:
+            *no description available*
+
+    .. py:method:: mitsuba.Int.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
 
         Returns → drjit.llvm.ad.Int:
             *no description available*
@@ -9914,6 +9948,14 @@
                 *no description available*
 
     .. py:method:: mitsuba.Int64.popcnt_(self)
+
+        Returns → drjit.llvm.ad.Int64:
+            *no description available*
+
+    .. py:method:: mitsuba.Int64.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
 
         Returns → drjit.llvm.ad.Int64:
             *no description available*
@@ -10801,7 +10843,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.3.0
+    :value: 3.4.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10809,7 +10851,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 3
+    :value: 4
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
@@ -13044,7 +13086,7 @@
         See also:
             TraversalCallback
 
-        Parameter ``cb`` (:py:obj:`mitsuba.TraversalCallback`):
+        Parameter ``cb`` (mitsuba::TraversalCallback):
             *no description available*
 
         Returns → None:
@@ -17612,6 +17654,69 @@
 
     Base class: :py:obj:`mitsuba.Endpoint`
 
+    .. py:method:: mitsuba.Sensor.eval(self, si, active=True)
+
+        Given a ray-surface intersection, return the emitted radiance or
+        importance traveling along the reverse direction
+
+        This function is e.g. used when an area light source has been hit by a
+        ray in a path tracing-style integrator, and it subsequently needs to
+        be queried for the emitted radiance along the negative ray direction.
+        The default implementation throws an exception, which states that the
+        method is not implemented.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An intersect record that specifies both the query position and
+            direction (using the ``si.wi`` field)
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The emitted radiance or importance
+
+    .. py:method:: mitsuba.Sensor.eval_direction(self, it, ds, active=True)
+
+        Re-evaluate the incident direct radiance/importance of the
+        sample_direction() method.
+
+        This function re-evaluates the incident direct radiance or importance
+        and sample probability due to the endpoint so that division by
+        ``ds.pdf`` equals the sampling weight returned by sample_direction().
+        This may appear redundant, and indeed such a function would not find
+        use in "normal" rendering algorithms.
+
+        However, the ability to re-evaluate the contribution of a generated
+        sample is important for differentiable rendering. For example, we
+        might want to track derivatives in the sampled direction (``ds.d``)
+        without also differentiating the sampling technique. Alternatively (or
+        additionally), it may be necessary to apply a spherical
+        reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
+
+        In contrast to pdf_direction(), evaluating this function can yield a
+        nonzero result in the case of emission profiles containing a Dirac
+        delta term (e.g. point or directional lights).
+
+        Parameter ``ref``:
+            A 3D reference location within the scene, which may influence the
+            sampling process.
+
+        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+            A direction sampling record, which specifies the query location.
+
+        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The incident direct radiance/importance associated with the
+            sample.
+
     .. py:method:: mitsuba.Sensor.film(self)
 
         Return the Film instance associated with this sensor
@@ -17627,46 +17732,263 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: mitsuba.Sensor.pdf_direction(self, it, ds, active=True)
 
-        Importance sample a ray differential proportional to the sensor's
-        sensitivity profile.
+        Evaluate the probability density of the *direct* sampling method
+        implemented by the sample_direction() method.
 
-        The sensor profile is a six-dimensional quantity that depends on time,
-        wavelength, surface position, and direction. This function takes a
-        given time value and five uniformly distributed samples on the
-        interval [0, 1] and warps them so that the returned ray the profile.
-        Any discrepancies between ideal and actual sampled profile are
-        absorbed into a spectral importance weight that is returned along with
-        the ray.
+        The returned probability will always be zero when the
+        emission/sensitivity profile contains a Dirac delta term (e.g. point
+        or directional emitters/sensors).
 
-        In contrast to Endpoint::sample_ray(), this function returns
-        differentials with respect to the X and Y axis in screen space.
+        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+            A direct sampling record, which specifies the query location.
 
-        Parameter ``time`` (drjit.llvm.ad.Float):
-            The scene time associated with the ray_differential to be sampled
-
-        Parameter ``sample1`` (drjit.llvm.ad.Float):
-            A uniformly distributed 1D value that is used to sample the
-            spectral dimension of the sensitivity profile.
-
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
-            This argument corresponds to the sample position in fractional
-            pixel coordinates relative to the crop window of the underlying
-            film.
-
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
-            A uniformly distributed sample on the domain ``[0,1]^2``. This
-            argument determines the position on the aperture of the sensor.
-            This argument is ignored if ``needs_sample_3() == false``.
+        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+            *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
-            The sampled ray differential and (potentially spectrally varying)
-            importance weights. The latter account for the difference between
-            the sensor profile and the actual used sampling density function.
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Sensor.pdf_position(self, ps, active=True)
+
+        Evaluate the probability density of the position sampling method
+        implemented by sample_position().
+
+        In simple cases, this will be the reciprocal of the endpoint's surface
+        area.
+
+        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+            The sampled position record.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            The corresponding sampling density.
+
+    .. py:method:: mitsuba.Sensor.sample_direction(self, it, sample, active=True)
+
+        Given a reference point in the scene, sample a direction from the
+        reference point towards the endpoint (ideally proportional to the
+        emission/sensitivity profile)
+
+        This operation is a generalization of direct illumination techniques
+        to both emitters *and* sensors. A direction sampling method is given
+        an arbitrary reference position in the scene and samples a direction
+        from the reference point towards the endpoint (ideally proportional to
+        the emission/sensitivity profile). This reduces the sampling domain
+        from 4D to 2D, which often enables the construction of smarter
+        specialized sampling techniques.
+
+        Ideally, the implementation should importance sample the product of
+        the emission profile and the geometry term between the reference point
+        and the position on the endpoint.
+
+        The default implementation throws an exception.
+
+        Parameter ``ref``:
+            A reference position somewhere within the scene.
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed 2D point on the domain ``[0,1]^2``.
+
+        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+            A DirectionSample instance describing the generated sample along
+            with a spectral importance weight.
+
+    .. py:method:: mitsuba.Sensor.sample_position(self, time, sample, active=True)
+
+        Importance sample the spatial component of the emission or importance
+        profile of the endpoint.
+
+        The default implementation throws an exception.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the position to be sampled.
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed 2D point on the domain ``[0,1]^2``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
+            A PositionSample instance describing the generated sample along
+            with an importance weight.
+
+    .. py:method:: mitsuba.Sensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
+
+        Importance sample a ray proportional to the endpoint's
+        sensitivity/emission profile.
+
+        The endpoint profile is a six-dimensional quantity that depends on
+        time, wavelength, surface position, and direction. This function takes
+        a given time value and five uniformly distributed samples on the
+        interval [0, 1] and warps them so that the returned ray follows the
+        profile. Any discrepancies between ideal and actual sampled profile
+        are absorbed into a spectral importance weight that is returned along
+        with the ray.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray to be sampled
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the emission profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument corresponds to the sample position
+            in fractional pixel coordinates relative to the crop window of the
+            underlying film. This argument is ignored if ``needs_sample_2() ==
+            false``.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument determines the position on the
+            aperture of the sensor. This argument is ignored if
+            ``needs_sample_3() == false``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+            The sampled ray and (potentially spectrally varying) importance
+            weights. The latter account for the difference between the profile
+            and the actual used sampling density function.
+
+    .. py:method:: mitsuba.Sensor.sample_ray_differential(overloaded)
+
+
+        .. py:method:: sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+
+            Importance sample a ray differential proportional to the sensor's
+            sensitivity profile.
+
+            The sensor profile is a six-dimensional quantity that depends on time,
+            wavelength, surface position, and direction. This function takes a
+            given time value and five uniformly distributed samples on the
+            interval [0, 1] and warps them so that the returned ray the profile.
+            Any discrepancies between ideal and actual sampled profile are
+            absorbed into a spectral importance weight that is returned along with
+            the ray.
+
+            In contrast to Endpoint::sample_ray(), this function returns
+            differentials with respect to the X and Y axis in screen space.
+
+            Parameter ``time`` (drjit.llvm.ad.Float):
+                The scene time associated with the ray_differential to be sampled
+
+            Parameter ``sample1`` (drjit.llvm.ad.Float):
+                A uniformly distributed 1D value that is used to sample the
+                spectral dimension of the sensitivity profile.
+
+            Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+                This argument corresponds to the sample position in fractional
+                pixel coordinates relative to the crop window of the underlying
+                film.
+
+            Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+                A uniformly distributed sample on the domain ``[0,1]^2``. This
+                argument determines the position on the aperture of the sensor.
+                This argument is ignored if ``needs_sample_3() == false``.
+
+            Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+                The sampled ray differential and (potentially spectrally varying)
+                importance weights. The latter account for the difference between
+                the sensor profile and the actual used sampling density function.
+
+            Parameter ``active`` (drjit.llvm.ad.Bool):
+                Mask to specify active lanes.
+
+        .. py:method:: sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+
+            Importance sample a ray differential proportional to the sensor's
+            sensitivity profile.
+
+            The sensor profile is a six-dimensional quantity that depends on time,
+            wavelength, surface position, and direction. This function takes a
+            given time value and five uniformly distributed samples on the
+            interval [0, 1] and warps them so that the returned ray the profile.
+            Any discrepancies between ideal and actual sampled profile are
+            absorbed into a spectral importance weight that is returned along with
+            the ray.
+
+            In contrast to Endpoint::sample_ray(), this function returns
+            differentials with respect to the X and Y axis in screen space.
+
+            Parameter ``time`` (drjit.llvm.ad.Float):
+                The scene time associated with the ray_differential to be sampled
+
+            Parameter ``sample1`` (drjit.llvm.ad.Float):
+                A uniformly distributed 1D value that is used to sample the
+                spectral dimension of the sensitivity profile.
+
+            Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+                This argument corresponds to the sample position in fractional
+                pixel coordinates relative to the crop window of the underlying
+                film.
+
+            Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+                A uniformly distributed sample on the domain ``[0,1]^2``. This
+                argument determines the position on the aperture of the sensor.
+                This argument is ignored if ``needs_sample_3() == false``.
+
+            Returns → Tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+                The sampled ray differential and (potentially spectrally varying)
+                importance weights. The latter account for the difference between
+                the sensor profile and the actual used sampling density function.
+
+            Parameter ``active`` (drjit.llvm.ad.Bool):
+                Mask to specify active lanes.
+
+    .. py:method:: mitsuba.Sensor.sample_wavelengths(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths according to the endpoint's
+        sensitivity/emission spectrum.
+
+        This function takes a uniformly distributed 1D sample and generates a
+        sample that is approximately distributed according to the endpoint's
+        spectral sensitivity/emission profile.
+
+        For this, the input 1D sample is first replicated into
+        ``Spectrum::Size`` separate samples using simple arithmetic
+        transformations (see math::sample_shifted()), which can be interpreted
+        as a type of Quasi-Monte-Carlo integration scheme. Following this, a
+        standard technique (e.g. inverse transform sampling) is used to find
+        the corresponding wavelengths. Any discrepancies between ideal and
+        actual sampled profile are absorbed into a spectral importance weight
+        that is returned along with the wavelengths.
+
+        This function should not be called in RGB or monochromatic modes.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            In the case of a spatially-varying spectral sensitivity/emission
+            profile, this parameter conditions sampling on a specific spatial
+            position. The ``si.uv`` field must be specified in this case.
+
+        Parameter ``sample`` (drjit.llvm.ad.Float):
+            A 1D uniformly distributed random variate
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+            The set of sampled wavelengths and (potentially spectrally
+            varying) importance weights. The latter account for the difference
+            between the profile and the actual used sampling density function.
+            In the case of emitters, the weight will include the emitted
+            radiance.
 
     .. py:method:: mitsuba.Sensor.sampler(self)
 
@@ -17678,6 +18000,13 @@
         be used for anything except creating forks.
 
         Returns → :py:obj:`mitsuba.Sampler`:
+            *no description available*
+
+    .. py:method:: mitsuba.Sensor.shape(self)
+
+        Return the shape, to which the emitter is currently attached
+
+        Returns → :py:obj:`mitsuba.Shape`:
             *no description available*
 
     .. py:method:: mitsuba.Sensor.shutter_open(self)
@@ -24615,7 +24944,7 @@
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``obj`` (mitsuba::Object):
+        Parameter ``obj`` (:py:obj:`mitsuba.Object`):
             *no description available*
 
         Parameter ``flags`` (int):
@@ -24634,7 +24963,7 @@
         Parameter ``value`` (object):
             *no description available*
 
-        Parameter ``flags`` (:py:obj:`mitsuba.ParamFlags`):
+        Parameter ``flags`` (int):
             *no description available*
 
         Returns → None:
@@ -25151,6 +25480,14 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
+    .. py:method:: mitsuba.UInt.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
     .. py:method:: mitsuba.UInt.prod_(self)
 
         Returns → drjit.llvm.ad.UInt:
@@ -25256,6 +25593,20 @@
             *no description available*
 
         Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt.scatter_inc_(arg0, arg1, arg2)
+
+        Parameter ``arg0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg1`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``arg2`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.UInt:
             *no description available*
 
     .. py:method:: mitsuba.UInt.scatter_reduce_(self, op, target, index, mask)
@@ -25886,6 +26237,14 @@
                 *no description available*
 
     .. py:method:: mitsuba.UInt64.popcnt_(self)
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.UInt64.prefix_sum_(self, arg0)
+
+        Parameter ``arg0`` (bool):
+            *no description available*
 
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
@@ -27260,8 +27619,9 @@
     Parameter ``bsdf_type`` (string):
         Name of the BSDF plugin to instantiate.
 
-    Parameter ``extra`` (string):
-        Additional XML used to specify the BSDF's parameters.
+    Parameter ``extra`` (string|dict):
+        Additional XML used to specify the BSDF's parameters, or a Python
+        dictionary as used by the ``load_dict`` routine.
 
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
@@ -27377,8 +27737,9 @@
     Parameter ``emitter_type`` (string):
         Name of the emitter plugin to instantiate.
 
-    Parameter ``extra`` (string):
-        Additional XML used to specify the emitter's parameters.
+    Parameter ``extra`` (string|dict):
+        Additional XML used to specify the emitter's parameters, or a Python
+        dictionary as used by the ``load_dict`` routine.
 
 .. py:class:: mitsuba.chi2.LineDomain
 
@@ -27396,8 +27757,9 @@
     Parameter ``phase_type`` (string):
         Name of the phase function plugin to instantiate.
 
-    Parameter ``extra`` (string):
-        Additional XML used to specify the phase function's parameters.
+    Parameter ``extra`` (string|dict):
+        Additional XML used to specify the phase function's parameters, or a
+        Python dictionary as used by the ``load_dict`` routine.
 
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
@@ -28002,6 +28364,22 @@
         *no description available*
 
     Returns → object:
+        *no description available*
+
+.. py:function:: mitsuba.lookup_ior(properties, name, default)
+
+    Lookup IOR value in table.
+
+    Parameter ``properties`` (:py:obj:`mitsuba.Properties`):
+        *no description available*
+
+    Parameter ``name`` (str):
+        *no description available*
+
+    Parameter ``default`` (object):
+        *no description available*
+
+    Returns → float:
         *no description available*
 
 .. py:function:: mitsuba.luminance(overloaded)
@@ -29249,24 +29627,16 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_sensor(overloaded)
+.. py:function:: mitsuba.register_sensor(arg0, arg1)
 
+    Parameter ``arg0`` (str):
+        *no description available*
 
-    .. py:function:: register_sensor(arg0, arg1)
+    Parameter ``arg1`` (Callable[[:py:obj:`mitsuba.Properties`], object]):
+        *no description available*
 
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (Callable[[:py:obj:`mitsuba.Properties`], object]):
-            *no description available*
-
-    .. py:function:: register_sensor(arg0, arg1)
-
-        Parameter ``arg0`` (str):
-            *no description available*
-
-        Parameter ``arg1`` (Callable[[:py:obj:`mitsuba.Properties`], object]):
-            *no description available*
+    Returns → None:
+        *no description available*
 
 .. py:function:: mitsuba.register_texture(arg0, arg1)
 
