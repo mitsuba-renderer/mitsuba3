@@ -5,7 +5,37 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-MItsuba 3.4.0
+Upcoming changes
+----------------
+
+- Upgrade Dr.Jit to [v0.4.4]<https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.4>
+
+  - Solved threading/concurrency issues which could break loading of large scenes or long running optimizations
+- Scene's bounding box now gets updated on parameter changes
+  `[97d4b6a] <https://github.com/mitsuba-renderer/mitsuba3/commit/97d4b6ad4c1ba3471642c177cee01d3adf0bf22e>`_
+- Python bindings for ``mi.lookup_ior``
+  `[d598d79] <https://github.com/mitsuba-renderer/mitsuba3/commit/d598d79a7d21c76ac9b422b3488137b1d28a33f9>`_
+- Fixes to ``mask`` BSDF when differentiated
+  `[ee87f1c] <https://github.com/mitsuba-renderer/mitsuba3/commit/ee87f1c01aa1b731bc58057ed9e6944046460a69>`_
+- Ray sampling is fixed when ``sample_border`` is used
+  `[c10b87b] <https://github.com/mitsuba-renderer/mitsuba3/commit/c10b87b072634db15d55a7dbc55cc3cf8f7c844c>`_
+- Rename OpenEXR shared library
+  `[9cc3bf4] <https://github.com/mitsuba-renderer/mitsuba3/commit/9cc3bf495da10dcd28e80cc14a145fb178a5ef4c>`_
+- Handle phase function differentiation in ``prbvolpath``
+  `[5f9eebd] <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9eebd41a3a939096d4509b1d2504586a3bf7c6>`_
+- Fixes to linear ``retarder``
+  `[8033a80] <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`_
+- Avoid copies to host when building 1D distributions
+  `[825f44f] <https://github.com/mitsuba-renderer/mitsuba3/commit/825f44f081fb43b23589b2bf0b9b7071af858f2a>`_ .. `[8f71fe9] <https://github.com/mitsuba-renderer/mitsuba3/commit/8f71fe995f40923449478ee05500918710ef27f6>`_
+- Fixes to linear ``retarder``
+  `[8033a80] <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`_
+- Sensor's prinicpal point is now exposed throught ``m̀i.traverse()``
+  `[f59faa5] <https://github.com/mitsuba-renderer/mitsuba3/commit/f59faa51929b506608a66522dc841f5317a8d43c>`_
+- Minor fixes to ``ptracer`` which could result in illegal memory accesses
+  `[3d902a4] <https://github.com/mitsuba-renderer/mitsuba3/commit/3d902a4dbf176c8c8d08e5493f23623659295197>`_
+- Other various minor bug fixes
+
+Mitsuba 3.4.0
 -------------
 
 - Upgrade Dr.Jit to v0.4.3
