@@ -106,8 +106,8 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     void scale_differential(Float amount) {
         o_x = dr::fmadd(o_x - o, amount, o);
         o_y = dr::fmadd(o_y - o, amount, o);
-        d_x = dr::fmadd(d_x - d, amount, d);
-        d_y = dr::fmadd(d_y - d, amount, d);
+        d_x = dr::normalize(dr::fmadd(d_x - d, amount, d));
+        d_y = dr::normalize(dr::fmadd(d_y - d, amount, d));
     }
 
     DRJIT_STRUCT(RayDifferential, o, d, maxt, time,
