@@ -5,10 +5,12 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Upcoming changes
-----------------
+Mitsuba 3.4.1
+-------------
 
-- Upgrade Dr.Jit to [v0.4.4]<https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.4>
+*December 11, 2023*
+
+- Upgrade Dr.Jit to `[v0.4.4] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.4>`_
 
   - Solved threading/concurrency issues which could break loading of large scenes or long running optimizations
 - Scene's bounding box now gets updated on parameter changes
@@ -37,6 +39,8 @@ Upcoming changes
 
 Mitsuba 3.4.0
 -------------
+
+*August 29, 2023*
 
 - Upgrade Dr.Jit to v0.4.3
 - Add ``mi.variant_context()``: a Python context manager for setting variants
@@ -73,6 +77,8 @@ Mitsuba 3.4.0
 
 Mitsuba 3.3.0
 -------------
+
+*April 25, 2023*
 
 - Upgrade Dr.Jit to v0.4.2
 - Emitters' members are opaque (fixes long JIT compilation times)
