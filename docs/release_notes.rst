@@ -5,8 +5,8 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Upcoming changes
-----------------
+Mitsuba 3.5.0
+-------------
 
 - New projective sampling based integrators, see PR `#997 <https://github.com/mitsuba-renderer/mitsuba3/pull/997>`_ for more details.
   Here's a brief overview of some of the major or breaking changes:
@@ -15,7 +15,6 @@ Upcoming changes
   - New curve/shadow optimization tutorial
   - Removed reparameterizations
   - Can no longer differentiate ``instance``, ``sdfgrid`` and ``Sensor``'s positions
-
 
 Mitsuba 3.4.1
 -------------
