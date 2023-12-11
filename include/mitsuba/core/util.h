@@ -51,48 +51,54 @@ extern MI_EXPORT_LIB std::string info_copyright();
 extern MI_EXPORT_LIB std::string info_features();
 
 struct Version {
-    unsigned int major, minor, patch;
+    unsigned int major_version, minor_version, patch_version;
 
     Version() = default;
 
     Version(int major, int minor, int patch)
-        : major(major), minor(minor), patch(patch) { }
+        : major_version(major), minor_version(minor), patch_version(patch) { }
 
     Version(const char *value) {
         auto list = string::tokenize(value, " .");
         if (list.size() != 3)
             Throw("Version number must consist of three period-separated parts!");
-        major = std::stoul(list[0]);
-        minor = std::stoul(list[1]);
-        patch = std::stoul(list[2]);
+        major_version = std::stoul(list[0]);
+        minor_version = std::stoul(list[1]);
+        patch_version = std::stoul(list[2]);
     }
 
     bool operator==(const Version &v) const {
-        return std::tie(major, minor, patch) == std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) ==
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     bool operator!=(const Version &v) const {
-        return std::tie(major, minor, patch) != std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) !=
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     bool operator<(const Version &v) const {
-        return std::tie(major, minor, patch) < std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) <
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     bool operator<=(const Version &v) const {
-        return std::tie(major, minor, patch) <= std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) <=
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     bool operator>(const Version &v) const {
-        return std::tie(major, minor, patch) > std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) >
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     bool operator>=(const Version &v) const {
-        return std::tie(major, minor, patch) >= std::tie(v.major, v.minor, v.patch);
+        return std::tie(major_version, minor_version, patch_version) >=
+               std::tie(v.major_version, v.minor_version, v.patch_version);
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Version &v) {
-        os << v.major << "." << v.minor << "." << v.patch;
+        os << v.major_version << "." << v.minor_version << "." << v.patch_version;
         return os;
     }
 };
