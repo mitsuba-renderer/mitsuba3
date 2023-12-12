@@ -35,7 +35,7 @@ class PRBIntegrator(RBIntegrator):
 
     - Russian Roulette stopping criterion.
 
-    - No reparameterization. This means that the integrator cannot be used for
+    - No projective sampling. This means that the integrator cannot be used for
       shape optimization (it will return incorrect/biased gradients for
       geometric parameters like vertex positions.)
 
@@ -46,7 +46,7 @@ class PRBIntegrator(RBIntegrator):
     the first two features.
 
     See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
-    for details on PRB, attached/detached sampling, and reparameterizations.
+    for details on PRB, attached/detached sampling.
 
     .. warning::
         This integrator is not supported in variants which track polarization
