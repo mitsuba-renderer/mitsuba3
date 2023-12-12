@@ -49,7 +49,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
     - Russian Roulette stopping criterion.
 
-    - No reparameterization. This means that the integrator cannot be used for
+    - No projective sampling. This means that the integrator cannot be used for
       shape optimization (it will return incorrect/biased gradients for
       geometric parameters like vertex positions.)
 

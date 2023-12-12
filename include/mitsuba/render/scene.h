@@ -422,11 +422,6 @@ public:
      * illumination sample is important for differentiable rendering. For
      * example, we might want to track derivatives in the sampled direction
      * (<tt>ds.d</tt>) without also differentiating the sampling technique.
-     * Alternatively (or additionally), it may be necessary to apply a
-     * spherical reparameterization to <tt>ds.d</tt>  to handle
-     * visibility-induced discontinuities during differentiation. Both steps
-     * require re-evaluating the contribution of the emitter while tracking
-     * derivative information through the calculation.
      *
      * In contrast to \ref pdf_emitter_direction(), evaluating this function can
      * yield a nonzero result in the case of emission profiles containing a
