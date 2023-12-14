@@ -1113,12 +1113,18 @@ class PSIntegrator(ADIntegrator):
                 scene, sensor_center, sampler.next_2d(), True)
             active = ss.is_valid() & (ss.pdf > 0)
 
-            # Jacobian (motion correction included)
-            J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
-
+            # Estimate the radiance difference along that path
             ΔL = self.proj_detail.eval_primary_silhouette_radiance_difference(
                 scene, sampler, ss, sensor_center, active=active)
             active &= dr.any(dr.neq(ΔL, 0))
+
+            # Jacobian (motion correction included)
+            J1 = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
+            J2 = self.proj_detail.new_jacobian(sensor, ss)
+            print(f"J1 = {J1.numpy()[:100]}")
+            print(f"J2 = {J2.numpy()[:100]}")
+
+            J = J2
 
         # ∂z/∂ⲡ * normal
         si = dr.zeros(mi.SurfaceInteraction3f)

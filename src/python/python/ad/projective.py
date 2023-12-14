@@ -129,7 +129,7 @@ class ProjectiveDetail():
         multiplier = dr.sqr(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
 
         # Frame
-        frame_t = dr.normalize(sensor_center - ss.p)
+        frame_t = -ss.d
         frame_n = ss.n
         frame_s = dr.cross(frame_t, frame_n)
 
@@ -140,6 +140,107 @@ class ProjectiveDetail():
                 dr.squared_norm(ss.p - sensor_center)
 
         return J_num / J_den * multiplier
+
+    def new_jacobian(self,
+                     sensor: mi.Sensor,
+                     ss: mi.SilhouetteSample3f):
+        """
+        The silhouette sample `ss` stores (1) the sampling density in the scene
+        space, and (2) the motion of the silhouette point in the scene space.
+        This Jacobian corrects both quantities to the camera sample space.
+        """
+        if not sensor.__repr__().startswith('PerspectiveCamera'):
+            raise Exception("Only perspective cameras are supported")
+
+        near_clip = sensor.near_clip()
+        x_fov = mi.traverse(sensor)["x_fov"][0]
+        film = sensor.film()
+
+        camera_to_sample = mi.perspective_projection(
+            film.size(),
+            film.crop_size(),
+            film.crop_offset(),
+            x_fov,
+            near_clip,
+            sensor.far_clip()
+        )
+        sample_to_camera = camera_to_sample.inverse()
+
+        camera_to_world = dr.detach(sensor.world_transform())
+        world_to_camera = camera_to_world.inverse()
+
+        world_to_sample = camera_to_sample @ world_to_camera
+
+        __use_AD = True
+
+        if __use_AD:
+            with dr.resume_grad():
+                t = mi.Float(1e-5)
+                dr.enable_grad(t)
+                p_sil = ss.p + ss.silhouette_d * t
+                p_nor = ss.p + ss.n * t
+
+                uv_pt  = world_to_sample @ mi.Point3f(ss.p)
+                uv_sil = world_to_sample @ mi.Point3f(p_sil)
+                uv_nor = world_to_sample @ mi.Point3f(p_nor)
+                
+                uvvec_sil = uv_sil - uv_pt
+                uvvec_nor = uv_nor - uv_pt
+                uvvec_sil[2] = 0
+                uvvec_nor[2] = 0
+                norm_sil = dr.norm(uvvec_sil)
+                norm_nor = dr.norm(uvvec_nor)
+
+                dr.forward(t, flags=dr.ADFlag.ClearEdges)
+                jacobian = dr.grad(norm_nor) * dr.grad(norm_sil)
+                dr.disable_grad(uvvec_nor, uvvec_sil)
+            
+            sine = dr.norm(dr.cross(dr.normalize(uvvec_sil), dr.normalize(uvvec_nor)))
+            jacobian *= sine
+        else:
+            t = mi.Float(0.01)
+            p_sil = ss.p + ss.silhouette_d * t
+            p_nor = ss.p + ss.n * t
+
+            uv_pt  = world_to_sample @ mi.Point3f(ss.p)
+            uv_sil = world_to_sample @ mi.Point3f(p_sil)
+            uv_nor = world_to_sample @ mi.Point3f(p_nor)
+            
+            uvvec_sil = uv_sil - uv_pt
+            uvvec_nor = uv_nor - uv_pt
+            uvvec_sil[2] = 0
+            uvvec_nor[2] = 0
+            area = dr.norm(dr.cross(uvvec_sil, uvvec_nor))
+            ratio = area / (t*t)
+            jacobian = ratio
+
+        return jacobian
+
+        # with dr.resume_grad():
+        #     def projection(vec):
+        #         world_to_sample = camera_to_sample @ world_to_camera
+
+        #         perpendicular_velocity = vec
+        #         projected_velocity = world_to_sample @ perpendicular_velocity
+        #         out = projected_velocity
+
+        #         return out
+
+        #     diff = mi.Vector3f(0)
+        #     dr.enable_grad(diff)
+        #     y = projection(diff)
+        #     jacobian = mi.Matrix3f(0)
+
+        #     for i in range(3):
+        #         dr.backward(y[i], flags=dr.ADFlag.ClearVertices)
+        #         dr.eval(dr.grad(diff))
+
+        #         jacobian[i, 0] = dr.grad(diff)[0]
+        #         jacobian[i, 1] = dr.grad(diff)[1]
+        #         jacobian[i, 2] = dr.grad(diff)[2]
+        #         dr.set_grad(diff, 0)
+
+        # return dr.det(jacobian)
 
     def eval_primary_silhouette_radiance_difference(self,
                                                     scene,
@@ -576,6 +677,7 @@ class ProjectiveDetail():
 
             motion = dr.dot(dr.detach(ss.n), (x_b_follow - shading_p))
             result = dr.select(active, result * motion, 0)
+
             return result, sensor_uv
 
 
