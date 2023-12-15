@@ -232,7 +232,7 @@ public:
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
                                      const Medium * /* unused */,
-                                     Float * /* unused */,
+                                     Float *aovs,
                                      Mask active) const override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "sample", true);
 
@@ -244,12 +244,15 @@ public:
         kwargs["ray"] = ray;
         kwargs["depth"] = 0;
         kwargs["δL"] = nb::none();
+        kwargs["δaovs"] = nb::none();
         kwargs["state_in"] = nb::none();
         kwargs["active"] = active;
 
-        using PyReturn = std::tuple<Spectrum, Mask, nb::object>;
-        auto [spec, mask, _] = nanobind::cast<PyReturn>(
+        using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>, nb::object>;
+        auto [spec, mask, aovs_, _] = nanobind::cast<PyReturn>(
             nb_trampoline.base().attr(nb_ticket.key)(**kwargs));
+
+        std::copy(aovs_.begin(), aovs_.end(), aovs);
 
         return { spec, mask };
     }

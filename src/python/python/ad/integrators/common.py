@@ -73,13 +73,14 @@ class ADIntegrator(mi.CppADIntegrator):
             ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode
-            L, valid, _ = self.sample(
+            L, valid, aovs, _ = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
                 depth=mi.UInt32(0),
                 δL=None,
+                δaovs=None,
                 state_in=None,
                 active=mi.Bool(True)
             )
@@ -96,6 +97,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 value=L * weight,
                 weight=1.0,
                 alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
+                aovs=aovs,
                 wavelengths=ray.wavelengths
             )
 
@@ -130,7 +132,7 @@ class ADIntegrator(mi.CppADIntegrator):
             ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             with dr.resume_grad():
-                L, valid, _ = self.sample(
+                L, valid, aovs, _ = self.sample(
                     mode=dr.ADMode.Forward,
                     scene=scene,
                     sampler=sampler,
@@ -147,6 +149,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     value=L * weight,
                     weight=1,
                     alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
+                    aovs=aovs,
                     wavelengths=ray.wavelengths
                 )
 
@@ -182,7 +185,7 @@ class ADIntegrator(mi.CppADIntegrator):
             ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             with dr.resume_grad():
-                L, valid, _ = self.sample(
+                L, valid, aovs, _ = self.sample(
                     mode=dr.ADMode.Backward,
                     scene=scene,
                     sampler=sampler,
@@ -202,6 +205,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     value=L * weight,
                     weight=1,
                     alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
+                    aovs=aovs,
                     wavelengths=ray.wavelengths
                 )
 
@@ -372,6 +376,7 @@ class ADIntegrator(mi.CppADIntegrator):
                        value: mi.Spectrum,
                        weight: mi.Float,
                        alpha: mi.Float,
+                       aovs: Sequence[mi.Float],
                        wavelengths: mi.Spectrum):
         '''Helper function to splat values to a imageblock'''
         if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
@@ -382,13 +387,18 @@ class ADIntegrator(mi.CppADIntegrator):
             block.put(pos, aovs)
             del aovs
         else:
-            block.put(
-                pos=pos,
-                wavelengths=wavelengths,
-                value=value,
-                weight=weight,
-                alpha=alpha
-            )
+            if mi.is_spectral:
+                rgb = mi.spectrum_to_srgb(value, wavelengths)
+            elif mi.is_monochromatic:
+                rgb = value.x
+            else:
+                rgb = value
+            if mi.has_flag(film.flags(), mi.FilmFlags.Alpha):
+                aovs = [rgb.x, rgb.y, rgb.z, alpha, weight] + aovs
+            else:
+                aovs = [rgb.x, rgb.y, rgb.z, weight] + aovs
+            block.put(pos, aovs)
+
 
     def sample(self,
                mode: dr.ADMode,
@@ -397,8 +407,9 @@ class ADIntegrator(mi.CppADIntegrator):
                ray: mi.Ray3f,
                depth: mi.UInt32,
                δL: Optional[mi.Spectrum],
+               δaovs: Optional[mi.Spectrum],
                state_in: Any,
-               active: mi.Bool) -> Tuple[mi.Spectrum, mi.Bool]:
+               active: mi.Bool) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float]]:
         """
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -465,6 +476,12 @@ class ADIntegrator(mi.CppADIntegrator):
         Output ``valid`` (``mi.Bool``):
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
         """
 
         raise Exception('RBIntegrator does not provide the sample() method. '
@@ -555,7 +572,7 @@ class RBIntegrator(ADIntegrator):
             ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            L, valid, state_out = self.sample(
+            L, valid, aovs, state_out = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
@@ -567,13 +584,14 @@ class RBIntegrator(ADIntegrator):
             )
 
             # Launch the Monte Carlo sampling process in forward mode (2)
-            δL, valid_2, state_out_2 = self.sample(
+            δL, valid_2, δaovs, state_out_2 = self.sample(
                 mode=dr.ADMode.Forward,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
                 depth=mi.UInt32(0),
                 δL=None,
+                δaovs=None,
                 state_in=state_out,
                 active=mi.Bool(True)
             )
@@ -590,6 +608,7 @@ class RBIntegrator(ADIntegrator):
                 value=δL * weight,
                 weight=1.0,
                 alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)),
+                aovs=[δaov * weight for δaov in δaovs],
                 wavelengths=ray.wavelengths
             )
 
@@ -597,8 +616,8 @@ class RBIntegrator(ADIntegrator):
             film.put_block(block)
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, L, valid, δL, valid_2, params, \
-                state_out, state_out_2, block
+            del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
+                valid_2, params, state_out, state_out_2, block
 
             # Probably a little overkill, but why not.. If there are any
             # DrJit arrays to be collected by Python's cyclic GC, then
@@ -682,7 +701,8 @@ class RBIntegrator(ADIntegrator):
 
             def splatting_and_backward_gradient_image(value: mi.Spectrum,
                                                       weight: mi.Float,
-                                                      alpha: mi.Float):
+                                                      alpha: mi.Float,
+                                                      aovs: Sequence[mi.Float]):
                 '''
                 Backward propagation of the gradient image through the sample
                 splatting and weight division steps.
@@ -699,6 +719,7 @@ class RBIntegrator(ADIntegrator):
                     value=value,
                     weight=weight,
                     alpha=alpha,
+                    aovs=aovs,
                     wavelengths=ray.wavelengths
                 )
 
@@ -721,45 +742,53 @@ class RBIntegrator(ADIntegrator):
                 with dr.suspend_grad(pos, ray, weight):
                     L = dr.full(mi.Spectrum, 1.0, dr.width(ray))
                     dr.enable_grad(L)
-
+                    aovs = []
+                    for _ in self.aov_names():
+                        aov = dr.ones(mi.Float, dr.width(ray))
+                        dr.enable_grad(aov)
+                        aovs.append(aov)
                     splatting_and_backward_gradient_image(
                         value=L * weight,
                         weight=1.0,
-                        alpha=1.0
+                        alpha=1.0,
+                        aovs=[aov * weight for aov in aovs]
                     )
 
                     δL = dr.grad(L)
+                    δaovs = dr.grad(aovs)
 
             # Clear the dummy data splatted on the film above
             film.clear()
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            L, valid, state_out = self.sample(
+            L, valid, aovs, state_out = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
                 depth=mi.UInt32(0),
                 δL=None,
+                δaovs=None,
                 state_in=None,
                 active=mi.Bool(True)
             )
 
             # Launch Monte Carlo sampling in backward AD mode (2)
-            L_2, valid_2, state_out_2 = self.sample(
+            L_2, valid_2, aovs_2, state_out_2 = self.sample(
                 mode=dr.ADMode.Backward,
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
                 depth=mi.UInt32(0),
                 δL=δL,
+                δaovs=δaovs,
                 state_in=state_out,
                 active=mi.Bool(True)
             )
 
             # We don't need any of the outputs here
-            del L_2, valid_2, state_out, state_out_2, δL, \
-                ray, weight, pos, sampler
+            del L_2, valid_2, aovs_2, state_out, state_out_2, \
+                δL, δaovs, ray, weight, pos, sampler
 
             gc.collect()
 
@@ -952,7 +981,7 @@ class PSIntegrator(ADIntegrator):
                 ray, weight, pos = self.sample_rays(scene, sensor, sampler)
 
                 # Launch the Monte Carlo sampling process in differentiable mode
-                L, valid, _ = self.sample(
+                L, valid, aovs, _ = self.sample(
                     mode     = mode,
                     scene    = scene,
                     sampler  = sampler,
@@ -973,6 +1002,7 @@ class PSIntegrator(ADIntegrator):
                 value=L * weight,
                 weight=1.0,
                 alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
+                aovs=[aov * weight for aov in aovs],
                 wavelengths=ray.wavelengths
             )
 
@@ -1225,11 +1255,12 @@ class PSIntegrator(ADIntegrator):
                ray: mi.Ray3f,
                depth: mi.UInt32,
                δL: Optional[mi.Spectrum],
+               δaovs: Optional[mi.Spectrum],
                state_in: Any,
                active: mi.Bool,
                project: bool = False,
                si_shade: Optional[mi.SurfaceInteraction3f] = None
-    ) -> Tuple[mi.Spectrum, mi.Bool, Any]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
         """
         See ADIntegrator.sample() for a description of this function's purpose.
 
@@ -1258,6 +1289,11 @@ class PSIntegrator(ADIntegrator):
         Output ``valid`` (``mi.Bool``):
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
+
+        Output ``aovs`` (``Sequence[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
 
         Output ``seedray`` / ``state_out`` (``any``):
             If ``project`` is true, the integrator returns the seed rays to be

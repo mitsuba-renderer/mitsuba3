@@ -52,8 +52,7 @@ class BasicPRBIntegrator(RBIntegrator):
                state_in: Optional[mi.Spectrum],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum,
-               mi.Bool, mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -161,6 +160,7 @@ class BasicPRBIntegrator(RBIntegrator):
         return (
             L if primal else δL, # Radiance/differential radiance
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
+            [],                  # Empty typle of AOVs
             L                    # State the for differential phase
         )
 
