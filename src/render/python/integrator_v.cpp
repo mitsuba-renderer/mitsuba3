@@ -247,14 +247,13 @@ public:
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
                                      const Medium * /* unused */,
-                                     Float * /* unused */,
+                                     Float *aovs,
                                      Mask active) const override {
         py::gil_scoped_acquire gil;
 
         py::function sample_override = py::get_override(this, "sample");
         if (sample_override) {
-            using PyReturn = std::tuple<Spectrum, Mask, py::object>;
-
+            using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>, py::object>;
             py::kwargs kwargs = py::dict(
                 "mode"_a=drjit::ADMode::Primal,
                 "scene"_a=scene,
@@ -262,13 +261,14 @@ public:
                 "ray"_a=ray,
                 "depth"_a=0,
                 "δL"_a=py::none(),
+                "δaovs"_a=py::none(),
                 "state_in"_a=py::none(),
                 "active"_a=active
             );
             // Third output is the ADIntegrator's state, which we ignore here
-            auto [spec, mask, _] =
+            auto [spec, mask, aovs_, _] =
                 sample_override(**kwargs).template cast<PyReturn>();
-
+            std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
         } else {
             Throw("ADIntegrator doesn't overload the method \"sample\"");
